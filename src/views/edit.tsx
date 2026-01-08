@@ -43,8 +43,8 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
 		<div className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-composer-error/10 text-composer-error">
 			<IconAlertTriangle className="w-4 h-4 shrink-0" />
 			<span>
-				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets] — these may
-				be timing markers from imported files
+				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets] — these may be
+				timing markers from imported files
 			</span>
 		</div>
 	);
@@ -65,9 +65,7 @@ const LinePreview: React.FC<{ line: ParsedLine }> = ({ line }) => {
 			>
 				{line.isEmpty ? "(empty line)" : line.text}
 			</span>
-			{line.hasBrackets && (
-				<IconAlertTriangle className="w-4 h-4 text-composer-error shrink-0" />
-			)}
+			{line.hasBrackets && <IconAlertTriangle className="w-4 h-4 text-composer-error shrink-0" />}
 		</div>
 	);
 };

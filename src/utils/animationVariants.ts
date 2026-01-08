@@ -60,6 +60,66 @@ const slideDownVariants: Variants = {
 	exit: { opacity: 0, y: -8 },
 };
 
+// -- Sync Carousel (vertical, direction-aware, instant) ----------------------
+
+const syncCarouselTransition: Transition = {
+	type: "spring",
+	stiffness: 400,
+	damping: 30,
+};
+
+const syncLineVariants: Variants = {
+	enter: (direction: number) => ({
+		y: direction > 0 ? 40 : -40,
+		opacity: 0,
+	}),
+	center: {
+		y: 0,
+		opacity: 1,
+	},
+	exit: (direction: number) => ({
+		y: direction > 0 ? -40 : 40,
+		opacity: 0,
+	}),
+};
+
+const syncContextVariants: Variants = {
+	enter: (direction: number) => ({
+		y: direction > 0 ? 30 : -30,
+		opacity: 0,
+	}),
+	center: {
+		y: 0,
+		opacity: 0.4,
+	},
+	exit: (direction: number) => ({
+		y: direction > 0 ? -30 : 30,
+		opacity: 0,
+	}),
+};
+
+const syncPulseVariants: Variants = {
+	idle: {
+		boxShadow: "0 0 0px rgba(129, 140, 248, 0)",
+		borderColor: "rgba(255, 255, 255, 0.1)",
+	},
+	pulse: {
+		boxShadow: "0 0 16px rgba(129, 140, 248, 0.4)",
+		borderColor: "rgba(129, 140, 248, 0.5)",
+	},
+};
+
+const shimmerTransition: Transition = {
+	type: "spring",
+	stiffness: 30,
+	damping: 15,
+};
+
+const shimmerVariants: Variants = {
+	initial: { backgroundPosition: "200% 0" },
+	animate: { backgroundPosition: "-100% 0" },
+};
+
 // -- Stagger Container --------------------------------------------------------
 
 const staggerContainerVariants: Variants = {
@@ -91,4 +151,10 @@ export {
 	slideDownVariants,
 	staggerContainerVariants,
 	staggerItemVariants,
+	syncCarouselTransition,
+	syncLineVariants,
+	syncContextVariants,
+	syncPulseVariants,
+	shimmerTransition,
+	shimmerVariants,
 };
