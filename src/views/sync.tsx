@@ -62,6 +62,7 @@ const SyncCarousel: React.FC<{
 	return (
 		<div className="relative overflow-hidden" style={{ height: containerHeight }}>
 			<motion.div
+				initial={{ y: translateY }}
 				animate={{ y: translateY }}
 				transition={syncCarouselTransition}
 				className="flex flex-col items-center"
@@ -69,14 +70,14 @@ const SyncCarousel: React.FC<{
 				{lines.map((line, idx) => {
 					const isCurrent = idx === lineIndex;
 					const distance = Math.abs(idx - lineIndex);
+					const opacity = distance === 0 ? 1 : distance === 1 ? 0.4 : 0;
+					const scale = distance === 0 ? 1 : 0.65;
 
 					return (
 						<motion.div
 							key={line.id}
-							animate={{
-								opacity: distance === 0 ? 1 : distance === 1 ? 0.4 : 0,
-								scale: distance === 0 ? 1 : 0.65,
-							}}
+							initial={{ opacity, scale }}
+							animate={{ opacity, scale }}
 							transition={syncCarouselTransition}
 							style={{ height: LINE_HEIGHT }}
 							className="flex items-center justify-center w-full shrink-0"
@@ -87,12 +88,9 @@ const SyncCarousel: React.FC<{
 									const isPrevLine = idx === lineIndex - 1;
 									const isLastSyncedOnCurrent =
 										isCurrent && wordIndex > 0 && widx === wordIndex - 1;
-									const isLastSyncedOnPrev =
-										isPrevLine &&
-										wordIndex === 0 &&
-										widx === lineWordCount - 1 &&
-										line.words?.length === lineWordCount;
-									const isLastSynced = isLastSyncedOnCurrent || isLastSyncedOnPrev;
+									const isLastWordOfPrevLine =
+										isPrevLine && wordIndex === 0 && widx === lineWordCount - 1;
+									const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
 
 									const color = isLastSynced
 										? "rgb(129, 140, 248)"
@@ -103,7 +101,6 @@ const SyncCarousel: React.FC<{
 									return (
 										<motion.span
 											key={`${line.id}-${widx}`}
-											initial={{ color }}
 											animate={{ color }}
 											transition={syncCarouselTransition}
 										>
@@ -165,10 +162,10 @@ const ScrollableLine: React.FC<{
 				isCurrent ? "bg-composer-accent/10 border-l-2 border-composer-accent" : ""
 			}`}
 		>
-			<span className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums mt-1">
+			<span className="w-8 mt-1 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums">
 				{lineNumber}
 			</span>
-			<div className="flex-1 flex flex-wrap gap-x-3 gap-y-1">
+			<div className="flex flex-wrap flex-1 gap-x-3 gap-y-1">
 				{wordTexts.map((word, idx) => {
 					const timing = words?.[idx];
 					const isSynced = !!timing;
@@ -326,12 +323,15 @@ const SyncPanel: React.FC = () => {
 				} else if (isPlaying) {
 					handleTap();
 				}
+			} else if (e.code === "Enter" && !e.repeat) {
+				e.preventDefault();
+				setIsPlaying(!isPlaying);
 			}
 		};
 
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [syncState.isActive, lines.length, handleStartSync, handleTap, isPlaying]);
+	}, [syncState.isActive, lines.length, handleStartSync, handleTap, isPlaying, setIsPlaying]);
 
 	// Show scrollable view when paused (regardless of sync state)
 	const showScrollableView = !isPlaying;
@@ -459,7 +459,7 @@ const SyncPanel: React.FC = () => {
 					{/* Paused hint */}
 					{!isComplete && !isPlaying && syncState.isActive && (
 						<div className="text-sm text-composer-text-muted">
-							Paused — click a line to jump, or play to continue
+							Paused ・ click a line to jump, or play to continue
 						</div>
 					)}
 				</div>

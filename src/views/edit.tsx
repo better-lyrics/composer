@@ -43,8 +43,8 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
 		<div className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-composer-error/10 text-composer-error">
 			<IconAlertTriangle className="w-4 h-4 shrink-0" />
 			<span>
-				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets] — these may be
-				timing markers from imported files
+				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets] ・ these may
+				be timing markers from imported files
 			</span>
 		</div>
 	);
@@ -57,11 +57,13 @@ const LinePreview: React.FC<{ line: ParsedLine }> = ({ line }) => {
 				line.isEmpty ? "opacity-50" : ""
 			} ${line.hasBrackets ? "bg-composer-error/5" : ""}`}
 		>
-			<span className="w-8 shrink-0 text-right font-mono text-xs text-composer-text-muted tabular-nums">
+			<span className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums">
 				{line.lineNumber}
 			</span>
 			<span
-				className={`flex-1 text-sm ${line.isEmpty ? "italic text-composer-text-muted" : "text-composer-text"} ${line.hasBrackets ? "text-composer-error" : ""}`}
+				className={`flex-1 text-sm ${
+					line.isEmpty ? "italic text-composer-text-muted" : "text-composer-text"
+				} ${line.hasBrackets ? "text-composer-error" : ""}`}
 			>
 				{line.isEmpty ? "(empty line)" : line.text}
 			</span>
@@ -95,7 +97,7 @@ const EditPanel: React.FC = () => {
 	);
 
 	return (
-		<div className="flex flex-1 flex-col gap-4 p-4 overflow-hidden">
+		<div className="flex flex-col flex-1 gap-4 p-4 overflow-hidden">
 			<div className="flex items-center justify-between select-none">
 				<h2 className="text-lg font-medium">Lyrics Editor</h2>
 				<span className="text-sm text-composer-text-muted">
@@ -105,12 +107,12 @@ const EditPanel: React.FC = () => {
 
 			<BracketWarning count={bracketCount} />
 
-			<div className="flex flex-1 gap-4 min-h-0">
+			<div className="flex flex-1 min-h-0 gap-4">
 				{/* Input */}
-				<div className="flex flex-1 flex-col min-w-0">
+				<div className="flex flex-col flex-1 min-w-0">
 					<label
 						htmlFor={textareaId}
-						className="mb-2 text-sm font-medium text-composer-text-secondary select-none"
+						className="mb-2 text-sm font-medium select-none text-composer-text-secondary"
 					>
 						Paste or type lyrics
 					</label>
@@ -119,17 +121,17 @@ const EditPanel: React.FC = () => {
 						value={rawText}
 						onChange={handleTextChange}
 						placeholder="Paste your lyrics here, one line at a time..."
-						className="flex-1 p-3 text-sm bg-composer-input border border-composer-border rounded-lg resize-none focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
+						className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
 						spellCheck={false}
 					/>
 				</div>
 
 				{/* Preview */}
-				<div className="flex flex-1 flex-col min-w-0">
-					<span className="mb-2 text-sm font-medium text-composer-text-secondary select-none">
+				<div className="flex flex-col flex-1 min-w-0">
+					<span className="mb-2 text-sm font-medium select-none text-composer-text-secondary">
 						Preview
 					</span>
-					<div className="flex-1 overflow-y-auto rounded-lg border border-composer-border bg-composer-bg-dark">
+					<div className="flex-1 overflow-y-auto border rounded-lg border-composer-border bg-composer-bg-dark">
 						{parsed.length === 0 || (parsed.length === 1 && parsed[0].isEmpty) ? (
 							<div className="flex items-center justify-center h-full text-sm text-composer-text-muted">
 								Lyrics will appear here
