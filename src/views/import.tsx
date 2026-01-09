@@ -1,8 +1,7 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { Waveform } from "@/audio/waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { IconMusic } from "@tabler/icons-react";
+import { IconCheck, IconMusic } from "@tabler/icons-react";
 import { useCallback } from "react";
 
 // -- Component ----------------------------------------------------------------
@@ -20,10 +19,16 @@ const ImportPanel: React.FC = () => {
     [setSource, setMetadata],
   );
 
-  if (source) {
+  if (source && source.type === "file") {
     return (
-      <div className="flex flex-col flex-1 p-4">
-        <Waveform />
+      <div className="flex flex-col items-center justify-center flex-1 size-full gap-4">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-composer-bg-elevated">
+          <IconCheck className="w-5 h-5 text-green-500" />
+          <span className="text-composer-text">{source.file.name}</span>
+        </div>
+        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
+          <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
+        </FileDropZone>
       </div>
     );
   }
