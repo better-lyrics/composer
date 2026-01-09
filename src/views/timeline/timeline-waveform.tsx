@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useCallback, useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
+import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 
 const LOG_PREFIX = "[TimelineWaveform]";
 const TIME_UPDATE_INTERVAL_MS = 66;
@@ -23,6 +24,7 @@ const WAVEFORM_OPTIONS = {
 const TimelineWaveform: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
+  const regionsRef = useRef<RegionsPlugin | null>(null);
   const loadedSourceRef = useRef<File | null>(null);
   const lastTimeUpdateRef = useRef<number>(0);
 
@@ -41,6 +43,9 @@ const TimelineWaveform: React.FC = () => {
       container: containerRef.current,
       ...WAVEFORM_OPTIONS,
     });
+
+    const regions = ws.registerPlugin(RegionsPlugin.create());
+    regionsRef.current = regions;
 
     ws.on("ready", () => {
       ws.setPlaybackRate(playbackRate);
@@ -63,6 +68,7 @@ const TimelineWaveform: React.FC = () => {
     wsRef.current = ws;
 
     return () => {
+      regionsRef.current = null;
       ws.destroy();
       wsRef.current = null;
     };
