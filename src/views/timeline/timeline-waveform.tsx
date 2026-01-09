@@ -116,9 +116,12 @@ const TimelineWaveform: React.FC = () => {
     }
   }, [currentTime]);
 
-  // Sync zoom
+  // Sync zoom (only if audio is loaded)
   useEffect(() => {
-    wsRef.current?.zoom(zoom);
+    const ws = wsRef.current;
+    if (ws && ws.getDuration() > 0) {
+      ws.zoom(zoom);
+    }
   }, [zoom]);
 
   const handleWheel = useCallback(
