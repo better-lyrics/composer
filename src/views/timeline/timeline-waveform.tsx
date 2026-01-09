@@ -48,6 +48,12 @@ const TimelineWaveform: React.FC = () => {
       normalize: true,
       hideScrollbar: true,
       minPxPerSec: zoom,
+      interact: true,
+    });
+
+    // Click to seek
+    ws.on("click", (relativeX) => {
+      ws.seekTo(relativeX);
     });
 
     ws.on("ready", () => {
