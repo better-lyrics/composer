@@ -1,8 +1,9 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { TimelineControls } from "@/views/timeline/timeline-controls";
-import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { useEffect, useState } from "react";
+import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
+import { TimelineWaveform, type WordSelection } from "@/views/timeline/timeline-waveform";
+import { useCallback, useEffect, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -18,9 +19,11 @@ const TimelinePanel: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const lines = useProjectStore((s) => s.lines);
+  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const [rippleEnabled, setRippleEnabled] = useState(false);
   const [loopRegion, setLoopRegion] = useState<{ start: number; end: number } | null>(null);
   const [loopEnabled, setLoopEnabled] = useState(false);
+  const [selectedWord, setSelectedWord] = useState<WordSelection | null>(null);
 
   // Loop playback logic
   useEffect(() => {
@@ -42,12 +45,63 @@ const TimelinePanel: React.FC = () => {
       } else if (e.key === "Escape") {
         setLoopRegion(null);
         setLoopEnabled(false);
+        setSelectedWord(null);
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [loopRegion]);
+
+  const handleUpdateWordBegin = useCallback(
+    (newBegin: number) => {
+      if (!selectedWord) return;
+      const line = lines[selectedWord.lineIndex];
+      if (!line) return;
+
+      if (selectedWord.type === "word" && line.words) {
+        const updatedWords = [...line.words];
+        updatedWords[selectedWord.wordIndex] = {
+          ...updatedWords[selectedWord.wordIndex],
+          begin: Math.max(0, newBegin),
+        };
+        updateLineWithHistory(line.id, { words: updatedWords });
+      } else if (selectedWord.type === "bg" && line.backgroundWords) {
+        const updatedWords = [...line.backgroundWords];
+        updatedWords[selectedWord.wordIndex] = {
+          ...updatedWords[selectedWord.wordIndex],
+          begin: Math.max(0, newBegin),
+        };
+        updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      }
+    },
+    [selectedWord, lines, updateLineWithHistory],
+  );
+
+  const handleUpdateWordEnd = useCallback(
+    (newEnd: number) => {
+      if (!selectedWord) return;
+      const line = lines[selectedWord.lineIndex];
+      if (!line) return;
+
+      if (selectedWord.type === "word" && line.words) {
+        const updatedWords = [...line.words];
+        updatedWords[selectedWord.wordIndex] = {
+          ...updatedWords[selectedWord.wordIndex],
+          end: Math.max(0, newEnd),
+        };
+        updateLineWithHistory(line.id, { words: updatedWords });
+      } else if (selectedWord.type === "bg" && line.backgroundWords) {
+        const updatedWords = [...line.backgroundWords];
+        updatedWords[selectedWord.wordIndex] = {
+          ...updatedWords[selectedWord.wordIndex],
+          end: Math.max(0, newEnd),
+        };
+        updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      }
+    },
+    [selectedWord, lines, updateLineWithHistory],
+  );
 
   if (!source) {
     return (
@@ -64,6 +118,13 @@ const TimelinePanel: React.FC = () => {
       </div>
     );
   }
+
+  const selectedWordData =
+    selectedWord && lines[selectedWord.lineIndex]
+      ? selectedWord.type === "word"
+        ? lines[selectedWord.lineIndex].words?.[selectedWord.wordIndex]
+        : lines[selectedWord.lineIndex].backgroundWords?.[selectedWord.wordIndex]
+      : null;
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden select-none">
@@ -87,8 +148,20 @@ const TimelinePanel: React.FC = () => {
           rippleEnabled={rippleEnabled}
           loopRegion={loopRegion}
           onLoopRegionChange={setLoopRegion}
+          onSelectWord={setSelectedWord}
         />
       </div>
+      {selectedWord && selectedWordData && (
+        <TimelineInfoPanel
+          lineNumber={selectedWord.lineIndex + 1}
+          agentId={lines[selectedWord.lineIndex].agentId}
+          word={selectedWordData}
+          wordType={selectedWord.type}
+          currentTime={currentTime}
+          onUpdateBegin={handleUpdateWordBegin}
+          onUpdateEnd={handleUpdateWordEnd}
+        />
+      )}
     </div>
   );
 };

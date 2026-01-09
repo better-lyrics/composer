@@ -34,11 +34,19 @@ const WAVEFORM_OPTIONS = {
 
 // -- Interfaces ----------------------------------------------------------------
 
+interface WordSelection {
+  lineId: string;
+  lineIndex: number;
+  wordIndex: number;
+  type: "word" | "bg";
+}
+
 interface TimelineWaveformProps {
   lines: LyricLine[];
   rippleEnabled: boolean;
   loopRegion: { start: number; end: number } | null;
   onLoopRegionChange?: (region: { start: number; end: number } | null) => void;
+  onSelectWord?: (selection: WordSelection | null) => void;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -50,6 +58,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
   rippleEnabled,
   loopRegion,
   onLoopRegionChange,
+  onSelectWord,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
@@ -68,9 +77,12 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
+  const onSelectWordRef = useRef(onSelectWord);
+
   linesRef.current = lines;
   rippleEnabledRef.current = rippleEnabled;
   onLoopRegionChangeRef.current = onLoopRegionChange;
+  onSelectWordRef.current = onSelectWord;
 
   // Initialize WaveSurfer
   useEffect(() => {
@@ -94,6 +106,22 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
         onLoopRegionChangeRef.current?.({ start: region.start, end: region.end });
         region.remove();
       }
+    });
+
+    regions.on("region-clicked", (region) => {
+      const parsed = parseRegionId(region.id);
+      if (!parsed) return;
+
+      const currentLines = linesRef.current;
+      const lineIndex = currentLines.findIndex((l) => l.id === parsed.lineId);
+      if (lineIndex === -1) return;
+
+      onSelectWordRef.current?.({
+        lineId: parsed.lineId,
+        lineIndex,
+        wordIndex: parsed.index,
+        type: parsed.type,
+      });
     });
 
     ws.on("ready", () => {
@@ -327,3 +355,4 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 // -- Exports -------------------------------------------------------------------
 
 export { TimelineWaveform };
+export type { WordSelection };
