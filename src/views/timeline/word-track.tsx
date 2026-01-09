@@ -1,7 +1,7 @@
 import { WordBlock } from "@/views/timeline/word-block";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { WordTiming } from "@/stores/project";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -15,9 +15,16 @@ interface WordTrackProps {
   onUpdateWord: (index: number, updates: Partial<WordTiming>) => void;
 }
 
+interface DragState {
+  index: number;
+  edge: "left" | "right";
+  begin: number;
+  end: number;
+}
+
 // -- Constants -----------------------------------------------------------------
 
-const TRACK_HEIGHT = 28;
+const TRACK_HEIGHT = 36;
 
 // -- Component -----------------------------------------------------------------
 
@@ -35,37 +42,60 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
   const rippleEnabled = useTimelineStore((s) => s.rippleEnabled);
 
+  // Local state during drag to avoid flickering
+  const [dragState, setDragState] = useState<DragState | null>(null);
+
   const handleResizeStart = useCallback(
     (index: number, edge: "left" | "right", startX: number) => {
       const word = words[index];
 
+      // Initialize drag state
+      setDragState({ index, edge, begin: word.begin, end: word.end });
+
       const handleMouseMove = (e: MouseEvent) => {
         const deltaX = e.clientX - startX;
         const deltaTime = deltaX / zoom;
-        const newTime = Math.max(0, Math.min(duration, (edge === "left" ? word.begin : word.end) + deltaTime));
 
-        if (edge === "left") {
-          const maxBegin = word.end - 0.05;
-          const prevEnd = index > 0 ? words[index - 1].end : 0;
-          const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, newTime));
-          onUpdateWord(index, { begin: clampedBegin });
+        setDragState((prev) => {
+          if (!prev) return null;
 
-          if (rippleEnabled && index > 0) {
-            onUpdateWord(index - 1, { end: clampedBegin });
+          const originalWord = words[index];
+
+          if (edge === "left") {
+            const newBegin = originalWord.begin + deltaTime;
+            const maxBegin = originalWord.end - 0.05;
+            const prevEnd = index > 0 ? words[index - 1].end : 0;
+            const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, newBegin)));
+            return { ...prev, begin: clampedBegin };
           }
-        } else {
-          const minEnd = word.begin + 0.05;
+
+          const newEnd = originalWord.end + deltaTime;
+          const minEnd = originalWord.begin + 0.05;
           const nextBegin = index < words.length - 1 ? words[index + 1].begin : duration;
-          const clampedEnd = Math.min(nextBegin, Math.max(minEnd, newTime));
-          onUpdateWord(index, { end: clampedEnd });
-
-          if (rippleEnabled && index < words.length - 1) {
-            onUpdateWord(index + 1, { begin: clampedEnd });
-          }
-        }
+          const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, newEnd)));
+          return { ...prev, end: clampedEnd };
+        });
       };
 
       const handleMouseUp = () => {
+        // Commit the change to the store
+        setDragState((prev) => {
+          if (prev) {
+            if (edge === "left") {
+              onUpdateWord(index, { begin: prev.begin });
+              if (rippleEnabled && index > 0) {
+                onUpdateWord(index - 1, { end: prev.begin });
+              }
+            } else {
+              onUpdateWord(index, { end: prev.end });
+              if (rippleEnabled && index < words.length - 1) {
+                onUpdateWord(index + 1, { begin: prev.end });
+              }
+            }
+          }
+          return null;
+        });
+
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
       };
@@ -81,29 +111,40 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const hasSelection = selectedWord !== null;
 
+  // Get display values (use drag state if dragging this word)
+  const getWordDisplay = (word: WordTiming, index: number) => {
+    if (dragState && dragState.index === index) {
+      return { begin: dragState.begin, end: dragState.end };
+    }
+    return { begin: word.begin, end: word.end };
+  };
+
   return (
     <div className="relative" style={{ height: TRACK_HEIGHT, width: duration * zoom }}>
-      {words.map((word, index) => (
-        <WordBlock
-          key={`${lineId}-${trackType}-${word.begin}-${word.text}`}
-          text={word.text}
-          begin={word.begin}
-          end={word.end}
-          color={color}
-          zoom={zoom}
-          isSelected={isWordSelected(index)}
-          isDimmed={hasSelection && !isWordSelected(index)}
-          onClick={() =>
-            setSelectedWord({
-              lineId,
-              lineIndex,
-              wordIndex: index,
-              type: trackType,
-            })
-          }
-          onResizeStart={(edge, startX) => handleResizeStart(index, edge, startX)}
-        />
-      ))}
+      {words.map((word, index) => {
+        const display = getWordDisplay(word, index);
+        return (
+          <WordBlock
+            key={`${lineId}-${trackType}-${word.text}-${index}`}
+            text={word.text}
+            begin={display.begin}
+            end={display.end}
+            color={color}
+            zoom={zoom}
+            isSelected={isWordSelected(index)}
+            isDimmed={hasSelection && !isWordSelected(index)}
+            onClick={() =>
+              setSelectedWord({
+                lineId,
+                lineIndex,
+                wordIndex: index,
+                type: trackType,
+              })
+            }
+            onResizeStart={(edge, startX) => handleResizeStart(index, edge, startX)}
+          />
+        );
+      })}
     </div>
   );
 };

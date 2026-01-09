@@ -14,6 +14,7 @@ interface LineRowProps {
 // -- Constants -----------------------------------------------------------------
 
 const GUTTER_WIDTH = 48;
+const COLLAPSED_BG_HEIGHT = 16;
 
 // -- Component -----------------------------------------------------------------
 
@@ -63,15 +64,15 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           )}
         </div>
 
-        {/* BG word track (only shown if has content) */}
-        {hasBgWords && (
-          <div
-            className="border-l-2"
-            style={{
-              borderColor: color,
-              opacity: 0.6,
-            }}
-          >
+        {/* BG word track (always shown, collapsed when empty) */}
+        <div
+          className="border-l-2 border-dashed"
+          style={{
+            borderColor: color,
+            opacity: hasBgWords ? 0.6 : 0.2,
+          }}
+        >
+          {hasBgWords ? (
             <WordTrack
               lineId={line.id}
               lineIndex={lineIndex}
@@ -81,8 +82,15 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               duration={duration}
               onUpdateWord={onUpdateBgWord}
             />
-          </div>
-        )}
+          ) : (
+            <div
+              style={{ height: COLLAPSED_BG_HEIGHT }}
+              className="flex items-center px-2 text-[10px] text-composer-text-muted/40 italic"
+            >
+              bg
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
