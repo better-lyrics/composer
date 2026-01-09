@@ -38,6 +38,9 @@ const Waveform: React.FC = () => {
 		ws.on("ready", () => {
 			setDuration(ws.getDuration());
 			setIsLoading(false);
+			// Apply initial playback rate
+			const { playbackRate } = useAudioStore.getState();
+			ws.setPlaybackRate(playbackRate);
 		});
 
 		ws.on("timeupdate", (time) => setCurrentTime(time));

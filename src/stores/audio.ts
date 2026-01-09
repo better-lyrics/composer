@@ -30,7 +30,7 @@ const INITIAL_STATE: AudioState = {
 	isPlaying: false,
 	currentTime: 0,
 	duration: 0,
-	playbackRate: 1,
+	playbackRate: 0.75,
 	isLoading: false,
 };
 
