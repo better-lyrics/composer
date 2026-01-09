@@ -44,9 +44,6 @@ importers:
       tailwind-merge:
         specifier: ^3.4.0
         version: 3.4.0
-      wavesurfer.js:
-        specifier: ^7.12.1
-        version: 7.12.1
       zustand:
         specifier: ^5.0.0
         version: 5.0.9(@types/react@19.2.7)(react@19.2.3)
@@ -1147,9 +1144,6 @@ packages:
       jsdom:
         optional: true
 
-  wavesurfer.js@7.12.1:
-    resolution: {integrity: sha512-NswPjVHxk0Q1F/VMRemCPUzSojjuHHisQrBqQiRXg7MVbe3f5vQ6r0rTTXA/a/neC/4hnOEC4YpXca4LpH0SUg==}
-
   why-is-node-running@2.3.0:
     resolution: {integrity: sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==}
     engines: {node: '>=8'}
@@ -2058,8 +2052,6 @@ snapshots:
       - terser
       - tsx
       - yaml
-
-  wavesurfer.js@7.12.1: {}
 
   why-is-node-running@2.3.0:
     dependencies:

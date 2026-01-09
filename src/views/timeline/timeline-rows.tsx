@@ -1,9 +1,12 @@
-import { Virtuoso } from "react-virtuoso";
 import { LineRow } from "@/views/timeline/line-row";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useProjectStore, type WordTiming } from "@/stores/project";
 import { useAudioStore } from "@/stores/audio";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
+
+// -- Constants -----------------------------------------------------------------
+
+const GUTTER_WIDTH = 48;
 
 // -- Component -----------------------------------------------------------------
 
@@ -11,7 +14,6 @@ const TimelineRows: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
-  const scrollLeft = useTimelineStore((s) => s.scrollLeft);
   const zoom = useTimelineStore((s) => s.zoom);
 
   const handleUpdateWord = useCallback(
@@ -38,27 +40,20 @@ const TimelineRows: React.FC = () => {
     [lines, updateLineWithHistory],
   );
 
+  const totalWidth = duration * zoom;
+
   return (
-    <div className="flex-1 overflow-hidden">
-      <div className="h-full" style={{ transform: `translateX(-${scrollLeft}px)`, width: duration * zoom }}>
-        <Virtuoso
-          totalCount={lines.length}
-          itemContent={(index) => {
-            const line = lines[index];
-            return (
-              <LineRow
-                key={line.id}
-                line={line}
-                lineIndex={index}
-                duration={duration}
-                onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
-                onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
-              />
-            );
-          }}
-          style={{ height: "100%" }}
+    <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%" }}>
+      {lines.map((line, index) => (
+        <LineRow
+          key={line.id}
+          line={line}
+          lineIndex={index}
+          duration={duration}
+          onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
+          onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
         />
-      </div>
+      ))}
     </div>
   );
 };

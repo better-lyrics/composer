@@ -12,6 +12,7 @@ interface WordTrackProps {
   color: string;
   trackType: "word" | "bg";
   duration: number;
+  height: number;
   onUpdateWord: (index: number, updates: Partial<WordTiming>) => void;
 }
 
@@ -22,9 +23,6 @@ interface DragState {
   end: number;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const TRACK_HEIGHT = 32;
 
 // -- Component -----------------------------------------------------------------
 
@@ -35,6 +33,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   color,
   trackType,
   duration,
+  height,
   onUpdateWord,
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
@@ -119,28 +118,44 @@ const WordTrack: React.FC<WordTrackProps> = ({
     return { begin: word.begin, end: word.end };
   };
 
+  const handleTrackClick = () => {
+    setSelectedWord(null);
+  };
+
   return (
-    <div className="relative" style={{ height: TRACK_HEIGHT, width: duration * zoom }}>
+    <div
+      className="relative"
+      style={{ height, width: duration * zoom }}
+      onClick={handleTrackClick}
+    >
       {words.map((word, index) => {
         const display = getWordDisplay(word, index);
         return (
           <WordBlock
-            key={`${lineId}-${trackType}-${word.text}-${index}`}
+            key={`${lineId}-${trackType}-${index}`}
+            id={`${lineId}-${trackType}-${index}`}
+            lineId={lineId}
+            lineIndex={lineIndex}
+            wordIndex={index}
+            trackType={trackType}
             text={word.text}
             begin={display.begin}
             end={display.end}
             color={color}
             zoom={zoom}
-            isSelected={isWordSelected(index)}
             isDimmed={hasSelection && !isWordSelected(index)}
-            onClick={() =>
-              setSelectedWord({
-                lineId,
-                lineIndex,
-                wordIndex: index,
-                type: trackType,
-              })
-            }
+            onClick={() => {
+              if (isWordSelected(index)) {
+                setSelectedWord(null);
+              } else {
+                setSelectedWord({
+                  lineId,
+                  lineIndex,
+                  wordIndex: index,
+                  type: trackType,
+                });
+              }
+            }}
             onResizeStart={(edge, startX) => handleResizeStart(index, edge, startX)}
           />
         );
@@ -151,4 +166,4 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { WordTrack, TRACK_HEIGHT };
+export { WordTrack };

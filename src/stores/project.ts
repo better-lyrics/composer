@@ -83,6 +83,8 @@ interface ProjectActions {
   canUndo: () => boolean;
   canRedo: () => boolean;
   clearHistory: () => void;
+  moveWordToBg: (lineId: string, wordIndex: number) => void;
+  moveWordFromBg: (lineId: string, wordIndex: number) => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -233,6 +235,38 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   canRedo: () => get().historyIndex < get().history.length - 1,
 
   clearHistory: () => set({ history: [], historyIndex: -1 }),
+
+  moveWordToBg: (lineId, wordIndex) =>
+    set((state) => ({
+      lines: state.lines.map((line) => {
+        if (line.id !== lineId || !line.words) return line;
+        const word = line.words[wordIndex];
+        if (!word) return line;
+        const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
+        return {
+          ...line,
+          words: line.words.filter((_, i) => i !== wordIndex),
+          backgroundWords: bgWords,
+        };
+      }),
+      isDirty: true,
+    })),
+
+  moveWordFromBg: (lineId, wordIndex) =>
+    set((state) => ({
+      lines: state.lines.map((line) => {
+        if (line.id !== lineId || !line.backgroundWords) return line;
+        const word = line.backgroundWords[wordIndex];
+        if (!word) return line;
+        const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
+        return {
+          ...line,
+          backgroundWords: line.backgroundWords.filter((_, i) => i !== wordIndex),
+          words: mainWords,
+        };
+      }),
+      isDirty: true,
+    })),
 }));
 
 function getAgentColor(agentId: string): string {
