@@ -232,18 +232,6 @@ const TimelineWaveform: React.FC = () => {
     [duration, totalWidth, seekTo],
   );
 
-  // Handle wheel for zoom
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        const delta = e.deltaY > 0 ? -20 : 20;
-        useTimelineStore.getState().setZoom(zoom + delta);
-      }
-    },
-    [zoom],
-  );
-
   if (!source) return null;
 
   return (
@@ -257,7 +245,6 @@ const TimelineWaveform: React.FC = () => {
           className="absolute inset-0 cursor-pointer"
           style={{ height: WAVEFORM_HEIGHT }}
           onClick={handleClick}
-          onWheel={handleWheel}
         />
       </div>
     </div>

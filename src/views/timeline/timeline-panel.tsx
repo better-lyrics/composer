@@ -220,6 +220,34 @@ const TimelinePanel: React.FC = () => {
     [setScrollLeft],
   );
 
+  const GUTTER_WIDTH = 48;
+
+  const handleWheel = useCallback(
+    (e: React.WheelEvent<HTMLDivElement>) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+
+      const container = scrollContainerRef.current;
+      if (!container || duration <= 0) return;
+
+      const rect = container.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
+      const cursorTime = cursorX / zoom;
+
+      const delta = e.deltaY > 0 ? -20 : 20;
+      const newZoom = Math.max(20, Math.min(500, zoom + delta));
+
+      if (newZoom === zoom) return;
+
+      const newCursorX = cursorTime * newZoom;
+      const newScrollLeft = Math.max(0, newCursorX - (e.clientX - rect.left - GUTTER_WIDTH));
+
+      useTimelineStore.getState().setZoom(newZoom);
+      container.scrollLeft = newScrollLeft;
+    },
+    [zoom, duration],
+  );
+
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
@@ -254,6 +282,7 @@ const TimelinePanel: React.FC = () => {
             ref={scrollContainerRef}
             className="flex-1 overflow-auto"
             onScroll={handleScroll}
+            onWheel={handleWheel}
             onKeyDown={(e) => {
               if (e.key === " " || e.key === "Enter") {
                 e.preventDefault();

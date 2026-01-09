@@ -112,7 +112,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         {hasBgWords ? (
           <div
             ref={setBgDropRef}
-            className={cn("relative border-l opacity-70 transition-colors", isOverBg && "bg-composer-accent/10")}
+            className={cn(
+              "relative border-l opacity-70 transition-colors",
+              isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+            )}
             style={{ borderColor: color }}
           >
             <WordTrack

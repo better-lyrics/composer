@@ -67,7 +67,11 @@ function findActivePositions(lines: LyricLine[], currentTime: number, granularit
             if (isOpen || currentTime < word.end) {
               const duration = word.end - word.begin;
               const progress = duration > 0 ? (currentTime - word.begin) / duration : 0;
-              positions.push({ lineIndex: lineIdx, wordIndex: wordIdx, progress });
+              positions.push({
+                lineIndex: lineIdx,
+                wordIndex: wordIdx,
+                progress,
+              });
             }
           }
         }
@@ -144,8 +148,12 @@ const PreviewLine: React.FC<{
             <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
           )}
         </div>
-        {line.backgroundText && line.backgroundWords?.length && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 justify-center">
+        {line.backgroundWords?.length ? (
+          <div
+            className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 ${alignmentClass} ${
+              alignment === "left" ? "ml-5" : alignment === "right" ? "mr-5" : ""
+            }`}
+          >
             {line.backgroundWords.map((bgWord, bgIdx) => {
               const bgCompleted = isWordCompleted(bgWord, currentTime);
               const bgIsActive =
@@ -172,7 +180,7 @@ const PreviewLine: React.FC<{
               );
             })}
           </div>
-        )}
+        ) : null}
       </div>
     );
   }
@@ -199,8 +207,7 @@ const PreviewLine: React.FC<{
               const progress = isWordCurrent ? wordPosition.progress : wordCompleted ? 1 : 0;
 
               return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
-                <span key={`${lineIndex}-${wordIdx}`} className="relative inline-block">
+                <span key={`${lineIndex}-${word.text}-${word.begin}`} className="relative inline-block">
                   <span className="text-composer-text-muted">{word.text}</span>
                   <span
                     className="absolute inset-0 overflow-hidden text-composer-accent-text"
@@ -215,7 +222,7 @@ const PreviewLine: React.FC<{
             line.text
               .split(/\s+/)
               .map((word, idx) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
+                // biome-ignore lint/suspicious/noArrayIndexKey: static unsynced text
                 <span key={`${lineIndex}-${idx}`} className="text-composer-text-muted">
                   {word}
                 </span>
@@ -224,8 +231,12 @@ const PreviewLine: React.FC<{
           <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
         )}
       </div>
-      {line.backgroundText && line.backgroundWords?.length && (
-        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 ${alignmentClass}`}>
+      {line.backgroundWords?.length ? (
+        <div
+          className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 ${alignmentClass} ${
+            alignment === "left" ? "ml-5" : alignment === "right" ? "mr-5" : ""
+          }`}
+        >
           {line.backgroundWords.map((bgWord, bgIdx) => {
             const bgCompleted = isWordCompleted(bgWord, currentTime);
             const bgIsActive = currentTime >= bgWord.begin && (bgWord.end === bgWord.begin || currentTime < bgWord.end);
@@ -251,7 +262,7 @@ const PreviewLine: React.FC<{
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

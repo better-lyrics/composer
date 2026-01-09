@@ -72,8 +72,17 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onSetBgWordEndTime,
 }) => {
   const lineRef = useRef<HTMLDivElement>(null);
-  const wordTexts = useMemo(() => splitIntoWords(text), [text]);
-  const bgWordTexts = useMemo(() => (backgroundText ? splitIntoWords(backgroundText) : []), [backgroundText]);
+  // Use words array if available (preserves timeline edits), otherwise split text
+  const wordTexts = useMemo(() => (words?.length ? words.map((w) => w.text) : splitIntoWords(text)), [text, words]);
+  const bgWordTexts = useMemo(
+    () =>
+      backgroundWords?.length
+        ? backgroundWords.map((w) => w.text)
+        : backgroundText
+          ? splitIntoWords(backgroundText)
+          : [],
+    [backgroundText, backgroundWords],
+  );
 
   useEffect(() => {
     if (isCurrent && lineRef.current) {
@@ -295,7 +304,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
             )}
           </div>
         )}
-        {backgroundText && (
+        {bgWordTexts.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             {bgWordTexts.map((word, idx) =>
               renderWord(
