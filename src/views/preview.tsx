@@ -1,9 +1,22 @@
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
+import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+function getAgentAlignment(agentId: string): "left" | "center" | "right" {
+  const match = agentId.match(/^v(\d+)$/);
+  if (!match) return "center";
+
+  const num = Number.parseInt(match[1], 10);
+  // High numbers (v1000+) are centered (harmony/chorus)
+  if (num >= 1000) return "center";
+  // Low numbers alternate: odd=left, even=right
+  return num % 2 === 1 ? "left" : "right";
+}
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -97,25 +110,69 @@ const PreviewLine: React.FC<{
     }
   }, [isLineCurrent]);
 
+  const alignment = getAgentAlignment(line.agentId);
+  const alignmentClass =
+    alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
+  const agentColor = getAgentColor(line.agentId);
+
+  const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+
   if (granularity === "line") {
     const progress = linePosition ? linePosition.progress : lineCompleted ? 1 : 0;
 
     return (
       <div
         ref={lineRef}
-        className={`py-3 px-6 text-2xl font-medium transition-opacity ${
+        className={`py-3 px-6 transition-opacity ${textAlignClass} ${
           isLineCurrent ? "opacity-100" : lineCompleted ? "opacity-60" : "opacity-30"
         }`}
       >
-        <span className="relative inline-block">
-          <span className="text-composer-text-muted">{line.text}</span>
-          <span
-            className="absolute inset-0 overflow-hidden text-composer-accent-text"
-            style={{ width: `${progress * 100}%` }}
-          >
-            {line.text}
+        <div className="inline-flex items-center gap-3 text-2xl font-medium">
+          {alignment === "left" && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
+          )}
+          <span className="relative inline-block">
+            <span className="text-composer-text-muted">{line.text}</span>
+            <span
+              className="absolute inset-0 overflow-hidden text-composer-accent-text"
+              style={{ width: `${progress * 100}%` }}
+            >
+              {line.text}
+            </span>
           </span>
-        </span>
+          {alignment === "right" && (
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
+          )}
+        </div>
+        {line.backgroundText && line.backgroundWords?.length && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 justify-center">
+            {line.backgroundWords.map((bgWord, bgIdx) => {
+              const bgCompleted = isWordCompleted(bgWord, currentTime);
+              const bgIsActive =
+                currentTime >= bgWord.begin && (bgWord.end === bgWord.begin || currentTime < bgWord.end);
+              const bgDuration = bgWord.end - bgWord.begin;
+              const bgProgress = bgIsActive
+                ? bgDuration > 0
+                  ? (currentTime - bgWord.begin) / bgDuration
+                  : 0
+                : bgCompleted
+                  ? 1
+                  : 0;
+
+              return (
+                <span key={`${lineIndex}-bg-${bgWord.text}-${bgIdx}`} className="relative inline-block">
+                  <span className="text-composer-text-muted">{bgWord.text}</span>
+                  <span
+                    className="absolute inset-0 overflow-hidden text-composer-accent-text"
+                    style={{ width: `${bgProgress * 100}%` }}
+                  >
+                    {bgWord.text}
+                  </span>
+                </span>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }
@@ -126,39 +183,75 @@ const PreviewLine: React.FC<{
   return (
     <div
       ref={lineRef}
-      className={`py-3 px-6 flex flex-wrap gap-x-3 gap-y-1 text-2xl font-medium transition-opacity ${
+      className={`py-3 px-6 transition-opacity ${textAlignClass} ${
         isLineCurrent ? "opacity-100" : lineCompleted ? "opacity-60" : "opacity-30"
       }`}
     >
-      {words.length > 0
-        ? words.map((word, wordIdx) => {
-            const wordCompleted = isWordCompleted(word, currentTime);
-            const wordPosition = activePositions.find((p) => p.lineIndex === lineIndex && p.wordIndex === wordIdx);
-            const isWordCurrent = !!wordPosition;
-            const progress = isWordCurrent ? wordPosition.progress : wordCompleted ? 1 : 0;
+      <div className={`inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-medium ${alignmentClass}`}>
+        {alignment === "left" && (
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
+        )}
+        {words.length > 0
+          ? words.map((word, wordIdx) => {
+              const wordCompleted = isWordCompleted(word, currentTime);
+              const wordPosition = activePositions.find((p) => p.lineIndex === lineIndex && p.wordIndex === wordIdx);
+              const isWordCurrent = !!wordPosition;
+              const progress = isWordCurrent ? wordPosition.progress : wordCompleted ? 1 : 0;
+
+              return (
+                // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
+                <span key={`${lineIndex}-${wordIdx}`} className="relative inline-block">
+                  <span className="text-composer-text-muted">{word.text}</span>
+                  <span
+                    className="absolute inset-0 overflow-hidden text-composer-accent-text"
+                    style={{ width: `${progress * 100}%` }}
+                  >
+                    {word.text}
+                  </span>
+                </span>
+              );
+            })
+          : // Unsynced line - show as faded text
+            line.text
+              .split(/\s+/)
+              .map((word, idx) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
+                <span key={`${lineIndex}-${idx}`} className="text-composer-text-muted">
+                  {word}
+                </span>
+              ))}
+        {alignment === "right" && (
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
+        )}
+      </div>
+      {line.backgroundText && line.backgroundWords?.length && (
+        <div className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 ${alignmentClass}`}>
+          {line.backgroundWords.map((bgWord, bgIdx) => {
+            const bgCompleted = isWordCompleted(bgWord, currentTime);
+            const bgIsActive = currentTime >= bgWord.begin && (bgWord.end === bgWord.begin || currentTime < bgWord.end);
+            const bgDuration = bgWord.end - bgWord.begin;
+            const bgProgress = bgIsActive
+              ? bgDuration > 0
+                ? (currentTime - bgWord.begin) / bgDuration
+                : 0
+              : bgCompleted
+                ? 1
+                : 0;
 
             return (
-              // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
-              <span key={`${lineIndex}-${wordIdx}`} className="relative inline-block">
-                <span className="text-composer-text-muted">{word.text}</span>
+              <span key={`${lineIndex}-bg-${bgWord.text}-${bgIdx}`} className="relative inline-block">
+                <span className="text-composer-text-muted">{bgWord.text}</span>
                 <span
                   className="absolute inset-0 overflow-hidden text-composer-accent-text"
-                  style={{ width: `${progress * 100}%` }}
+                  style={{ width: `${bgProgress * 100}%` }}
                 >
-                  {word.text}
+                  {bgWord.text}
                 </span>
               </span>
             );
-          })
-        : // Unsynced line - show as faded text
-          line.text
-            .split(/\s+/)
-            .map((word, idx) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed
-              <span key={`${lineIndex}-${idx}`} className="text-composer-text-muted">
-                {word}
-              </span>
-            ))}
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -216,7 +309,7 @@ const PreviewPanel: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <h2 className="text-lg font-medium">Preview</h2>
-        <Button variant="primary" onClick={() => setIsPlaying(!isPlaying)}>
+        <Button variant="primary" hasIcon onClick={() => setIsPlaying(!isPlaying)}>
           {isPlaying ? <IconPlayerPauseFilled className="w-4 h-4" /> : <IconPlayerPlayFilled className="w-4 h-4" />}
           {isPlaying ? "Pause" : "Play"}
         </Button>

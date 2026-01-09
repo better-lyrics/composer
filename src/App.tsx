@@ -4,13 +4,16 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
+import { HelpModal } from "@/ui/help-modal";
 import { TabBar } from "@/ui/tab-bar";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { Activity, useMemo } from "react";
+import { IconHelp } from "@tabler/icons-react";
+import { Activity, useMemo, useState } from "react";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "preview"];
 
@@ -18,6 +21,7 @@ const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
 
@@ -53,6 +57,12 @@ const AppContent: React.FC = () => {
         action: () => setActiveTab("export"),
         description: "Export",
       },
+      {
+        key: "?",
+        shift: true,
+        action: () => setHelpOpen(true),
+        description: "Show keyboard shortcuts",
+      },
     ],
     [setActiveTab],
   );
@@ -66,7 +76,11 @@ const AppContent: React.FC = () => {
           <img src="/logo.svg" alt="Composer Logo" className="inline-block w-6 h-6 mr-2 -mt-1" />
           Composer
         </h1>
+        <Button size="icon" variant="ghost" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">
+          <IconHelp className="w-5 h-5" />
+        </Button>
       </header>
+      <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
         <div className={`absolute inset-0 flex flex-col ${activeTab === "import" ? "visible" : "invisible"}`}>

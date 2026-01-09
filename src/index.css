@@ -33,8 +33,8 @@
   --color-composer-link: #5865f2;
 
   /* Error/Warning */
-  --color-composer-error: #ff9999;
-  --color-composer-error-text: color(display-p3 0.992 0.882 0.882);
+  --color-composer-error: #b45555;
+  --color-composer-error-text: #ffe5e5;
   --color-composer-warning: #f5a623;
 
   /* Typography */
@@ -58,10 +58,9 @@ body {
   font-family: var(--font-family-sans);
 }
 
-/* Focus visible indicators */
+/* Focus visible indicators - minimal for utility app */
 :focus-visible {
-  outline: 2px solid var(--color-composer-accent);
-  outline-offset: 2px;
+  outline: none;
 }
 
 /* Geist Mono base weight */

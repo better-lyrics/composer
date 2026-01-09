@@ -17,6 +17,7 @@ import {
   getSyncedWordCount,
   getTotalWords,
   hasLineTiming,
+  splitIntoWords,
 } from "@/utils/sync-helpers";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { SyncCarousel } from "@/views/sync/sync-carousel";
@@ -70,6 +71,10 @@ const SyncPanel: React.FC = () => {
     handleSetSyllableTime,
     handleNudgeSyllableEnd,
     handleSetSyllableEndTime,
+    handleNudgeBgWord,
+    handleSetBgWordTime,
+    handleNudgeBgWordEnd,
+    handleSetBgWordEndTime,
     isComplete,
     currentWord,
   } = useSyncHandlers({
@@ -82,6 +87,27 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
+
+  const updateLine = useProjectStore((s) => s.updateLine);
+
+  // Auto-initialize BG word timing for lines that have BG text and line timing but no BG words
+  useEffect(() => {
+    for (const line of lines) {
+      if (line.backgroundText && !line.backgroundWords?.length) {
+        const timing = getLineTiming(line);
+        if (timing) {
+          const bgWordTexts = splitIntoWords(line.backgroundText);
+          updateLine(line.id, {
+            backgroundWords: bgWordTexts.map((text) => ({
+              text,
+              begin: timing.begin,
+              end: timing.end,
+            })),
+          });
+        }
+      }
+    }
+  }, [lines, updateLine]);
 
   const totalWords = useMemo(() => getTotalWords(lines), [lines]);
   const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
@@ -239,6 +265,7 @@ const SyncPanel: React.FC = () => {
             </button>
           </div>
           <Button
+            hasIcon
             variant={editMode ? "primary" : "secondary"}
             onClick={() => setEditMode(!editMode)}
             title={editMode ? "Unlock sync mode" : "Lock to edit mode"}
@@ -247,13 +274,13 @@ const SyncPanel: React.FC = () => {
             Edit
           </Button>
           {syncState.isActive && !editMode && (
-            <Button onClick={handleReset}>
+            <Button hasIcon onClick={handleReset}>
               <IconRefresh className="w-4 h-4" />
               Reset
             </Button>
           )}
           {!syncState.isActive && !editMode && (
-            <Button variant="primary" onClick={handleStartSync}>
+            <Button hasIcon variant="primary" onClick={handleStartSync}>
               <IconPlayerPlayFilled className="w-4 h-4" />
               Start
             </Button>
@@ -273,6 +300,9 @@ const SyncPanel: React.FC = () => {
                   text={line.text}
                   lineNumber={index + 1}
                   isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
+                  agentId={line.agentId}
+                  backgroundText={line.backgroundText}
+                  backgroundWords={line.backgroundWords}
                   words={line.words}
                   lineBegin={timing?.begin}
                   lineEnd={timing?.end}
@@ -299,6 +329,10 @@ const SyncPanel: React.FC = () => {
                   onSetSyllableEndTime={(wordIdx, syllableIdx, newEnd) =>
                     handleSetSyllableEndTime(index, wordIdx, syllableIdx, newEnd)
                   }
+                  onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
+                  onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
+                  onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
+                  onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
                 />
               );
             })}

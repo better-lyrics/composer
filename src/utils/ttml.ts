@@ -96,17 +96,38 @@ function generateTTML({ metadata, agents, lines, granularity }: TTMLOptions): st
         }
       }
 
-      // Background vocals
-      if (line.backgroundText) {
-        xmlParts.push(`        <span ttm:role="x-bg">${escapeXml(line.backgroundText)}</span>`);
+      // Background vocals with word-level timing
+      if (line.backgroundText && line.backgroundWords?.length) {
+        const bgSpans: string[] = [];
+        for (let i = 0; i < line.backgroundWords.length; i++) {
+          const bgWord = line.backgroundWords[i];
+          const isLastWord = i === line.backgroundWords.length - 1;
+          const text = isLastWord ? escapeXml(bgWord.text) : `${escapeXml(bgWord.text)} `;
+          bgSpans.push(`<span begin="${formatTime(bgWord.begin)}" end="${formatTime(bgWord.end)}">${text}</span>`);
+        }
+        xmlParts.push(`        <span ttm:role="x-bg">${bgSpans.join("")}</span>`);
+      } else if (line.backgroundText) {
+        // Fallback: BG text without word timing uses line timing
+        xmlParts.push(
+          `        <span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`,
+        );
       }
 
       xmlParts.push("      </p>");
     } else {
       // Line-level timing
       let content = escapeXml(line.text);
-      if (line.backgroundText) {
-        content += ` <span ttm:role="x-bg">${escapeXml(line.backgroundText)}</span>`;
+      if (line.backgroundText && line.backgroundWords?.length) {
+        const bgSpans: string[] = [];
+        for (let i = 0; i < line.backgroundWords.length; i++) {
+          const bgWord = line.backgroundWords[i];
+          const isLastWord = i === line.backgroundWords.length - 1;
+          const text = isLastWord ? escapeXml(bgWord.text) : `${escapeXml(bgWord.text)} `;
+          bgSpans.push(`<span begin="${formatTime(bgWord.begin)}" end="${formatTime(bgWord.end)}">${text}</span>`);
+        }
+        content += ` <span ttm:role="x-bg">${bgSpans.join("")}</span>`;
+      } else if (line.backgroundText) {
+        content += ` <span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`;
       }
       xmlParts.push(
         `      <p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}>${content}</p>`,

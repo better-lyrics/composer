@@ -1,3 +1,4 @@
+import { cn } from "@/utils/cn";
 import { useCallback, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -115,7 +116,7 @@ const Slider: React.FC<SliderProps> = ({
       aria-valuemax={max}
       aria-valuenow={value}
       aria-label={ariaLabel}
-      className={`group relative h-1 cursor-pointer rounded-full bg-composer-button ${className}`}
+      className={cn("group relative h-1 cursor-pointer rounded-full bg-composer-button", className)}
       onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
     >

@@ -15,10 +15,12 @@
   "dependencies": {
     "@floating-ui/react": "^0.27.16",
     "@tabler/icons-react": "^3.36.1",
+    "clsx": "^2.1.1",
     "motion": "^12.24.12",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.4.0",
     "wavesurfer.js": "^7.12.1",
     "zustand": "^5.0.0"
   },

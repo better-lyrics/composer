@@ -125,20 +125,20 @@ const ExportPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {editedContent !== null && (
-            <Button onClick={handleRegenerate}>
+            <Button hasIcon onClick={handleRegenerate}>
               <IconRefresh className="w-4 h-4" />
               Regenerate
             </Button>
           )}
-          <Button variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
+          <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
             <IconEdit className="w-4 h-4" />
             {isEditing ? "Done" : "Edit"}
           </Button>
-          <Button onClick={handleCopy}>
+          <Button hasIcon onClick={handleCopy}>
             {copied ? <IconCheck className="w-4 h-4" /> : <IconCopy className="w-4 h-4" />}
             {copied ? "Copied" : "Copy"}
           </Button>
-          <Button variant="primary" onClick={handleDownload}>
+          <Button hasIcon variant="primary" onClick={handleDownload}>
             <IconDownload className="w-4 h-4" />
             Download TTML
           </Button>

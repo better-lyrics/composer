@@ -1,4 +1,5 @@
 import { Button } from "@/ui/button";
+import { cn } from "@/utils/cn";
 import { IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
@@ -10,11 +11,12 @@ interface ModalProps {
   onClose: () => void;
   title?: string;
   children: React.ReactNode;
+  className?: string;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDialogElement>(null);
 
@@ -61,7 +63,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children }) => {
         ref={contentRef}
         open
         aria-labelledby={title ? "modal-title" : undefined}
-        className="relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none"
+        className={cn(
+          "relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none",
+          className,
+        )}
       >
         {title && (
           <div className="flex items-center justify-between px-5 py-4 border-b border-composer-border">

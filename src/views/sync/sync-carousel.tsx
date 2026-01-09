@@ -68,25 +68,27 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
                     {line.text}
                   </motion.span>
                 ) : (
-                  splitIntoWords(line.text).map((word, widx) => {
-                    const lineWordCount = splitIntoWords(line.text).length;
-                    const isPrevLine = idx === lineIndex - 1;
-                    const isLastSyncedOnCurrent = isCurrent && wordIndex > 0 && widx === wordIndex - 1;
-                    const isLastWordOfPrevLine = isPrevLine && wordIndex === 0 && widx === lineWordCount - 1;
-                    const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
+                  (() => {
+                    const lineWords = splitIntoWords(line.text);
+                    return lineWords.map((word, widx) => {
+                      const isPrevLine = idx === lineIndex - 1;
+                      const isLastSyncedOnCurrent = isCurrent && wordIndex > 0 && widx === wordIndex - 1;
+                      const isLastWordOfPrevLine = isPrevLine && wordIndex === 0 && widx === lineWords.length - 1;
+                      const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
 
-                    const color = isLastSynced
-                      ? "rgb(129, 140, 248)"
-                      : isCurrent
-                        ? "rgba(255, 255, 255, 0.7)"
-                        : "rgba(255, 255, 255, 0.4)";
+                      const color = isLastSynced
+                        ? "rgb(129, 140, 248)"
+                        : isCurrent
+                          ? "rgba(255, 255, 255, 0.7)"
+                          : "rgba(255, 255, 255, 0.4)";
 
-                    return (
-                      <motion.span key={`${line.id}-${widx}`} animate={{ color }} transition={syncCarouselTransition}>
-                        {word}
-                      </motion.span>
-                    );
-                  })
+                      return (
+                        <motion.span key={`${line.id}-${widx}`} animate={{ color }} transition={syncCarouselTransition}>
+                          {word}
+                        </motion.span>
+                      );
+                    });
+                  })()
                 )}
               </div>
             </motion.div>

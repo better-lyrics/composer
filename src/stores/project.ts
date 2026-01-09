@@ -32,6 +32,7 @@ interface LyricLine {
   end?: number;
   words?: WordTiming[];
   backgroundText?: string;
+  backgroundWords?: WordTiming[];
 }
 
 type GranularityMode = "line" | "word";
@@ -69,6 +70,7 @@ interface ProjectActions {
   updateLine: (id: string, updates: Partial<LyricLine>) => void;
   updateLineWithHistory: (id: string, updates: Partial<LyricLine>) => void;
   addAgent: (agent: Agent) => void;
+  updateAgent: (id: string, updates: Partial<Agent>) => void;
   removeAgent: (id: string) => void;
   setGranularity: (mode: GranularityMode) => void;
   setEditorMode: (mode: EditorMode) => void;
@@ -85,7 +87,33 @@ interface ProjectActions {
 
 // -- Constants ----------------------------------------------------------------
 
-const DEFAULT_AGENTS: Agent[] = [{ id: "v1", type: "person", name: "Primary" }];
+const AGENT_PRESETS: Agent[] = [
+  { id: "v1", type: "person", name: "Lead" },
+  { id: "v1000", type: "group", name: "Harmony" },
+  { id: "v2000", type: "other", name: "Chorus" },
+];
+
+const AGENT_COLORS: Record<string, string> = {
+  v1: "#60a5fa", // blue
+  v2: "#4ade80", // green
+  v3: "#fb923c", // orange
+  v4: "#22d3d1", // cyan
+  v5: "#facc15", // yellow
+  v6: "#fb7185", // rose
+  v7: "#2dd4bf", // teal
+  v8: "#fbbf24", // amber
+  v9: "#818cf8", // indigo
+  v10: "#34d399", // emerald
+  v11: "#f87171", // red
+  v12: "#38bdf8", // sky
+  v13: "#a3e635", // lime
+  v14: "#e879f9", // fuchsia
+  v15: "#a78bfa", // violet
+  v1000: "#f472b6", // pink
+  v2000: "#c4b5fd", // purple light
+};
+
+const DEFAULT_AGENTS: Agent[] = [AGENT_PRESETS[0]];
 
 const MAX_HISTORY_SIZE = 100;
 
@@ -149,6 +177,12 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       isDirty: true,
     })),
 
+  updateAgent: (id, updates) =>
+    set((state) => ({
+      agents: state.agents.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+      isDirty: true,
+    })),
+
   removeAgent: (id) =>
     set((state) => ({
       agents: state.agents.filter((a) => a.id !== id),
@@ -201,7 +235,11 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   clearHistory: () => set({ history: [], historyIndex: -1 }),
 }));
 
-export { useProjectStore, DEFAULT_AGENTS, INITIAL_STATE };
+function getAgentColor(agentId: string): string {
+  return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
+}
+
+export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, AGENT_COLORS, getAgentColor, INITIAL_STATE };
 export type {
   Agent,
   AgentType,

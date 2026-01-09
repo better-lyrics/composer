@@ -5,6 +5,9 @@ import WaveSurfer from "wavesurfer.js";
 
 const LOG_PREFIX = "[Waveform]";
 
+// Throttle time updates to ~15fps to reduce re-renders while maintaining smooth playback
+const TIME_UPDATE_INTERVAL_MS = 66;
+
 const WAVEFORM_OPTIONS = {
   waveColor: "rgba(255, 255, 255, 0.3)",
   progressColor: "rgb(129, 140, 248)",
@@ -21,6 +24,7 @@ const WAVEFORM_OPTIONS = {
 const Waveform: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const loadedSourceRef = useRef<File | null>(null);
+  const lastTimeUpdateRef = useRef<number>(0);
 
   const { wavesurferRef } = useAudioContext();
   const source = useAudioStore((s) => s.source);
@@ -43,7 +47,15 @@ const Waveform: React.FC = () => {
       ws.setPlaybackRate(playbackRate);
     });
 
-    ws.on("timeupdate", (time) => setCurrentTime(time));
+    // Throttle timeupdate to reduce re-renders
+    ws.on("timeupdate", (time) => {
+      const now = performance.now();
+      if (now - lastTimeUpdateRef.current >= TIME_UPDATE_INTERVAL_MS) {
+        lastTimeUpdateRef.current = now;
+        setCurrentTime(time);
+      }
+    });
+    // Seeking should always update immediately for responsiveness
     ws.on("seeking", (time) => setCurrentTime(time));
     ws.on("play", () => setIsPlaying(true));
     ws.on("pause", () => setIsPlaying(false));
