@@ -172,13 +172,8 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
     wsRef.current = ws;
 
-    return () => {
-      regionsRef.current = null;
-      ws.destroy().catch(() => {
-        // AbortError is expected when destroying during async operations
-      });
-      wsRef.current = null;
-    };
+    // No cleanup needed - WaveSurfer instance lives for app lifetime
+    // (Activity component preserves state, avoids unmount/remount issues)
   }, [playbackRate, setCurrentTime, setIsPlaying]);
 
   // Load audio file
