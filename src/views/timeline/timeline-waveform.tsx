@@ -1,11 +1,23 @@
 import { useAudioStore } from "@/stores/audio";
-import { getAgentColor, type LyricLine } from "@/stores/project";
+import { getAgentColor, type LyricLine, useProjectStore } from "@/stores/project";
 import { useCallback, useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 
 const LOG_PREFIX = "[TimelineWaveform]";
 const TIME_UPDATE_INTERVAL_MS = 66;
+
+function parseRegionId(id: string): { lineId: string; type: "word" | "bg"; index: number } | null {
+  const wordMatch = id.match(/^(.+)-word-(\d+)$/);
+  if (wordMatch) {
+    return { lineId: wordMatch[1], type: "word", index: Number.parseInt(wordMatch[2], 10) };
+  }
+  const bgMatch = id.match(/^(.+)-bg-(\d+)$/);
+  if (bgMatch) {
+    return { lineId: bgMatch[1], type: "bg", index: Number.parseInt(bgMatch[2], 10) };
+  }
+  return null;
+}
 
 const WAVEFORM_OPTIONS = {
   waveColor: "rgba(255, 255, 255, 0.3)",
@@ -34,6 +46,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
   const regionsRef = useRef<RegionsPlugin | null>(null);
   const loadedSourceRef = useRef<File | null>(null);
   const lastTimeUpdateRef = useRef<number>(0);
+  const linesRef = useRef<LyricLine[]>(lines);
 
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -41,6 +54,9 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
   const playbackRate = useAudioStore((s) => s.playbackRate);
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
+  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+
+  linesRef.current = lines;
 
   // Initialize WaveSurfer
   useEffect(() => {
@@ -174,6 +190,45 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
       }
     }
   }, [lines]);
+
+  // Handle region drag updates
+  useEffect(() => {
+    const regions = regionsRef.current;
+    if (!regions) return;
+
+    const handleRegionUpdated = (region: { id: string; start: number; end: number }) => {
+      const parsed = parseRegionId(region.id);
+      if (!parsed) return;
+
+      const currentLines = linesRef.current;
+      const line = currentLines.find((l) => l.id === parsed.lineId);
+      if (!line) return;
+
+      if (parsed.type === "word" && line.words) {
+        const updatedWords = [...line.words];
+        updatedWords[parsed.index] = {
+          ...updatedWords[parsed.index],
+          begin: region.start,
+          end: region.end,
+        };
+        updateLineWithHistory(line.id, { words: updatedWords });
+      } else if (parsed.type === "bg" && line.backgroundWords) {
+        const updatedWords = [...line.backgroundWords];
+        updatedWords[parsed.index] = {
+          ...updatedWords[parsed.index],
+          begin: region.start,
+          end: region.end,
+        };
+        updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      }
+    };
+
+    regions.on("region-updated", handleRegionUpdated);
+
+    return () => {
+      regions.un("region-updated", handleRegionUpdated);
+    };
+  }, [updateLineWithHistory]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     const ws = wsRef.current;
