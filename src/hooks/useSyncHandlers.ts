@@ -48,7 +48,8 @@ function useSyncHandlers({
     const wordText = lineWords[wordIndex];
     if (!wordText) return;
 
-    const existingWords = line.words ?? [];
+    // When syncing first word of a line, start fresh (clears any distributed timing)
+    const existingWords = wordIndex === 0 ? [] : (line.words ?? []);
 
     if (existingWords.length > 0) {
       const updatedWords = [...existingWords];

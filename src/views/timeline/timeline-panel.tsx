@@ -80,9 +80,14 @@ const TimelinePanel: React.FC = () => {
     }),
   );
 
-  // Initialize timing if lines have no timing
+  // Initialize timing if lines have no timing - only distribute once per audio load
+  const lastDistributedDurationRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (duration <= 0 || lines.length === 0) return;
+
+    // Only distribute once per duration value (reset when audio changes)
+    if (lastDistributedDurationRef.current === duration) return;
 
     const hasAnyTiming = lines.some((l) => l.words?.length || (l.begin !== undefined && l.end !== undefined));
 
@@ -90,6 +95,7 @@ const TimelinePanel: React.FC = () => {
       const distributed = distributeLinesTiming(lines, duration);
       setLines(distributed);
     }
+    lastDistributedDurationRef.current = duration;
   }, [duration, lines, setLines]);
 
   // Track content height for playhead
