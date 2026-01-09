@@ -174,7 +174,11 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
     return () => {
       regionsRef.current = null;
-      ws.destroy();
+      try {
+        ws.destroy();
+      } catch {
+        // AbortError is expected when destroying during async operations
+      }
       wsRef.current = null;
     };
   }, [playbackRate, setCurrentTime, setIsPlaying]);
@@ -402,7 +406,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
   if (!source) return null;
 
-  return <div ref={containerRef} className="w-full cursor-pointer" onWheel={handleWheel} />;
+  return <div ref={containerRef} className="w-full h-32 cursor-pointer" onWheel={handleWheel} />;
 };
 
 // -- Exports -------------------------------------------------------------------
