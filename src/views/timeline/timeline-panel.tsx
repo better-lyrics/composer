@@ -44,7 +44,7 @@ const TimelinePanel: React.FC = () => {
         />
       </div>
       <div className="flex-1 p-4">
-        <TimelineWaveform lines={lines} />
+        <TimelineWaveform lines={lines} rippleEnabled={rippleEnabled} />
       </div>
     </div>
   );

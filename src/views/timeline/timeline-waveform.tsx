@@ -36,17 +36,19 @@ const WAVEFORM_OPTIONS = {
 
 interface TimelineWaveformProps {
   lines: LyricLine[];
+  rippleEnabled: boolean;
 }
 
 // -- Component -----------------------------------------------------------------
 
-const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
+const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnabled }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const regionsRef = useRef<RegionsPlugin | null>(null);
   const loadedSourceRef = useRef<File | null>(null);
   const lastTimeUpdateRef = useRef<number>(0);
   const linesRef = useRef<LyricLine[]>(lines);
+  const rippleEnabledRef = useRef(rippleEnabled);
 
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -57,6 +59,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
   linesRef.current = lines;
+  rippleEnabledRef.current = rippleEnabled;
 
   // Initialize WaveSurfer
   useEffect(() => {
@@ -206,19 +209,59 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
 
       if (parsed.type === "word" && line.words) {
         const updatedWords = [...line.words];
+        const word = updatedWords[parsed.index];
+        const oldBegin = word.begin;
+        const oldEnd = word.end;
+
         updatedWords[parsed.index] = {
-          ...updatedWords[parsed.index],
+          ...word,
           begin: region.start,
           end: region.end,
         };
+
+        if (rippleEnabledRef.current) {
+          if (region.start !== oldBegin && parsed.index > 0) {
+            updatedWords[parsed.index - 1] = {
+              ...updatedWords[parsed.index - 1],
+              end: region.start,
+            };
+          }
+          if (region.end !== oldEnd && parsed.index < updatedWords.length - 1) {
+            updatedWords[parsed.index + 1] = {
+              ...updatedWords[parsed.index + 1],
+              begin: region.end,
+            };
+          }
+        }
+
         updateLineWithHistory(line.id, { words: updatedWords });
       } else if (parsed.type === "bg" && line.backgroundWords) {
         const updatedWords = [...line.backgroundWords];
+        const bgWord = updatedWords[parsed.index];
+        const oldBegin = bgWord.begin;
+        const oldEnd = bgWord.end;
+
         updatedWords[parsed.index] = {
-          ...updatedWords[parsed.index],
+          ...bgWord,
           begin: region.start,
           end: region.end,
         };
+
+        if (rippleEnabledRef.current) {
+          if (region.start !== oldBegin && parsed.index > 0) {
+            updatedWords[parsed.index - 1] = {
+              ...updatedWords[parsed.index - 1],
+              end: region.start,
+            };
+          }
+          if (region.end !== oldEnd && parsed.index < updatedWords.length - 1) {
+            updatedWords[parsed.index + 1] = {
+              ...updatedWords[parsed.index + 1],
+              begin: region.end,
+            };
+          }
+        }
+
         updateLineWithHistory(line.id, { backgroundWords: updatedWords });
       }
     };
