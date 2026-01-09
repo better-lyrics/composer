@@ -7,7 +7,7 @@ import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
 const LOG_PREFIX = "[TimelineWaveform]";
 const TIME_UPDATE_INTERVAL_MS = 66;
 
-function parseRegionId(id: string): { lineId: string; type: "word" | "bg"; index: number } | null {
+function parseRegionId(id: string): { lineId: string; type: "word" | "bg" | "line"; index: number } | null {
   const wordMatch = id.match(/^(.+)-word-(\d+)$/);
   if (wordMatch) {
     return { lineId: wordMatch[1], type: "word", index: Number.parseInt(wordMatch[2], 10) };
@@ -15,6 +15,22 @@ function parseRegionId(id: string): { lineId: string; type: "word" | "bg"; index
   const bgMatch = id.match(/^(.+)-bg-(\d+)$/);
   if (bgMatch) {
     return { lineId: bgMatch[1], type: "bg", index: Number.parseInt(bgMatch[2], 10) };
+  }
+  const lineMatch = id.match(/^(.+)-line$/);
+  if (lineMatch) {
+    return { lineId: lineMatch[1], type: "line", index: -1 };
+  }
+  return null;
+}
+
+function getLineTiming(line: LyricLine): { begin: number; end: number } | null {
+  if (line.words?.length) {
+    const firstWord = line.words[0];
+    const lastWord = line.words[line.words.length - 1];
+    return { begin: firstWord.begin, end: lastWord.end };
+  }
+  if (line.begin !== undefined && line.end !== undefined) {
+    return { begin: line.begin, end: line.end };
   }
   return null;
 }
@@ -44,6 +60,7 @@ interface WordSelection {
 interface TimelineWaveformProps {
   lines: LyricLine[];
   rippleEnabled: boolean;
+  granularity: "line" | "word";
   loopRegion: { start: number; end: number } | null;
   onLoopRegionChange?: (region: { start: number; end: number } | null) => void;
   onSelectWord?: (selection: WordSelection | null) => void;
@@ -56,6 +73,7 @@ const LOOP_REGION_ID = "loop-region";
 const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
   lines,
   rippleEnabled,
+  granularity,
   loopRegion,
   onLoopRegionChange,
   onSelectWord,
@@ -67,6 +85,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
   const lastTimeUpdateRef = useRef<number>(0);
   const linesRef = useRef<LyricLine[]>(lines);
   const rippleEnabledRef = useRef(rippleEnabled);
+  const granularityRef = useRef(granularity);
   const onLoopRegionChangeRef = useRef(onLoopRegionChange);
 
   const source = useAudioStore((s) => s.source);
@@ -81,6 +100,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
   linesRef.current = lines;
   rippleEnabledRef.current = rippleEnabled;
+  granularityRef.current = granularity;
   onLoopRegionChangeRef.current = onLoopRegionChange;
   onSelectWordRef.current = onSelectWord;
 
@@ -101,8 +121,13 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
     });
 
     regions.on("region-created", (region) => {
-      // User-created regions (drag selection) don't have word/bg in their ID
-      if (!region.id.includes("-word-") && !region.id.includes("-bg-") && region.id !== LOOP_REGION_ID) {
+      // User-created regions (drag selection) don't have word/bg/line in their ID
+      if (
+        !region.id.includes("-word-") &&
+        !region.id.includes("-bg-") &&
+        !region.id.endsWith("-line") &&
+        region.id !== LOOP_REGION_ID
+      ) {
         onLoopRegionChangeRef.current?.({ start: region.start, end: region.end });
         region.remove();
       }
@@ -111,6 +136,9 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
     regions.on("region-clicked", (region) => {
       const parsed = parseRegionId(region.id);
       if (!parsed) return;
+
+      // Only handle word/bg selection, not line regions
+      if (parsed.type === "line") return;
 
       const currentLines = linesRef.current;
       const lineIndex = currentLines.findIndex((l) => l.id === parsed.lineId);
@@ -198,7 +226,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
     }
   }, [currentTime]);
 
-  // Render word regions and loop region
+  // Render regions based on granularity and loop region
   useEffect(() => {
     const regions = regionsRef.current;
     const ws = wsRef.current;
@@ -206,41 +234,61 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
     regions.clearRegions();
 
-    for (const line of lines) {
-      if (!line.words?.length) continue;
+    if (granularity === "word") {
+      for (const line of lines) {
+        if (!line.words?.length) continue;
 
-      const color = getAgentColor(line.agentId);
+        const color = getAgentColor(line.agentId);
 
-      for (let i = 0; i < line.words.length; i++) {
-        const word = line.words[i];
-        if (word.begin === word.end) continue;
-
-        regions.addRegion({
-          id: `${line.id}-word-${i}`,
-          start: word.begin,
-          end: word.end,
-          content: word.text,
-          color: `${color}40`,
-          drag: true,
-          resize: true,
-        });
-      }
-
-      if (line.backgroundWords?.length) {
-        for (let i = 0; i < line.backgroundWords.length; i++) {
-          const bgWord = line.backgroundWords[i];
-          if (bgWord.begin === bgWord.end) continue;
+        for (let i = 0; i < line.words.length; i++) {
+          const word = line.words[i];
+          if (word.begin === word.end) continue;
 
           regions.addRegion({
-            id: `${line.id}-bg-${i}`,
-            start: bgWord.begin,
-            end: bgWord.end,
-            content: bgWord.text,
-            color: `${color}20`,
+            id: `${line.id}-word-${i}`,
+            start: word.begin,
+            end: word.end,
+            content: word.text,
+            color: `${color}40`,
             drag: true,
             resize: true,
           });
         }
+
+        if (line.backgroundWords?.length) {
+          for (let i = 0; i < line.backgroundWords.length; i++) {
+            const bgWord = line.backgroundWords[i];
+            if (bgWord.begin === bgWord.end) continue;
+
+            regions.addRegion({
+              id: `${line.id}-bg-${i}`,
+              start: bgWord.begin,
+              end: bgWord.end,
+              content: bgWord.text,
+              color: `${color}20`,
+              drag: true,
+              resize: true,
+            });
+          }
+        }
+      }
+    } else {
+      // Line markers
+      for (const line of lines) {
+        const timing = getLineTiming(line);
+        if (!timing) continue;
+
+        const color = getAgentColor(line.agentId);
+
+        regions.addRegion({
+          id: `${line.id}-line`,
+          start: timing.begin,
+          end: timing.end,
+          content: line.text.slice(0, 20) + (line.text.length > 20 ? "..." : ""),
+          color: `${color}40`,
+          drag: true,
+          resize: true,
+        });
       }
     }
 
@@ -255,7 +303,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
         resize: false,
       });
     }
-  }, [lines, loopRegion]);
+  }, [lines, granularity, loopRegion]);
 
   // Handle region drag updates
   useEffect(() => {
@@ -326,6 +374,11 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
         }
 
         updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      } else if (parsed.type === "line") {
+        updateLineWithHistory(line.id, {
+          begin: region.start,
+          end: region.end,
+        });
       }
     };
 

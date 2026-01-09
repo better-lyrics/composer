@@ -19,6 +19,7 @@ const TimelinePanel: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const lines = useProjectStore((s) => s.lines);
+  const granularity = useProjectStore((s) => s.granularity);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const [rippleEnabled, setRippleEnabled] = useState(false);
   const [loopRegion, setLoopRegion] = useState<{ start: number; end: number } | null>(null);
@@ -146,6 +147,7 @@ const TimelinePanel: React.FC = () => {
         <TimelineWaveform
           lines={lines}
           rippleEnabled={rippleEnabled}
+          granularity={granularity}
           loopRegion={loopRegion}
           onLoopRegionChange={setLoopRegion}
           onSelectWord={setSelectedWord}
