@@ -9,7 +9,7 @@ import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
-import { SyncPanel } from "@/views/sync";
+import { SyncPanel } from "@/views/sync/sync-panel";
 import { Activity, useMemo } from "react";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "preview"];
