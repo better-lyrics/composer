@@ -1,4 +1,3 @@
-import { useAudioContext } from "@/audio/audio-context";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
@@ -89,9 +88,8 @@ const PlaybackRateControl: React.FC<{
 };
 
 const AudioPlayer: React.FC = () => {
-  const { seek } = useAudioContext();
-
   const source = useAudioStore((s) => s.source);
+  const seekTo = useAudioStore((s) => s.seekTo);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const currentTime = useAudioStore((s) => s.currentTime);
   const duration = useAudioStore((s) => s.duration);
@@ -108,7 +106,7 @@ const AudioPlayer: React.FC = () => {
         value={currentTime}
         min={0}
         max={duration}
-        onChange={seek}
+        onChange={seekTo}
         aria-label="Audio progress"
         className="flex-1"
       />

@@ -41,7 +41,7 @@ const ImportPanel: React.FC = () => {
       setSource({ type: "file", file });
       setMetadata({ title: file.name.replace(/\.[^/.]+$/, "") });
     },
-    [setSource, setMetadata]
+    [setSource, setMetadata],
   );
 
   if (source && source.type === "file") {
@@ -68,33 +68,25 @@ const ImportPanel: React.FC = () => {
           >
             {/* File name */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-composer-text">
-                {fileName}
-              </p>
+              <p className="text-sm font-medium truncate text-composer-text">{fileName}</p>
               <p className="text-xs text-composer-text-muted">{extension}</p>
             </div>
 
             {/* Duration */}
             <div className="flex items-center gap-1.5">
               <IconClock size={14} className="text-composer-text-muted" />
-              <span className="text-sm font-mono text-composer-text tabular-nums">
-                {formatDuration(duration)}
-              </span>
+              <span className="text-sm font-mono text-composer-text tabular-nums">{formatDuration(duration)}</span>
             </div>
 
             {/* File size */}
-            <div className="text-sm text-composer-text-muted">
-              {formatFileSize(file.size)}
-            </div>
+            <div className="text-sm text-composer-text-muted">{formatFileSize(file.size)}</div>
           </div>
         </div>
 
         {/* Replace drop zone */}
         <div className="flex-1 flex items-center justify-center">
           <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-            <p className="text-sm text-composer-text-muted">
-              Drop another file to replace
-            </p>
+            <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
           </FileDropZone>
         </div>
       </div>
@@ -104,17 +96,10 @@ const ImportPanel: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center flex-1 size-full">
       <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-        <IconMusic
-          className="w-12 h-12 mb-4 opacity-50 text-composer-text"
-          stroke={1.5}
-        />
+        <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
         <p className="text-composer-text-secondary">Drop audio file here</p>
-        <p className="mt-1 text-sm text-composer-text-muted">
-          or click to browse
-        </p>
-        <p className="mt-4 text-xs text-composer-text-muted">
-          Supports MP3, WAV, M4A, OGG, FLAC
-        </p>
+        <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
+        <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
       </FileDropZone>
     </div>
   );

@@ -1,4 +1,4 @@
-import { AudioProvider } from "@/audio/audio-context";
+import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
@@ -119,17 +119,14 @@ const AppContent: React.FC = () => {
           </div>
         </Activity>
       </main>
+      {source && <AudioEngine />}
       {showPlayer && <AudioPlayer />}
     </div>
   );
 };
 
 const App: React.FC = () => {
-  return (
-    <AudioProvider>
-      <AppContent />
-    </AudioProvider>
-  );
+  return <AppContent />;
 };
 
 export { App };

@@ -66,7 +66,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         "text-xs text-white truncate select-none cursor-grab",
         "border rounded-xl transition-opacity duration-100",
         isDimmed && "opacity-30",
-        isDragging && "opacity-50 cursor-grabbing z-50"
+        isDragging && "opacity-50 cursor-grabbing z-50",
       )}
       style={{
         left,

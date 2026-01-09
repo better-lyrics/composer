@@ -1,9 +1,5 @@
 import { useDroppable } from "@dnd-kit/core";
-import {
-  getAgentColor,
-  type LyricLine,
-  type WordTiming,
-} from "@/stores/project";
+import { getAgentColor, type LyricLine, type WordTiming } from "@/stores/project";
 import { WordTrack } from "@/views/timeline/word-track";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { cn } from "@/utils/cn";
@@ -26,20 +22,12 @@ const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Component -----------------------------------------------------------------
 
-const LineRow: React.FC<LineRowProps> = ({
-  line,
-  lineIndex,
-  duration,
-  onUpdateWord,
-  onUpdateBgWord,
-}) => {
+const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 
-  const rowHeight = useTimelineStore(
-    (s) => s.rowHeights[line.id] ?? s.defaultRowHeight
-  );
+  const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const setRowHeight = useTimelineStore((s) => s.setRowHeight);
 
@@ -76,7 +64,7 @@ const LineRow: React.FC<LineRowProps> = ({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [line.id, rowHeight, setRowHeight]
+    [line.id, rowHeight, setRowHeight],
   );
 
   return (
@@ -94,7 +82,7 @@ const LineRow: React.FC<LineRowProps> = ({
           className={cn(
             "border-l transition-colors",
             !hasMainWords && "opacity-50",
-            isOverMain && "bg-composer-accent/10"
+            isOverMain && "bg-composer-accent/10",
           )}
           style={{ borderColor: color }}
         >
@@ -124,10 +112,7 @@ const LineRow: React.FC<LineRowProps> = ({
         {hasBgWords ? (
           <div
             ref={setBgDropRef}
-            className={cn(
-              "relative border-l opacity-70 transition-colors",
-              isOverBg && "bg-composer-accent/10"
-            )}
+            className={cn("relative border-l opacity-70 transition-colors", isOverBg && "bg-composer-accent/10")}
             style={{ borderColor: color }}
           >
             <WordTrack
@@ -148,14 +133,12 @@ const LineRow: React.FC<LineRowProps> = ({
               "flex items-center px-2 text-xs font-mono truncate border-l transition-colors",
               isOverBg
                 ? "bg-composer-accent/20 text-composer-text"
-                : "text-composer-text-muted/50 bg-composer-bg-elevated/25"
+                : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
             )}
             style={{ height: BG_DROP_ZONE_HEIGHT, borderColor: `${color}` }}
           >
             {line.backgroundText
-              ? `${line.backgroundText.slice(0, 40)}${
-                  line.backgroundText.length > 40 ? "..." : ""
-                }`
+              ? `${line.backgroundText.slice(0, 40)}${line.backgroundText.length > 40 ? "..." : ""}`
               : "BG"}
           </div>
         )}
@@ -165,7 +148,7 @@ const LineRow: React.FC<LineRowProps> = ({
       <div
         className={cn(
           "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-20",
-          isResizing && "bg-composer-accent/50"
+          isResizing && "bg-composer-accent/50",
         )}
         onMouseDown={handleResizeStart}
         onDoubleClick={() => setRowHeight(line.id, defaultRowHeight)}

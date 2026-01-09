@@ -1,8 +1,4 @@
-import {
-  getAgentColor,
-  type SyllableTiming,
-  type WordTiming,
-} from "@/stores/project";
+import { getAgentColor, type SyllableTiming, type WordTiming } from "@/stores/project";
 import { Tooltip } from "@/ui/tooltip";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
@@ -33,26 +29,10 @@ interface ScrollableLineProps {
   onNudgeLine?: (delta: number) => void;
   onSetLineTime?: (newBegin: number) => void;
   onSplitWord?: (wordIndex: number, syllables: SyllableTiming[]) => void;
-  onNudgeSyllable?: (
-    wordIndex: number,
-    syllableIdx: number,
-    delta: number
-  ) => void;
-  onSetSyllableTime?: (
-    wordIndex: number,
-    syllableIdx: number,
-    newBegin: number
-  ) => void;
-  onNudgeSyllableEnd?: (
-    wordIndex: number,
-    syllableIdx: number,
-    delta: number
-  ) => void;
-  onSetSyllableEndTime?: (
-    wordIndex: number,
-    syllableIdx: number,
-    newEnd: number
-  ) => void;
+  onNudgeSyllable?: (wordIndex: number, syllableIdx: number, delta: number) => void;
+  onSetSyllableTime?: (wordIndex: number, syllableIdx: number, newBegin: number) => void;
+  onNudgeSyllableEnd?: (wordIndex: number, syllableIdx: number, delta: number) => void;
+  onSetSyllableEndTime?: (wordIndex: number, syllableIdx: number, newEnd: number) => void;
   onNudgeBgWord?: (wordIndex: number, delta: number) => void;
   onSetBgWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeBgWordEnd?: (wordIndex: number, delta: number) => void;
@@ -93,10 +73,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 }) => {
   const lineRef = useRef<HTMLDivElement>(null);
   const wordTexts = useMemo(() => splitIntoWords(text), [text]);
-  const bgWordTexts = useMemo(
-    () => (backgroundText ? splitIntoWords(backgroundText) : []),
-    [backgroundText]
-  );
+  const bgWordTexts = useMemo(() => (backgroundText ? splitIntoWords(backgroundText) : []), [backgroundText]);
 
   useEffect(() => {
     if (isCurrent && lineRef.current) {
@@ -107,17 +84,10 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   const renderLineContent = () => {
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       const isOpen = lineEnd === lineBegin;
-      const isActive =
-        currentTime >= lineBegin && (isOpen || currentTime < lineEnd);
+      const isActive = currentTime >= lineBegin && (isOpen || currentTime < lineEnd);
       const isCompleted = lineEnd > lineBegin && currentTime >= lineEnd;
       const duration = lineEnd - lineBegin;
-      const progress = isActive
-        ? duration > 0
-          ? (currentTime - lineBegin) / duration
-          : 0
-        : isCompleted
-        ? 1
-        : 0;
+      const progress = isActive ? (duration > 0 ? (currentTime - lineBegin) / duration : 0) : isCompleted ? 1 : 0;
       return (
         <span className="relative inline-block">
           <span className="text-composer-text-muted">{text}</span>
@@ -130,50 +100,28 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         </span>
       );
     }
-    return (
-      <span
-        className={
-          lineBegin !== undefined
-            ? "text-composer-text-muted"
-            : "text-composer-text"
-        }
-      >
-        {text}
-      </span>
-    );
+    return <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{text}</span>;
   };
 
-  const renderWordContent = (
-    word: string,
-    timing: WordTiming | undefined,
-    isBackground = false
-  ) => {
+  const renderWordContent = (word: string, timing: WordTiming | undefined, isBackground = false) => {
     const isSynced = !!timing;
     const baseClass = isBackground ? "italic" : "";
-    const syncedClass = isBackground
-      ? "text-composer-text-muted/70"
-      : "text-composer-text-muted";
-    const unsyncedClass = isBackground
-      ? "text-composer-text-muted/50"
-      : "text-composer-text";
-    const activeClass = isBackground
-      ? "text-composer-accent-text/80"
-      : "text-composer-accent-text";
+    const syncedClass = isBackground ? "text-composer-text-muted/70" : "text-composer-text-muted";
+    const unsyncedClass = isBackground ? "text-composer-text-muted/50" : "text-composer-text";
+    const activeClass = isBackground ? "text-composer-accent-text/80" : "text-composer-accent-text";
 
     if (editMode && isSynced) {
       const isOpen = timing.end === timing.begin;
-      const isWordActive =
-        currentTime >= timing.begin && (isOpen || currentTime < timing.end);
-      const isWordCompleted =
-        timing.end > timing.begin && currentTime >= timing.end;
+      const isWordActive = currentTime >= timing.begin && (isOpen || currentTime < timing.end);
+      const isWordCompleted = timing.end > timing.begin && currentTime >= timing.end;
       const duration = timing.end - timing.begin;
       const wordProgress = isWordActive
         ? duration > 0
           ? (currentTime - timing.begin) / duration
           : 0
         : isWordCompleted
-        ? 1
-        : 0;
+          ? 1
+          : 0;
       return (
         <span className={`relative inline-block ${baseClass}`}>
           <span className={syncedClass}>{word}</span>
@@ -186,13 +134,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         </span>
       );
     }
-    return (
-      <span
-        className={`${baseClass} ${isSynced ? syncedClass : unsyncedClass}`}
-      >
-        {word}
-      </span>
-    );
+    return <span className={`${baseClass} ${isSynced ? syncedClass : unsyncedClass}`}>{word}</span>;
   };
 
   const renderWord = (
@@ -206,28 +148,12 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       onNudgeEnd?: (idx: number, delta: number) => void;
       onSetEndTime?: (idx: number, newEnd: number) => void;
       onSplit?: (idx: number, syllables: SyllableTiming[]) => void;
-      onNudgeSyllable?: (
-        idx: number,
-        syllableIdx: number,
-        delta: number
-      ) => void;
-      onSetSyllableTime?: (
-        idx: number,
-        syllableIdx: number,
-        newBegin: number
-      ) => void;
-      onNudgeSyllableEnd?: (
-        idx: number,
-        syllableIdx: number,
-        delta: number
-      ) => void;
-      onSetSyllableEndTime?: (
-        idx: number,
-        syllableIdx: number,
-        newEnd: number
-      ) => void;
+      onNudgeSyllable?: (idx: number, syllableIdx: number, delta: number) => void;
+      onSetSyllableTime?: (idx: number, syllableIdx: number, newBegin: number) => void;
+      onNudgeSyllableEnd?: (idx: number, syllableIdx: number, delta: number) => void;
+      onSetSyllableEndTime?: (idx: number, syllableIdx: number, newEnd: number) => void;
     },
-    isBackground = false
+    isBackground = false,
   ) => {
     const isSynced = !!timing;
     const hasSyllables = !!timing?.syllables?.length;
@@ -242,27 +168,17 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     return (
       <span
         key={`${lineNumber}-${isBackground ? "bg" : "main"}-${word}-${idx}`}
-        className={`inline-flex flex-col items-start ${
-          isBackground ? "italic" : ""
-        }`}
+        className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}
       >
         {hasSyllables && !isBackground ? (
           <SyllableSplitter
             word={timing}
             currentTime={currentTime}
             onSplit={(syllables) => handlers.onSplit?.(idx, syllables)}
-            onNudgeSyllable={(syllableIdx, delta) =>
-              handlers.onNudgeSyllable?.(idx, syllableIdx, delta)
-            }
-            onSetSyllableTime={(syllableIdx, newBegin) =>
-              handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)
-            }
-            onNudgeSyllableEnd={(syllableIdx, delta) =>
-              handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)
-            }
-            onSetSyllableEndTime={(syllableIdx, newEnd) =>
-              handlers.onSetSyllableEndTime?.(idx, syllableIdx, newEnd)
-            }
+            onNudgeSyllable={(syllableIdx, delta) => handlers.onNudgeSyllable?.(idx, syllableIdx, delta)}
+            onSetSyllableTime={(syllableIdx, newBegin) => handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)}
+            onNudgeSyllableEnd={(syllableIdx, delta) => handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)}
+            onSetSyllableEndTime={(syllableIdx, newEnd) => handlers.onSetSyllableEndTime?.(idx, syllableIdx, newEnd)}
           />
         ) : (
           <>
@@ -275,36 +191,23 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
                   </span>
                 </Tooltip>
               )}
-              {isSynced &&
-                timing &&
-                timing.text.length >= 2 &&
-                !isBackground && (
-                  <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
-                    <SyllableSplitter
-                      word={timing}
-                      currentTime={currentTime}
-                      onSplit={(syllables) =>
-                        handlers.onSplit?.(idx, syllables)
-                      }
-                      onNudgeSyllable={(syllableIdx, delta) =>
-                        handlers.onNudgeSyllable?.(idx, syllableIdx, delta)
-                      }
-                      onSetSyllableTime={(syllableIdx, newBegin) =>
-                        handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)
-                      }
-                      onNudgeSyllableEnd={(syllableIdx, delta) =>
-                        handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)
-                      }
-                      onSetSyllableEndTime={(syllableIdx, newEnd) =>
-                        handlers.onSetSyllableEndTime?.(
-                          idx,
-                          syllableIdx,
-                          newEnd
-                        )
-                      }
-                    />
-                  </span>
-                )}
+              {isSynced && timing && timing.text.length >= 2 && !isBackground && (
+                <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
+                  <SyllableSplitter
+                    word={timing}
+                    currentTime={currentTime}
+                    onSplit={(syllables) => handlers.onSplit?.(idx, syllables)}
+                    onNudgeSyllable={(syllableIdx, delta) => handlers.onNudgeSyllable?.(idx, syllableIdx, delta)}
+                    onSetSyllableTime={(syllableIdx, newBegin) =>
+                      handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)
+                    }
+                    onNudgeSyllableEnd={(syllableIdx, delta) => handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)}
+                    onSetSyllableEndTime={(syllableIdx, newEnd) =>
+                      handlers.onSetSyllableEndTime?.(idx, syllableIdx, newEnd)
+                    }
+                  />
+                </span>
+              )}
             </span>
             {isSynced && timing && (
               <span className="flex items-center gap-1">
@@ -347,9 +250,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         }
       }}
       className={`flex items-start gap-3 px-4 py-2 w-full text-left cursor-pointer transition-colors hover:bg-composer-button/50 border-l ${
-        isCurrent
-          ? "bg-composer-accent/10 border-composer-accent"
-          : "border-transparent"
+        isCurrent ? "bg-composer-accent/10 border-composer-accent" : "border-transparent"
       }`}
     >
       <span className="flex items-center gap-1.5 mt-1 w-10 shrink-0">
@@ -360,9 +261,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
           }}
           title={agentId}
         />
-        <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">
-          {lineNumber}
-        </span>
+        <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">{lineNumber}</span>
       </span>
       <div className="flex flex-col flex-1 gap-1">
         {granularity === "line" ? (
@@ -392,7 +291,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
                 onSetSyllableTime: onSetSyllableTime,
                 onNudgeSyllableEnd: onNudgeSyllableEnd,
                 onSetSyllableEndTime: onSetSyllableEndTime,
-              })
+              }),
             )}
           </div>
         )}
@@ -410,8 +309,8 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
                   onNudgeEnd: onNudgeBgWordEnd,
                   onSetEndTime: onSetBgWordEndTime,
                 },
-                true
-              )
+                true,
+              ),
             )}
           </div>
         )}
@@ -440,12 +339,7 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
   }
 
   // In edit mode with timing, we need currentTime for progress bar
-  if (
-    next.editMode &&
-    (next.lineBegin !== undefined ||
-      next.words?.length ||
-      next.backgroundWords?.length)
-  ) {
+  if (next.editMode && (next.lineBegin !== undefined || next.words?.length || next.backgroundWords?.length)) {
     return false;
   }
 

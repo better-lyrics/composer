@@ -1,111 +1,127 @@
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
 const WAVEFORM_HEIGHT = 80;
-const SAMPLES_PER_PIXEL = 100;
 const GUTTER_WIDTH = 48;
 
 // -- Component -----------------------------------------------------------------
 
 const TimelineWaveform: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const [waveformData, setWaveformData] = useState<number[] | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+  const waveformDataRef = useRef<number[] | null>(null);
 
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const currentTime = useAudioStore((s) => s.currentTime);
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
-  const setDuration = useAudioStore((s) => s.setDuration);
   const isPlaying = useAudioStore((s) => s.isPlaying);
-  const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
-  const playbackRate = useAudioStore((s) => s.playbackRate);
+  const audioElement = useAudioStore((s) => s.audioElement);
+  const waveformData = useAudioStore((s) => s.waveformData);
+  const seekTo = useAudioStore((s) => s.seekTo);
 
   const zoom = useTimelineStore((s) => s.zoom);
+  const isDraggingPlayhead = useTimelineStore((s) => s.isDraggingPlayhead);
+  const dragTime = useTimelineStore((s) => s.dragTime);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
+  const displayTime = isDraggingPlayhead ? dragTime : currentTime;
 
-  // Create audio element and decode waveform
+  // Keep ref in sync with store data
   useEffect(() => {
-    if (!source || source.type !== "file") return;
+    waveformDataRef.current = waveformData;
+  }, [waveformData]);
 
-    const audio = new Audio();
-    audio.src = URL.createObjectURL(source.file);
-    audioRef.current = audio;
+  // Smooth time updates with direct canvas drawing during playback
+  useEffect(() => {
+    const audio = audioElement;
+    const canvas = overlayCanvasRef.current;
+    if (!audio || !isPlaying) return;
 
-    audio.addEventListener("loadedmetadata", () => {
-      setDuration(audio.duration);
-    });
+    let rafId: number;
+    let lastStateUpdate = 0;
 
-    audio.addEventListener("timeupdate", () => {
-      setCurrentTime(audio.currentTime);
-    });
+    const drawOverlay = () => {
+      const data = waveformDataRef.current;
+      if (!canvas || !data || duration <= 0 || totalWidth <= 0) {
+        rafId = requestAnimationFrame(drawOverlay);
+        return;
+      }
 
-    audio.addEventListener("ended", () => {
-      setIsPlaying(false);
-    });
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        rafId = requestAnimationFrame(drawOverlay);
+        return;
+      }
 
-    // Decode audio for waveform
-    const audioContext = new AudioContext();
-    audioContextRef.current = audioContext;
+      const time = audio.currentTime;
+      const dpr = window.devicePixelRatio || 1;
+      const width = totalWidth;
+      const height = WAVEFORM_HEIGHT;
 
-    source.file.arrayBuffer().then((arrayBuffer) => {
-      audioContext.decodeAudioData(arrayBuffer).then((audioBuffer) => {
-        const channelData = audioBuffer.getChannelData(0);
-        const samples: number[] = [];
-        const step = Math.floor(
-          channelData.length / (audioBuffer.duration * SAMPLES_PER_PIXEL)
-        );
+      if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+        canvas.width = width * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
+      }
 
-        for (let i = 0; i < channelData.length; i += step) {
-          let sum = 0;
-          const count = Math.min(step, channelData.length - i);
-          for (let j = 0; j < count; j++) {
-            sum += Math.abs(channelData[i + j]);
-          }
-          samples.push(sum / count);
-        }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, height);
 
-        // Normalize
-        const max = Math.max(...samples);
-        const normalized = samples.map((s) => s / max);
-        setWaveformData(normalized);
-      });
-    });
+      const barWidth = 2;
+      const barGap = 1;
+      const barStep = barWidth + barGap;
+      const numBars = Math.floor(width / barStep);
+      const samplesPerBar = data.length / numBars;
+      const progressWidth = (time / duration) * width;
+
+      ctx.fillStyle = "rgba(129, 140, 248, 0.5)";
+
+      for (let i = 0; i < numBars; i++) {
+        const x = i * barStep;
+        if (x > progressWidth) break;
+
+        const sampleIndex = Math.floor(i * samplesPerBar);
+        const value = data[sampleIndex] || 0;
+        const barHeight = Math.max(2, value * (height - 4));
+        const y = (height - barHeight) / 2;
+
+        ctx.beginPath();
+        ctx.roundRect(x, y, barWidth, barHeight, 1);
+        ctx.fill();
+      }
+
+      // Gradient overlay
+      const overlayWidth = 36;
+      const actualOverlayWidth = Math.min(overlayWidth, progressWidth);
+      const overlayStart = progressWidth - actualOverlayWidth;
+      const gradient = ctx.createLinearGradient(overlayStart, 0, progressWidth, 0);
+      gradient.addColorStop(0, "rgba(129, 140, 248, 0)");
+      gradient.addColorStop(1, "rgba(129, 140, 248, 0.05)");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(overlayStart, 0, actualOverlayWidth, height);
+
+      // Update React state at 30fps for other components
+      const now = performance.now();
+      if (now - lastStateUpdate > 33) {
+        setCurrentTime(time);
+        lastStateUpdate = now;
+      }
+
+      rafId = requestAnimationFrame(drawOverlay);
+    };
+    rafId = requestAnimationFrame(drawOverlay);
 
     return () => {
-      audio.pause();
-      audio.src = "";
-      URL.revokeObjectURL(audio.src);
-      audioContext.close();
+      if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [source, setDuration, setCurrentTime, setIsPlaying]);
+  }, [isPlaying, audioElement, setCurrentTime, duration, totalWidth]);
 
-  // Sync playback
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (isPlaying) {
-      audio.play();
-    } else {
-      audio.pause();
-    }
-  }, [isPlaying]);
-
-  // Sync playback rate
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.playbackRate = playbackRate;
-    }
-  }, [playbackRate]);
-
-  // Draw waveform
+  // Draw static waveform (only when waveform data or zoom changes)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !waveformData || totalWidth <= 0) return;
@@ -125,7 +141,6 @@ const TimelineWaveform: React.FC = () => {
 
     ctx.clearRect(0, 0, width, height);
 
-    // Draw waveform bars
     const barWidth = 2;
     const barGap = 1;
     const barStep = barWidth + barGap;
@@ -145,9 +160,40 @@ const TimelineWaveform: React.FC = () => {
       ctx.roundRect(x, y, barWidth, barHeight, 1);
       ctx.fill();
     }
+  }, [waveformData, totalWidth]);
 
-    // Draw progress overlay with gradient near cursor
-    const progressWidth = (currentTime / duration) * width;
+  // Draw progress overlay when paused or dragging
+  useEffect(() => {
+    if (isPlaying && !isDraggingPlayhead) return;
+
+    const canvas = overlayCanvasRef.current;
+    if (!canvas || !waveformData || totalWidth <= 0 || duration <= 0) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const width = totalWidth;
+    const height = WAVEFORM_HEIGHT;
+
+    if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, width, height);
+
+    const barWidth = 2;
+    const barGap = 1;
+    const barStep = barWidth + barGap;
+    const numBars = Math.floor(width / barStep);
+    const samplesPerBar = waveformData.length / numBars;
+    const progressWidth = (displayTime / duration) * width;
+
+    ctx.fillStyle = "rgba(129, 140, 248, 0.5)";
 
     for (let i = 0; i < numBars; i++) {
       const x = i * barStep;
@@ -158,7 +204,6 @@ const TimelineWaveform: React.FC = () => {
       const barHeight = Math.max(2, value * (height - 4));
       const y = (height - barHeight) / 2;
 
-      ctx.fillStyle = "rgba(129, 140, 248, 0.5)";
       ctx.beginPath();
       ctx.roundRect(x, y, barWidth, barHeight, 1);
       ctx.fill();
@@ -166,18 +211,14 @@ const TimelineWaveform: React.FC = () => {
 
     // Draw full-height gradient overlay to the left of cursor
     const overlayWidth = 36;
-    const overlayStart = Math.max(0, progressWidth - overlayWidth);
-    const gradient = ctx.createLinearGradient(
-      overlayStart,
-      0,
-      progressWidth,
-      0
-    );
+    const actualOverlayWidth = Math.min(overlayWidth, progressWidth);
+    const overlayStart = progressWidth - actualOverlayWidth;
+    const gradient = ctx.createLinearGradient(overlayStart, 0, progressWidth, 0);
     gradient.addColorStop(0, "rgba(129, 140, 248, 0)");
-    gradient.addColorStop(1, "rgba(129, 140, 248, 0.1)");
+    gradient.addColorStop(1, "rgba(129, 140, 248, 0.05)");
     ctx.fillStyle = gradient;
-    ctx.fillRect(overlayStart, 0, overlayWidth, height);
-  }, [waveformData, totalWidth, currentTime, duration]);
+    ctx.fillRect(overlayStart, 0, actualOverlayWidth, height);
+  }, [isPlaying, isDraggingPlayhead, waveformData, totalWidth, displayTime, duration]);
 
   // Handle click to seek
   const handleClick = useCallback(
@@ -186,14 +227,9 @@ const TimelineWaveform: React.FC = () => {
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const time = (x / totalWidth) * duration;
-      setCurrentTime(time);
-
-      const audio = audioRef.current;
-      if (audio) {
-        audio.currentTime = time;
-      }
+      seekTo(time);
     },
-    [duration, totalWidth, setCurrentTime]
+    [duration, totalWidth, seekTo],
   );
 
   // Handle wheel for zoom
@@ -205,25 +241,25 @@ const TimelineWaveform: React.FC = () => {
         useTimelineStore.getState().setZoom(zoom + delta);
       }
     },
-    [zoom]
+    [zoom],
   );
 
   if (!source) return null;
 
   return (
-    <div
-      className="flex"
-      style={{ width: totalWidth > 0 ? totalWidth + GUTTER_WIDTH : "100%" }}
-    >
+    <div className="flex" style={{ width: totalWidth > 0 ? totalWidth + GUTTER_WIDTH : "100%" }}>
       <div className="shrink-0 w-12 border-r border-composer-border/50 bg-composer-bg" />
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: fuck you*/}
-      <canvas
-        ref={canvasRef}
-        className="cursor-pointer"
-        style={{ height: WAVEFORM_HEIGHT }}
-        onClick={handleClick}
-        onWheel={handleWheel}
-      />
+      <div className="relative" style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}>
+        <canvas ref={canvasRef} className="absolute inset-0" style={{ height: WAVEFORM_HEIGHT }} />
+        {/* biome-ignore lint/a11y/useKeyWithClickEvents: canvas click for seeking */}
+        <canvas
+          ref={overlayCanvasRef}
+          className="absolute inset-0 cursor-pointer"
+          style={{ height: WAVEFORM_HEIGHT }}
+          onClick={handleClick}
+          onWheel={handleWheel}
+        />
+      </div>
     </div>
   );
 };

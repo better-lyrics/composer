@@ -23,7 +23,6 @@ interface DragState {
   end: number;
 }
 
-
 // -- Component -----------------------------------------------------------------
 
 const WordTrack: React.FC<WordTrackProps> = ({
@@ -123,17 +122,15 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   return (
-    <div
-      className="relative"
-      style={{ height, width: duration * zoom }}
-      onClick={handleTrackClick}
-    >
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click to deselect
+    <div className="relative" style={{ height, width: duration * zoom }} onClick={handleTrackClick}>
       {words.map((word, index) => {
         const display = getWordDisplay(word, index);
+        const wordKey = `${lineId}-${trackType}-${word.begin.toFixed(3)}`;
         return (
           <WordBlock
-            key={`${lineId}-${trackType}-${index}`}
-            id={`${lineId}-${trackType}-${index}`}
+            key={wordKey}
+            id={wordKey}
             lineId={lineId}
             lineIndex={lineIndex}
             wordIndex={index}

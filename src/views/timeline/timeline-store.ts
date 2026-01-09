@@ -16,6 +16,8 @@ interface TimelineState {
   scrollLeft: number;
   rowHeights: Record<string, number>;
   defaultRowHeight: number;
+  isDraggingPlayhead: boolean;
+  dragTime: number;
 }
 
 interface TimelineActions {
@@ -28,6 +30,8 @@ interface TimelineActions {
   setScrollLeft: (scrollLeft: number) => void;
   setRowHeight: (lineId: string, height: number) => void;
   getRowHeight: (lineId: string) => number;
+  setDraggingPlayhead: (isDragging: boolean, time?: number) => void;
+  setDragTime: (time: number) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -49,6 +53,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   scrollLeft: 0,
   rowHeights: {},
   defaultRowHeight: DEFAULT_ROW_HEIGHT,
+  isDraggingPlayhead: false,
+  dragTime: 0,
 
   setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
   zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -65,17 +71,11 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
       },
     })),
   getRowHeight: (lineId) => get().rowHeights[lineId] ?? get().defaultRowHeight,
+  setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
+  setDragTime: (dragTime) => set({ dragTime }),
 }));
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  useTimelineStore,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  DEFAULT_ZOOM,
-  MIN_ROW_HEIGHT,
-  MAX_ROW_HEIGHT,
-  DEFAULT_ROW_HEIGHT,
-};
+export { useTimelineStore, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT, DEFAULT_ROW_HEIGHT };
 export type { WordSelection };

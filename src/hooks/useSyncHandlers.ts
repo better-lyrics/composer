@@ -1,4 +1,4 @@
-import { useAudioContext } from "@/audio/audio-context";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine, SyllableTiming } from "@/stores/project";
 import { NUDGE_AMOUNT, type SyncState, getLineTiming, splitIntoWords } from "@/utils/sync-helpers";
@@ -29,7 +29,7 @@ function useSyncHandlers({
   setShowPulse,
   setIsPlaying,
 }: UseSyncHandlersProps) {
-  const { seek } = useAudioContext();
+  const seekTo = useAudioStore((s) => s.seekTo);
   const updateLine = useProjectStore((s) => s.updateLine);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
@@ -178,7 +178,7 @@ function useSyncHandlers({
       if (editMode) {
         const timing = getLineTiming(lines[index]);
         if (timing) {
-          seek(timing.begin);
+          seekTo(timing.begin);
         }
         return;
       }
@@ -187,7 +187,7 @@ function useSyncHandlers({
         position: { lineIndex: index, wordIndex: 0 },
       }));
     },
-    [editMode, lines, seek, setSyncState],
+    [editMode, lines, seekTo, setSyncState],
   );
 
   const handleNudgeWord = useCallback(
