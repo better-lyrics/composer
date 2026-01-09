@@ -37,7 +37,7 @@ const TimelinePanel: React.FC = () => {
         <h2 className="text-lg font-medium">Timeline</h2>
       </div>
       <div className="flex-1 p-4">
-        <TimelineWaveform />
+        <TimelineWaveform lines={lines} />
       </div>
     </div>
   );

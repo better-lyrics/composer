@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { getAgentColor, type LyricLine } from "@/stores/project";
 import { useCallback, useEffect, useRef } from "react";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.js";
@@ -19,9 +20,15 @@ const WAVEFORM_OPTIONS = {
   hideScrollbar: true,
 };
 
+// -- Interfaces ----------------------------------------------------------------
+
+interface TimelineWaveformProps {
+  lines: LyricLine[];
+}
+
 // -- Component -----------------------------------------------------------------
 
-const TimelineWaveform: React.FC = () => {
+const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const regionsRef = useRef<RegionsPlugin | null>(null);
@@ -120,6 +127,53 @@ const TimelineWaveform: React.FC = () => {
       }
     }
   }, [currentTime]);
+
+  // Render word regions
+  useEffect(() => {
+    const regions = regionsRef.current;
+    const ws = wsRef.current;
+    if (!regions || !ws || ws.getDuration() === 0) return;
+
+    regions.clearRegions();
+
+    for (const line of lines) {
+      if (!line.words?.length) continue;
+
+      const color = getAgentColor(line.agentId);
+
+      for (let i = 0; i < line.words.length; i++) {
+        const word = line.words[i];
+        if (word.begin === word.end) continue;
+
+        regions.addRegion({
+          id: `${line.id}-word-${i}`,
+          start: word.begin,
+          end: word.end,
+          content: word.text,
+          color: `${color}40`,
+          drag: true,
+          resize: true,
+        });
+      }
+
+      if (line.backgroundWords?.length) {
+        for (let i = 0; i < line.backgroundWords.length; i++) {
+          const bgWord = line.backgroundWords[i];
+          if (bgWord.begin === bgWord.end) continue;
+
+          regions.addRegion({
+            id: `${line.id}-bg-${i}`,
+            start: bgWord.begin,
+            end: bgWord.end,
+            content: bgWord.text,
+            color: `${color}20`,
+            drag: true,
+            resize: true,
+          });
+        }
+      }
+    }
+  }, [lines]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     const ws = wsRef.current;
