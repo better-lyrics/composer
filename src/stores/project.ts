@@ -11,10 +11,17 @@ interface Agent {
 	name?: string;
 }
 
+interface SyllableTiming {
+	text: string;
+	begin: number;
+	end: number;
+}
+
 interface WordTiming {
 	text: string;
 	begin: number;
 	end: number;
+	syllables?: SyllableTiming[];
 }
 
 interface LyricLine {
@@ -204,5 +211,6 @@ export type {
 	ProjectMetadata,
 	ProjectState,
 	SimpleTab,
+	SyllableTiming,
 	WordTiming,
 };

@@ -82,11 +82,27 @@ function generateTTML({ metadata, agents, lines, granularity }: TTMLOptions): st
 
 			for (let i = 0; i < line.words.length; i++) {
 				const word = line.words[i];
-				const isLast = i === line.words.length - 1;
-				const text = isLast ? escapeXml(word.text) : `${escapeXml(word.text)} `;
-				xmlParts.push(
-					`        <span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}">${text}</span>`,
-				);
+				const isLastWord = i === line.words.length - 1;
+
+				if (word.syllables?.length) {
+					// Output syllables as separate spans (no space between syllables of same word)
+					for (let j = 0; j < word.syllables.length; j++) {
+						const syllable = word.syllables[j];
+						const isLastSyllable = j === word.syllables.length - 1;
+						const text =
+							isLastSyllable && !isLastWord
+								? `${escapeXml(syllable.text)} `
+								: escapeXml(syllable.text);
+						xmlParts.push(
+							`        <span begin="${formatTime(syllable.begin)}" end="${formatTime(syllable.end)}">${text}</span>`,
+						);
+					}
+				} else {
+					const text = isLastWord ? escapeXml(word.text) : `${escapeXml(word.text)} `;
+					xmlParts.push(
+						`        <span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}">${text}</span>`,
+					);
+				}
 			}
 
 			// Background vocals

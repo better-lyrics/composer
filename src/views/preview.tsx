@@ -38,17 +38,27 @@ function findActivePositions(
 
 		if (granularity === "line") {
 			const timing = getLineTiming(line);
-			if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-				const progress = (currentTime - timing.begin) / (timing.end - timing.begin);
-				positions.push({ lineIndex: lineIdx, wordIndex: -1, progress });
+			if (timing && currentTime >= timing.begin) {
+				// Handle case where end === begin (last synced word not closed yet)
+				const isOpen = timing.end === timing.begin;
+				if (isOpen || currentTime < timing.end) {
+					const duration = timing.end - timing.begin;
+					const progress = duration > 0 ? (currentTime - timing.begin) / duration : 0;
+					positions.push({ lineIndex: lineIdx, wordIndex: -1, progress });
+				}
 			}
 		} else {
 			if (line.words?.length) {
 				for (let wordIdx = 0; wordIdx < line.words.length; wordIdx++) {
 					const word = line.words[wordIdx];
-					if (currentTime >= word.begin && currentTime < word.end) {
-						const progress = (currentTime - word.begin) / (word.end - word.begin);
-						positions.push({ lineIndex: lineIdx, wordIndex: wordIdx, progress });
+					if (currentTime >= word.begin) {
+						// Handle case where end === begin (word not closed yet)
+						const isOpen = word.end === word.begin;
+						if (isOpen || currentTime < word.end) {
+							const duration = word.end - word.begin;
+							const progress = duration > 0 ? (currentTime - word.begin) / duration : 0;
+							positions.push({ lineIndex: lineIdx, wordIndex: wordIdx, progress });
+						}
 					}
 				}
 			}

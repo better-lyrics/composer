@@ -10,17 +10,19 @@ import {
 import {
 	NUDGE_AMOUNT,
 	type SyncState,
+	convertLineToWord,
 	getLineTiming,
 	getSyncedLineCount,
 	getSyncedWordCount,
 	getTotalWords,
+	hasLineTiming,
 } from "@/utils/sync-helpers";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { motion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -33,6 +35,7 @@ const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint
 
 const SyncPanel: React.FC = () => {
 	const lines = useProjectStore((s) => s.lines);
+	const setLines = useProjectStore((s) => s.setLines);
 	const undo = useProjectStore((s) => s.undo);
 	const redo = useProjectStore((s) => s.redo);
 	const granularity = useProjectStore((s) => s.granularity);
@@ -61,6 +64,11 @@ const SyncPanel: React.FC = () => {
 		handleNudgeLine,
 		handleSetLineTime,
 		handleNudgeLastSynced,
+		handleSplitWord,
+		handleNudgeSyllable,
+		handleSetSyllableTime,
+		handleNudgeSyllableEnd,
+		handleSetSyllableEndTime,
 		isComplete,
 		currentWord,
 	} = useSyncHandlers({
@@ -80,6 +88,20 @@ const SyncPanel: React.FC = () => {
 
 	const progressText =
 		granularity === "word" ? `${syncedWords}/${totalWords}` : `${syncedLines}/${lines.length}`;
+
+	const handleGranularityChange = useCallback(
+		(newGranularity: "line" | "word") => {
+			if (newGranularity === granularity) return;
+
+			if (newGranularity === "word" && hasLineTiming(lines)) {
+				const convertedLines = lines.map((line) => convertLineToWord(line));
+				setLines(convertedLines);
+			}
+
+			setGranularity(newGranularity);
+		},
+		[granularity, lines, setLines, setGranularity],
+	);
 
 	const playingLineIndex = useMemo(() => {
 		for (let i = 0; i < lines.length; i++) {
@@ -197,7 +219,7 @@ const SyncPanel: React.FC = () => {
 					<div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
 						<button
 							type="button"
-							onClick={() => setGranularity("line")}
+							onClick={() => handleGranularityChange("line")}
 							className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
 								granularity === "line"
 									? "bg-composer-button text-composer-text"
@@ -208,7 +230,7 @@ const SyncPanel: React.FC = () => {
 						</button>
 						<button
 							type="button"
-							onClick={() => setGranularity("word")}
+							onClick={() => handleGranularityChange("word")}
 							className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
 								granularity === "word"
 									? "bg-composer-button text-composer-text"
@@ -281,6 +303,19 @@ const SyncPanel: React.FC = () => {
 									}
 									onNudgeLine={(delta) => handleNudgeLine(index, delta)}
 									onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
+									onSplitWord={(wordIdx, syllables) => handleSplitWord(index, wordIdx, syllables)}
+									onNudgeSyllable={(wordIdx, syllableIdx, delta) =>
+										handleNudgeSyllable(index, wordIdx, syllableIdx, delta)
+									}
+									onSetSyllableTime={(wordIdx, syllableIdx, newBegin) =>
+										handleSetSyllableTime(index, wordIdx, syllableIdx, newBegin)
+									}
+									onNudgeSyllableEnd={(wordIdx, syllableIdx, delta) =>
+										handleNudgeSyllableEnd(index, wordIdx, syllableIdx, delta)
+									}
+									onSetSyllableEndTime={(wordIdx, syllableIdx, newEnd) =>
+										handleSetSyllableEndTime(index, wordIdx, syllableIdx, newEnd)
+									}
 								/>
 							);
 						})}

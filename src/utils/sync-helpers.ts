@@ -77,15 +77,71 @@ function getSyncedLineCount(
 	return lines.filter((line) => getLineTiming(line) !== null).length;
 }
 
+// -- Conversion Functions -----------------------------------------------------
+
+interface ConvertibleLine {
+	text: string;
+	begin?: number;
+	end?: number;
+	words?: WordTiming[];
+}
+
+function convertLineToWord<T extends ConvertibleLine>(line: T): T {
+	if (line.words?.length) return line;
+	if (line.begin === undefined || line.end === undefined) return line;
+
+	const wordTexts = splitIntoWords(line.text);
+	if (wordTexts.length === 0) return line;
+
+	const duration = line.end - line.begin;
+	const wordDuration = duration / wordTexts.length;
+
+	const words: WordTiming[] = wordTexts.map((text, i) => ({
+		text,
+		begin: line.begin + i * wordDuration,
+		end: line.begin + (i + 1) * wordDuration,
+	}));
+
+	return { ...line, words, begin: undefined, end: undefined };
+}
+
+function convertWordToLine<T extends ConvertibleLine>(line: T): T {
+	if (!line.words?.length) return line;
+
+	const firstWord = line.words[0];
+	const lastWord = line.words[line.words.length - 1];
+
+	return {
+		...line,
+		begin: firstWord.begin,
+		end: lastWord.end,
+		words: undefined,
+	};
+}
+
+function hasWordTiming(lines: ConvertibleLine[]): boolean {
+	return lines.some((line) => line.words?.length);
+}
+
+function hasLineTiming(lines: ConvertibleLine[]): boolean {
+	return lines.some(
+		(line) => line.begin !== undefined && line.end !== undefined && !line.words?.length,
+	);
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
 	NUDGE_AMOUNT,
+	convertLineToWord,
+	convertWordToLine,
 	formatTimeMs,
 	getLineTiming,
 	getSyncedLineCount,
 	getSyncedWordCount,
 	getTotalWords,
+	hasLineTiming,
+	hasWordTiming,
 	parseTimeMs,
 	splitIntoWords,
 };

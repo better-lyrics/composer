@@ -1,7 +1,9 @@
-import type { WordTiming } from "@/stores/project";
+import type { SyllableTiming, WordTiming } from "@/stores/project";
+import { Tooltip } from "@/ui/tooltip";
 import { splitIntoWords } from "@/utils/sync-helpers";
+import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
-import { IconArrowRight } from "@tabler/icons-react";
+import { IconAlertTriangle, IconArrowRight } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -23,6 +25,11 @@ interface ScrollableLineProps {
 	onSetWordEndTime?: (wordIndex: number, newEnd: number) => void;
 	onNudgeLine?: (delta: number) => void;
 	onSetLineTime?: (newBegin: number) => void;
+	onSplitWord?: (wordIndex: number, syllables: SyllableTiming[]) => void;
+	onNudgeSyllable?: (wordIndex: number, syllableIdx: number, delta: number) => void;
+	onSetSyllableTime?: (wordIndex: number, syllableIdx: number, newBegin: number) => void;
+	onNudgeSyllableEnd?: (wordIndex: number, syllableIdx: number, delta: number) => void;
+	onSetSyllableEndTime?: (wordIndex: number, syllableIdx: number, newEnd: number) => void;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -44,6 +51,11 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
 	onSetWordEndTime,
 	onNudgeLine,
 	onSetLineTime,
+	onSplitWord,
+	onNudgeSyllable,
+	onSetSyllableTime,
+	onNudgeSyllableEnd,
+	onSetSyllableEndTime,
 }) => {
 	const lineRef = useRef<HTMLDivElement>(null);
 	const wordTexts = useMemo(() => splitIntoWords(text), [text]);
@@ -56,10 +68,14 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
 
 	const renderLineContent = () => {
 		if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
-			const isActive = currentTime >= lineBegin && currentTime < lineEnd;
+			const isOpen = lineEnd === lineBegin;
+			const isActive = currentTime >= lineBegin && (isOpen || currentTime < lineEnd);
 			const isCompleted = lineEnd > lineBegin && currentTime >= lineEnd;
+			const duration = lineEnd - lineBegin;
 			const progress = isActive
-				? (currentTime - lineBegin) / (lineEnd - lineBegin)
+				? duration > 0
+					? (currentTime - lineBegin) / duration
+					: 0
 				: isCompleted
 					? 1
 					: 0;
@@ -86,10 +102,14 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
 		const isSynced = !!timing;
 
 		if (editMode && isSynced) {
-			const isWordActive = currentTime >= timing.begin && currentTime < timing.end;
+			const isOpen = timing.end === timing.begin;
+			const isWordActive = currentTime >= timing.begin && (isOpen || currentTime < timing.end);
 			const isWordCompleted = timing.end > timing.begin && currentTime >= timing.end;
+			const duration = timing.end - timing.begin;
 			const wordProgress = isWordActive
-				? (currentTime - timing.begin) / (timing.end - timing.begin)
+				? duration > 0
+					? (currentTime - timing.begin) / duration
+					: 0
 				: isWordCompleted
 					? 1
 					: 0;
@@ -149,6 +169,7 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
 					{wordTexts.map((word, idx) => {
 						const timing = words?.[idx];
 						const isSynced = !!timing;
+						const hasSyllables = !!timing?.syllables?.length;
 
 						const prevWord = words?.[idx - 1];
 						const nextWord = words?.[idx + 1];
@@ -160,27 +181,79 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
 						return (
 							// biome-ignore lint/suspicious/noArrayIndexKey: word order is fixed in lyrics
 							<span key={`${lineNumber}-${idx}`} className="inline-flex flex-col items-start">
-								{renderWordContent(word, timing)}
-								{isSynced && timing && (
-									<span className="flex items-center gap-1">
-										<TimeNudgeInput
-											value={timing.begin}
-											currentTime={currentTime}
-											canDecrease={timing.begin > minBegin}
-											canIncrease={timing.begin < maxBegin}
-											onNudge={(delta) => onNudgeWord?.(idx, delta)}
-											onSetTime={(newBegin) => onSetWordTime?.(idx, newBegin)}
-										/>
-										<IconArrowRight className="w-2.5 h-2.5 text-composer-text opacity-25 mx-0.5" />
-										<TimeNudgeInput
-											value={timing.end}
-											currentTime={currentTime}
-											canDecrease={timing.end > minEnd}
-											canIncrease={timing.end < maxEnd}
-											onNudge={(delta) => onNudgeWordEnd?.(idx, delta)}
-											onSetTime={(newEnd) => onSetWordEndTime?.(idx, newEnd)}
-										/>
-									</span>
+								{hasSyllables ? (
+									<SyllableSplitter
+										word={timing}
+										currentTime={currentTime}
+										onSplit={(syllables) => onSplitWord?.(idx, syllables)}
+										onNudgeSyllable={(syllableIdx, delta) =>
+											onNudgeSyllable?.(idx, syllableIdx, delta)
+										}
+										onSetSyllableTime={(syllableIdx, newBegin) =>
+											onSetSyllableTime?.(idx, syllableIdx, newBegin)
+										}
+										onNudgeSyllableEnd={(syllableIdx, delta) =>
+											onNudgeSyllableEnd?.(idx, syllableIdx, delta)
+										}
+										onSetSyllableEndTime={(syllableIdx, newEnd) =>
+											onSetSyllableEndTime?.(idx, syllableIdx, newEnd)
+										}
+									/>
+								) : (
+									<>
+										<span className="flex items-center gap-1 group/word">
+											{renderWordContent(word, timing)}
+											{isSynced && timing && timing.end === timing.begin && (
+												<Tooltip content="No duration - sync the next word to close this one or increase the end time">
+													<span className="text-composer-warning">
+														<IconAlertTriangle className="w-3.5 h-3.5" />
+													</span>
+												</Tooltip>
+											)}
+											{isSynced && timing && (
+												<span className="transition-opacity opacity-0 group-hover/word:opacity-100">
+													<SyllableSplitter
+														word={timing}
+														currentTime={currentTime}
+														onSplit={(syllables) => onSplitWord?.(idx, syllables)}
+														onNudgeSyllable={(syllableIdx, delta) =>
+															onNudgeSyllable?.(idx, syllableIdx, delta)
+														}
+														onSetSyllableTime={(syllableIdx, newBegin) =>
+															onSetSyllableTime?.(idx, syllableIdx, newBegin)
+														}
+														onNudgeSyllableEnd={(syllableIdx, delta) =>
+															onNudgeSyllableEnd?.(idx, syllableIdx, delta)
+														}
+														onSetSyllableEndTime={(syllableIdx, newEnd) =>
+															onSetSyllableEndTime?.(idx, syllableIdx, newEnd)
+														}
+													/>
+												</span>
+											)}
+										</span>
+										{isSynced && timing && (
+											<span className="flex items-center gap-1">
+												<TimeNudgeInput
+													value={timing.begin}
+													currentTime={currentTime}
+													canDecrease={timing.begin > minBegin}
+													canIncrease={timing.begin < maxBegin}
+													onNudge={(delta) => onNudgeWord?.(idx, delta)}
+													onSetTime={(newBegin) => onSetWordTime?.(idx, newBegin)}
+												/>
+												<IconArrowRight className="w-2.5 h-2.5 text-composer-text opacity-25 mx-0.5" />
+												<TimeNudgeInput
+													value={timing.end}
+													currentTime={currentTime}
+													canDecrease={timing.end > minEnd}
+													canIncrease={timing.end < maxEnd}
+													onNudge={(delta) => onNudgeWordEnd?.(idx, delta)}
+													onSetTime={(newEnd) => onSetWordEndTime?.(idx, newEnd)}
+												/>
+											</span>
+										)}
+									</>
 								)}
 							</span>
 						);

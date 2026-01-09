@@ -9,7 +9,7 @@
 		"preview": "vite preview",
 		"test": "vitest run",
 		"test:watch": "vitest",
-		"lint:fix": "biome check --write ."
+		"lint:fix": "biome lint --write . && biome format --write ."
 	},
 	"dependencies": {
 		"@tabler/icons-react": "^3.36.1",

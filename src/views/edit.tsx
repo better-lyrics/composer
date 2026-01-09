@@ -1,7 +1,8 @@
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
-import { IconAlertTriangle } from "@tabler/icons-react";
-import { useCallback, useId, useMemo, useState } from "react";
+import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
+import { IconAlertTriangle, IconFileImport, IconX } from "@tabler/icons-react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -10,26 +11,33 @@ interface ParsedLine {
 	text: string;
 	isEmpty: boolean;
 	hasBrackets: boolean;
+	hasTiming: boolean;
 }
 
 // -- Helpers ------------------------------------------------------------------
 
-function parseLyrics(text: string): ParsedLine[] {
-	const lines = text.split("\n");
-	return lines.map((line, index) => ({
-		lineNumber: index + 1,
-		text: line,
-		isEmpty: line.trim() === "",
-		hasBrackets: /\[.*?\]/.test(line),
-	}));
+function parseLyrics(text: string, lines: LyricLine[]): ParsedLine[] {
+	const textLines = text.split("\n");
+	return textLines.map((line, index) => {
+		const lyricLine = lines[index];
+		const hasTiming = lyricLine?.begin !== undefined || (lyricLine?.words?.length ?? 0) > 0;
+		return {
+			lineNumber: index + 1,
+			text: line,
+			isEmpty: line.trim() === "",
+			hasBrackets: /\[.*?\]/.test(line),
+			hasTiming,
+		};
+	});
 }
 
-function parsedToLyricLines(parsed: ParsedLine[], defaultAgentId: string): LyricLine[] {
-	return parsed
-		.filter((p) => !p.isEmpty)
-		.map((p) => ({
+function textToLyricLines(text: string, defaultAgentId: string): LyricLine[] {
+	return text
+		.split("\n")
+		.filter((line) => line.trim() !== "")
+		.map((line) => ({
 			id: crypto.randomUUID(),
-			text: p.text.trim(),
+			text: line.trim(),
 			agentId: defaultAgentId,
 		}));
 }
@@ -43,9 +51,43 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
 		<div className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-composer-error/10 text-composer-error">
 			<IconAlertTriangle className="w-4 h-4 shrink-0" />
 			<span>
-				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets] ・ these may
-				be timing markers from imported files
+				{count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets]
 			</span>
+		</div>
+	);
+};
+
+const ImportSuccessBanner: React.FC<{
+	result: ParseResult;
+	filename: string;
+	onDismiss: () => void;
+}> = ({ result, filename, onDismiss }) => {
+	const lineCount = result.lines.length;
+	const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
+	const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
+
+	return (
+		<div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg bg-composer-accent/10 text-composer-accent-text">
+			<div className="flex items-center gap-2">
+				<IconFileImport className="w-4 h-4 shrink-0" />
+				<span>
+					Imported {lineCount} lines from {filename}
+					{result.hasTimingData && (
+						<>
+							{" "}
+							with {wordTimedCount > 0 ? `${wordTimedCount} word-timed` : `${timedLineCount} timed`}{" "}
+							lines
+						</>
+					)}
+				</span>
+			</div>
+			<button
+				type="button"
+				onClick={onDismiss}
+				className="p-1 rounded hover:bg-composer-accent/20 cursor-pointer"
+			>
+				<IconX className="w-4 h-4" />
+			</button>
 		</div>
 	);
 };
@@ -67,6 +109,7 @@ const LinePreview: React.FC<{ line: ParsedLine }> = ({ line }) => {
 			>
 				{line.isEmpty ? "(empty line)" : line.text}
 			</span>
+			{line.hasTiming && <span className="text-xs text-composer-accent-text shrink-0">synced</span>}
 			{line.hasBrackets && <IconAlertTriangle className="w-4 h-4 text-composer-error shrink-0" />}
 		</div>
 	);
@@ -74,12 +117,19 @@ const LinePreview: React.FC<{ line: ParsedLine }> = ({ line }) => {
 
 const EditPanel: React.FC = () => {
 	const textareaId = useId();
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const agents = useProjectStore((s) => s.agents);
+	const lines = useProjectStore((s) => s.lines);
 	const setLines = useProjectStore((s) => s.setLines);
+	const setMetadata = useProjectStore((s) => s.setMetadata);
 
 	const [rawText, setRawText] = useState("");
+	const [importResult, setImportResult] = useState<{
+		result: ParseResult;
+		filename: string;
+	} | null>(null);
 
-	const parsed = useMemo(() => parseLyrics(rawText), [rawText]);
+	const parsed = useMemo(() => parseLyrics(rawText, lines), [rawText, lines]);
 	const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
 	const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
 
@@ -88,22 +138,101 @@ const EditPanel: React.FC = () => {
 			const text = e.target.value;
 			setRawText(text);
 
-			const newParsed = parseLyrics(text);
 			const defaultAgent = agents[0]?.id ?? "v1";
-			const lyricLines = parsedToLyricLines(newParsed, defaultAgent);
+			const lyricLines = textToLyricLines(text, defaultAgent);
 			setLines(lyricLines);
+			setImportResult(null);
 		},
 		[agents, setLines],
 	);
 
+	const handleFileImport = useCallback(
+		async (file: File) => {
+			const content = await file.text();
+			const result = parseLyricsFile(file.name, content);
+
+			if (result.lines.length > 0) {
+				setLines(result.lines);
+				setRawText(result.lines.map((l) => l.text).join("\n"));
+
+				if (Object.keys(result.metadata).length > 0) {
+					setMetadata(result.metadata);
+				}
+
+				setImportResult({ result, filename: file.name });
+			}
+		},
+		[setLines, setMetadata],
+	);
+
+	const handleFileInputChange = useCallback(
+		(e: React.ChangeEvent<HTMLInputElement>) => {
+			const file = e.target.files?.[0];
+			if (file) {
+				handleFileImport(file);
+			}
+			// Reset input so same file can be selected again
+			e.target.value = "";
+		},
+		[handleFileImport],
+	);
+
+	const handleImportClick = useCallback(() => {
+		fileInputRef.current?.click();
+	}, []);
+
+	const handleDrop = useCallback(
+		(e: React.DragEvent) => {
+			e.preventDefault();
+			const file = e.dataTransfer.files[0];
+			if (file && /\.(txt|lrc|srt|ttml|xml)$/i.test(file.name)) {
+				handleFileImport(file);
+			}
+		},
+		[handleFileImport],
+	);
+
+	const handleDragOver = useCallback((e: React.DragEvent) => {
+		e.preventDefault();
+	}, []);
+
 	return (
-		<div className="flex flex-col flex-1 gap-4 p-4 overflow-hidden">
+		<div
+			className="flex flex-col flex-1 gap-4 p-4 overflow-hidden"
+			onDrop={handleDrop}
+			onDragOver={handleDragOver}
+		>
 			<div className="flex items-center justify-between select-none">
 				<h2 className="text-lg font-medium">Lyrics Editor</h2>
-				<span className="text-sm text-composer-text-muted">
-					{nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
-				</span>
+				<div className="flex items-center gap-3">
+					<span className="text-sm text-composer-text-muted">
+						{nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
+					</span>
+					<button
+						type="button"
+						onClick={handleImportClick}
+						className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-composer-button hover:bg-composer-button-hover transition-colors cursor-pointer"
+					>
+						<IconFileImport className="w-4 h-4" />
+						Import File
+					</button>
+					<input
+						ref={fileInputRef}
+						type="file"
+						accept=".txt,.lrc,.srt,.ttml,.xml"
+						onChange={handleFileInputChange}
+						className="sr-only"
+					/>
+				</div>
 			</div>
+
+			{importResult && (
+				<ImportSuccessBanner
+					result={importResult.result}
+					filename={importResult.filename}
+					onDismiss={() => setImportResult(null)}
+				/>
+			)}
 
 			<BracketWarning count={bracketCount} />
 
@@ -120,7 +249,9 @@ const EditPanel: React.FC = () => {
 						id={textareaId}
 						value={rawText}
 						onChange={handleTextChange}
-						placeholder="Paste your lyrics here, one line at a time..."
+						placeholder="Paste your lyrics here, one line at a time...
+
+Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
 						className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
 						spellCheck={false}
 					/>
