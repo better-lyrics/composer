@@ -5,6 +5,7 @@ const TABS: { id: SimpleTab; label: string }[] = [
   { id: "import", label: "Import" },
   { id: "edit", label: "Edit" },
   { id: "sync", label: "Sync" },
+  { id: "timeline", label: "Timeline" },
   { id: "preview", label: "Preview" },
   { id: "export", label: "Export" },
 ];

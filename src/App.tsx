@@ -12,10 +12,11 @@ import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { IconHelp } from "@tabler/icons-react";
 import { Activity, useMemo, useState } from "react";
 
-const TABS_WITH_PLAYER = ["import", "edit", "sync", "preview"];
+const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
 
 const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -48,11 +49,17 @@ const AppContent: React.FC = () => {
       {
         key: "4",
         ctrl: true,
+        action: () => setActiveTab("timeline"),
+        description: "Timeline",
+      },
+      {
+        key: "5",
+        ctrl: true,
         action: () => setActiveTab("preview"),
         description: "Preview",
       },
       {
-        key: "5",
+        key: "6",
         ctrl: true,
         action: () => setActiveTab("export"),
         description: "Export",
@@ -94,6 +101,11 @@ const AppContent: React.FC = () => {
         <Activity mode={activeTab === "sync" ? "visible" : "hidden"}>
           <div className="absolute inset-0 flex flex-col">
             <SyncPanel />
+          </div>
+        </Activity>
+        <Activity mode={activeTab === "timeline" ? "visible" : "hidden"}>
+          <div className="absolute inset-0 flex flex-col">
+            <TimelinePanel />
           </div>
         </Activity>
         <Activity mode={activeTab === "preview" ? "visible" : "hidden"}>

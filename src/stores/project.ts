@@ -37,7 +37,7 @@ interface LyricLine {
 
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
-type SimpleTab = "import" | "edit" | "sync" | "preview" | "export";
+type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
 
 interface ProjectMetadata {
   title: string;
