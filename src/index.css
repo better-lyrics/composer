@@ -3,83 +3,81 @@
 @import "tailwindcss";
 
 @theme {
-	/* Background Colors */
-	--color-composer-bg: #28292c;
-	--color-composer-bg-dark: #1a1a1c;
-	--color-composer-bg-elevated: #3e3e41;
-	--color-composer-overlay: rgba(0, 0, 0, 0.2);
-	--color-composer-overlay-hover: rgba(0, 0, 0, 0.3);
+  /* Background Colors */
+  --color-composer-bg: #28292c;
+  --color-composer-bg-dark: #1a1a1c;
+  --color-composer-bg-elevated: #3e3e41;
+  --color-composer-overlay: rgba(0, 0, 0, 0.2);
+  --color-composer-overlay-hover: rgba(0, 0, 0, 0.3);
 
-	/* Text Colors */
-	--color-composer-text: #fff;
-	--color-composer-text-secondary: rgba(255, 255, 255, 0.75);
-	--color-composer-text-muted: rgba(255, 255, 255, 0.5);
-	--color-composer-text-disabled: rgba(255, 255, 255, 0.4);
-	--color-composer-text-tertiary: #aaa;
+  /* Text Colors */
+  --color-composer-text: #fff;
+  --color-composer-text-secondary: rgba(255, 255, 255, 0.75);
+  --color-composer-text-muted: rgba(255, 255, 255, 0.5);
+  --color-composer-text-disabled: rgba(255, 255, 255, 0.4);
+  --color-composer-text-tertiary: #aaa;
 
-	/* Interactive Elements */
-	--color-composer-button: hsla(0, 0%, 100%, 0.1);
-	--color-composer-button-hover: hsla(0, 0%, 100%, 0.2);
-	--color-composer-input: rgba(255, 255, 255, 0.05);
-	--color-composer-border: rgba(255, 255, 255, 0.1);
-	--color-composer-border-hover: rgba(255, 255, 255, 0.15);
+  /* Interactive Elements */
+  --color-composer-button: hsla(0, 0%, 100%, 0.1);
+  --color-composer-button-hover: hsla(0, 0%, 100%, 0.2);
+  --color-composer-input: rgba(255, 255, 255, 0.05);
+  --color-composer-border: rgba(255, 255, 255, 0.1);
+  --color-composer-border-hover: rgba(255, 255, 255, 0.15);
 
-	/* Accent Colors */
-	--color-composer-accent: rgb(129, 140, 248);
-	--color-composer-accent-dark: rgb(100, 112, 220);
-	--color-composer-accent-darker: rgb(80, 90, 200);
-	--color-composer-accent-text: rgb(165, 180, 252);
-	--color-composer-accent-warm: #d4a5a5;
-	--color-composer-link: #5865f2;
+  /* Accent Colors */
+  --color-composer-accent: rgb(129, 140, 248);
+  --color-composer-accent-dark: rgb(100, 112, 220);
+  --color-composer-accent-darker: rgb(80, 90, 200);
+  --color-composer-accent-text: rgb(165, 180, 252);
+  --color-composer-accent-warm: #d4a5a5;
+  --color-composer-link: #5865f2;
 
-	/* Error/Warning */
-	--color-composer-error: #ff9999;
-	--color-composer-error-text: color(display-p3 0.992 0.882 0.882);
-	--color-composer-warning: #f5a623;
+  /* Error/Warning */
+  --color-composer-error: #ff9999;
+  --color-composer-error-text: color(display-p3 0.992 0.882 0.882);
+  --color-composer-warning: #f5a623;
 
-	/* Typography */
-	--font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
-		"Segoe UI Emoji";
-	--font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-		monospace;
+  /* Typography */
+  --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
-	/* Animation */
-	--transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
+  /* Animation */
+  --transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
 }
 
 /* Base styles */
 html {
-	font-size: 16px;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-	background-color: var(--color-composer-bg);
-	color: var(--color-composer-text);
-	font-family: var(--font-family-sans);
+  background-color: var(--color-composer-bg);
+  color: var(--color-composer-text);
+  font-family: var(--font-family-sans);
 }
 
 /* Focus visible indicators */
 :focus-visible {
-	outline: 2px solid var(--color-composer-accent);
-	outline-offset: 2px;
+  outline: 2px solid var(--color-composer-accent);
+  outline-offset: 2px;
 }
 
 /* Geist Mono base weight */
 @layer base {
-	.font-mono {
-		font-weight: 500;
-	}
+  .font-mono {
+    font-weight: 500;
+  }
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-	*,
-	*::before,
-	*::after {
-		animation-duration: 0.01ms !important;
-		animation-iteration-count: 1 !important;
-		transition-duration: 0.01ms !important;
-	}
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
