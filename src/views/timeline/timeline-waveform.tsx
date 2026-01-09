@@ -37,11 +37,20 @@ const WAVEFORM_OPTIONS = {
 interface TimelineWaveformProps {
   lines: LyricLine[];
   rippleEnabled: boolean;
+  loopRegion: { start: number; end: number } | null;
+  onLoopRegionChange?: (region: { start: number; end: number } | null) => void;
 }
 
 // -- Component -----------------------------------------------------------------
 
-const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnabled }) => {
+const LOOP_REGION_ID = "loop-region";
+
+const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
+  lines,
+  rippleEnabled,
+  loopRegion,
+  onLoopRegionChange,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WaveSurfer | null>(null);
   const regionsRef = useRef<RegionsPlugin | null>(null);
@@ -49,6 +58,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnable
   const lastTimeUpdateRef = useRef<number>(0);
   const linesRef = useRef<LyricLine[]>(lines);
   const rippleEnabledRef = useRef(rippleEnabled);
+  const onLoopRegionChangeRef = useRef(onLoopRegionChange);
 
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -60,6 +70,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnable
 
   linesRef.current = lines;
   rippleEnabledRef.current = rippleEnabled;
+  onLoopRegionChangeRef.current = onLoopRegionChange;
 
   // Initialize WaveSurfer
   useEffect(() => {
@@ -72,6 +83,18 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnable
 
     const regions = ws.registerPlugin(RegionsPlugin.create());
     regionsRef.current = regions;
+
+    regions.enableDragSelection({
+      color: "rgba(129, 140, 248, 0.2)",
+    });
+
+    regions.on("region-created", (region) => {
+      // User-created regions (drag selection) don't have word/bg in their ID
+      if (!region.id.includes("-word-") && !region.id.includes("-bg-") && region.id !== LOOP_REGION_ID) {
+        onLoopRegionChangeRef.current?.({ start: region.start, end: region.end });
+        region.remove();
+      }
+    });
 
     ws.on("ready", () => {
       ws.setPlaybackRate(playbackRate);
@@ -147,7 +170,7 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnable
     }
   }, [currentTime]);
 
-  // Render word regions
+  // Render word regions and loop region
   useEffect(() => {
     const regions = regionsRef.current;
     const ws = wsRef.current;
@@ -192,7 +215,19 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({ lines, rippleEnable
         }
       }
     }
-  }, [lines]);
+
+    // Render loop region if set
+    if (loopRegion) {
+      regions.addRegion({
+        id: LOOP_REGION_ID,
+        start: loopRegion.start,
+        end: loopRegion.end,
+        color: "rgba(129, 140, 248, 0.15)",
+        drag: false,
+        resize: false,
+      });
+    }
+  }, [lines, loopRegion]);
 
   // Handle region drag updates
   useEffect(() => {

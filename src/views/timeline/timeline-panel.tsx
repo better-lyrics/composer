@@ -2,7 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { TimelineControls } from "@/views/timeline/timeline-controls";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -15,8 +15,39 @@ const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint
 
 const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
+  const currentTime = useAudioStore((s) => s.currentTime);
+  const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const lines = useProjectStore((s) => s.lines);
   const [rippleEnabled, setRippleEnabled] = useState(false);
+  const [loopRegion, setLoopRegion] = useState<{ start: number; end: number } | null>(null);
+  const [loopEnabled, setLoopEnabled] = useState(false);
+
+  // Loop playback logic
+  useEffect(() => {
+    if (!loopEnabled || !loopRegion) return;
+
+    if (currentTime >= loopRegion.end) {
+      setCurrentTime(loopRegion.start);
+    }
+  }, [currentTime, loopEnabled, loopRegion, setCurrentTime]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+      if (e.key === "l" || e.key === "L") {
+        if (loopRegion) setLoopEnabled((prev) => !prev);
+      } else if (e.key === "Escape") {
+        setLoopRegion(null);
+        setLoopEnabled(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [loopRegion]);
 
   if (!source) {
     return (
@@ -41,10 +72,22 @@ const TimelinePanel: React.FC = () => {
         <TimelineControls
           rippleEnabled={rippleEnabled}
           onToggleRipple={() => setRippleEnabled(!rippleEnabled)}
+          loopRegion={loopRegion}
+          loopEnabled={loopEnabled}
+          onToggleLoop={() => setLoopEnabled(!loopEnabled)}
+          onClearLoop={() => {
+            setLoopRegion(null);
+            setLoopEnabled(false);
+          }}
         />
       </div>
       <div className="flex-1 p-4">
-        <TimelineWaveform lines={lines} rippleEnabled={rippleEnabled} />
+        <TimelineWaveform
+          lines={lines}
+          rippleEnabled={rippleEnabled}
+          loopRegion={loopRegion}
+          onLoopRegionChange={setLoopRegion}
+        />
       </div>
     </div>
   );

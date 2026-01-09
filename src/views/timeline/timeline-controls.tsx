@@ -1,12 +1,16 @@
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
-import { IconLink, IconLinkOff } from "@tabler/icons-react";
+import { IconLink, IconLinkOff, IconRepeat, IconX } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
 interface TimelineControlsProps {
   rippleEnabled: boolean;
   onToggleRipple: () => void;
+  loopRegion: { start: number; end: number } | null;
+  loopEnabled: boolean;
+  onToggleLoop: () => void;
+  onClearLoop: () => void;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -14,6 +18,10 @@ interface TimelineControlsProps {
 const TimelineControls: React.FC<TimelineControlsProps> = ({
   rippleEnabled,
   onToggleRipple,
+  loopRegion,
+  loopEnabled,
+  onToggleLoop,
+  onClearLoop,
 }) => {
   const granularity = useProjectStore((s) => s.granularity);
   const setGranularity = useProjectStore((s) => s.setGranularity);
@@ -52,6 +60,19 @@ const TimelineControls: React.FC<TimelineControlsProps> = ({
       >
         {rippleEnabled ? <IconLink className="w-4 h-4" /> : <IconLinkOff className="w-4 h-4" />}
         Ripple
+      </Button>
+      <Button
+        hasIcon
+        variant={loopEnabled ? "primary" : "secondary"}
+        onClick={onToggleLoop}
+        disabled={!loopRegion}
+        title={loopEnabled ? "Loop enabled" : "Loop disabled"}
+      >
+        <IconRepeat className="w-4 h-4" />
+        Loop
+      </Button>
+      <Button hasIcon variant="secondary" onClick={onClearLoop} disabled={!loopRegion} title="Clear loop region">
+        <IconX className="w-4 h-4" />
       </Button>
     </div>
   );
