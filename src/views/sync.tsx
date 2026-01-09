@@ -1,3 +1,4 @@
+import { useAudioContext } from "@/audio/audio-context";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
@@ -596,6 +597,7 @@ const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint
 );
 
 const SyncPanel: React.FC = () => {
+	const { seek } = useAudioContext();
 	const lines = useProjectStore((s) => s.lines);
 	const updateLine = useProjectStore((s) => s.updateLine);
 	const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
@@ -782,12 +784,24 @@ const SyncPanel: React.FC = () => {
 		setIsPlaying(true);
 	}, [setIsPlaying]);
 
-	const handleJumpToLine = useCallback((index: number) => {
-		setSyncState((prev) => ({
-			...prev,
-			position: { lineIndex: index, wordIndex: 0 },
-		}));
-	}, []);
+	const handleJumpToLine = useCallback(
+		(index: number) => {
+			// In edit mode, seek to line's begin time if it has sync data
+			if (editMode) {
+				const timing = getLineTiming(lines[index]);
+				if (timing) {
+					seek(timing.begin);
+				}
+				return;
+			}
+			// In sync mode, update the sync position
+			setSyncState((prev) => ({
+				...prev,
+				position: { lineIndex: index, wordIndex: 0 },
+			}));
+		},
+		[editMode, lines, seek],
+	);
 
 	const handleNudgeWord = useCallback(
 		(lineIdx: number, wordIdx: number, delta: number) => {
@@ -1114,7 +1128,7 @@ const SyncPanel: React.FC = () => {
 
 			{/* Bottom panel */}
 			<div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
-				<div className="flex items-center justify-between">
+				<div className="flex items-center justify-between h-14">
 					{/* Timing display */}
 					<TimingDisplay currentTime={currentTime} lastSyncedTime={lastSyncedTime} />
 
@@ -1126,6 +1140,7 @@ const SyncPanel: React.FC = () => {
 							)}
 							<motion.div
 								variants={syncPulseVariants}
+								initial={false}
 								animate={showPulse ? "pulse" : "idle"}
 								transition={syncCarouselTransition}
 								className="flex items-center justify-center border-2 rounded-full w-14 h-14 bg-composer-bg-elevated"
