@@ -174,11 +174,9 @@ const TimelineWaveform: React.FC<TimelineWaveformProps> = ({
 
     return () => {
       regionsRef.current = null;
-      try {
-        ws.destroy();
-      } catch {
+      ws.destroy().catch(() => {
         // AbortError is expected when destroying during async operations
-      }
+      });
       wsRef.current = null;
     };
   }, [playbackRate, setCurrentTime, setIsPlaying]);
