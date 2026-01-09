@@ -36,9 +36,7 @@ const TimelinePanel: React.FC = () => {
   useEffect(() => {
     if (duration <= 0 || lines.length === 0) return;
 
-    const hasAnyTiming = lines.some(
-      (l) => l.words?.length || (l.begin !== undefined && l.end !== undefined)
-    );
+    const hasAnyTiming = lines.some((l) => l.words?.length || (l.begin !== undefined && l.end !== undefined));
 
     if (!hasAnyTiming) {
       const distributed = distributeLinesTiming(lines, duration);

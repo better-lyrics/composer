@@ -42,7 +42,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight }) 
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [scrollLeft, duration, zoom, setCurrentTime, setIsPlaying]
+    [scrollLeft, duration, zoom, setCurrentTime, setIsPlaying],
   );
 
   if (duration === 0) return null;

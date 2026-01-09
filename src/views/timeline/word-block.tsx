@@ -49,7 +49,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         "text-xs text-white truncate select-none",
         "border-2 rounded-sm transition-opacity duration-100",
         isDimmed && "opacity-30",
-        isSelected && "ring-1 ring-white/40"
+        isSelected && "ring-1 ring-white/40",
       )}
       style={{
         left,
@@ -60,6 +60,12 @@ const WordBlock: React.FC<WordBlockProps> = ({
       onClick={(e) => {
         e.stopPropagation();
         onClick();
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.stopPropagation();
+          onClick();
+        }
       }}
     >
       {/* Left resize handle */}

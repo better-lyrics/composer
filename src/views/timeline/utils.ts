@@ -24,7 +24,7 @@ function distributeWordsInLine(text: string, begin: number, end: number): WordTi
 
 function distributeLinesTiming<T extends { id: string; text: string }>(
   lines: T[],
-  duration: number
+  duration: number,
 ): (T & { begin: number; end: number; words: WordTiming[] })[] {
   if (lines.length === 0) return [];
 

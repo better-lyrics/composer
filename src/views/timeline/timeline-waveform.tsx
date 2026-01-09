@@ -129,7 +129,7 @@ const TimelineWaveform: React.FC = () => {
         useTimelineStore.getState().setZoom(zoom + delta);
       }
     },
-    [zoom]
+    [zoom],
   );
 
   if (!source) return null;

@@ -33,13 +33,7 @@ const TimelineHeader: React.FC = () => {
 
         {/* Zoom controls */}
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={zoomOut}
-            disabled={zoom <= MIN_ZOOM}
-            className="h-7 w-7"
-          >
+          <Button variant="ghost" size="icon" onClick={zoomOut} disabled={zoom <= MIN_ZOOM} className="h-7 w-7">
             <IconMinus size={16} />
           </Button>
 
@@ -47,13 +41,7 @@ const TimelineHeader: React.FC = () => {
             {zoomPercent}%
           </span>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={zoomIn}
-            disabled={zoom >= MAX_ZOOM}
-            className="h-7 w-7"
-          >
+          <Button variant="ghost" size="icon" onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="h-7 w-7">
             <IconPlus size={16} />
           </Button>
         </div>

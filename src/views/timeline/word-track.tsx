@@ -73,24 +73,19 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, rippleEnabled]
+    [words, zoom, duration, onUpdateWord, rippleEnabled],
   );
 
   const isWordSelected = (index: number) =>
-    selectedWord?.lineId === lineId &&
-    selectedWord?.wordIndex === index &&
-    selectedWord?.type === trackType;
+    selectedWord?.lineId === lineId && selectedWord?.wordIndex === index && selectedWord?.type === trackType;
 
   const hasSelection = selectedWord !== null;
 
   return (
-    <div
-      className="relative"
-      style={{ height: TRACK_HEIGHT, width: duration * zoom }}
-    >
+    <div className="relative" style={{ height: TRACK_HEIGHT, width: duration * zoom }}>
       {words.map((word, index) => (
         <WordBlock
-          key={`${lineId}-${trackType}-${index}`}
+          key={`${lineId}-${trackType}-${word.begin}-${word.text}`}
           text={word.text}
           begin={word.begin}
           end={word.end}

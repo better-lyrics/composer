@@ -23,7 +23,7 @@ const TimelineRows: React.FC = () => {
       updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
       updateLineWithHistory(lineId, { words: updatedWords });
     },
-    [lines, updateLineWithHistory]
+    [lines, updateLineWithHistory],
   );
 
   const handleUpdateBgWord = useCallback(
@@ -35,15 +35,12 @@ const TimelineRows: React.FC = () => {
       updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
       updateLineWithHistory(lineId, { backgroundWords: updatedWords });
     },
-    [lines, updateLineWithHistory]
+    [lines, updateLineWithHistory],
   );
 
   return (
     <div className="flex-1 overflow-hidden">
-      <div
-        className="h-full"
-        style={{ transform: `translateX(-${scrollLeft}px)`, width: duration * zoom }}
-      >
+      <div className="h-full" style={{ transform: `translateX(-${scrollLeft}px)`, width: duration * zoom }}>
         <Virtuoso
           totalCount={lines.length}
           itemContent={(index) => {

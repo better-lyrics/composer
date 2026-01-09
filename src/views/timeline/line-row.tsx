@@ -17,13 +17,7 @@ const GUTTER_WIDTH = 48;
 
 // -- Component -----------------------------------------------------------------
 
-const LineRow: React.FC<LineRowProps> = ({
-  line,
-  lineIndex,
-  duration,
-  onUpdateWord,
-  onUpdateBgWord,
-}) => {
+const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
@@ -63,7 +57,8 @@ const LineRow: React.FC<LineRowProps> = ({
               style={{ height: TRACK_HEIGHT }}
               className="flex items-center px-2 text-xs text-composer-text-muted italic truncate"
             >
-              {line.text.slice(0, 60)}{line.text.length > 60 ? "..." : ""}
+              {line.text.slice(0, 60)}
+              {line.text.length > 60 ? "..." : ""}
             </div>
           )}
         </div>
