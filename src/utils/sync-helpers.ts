@@ -88,16 +88,18 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
   if (line.words?.length) return line;
   if (line.begin === undefined || line.end === undefined) return line;
 
+  const lineBegin = line.begin;
+  const lineEnd = line.end;
   const wordTexts = splitIntoWords(line.text);
   if (wordTexts.length === 0) return line;
 
-  const duration = line.end - line.begin;
+  const duration = lineEnd - lineBegin;
   const wordDuration = duration / wordTexts.length;
 
   const words: WordTiming[] = wordTexts.map((text, i) => ({
     text,
-    begin: line.begin + i * wordDuration,
-    end: line.begin + (i + 1) * wordDuration,
+    begin: lineBegin + i * wordDuration,
+    end: lineBegin + (i + 1) * wordDuration,
   }));
 
   return { ...line, words, begin: undefined, end: undefined };

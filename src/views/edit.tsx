@@ -1,5 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
+import { Button } from "@/ui/button";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { IconAlertTriangle, IconFileImport, IconX } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
@@ -77,9 +78,9 @@ const ImportSuccessBanner: React.FC<{
           )}
         </span>
       </div>
-      <button type="button" onClick={onDismiss} className="p-1 rounded hover:bg-composer-accent/20 cursor-pointer">
+      <Button size="icon" variant="ghost" onClick={onDismiss} className="h-6 w-6">
         <IconX className="w-4 h-4" />
-      </button>
+      </Button>
     </div>
   );
 };
@@ -196,14 +197,10 @@ const EditPanel: React.FC = () => {
           <span className="text-sm text-composer-text-muted">
             {nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
           </span>
-          <button
-            type="button"
-            onClick={handleImportClick}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-composer-button hover:bg-composer-button-hover transition-colors cursor-pointer"
-          >
+          <Button onClick={handleImportClick}>
             <IconFileImport className="w-4 h-4" />
             Import File
-          </button>
+          </Button>
           <input
             ref={fileInputRef}
             type="file"

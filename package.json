@@ -9,9 +9,11 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint:fix": "biome lint --write . && biome format --write ."
+    "lint:fix": "biome lint --write . && biome format --write .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.16",
     "@tabler/icons-react": "^3.36.1",
     "motion": "^12.24.12",
     "prism-react-renderer": "^2.4.1",
@@ -23,12 +25,13 @@
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^25.0.3",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.0",
     "vite": "^6.0.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.0.16"
   }
 }

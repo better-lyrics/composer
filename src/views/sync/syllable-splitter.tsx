@@ -1,7 +1,9 @@
 import type { SyllableTiming, WordTiming } from "@/stores/project";
+import { Button } from "@/ui/button";
+import { Popover } from "@/ui/popover";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { IconArrowRight, IconScissors } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { useState, useCallback } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -48,7 +50,7 @@ function distributeTiming(text: string, splitPoints: number[], begin: number, en
 
 // -- Components ---------------------------------------------------------------
 
-const SplitModeView: React.FC<{
+const SplitModeContent: React.FC<{
   text: string;
   splitPoints: number[];
   onToggleSplit: (index: number) => void;
@@ -57,9 +59,26 @@ const SplitModeView: React.FC<{
 }> = ({ text, splitPoints, onToggleSplit, onConfirm, onCancel }) => {
   const chars = text.split("");
 
+  const previewSyllables = (() => {
+    if (splitPoints.length === 0) return [text];
+    const sorted = [...splitPoints].sort((a, b) => a - b);
+    const result: string[] = [];
+    let lastIdx = 0;
+    for (const point of sorted) {
+      if (point > lastIdx && point < text.length) {
+        result.push(text.slice(lastIdx, point));
+        lastIdx = point;
+      }
+    }
+    result.push(text.slice(lastIdx));
+    return result;
+  })();
+
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-1 text-lg tracking-wide">
+    <div className="flex flex-col gap-5">
+      <p className="text-sm text-composer-text-secondary">Click between letters to mark split points</p>
+
+      <div className="flex flex-wrap items-center justify-center gap-0.5 py-4 text-2xl tracking-wide">
         {chars.map((char, idx) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: character order is fixed in word
           <span key={idx} className="flex items-center">
@@ -68,35 +87,39 @@ const SplitModeView: React.FC<{
               <button
                 type="button"
                 onClick={() => onToggleSplit(idx + 1)}
-                className={`w-3 h-6 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer ${
+                className={`w-4 h-8 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer ${
                   splitPoints.includes(idx + 1)
-                    ? "bg-composer-accent text-white"
-                    : "bg-composer-bg-elevated hover:bg-composer-button text-composer-text-muted"
+                    ? "bg-composer-accent"
+                    : "bg-composer-button hover:bg-composer-button-hover"
                 }`}
-                title={splitPoints.includes(idx + 1) ? "Remove split" : "Add split"}
               >
-                <span className="text-xs font-bold group-hover:text-composer-text text-composer-text-tertiary">⋮</span>
+                <span
+                  className={`text-sm font-bold ${
+                    splitPoints.includes(idx + 1)
+                      ? "text-white"
+                      : "text-composer-text-tertiary group-hover:text-composer-text"
+                  }`}
+                >
+                  ⋮
+                </span>
               </button>
             )}
           </span>
         ))}
       </div>
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={splitPoints.length === 0}
-          className="px-2 py-1 text-xs transition-colors rounded cursor-pointer bg-composer-accent-dark hover:bg-composer-accent disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Split
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-2 py-1 text-xs transition-colors rounded cursor-pointer bg-composer-button hover:bg-composer-button-hover"
-        >
-          Cancel
-        </button>
+
+      {splitPoints.length > 0 && (
+        <div className="flex items-center justify-center gap-2 text-sm text-composer-text-muted">
+          <span>Preview:</span>
+          <span className="font-medium text-composer-text">{previewSyllables.join(" · ")}</span>
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-2 pt-2">
+        <Button onClick={onCancel}>Cancel</Button>
+        <Button variant="primary" onClick={onConfirm} disabled={splitPoints.length === 0}>
+          Split Word
+        </Button>
       </div>
     </div>
   );
@@ -175,23 +198,25 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
   onNudgeSyllableEnd,
   onSetSyllableEndTime,
 }) => {
-  const [isSplitMode, setIsSplitMode] = useState(false);
   const [splitPoints, setSplitPoints] = useState<number[]>([]);
 
   const handleToggleSplit = useCallback((index: number) => {
     setSplitPoints((prev) => (prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index]));
   }, []);
 
-  const handleConfirmSplit = useCallback(() => {
-    const syllables = distributeTiming(word.text, splitPoints, word.begin, word.end);
-    onSplit(syllables);
-    setIsSplitMode(false);
-    setSplitPoints([]);
-  }, [word.text, word.begin, word.end, splitPoints, onSplit]);
+  const handleConfirmSplit = useCallback(
+    (close: () => void) => {
+      const syllables = distributeTiming(word.text, splitPoints, word.begin, word.end);
+      onSplit(syllables);
+      setSplitPoints([]);
+      close();
+    },
+    [word.text, word.begin, word.end, splitPoints, onSplit],
+  );
 
-  const handleCancelSplit = useCallback(() => {
-    setIsSplitMode(false);
+  const handleCancelSplit = useCallback((close: () => void) => {
     setSplitPoints([]);
+    close();
   }, []);
 
   if (word.syllables?.length) {
@@ -207,27 +232,37 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
     );
   }
 
-  if (isSplitMode) {
-    return (
-      <SplitModeView
-        text={word.text}
-        splitPoints={splitPoints}
-        onToggleSplit={handleToggleSplit}
-        onConfirm={handleConfirmSplit}
-        onCancel={handleCancelSplit}
-      />
-    );
+  // Can't split single-character words
+  if (word.text.length < 2) {
+    return null;
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => setIsSplitMode(true)}
-      className="flex items-center gap-1 px-1.5 py-0.5 text-xs rounded bg-composer-bg-elevated hover:bg-composer-button text-composer-text-muted hover:text-composer-text transition-colors cursor-pointer"
-      title="Split into syllables"
+    <Popover
+      trigger={
+        <Button
+          size="sm"
+          variant="ghost"
+          title="Split into syllables"
+          className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
+        >
+          <IconScissors className="w-3 h-3" />
+        </Button>
+      }
     >
-      <IconScissors className="w-3 h-3" />
-    </button>
+      {(close) => (
+        <div className="p-5">
+          <h3 className="mb-4 text-lg font-medium">Split "{word.text}"</h3>
+          <SplitModeContent
+            text={word.text}
+            splitPoints={splitPoints}
+            onToggleSplit={handleToggleSplit}
+            onConfirm={() => handleConfirmSplit(close)}
+            onCancel={() => handleCancelSplit(close)}
+          />
+        </div>
+      )}
+    </Popover>
   );
 };
 

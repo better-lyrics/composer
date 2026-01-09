@@ -1,4 +1,5 @@
 import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
 import { generateTTML } from "@/utils/ttml";
 import { IconCheck, IconCopy, IconDownload, IconEdit, IconRefresh } from "@tabler/icons-react";
 import { Highlight, themes } from "prism-react-renderer";
@@ -124,43 +125,23 @@ const ExportPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           {editedContent !== null && (
-            <button
-              type="button"
-              onClick={handleRegenerate}
-              className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg bg-composer-button hover:bg-composer-button-hover transition-colors cursor-pointer"
-            >
+            <Button onClick={handleRegenerate}>
               <IconRefresh className="w-4 h-4" />
               Regenerate
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={handleEdit}
-            className={`flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg transition-colors cursor-pointer ${
-              isEditing
-                ? "bg-composer-accent-dark hover:bg-composer-accent"
-                : "bg-composer-button hover:bg-composer-button-hover"
-            }`}
-          >
+          <Button variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
             <IconEdit className="w-4 h-4" />
             {isEditing ? "Done" : "Edit"}
-          </button>
-          <button
-            type="button"
-            onClick={handleCopy}
-            className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg bg-composer-button hover:bg-composer-button-hover transition-colors cursor-pointer"
-          >
+          </Button>
+          <Button onClick={handleCopy}>
             {copied ? <IconCheck className="w-4 h-4" /> : <IconCopy className="w-4 h-4" />}
             {copied ? "Copied" : "Copy"}
-          </button>
-          <button
-            type="button"
-            onClick={handleDownload}
-            className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg bg-composer-accent-dark hover:bg-composer-accent transition-colors cursor-pointer"
-          >
+          </Button>
+          <Button variant="primary" onClick={handleDownload}>
             <IconDownload className="w-4 h-4" />
             Download TTML
-          </button>
+          </Button>
         </div>
       </div>
 

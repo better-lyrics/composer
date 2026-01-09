@@ -1,6 +1,7 @@
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
 import {
   shimmerTransition,
   shimmerVariants,
@@ -237,38 +238,25 @@ const SyncPanel: React.FC = () => {
               Word
             </button>
           </div>
-          <button
-            type="button"
+          <Button
+            variant={editMode ? "primary" : "secondary"}
             onClick={() => setEditMode(!editMode)}
-            className={`flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg transition-colors cursor-pointer ${
-              editMode
-                ? "bg-composer-accent-dark hover:bg-composer-accent"
-                : "bg-composer-button hover:bg-composer-button-hover"
-            }`}
             title={editMode ? "Unlock sync mode" : "Lock to edit mode"}
           >
             {editMode ? <IconLock className="w-4 h-4" /> : <IconLockOpen className="w-4 h-4" />}
             Edit
-          </button>
+          </Button>
           {syncState.isActive && !editMode && (
-            <button
-              type="button"
-              onClick={handleReset}
-              className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg bg-composer-button hover:bg-composer-button-hover transition-colors cursor-pointer"
-            >
+            <Button onClick={handleReset}>
               <IconRefresh className="w-4 h-4" />
               Reset
-            </button>
+            </Button>
           )}
           {!syncState.isActive && !editMode && (
-            <button
-              type="button"
-              onClick={handleStartSync}
-              className="flex items-center gap-1.5 h-8 px-3 text-sm rounded-lg bg-composer-accent-dark hover:bg-composer-accent transition-colors cursor-pointer"
-            >
+            <Button variant="primary" onClick={handleStartSync}>
               <IconPlayerPlayFilled className="w-4 h-4" />
               Start
-            </button>
+            </Button>
           )}
         </div>
       </div>

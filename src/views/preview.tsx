@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
+import { Button } from "@/ui/button";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useEffect, useMemo, useRef } from "react";
 
@@ -215,23 +216,10 @@ const PreviewPanel: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <h2 className="text-lg font-medium">Preview</h2>
-        <button
-          type="button"
-          onClick={() => setIsPlaying(!isPlaying)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-composer-accent-dark hover:bg-composer-accent transition-colors cursor-pointer"
-        >
-          {isPlaying ? (
-            <>
-              <IconPlayerPauseFilled className="w-4 h-4" />
-              Pause
-            </>
-          ) : (
-            <>
-              <IconPlayerPlayFilled className="w-4 h-4" />
-              Play
-            </>
-          )}
-        </button>
+        <Button variant="primary" onClick={() => setIsPlaying(!isPlaying)}>
+          {isPlaying ? <IconPlayerPauseFilled className="w-4 h-4" /> : <IconPlayerPlayFilled className="w-4 h-4" />}
+          {isPlaying ? "Pause" : "Play"}
+        </Button>
       </div>
 
       {/* Preview area */}

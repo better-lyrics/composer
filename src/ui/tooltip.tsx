@@ -38,15 +38,15 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, side = "top", dela
 
   const arrowClasses =
     side === "top"
-      ? "top-full left-1/2 -translate-x-1/2 border-t-composer-bg-elevated border-x-transparent border-b-transparent"
-      : "bottom-full left-1/2 -translate-x-1/2 border-b-composer-bg-elevated border-x-transparent border-t-transparent";
+      ? "top-full left-1/2 -translate-x-1/2 border-t-composer-bg-dark border-x-transparent border-b-transparent"
+      : "bottom-full left-1/2 -translate-x-1/2 border-b-composer-bg-dark border-x-transparent border-t-transparent";
 
   return (
     <span className="relative inline-flex" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {children}
       {isVisible && (
         <span
-          className={`absolute w-max max-w-48 z-50 px-2 py-1.5 text-xs text-center leading-snug rounded bg-composer-bg-elevated text-composer-text shadow-lg ${positionClasses}`}
+          className={`absolute w-max max-w-48 z-50 px-2 py-1.5 text-xs text-center leading-snug rounded bg-composer-bg-dark text-composer-text shadow-lg ${positionClasses}`}
           role="tooltip"
         >
           {content}

@@ -190,7 +190,7 @@ const ScrollableLine: React.FC<ScrollableLineProps> = ({
                           </span>
                         </Tooltip>
                       )}
-                      {isSynced && timing && (
+                      {isSynced && timing && timing.text.length >= 2 && (
                         <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
                           <SyllableSplitter
                             word={timing}
