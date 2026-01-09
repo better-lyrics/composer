@@ -45,17 +45,17 @@ const WordBlock: React.FC<WordBlockProps> = ({
   return (
     <div
       className={cn(
-        "absolute top-0 h-full flex items-center justify-center",
-        "text-xs text-white truncate select-none",
-        "border-2 rounded-sm transition-opacity duration-100",
+        "absolute top-1 bottom-1 flex items-center justify-center",
+        "text-xs text-white truncate select-none cursor-pointer",
+        "border rounded transition-opacity duration-100",
         isDimmed && "opacity-30",
-        isSelected && "ring-1 ring-white/40",
+        isSelected && "shadow-[0_0_0_1px_rgba(255,255,255,0.3)]",
       )}
       style={{
         left,
         width,
-        backgroundColor: `${color}40`,
-        borderColor: isSelected ? color : `${color}60`,
+        backgroundColor: `${color}30`,
+        borderColor: isSelected ? color : `${color}50`,
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -70,16 +70,16 @@ const WordBlock: React.FC<WordBlockProps> = ({
     >
       {/* Left resize handle */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 z-10"
+        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
         onMouseDown={handleLeftResizeStart}
       />
 
       {/* Word text */}
-      <span className="px-1.5 pointer-events-none truncate">{text}</span>
+      <span className="px-2 pointer-events-none truncate">{text}</span>
 
       {/* Right resize handle */}
       <div
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 z-10"
+        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
         onMouseDown={handleRightResizeStart}
       />
     </div>

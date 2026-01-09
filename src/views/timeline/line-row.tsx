@@ -14,7 +14,7 @@ interface LineRowProps {
 // -- Constants -----------------------------------------------------------------
 
 const GUTTER_WIDTH = 48;
-const COLLAPSED_BG_HEIGHT = 16;
+const COLLAPSED_BG_HEIGHT = 12;
 
 // -- Component -----------------------------------------------------------------
 
@@ -27,7 +27,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
     <div className="flex border-b border-composer-border/50">
       {/* Gutter */}
       <div
-        className="flex-shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r border-composer-border/50 bg-composer-bg"
+        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r border-composer-border/50 bg-composer-bg"
         style={{ width: GUTTER_WIDTH }}
       >
         {lineIndex + 1}
@@ -40,7 +40,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           className="border-l-2"
           style={{
             borderColor: color,
-            opacity: hasMainWords ? 1 : 0.4,
+            opacity: hasMainWords ? 1 : 0.5,
           }}
         >
           {hasMainWords ? (
@@ -56,7 +56,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           ) : (
             <div
               style={{ height: TRACK_HEIGHT }}
-              className="flex items-center px-2 text-xs text-composer-text-muted italic truncate"
+              className="flex items-center px-3 text-xs text-composer-text-muted italic truncate"
             >
               {line.text.slice(0, 60)}
               {line.text.length > 60 ? "..." : ""}
@@ -66,10 +66,10 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
         {/* BG word track (always shown, collapsed when empty) */}
         <div
-          className="border-l-2 border-dashed"
+          className="relative"
           style={{
-            borderColor: color,
-            opacity: hasBgWords ? 0.6 : 0.2,
+            borderLeft: `2px dashed ${color}`,
+            opacity: hasBgWords ? 0.7 : 0.3,
           }}
         >
           {hasBgWords ? (
@@ -83,12 +83,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               onUpdateWord={onUpdateBgWord}
             />
           ) : (
-            <div
-              style={{ height: COLLAPSED_BG_HEIGHT }}
-              className="flex items-center px-2 text-[10px] text-composer-text-muted/40 italic"
-            >
-              bg
-            </div>
+            <div style={{ height: COLLAPSED_BG_HEIGHT }} />
           )}
         </div>
       </div>
