@@ -215,6 +215,45 @@ function parseTtmlTimestamp(timestamp: string): number {
   return seconds + millis / 1000;
 }
 
+function extractTimedWords(
+  parent: Element,
+  excludeContainer?: Element | null,
+): WordTiming[] {
+  const words: WordTiming[] = [];
+
+  for (const node of parent.childNodes) {
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element;
+      const role =
+        el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+
+      // Skip x-bg containers (handled separately)
+      if (role === "x-bg" || excludeContainer?.contains(el)) continue;
+
+      // Handle span with timing
+      if (el.tagName.toLowerCase() === "span" && el.hasAttribute("begin")) {
+        const begin = parseTtmlTimestamp(el.getAttribute("begin") ?? "");
+        const end = parseTtmlTimestamp(el.getAttribute("end") ?? "");
+        const text = el.textContent ?? "";
+        if (text.trim()) {
+          words.push({ text, begin, end });
+        }
+      }
+    } else if (node.nodeType === Node.TEXT_NODE) {
+      // Whitespace between spans - append to preceding word
+      const content = node.textContent ?? "";
+      if (/\s/.test(content) && words.length > 0) {
+        const lastWord = words[words.length - 1];
+        if (!lastWord.text.endsWith(" ")) {
+          lastWord.text += " ";
+        }
+      }
+    }
+  }
+
+  return words;
+}
+
 function parseTtml(content: string): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LyricLine[] = [];
@@ -262,45 +301,18 @@ function parseTtml(content: string): ParseResult {
     let backgroundWords: WordTiming[] | undefined;
 
     if (bgContainer) {
-      const bgSpans = bgContainer.querySelectorAll("span[begin]");
-      if (bgSpans.length > 0) {
-        backgroundWords = [];
-        for (const span of bgSpans) {
-          const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
-          const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
-          // Preserve text with trailing space - TTML is syllable-synced
-          const text = span.textContent ?? "";
-          if (text.trim()) {
-            backgroundWords.push({ text, begin: wordBegin, end: wordEnd });
-          }
-        }
-        if (backgroundWords.length > 0) {
-          // Concatenate without adding spaces - trailing spaces are embedded
-          backgroundText = backgroundWords.map((w) => w.text).join("");
-        }
+      backgroundWords = extractTimedWords(bgContainer, null);
+      if (backgroundWords.length > 0) {
+        backgroundText = backgroundWords.map((w) => w.text).join("");
       } else {
-        // Preserve text as-is, don't trim
         backgroundText = bgContainer.textContent || undefined;
       }
     }
 
     // Check for word-level timing (span elements NOT inside x-bg)
-    const allSpans = p.querySelectorAll("span[begin]");
-    const mainSpans = Array.from(allSpans).filter((span) => !bgContainer?.contains(span));
+    const words = extractTimedWords(p, bgContainer);
 
-    if (mainSpans.length > 0) {
-      const words: WordTiming[] = [];
-      for (const span of mainSpans) {
-        const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
-        const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
-        // Preserve text with trailing space - TTML is syllable-synced
-        const text = span.textContent ?? "";
-        if (text.trim()) {
-          words.push({ text, begin: wordBegin, end: wordEnd });
-        }
-      }
-
-      if (words.length > 0) {
+    if (words.length > 0) {
         lines.push({
           id: generateLineId(),
           // Concatenate without adding spaces - trailing spaces are embedded
@@ -312,7 +324,6 @@ function parseTtml(content: string): ParseResult {
           backgroundText,
           backgroundWords,
         });
-      }
     } else {
       // Line-level timing only - extract text without bg content
       let text = "";
