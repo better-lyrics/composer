@@ -23,35 +23,16 @@ function getAgentAlignment(agentId: string): "left" | "center" | "right" {
 
 // -- Component ----------------------------------------------------------------
 
-const PreviewLine: React.FC<PreviewLineProps> = ({
-  line,
-  lineIndex,
-  granularity,
-}) => {
+const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity }) => {
   const timing = getLineTiming(line);
   const alignment = getAgentAlignment(line.agentId);
   const alignmentClass =
-    alignment === "left"
-      ? "justify-start"
-      : alignment === "right"
-      ? "justify-end"
-      : "justify-center";
+    alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
   const agentColor = getAgentColor(line.agentId);
-  const textAlignClass =
-    alignment === "left"
-      ? "text-left"
-      : alignment === "right"
-      ? "text-right"
-      : "text-center";
-  const bgMarginClass =
-    alignment === "left" ? "ml-5" : alignment === "right" ? "mr-5" : "";
+  const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+  const bgMarginClass = alignment === "left" ? "ml-5" : alignment === "right" ? "mr-5" : "";
 
-  const AgentDot = (
-    <span
-      className="w-2 h-2 rounded-full shrink-0"
-      style={{ backgroundColor: agentColor }}
-    />
-  );
+  const AgentDot = <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />;
 
   // Word for progress overlay - outputs data attributes for DOM animation
   const WordWithProgress: React.FC<{
@@ -132,18 +113,11 @@ const PreviewLine: React.FC<PreviewLineProps> = ({
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
-      <div
-        className={`inline items-center text-2xl font-medium ${alignmentClass}`}
-      >
+      <div className={`inline items-center text-2xl font-medium ${alignmentClass}`}>
         {alignment === "left" && AgentDot}
         {words.length > 0
           ? words.map((word) => (
-              <WordWithProgress
-                key={`${word.begin}-${word.text}`}
-                text={word.text}
-                begin={word.begin}
-                end={word.end}
-              />
+              <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
             ))
           : line.text.split(/\s+/).map((word, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static text
