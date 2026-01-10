@@ -38,7 +38,7 @@ const TimelineWaveform: React.FC = () => {
       fillParent: false,
       minPxPerSec: useTimelineStore.getState().zoom,
     }),
-    [audioElement],
+    [audioElement]
   );
 
   const { wavesurfer, isReady } = useWavesurfer(options);
@@ -52,28 +52,26 @@ const TimelineWaveform: React.FC = () => {
   // Handle click to seek
   const handleClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
+      e.stopPropagation();
       if (!duration || totalWidth <= 0) return;
       const rect = e.currentTarget.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const time = (x / totalWidth) * duration;
       seekTo(time);
     },
-    [duration, totalWidth, seekTo],
+    [duration, totalWidth, seekTo]
   );
 
   if (!source) return null;
 
   return (
-    <div className="flex" style={{ width: totalWidth > 0 ? totalWidth + GUTTER_WIDTH : "100%" }}>
-      <div className="shrink-0 w-12 border-r border-composer-border/50 bg-composer-bg" />
-      {/* biome-ignore lint/a11y/useKeyWithClickEvents: click for seeking */}
-      <div
-        ref={containerRef}
-        className="relative cursor-pointer"
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
-        onClick={handleClick}
-      />
-    </div>
+    // biome-ignore lint/a11y/useKeyWithClickEvents: click for seeking
+    <div
+      ref={containerRef}
+      className="relative cursor-pointer bg-composer-bg"
+      style={{ width: totalWidth, height: WAVEFORM_HEIGHT, marginLeft: GUTTER_WIDTH }}
+      onClick={handleClick}
+    />
   );
 };
 

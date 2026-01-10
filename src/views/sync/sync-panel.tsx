@@ -24,7 +24,7 @@ import { SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -53,6 +53,8 @@ const SyncPanel: React.FC = () => {
   });
   const [showPulse, setShowPulse] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   const {
     handleTap,
@@ -67,10 +69,6 @@ const SyncPanel: React.FC = () => {
     handleSetLineTime,
     handleNudgeLastSynced,
     handleSplitWord,
-    handleNudgeSyllable,
-    handleSetSyllableTime,
-    handleNudgeSyllableEnd,
-    handleSetSyllableEndTime,
     handleNudgeBgWord,
     handleSetBgWordTime,
     handleNudgeBgWordEnd,
@@ -108,6 +106,52 @@ const SyncPanel: React.FC = () => {
       }
     }
   }, [lines, updateLine]);
+
+  // RAF animation loop for smooth word progress updates (reads audioElement.currentTime directly)
+  useEffect(() => {
+    if (!editMode) {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      return;
+    }
+
+    const update = () => {
+      const container = scrollContainerRef.current;
+      if (!container) {
+        rafRef.current = requestAnimationFrame(update);
+        return;
+      }
+
+      const audioEl = useAudioStore.getState().audioElement;
+      const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+
+      const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
+      for (const el of wordEls) {
+        const begin = Number.parseFloat(el.dataset.wordBegin ?? "0");
+        const end = Number.parseFloat(el.dataset.wordEnd ?? "0");
+        const duration = end - begin;
+
+        const isOpen = end === begin;
+        const isActive = time >= begin && (isOpen || time < end);
+        const isComplete = end > begin && time >= end;
+
+        let progress = 0;
+        if (isActive && duration > 0) {
+          progress = (time - begin) / duration;
+        } else if (isComplete) {
+          progress = 1;
+        }
+
+        el.style.width = `${progress * 100}%`;
+      }
+
+      rafRef.current = requestAnimationFrame(update);
+    };
+
+    rafRef.current = requestAnimationFrame(update);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [editMode]);
 
   const totalWords = useMemo(() => getTotalWords(lines), [lines]);
   const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
@@ -290,7 +334,7 @@ const SyncPanel: React.FC = () => {
 
       {/* Main sync area */}
       {showScrollableView ? (
-        <div className="flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <div className="py-2">
             {lines.map((line, index) => {
               const timing = getLineTiming(line);
@@ -316,19 +360,7 @@ const SyncPanel: React.FC = () => {
                   onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
                   onNudgeLine={(delta) => handleNudgeLine(index, delta)}
                   onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
-                  onSplitWord={(wordIdx, syllables) => handleSplitWord(index, wordIdx, syllables)}
-                  onNudgeSyllable={(wordIdx, syllableIdx, delta) =>
-                    handleNudgeSyllable(index, wordIdx, syllableIdx, delta)
-                  }
-                  onSetSyllableTime={(wordIdx, syllableIdx, newBegin) =>
-                    handleSetSyllableTime(index, wordIdx, syllableIdx, newBegin)
-                  }
-                  onNudgeSyllableEnd={(wordIdx, syllableIdx, delta) =>
-                    handleNudgeSyllableEnd(index, wordIdx, syllableIdx, delta)
-                  }
-                  onSetSyllableEndTime={(wordIdx, syllableIdx, newEnd) =>
-                    handleSetSyllableEndTime(index, wordIdx, syllableIdx, newEnd)
-                  }
+                  onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
                   onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
                   onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
                   onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
@@ -370,7 +402,7 @@ const SyncPanel: React.FC = () => {
       {/* Bottom panel */}
       <div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
         <div className="flex items-center justify-between h-14">
-          <TimingDisplay currentTime={currentTime} lastSyncedTime={lastSyncedTime} />
+          <TimingDisplay lastSyncedTime={lastSyncedTime} />
 
           {!isComplete && isPlaying && (
             <div className="flex items-center gap-4">

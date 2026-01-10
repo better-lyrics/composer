@@ -12,6 +12,7 @@ interface WordSelection {
 interface TimelineState {
   zoom: number;
   followEnabled: boolean;
+  previewSidebarOpen: boolean;
   selectedWord: WordSelection | null;
   scrollLeft: number;
   rowHeights: Record<string, number>;
@@ -25,6 +26,7 @@ interface TimelineActions {
   zoomIn: () => void;
   zoomOut: () => void;
   toggleFollow: () => void;
+  togglePreviewSidebar: () => void;
   setSelectedWord: (selection: WordSelection | null) => void;
   setScrollLeft: (scrollLeft: number) => void;
   setRowHeight: (lineId: string, height: number) => void;
@@ -48,6 +50,7 @@ const DEFAULT_ROW_HEIGHT = 44;
 const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => ({
   zoom: DEFAULT_ZOOM,
   followEnabled: true,
+  previewSidebarOpen: false,
   selectedWord: null,
   scrollLeft: 0,
   rowHeights: {},
@@ -59,6 +62,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
   zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
   toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
+  togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
   setSelectedWord: (selectedWord) => set({ selectedWord }),
   setScrollLeft: (scrollLeft) => set({ scrollLeft }),
   setRowHeight: (lineId, height) =>

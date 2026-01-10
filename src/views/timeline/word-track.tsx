@@ -17,7 +17,7 @@ interface WordTrackProps {
 }
 
 interface DragState {
-  index: number;
+  wordIndex: number;
   edge: "left" | "right";
   begin: number;
   end: number;
@@ -49,9 +49,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   }, []);
 
   const handleResizeStart = useCallback(
-    (index: number, edge: "left" | "right", startX: number) => {
-      const word = words[index];
-      setDragState({ index, edge, begin: word.begin, end: word.end });
+    (wordIndex: number, edge: "left" | "right", startX: number) => {
+      const word = words[wordIndex];
+      setDragState({ wordIndex, edge, begin: word.begin, end: word.end });
 
       const handleMouseMove = (e: MouseEvent) => {
         const deltaX = e.clientX - startX;
@@ -60,19 +60,19 @@ const WordTrack: React.FC<WordTrackProps> = ({
         setDragState((prev) => {
           if (!prev) return null;
 
-          const originalWord = words[index];
+          const originalWord = words[wordIndex];
 
           if (edge === "left") {
             const newBegin = originalWord.begin + deltaTime;
             const maxBegin = originalWord.end - 0.05;
-            const prevEnd = index > 0 ? words[index - 1].end : 0;
+            const prevEnd = wordIndex > 0 ? words[wordIndex - 1].end : 0;
             const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, newBegin)));
             return { ...prev, begin: clampedBegin };
           }
 
           const newEnd = originalWord.end + deltaTime;
           const minEnd = originalWord.begin + 0.05;
-          const nextBegin = index < words.length - 1 ? words[index + 1].begin : duration;
+          const nextBegin = wordIndex < words.length - 1 ? words[wordIndex + 1].begin : duration;
           const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, newEnd)));
           return { ...prev, end: clampedEnd };
         });
@@ -82,9 +82,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
         setDragState((prev) => {
           if (prev) {
             if (edge === "left") {
-              onUpdateWord(index, { begin: prev.begin });
+              onUpdateWord(wordIndex, { begin: prev.begin });
             } else {
-              onUpdateWord(index, { end: prev.end });
+              onUpdateWord(wordIndex, { end: prev.end });
             }
           }
           return null;
@@ -106,15 +106,16 @@ const WordTrack: React.FC<WordTrackProps> = ({
     [words, zoom, duration, onUpdateWord],
   );
 
-  const isWordSelected = (index: number) =>
-    selectedWord?.lineId === lineId && selectedWord?.wordIndex === index && selectedWord?.type === trackType;
+  const isSelected = (wordIndex: number) =>
+    selectedWord?.lineId === lineId && selectedWord?.wordIndex === wordIndex && selectedWord?.type === trackType;
 
   const hasSelection = selectedWord !== null;
 
-  const getWordDisplay = (word: WordTiming, index: number) => {
-    if (dragState && dragState.index === index) {
+  const getDisplay = (wordIndex: number) => {
+    if (dragState && dragState.wordIndex === wordIndex) {
       return { begin: dragState.begin, end: dragState.end };
     }
+    const word = words[wordIndex];
     return { begin: word.begin, end: word.end };
   };
 
@@ -122,39 +123,41 @@ const WordTrack: React.FC<WordTrackProps> = ({
     setSelectedWord(null);
   };
 
+  const handleSelect = (wordIndex: number) => {
+    if (isSelected(wordIndex)) {
+      setSelectedWord(null);
+    } else {
+      setSelectedWord({
+        lineId,
+        lineIndex,
+        wordIndex,
+        type: trackType,
+      });
+    }
+  };
+
   return (
     // biome-ignore lint/a11y/useKeyWithClickEvents: click to deselect
     <div className="relative" style={{ height, width: duration * zoom }} onClick={handleTrackClick}>
-      {words.map((word, index) => {
-        const display = getWordDisplay(word, index);
-        const wordKey = `${lineId}-${trackType}-${word.begin.toFixed(3)}`;
+      {words.map((word, wordIndex) => {
+        const display = getDisplay(wordIndex);
+        const wordKey = `${lineId}-${trackType}-${wordIndex}`;
         return (
           <WordBlock
             key={wordKey}
             id={wordKey}
             lineId={lineId}
             lineIndex={lineIndex}
-            wordIndex={index}
+            wordIndex={wordIndex}
             trackType={trackType}
             text={word.text}
             begin={display.begin}
             end={display.end}
             color={color}
             zoom={zoom}
-            isDimmed={hasSelection && !isWordSelected(index)}
-            onClick={() => {
-              if (isWordSelected(index)) {
-                setSelectedWord(null);
-              } else {
-                setSelectedWord({
-                  lineId,
-                  lineIndex,
-                  wordIndex: index,
-                  type: trackType,
-                });
-              }
-            }}
-            onResizeStart={(edge, startX) => handleResizeStart(index, edge, startX)}
+            isDimmed={hasSelection && !isSelected(wordIndex)}
+            onClick={() => handleSelect(wordIndex)}
+            onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
           />
         );
       })}

@@ -10,10 +10,12 @@ function distributeWordsInLine(text: string, begin: number, end: number): WordTi
   const duration = end - begin;
 
   let currentTime = begin;
-  return words.map((word) => {
+  return words.map((word, i) => {
     const wordDuration = (word.length / totalChars) * duration;
+    // Add trailing space to all words except the last one (matches TTML format)
+    const isLastWord = i === words.length - 1;
     const wordTiming: WordTiming = {
-      text: word,
+      text: isLastWord ? word : `${word} `,
       begin: currentTime,
       end: currentTime + wordDuration,
     };

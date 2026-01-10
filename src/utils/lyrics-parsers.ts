@@ -268,16 +268,19 @@ function parseTtml(content: string): ParseResult {
         for (const span of bgSpans) {
           const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
           const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
-          const text = span.textContent?.trim() ?? "";
-          if (text) {
+          // Preserve text with trailing space - TTML is syllable-synced
+          const text = span.textContent ?? "";
+          if (text.trim()) {
             backgroundWords.push({ text, begin: wordBegin, end: wordEnd });
           }
         }
         if (backgroundWords.length > 0) {
-          backgroundText = backgroundWords.map((w) => w.text).join(" ");
+          // Concatenate without adding spaces - trailing spaces are embedded
+          backgroundText = backgroundWords.map((w) => w.text).join("");
         }
       } else {
-        backgroundText = bgContainer.textContent?.trim() || undefined;
+        // Preserve text as-is, don't trim
+        backgroundText = bgContainer.textContent || undefined;
       }
     }
 
@@ -290,8 +293,9 @@ function parseTtml(content: string): ParseResult {
       for (const span of mainSpans) {
         const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
         const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
-        const text = span.textContent?.trim() ?? "";
-        if (text) {
+        // Preserve text with trailing space - TTML is syllable-synced
+        const text = span.textContent ?? "";
+        if (text.trim()) {
           words.push({ text, begin: wordBegin, end: wordEnd });
         }
       }
@@ -299,7 +303,8 @@ function parseTtml(content: string): ParseResult {
       if (words.length > 0) {
         lines.push({
           id: generateLineId(),
-          text: words.map((w) => w.text).join(" "),
+          // Concatenate without adding spaces - trailing spaces are embedded
+          text: words.map((w) => w.text).join(""),
           agentId,
           begin: words[0].begin,
           end: words[words.length - 1].end,

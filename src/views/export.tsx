@@ -1,9 +1,20 @@
+import { exportProjectToFile, importProjectFromFile, clearCurrentProject } from "@/lib/persistence";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { generateTTML } from "@/utils/ttml";
-import { IconCheck, IconCopy, IconDownload, IconEdit, IconRefresh } from "@tabler/icons-react";
+import {
+  IconCheck,
+  IconCopy,
+  IconDownload,
+  IconEdit,
+  IconFolderOpen,
+  IconRefresh,
+  IconTrash,
+  IconUpload,
+} from "@tabler/icons-react";
 import { Highlight, themes } from "prism-react-renderer";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -13,7 +24,10 @@ function getLineTiming(line: {
   words?: { begin: number; end: number }[];
 }) {
   if (line.words?.length) {
-    return { begin: line.words[0].begin, end: line.words[line.words.length - 1].end };
+    return {
+      begin: line.words[0].begin,
+      end: line.words[line.words.length - 1].end,
+    };
   }
   if (line.begin !== undefined && line.end !== undefined) {
     return { begin: line.begin, end: line.end };
@@ -35,10 +49,17 @@ const ExportPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const granularity = useProjectStore((s) => s.granularity);
+  const setMetadata = useProjectStore((s) => s.setMetadata);
+  const setLines = useProjectStore((s) => s.setLines);
+  const setGranularity = useProjectStore((s) => s.setGranularity);
+  const addAgent = useProjectStore((s) => s.addAgent);
+  const reset = useProjectStore((s) => s.reset);
+  const markClean = useProjectStore((s) => s.markClean);
 
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasSyncedContent = useMemo(() => {
     return lines.some((line) => getLineTiming(line) !== null);
@@ -65,7 +86,9 @@ const ExportPanel: React.FC = () => {
   const handleDownload = useCallback(() => {
     if (!ttmlContent) return;
 
-    const blob = new Blob([ttmlContent], { type: "application/ttml+xml;charset=utf-8" });
+    const blob = new Blob([ttmlContent], {
+      type: "application/ttml+xml;charset=utf-8",
+    });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -95,6 +118,41 @@ const ExportPanel: React.FC = () => {
     setEditedContent(null);
     setIsEditing(false);
   }, []);
+
+  const handleExportProject = useCallback(() => {
+    const audioSource = useAudioStore.getState().source;
+    const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
+    exportProjectToFile(metadata, agents, lines, granularity, audioFileName);
+  }, [metadata, agents, lines, granularity]);
+
+  const handleImportProject = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const project = await importProjectFromFile(file);
+      setMetadata(project.metadata);
+      setLines(project.lines);
+      setGranularity(project.granularity);
+      for (const agent of project.agents) {
+        if (!agents.find((a) => a.id === agent.id)) {
+          addAgent(agent);
+        }
+      }
+      markClean();
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [agents, setMetadata, setLines, setGranularity, addAgent, markClean],
+  );
+
+  const handleClearProject = useCallback(async () => {
+    if (!confirm("This will clear all project data. Are you sure?")) return;
+    reset();
+    await clearCurrentProject();
+  }, [reset]);
 
   if (lines.length === 0) {
     return (
@@ -145,6 +203,32 @@ const ExportPanel: React.FC = () => {
         </div>
       </div>
 
+      {/* Project management */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
+        <span className="text-sm text-composer-text-muted">Project</span>
+        <div className="flex items-center gap-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.ttml-project.json"
+            onChange={handleImportProject}
+            className="hidden"
+          />
+          <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
+            <IconFolderOpen className="w-4 h-4 text-composer-text opacity-50" />
+            Import Project
+          </Button>
+          <Button hasIcon variant="ghost" size="sm" onClick={handleExportProject}>
+            <IconUpload className="w-4 h-4 text-composer-text opacity-50" />
+            Export Project
+          </Button>
+          <Button hasIcon variant="ghost" size="sm" onClick={handleClearProject}>
+            <IconTrash className="w-4 h-4 text-composer-text opacity-50" />
+            Clear
+          </Button>
+        </div>
+      </div>
+
       {/* Preview / Editor */}
       <div className="flex-1 overflow-auto p-6">
         {isEditing ? (
@@ -159,7 +243,10 @@ const ExportPanel: React.FC = () => {
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre
                 className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
-                style={{ ...style, background: "var(--color-composer-bg-elevated)" }}
+                style={{
+                  ...style,
+                  background: "var(--color-composer-bg-elevated)",
+                }}
               >
                 {tokens.map((line, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices

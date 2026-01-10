@@ -1,6 +1,6 @@
 import { Button } from "@/ui/button";
 import { useTimelineStore, MIN_ZOOM, MAX_ZOOM } from "@/views/timeline/timeline-store";
-import { IconMinus, IconPlus, IconFocusCentered } from "@tabler/icons-react";
+import { IconMinus, IconPlus, IconFocusCentered, IconEye } from "@tabler/icons-react";
 import { cn } from "@/utils/cn";
 
 // -- Component -----------------------------------------------------------------
@@ -11,6 +11,8 @@ const TimelineHeader: React.FC = () => {
   const zoomOut = useTimelineStore((s) => s.zoomOut);
   const followEnabled = useTimelineStore((s) => s.followEnabled);
   const toggleFollow = useTimelineStore((s) => s.toggleFollow);
+  const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
+  const togglePreviewSidebar = useTimelineStore((s) => s.togglePreviewSidebar);
 
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
 
@@ -29,6 +31,18 @@ const TimelineHeader: React.FC = () => {
         >
           <IconFocusCentered size={16} />
           <span>Follow</span>
+        </Button>
+
+        {/* Preview sidebar toggle */}
+        <Button
+          variant={previewSidebarOpen ? "primary" : "ghost"}
+          size="sm"
+          onClick={togglePreviewSidebar}
+          hasIcon
+          className={cn(!previewSidebarOpen && "opacity-60")}
+        >
+          <IconEye size={16} />
+          <span>Preview</span>
         </Button>
 
         {/* Zoom controls */}

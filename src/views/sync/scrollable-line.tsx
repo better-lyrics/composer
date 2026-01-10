@@ -1,4 +1,4 @@
-import { getAgentColor, type SyllableTiming, type WordTiming } from "@/stores/project";
+import { getAgentColor, type WordTiming } from "@/stores/project";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
@@ -26,11 +26,7 @@ interface ScrollableLineProps {
   onSetWordEndTime?: (wordIndex: number, newEnd: number) => void;
   onNudgeLine?: (delta: number) => void;
   onSetLineTime?: (newBegin: number) => void;
-  onSplitWord?: (wordIndex: number, syllables: SyllableTiming[]) => void;
-  onNudgeSyllable?: (wordIndex: number, syllableIdx: number, delta: number) => void;
-  onSetSyllableTime?: (wordIndex: number, syllableIdx: number, newBegin: number) => void;
-  onNudgeSyllableEnd?: (wordIndex: number, syllableIdx: number, delta: number) => void;
-  onSetSyllableEndTime?: (wordIndex: number, syllableIdx: number, newEnd: number) => void;
+  onSplitWord?: (wordIndex: number, newWords: WordTiming[]) => void;
   onNudgeBgWord?: (wordIndex: number, delta: number) => void;
   onSetBgWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeBgWordEnd?: (wordIndex: number, delta: number) => void;
@@ -60,10 +56,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onNudgeLine,
   onSetLineTime,
   onSplitWord,
-  onNudgeSyllable,
-  onSetSyllableTime,
-  onNudgeSyllableEnd,
-  onSetSyllableEndTime,
   onNudgeBgWord,
   onSetBgWordTime,
   onNudgeBgWordEnd,
@@ -89,17 +81,14 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 
   const renderLineContent = () => {
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
-      const isOpen = lineEnd === lineBegin;
-      const isActive = currentTime >= lineBegin && (isOpen || currentTime < lineEnd);
-      const isCompleted = lineEnd > lineBegin && currentTime >= lineEnd;
-      const duration = lineEnd - lineBegin;
-      const progress = isActive ? (duration > 0 ? (currentTime - lineBegin) / duration : 0) : isCompleted ? 1 : 0;
       return (
         <span className="relative inline-block">
           <span className="text-composer-text-muted">{text}</span>
           <span
             className="absolute inset-0 overflow-hidden text-composer-accent-text"
-            style={{ width: `${progress * 100}%` }}
+            data-word-begin={lineBegin}
+            data-word-end={lineEnd}
+            style={{ width: "0%" }}
           >
             {text}
           </span>
@@ -115,10 +104,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     onNudgeEnd: onNudgeWordEnd,
     onSetEndTime: onSetWordEndTime,
     onSplit: onSplitWord,
-    onNudgeSyllable: onNudgeSyllable,
-    onSetSyllableTime: onSetSyllableTime,
-    onNudgeSyllableEnd: onNudgeSyllableEnd,
-    onSetSyllableEndTime: onSetSyllableEndTime,
   };
 
   const bgWordHandlers: WordHandlers = {
@@ -213,46 +198,19 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 };
 
 const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
-  if (
-    prev.text !== next.text ||
-    prev.lineNumber !== next.lineNumber ||
-    prev.isCurrent !== next.isCurrent ||
-    prev.agentId !== next.agentId ||
-    prev.backgroundText !== next.backgroundText ||
-    prev.backgroundWords !== next.backgroundWords ||
-    prev.granularity !== next.granularity ||
-    prev.editMode !== next.editMode ||
-    prev.lineBegin !== next.lineBegin ||
-    prev.lineEnd !== next.lineEnd ||
-    prev.words !== next.words
-  ) {
-    return false;
-  }
-
-  if (!next.editMode) return true;
-
-  const getTimingBounds = (props: ScrollableLineProps) => {
-    if (props.words?.length) {
-      return { begin: props.words[0].begin, end: props.words[props.words.length - 1].end };
-    }
-    if (props.lineBegin !== undefined && props.lineEnd !== undefined) {
-      return { begin: props.lineBegin, end: props.lineEnd };
-    }
-    return null;
-  };
-
-  const timing = getTimingBounds(next);
-  if (!timing) return true;
-
-  const wasActive = prev.currentTime >= timing.begin && prev.currentTime < timing.end;
-  const isActive = next.currentTime >= timing.begin && next.currentTime < timing.end;
-  const wasComplete = prev.currentTime >= timing.end;
-  const isComplete = next.currentTime >= timing.end;
-
-  if (wasActive !== isActive || wasComplete !== isComplete) return false;
-  if (isActive) return false;
-
-  return true;
+  return (
+    prev.text === next.text &&
+    prev.lineNumber === next.lineNumber &&
+    prev.isCurrent === next.isCurrent &&
+    prev.agentId === next.agentId &&
+    prev.backgroundText === next.backgroundText &&
+    prev.backgroundWords === next.backgroundWords &&
+    prev.granularity === next.granularity &&
+    prev.editMode === next.editMode &&
+    prev.lineBegin === next.lineBegin &&
+    prev.lineEnd === next.lineEnd &&
+    prev.words === next.words
+  );
 });
 
 // -- Exports ------------------------------------------------------------------

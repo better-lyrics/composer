@@ -1,16 +1,9 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine, SyllableTiming } from "@/stores/project";
+import type { LyricLine, WordTiming } from "@/stores/project";
 import { NUDGE_AMOUNT, type SyncState, getLineTiming, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
-import {
-  splitWordIntoSyllables,
-  nudgeSyllableBegin,
-  setSyllableBegin,
-  nudgeSyllableEnd,
-  setSyllableEnd,
-} from "@/utils/timing/syllable-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
 
@@ -58,6 +51,10 @@ function useSyncHandlers({
     const wordText = lineWords[wordIndex];
     if (!wordText) return;
 
+    // Add trailing space to all words except the last one (matches TTML format)
+    const isLastWord = wordIndex === lineWords.length - 1;
+    const textWithSpace = isLastWord ? wordText : `${wordText} `;
+
     const existingWords = wordIndex === 0 ? [] : (line.words ?? []);
 
     if (existingWords.length > 0) {
@@ -67,19 +64,19 @@ function useSyncHandlers({
         end: currentTime,
       };
       updatedWords.push({
-        text: wordText,
+        text: textWithSpace,
         begin: currentTime,
         end: currentTime,
       });
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {
-        words: [{ text: wordText, begin: currentTime, end: currentTime }],
+        words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
       };
       if (line.backgroundText && !line.backgroundWords?.length) {
         const bgWordTexts = splitIntoWords(line.backgroundText);
-        updates.backgroundWords = bgWordTexts.map((text) => ({
-          text,
+        updates.backgroundWords = bgWordTexts.map((text, i) => ({
+          text: i === bgWordTexts.length - 1 ? text : `${text} `,
           begin: currentTime,
           end: currentTime,
         }));
@@ -137,8 +134,8 @@ function useSyncHandlers({
     const updates: Partial<LyricLine> = { begin: currentTime, end: currentTime };
     if (line.backgroundText && !line.backgroundWords?.length) {
       const bgWordTexts = splitIntoWords(line.backgroundText);
-      updates.backgroundWords = bgWordTexts.map((text) => ({
-        text,
+      updates.backgroundWords = bgWordTexts.map((text, i) => ({
+        text: i === bgWordTexts.length - 1 ? text : `${text} `,
         begin: currentTime,
         end: currentTime,
       }));
@@ -258,32 +255,14 @@ function useSyncHandlers({
   );
 
   const handleSplitWord = useCallback(
-    (lineIdx: number, wordIdx: number, syllables: SyllableTiming[]) =>
-      splitWordIntoSyllables(lines, lineIdx, wordIdx, syllables, updateLineWithHistory),
-    [lines, updateLineWithHistory],
-  );
+    (lineIdx: number, wordIdx: number, newWords: WordTiming[]) => {
+      const line = lines[lineIdx];
+      if (!line?.words) return;
 
-  const handleNudgeSyllable = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, delta: number) =>
-      nudgeSyllableBegin(lines, lineIdx, wordIdx, syllableIdx, delta, updateLineWithHistory),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetSyllableTime = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, newBegin: number) =>
-      setSyllableBegin(lines, lineIdx, wordIdx, syllableIdx, newBegin, updateLineWithHistory),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeSyllableEnd = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, delta: number) =>
-      nudgeSyllableEnd(lines, lineIdx, wordIdx, syllableIdx, delta, updateLineWithHistory),
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetSyllableEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, newEnd: number) =>
-      setSyllableEnd(lines, lineIdx, wordIdx, syllableIdx, newEnd, updateLineWithHistory),
+      const updatedWords = [...line.words];
+      updatedWords.splice(wordIdx, 1, ...newWords);
+      updateLineWithHistory(line.id, { words: updatedWords });
+    },
     [lines, updateLineWithHistory],
   );
 
@@ -324,10 +303,6 @@ function useSyncHandlers({
     handleSetLineTime,
     handleNudgeLastSynced,
     handleSplitWord,
-    handleNudgeSyllable,
-    handleSetSyllableTime,
-    handleNudgeSyllableEnd,
-    handleSetSyllableEndTime,
     handleNudgeBgWord,
     handleSetBgWordTime,
     handleNudgeBgWordEnd,

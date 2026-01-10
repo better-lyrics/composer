@@ -14,6 +14,8 @@ const AudioEngine: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const playbackRate = useAudioStore((s) => s.playbackRate);
+  const volume = useAudioStore((s) => s.volume);
+  const isMuted = useAudioStore((s) => s.isMuted);
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const setDuration = useAudioStore((s) => s.setDuration);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
@@ -81,6 +83,20 @@ const AudioEngine: React.FC = () => {
       audio.playbackRate = playbackRate;
     }
   }, [playbackRate]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = volume;
+    }
+  }, [volume]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.muted = isMuted;
+    }
+  }, [isMuted]);
 
   return null;
 };

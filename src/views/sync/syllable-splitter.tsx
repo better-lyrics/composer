@@ -1,49 +1,44 @@
-import type { SyllableTiming, WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
-import { IconArrowRight, IconScissors } from "@tabler/icons-react";
+import { IconScissors } from "@tabler/icons-react";
 import { useState, useCallback } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface SyllableSplitterProps {
   word: WordTiming;
-  currentTime: number;
-  onSplit: (syllables: SyllableTiming[]) => void;
-  onNudgeSyllable: (syllableIdx: number, delta: number) => void;
-  onSetSyllableTime: (syllableIdx: number, newBegin: number) => void;
-  onNudgeSyllableEnd: (syllableIdx: number, delta: number) => void;
-  onSetSyllableEndTime: (syllableIdx: number, newEnd: number) => void;
+  wordIndex: number;
+  onSplit: (wordIndex: number, newWords: WordTiming[]) => void;
 }
 
 // -- Helpers ------------------------------------------------------------------
 
-function distributeTiming(text: string, splitPoints: number[], begin: number, end: number): SyllableTiming[] {
-  const syllables: string[] = [];
+function distributeTiming(text: string, splitPoints: number[], begin: number, end: number): WordTiming[] {
+  const parts: string[] = [];
   let lastIdx = 0;
 
   const sortedPoints = [...splitPoints].sort((a, b) => a - b);
   for (const point of sortedPoints) {
     if (point > lastIdx && point < text.length) {
-      syllables.push(text.slice(lastIdx, point));
+      parts.push(text.slice(lastIdx, point));
       lastIdx = point;
     }
   }
-  syllables.push(text.slice(lastIdx));
+  parts.push(text.slice(lastIdx));
 
   const duration = end - begin;
   const charDuration = duration / text.length;
 
   let currentBegin = begin;
-  return syllables.map((syllable) => {
-    const syllableEnd = currentBegin + syllable.length * charDuration;
-    const timing: SyllableTiming = {
-      text: syllable,
+  return parts.map((part) => {
+    const partEnd = currentBegin + part.length * charDuration;
+    const timing: WordTiming = {
+      text: part,
       begin: currentBegin,
-      end: syllableEnd,
+      end: partEnd,
     };
-    currentBegin = syllableEnd;
+    currentBegin = partEnd;
     return timing;
   });
 }
@@ -59,7 +54,7 @@ const SplitModeContent: React.FC<{
 }> = ({ text, splitPoints, onToggleSplit, onConfirm, onCancel }) => {
   const chars = text.split("");
 
-  const previewSyllables = (() => {
+  const previewParts = (() => {
     if (splitPoints.length === 0) return [text];
     const sorted = [...splitPoints].sort((a, b) => a - b);
     const result: string[] = [];
@@ -111,7 +106,7 @@ const SplitModeContent: React.FC<{
       {splitPoints.length > 0 && (
         <div className="flex items-center justify-center gap-2 text-sm text-composer-text-muted">
           <span>Preview:</span>
-          <span className="font-medium text-composer-text">{previewSyllables.join(" · ")}</span>
+          <span className="font-medium text-composer-text">{previewParts.join(" · ")}</span>
         </div>
       )}
 
@@ -125,79 +120,7 @@ const SplitModeContent: React.FC<{
   );
 };
 
-const SyllableTimingView: React.FC<{
-  syllables: SyllableTiming[];
-  currentTime: number;
-  onNudge: (idx: number, delta: number) => void;
-  onSetTime: (idx: number, newBegin: number) => void;
-  onNudgeEnd: (idx: number, delta: number) => void;
-  onSetEndTime: (idx: number, newEnd: number) => void;
-}> = ({ syllables, currentTime, onNudge, onSetTime, onNudgeEnd, onSetEndTime }) => {
-  return (
-    <div className="flex flex-wrap gap-2">
-      {syllables.map((syllable, idx) => {
-        const prevSyllable = syllables[idx - 1];
-        const nextSyllable = syllables[idx + 1];
-        const minBegin = prevSyllable?.end ?? 0;
-        const maxBegin = syllable.end;
-        const minEnd = syllable.begin;
-        const maxEnd = nextSyllable?.begin ?? Number.POSITIVE_INFINITY;
-
-        const isActive = currentTime >= syllable.begin && currentTime < syllable.end;
-        const isCompleted = syllable.end > syllable.begin && currentTime >= syllable.end;
-        const progress = isActive
-          ? (currentTime - syllable.begin) / (syllable.end - syllable.begin)
-          : isCompleted
-            ? 1
-            : 0;
-
-        return (
-          // biome-ignore lint/suspicious/noArrayIndexKey: syllable order is fixed in word
-          <span key={idx} className="inline-flex flex-col items-start">
-            <span className="relative inline-block">
-              <span className="text-composer-text-muted">{syllable.text}</span>
-              <span
-                className="absolute inset-0 overflow-hidden text-composer-accent-text"
-                style={{ width: `${progress * 100}%` }}
-              >
-                {syllable.text}
-              </span>
-            </span>
-            <span className="flex items-center gap-1">
-              <TimeNudgeInput
-                value={syllable.begin}
-                currentTime={currentTime}
-                canDecrease={syllable.begin > minBegin}
-                canIncrease={syllable.begin < maxBegin}
-                onNudge={(delta) => onNudge(idx, delta)}
-                onSetTime={(newBegin) => onSetTime(idx, newBegin)}
-              />
-              <IconArrowRight className="w-2.5 h-2.5 text-composer-text opacity-25 mx-0.5" />
-              <TimeNudgeInput
-                value={syllable.end}
-                currentTime={currentTime}
-                canDecrease={syllable.end > minEnd}
-                canIncrease={syllable.end < maxEnd}
-                onNudge={(delta) => onNudgeEnd(idx, delta)}
-                onSetTime={(newEnd) => onSetEndTime(idx, newEnd)}
-              />
-            </span>
-          </span>
-        );
-      })}
-    </div>
-  );
-};
-
-const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
-  word,
-  currentTime,
-  onSplit,
-  onNudgeSyllable,
-  onSetSyllableTime,
-  onNudgeSyllableEnd,
-  onSetSyllableEndTime,
-}) => {
+const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, onSplit }) => {
   const [splitPoints, setSplitPoints] = useState<number[]>([]);
 
   const handleToggleSplit = useCallback((index: number) => {
@@ -206,12 +129,12 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
 
   const handleConfirmSplit = useCallback(
     (close: () => void) => {
-      const syllables = distributeTiming(word.text, splitPoints, word.begin, word.end);
-      onSplit(syllables);
+      const newWords = distributeTiming(word.text, splitPoints, word.begin, word.end);
+      onSplit(wordIndex, newWords);
       setSplitPoints([]);
       close();
     },
-    [word.text, word.begin, word.end, splitPoints, onSplit],
+    [word.text, word.begin, word.end, splitPoints, wordIndex, onSplit],
   );
 
   const handleCancelSplit = useCallback((close: () => void) => {
@@ -219,21 +142,9 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
     close();
   }, []);
 
-  if (word.syllables?.length) {
-    return (
-      <SyllableTimingView
-        syllables={word.syllables}
-        currentTime={currentTime}
-        onNudge={onNudgeSyllable}
-        onSetTime={onSetSyllableTime}
-        onNudgeEnd={onNudgeSyllableEnd}
-        onSetEndTime={onSetSyllableEndTime}
-      />
-    );
-  }
-
-  // Can't split single-character words
-  if (word.text.length < 2) {
+  // Can't split single-character words (after trimming trailing space)
+  const trimmedLength = word.text.trimEnd().length;
+  if (trimmedLength < 2) {
     return null;
   }
 
@@ -252,9 +163,9 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({
     >
       {(close) => (
         <div className="p-5">
-          <h3 className="mb-4 text-lg font-medium">Split "{word.text}"</h3>
+          <h3 className="mb-4 text-lg font-medium">Split "{word.text.trimEnd()}"</h3>
           <SplitModeContent
-            text={word.text}
+            text={word.text.trimEnd()}
             splitPoints={splitPoints}
             onToggleSplit={handleToggleSplit}
             onConfirm={() => handleConfirmSplit(close)}

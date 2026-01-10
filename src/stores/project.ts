@@ -11,17 +11,10 @@ interface Agent {
   name?: string;
 }
 
-interface SyllableTiming {
-  text: string;
-  begin: number;
-  end: number;
-}
-
 interface WordTiming {
   text: string;
   begin: number;
   end: number;
-  syllables?: SyllableTiming[];
 }
 
 interface LyricLine {
@@ -243,7 +236,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const word = line.words[wordIndex];
         if (!word) return line;
         const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
-        const bgText = bgWords.map((w) => w.text).join(" ");
+        // Concatenate without adding spaces - trailing spaces are embedded in word.text
+        const bgText = bgWords.map((w) => w.text).join("");
         return {
           ...line,
           words: line.words.filter((_, i) => i !== wordIndex),
@@ -262,7 +256,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (!word) return line;
         const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
         const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
-        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join(" ") : undefined;
+        // Concatenate without adding spaces - trailing spaces are embedded in word.text
+        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join("") : undefined;
         return {
           ...line,
           backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
@@ -288,6 +283,5 @@ export type {
   ProjectMetadata,
   ProjectState,
   SimpleTab,
-  SyllableTiming,
   WordTiming,
 };

@@ -2,6 +2,7 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
+import { debouncedSave, flushPendingSave, loadCurrentProject, saveCurrentProject } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -14,7 +15,7 @@ import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { IconHelp } from "@tabler/icons-react";
-import { Activity, useMemo, useState } from "react";
+import { Activity, useEffect, useMemo, useState } from "react";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
 
@@ -25,6 +26,55 @@ const AppContent: React.FC = () => {
   const [helpOpen, setHelpOpen] = useState(false);
 
   const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
+
+  // Load saved project on mount
+  useEffect(() => {
+    loadCurrentProject().then((project) => {
+      if (project) {
+        const state = useProjectStore.getState();
+        state.setMetadata(project.metadata);
+        state.setLines(project.lines);
+        state.setGranularity(project.granularity);
+        for (const agent of project.agents) {
+          if (!state.agents.find((a) => a.id === agent.id)) {
+            state.addAgent(agent);
+          }
+        }
+        state.markClean();
+      }
+    });
+  }, []);
+
+  // Auto-save on state changes
+  useEffect(() => {
+    const unsubscribe = useProjectStore.subscribe((state) => {
+      if (state.lines.length > 0 || state.metadata.title) {
+        const audioSource = useAudioStore.getState().source;
+        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
+        debouncedSave(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Warn on tab close if dirty
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const state = useProjectStore.getState();
+      if (state.isDirty && state.lines.length > 0) {
+        flushPendingSave();
+        const audioSource = useAudioStore.getState().source;
+        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
+        saveCurrentProject(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
+        e.preventDefault();
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const shortcuts: Shortcut[] = useMemo(
     () => [

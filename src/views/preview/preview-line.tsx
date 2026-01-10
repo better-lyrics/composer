@@ -36,7 +36,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
 
   // Word for progress overlay - outputs data attributes for DOM animation
   const WordWithProgress: React.FC<{ text: string; begin: number; end: number }> = ({ text, begin, end }) => (
-    <span className="relative inline-block">
+    <span className="relative inline-block whitespace-pre">
       <span className="text-composer-text-muted">{text}</span>
       <span
         className="absolute inset-0 text-composer-accent-text"
@@ -54,7 +54,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
     if (!line.backgroundWords?.length) return null;
     return (
       <div
-        className={`flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-medium mt-1 ${alignmentClass} ${bgMarginClass}`}
+        className={`flex flex-wrap items-center gap-y-1 text-base font-medium mt-1 ${alignmentClass} ${bgMarginClass}`}
       >
         {line.backgroundWords.map((bgWord, bgIdx) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: stable position
@@ -104,17 +104,16 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
-      <div className={`inline-flex flex-wrap items-center gap-x-3 gap-y-1 text-2xl font-medium ${alignmentClass}`}>
+      <div className={`inline items-center text-2xl font-medium ${alignmentClass}`}>
         {alignment === "left" && AgentDot}
         {words.length > 0
-          ? words.map((word, wordIdx) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: stable position
-              <WordWithProgress key={wordIdx} text={word.text} begin={word.begin} end={word.end} />
+          ? words.map((word) => (
+              <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
             ))
           : line.text.split(/\s+/).map((word, idx) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static text
               <span key={idx} className="text-composer-text-muted">
-                {word}
+                {word}{" "}
               </span>
             ))}
         {alignment === "right" && AgentDot}
