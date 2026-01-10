@@ -14,7 +14,7 @@ import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -66,6 +66,7 @@ const TimelinePanel: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
   const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
+  const toggleFollow = useTimelineStore((s) => s.toggleFollow);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -80,13 +81,10 @@ const TimelinePanel: React.FC = () => {
     }),
   );
 
-  // Initialize timing if lines have no timing - only distribute once per audio load
   const lastDistributedDurationRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (duration <= 0 || lines.length === 0) return;
-
-    // Only distribute once per duration value (reset when audio changes)
     if (lastDistributedDurationRef.current === duration) return;
 
     const hasAnyTiming = lines.some((l) => l.words?.length || (l.begin !== undefined && l.end !== undefined));
@@ -98,7 +96,6 @@ const TimelinePanel: React.FC = () => {
     lastDistributedDurationRef.current = duration;
   }, [duration, lines, setLines]);
 
-  // Track content height for playhead
   useEffect(() => {
     if (!contentRef.current) return;
     const observer = new ResizeObserver((entries) => {
@@ -108,7 +105,6 @@ const TimelinePanel: React.FC = () => {
     return () => observer.disconnect();
   }, []);
 
-  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -119,12 +115,14 @@ const TimelinePanel: React.FC = () => {
         setIsPlaying(!isPlaying);
       } else if (e.key === "Escape") {
         setSelectedWord(null);
+      } else if (e.key === "f" || e.key === "F") {
+        toggleFollow();
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, setIsPlaying, setSelectedWord]);
+  }, [isPlaying, setIsPlaying, setSelectedWord, toggleFollow]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
@@ -150,7 +148,6 @@ const TimelinePanel: React.FC = () => {
       const line = lines.find((l) => l.id === activeData.lineId);
       if (!line) return;
 
-      // Check for track transfer (significant vertical movement)
       const movedDownToBg = delta.y > 30;
       const movedUpToMain = delta.y < -30;
 
@@ -164,7 +161,6 @@ const TimelinePanel: React.FC = () => {
         return;
       }
 
-      // Horizontal repositioning / reordering
       if (Math.abs(delta.x) < 5) return;
 
       const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
@@ -173,19 +169,13 @@ const TimelinePanel: React.FC = () => {
       const wordIndex = activeData.wordIndex;
       const timeDelta = delta.x / zoom;
       const wordDuration = activeData.end - activeData.begin;
-
-      // Calculate new position, clamped to valid range
       const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
       const newEnd = newBegin + wordDuration;
 
-      // Update the word's timing
       const words = [...wordsArray];
       words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
-
-      // Re-sort by begin time to handle reordering
       words.sort((a, b) => a.begin - b.begin);
 
-      // Check for overlaps and push words apart
       for (let i = 1; i < words.length; i++) {
         if (words[i].begin < words[i - 1].end) {
           const overlap = words[i - 1].end - words[i].begin;
@@ -193,7 +183,6 @@ const TimelinePanel: React.FC = () => {
         }
       }
 
-      // Clamp last word to duration
       const lastWord = words[words.length - 1];
       if (lastWord.end > duration) {
         const overflow = lastWord.end - duration;
@@ -219,8 +208,6 @@ const TimelinePanel: React.FC = () => {
     },
     [setScrollLeft],
   );
-
-  const GUTTER_WIDTH = 48;
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
@@ -277,7 +264,6 @@ const TimelinePanel: React.FC = () => {
         <TimelineHeader />
 
         <div ref={contentRef} className="relative flex-1 flex flex-col overflow-hidden">
-          {/* Shared scroll container for waveform and rows */}
           <div
             ref={scrollContainerRef}
             className="flex-1 overflow-auto"
@@ -289,17 +275,14 @@ const TimelinePanel: React.FC = () => {
               }
             }}
           >
-            {/* Sticky waveform */}
             <div className="sticky top-0 z-10 border-b border-composer-border bg-composer-bg w-max">
               <TimelineWaveform />
             </div>
 
-            {/* Rows */}
-            <TimelineRows />
+            <TimelineRows scrollContainerRef={scrollContainerRef} />
           </div>
 
-          {/* Playhead overlay */}
-          <TimelinePlayhead containerHeight={contentHeight} />
+          <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
         </div>
 
         <TimelineInfoPanel />

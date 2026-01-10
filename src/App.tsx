@@ -90,9 +90,11 @@ const AppContent: React.FC = () => {
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
-        <div className={`absolute inset-0 flex flex-col ${activeTab === "import" ? "visible" : "invisible"}`}>
-          <ImportPanel />
-        </div>
+        <Activity mode={activeTab === "import" ? "visible" : "hidden"}>
+          <div className="absolute inset-0 flex flex-col">
+            <ImportPanel />
+          </div>
+        </Activity>
         <Activity mode={activeTab === "edit" ? "visible" : "hidden"}>
           <div className="absolute inset-0 flex flex-col">
             <EditPanel />

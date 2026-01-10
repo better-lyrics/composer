@@ -87,17 +87,14 @@ const WordBlock: React.FC<WordBlockProps> = ({
       {...attributes}
       {...listeners}
     >
-      {/* Left resize handle */}
       <div
         className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
         onMouseDown={handleLeftResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
       />
 
-      {/* Word text */}
       {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
 
-      {/* Right resize handle */}
       <div
         className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
         onMouseDown={handleRightResizeStart}

@@ -11,7 +11,7 @@ interface WordSelection {
 
 interface TimelineState {
   zoom: number;
-  rippleEnabled: boolean;
+  followEnabled: boolean;
   selectedWord: WordSelection | null;
   scrollLeft: number;
   rowHeights: Record<string, number>;
@@ -24,18 +24,17 @@ interface TimelineActions {
   setZoom: (zoom: number) => void;
   zoomIn: () => void;
   zoomOut: () => void;
-  setRippleEnabled: (enabled: boolean) => void;
-  toggleRipple: () => void;
+  toggleFollow: () => void;
   setSelectedWord: (selection: WordSelection | null) => void;
   setScrollLeft: (scrollLeft: number) => void;
   setRowHeight: (lineId: string, height: number) => void;
-  getRowHeight: (lineId: string) => number;
   setDraggingPlayhead: (isDragging: boolean, time?: number) => void;
   setDragTime: (time: number) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
 
+const GUTTER_WIDTH = 48;
 const MIN_ZOOM = 20;
 const MAX_ZOOM = 500;
 const ZOOM_STEP = 20;
@@ -48,7 +47,7 @@ const DEFAULT_ROW_HEIGHT = 44;
 
 const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => ({
   zoom: DEFAULT_ZOOM,
-  rippleEnabled: false,
+  followEnabled: true,
   selectedWord: null,
   scrollLeft: 0,
   rowHeights: {},
@@ -59,8 +58,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
   zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
   zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
-  setRippleEnabled: (rippleEnabled) => set({ rippleEnabled }),
-  toggleRipple: () => set((s) => ({ rippleEnabled: !s.rippleEnabled })),
+  toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
   setSelectedWord: (selectedWord) => set({ selectedWord }),
   setScrollLeft: (scrollLeft) => set({ scrollLeft }),
   setRowHeight: (lineId, height) =>
@@ -70,12 +68,20 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
         [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)),
       },
     })),
-  getRowHeight: (lineId) => get().rowHeights[lineId] ?? get().defaultRowHeight,
   setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
   setDragTime: (dragTime) => set({ dragTime }),
 }));
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM, MIN_ROW_HEIGHT, MAX_ROW_HEIGHT, DEFAULT_ROW_HEIGHT };
+export {
+  useTimelineStore,
+  GUTTER_WIDTH,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DEFAULT_ZOOM,
+  MIN_ROW_HEIGHT,
+  MAX_ROW_HEIGHT,
+  DEFAULT_ROW_HEIGHT,
+};
 export type { WordSelection };

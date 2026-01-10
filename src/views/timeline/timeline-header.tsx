@@ -1,6 +1,6 @@
 import { Button } from "@/ui/button";
 import { useTimelineStore, MIN_ZOOM, MAX_ZOOM } from "@/views/timeline/timeline-store";
-import { IconMinus, IconPlus, IconArrowsHorizontal } from "@tabler/icons-react";
+import { IconMinus, IconPlus, IconFocusCentered } from "@tabler/icons-react";
 import { cn } from "@/utils/cn";
 
 // -- Component -----------------------------------------------------------------
@@ -9,8 +9,8 @@ const TimelineHeader: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
   const zoomIn = useTimelineStore((s) => s.zoomIn);
   const zoomOut = useTimelineStore((s) => s.zoomOut);
-  const rippleEnabled = useTimelineStore((s) => s.rippleEnabled);
-  const toggleRipple = useTimelineStore((s) => s.toggleRipple);
+  const followEnabled = useTimelineStore((s) => s.followEnabled);
+  const toggleFollow = useTimelineStore((s) => s.toggleFollow);
 
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
 
@@ -19,16 +19,16 @@ const TimelineHeader: React.FC = () => {
       <h2 className="text-lg font-medium select-none">Timeline</h2>
 
       <div className="flex items-center gap-4">
-        {/* Ripple toggle */}
+        {/* Follow toggle */}
         <Button
-          variant={rippleEnabled ? "primary" : "ghost"}
+          variant={followEnabled ? "primary" : "ghost"}
           size="sm"
-          onClick={toggleRipple}
+          onClick={toggleFollow}
           hasIcon
-          className={cn(!rippleEnabled && "opacity-60")}
+          className={cn(!followEnabled && "opacity-60")}
         >
-          <IconArrowsHorizontal size={16} />
-          <span>Ripple</span>
+          <IconFocusCentered size={16} />
+          <span>Follow</span>
         </Button>
 
         {/* Zoom controls */}

@@ -1,9 +1,7 @@
 import { getAgentColor, type SyllableTiming, type WordTiming } from "@/stores/project";
-import { Tooltip } from "@/ui/tooltip";
 import { splitIntoWords } from "@/utils/sync-helpers";
-import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
-import { IconAlertTriangle, IconArrowRight } from "@tabler/icons-react";
+import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
 import { memo, useEffect, useMemo, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -39,7 +37,7 @@ interface ScrollableLineProps {
   onSetBgWordEndTime?: (wordIndex: number, newEnd: number) => void;
 }
 
-// -- Components ---------------------------------------------------------------
+// -- Component ----------------------------------------------------------------
 
 const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   text,
@@ -72,7 +70,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onSetBgWordEndTime,
 }) => {
   const lineRef = useRef<HTMLDivElement>(null);
-  // Use words array if available (preserves timeline edits), otherwise split text
   const wordTexts = useMemo(() => (words?.length ? words.map((w) => w.text) : splitIntoWords(text)), [text, words]);
   const bgWordTexts = useMemo(
     () =>
@@ -112,137 +109,23 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     return <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{text}</span>;
   };
 
-  const renderWordContent = (word: string, timing: WordTiming | undefined, isBackground = false) => {
-    const isSynced = !!timing;
-    const baseClass = isBackground ? "italic" : "";
-    const syncedClass = isBackground ? "text-composer-text-muted/70" : "text-composer-text-muted";
-    const unsyncedClass = isBackground ? "text-composer-text-muted/50" : "text-composer-text";
-    const activeClass = isBackground ? "text-composer-accent-text/80" : "text-composer-accent-text";
-
-    if (editMode && isSynced) {
-      const isOpen = timing.end === timing.begin;
-      const isWordActive = currentTime >= timing.begin && (isOpen || currentTime < timing.end);
-      const isWordCompleted = timing.end > timing.begin && currentTime >= timing.end;
-      const duration = timing.end - timing.begin;
-      const wordProgress = isWordActive
-        ? duration > 0
-          ? (currentTime - timing.begin) / duration
-          : 0
-        : isWordCompleted
-          ? 1
-          : 0;
-      return (
-        <span className={`relative inline-block ${baseClass}`}>
-          <span className={syncedClass}>{word}</span>
-          <span
-            className={`absolute inset-0 overflow-hidden ${activeClass}`}
-            style={{ width: `${wordProgress * 100}%` }}
-          >
-            {word}
-          </span>
-        </span>
-      );
-    }
-    return <span className={`${baseClass} ${isSynced ? syncedClass : unsyncedClass}`}>{word}</span>;
+  const mainWordHandlers: WordHandlers = {
+    onNudge: onNudgeWord,
+    onSetTime: onSetWordTime,
+    onNudgeEnd: onNudgeWordEnd,
+    onSetEndTime: onSetWordEndTime,
+    onSplit: onSplitWord,
+    onNudgeSyllable: onNudgeSyllable,
+    onSetSyllableTime: onSetSyllableTime,
+    onNudgeSyllableEnd: onNudgeSyllableEnd,
+    onSetSyllableEndTime: onSetSyllableEndTime,
   };
 
-  const renderWord = (
-    word: string,
-    idx: number,
-    timing: WordTiming | undefined,
-    allWords: WordTiming[] | undefined,
-    handlers: {
-      onNudge?: (idx: number, delta: number) => void;
-      onSetTime?: (idx: number, newBegin: number) => void;
-      onNudgeEnd?: (idx: number, delta: number) => void;
-      onSetEndTime?: (idx: number, newEnd: number) => void;
-      onSplit?: (idx: number, syllables: SyllableTiming[]) => void;
-      onNudgeSyllable?: (idx: number, syllableIdx: number, delta: number) => void;
-      onSetSyllableTime?: (idx: number, syllableIdx: number, newBegin: number) => void;
-      onNudgeSyllableEnd?: (idx: number, syllableIdx: number, delta: number) => void;
-      onSetSyllableEndTime?: (idx: number, syllableIdx: number, newEnd: number) => void;
-    },
-    isBackground = false,
-  ) => {
-    const isSynced = !!timing;
-    const hasSyllables = !!timing?.syllables?.length;
-
-    const prevWord = allWords?.[idx - 1];
-    const nextWord = allWords?.[idx + 1];
-    const minBegin = prevWord?.end ?? 0;
-    const maxBegin = timing?.end ?? 0;
-    const minEnd = timing?.begin ?? 0;
-    const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-
-    return (
-      <span
-        key={`${lineNumber}-${isBackground ? "bg" : "main"}-${word}-${idx}`}
-        className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}
-      >
-        {hasSyllables && !isBackground ? (
-          <SyllableSplitter
-            word={timing}
-            currentTime={currentTime}
-            onSplit={(syllables) => handlers.onSplit?.(idx, syllables)}
-            onNudgeSyllable={(syllableIdx, delta) => handlers.onNudgeSyllable?.(idx, syllableIdx, delta)}
-            onSetSyllableTime={(syllableIdx, newBegin) => handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)}
-            onNudgeSyllableEnd={(syllableIdx, delta) => handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)}
-            onSetSyllableEndTime={(syllableIdx, newEnd) => handlers.onSetSyllableEndTime?.(idx, syllableIdx, newEnd)}
-          />
-        ) : (
-          <>
-            <span className="flex items-center gap-1 group/word">
-              {renderWordContent(word, timing, isBackground)}
-              {isSynced && timing && timing.end === timing.begin && (
-                <Tooltip content="No duration - sync the next word to close this one or increase the end time">
-                  <span className="text-composer-warning">
-                    <IconAlertTriangle className="w-3.5 h-3.5" />
-                  </span>
-                </Tooltip>
-              )}
-              {isSynced && timing && timing.text.length >= 2 && !isBackground && (
-                <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
-                  <SyllableSplitter
-                    word={timing}
-                    currentTime={currentTime}
-                    onSplit={(syllables) => handlers.onSplit?.(idx, syllables)}
-                    onNudgeSyllable={(syllableIdx, delta) => handlers.onNudgeSyllable?.(idx, syllableIdx, delta)}
-                    onSetSyllableTime={(syllableIdx, newBegin) =>
-                      handlers.onSetSyllableTime?.(idx, syllableIdx, newBegin)
-                    }
-                    onNudgeSyllableEnd={(syllableIdx, delta) => handlers.onNudgeSyllableEnd?.(idx, syllableIdx, delta)}
-                    onSetSyllableEndTime={(syllableIdx, newEnd) =>
-                      handlers.onSetSyllableEndTime?.(idx, syllableIdx, newEnd)
-                    }
-                  />
-                </span>
-              )}
-            </span>
-            {isSynced && timing && (
-              <span className="flex items-center gap-1">
-                <TimeNudgeInput
-                  value={timing.begin}
-                  currentTime={currentTime}
-                  canDecrease={timing.begin > minBegin}
-                  canIncrease={timing.begin < maxBegin}
-                  onNudge={(delta) => handlers.onNudge?.(idx, delta)}
-                  onSetTime={(newBegin) => handlers.onSetTime?.(idx, newBegin)}
-                />
-                <IconArrowRight className="w-2.5 h-2.5 text-composer-text opacity-25 mx-0.5" />
-                <TimeNudgeInput
-                  value={timing.end}
-                  currentTime={currentTime}
-                  canDecrease={timing.end > minEnd}
-                  canIncrease={timing.end < maxEnd}
-                  onNudge={(delta) => handlers.onNudgeEnd?.(idx, delta)}
-                  onSetTime={(newEnd) => handlers.onSetEndTime?.(idx, newEnd)}
-                />
-              </span>
-            )}
-          </>
-        )}
-      </span>
-    );
+  const bgWordHandlers: WordHandlers = {
+    onNudge: onNudgeBgWord,
+    onSetTime: onSetBgWordTime,
+    onNudgeEnd: onNudgeBgWordEnd,
+    onSetEndTime: onSetBgWordEndTime,
   };
 
   return (
@@ -289,38 +172,39 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
           </div>
         ) : (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {wordTexts.map((word, idx) =>
-              renderWord(word, idx, words?.[idx], words, {
-                onNudge: onNudgeWord,
-                onSetTime: onSetWordTime,
-                onNudgeEnd: onNudgeWordEnd,
-                onSetEndTime: onSetWordEndTime,
-                onSplit: onSplitWord,
-                onNudgeSyllable: onNudgeSyllable,
-                onSetSyllableTime: onSetSyllableTime,
-                onNudgeSyllableEnd: onNudgeSyllableEnd,
-                onSetSyllableEndTime: onSetSyllableEndTime,
-              }),
-            )}
+            {wordTexts.map((word, idx) => (
+              <WordRenderer
+                // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
+                key={`${lineNumber}-main-${idx}`}
+                word={word}
+                idx={idx}
+                lineNumber={lineNumber}
+                timing={words?.[idx]}
+                allWords={words}
+                handlers={mainWordHandlers}
+                editMode={editMode}
+                currentTime={currentTime}
+              />
+            ))}
           </div>
         )}
         {bgWordTexts.length > 0 && (
           <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {bgWordTexts.map((word, idx) =>
-              renderWord(
-                word,
-                idx,
-                backgroundWords?.[idx],
-                backgroundWords,
-                {
-                  onNudge: onNudgeBgWord,
-                  onSetTime: onSetBgWordTime,
-                  onNudgeEnd: onNudgeBgWordEnd,
-                  onSetEndTime: onSetBgWordEndTime,
-                },
-                true,
-              ),
-            )}
+            {bgWordTexts.map((word, idx) => (
+              <WordRenderer
+                // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
+                key={`${lineNumber}-bg-${idx}`}
+                word={word}
+                idx={idx}
+                lineNumber={lineNumber}
+                timing={backgroundWords?.[idx]}
+                allWords={backgroundWords}
+                handlers={bgWordHandlers}
+                isBackground
+                editMode={editMode}
+                currentTime={currentTime}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -328,9 +212,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   );
 };
 
-// Memoize to prevent re-renders when currentTime changes but line doesn't need update
 const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
-  // Always re-render if non-time props change
   if (
     prev.text !== next.text ||
     prev.lineNumber !== next.lineNumber ||
@@ -347,12 +229,29 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     return false;
   }
 
-  // In edit mode with timing, we need currentTime for progress bar
-  if (next.editMode && (next.lineBegin !== undefined || next.words?.length || next.backgroundWords?.length)) {
-    return false;
-  }
+  if (!next.editMode) return true;
 
-  // Otherwise, currentTime changes don't matter
+  const getTimingBounds = (props: ScrollableLineProps) => {
+    if (props.words?.length) {
+      return { begin: props.words[0].begin, end: props.words[props.words.length - 1].end };
+    }
+    if (props.lineBegin !== undefined && props.lineEnd !== undefined) {
+      return { begin: props.lineBegin, end: props.lineEnd };
+    }
+    return null;
+  };
+
+  const timing = getTimingBounds(next);
+  if (!timing) return true;
+
+  const wasActive = prev.currentTime >= timing.begin && prev.currentTime < timing.end;
+  const isActive = next.currentTime >= timing.begin && next.currentTime < timing.end;
+  const wasComplete = prev.currentTime >= timing.end;
+  const isComplete = next.currentTime >= timing.end;
+
+  if (wasActive !== isActive || wasComplete !== isComplete) return false;
+  if (isActive) return false;
+
   return true;
 });
 

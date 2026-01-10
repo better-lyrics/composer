@@ -1,7 +1,7 @@
 import { WordBlock } from "@/views/timeline/word-block";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { WordTiming } from "@/stores/project";
-import { useCallback, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -38,16 +38,19 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const zoom = useTimelineStore((s) => s.zoom);
   const selectedWord = useTimelineStore((s) => s.selectedWord);
   const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
-  const rippleEnabled = useTimelineStore((s) => s.rippleEnabled);
 
-  // Local state during drag to avoid flickering
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
 
   const handleResizeStart = useCallback(
     (index: number, edge: "left" | "right", startX: number) => {
       const word = words[index];
-
-      // Initialize drag state
       setDragState({ index, edge, begin: word.begin, end: word.end });
 
       const handleMouseMove = (e: MouseEvent) => {
@@ -76,24 +79,23 @@ const WordTrack: React.FC<WordTrackProps> = ({
       };
 
       const handleMouseUp = () => {
-        // Commit the change to the store
         setDragState((prev) => {
           if (prev) {
             if (edge === "left") {
               onUpdateWord(index, { begin: prev.begin });
-              if (rippleEnabled && index > 0) {
-                onUpdateWord(index - 1, { end: prev.begin });
-              }
             } else {
               onUpdateWord(index, { end: prev.end });
-              if (rippleEnabled && index < words.length - 1) {
-                onUpdateWord(index + 1, { begin: prev.end });
-              }
             }
           }
           return null;
         });
 
+        cleanupRef.current = null;
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      cleanupRef.current = () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
       };
@@ -101,7 +103,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, rippleEnabled],
+    [words, zoom, duration, onUpdateWord],
   );
 
   const isWordSelected = (index: number) =>
@@ -109,7 +111,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const hasSelection = selectedWord !== null;
 
-  // Get display values (use drag state if dragging this word)
   const getWordDisplay = (word: WordTiming, index: number) => {
     if (dragState && dragState.index === index) {
       return { begin: dragState.begin, end: dragState.end };
@@ -163,4 +164,5 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { WordTrack };
+const MemoizedWordTrack = memo(WordTrack);
+export { MemoizedWordTrack as WordTrack };

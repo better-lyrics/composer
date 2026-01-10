@@ -12,7 +12,6 @@ interface AudioState {
   playbackRate: number;
   isLoading: boolean;
   audioElement: HTMLAudioElement | null;
-  waveformData: number[] | null;
 }
 
 interface AudioActions {
@@ -23,7 +22,6 @@ interface AudioActions {
   setPlaybackRate: (rate: number) => void;
   setIsLoading: (isLoading: boolean) => void;
   registerAudioElement: (element: HTMLAudioElement | null) => void;
-  setWaveformData: (data: number[] | null) => void;
   seekTo: (time: number) => void;
   reset: () => void;
 }
@@ -38,7 +36,6 @@ const INITIAL_STATE: AudioState = {
   playbackRate: 0.75,
   isLoading: false,
   audioElement: null,
-  waveformData: null,
 };
 
 // -- Store --------------------------------------------------------------------
@@ -53,7 +50,6 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setPlaybackRate: (playbackRate) => set({ playbackRate }),
   setIsLoading: (isLoading) => set({ isLoading }),
   registerAudioElement: (audioElement) => set({ audioElement }),
-  setWaveformData: (waveformData) => set({ waveformData }),
   seekTo: (time: number) => {
     const audio = get().audioElement;
     if (audio) {

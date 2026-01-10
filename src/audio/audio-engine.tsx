@@ -3,13 +3,12 @@ import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
-const SAMPLES_PER_PIXEL = 100;
+const LOG_PREFIX = "[AudioEngine]";
 
 // -- Component -----------------------------------------------------------------
 
 const AudioEngine: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
   const source = useAudioStore((s) => s.source);
@@ -19,17 +18,13 @@ const AudioEngine: React.FC = () => {
   const setDuration = useAudioStore((s) => s.setDuration);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const registerAudioElement = useAudioStore((s) => s.registerAudioElement);
-  const setWaveformData = useAudioStore((s) => s.setWaveformData);
 
-  // Create audio element and decode waveform when source changes
   useEffect(() => {
     if (!source || source.type !== "file") {
       registerAudioElement(null);
-      setWaveformData(null);
       return;
     }
 
-    // Revoke previous object URL
     if (objectUrlRef.current) {
       URL.revokeObjectURL(objectUrlRef.current);
     }
@@ -54,30 +49,8 @@ const AudioEngine: React.FC = () => {
       setIsPlaying(false);
     });
 
-    // Decode audio for waveform
-    const audioContext = new AudioContext();
-    audioContextRef.current = audioContext;
-
-    source.file.arrayBuffer().then((arrayBuffer) => {
-      audioContext.decodeAudioData(arrayBuffer).then((audioBuffer) => {
-        const channelData = audioBuffer.getChannelData(0);
-        const samples: number[] = [];
-        const step = Math.floor(channelData.length / (audioBuffer.duration * SAMPLES_PER_PIXEL));
-
-        for (let i = 0; i < channelData.length; i += step) {
-          let sum = 0;
-          const count = Math.min(step, channelData.length - i);
-          for (let j = 0; j < count; j++) {
-            sum += Math.abs(channelData[i + j]);
-          }
-          samples.push(sum / count);
-        }
-
-        // Normalize
-        const max = Math.max(...samples);
-        const normalized = samples.map((s) => s / max);
-        setWaveformData(normalized);
-      });
+    audio.addEventListener("error", (e) => {
+      console.error(LOG_PREFIX, "Audio error:", e);
     });
 
     return () => {
@@ -87,12 +60,10 @@ const AudioEngine: React.FC = () => {
         URL.revokeObjectURL(objectUrlRef.current);
         objectUrlRef.current = null;
       }
-      audioContext.close();
       registerAudioElement(null);
     };
-  }, [source, setDuration, setCurrentTime, setIsPlaying, registerAudioElement, setWaveformData]);
+  }, [source, setDuration, setCurrentTime, setIsPlaying, registerAudioElement]);
 
-  // Sync playback state
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -104,7 +75,6 @@ const AudioEngine: React.FC = () => {
     }
   }, [isPlaying]);
 
-  // Sync playback rate
   useEffect(() => {
     const audio = audioRef.current;
     if (audio) {
@@ -117,4 +87,4 @@ const AudioEngine: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { AudioEngine, SAMPLES_PER_PIXEL };
+export { AudioEngine };

@@ -1,20 +1,29 @@
-import { LineRow } from "@/views/timeline/line-row";
-import { useProjectStore, type WordTiming } from "@/stores/project";
 import { useAudioStore } from "@/stores/audio";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback } from "react";
+import { useProjectStore, type WordTiming } from "@/stores/project";
+import { LineRow } from "@/views/timeline/line-row";
+import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useCallback, useMemo, type RefObject } from "react";
+import { Virtuoso } from "react-virtuoso";
+
+// -- Types ---------------------------------------------------------------------
+
+interface TimelineRowsProps {
+  scrollContainerRef: RefObject<HTMLDivElement | null>;
+}
 
 // -- Constants -----------------------------------------------------------------
 
-const GUTTER_WIDTH = 48;
+const BG_DROP_ZONE_HEIGHT = 24;
+const WAVEFORM_HEIGHT = 80;
 
 // -- Component -----------------------------------------------------------------
 
-const TimelineRows: React.FC = () => {
+const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const lines = useProjectStore((s) => s.lines);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);
+  const rowHeights = useTimelineStore((s) => s.rowHeights);
 
   const handleUpdateWord = useCallback(
     (lineId: string, wordIndex: number, updates: Partial<WordTiming>) => {
@@ -42,9 +51,22 @@ const TimelineRows: React.FC = () => {
 
   const totalWidth = duration * zoom;
 
-  return (
-    <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%" }}>
-      {lines.map((line, index) => (
+  const getRowHeight = useCallback(
+    (index: number) => {
+      const line = lines[index];
+      if (!line) return DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT;
+      const mainHeight = rowHeights[line.id] ?? DEFAULT_ROW_HEIGHT;
+      const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
+      return mainHeight + (hasBgWords ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+    },
+    [lines, rowHeights],
+  );
+
+  const itemContent = useCallback(
+    (index: number) => {
+      const line = lines[index];
+      if (!line) return null;
+      return (
         <LineRow
           key={line.id}
           line={line}
@@ -53,7 +75,24 @@ const TimelineRows: React.FC = () => {
           onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
           onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
         />
-      ))}
+      );
+    },
+    [lines, duration, handleUpdateWord, handleUpdateBgWord],
+  );
+
+  const totalHeight = useMemo(() => lines.reduce((sum, _, i) => sum + getRowHeight(i), 0), [lines, getRowHeight]);
+
+  return (
+    <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
+      <Virtuoso
+        totalCount={lines.length}
+        itemContent={itemContent}
+        style={{ height: "100%", width: "100%" }}
+        customScrollParent={scrollContainerRef.current ?? undefined}
+        overscan={200}
+        defaultItemHeight={DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT}
+        increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
+      />
     </div>
   );
 };

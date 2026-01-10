@@ -1,9 +1,9 @@
 import { useDroppable } from "@dnd-kit/core";
 import { getAgentColor, type LyricLine, type WordTiming } from "@/stores/project";
-import { WordTrack } from "@/views/timeline/word-track";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { cn } from "@/utils/cn";
-import { useCallback, useState } from "react";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { WordTrack } from "@/views/timeline/word-track";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -17,7 +17,6 @@ interface LineRowProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GUTTER_WIDTH = 48;
 const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Component -----------------------------------------------------------------
@@ -32,6 +31,13 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const setRowHeight = useTimelineStore((s) => s.setRowHeight);
 
   const [isResizing, setIsResizing] = useState(false);
+  const cleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      cleanupRef.current?.();
+    };
+  }, []);
 
   const { setNodeRef: setBgDropRef, isOver: isOverBg } = useDroppable({
     id: `bg-drop-${line.id}`,
@@ -57,6 +63,12 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
       const handleMouseUp = () => {
         setIsResizing(false);
+        cleanupRef.current = null;
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+
+      cleanupRef.current = () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
       };
@@ -69,14 +81,11 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
   return (
     <div className="relative flex border-b border-composer-border/50">
-      {/* Gutter */}
       <div className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r border-composer-border/50 bg-composer-bg w-12">
         {lineIndex + 1}
       </div>
 
-      {/* Tracks */}
       <div className="flex-1 overflow-hidden">
-        {/* Main word track - droppable for BG words */}
         <div
           ref={setMainDropRef}
           className={cn(
@@ -108,7 +117,6 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           )}
         </div>
 
-        {/* BG word track / drop zone */}
         {hasBgWords ? (
           <div
             ref={setBgDropRef}
@@ -147,7 +155,6 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         )}
       </div>
 
-      {/* Row resize handle */}
       <div
         className={cn(
           "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-20",
@@ -162,4 +169,5 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
 // -- Exports -------------------------------------------------------------------
 
-export { LineRow, GUTTER_WIDTH };
+const MemoizedLineRow = memo(LineRow);
+export { MemoizedLineRow as LineRow };

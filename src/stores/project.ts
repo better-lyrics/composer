@@ -243,10 +243,12 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const word = line.words[wordIndex];
         if (!word) return line;
         const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
+        const bgText = bgWords.map((w) => w.text).join(" ");
         return {
           ...line,
           words: line.words.filter((_, i) => i !== wordIndex),
           backgroundWords: bgWords,
+          backgroundText: bgText,
         };
       }),
       isDirty: true,
@@ -259,9 +261,12 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const word = line.backgroundWords[wordIndex];
         if (!word) return line;
         const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
+        const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
+        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join(" ") : undefined;
         return {
           ...line,
-          backgroundWords: line.backgroundWords.filter((_, i) => i !== wordIndex),
+          backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
+          backgroundText: bgText,
           words: mainWords,
         };
       }),
