@@ -53,7 +53,6 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
   if (!isOpen) return null;
 
   return createPortal(
-    // biome-ignore lint/a11y/useKeyWithClickEvents: Escape key handled via useEffect
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}

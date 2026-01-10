@@ -48,6 +48,7 @@
 /* Base styles */
 html {
   font-size: 16px;
+  color-scheme: dark;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

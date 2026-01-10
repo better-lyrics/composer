@@ -10,7 +10,10 @@ interface AudioState {
   currentTime: number;
   duration: number;
   playbackRate: number;
+  volume: number;
+  isMuted: boolean;
   isLoading: boolean;
+  audioElement: HTMLAudioElement | null;
 }
 
 interface AudioActions {
@@ -19,7 +22,11 @@ interface AudioActions {
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
   setPlaybackRate: (rate: number) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
   setIsLoading: (isLoading: boolean) => void;
+  registerAudioElement: (element: HTMLAudioElement | null) => void;
+  seekTo: (time: number) => void;
   reset: () => void;
 }
 
@@ -31,12 +38,15 @@ const INITIAL_STATE: AudioState = {
   currentTime: 0,
   duration: 0,
   playbackRate: 0.75,
+  volume: 1,
+  isMuted: false,
   isLoading: false,
+  audioElement: null,
 };
 
 // -- Store --------------------------------------------------------------------
 
-const useAudioStore = create<AudioState & AudioActions>((set) => ({
+const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   ...INITIAL_STATE,
 
   setSource: (source) => set({ source, currentTime: 0, duration: 0, isPlaying: false }),
@@ -44,7 +54,17 @@ const useAudioStore = create<AudioState & AudioActions>((set) => ({
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),
   setPlaybackRate: (playbackRate) => set({ playbackRate }),
+  setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
+  toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),
   setIsLoading: (isLoading) => set({ isLoading }),
+  registerAudioElement: (audioElement) => set({ audioElement }),
+  seekTo: (time: number) => {
+    const audio = get().audioElement;
+    if (audio) {
+      audio.currentTime = time;
+    }
+    set({ currentTime: time });
+  },
   reset: () => set(INITIAL_STATE),
 }));
 

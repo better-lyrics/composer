@@ -11,17 +11,10 @@ interface Agent {
   name?: string;
 }
 
-interface SyllableTiming {
-  text: string;
-  begin: number;
-  end: number;
-}
-
 interface WordTiming {
   text: string;
   begin: number;
   end: number;
-  syllables?: SyllableTiming[];
 }
 
 interface LyricLine {
@@ -37,7 +30,7 @@ interface LyricLine {
 
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
-type SimpleTab = "import" | "edit" | "sync" | "preview" | "export";
+type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
 
 interface ProjectMetadata {
   title: string;
@@ -83,6 +76,8 @@ interface ProjectActions {
   canUndo: () => boolean;
   canRedo: () => boolean;
   clearHistory: () => void;
+  moveWordToBg: (lineId: string, wordIndex: number) => void;
+  moveWordFromBg: (lineId: string, wordIndex: number) => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -233,6 +228,45 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   canRedo: () => get().historyIndex < get().history.length - 1,
 
   clearHistory: () => set({ history: [], historyIndex: -1 }),
+
+  moveWordToBg: (lineId, wordIndex) =>
+    set((state) => ({
+      lines: state.lines.map((line) => {
+        if (line.id !== lineId || !line.words) return line;
+        const word = line.words[wordIndex];
+        if (!word) return line;
+        const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
+        // Concatenate without adding spaces - trailing spaces are embedded in word.text
+        const bgText = bgWords.map((w) => w.text).join("");
+        return {
+          ...line,
+          words: line.words.filter((_, i) => i !== wordIndex),
+          backgroundWords: bgWords,
+          backgroundText: bgText,
+        };
+      }),
+      isDirty: true,
+    })),
+
+  moveWordFromBg: (lineId, wordIndex) =>
+    set((state) => ({
+      lines: state.lines.map((line) => {
+        if (line.id !== lineId || !line.backgroundWords) return line;
+        const word = line.backgroundWords[wordIndex];
+        if (!word) return line;
+        const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
+        const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
+        // Concatenate without adding spaces - trailing spaces are embedded in word.text
+        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join("") : undefined;
+        return {
+          ...line,
+          backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
+          backgroundText: bgText,
+          words: mainWords,
+        };
+      }),
+      isDirty: true,
+    })),
 }));
 
 function getAgentColor(agentId: string): string {
@@ -249,6 +283,5 @@ export type {
   ProjectMetadata,
   ProjectState,
   SimpleTab,
-  SyllableTiming,
   WordTiming,
 };

@@ -1,7 +1,8 @@
-import { AudioProvider } from "@/audio/audio-context";
+import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
+import { debouncedSave, flushPendingSave, loadCurrentProject, saveCurrentProject } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -12,10 +13,11 @@ import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { IconHelp } from "@tabler/icons-react";
-import { Activity, useMemo, useState } from "react";
+import { Activity, useEffect, useMemo, useState } from "react";
 
-const TABS_WITH_PLAYER = ["import", "edit", "sync", "preview"];
+const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
 
 const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -24,6 +26,55 @@ const AppContent: React.FC = () => {
   const [helpOpen, setHelpOpen] = useState(false);
 
   const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
+
+  // Load saved project on mount
+  useEffect(() => {
+    loadCurrentProject().then((project) => {
+      if (project) {
+        const state = useProjectStore.getState();
+        state.setMetadata(project.metadata);
+        state.setLines(project.lines);
+        state.setGranularity(project.granularity);
+        for (const agent of project.agents) {
+          if (!state.agents.find((a) => a.id === agent.id)) {
+            state.addAgent(agent);
+          }
+        }
+        state.markClean();
+      }
+    });
+  }, []);
+
+  // Auto-save on state changes
+  useEffect(() => {
+    const unsubscribe = useProjectStore.subscribe((state) => {
+      if (state.lines.length > 0 || state.metadata.title) {
+        const audioSource = useAudioStore.getState().source;
+        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
+        debouncedSave(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Warn on tab close if dirty
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      const state = useProjectStore.getState();
+      if (state.isDirty && state.lines.length > 0) {
+        flushPendingSave();
+        const audioSource = useAudioStore.getState().source;
+        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
+        saveCurrentProject(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
+        e.preventDefault();
+        return "";
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const shortcuts: Shortcut[] = useMemo(
     () => [
@@ -48,11 +99,17 @@ const AppContent: React.FC = () => {
       {
         key: "4",
         ctrl: true,
+        action: () => setActiveTab("timeline"),
+        description: "Timeline",
+      },
+      {
+        key: "5",
+        ctrl: true,
         action: () => setActiveTab("preview"),
         description: "Preview",
       },
       {
-        key: "5",
+        key: "6",
         ctrl: true,
         action: () => setActiveTab("export"),
         description: "Export",
@@ -83,9 +140,11 @@ const AppContent: React.FC = () => {
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
-        <div className={`absolute inset-0 flex flex-col ${activeTab === "import" ? "visible" : "invisible"}`}>
-          <ImportPanel />
-        </div>
+        <Activity mode={activeTab === "import" ? "visible" : "hidden"}>
+          <div className="absolute inset-0 flex flex-col">
+            <ImportPanel />
+          </div>
+        </Activity>
         <Activity mode={activeTab === "edit" ? "visible" : "hidden"}>
           <div className="absolute inset-0 flex flex-col">
             <EditPanel />
@@ -94,6 +153,11 @@ const AppContent: React.FC = () => {
         <Activity mode={activeTab === "sync" ? "visible" : "hidden"}>
           <div className="absolute inset-0 flex flex-col">
             <SyncPanel />
+          </div>
+        </Activity>
+        <Activity mode={activeTab === "timeline" ? "visible" : "hidden"}>
+          <div className="absolute inset-0 flex flex-col">
+            <TimelinePanel />
           </div>
         </Activity>
         <Activity mode={activeTab === "preview" ? "visible" : "hidden"}>
@@ -107,17 +171,14 @@ const AppContent: React.FC = () => {
           </div>
         </Activity>
       </main>
+      {source && <AudioEngine />}
       {showPlayer && <AudioPlayer />}
     </div>
   );
 };
 
 const App: React.FC = () => {
-  return (
-    <AudioProvider>
-      <AppContent />
-    </AudioProvider>
-  );
+  return <AppContent />;
 };
 
 export { App };

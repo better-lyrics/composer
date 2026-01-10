@@ -36,9 +36,6 @@ const AgentBadge: React.FC<{
         canRemove ? "cursor-pointer" : ""
       }`}
       onClick={canRemove ? onRemove : undefined}
-      onKeyDown={canRemove ? (e) => e.key === "Enter" && onRemove?.() : undefined}
-      role={canRemove ? "button" : undefined}
-      tabIndex={canRemove ? 0 : undefined}
     >
       <span className={`flex items-center gap-2 ${canRemove ? "group-hover:opacity-0" : ""} transition-opacity`}>
         <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />

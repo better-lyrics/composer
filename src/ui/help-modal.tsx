@@ -39,24 +39,43 @@ function formatKey(key: string): string {
 
 const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
+    title: "General",
+    shortcuts: [
+      { keys: ["Shift", "?"], description: "Show keyboard shortcuts" },
+      { keys: ["Space"], description: "Play / Pause audio" },
+      { keys: ["Enter"], description: "Play / Pause audio" },
+    ],
+  },
+  {
     title: "Navigation",
     shortcuts: [
       { keys: ["Mod", "1"], description: "Go to Import tab" },
       { keys: ["Mod", "2"], description: "Go to Edit tab" },
       { keys: ["Mod", "3"], description: "Go to Sync tab" },
-      { keys: ["Mod", "4"], description: "Go to Preview tab" },
-      { keys: ["Mod", "5"], description: "Go to Export tab" },
+      { keys: ["Mod", "4"], description: "Go to Timeline tab" },
+      { keys: ["Mod", "5"], description: "Go to Preview tab" },
+      { keys: ["Mod", "6"], description: "Go to Export tab" },
     ],
   },
   {
     title: "Sync Mode",
     shortcuts: [
-      { keys: ["Space"], description: "Start sync / Tap to sync word or line" },
-      { keys: ["Enter"], description: "Play / Pause audio" },
+      { keys: ["Space"], description: "Start sync / Tap to sync word" },
       { keys: ["ArrowLeft"], description: "Nudge last synced -50ms" },
       { keys: ["ArrowRight"], description: "Nudge last synced +50ms" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
+    ],
+  },
+  {
+    title: "Timeline Mode",
+    shortcuts: [
+      { keys: ["F"], description: "Toggle follow playhead" },
+      { keys: ["P"], description: "Toggle preview sidebar" },
+      { keys: ["Escape"], description: "Deselect word" },
+      { keys: ["["], description: "Set word begin to cursor" },
+      { keys: ["]"], description: "Set word end to cursor" },
+      { keys: ["Mod", "Scroll"], description: "Zoom in / out" },
     ],
   },
   {
@@ -114,7 +133,12 @@ const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) =
 
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Keyboard Shortcuts" className="max-w-3xl">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Keyboard Shortcuts"
+      className="max-w-3xl max-h-[80%] overflow-y-auto"
+    >
       <div className="flex items-center gap-2 mb-6 text-sm text-composer-text-muted">
         <IconKeyboard className="w-4 h-4" />
         <span>Use these shortcuts to speed up your workflow</span>

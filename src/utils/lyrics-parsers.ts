@@ -246,16 +246,56 @@ function parseTtml(content: string): ParseResult {
     const end = parseTtmlTimestamp(p.getAttribute("end") ?? "");
     const agentId = p.getAttribute("ttm:agent")?.replace("#", "") ?? "v1";
 
-    // Check for word-level timing (span elements)
-    const spans = p.querySelectorAll("span[begin]");
+    // Find background vocal container (x-bg role)
+    // Note: namespaced attributes need special handling - querySelector escaping is unreliable
+    const allSpansInP = p.querySelectorAll("span");
+    let bgContainer: Element | null = null;
+    for (const span of allSpansInP) {
+      const role = span.getAttribute("ttm:role") || span.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+      if (role === "x-bg") {
+        bgContainer = span;
+        break;
+      }
+    }
 
-    if (spans.length > 0) {
+    let backgroundText: string | undefined;
+    let backgroundWords: WordTiming[] | undefined;
+
+    if (bgContainer) {
+      const bgSpans = bgContainer.querySelectorAll("span[begin]");
+      if (bgSpans.length > 0) {
+        backgroundWords = [];
+        for (const span of bgSpans) {
+          const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
+          const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
+          // Preserve text with trailing space - TTML is syllable-synced
+          const text = span.textContent ?? "";
+          if (text.trim()) {
+            backgroundWords.push({ text, begin: wordBegin, end: wordEnd });
+          }
+        }
+        if (backgroundWords.length > 0) {
+          // Concatenate without adding spaces - trailing spaces are embedded
+          backgroundText = backgroundWords.map((w) => w.text).join("");
+        }
+      } else {
+        // Preserve text as-is, don't trim
+        backgroundText = bgContainer.textContent || undefined;
+      }
+    }
+
+    // Check for word-level timing (span elements NOT inside x-bg)
+    const allSpans = p.querySelectorAll("span[begin]");
+    const mainSpans = Array.from(allSpans).filter((span) => !bgContainer?.contains(span));
+
+    if (mainSpans.length > 0) {
       const words: WordTiming[] = [];
-      for (const span of spans) {
+      for (const span of mainSpans) {
         const wordBegin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
         const wordEnd = parseTtmlTimestamp(span.getAttribute("end") ?? "");
-        const text = span.textContent?.trim() ?? "";
-        if (text) {
+        // Preserve text with trailing space - TTML is syllable-synced
+        const text = span.textContent ?? "";
+        if (text.trim()) {
           words.push({ text, begin: wordBegin, end: wordEnd });
         }
       }
@@ -263,16 +303,32 @@ function parseTtml(content: string): ParseResult {
       if (words.length > 0) {
         lines.push({
           id: generateLineId(),
-          text: words.map((w) => w.text).join(" "),
+          // Concatenate without adding spaces - trailing spaces are embedded
+          text: words.map((w) => w.text).join(""),
           agentId,
           begin: words[0].begin,
           end: words[words.length - 1].end,
           words,
+          backgroundText,
+          backgroundWords,
         });
       }
     } else {
-      // Line-level timing only
-      const text = p.textContent?.trim() ?? "";
+      // Line-level timing only - extract text without bg content
+      let text = "";
+      for (const node of p.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          text += node.textContent ?? "";
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element;
+          const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+          if (role !== "x-bg") {
+            text += el.textContent ?? "";
+          }
+        }
+      }
+      text = text.trim();
+
       if (text) {
         lines.push({
           id: generateLineId(),
@@ -280,6 +336,8 @@ function parseTtml(content: string): ParseResult {
           agentId,
           begin: begin || undefined,
           end: end || undefined,
+          backgroundText,
+          backgroundWords,
         });
       }
     }

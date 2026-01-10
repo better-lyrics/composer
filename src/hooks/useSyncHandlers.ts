@@ -1,7 +1,10 @@
-import { useAudioContext } from "@/audio/audio-context";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine, SyllableTiming } from "@/stores/project";
+import type { LyricLine, WordTiming } from "@/stores/project";
 import { NUDGE_AMOUNT, type SyncState, getLineTiming, splitIntoWords } from "@/utils/sync-helpers";
+import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
+import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
+import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -17,6 +20,17 @@ interface UseSyncHandlersProps {
   setIsPlaying: (playing: boolean) => void;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
+  const bgWordTexts = splitIntoWords(backgroundText);
+  return bgWordTexts.map((text, i) => ({
+    text: i === bgWordTexts.length - 1 ? text : `${text} `,
+    begin: time,
+    end: time,
+  }));
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useSyncHandlers({
@@ -29,7 +43,7 @@ function useSyncHandlers({
   setShowPulse,
   setIsPlaying,
 }: UseSyncHandlersProps) {
-  const { seek } = useAudioContext();
+  const seekTo = useAudioStore((s) => s.seekTo);
   const updateLine = useProjectStore((s) => s.updateLine);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
@@ -48,31 +62,34 @@ function useSyncHandlers({
     const wordText = lineWords[wordIndex];
     if (!wordText) return;
 
+    // Add trailing space to all words except the last one (matches TTML format)
+    const isLastWord = wordIndex === lineWords.length - 1;
+    const textWithSpace = isLastWord ? wordText : `${wordText} `;
+
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
       const updatedWords = [...existingWords];
-      updatedWords[updatedWords.length - 1] = {
-        ...updatedWords[updatedWords.length - 1],
-        end: currentTime,
-      };
-      updatedWords.push({
-        text: wordText,
-        begin: currentTime,
-        end: currentTime,
-      });
+      if (wordIndex === 0) {
+        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
+      } else {
+        updatedWords[updatedWords.length - 1] = {
+          ...updatedWords[updatedWords.length - 1],
+          end: currentTime,
+        };
+        updatedWords.push({
+          text: textWithSpace,
+          begin: currentTime,
+          end: currentTime,
+        });
+      }
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {
-        words: [{ text: wordText, begin: currentTime, end: currentTime }],
+        words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
       };
       if (line.backgroundText && !line.backgroundWords?.length) {
-        const bgWordTexts = splitIntoWords(line.backgroundText);
-        updates.backgroundWords = bgWordTexts.map((text) => ({
-          text,
-          begin: currentTime,
-          end: currentTime,
-        }));
+        updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
       }
       updateLineWithHistory(line.id, updates);
     }
@@ -126,12 +143,7 @@ function useSyncHandlers({
 
     const updates: Partial<LyricLine> = { begin: currentTime, end: currentTime };
     if (line.backgroundText && !line.backgroundWords?.length) {
-      const bgWordTexts = splitIntoWords(line.backgroundText);
-      updates.backgroundWords = bgWordTexts.map((text) => ({
-        text,
-        begin: currentTime,
-        end: currentTime,
-      }));
+      updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
     }
     updateLineWithHistory(line.id, updates);
 
@@ -178,7 +190,7 @@ function useSyncHandlers({
       if (editMode) {
         const timing = getLineTiming(lines[index]);
         if (timing) {
-          seek(timing.begin);
+          seekTo(timing.begin);
         }
         return;
       }
@@ -187,101 +199,40 @@ function useSyncHandlers({
         position: { lineIndex: index, wordIndex: 0 },
       }));
     },
-    [editMode, lines, seek, setSyncState],
+    [editMode, lines, seekTo, setSyncState],
   );
 
   const handleNudgeWord = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      if (!line?.words?.[wordIdx]) return;
-
-      const updatedWords = [...line.words];
-      const word = updatedWords[wordIdx];
-      const prevWord = updatedWords[wordIdx - 1];
-      const minBegin = prevWord?.end ?? 0;
-      const newBegin = Math.min(word.end, Math.max(minBegin, word.begin + delta));
-
-      updatedWords[wordIdx] = { ...word, begin: newBegin };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, delta: number) =>
+      nudgeWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordTime = useCallback(
-    (lineIdx: number, wordIdx: number, newBegin: number) => {
-      const line = lines[lineIdx];
-      if (!line?.words?.[wordIdx]) return;
-
-      const updatedWords = [...line.words];
-      const word = updatedWords[wordIdx];
-      const prevWord = updatedWords[wordIdx - 1];
-      const minBegin = prevWord?.end ?? 0;
-      const clampedBegin = Math.min(word.end, Math.max(minBegin, newBegin));
-      updatedWords[wordIdx] = { ...word, begin: clampedBegin };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, newBegin: number) =>
+      setWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeWordEnd = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      if (!line?.words?.[wordIdx]) return;
-
-      const updatedWords = [...line.words];
-      const word = updatedWords[wordIdx];
-      const nextWord = updatedWords[wordIdx + 1];
-      const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-      const newEnd = Math.min(maxEnd, Math.max(word.begin, word.end + delta));
-
-      updatedWords[wordIdx] = { ...word, end: newEnd };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, delta: number) =>
+      nudgeWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, newEnd: number) => {
-      const line = lines[lineIdx];
-      if (!line?.words?.[wordIdx]) return;
-
-      const updatedWords = [...line.words];
-      const word = updatedWords[wordIdx];
-      const nextWord = updatedWords[wordIdx + 1];
-      const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-      const clampedEnd = Math.min(maxEnd, Math.max(word.begin, newEnd));
-      updatedWords[wordIdx] = { ...word, end: clampedEnd };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, newEnd: number) =>
+      setWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeLine = useCallback(
-    (lineIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      if (line?.begin === undefined) return;
-
-      const newBegin = Math.max(0, line.begin + delta);
-      const duration = (line.end ?? line.begin) - line.begin;
-      updateLineWithHistory(line.id, {
-        begin: newBegin,
-        end: newBegin + duration,
-      });
-    },
+    (lineIdx: number, delta: number) => nudgeLineBegin(lines, lineIdx, delta, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleSetLineTime = useCallback(
-    (lineIdx: number, newBegin: number) => {
-      const line = lines[lineIdx];
-      if (line?.begin === undefined) return;
-
-      const duration = (line.end ?? line.begin) - line.begin;
-      updateLineWithHistory(line.id, {
-        begin: newBegin,
-        end: newBegin + duration,
-      });
-    },
+    (lineIdx: number, newBegin: number) => setLineBegin(lines, lineIdx, newBegin, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
@@ -309,156 +260,38 @@ function useSyncHandlers({
   );
 
   const handleSplitWord = useCallback(
-    (lineIdx: number, wordIdx: number, syllables: SyllableTiming[]) => {
+    (lineIdx: number, wordIdx: number, newWords: WordTiming[]) => {
       const line = lines[lineIdx];
-      if (!line?.words?.[wordIdx]) return;
+      if (!line?.words) return;
 
       const updatedWords = [...line.words];
-      updatedWords[wordIdx] = { ...updatedWords[wordIdx], syllables };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeSyllable = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      const syllables = line?.words?.[wordIdx]?.syllables;
-      if (!syllables?.[syllableIdx]) return;
-
-      const updatedWords = [...line.words!];
-      const updatedSyllables = [...syllables];
-      const syllable = updatedSyllables[syllableIdx];
-      const prevSyllable = updatedSyllables[syllableIdx - 1];
-      const minBegin = prevSyllable?.end ?? 0;
-      const newBegin = Math.max(minBegin, syllable.begin + delta);
-      updatedSyllables[syllableIdx] = { ...syllable, begin: newBegin };
-      updatedWords[wordIdx] = { ...updatedWords[wordIdx], syllables: updatedSyllables };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetSyllableTime = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, newBegin: number) => {
-      const line = lines[lineIdx];
-      const syllables = line?.words?.[wordIdx]?.syllables;
-      if (!syllables?.[syllableIdx]) return;
-
-      const updatedWords = [...line.words!];
-      const updatedSyllables = [...syllables];
-      const syllable = updatedSyllables[syllableIdx];
-      const prevSyllable = updatedSyllables[syllableIdx - 1];
-      const minBegin = prevSyllable?.end ?? 0;
-      const clampedBegin = Math.min(syllable.end, Math.max(minBegin, newBegin));
-      updatedSyllables[syllableIdx] = { ...syllable, begin: clampedBegin };
-      updatedWords[wordIdx] = { ...updatedWords[wordIdx], syllables: updatedSyllables };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
-    [lines, updateLineWithHistory],
-  );
-
-  const handleNudgeSyllableEnd = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      const syllables = line?.words?.[wordIdx]?.syllables;
-      if (!syllables?.[syllableIdx]) return;
-
-      const updatedWords = [...line.words!];
-      const updatedSyllables = [...syllables];
-      const syllable = updatedSyllables[syllableIdx];
-      const nextSyllable = updatedSyllables[syllableIdx + 1];
-      const maxEnd = nextSyllable?.begin ?? Number.POSITIVE_INFINITY;
-      const newEnd = Math.min(maxEnd, Math.max(syllable.begin, syllable.end + delta));
-      updatedSyllables[syllableIdx] = { ...syllable, end: newEnd };
-      updatedWords[wordIdx] = { ...updatedWords[wordIdx], syllables: updatedSyllables };
-      updateLineWithHistory(line.id, { words: updatedWords });
-    },
-    [lines, updateLineWithHistory],
-  );
-
-  const handleSetSyllableEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, syllableIdx: number, newEnd: number) => {
-      const line = lines[lineIdx];
-      const syllables = line?.words?.[wordIdx]?.syllables;
-      if (!syllables?.[syllableIdx]) return;
-
-      const updatedWords = [...line.words!];
-      const updatedSyllables = [...syllables];
-      const syllable = updatedSyllables[syllableIdx];
-      const nextSyllable = updatedSyllables[syllableIdx + 1];
-      const maxEnd = nextSyllable?.begin ?? Number.POSITIVE_INFINITY;
-      const clampedEnd = Math.min(maxEnd, Math.max(syllable.begin, newEnd));
-      updatedSyllables[syllableIdx] = { ...syllable, end: clampedEnd };
-      updatedWords[wordIdx] = { ...updatedWords[wordIdx], syllables: updatedSyllables };
+      updatedWords.splice(wordIdx, 1, ...newWords);
       updateLineWithHistory(line.id, { words: updatedWords });
     },
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeBgWord = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      if (!line?.backgroundWords?.[wordIdx]) return;
-
-      const updatedWords = [...line.backgroundWords];
-      const word = updatedWords[wordIdx];
-      const prevWord = updatedWords[wordIdx - 1];
-      const minBegin = prevWord?.end ?? 0;
-      const newBegin = Math.min(word.end, Math.max(minBegin, word.begin + delta));
-
-      updatedWords[wordIdx] = { ...word, begin: newBegin };
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, delta: number) =>
+      nudgeBgWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordTime = useCallback(
-    (lineIdx: number, wordIdx: number, newBegin: number) => {
-      const line = lines[lineIdx];
-      if (!line?.backgroundWords?.[wordIdx]) return;
-
-      const updatedWords = [...line.backgroundWords];
-      const word = updatedWords[wordIdx];
-      const prevWord = updatedWords[wordIdx - 1];
-      const minBegin = prevWord?.end ?? 0;
-      const clampedBegin = Math.min(word.end, Math.max(minBegin, newBegin));
-      updatedWords[wordIdx] = { ...word, begin: clampedBegin };
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, newBegin: number) =>
+      setBgWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeBgWordEnd = useCallback(
-    (lineIdx: number, wordIdx: number, delta: number) => {
-      const line = lines[lineIdx];
-      if (!line?.backgroundWords?.[wordIdx]) return;
-
-      const updatedWords = [...line.backgroundWords];
-      const word = updatedWords[wordIdx];
-      const nextWord = updatedWords[wordIdx + 1];
-      const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-      const newEnd = Math.min(maxEnd, Math.max(word.begin, word.end + delta));
-
-      updatedWords[wordIdx] = { ...word, end: newEnd };
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, delta: number) =>
+      nudgeBgWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordEndTime = useCallback(
-    (lineIdx: number, wordIdx: number, newEnd: number) => {
-      const line = lines[lineIdx];
-      if (!line?.backgroundWords?.[wordIdx]) return;
-
-      const updatedWords = [...line.backgroundWords];
-      const word = updatedWords[wordIdx];
-      const nextWord = updatedWords[wordIdx + 1];
-      const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-      const clampedEnd = Math.min(maxEnd, Math.max(word.begin, newEnd));
-      updatedWords[wordIdx] = { ...word, end: clampedEnd };
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
-    },
+    (lineIdx: number, wordIdx: number, newEnd: number) =>
+      setBgWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory),
     [lines, updateLineWithHistory],
   );
 
@@ -475,10 +308,6 @@ function useSyncHandlers({
     handleSetLineTime,
     handleNudgeLastSynced,
     handleSplitWord,
-    handleNudgeSyllable,
-    handleSetSyllableTime,
-    handleNudgeSyllableEnd,
-    handleSetSyllableEndTime,
     handleNudgeBgWord,
     handleSetBgWordTime,
     handleNudgeBgWordEnd,
