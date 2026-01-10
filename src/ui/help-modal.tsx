@@ -76,6 +76,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["["], description: "Set word begin to cursor" },
       { keys: ["]"], description: "Set word end to cursor" },
       { keys: ["Mod", "Scroll"], description: "Zoom in / out" },
+      { keys: ["Middle", "Drag"], description: "Pan timeline" },
+      { keys: ["Shift", "Middle", "Drag"], description: "Pan locked to axis" },
     ],
   },
   {
