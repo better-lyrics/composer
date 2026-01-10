@@ -28,7 +28,18 @@ const MiniPreviewLine: React.FC<{
   const agentColor = getAgentColor(line.agentId);
   const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
 
-  const AgentDot = <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />;
+  const AgentDotLeft = (
+    <span
+      className="inline-block w-1.5 h-1.5 mr-2 rounded-full"
+      style={{ backgroundColor: agentColor, verticalAlign: "0.1em" }}
+    />
+  );
+  const AgentDotRight = (
+    <span
+      className="inline-block w-1.5 h-1.5 ml-2 rounded-full"
+      style={{ backgroundColor: agentColor, verticalAlign: "0.1em" }}
+    />
+  );
 
   const WordWithProgress: React.FC<{
     text: string;
@@ -77,7 +88,7 @@ const MiniPreviewLine: React.FC<{
         data-line-idx={lineIndex}
       >
         <div className="inline-flex items-center gap-2 text-sm font-medium">
-          {alignment === "left" && AgentDot}
+          {alignment === "left" && AgentDotLeft}
           <span className="relative inline-block">
             <span className="text-composer-text-muted">{line.text}</span>
             <span
@@ -90,7 +101,7 @@ const MiniPreviewLine: React.FC<{
               {line.text}
             </span>
           </span>
-          {alignment === "right" && AgentDot}
+          {alignment === "right" && AgentDotRight}
         </div>
         {renderBgWords()}
       </div>
@@ -106,7 +117,7 @@ const MiniPreviewLine: React.FC<{
       data-line-idx={lineIndex}
     >
       <div className={`inline-flex items-center text-sm font-medium ${alignmentClass}`}>
-        {alignment === "left" && AgentDot}
+        {alignment === "left" && AgentDotLeft}
         {words.length > 0
           ? words.map((word) => (
               <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
@@ -116,7 +127,7 @@ const MiniPreviewLine: React.FC<{
                 {word}{" "}
               </span>
             ))}
-        {alignment === "right" && AgentDot}
+        {alignment === "right" && AgentDotRight}
       </div>
       {renderBgWords()}
     </div>

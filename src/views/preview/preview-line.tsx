@@ -32,7 +32,18 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
   const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
   const bgMarginClass = alignment === "left" ? "ml-5" : alignment === "right" ? "mr-5" : "";
 
-  const AgentDot = <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />;
+  const AgentDotLeft = (
+    <span
+      className="inline-block w-2 h-2 mr-3 rounded-full relative -top-px"
+      style={{ backgroundColor: agentColor, verticalAlign: "0.15em" }}
+    />
+  );
+  const AgentDotRight = (
+    <span
+      className="inline-block w-2 h-2 ml-3 rounded-full relative -top-px"
+      style={{ backgroundColor: agentColor, verticalAlign: "0.15em" }}
+    />
+  );
 
   // Word for progress overlay - outputs data attributes for DOM animation
   const WordWithProgress: React.FC<{
@@ -83,7 +94,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
         data-line-idx={lineIndex}
       >
         <div className="inline-flex items-center gap-3 text-2xl font-medium">
-          {alignment === "left" && AgentDot}
+          {alignment === "left" && AgentDotLeft}
           <span className="relative inline-block">
             <span className="text-composer-text-muted">{line.text}</span>
             <span
@@ -96,7 +107,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
               {line.text}
             </span>
           </span>
-          {alignment === "right" && AgentDot}
+          {alignment === "right" && AgentDotRight}
         </div>
         {renderBgWords()}
       </div>
@@ -114,7 +125,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
       data-line-idx={lineIndex}
     >
       <div className={`inline items-center text-2xl font-medium ${alignmentClass}`}>
-        {alignment === "left" && AgentDot}
+        {alignment === "left" && AgentDotLeft}
         {words.length > 0
           ? words.map((word) => (
               <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
@@ -125,7 +136,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
                 {word}{" "}
               </span>
             ))}
-        {alignment === "right" && AgentDot}
+        {alignment === "right" && AgentDotRight}
       </div>
       {renderBgWords()}
     </div>
