@@ -1,11 +1,14 @@
+import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
-import { useTimelineStore, MIN_ZOOM, MAX_ZOOM } from "@/views/timeline/timeline-store";
+import { useTimelineStore, MIN_ZOOM, getMaxZoomForDuration } from "@/views/timeline/timeline-store";
 import { IconMinus, IconPlus, IconFocusCentered, IconEye } from "@tabler/icons-react";
 import { cn } from "@/utils/cn";
 
 // -- Component -----------------------------------------------------------------
 
 const TimelineHeader: React.FC = () => {
+  const duration = useAudioStore((s) => s.duration);
+
   const zoom = useTimelineStore((s) => s.zoom);
   const zoomIn = useTimelineStore((s) => s.zoomIn);
   const zoomOut = useTimelineStore((s) => s.zoomOut);
@@ -14,7 +17,8 @@ const TimelineHeader: React.FC = () => {
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
   const togglePreviewSidebar = useTimelineStore((s) => s.togglePreviewSidebar);
 
-  const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
+  const maxZoom = getMaxZoomForDuration(duration);
+  const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (maxZoom - MIN_ZOOM)) * 100);
 
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border">
@@ -55,7 +59,7 @@ const TimelineHeader: React.FC = () => {
             {zoomPercent}%
           </span>
 
-          <Button variant="ghost" size="icon" onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="h-7 w-7">
+          <Button variant="ghost" size="icon" onClick={zoomIn} disabled={zoom >= maxZoom} className="h-7 w-7">
             <IconPlus size={16} />
           </Button>
         </div>

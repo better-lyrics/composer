@@ -38,7 +38,7 @@ const TimelineWaveform: React.FC = () => {
       fillParent: false,
       minPxPerSec: useTimelineStore.getState().zoom,
     }),
-    [audioElement]
+    [audioElement],
   );
 
   const { wavesurfer, isReady } = useWavesurfer(options);
@@ -59,7 +59,7 @@ const TimelineWaveform: React.FC = () => {
       const time = (x / totalWidth) * duration;
       seekTo(time);
     },
-    [duration, totalWidth, seekTo]
+    [duration, totalWidth, seekTo],
   );
 
   if (!source) return null;
@@ -69,7 +69,11 @@ const TimelineWaveform: React.FC = () => {
     <div
       ref={containerRef}
       className="relative cursor-pointer bg-composer-bg"
-      style={{ width: totalWidth, height: WAVEFORM_HEIGHT, marginLeft: GUTTER_WIDTH }}
+      style={{
+        width: totalWidth,
+        height: WAVEFORM_HEIGHT,
+        marginLeft: GUTTER_WIDTH,
+      }}
       onClick={handleClick}
     />
   );

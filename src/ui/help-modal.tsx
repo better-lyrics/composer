@@ -20,9 +20,7 @@ interface HelpModalProps {
 
 // -- Helpers ------------------------------------------------------------------
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 function formatKey(key: string): string {
   if (key === "Mod") return isMac ? "⌘" : "Ctrl";
@@ -101,11 +99,7 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
         isSymbol ? "text-base" : ""
       }`}
     >
-      {keyName === "Mod" && isMac ? (
-        <IconCommand className="w-3.5 h-3.5" />
-      ) : (
-        formatted
-      )}
+      {keyName === "Mod" && isMac ? <IconCommand className="w-3.5 h-3.5" /> : formatted}
     </span>
   );
 };
@@ -113,9 +107,7 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
 const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-composer-text-secondary">
-        {description}
-      </span>
+      <span className="text-sm text-composer-text-secondary">{description}</span>
       <div className="flex items-center gap-1">
         {keys.map((key, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
@@ -126,15 +118,10 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => {
   );
 };
 
-const ShortcutSection: React.FC<ShortcutSectionProps> = ({
-  title,
-  shortcuts,
-}) => {
+const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) => {
   return (
     <div>
-      <h3 className="mb-2 text-xs font-medium tracking-wide text-composer-text-muted">
-        {title}
-      </h3>
+      <h3 className="mb-2 text-xs font-medium tracking-wide text-composer-text-muted">{title}</h3>
       <div className="flex flex-col">
         {shortcuts.map((shortcut, i) => (
           <ShortcutItem key={`${shortcut.description}-${i}`} {...shortcut} />

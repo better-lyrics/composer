@@ -15,10 +15,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
-import {
-  GUTTER_WIDTH,
-  useTimelineStore,
-} from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MIN_ZOOM, getMaxZoomForDuration, useTimelineStore } from "@/views/timeline/timeline-store";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 
@@ -36,20 +33,14 @@ interface DragData {
 
 // -- Components ----------------------------------------------------------------
 
-const EmptyState: React.FC<{ message: string; hint: string }> = ({
-  message,
-  hint,
-}) => (
+const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
   <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center">
     <p className="text-lg text-composer-text-secondary">{message}</p>
     <p className="text-sm text-composer-text-muted">{hint}</p>
   </div>
 );
 
-const DragGhost: React.FC<{ text: string; color: string }> = ({
-  text,
-  color,
-}) => (
+const DragGhost: React.FC<{ text: string; color: string }> = ({ text, color }) => (
   <div
     className="px-3 py-1 text-xs text-white rounded-xl border cursor-grabbing shadow-lg"
     style={{
@@ -90,7 +81,7 @@ const TimelinePanel: React.FC = () => {
       activationConstraint: {
         distance: 8,
       },
-    })
+    }),
   );
 
   const lastDistributedDurationRef = useRef<number | null>(null);
@@ -99,9 +90,7 @@ const TimelinePanel: React.FC = () => {
     if (duration <= 0 || lines.length === 0) return;
     if (lastDistributedDurationRef.current === duration) return;
 
-    const hasAnyTiming = lines.some(
-      (l) => l.words?.length || (l.begin !== undefined && l.end !== undefined)
-    );
+    const hasAnyTiming = lines.some((l) => l.words?.length || (l.begin !== undefined && l.end !== undefined));
 
     if (!hasAnyTiming) {
       const distributed = distributeLinesTiming(lines, duration);
@@ -127,13 +116,11 @@ const TimelinePanel: React.FC = () => {
       const line = lines[selectedWord.lineIndex];
       if (!line) return;
 
-      const wordsArray =
-        selectedWord.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
       if (!wordsArray) return;
 
       const audioEl = useAudioStore.getState().audioElement;
-      const currentTime =
-        audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
 
       const wordIndex = selectedWord.wordIndex;
       const word = wordsArray[wordIndex];
@@ -144,21 +131,12 @@ const TimelinePanel: React.FC = () => {
       if (edge === "begin") {
         const prevEnd = wordIndex > 0 ? wordsArray[wordIndex - 1].end : 0;
         const maxBegin = word.end - 0.05;
-        const clampedBegin = Math.max(
-          prevEnd,
-          Math.min(maxBegin, Math.max(0, currentTime))
-        );
+        const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, currentTime)));
         updatedWords[wordIndex] = { ...word, begin: clampedBegin };
       } else {
         const minEnd = word.begin + 0.05;
-        const nextBegin =
-          wordIndex < wordsArray.length - 1
-            ? wordsArray[wordIndex + 1].begin
-            : duration;
-        const clampedEnd = Math.min(
-          nextBegin,
-          Math.max(minEnd, Math.min(duration, currentTime))
-        );
+        const nextBegin = wordIndex < wordsArray.length - 1 ? wordsArray[wordIndex + 1].begin : duration;
+        const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, currentTime)));
         updatedWords[wordIndex] = { ...word, end: clampedEnd };
       }
 
@@ -168,7 +146,7 @@ const TimelinePanel: React.FC = () => {
         updateLineWithHistory(line.id, { backgroundWords: updatedWords });
       }
     },
-    [lines, duration, updateLineWithHistory]
+    [lines, duration, updateLineWithHistory],
   );
 
   useEffect(() => {
@@ -196,14 +174,7 @@ const TimelinePanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [
-    isPlaying,
-    setIsPlaying,
-    setSelectedWord,
-    toggleFollow,
-    togglePreviewSidebar,
-    handleSetWordTiming,
-  ]);
+  }, [isPlaying, setIsPlaying, setSelectedWord, toggleFollow, togglePreviewSidebar, handleSetWordTiming]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
@@ -232,37 +203,25 @@ const TimelinePanel: React.FC = () => {
       const movedDownToBg = delta.y > 30;
       const movedUpToMain = delta.y < -30;
 
-      if (
-        dropId.startsWith("bg-drop-") &&
-        activeData.trackType === "word" &&
-        movedDownToBg
-      ) {
+      if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
         moveWordToBg(activeData.lineId, activeData.wordIndex);
         return;
       }
 
-      if (
-        dropId.startsWith("main-drop-") &&
-        activeData.trackType === "bg" &&
-        movedUpToMain
-      ) {
+      if (dropId.startsWith("main-drop-") && activeData.trackType === "bg" && movedUpToMain) {
         moveWordFromBg(activeData.lineId, activeData.wordIndex);
         return;
       }
 
       if (Math.abs(delta.x) < 5) return;
 
-      const wordsArray =
-        activeData.trackType === "word" ? line.words : line.backgroundWords;
+      const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
       if (!wordsArray) return;
 
       const wordIndex = activeData.wordIndex;
       const timeDelta = delta.x / zoom;
       const wordDuration = activeData.end - activeData.begin;
-      const newBegin = Math.max(
-        0,
-        Math.min(duration - wordDuration, activeData.begin + timeDelta)
-      );
+      const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
       const newEnd = newBegin + wordDuration;
 
       const words = [...wordsArray];
@@ -296,7 +255,7 @@ const TimelinePanel: React.FC = () => {
         updateLineWithHistory(activeData.lineId, { backgroundWords: words });
       }
     },
-    [moveWordToBg, moveWordFromBg, updateLineWithHistory, zoom, duration, lines]
+    [moveWordToBg, moveWordFromBg, updateLineWithHistory, zoom, duration, lines],
   );
 
   const handleDragCancel = useCallback(() => {
@@ -307,7 +266,7 @@ const TimelinePanel: React.FC = () => {
     (e: React.UIEvent<HTMLDivElement>) => {
       setScrollLeft(e.currentTarget.scrollLeft);
     },
-    [setScrollLeft]
+    [setScrollLeft],
   );
 
   const handleWheel = useCallback(
@@ -319,34 +278,28 @@ const TimelinePanel: React.FC = () => {
       if (!container || duration <= 0) return;
 
       const rect = container.getBoundingClientRect();
-      const cursorX =
-        e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
+      const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
       const cursorTime = cursorX / zoom;
 
       const delta = e.deltaY > 0 ? -20 : 20;
-      const newZoom = Math.max(20, Math.min(500, zoom + delta));
+      const maxZoom = getMaxZoomForDuration(duration);
+      const newZoom = Math.max(MIN_ZOOM, Math.min(maxZoom, zoom + delta));
 
       if (newZoom === zoom) return;
 
       const newCursorX = cursorTime * newZoom;
-      const newScrollLeft = Math.max(
-        0,
-        newCursorX - (e.clientX - rect.left - GUTTER_WIDTH)
-      );
+      const newScrollLeft = Math.max(0, newCursorX - (e.clientX - rect.left - GUTTER_WIDTH));
 
       useTimelineStore.getState().setZoom(newZoom);
       container.scrollLeft = newScrollLeft;
     },
-    [zoom, duration]
+    [zoom, duration],
   );
 
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState
-          message="No audio loaded"
-          hint="Import audio in the Import tab first"
-        />
+        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
       </div>
     );
   }
@@ -354,19 +307,12 @@ const TimelinePanel: React.FC = () => {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState
-          message="No lyrics to display"
-          hint="Add lyrics in the Edit tab first"
-        />
+        <EmptyState message="No lyrics to display" hint="Add lyrics in the Edit tab first" />
       </div>
     );
   }
 
-  const dragColor = activeDrag
-    ? getAgentColor(
-        lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? ""
-      )
-    : "#888";
+  const dragColor = activeDrag ? getAgentColor(lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "") : "#888";
 
   return (
     <DndContext
@@ -380,10 +326,7 @@ const TimelinePanel: React.FC = () => {
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex flex-col flex-1 overflow-hidden">
-            <div
-              ref={contentRef}
-              className="relative flex-1 flex flex-col overflow-hidden isolate"
-            >
+            <div ref={contentRef} className="relative flex-1 flex flex-col overflow-hidden isolate">
               <div
                 ref={scrollContainerRef}
                 className="flex-1 overflow-x-auto"
@@ -396,11 +339,7 @@ const TimelinePanel: React.FC = () => {
                 }}
               >
                 <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20.25 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="size-4"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24">
                     <title>Music Icon</title>
                     <path
                       fill="currentColor"
@@ -416,10 +355,7 @@ const TimelinePanel: React.FC = () => {
                 <TimelineRows scrollContainerRef={scrollContainerRef} />
               </div>
 
-              <TimelinePlayhead
-                containerHeight={contentHeight}
-                scrollContainerRef={scrollContainerRef}
-              />
+              <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
             </div>
 
             <TimelineInfoPanel />
