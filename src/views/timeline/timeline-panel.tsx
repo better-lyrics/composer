@@ -77,7 +77,10 @@ const TimelinePanel: React.FC = () => {
 
   const isPanningRef = useRef(false);
   const panStartXRef = useRef(0);
+  const panStartYRef = useRef(0);
   const panStartScrollRef = useRef(0);
+  const panStartScrollTopRef = useRef(0);
+  const panAxisLockRef = useRef<"x" | "y" | null>(null);
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
 
   const sensors = useSensors(
@@ -314,15 +317,31 @@ const TimelinePanel: React.FC = () => {
       e.preventDefault();
       isPanningRef.current = true;
       panStartXRef.current = e.clientX;
+      panStartYRef.current = e.clientY;
       panStartScrollRef.current = scrollContainerRef.current?.scrollLeft ?? 0;
+      panStartScrollTopRef.current = scrollContainerRef.current?.scrollTop ?? 0;
+      panAxisLockRef.current = null;
     }
   }, []);
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isPanningRef.current || !scrollContainerRef.current) return;
-      const delta = panStartXRef.current - e.clientX;
-      scrollContainerRef.current.scrollLeft = panStartScrollRef.current + delta;
+      const deltaX = panStartXRef.current - e.clientX;
+      const deltaY = panStartYRef.current - e.clientY;
+
+      if (e.shiftKey && !panAxisLockRef.current) {
+        panAxisLockRef.current = Math.abs(deltaX) > Math.abs(deltaY) ? "x" : "y";
+      }
+
+      if (e.shiftKey && panAxisLockRef.current === "x") {
+        scrollContainerRef.current.scrollLeft = panStartScrollRef.current + deltaX;
+      } else if (e.shiftKey && panAxisLockRef.current === "y") {
+        scrollContainerRef.current.scrollTop = panStartScrollTopRef.current + deltaY;
+      } else {
+        scrollContainerRef.current.scrollLeft = panStartScrollRef.current + deltaX;
+        scrollContainerRef.current.scrollTop = panStartScrollTopRef.current + deltaY;
+      }
     };
     const handleMouseUp = () => {
       isPanningRef.current = false;
@@ -368,7 +387,7 @@ const TimelinePanel: React.FC = () => {
             <div ref={contentRef} className="relative flex-1 flex flex-col overflow-hidden isolate">
               <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-x-auto"
+                className="flex-1 overflow-auto"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
