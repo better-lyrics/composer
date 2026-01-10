@@ -102,10 +102,12 @@ const syncPulseVariants: Variants = {
   idle: {
     boxShadow: "0 0 0px rgba(129, 140, 248, 0)",
     borderColor: "rgba(255, 255, 255, 0.1)",
+    transition: { type: "spring", stiffness: 400, damping: 30 },
   },
   pulse: {
-    boxShadow: "0 0 16px rgba(129, 140, 248, 0.4)",
-    borderColor: "rgba(129, 140, 248, 0.5)",
+    boxShadow: "0 0 16px rgba(255, 255, 255, 0.15)",
+    borderColor: "rgba(255, 255, 255, 0.2)",
+    transition: { duration: 0 },
   },
 };
 
