@@ -215,17 +215,13 @@ function parseTtmlTimestamp(timestamp: string): number {
   return seconds + millis / 1000;
 }
 
-function extractTimedWords(
-  parent: Element,
-  excludeContainer?: Element | null,
-): WordTiming[] {
+function extractTimedWords(parent: Element, excludeContainer?: Element | null): WordTiming[] {
   const words: WordTiming[] = [];
 
   for (const node of parent.childNodes) {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node as Element;
-      const role =
-        el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+      const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
 
       // Skip x-bg containers (handled separately)
       if (role === "x-bg" || excludeContainer?.contains(el)) continue;
@@ -313,17 +309,17 @@ function parseTtml(content: string): ParseResult {
     const words = extractTimedWords(p, bgContainer);
 
     if (words.length > 0) {
-        lines.push({
-          id: generateLineId(),
-          // Concatenate without adding spaces - trailing spaces are embedded
-          text: words.map((w) => w.text).join(""),
-          agentId,
-          begin: words[0].begin,
-          end: words[words.length - 1].end,
-          words,
-          backgroundText,
-          backgroundWords,
-        });
+      lines.push({
+        id: generateLineId(),
+        // Concatenate without adding spaces - trailing spaces are embedded
+        text: words.map((w) => w.text).join(""),
+        agentId,
+        begin: words[0].begin,
+        end: words[words.length - 1].end,
+        words,
+        backgroundText,
+        backgroundWords,
+      });
     } else {
       // Line-level timing only - extract text without bg content
       let text = "";
