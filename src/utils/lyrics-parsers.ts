@@ -1,4 +1,4 @@
-import type { LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
+import type { Agent, AgentType, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -6,6 +6,7 @@ interface ParseResult {
   lines: LyricLine[];
   metadata: Partial<ProjectMetadata>;
   hasTimingData: boolean;
+  agents?: Agent[];
 }
 
 type LyricsFileType = "txt" | "lrc" | "srt" | "ttml" | "unknown";
@@ -255,7 +256,9 @@ function parseTtml(content: string): ParseResult {
   const lines: LyricLine[] = [];
 
   const parser = new DOMParser();
-  const doc = parser.parseFromString(content, "text/xml");
+  // Clean escaped quotes that might come from JSON-escaped content
+  const cleanedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
+  const doc = parser.parseFromString(cleanedContent, "text/xml");
 
   // Check for parse errors
   const parseError = doc.querySelector("parsererror");
@@ -263,9 +266,13 @@ function parseTtml(content: string): ParseResult {
     return { lines: [], metadata: {}, hasTimingData: false };
   }
 
-  // Extract metadata
-  const titleEl = doc.querySelector("title");
+  // Extract metadata (use getElementsByTagName for namespace compatibility)
+  const titleEl = doc.getElementsByTagName("title")[0];
   if (titleEl?.textContent) metadata.title = titleEl.textContent;
+
+  // Also check ttm:title for Apple Music format
+  const ttmTitleEl = doc.getElementsByTagName("ttm:title")[0];
+  if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
   const artistEl = doc.querySelector('[type="artist"]');
   if (artistEl?.textContent) metadata.artist = artistEl.textContent;
@@ -273,8 +280,28 @@ function parseTtml(content: string): ParseResult {
   const albumEl = doc.querySelector('[type="album"]');
   if (albumEl?.textContent) metadata.album = albumEl.textContent;
 
+  // Extract agents from metadata
+  const agents: Agent[] = [];
+  const agentEls = doc.getElementsByTagName("ttm:agent");
+  for (const el of agentEls) {
+    const id = el.getAttribute("xml:id");
+    const type = (el.getAttribute("type") as AgentType) || "person";
+    // Try attribute first, then child element, then generate default
+    let name = el.getAttribute("ttm:name") || undefined;
+    if (!name) {
+      const nameEl = el.getElementsByTagName("ttm:name")[0];
+      if (nameEl?.textContent) name = nameEl.textContent;
+    }
+    if (!name) {
+      name = `Voice ${agents.length + 1}`;
+    }
+    if (id) {
+      agents.push({ id, type, name });
+    }
+  }
+
   // Parse lyrics - look for <p> elements with timing
-  const paragraphs = doc.querySelectorAll("p");
+  const paragraphs = doc.getElementsByTagName("p");
 
   for (const p of paragraphs) {
     const begin = parseTtmlTimestamp(p.getAttribute("begin") ?? "");
@@ -282,8 +309,8 @@ function parseTtml(content: string): ParseResult {
     const agentId = p.getAttribute("ttm:agent")?.replace("#", "") ?? "v1";
 
     // Find background vocal container (x-bg role)
-    // Note: namespaced attributes need special handling - querySelector escaping is unreliable
-    const allSpansInP = p.querySelectorAll("span");
+    // Note: use getElementsByTagName for namespace compatibility
+    const allSpansInP = p.getElementsByTagName("span");
     let bgContainer: Element | null = null;
     for (const span of allSpansInP) {
       const role = span.getAttribute("ttm:role") || span.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
@@ -354,6 +381,7 @@ function parseTtml(content: string): ParseResult {
     lines,
     metadata,
     hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
+    agents: agents.length > 0 ? agents : undefined,
   };
 }
 

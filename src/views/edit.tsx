@@ -275,6 +275,7 @@ const EditPanel: React.FC = () => {
   const setLines = useProjectStore((s) => s.setLines);
   const setMetadata = useProjectStore((s) => s.setMetadata);
   const updateLine = useProjectStore((s) => s.updateLine);
+  const addAgent = useProjectStore((s) => s.addAgent);
 
   const [rawText, setRawText] = useState("");
   const [importResult, setImportResult] = useState<{
@@ -367,10 +368,19 @@ const EditPanel: React.FC = () => {
           setMetadata(result.metadata);
         }
 
+        // Add imported agents (skip duplicates)
+        if (result.agents?.length) {
+          for (const agent of result.agents) {
+            if (!agents.find((a) => a.id === agent.id)) {
+              addAgent(agent);
+            }
+          }
+        }
+
         setImportResult({ result, filename: file.name });
       }
     },
-    [setLines, setMetadata],
+    [setLines, setMetadata, agents, addAgent],
   );
 
   const handleFileInputChange = useCallback(
