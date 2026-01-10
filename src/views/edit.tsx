@@ -400,9 +400,7 @@ const EditPanel: React.FC = () => {
     [handleFileImport],
   );
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-  }, []);
+  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   return (
     <div className="flex flex-col flex-1 gap-4 p-4 overflow-hidden" onDrop={handleDrop} onDragOver={handleDragOver}>

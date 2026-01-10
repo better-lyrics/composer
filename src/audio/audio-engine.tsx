@@ -77,24 +77,11 @@ const AudioEngine: React.FC = () => {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (audio) {
-      audio.playbackRate = playbackRate;
-    }
-  }, [playbackRate]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.volume = volume;
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (audio) {
-      audio.muted = isMuted;
-    }
-  }, [isMuted]);
+    if (!audio) return;
+    audio.playbackRate = playbackRate;
+    audio.volume = volume;
+    audio.muted = isMuted;
+  }, [playbackRate, volume, isMuted]);
 
   return null;
 };

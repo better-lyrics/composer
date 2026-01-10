@@ -20,6 +20,17 @@ interface UseSyncHandlersProps {
   setIsPlaying: (playing: boolean) => void;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
+  const bgWordTexts = splitIntoWords(backgroundText);
+  return bgWordTexts.map((text, i) => ({
+    text: i === bgWordTexts.length - 1 ? text : `${text} `,
+    begin: time,
+    end: time,
+  }));
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useSyncHandlers({
@@ -78,12 +89,7 @@ function useSyncHandlers({
         words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
       };
       if (line.backgroundText && !line.backgroundWords?.length) {
-        const bgWordTexts = splitIntoWords(line.backgroundText);
-        updates.backgroundWords = bgWordTexts.map((text, i) => ({
-          text: i === bgWordTexts.length - 1 ? text : `${text} `,
-          begin: currentTime,
-          end: currentTime,
-        }));
+        updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
       }
       updateLineWithHistory(line.id, updates);
     }
@@ -137,12 +143,7 @@ function useSyncHandlers({
 
     const updates: Partial<LyricLine> = { begin: currentTime, end: currentTime };
     if (line.backgroundText && !line.backgroundWords?.length) {
-      const bgWordTexts = splitIntoWords(line.backgroundText);
-      updates.backgroundWords = bgWordTexts.map((text, i) => ({
-        text: i === bgWordTexts.length - 1 ? text : `${text} `,
-        begin: currentTime,
-        end: currentTime,
-      }));
+      updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
     }
     updateLineWithHistory(line.id, updates);
 

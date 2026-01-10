@@ -154,21 +154,31 @@ const TimelinePanel: React.FC = () => {
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        setIsPlaying(!isPlaying);
-      } else if (e.key === "Escape") {
-        setSelectedWord(null);
-      } else if (e.key === "f" || e.key === "F") {
-        toggleFollow();
-      } else if (e.key === "p" || e.key === "P") {
-        togglePreviewSidebar();
-      } else if (e.key === "[") {
-        e.preventDefault();
-        handleSetWordTiming("begin");
-      } else if (e.key === "]") {
-        e.preventDefault();
-        handleSetWordTiming("end");
+      switch (e.key) {
+        case " ":
+        case "Enter":
+          e.preventDefault();
+          setIsPlaying(!isPlaying);
+          break;
+        case "Escape":
+          setSelectedWord(null);
+          break;
+        case "f":
+        case "F":
+          toggleFollow();
+          break;
+        case "p":
+        case "P":
+          togglePreviewSidebar();
+          break;
+        case "[":
+          e.preventDefault();
+          handleSetWordTiming("begin");
+          break;
+        case "]":
+          e.preventDefault();
+          handleSetWordTiming("end");
+          break;
       }
     };
 

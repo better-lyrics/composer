@@ -46,16 +46,11 @@ const WordBlock: React.FC<WordBlockProps> = ({
     data: { lineId, lineIndex, wordIndex, trackType, text, begin, end },
   });
 
-  const handleLeftResizeStart = (e: React.MouseEvent) => {
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.stopPropagation();
     e.preventDefault();
-    onResizeStart("left", e.clientX);
-  };
-
-  const handleRightResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    onResizeStart("right", e.clientX);
+    const edge = e.currentTarget.dataset.edge as "left" | "right";
+    onResizeStart(edge, e.clientX);
   };
 
   return (
@@ -82,16 +77,18 @@ const WordBlock: React.FC<WordBlockProps> = ({
       {...listeners}
     >
       <div
+        data-edge="left"
         className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
-        onMouseDown={handleLeftResizeStart}
+        onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
       />
 
       {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
 
       <div
+        data-edge="right"
         className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
-        onMouseDown={handleRightResizeStart}
+        onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
       />
     </div>

@@ -23,13 +23,27 @@ function formatTime(seconds: number): string {
 
 // -- Components ---------------------------------------------------------------
 
-const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
-  <Button onClick={onClick} className="w-10 h-10 rounded-full" aria-label={isPlaying ? "Pause" : "Play"}>
-    {isPlaying ? <IconPlayerPauseFilled className="w-5 h-5" /> : <IconPlayerPlayFilled className="w-5 h-5" />}
+const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({
+  isPlaying,
+  onClick,
+}) => (
+  <Button
+    onClick={onClick}
+    className="w-10 h-10 rounded-full"
+    aria-label={isPlaying ? "Pause" : "Play"}
+  >
+    {isPlaying ? (
+      <IconPlayerPauseFilled className="w-5 h-5" />
+    ) : (
+      <IconPlayerPlayFilled className="w-5 h-5" />
+    )}
   </Button>
 );
 
-const TimeDisplay: React.FC<{ current: number; duration: number }> = ({ current, duration }) => (
+const TimeDisplay: React.FC<{ current: number; duration: number }> = ({
+  current,
+  duration,
+}) => (
   <span className="font-mono text-sm select-text text-composer-text-secondary tabular-nums">
     {formatTime(current)} / {formatTime(duration)}
   </span>
@@ -48,7 +62,7 @@ const PlaybackRateControl: React.FC<{
     (value: number) => {
       onChangeRate(Math.round(value * 100) / 100);
     },
-    [onChangeRate],
+    [onChangeRate]
   );
 
   const displayRate = rate.toFixed(2);
@@ -77,7 +91,9 @@ const PlaybackRateControl: React.FC<{
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-composer-text-muted">{RATE_MIN}x</span>
+          <span className="font-mono text-xs text-composer-text-muted">
+            {RATE_MIN}x
+          </span>
           <Slider
             value={rate}
             min={RATE_MIN}
@@ -87,7 +103,9 @@ const PlaybackRateControl: React.FC<{
             aria-label="Playback rate"
             className="w-full"
           />
-          <span className="font-mono text-xs text-composer-text-muted">{RATE_MAX}x</span>
+          <span className="font-mono text-xs text-composer-text-muted">
+            {RATE_MAX}x
+          </span>
         </div>
       </div>
     </Popover>
@@ -114,13 +132,18 @@ const VolumeControl: React.FC<{
     <Popover
       placement="top-end"
       trigger={
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Volume">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8"
+          aria-label="Volume"
+        >
           <VolumeIcon className="w-4 h-4" />
         </Button>
       }
     >
       <div className="p-3 w-40">
-        <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-2 mb-2 justify-between pr-2.5">
           <Button
             variant="ghost"
             size="icon"
@@ -130,7 +153,9 @@ const VolumeControl: React.FC<{
           >
             <VolumeIcon className="w-4 h-4" />
           </Button>
-          <span className="text-xs text-composer-text-muted tabular-nums w-8">{displayVolume}%</span>
+          <span className="text-xs text-composer-text-muted tabular-nums w-8 text-right">
+            {displayVolume}%
+          </span>
         </div>
         <Slider
           value={isMuted ? 0 : volume}
@@ -164,7 +189,10 @@ const AudioPlayer: React.FC = () => {
 
   return (
     <div className="flex items-center gap-4 p-4 border-t select-none border-composer-border bg-composer-bg-dark">
-      <PlayButton isPlaying={isPlaying} onClick={() => setIsPlaying(!isPlaying)} />
+      <PlayButton
+        isPlaying={isPlaying}
+        onClick={() => setIsPlaying(!isPlaying)}
+      />
       <Slider
         value={currentTime}
         min={0}
@@ -174,7 +202,12 @@ const AudioPlayer: React.FC = () => {
         className="flex-1"
       />
       <TimeDisplay current={currentTime} duration={duration} />
-      <VolumeControl volume={volume} isMuted={isMuted} onChangeVolume={setVolume} onToggleMute={toggleMute} />
+      <VolumeControl
+        volume={volume}
+        isMuted={isMuted}
+        onChangeVolume={setVolume}
+        onToggleMute={toggleMute}
+      />
       <PlaybackRateControl rate={playbackRate} onChangeRate={setPlaybackRate} />
     </div>
   );
