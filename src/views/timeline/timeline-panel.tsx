@@ -386,7 +386,7 @@ const TimelinePanel: React.FC = () => {
             >
               <div
                 ref={scrollContainerRef}
-                className="flex-1 overflow-auto"
+                className="flex-1 overflow-x-auto"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
                 onKeyDown={(e) => {
