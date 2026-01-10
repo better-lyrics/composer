@@ -33,101 +33,80 @@ interface TTMLOptions {
   agents: Agent[];
   lines: LyricLine[];
   granularity: "line" | "word";
+  minify?: boolean;
 }
 
-function generateTTML({ metadata, agents, lines, granularity }: TTMLOptions): string {
-  const xmlParts: string[] = [];
+function generateTTML({ metadata, agents, lines, granularity, minify = false }: TTMLOptions): string {
+  const nl = minify ? "" : "\n";
+  const ind = (n: number) => (minify ? "" : "  ".repeat(n));
+
+  const parts: string[] = [];
 
   // Root element with namespaces
-  xmlParts.push(
+  parts.push(
     `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:composer="https://composer.boidu.dev/ttml" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}">`,
   );
 
   // Head section
-  xmlParts.push("  <head>");
-  xmlParts.push("    <metadata>");
-
-  // Title
+  parts.push(`${ind(1)}<head>`);
+  parts.push(`${ind(2)}<metadata>`);
   if (metadata.title) {
-    xmlParts.push(`      <ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
+    parts.push(`${ind(3)}<ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
   }
-
-  // Agents
   for (const agent of agents) {
     const nameAttr = agent.name ? ` ttm:name="${escapeXml(agent.name)}"` : "";
-    xmlParts.push(`      <ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}"${nameAttr}/>`);
+    parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}"${nameAttr}/>`);
   }
-
-  xmlParts.push("    </metadata>");
-  xmlParts.push("  </head>");
+  parts.push(`${ind(2)}</metadata>`);
+  parts.push(`${ind(1)}</head>`);
 
   // Body section
-  xmlParts.push("  <body>");
-  xmlParts.push("    <div>");
+  parts.push(`${ind(1)}<body>`);
+  parts.push(`${ind(2)}<div>`);
 
-  // Lines
   for (const line of lines) {
     const timing = getLineTiming(line);
     if (!timing) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXml(line.agentId)}"` : "";
+    let content = "";
 
     if (granularity === "word" && line.words?.length) {
-      // Word-level timing
-      xmlParts.push(`      <p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}>`);
-
+      // Word-level timing - build spans inline
       for (let i = 0; i < line.words.length; i++) {
         const word = line.words[i];
-        // Text already contains trailing space if needed (embedded in word.text)
-        xmlParts.push(
-          `        <span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}">${escapeXml(word.text)}</span>`,
-        );
+        const text = word.text.trimEnd();
+        const needsSpace = i < line.words.length - 1 && word.text.endsWith(" ");
+        content += `<span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}">${escapeXml(text)}</span>${needsSpace ? " " : ""}`;
       }
-
-      // Background vocals with word-level timing
-      if (line.backgroundText && line.backgroundWords?.length) {
-        const bgSpans: string[] = [];
-        for (const bgWord of line.backgroundWords) {
-          // Text already contains trailing space if needed
-          bgSpans.push(
-            `<span begin="${formatTime(bgWord.begin)}" end="${formatTime(bgWord.end)}">${escapeXml(bgWord.text)}</span>`,
-          );
-        }
-        xmlParts.push(`        <span ttm:role="x-bg">${bgSpans.join("")}</span>`);
-      } else if (line.backgroundText) {
-        // Fallback: BG text without word timing uses line timing
-        xmlParts.push(
-          `        <span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`,
-        );
-      }
-
-      xmlParts.push("      </p>");
     } else {
-      // Line-level timing
-      let content = escapeXml(line.text);
-      if (line.backgroundText && line.backgroundWords?.length) {
-        const bgSpans: string[] = [];
-        for (const bgWord of line.backgroundWords) {
-          // Text already contains trailing space if needed
-          bgSpans.push(
-            `<span begin="${formatTime(bgWord.begin)}" end="${formatTime(bgWord.end)}">${escapeXml(bgWord.text)}</span>`,
-          );
-        }
-        content += ` <span ttm:role="x-bg">${bgSpans.join("")}</span>`;
-      } else if (line.backgroundText) {
-        content += ` <span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`;
-      }
-      xmlParts.push(
-        `      <p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}>${content}</p>`,
-      );
+      content = escapeXml(line.text);
     }
+
+    // Background vocals
+    if (line.backgroundText && line.backgroundWords?.length) {
+      let bgContent = "";
+      for (let i = 0; i < line.backgroundWords.length; i++) {
+        const bgWord = line.backgroundWords[i];
+        const text = bgWord.text.trimEnd();
+        const needsSpace = i < line.backgroundWords.length - 1 && bgWord.text.endsWith(" ");
+        bgContent += `<span begin="${formatTime(bgWord.begin)}" end="${formatTime(bgWord.end)}">${escapeXml(text)}</span>${needsSpace ? " " : ""}`;
+      }
+      content += `<span ttm:role="x-bg">${bgContent}</span>`;
+    } else if (line.backgroundText) {
+      content += `<span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`;
+    }
+
+    parts.push(
+      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}>${content}</p>`,
+    );
   }
 
-  xmlParts.push("    </div>");
-  xmlParts.push("  </body>");
-  xmlParts.push("</tt>");
+  parts.push(`${ind(2)}</div>`);
+  parts.push(`${ind(1)}</body>`);
+  parts.push("</tt>");
 
-  return xmlParts.join("\n");
+  return parts.join(nl);
 }
 
 // -- Exports ------------------------------------------------------------------

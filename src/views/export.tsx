@@ -74,6 +74,11 @@ const ExportPanel: React.FC = () => {
     return generateTTML({ metadata, agents, lines, granularity });
   }, [metadata, agents, lines, granularity, hasSyncedContent]);
 
+  const minifiedTtml = useMemo(() => {
+    if (!hasSyncedContent) return "";
+    return generateTTML({ metadata, agents, lines, granularity, minify: true });
+  }, [metadata, agents, lines, granularity, hasSyncedContent]);
+
   // Reset edited content when generated content changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when generated content changes
   useEffect(() => {
@@ -81,12 +86,13 @@ const ExportPanel: React.FC = () => {
     setIsEditing(false);
   }, [generatedTtml]);
 
-  const ttmlContent = editedContent ?? generatedTtml;
+  const displayContent = editedContent ?? generatedTtml;
+  const exportContent = editedContent ?? minifiedTtml;
 
   const handleDownload = useCallback(() => {
-    if (!ttmlContent) return;
+    if (!exportContent) return;
 
-    const blob = new Blob([ttmlContent], {
+    const blob = new Blob([exportContent], {
       type: "application/ttml+xml;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
@@ -97,22 +103,22 @@ const ExportPanel: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [ttmlContent, metadata.title]);
+  }, [exportContent, metadata.title]);
 
   const handleCopy = useCallback(async () => {
-    if (!ttmlContent) return;
+    if (!exportContent) return;
 
-    await navigator.clipboard.writeText(ttmlContent);
+    await navigator.clipboard.writeText(exportContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [ttmlContent]);
+  }, [exportContent]);
 
   const handleEdit = useCallback(() => {
     if (!isEditing) {
-      setEditedContent(ttmlContent);
+      setEditedContent(displayContent);
     }
     setIsEditing(!isEditing);
-  }, [isEditing, ttmlContent]);
+  }, [isEditing, displayContent]);
 
   const handleRegenerate = useCallback(() => {
     setEditedContent(null);
@@ -239,7 +245,7 @@ const ExportPanel: React.FC = () => {
             spellCheck={false}
           />
         ) : (
-          <Highlight theme={themes.nightOwl} code={ttmlContent} language="xml">
+          <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre
                 className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
