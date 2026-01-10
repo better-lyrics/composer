@@ -87,12 +87,12 @@ const MiniPreviewLine: React.FC<{
         data-line-end={timing?.end ?? 0}
         data-line-idx={lineIndex}
       >
-        <div className="inline-flex items-center gap-2 text-sm font-medium">
+        <div className="flex items-center gap-2 text-sm font-medium">
           {alignment === "left" && AgentDotLeft}
-          <span className="relative inline-block">
+          <span className="relative block truncate">
             <span className="text-composer-text-muted">{line.text}</span>
             <span
-              className="absolute inset-0 text-composer-accent-text"
+              className="absolute inset-0 text-composer-accent-text truncate"
               data-word-begin={timing?.begin ?? 0}
               data-word-end={timing?.end ?? 0}
               data-line-idx={lineIndex}
@@ -116,7 +116,7 @@ const MiniPreviewLine: React.FC<{
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
-      <div className={`inline-flex items-center text-sm font-medium ${alignmentClass}`}>
+      <div className={`flex flex-wrap items-center text-sm font-medium ${alignmentClass}`}>
         {alignment === "left" && AgentDotLeft}
         {words.length > 0
           ? words.map((word) => (
