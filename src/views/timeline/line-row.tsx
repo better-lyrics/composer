@@ -1,5 +1,9 @@
 import { useDroppable } from "@dnd-kit/core";
-import { getAgentColor, type LyricLine, type WordTiming } from "@/stores/project";
+import {
+  getAgentColor,
+  type LyricLine,
+  type WordTiming,
+} from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -21,12 +25,20 @@ const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Component -----------------------------------------------------------------
 
-const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
+const LineRow: React.FC<LineRowProps> = ({
+  line,
+  lineIndex,
+  duration,
+  onUpdateWord,
+  onUpdateBgWord,
+}) => {
   const color = getAgentColor(line.agentId);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 
-  const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
+  const rowHeight = useTimelineStore(
+    (s) => s.rowHeights[line.id] ?? s.defaultRowHeight
+  );
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const setRowHeight = useTimelineStore((s) => s.setRowHeight);
 
@@ -76,7 +88,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [line.id, rowHeight, setRowHeight],
+    [line.id, rowHeight, setRowHeight]
   );
 
   return (
@@ -91,7 +103,11 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       <div className="flex-1 overflow-hidden border-b border-composer-border">
         <div
           ref={setMainDropRef}
-          className={cn("transition-colors", !hasMainWords && "opacity-50", isOverMain && "bg-composer-accent/10")}
+          className={cn(
+            "transition-colors",
+            !hasMainWords && "opacity-50",
+            isOverMain && "bg-composer-accent/10"
+          )}
         >
           {hasMainWords ? (
             <WordTrack
@@ -119,8 +135,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           <div
             ref={setBgDropRef}
             className={cn(
-              "relative opacity-70 transition-colors",
-              isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+              "relative opacity-70 transition-colors border-t border-composer-border/50",
+              isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25"
             )}
           >
             <WordTrack
@@ -138,15 +154,17 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           <div
             ref={setBgDropRef}
             className={cn(
-              "flex items-center px-2 text-xs font-mono truncate transition-colors",
+              "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30",
               isOverBg
                 ? "bg-composer-accent/20 text-composer-text"
-                : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
+                : "text-composer-text-muted/50 bg-composer-bg-elevated/25"
             )}
             style={{ height: BG_DROP_ZONE_HEIGHT }}
           >
             {line.backgroundText
-              ? `${line.backgroundText.slice(0, 40)}${line.backgroundText.length > 40 ? "..." : ""}`
+              ? `${line.backgroundText.slice(0, 40)}${
+                  line.backgroundText.length > 40 ? "..." : ""
+                }`
               : "BG"}
           </div>
         )}
@@ -155,7 +173,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       <div
         className={cn(
           "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-10",
-          isResizing && "bg-composer-accent/50",
+          isResizing && "bg-composer-accent/50"
         )}
         onMouseDown={handleResizeStart}
         onDoubleClick={() => setRowHeight(line.id, defaultRowHeight)}
