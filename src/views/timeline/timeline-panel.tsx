@@ -15,7 +15,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
-import { GUTTER_WIDTH, MIN_ZOOM, getMaxZoomForDuration, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 
@@ -282,8 +282,7 @@ const TimelinePanel: React.FC = () => {
       const cursorTime = cursorX / zoom;
 
       const delta = e.deltaY > 0 ? -20 : 20;
-      const maxZoom = getMaxZoomForDuration(duration);
-      const newZoom = Math.max(MIN_ZOOM, Math.min(maxZoom, zoom + delta));
+      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
 
       if (newZoom === zoom) return;
 
@@ -348,7 +347,7 @@ const TimelinePanel: React.FC = () => {
                   </svg>
                 </div>
                 {/* Waveform content - lower z so playhead is visible over it */}
-                <div className="sticky top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg">
+                <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg">
                   <TimelineWaveform />
                 </div>
 

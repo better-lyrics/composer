@@ -1,7 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { useWavesurfer } from "@wavesurfer/react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import WavesurferPlayer from "@wavesurfer/react";
+import { useCallback, useEffect, useState } from "react";
+import type WaveSurfer from "wavesurfer.js";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -10,8 +11,6 @@ const WAVEFORM_HEIGHT = 80;
 // -- Component -----------------------------------------------------------------
 
 const TimelineWaveform: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const audioElement = useAudioStore((s) => s.audioElement);
@@ -19,35 +18,15 @@ const TimelineWaveform: React.FC = () => {
 
   const zoom = useTimelineStore((s) => s.zoom);
 
+  const [ws, setWs] = useState<WaveSurfer | null>(null);
+
   const totalWidth = duration > 0 ? duration * zoom : 0;
-
-  // Create wavesurfer instance - only recreate when audioElement changes
-  const options = useMemo(
-    () => ({
-      container: containerRef,
-      height: WAVEFORM_HEIGHT,
-      waveColor: "rgba(255, 255, 255, 0.35)",
-      progressColor: "#818cf8",
-      cursorColor: "transparent",
-      barWidth: 2,
-      barGap: 1,
-      barRadius: 1,
-      media: audioElement ?? undefined,
-      interact: false,
-      hideScrollbar: true,
-      fillParent: false,
-      minPxPerSec: useTimelineStore.getState().zoom,
-    }),
-    [audioElement],
-  );
-
-  const { wavesurfer, isReady } = useWavesurfer(options);
 
   // Sync zoom imperatively
   useEffect(() => {
-    if (!wavesurfer || !isReady) return;
-    wavesurfer.zoom(zoom);
-  }, [wavesurfer, isReady, zoom]);
+    if (!ws) return;
+    ws.zoom(zoom);
+  }, [ws, zoom]);
 
   // Handle click to seek
   const handleClick = useCallback(
@@ -62,20 +41,39 @@ const TimelineWaveform: React.FC = () => {
     [duration, totalWidth, seekTo],
   );
 
+  const onReady = useCallback((wavesurfer: WaveSurfer) => {
+    setWs(wavesurfer);
+  }, []);
+
   if (!source) return null;
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: click for seeking
-    <div
-      ref={containerRef}
-      className="relative cursor-pointer bg-composer-bg"
-      style={{
-        width: totalWidth,
-        height: WAVEFORM_HEIGHT,
-        marginLeft: GUTTER_WIDTH,
-      }}
-      onClick={handleClick}
-    />
+    <>
+      <WavesurferPlayer
+        height={WAVEFORM_HEIGHT}
+        waveColor="rgba(255, 255, 255, 0.35)"
+        progressColor="#818cf8"
+        cursorColor="transparent"
+        barWidth={2}
+        barGap={1}
+        barRadius={12}
+        media={audioElement ?? undefined}
+        interact={false}
+        hideScrollbar={true}
+        fillParent={false}
+        minPxPerSec={useTimelineStore.getState().zoom}
+        onReady={onReady}
+      />
+      <div
+        className="absolute top-0 left-0 z-10 cursor-pointer"
+        key="waveform-click-layer"
+        style={{
+          width: totalWidth,
+          height: WAVEFORM_HEIGHT,
+        }}
+        onClick={handleClick}
+      />
+    </>
   );
 };
 

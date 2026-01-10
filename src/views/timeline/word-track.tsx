@@ -137,7 +137,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   return (
-    // biome-ignore lint/a11y/useKeyWithClickEvents: click to deselect
     <div className="relative" style={{ height, width: duration * zoom }} onClick={handleTrackClick}>
       {words.map((word, wordIndex) => {
         const display = getDisplay(wordIndex);

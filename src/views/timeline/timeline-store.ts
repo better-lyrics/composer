@@ -41,13 +41,6 @@ const MIN_ZOOM = 20;
 const MAX_ZOOM = 500;
 const ZOOM_STEP = 20;
 const DEFAULT_ZOOM = 100;
-const MAX_CANVAS_WIDTH = 15000; // Browser canvas size limit
-
-// Calculate safe max zoom based on duration to avoid exceeding canvas limits
-function getMaxZoomForDuration(duration: number): number {
-  if (duration <= 0) return MAX_ZOOM;
-  return Math.min(MAX_ZOOM, Math.floor(MAX_CANVAS_WIDTH / duration));
-}
 const MIN_ROW_HEIGHT = 32;
 const MAX_ROW_HEIGHT = 120;
 const DEFAULT_ROW_HEIGHT = 44;
@@ -94,6 +87,5 @@ export {
   MIN_ROW_HEIGHT,
   MAX_ROW_HEIGHT,
   DEFAULT_ROW_HEIGHT,
-  getMaxZoomForDuration,
 };
 export type { WordSelection };
