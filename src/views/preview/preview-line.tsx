@@ -35,7 +35,11 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
   const AgentDot = <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />;
 
   // Word for progress overlay - outputs data attributes for DOM animation
-  const WordWithProgress: React.FC<{ text: string; begin: number; end: number }> = ({ text, begin, end }) => (
+  const WordWithProgress: React.FC<{
+    text: string;
+    begin: number;
+    end: number;
+  }> = ({ text, begin, end }) => (
     <span className="relative inline-block whitespace-pre">
       <span className="text-composer-text-muted">{text}</span>
       <span
@@ -57,8 +61,13 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
         className={`flex flex-wrap items-center gap-y-1 text-base font-medium mt-1 ${alignmentClass} ${bgMarginClass}`}
       >
         {line.backgroundWords.map((bgWord, bgIdx) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: stable position
-          <WordWithProgress key={`bg-${bgIdx}`} text={bgWord.text} begin={bgWord.begin} end={bgWord.end} />
+          <WordWithProgress
+            // biome-ignore lint/suspicious/noArrayIndexKey: stable position
+            key={`bg-${bgIdx}`}
+            text={bgWord.text}
+            begin={bgWord.begin}
+            end={bgWord.end}
+          />
         ))}
       </div>
     );
@@ -104,7 +113,7 @@ const PreviewLine: React.FC<PreviewLineProps> = ({ line, lineIndex, granularity 
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
-      <div className={`inline items-center text-2xl font-medium ${alignmentClass}`}>
+      <div className={`inline-flex gap-3 items-center text-2xl font-medium ${alignmentClass}`}>
         {alignment === "left" && AgentDot}
         {words.length > 0
           ? words.map((word) => (
