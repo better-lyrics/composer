@@ -286,15 +286,8 @@ function parseTtml(content: string): ParseResult {
   for (const el of agentEls) {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
-    // Try attribute first, then child element, then generate default
-    let name = el.getAttribute("ttm:name") || undefined;
-    if (!name) {
-      const nameEl = el.getElementsByTagName("ttm:name")[0];
-      if (nameEl?.textContent) name = nameEl.textContent;
-    }
-    if (!name) {
-      name = `Voice ${agents.length + 1}`;
-    }
+    const nameEl = el.getElementsByTagName("ttm:name")[0];
+    const name = nameEl?.textContent || `Voice ${agents.length + 1}`;
     if (id) {
       agents.push({ id, type, name });
     }

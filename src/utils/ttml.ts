@@ -54,8 +54,13 @@ function generateTTML({ metadata, agents, lines, granularity, minify = false }: 
     parts.push(`${ind(3)}<ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
   }
   for (const agent of agents) {
-    const nameAttr = agent.name ? ` ttm:name="${escapeXml(agent.name)}"` : "";
-    parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}"${nameAttr}/>`);
+    if (agent.name) {
+      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}">`);
+      parts.push(`${ind(4)}<ttm:name>${escapeXml(agent.name)}</ttm:name>`);
+      parts.push(`${ind(3)}</ttm:agent>`);
+    } else {
+      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}"/>`);
+    }
   }
   parts.push(`${ind(2)}</metadata>`);
   parts.push(`${ind(1)}</head>`);
