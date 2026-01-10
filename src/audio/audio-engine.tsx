@@ -39,23 +39,21 @@ const AudioEngine: React.FC = () => {
     audioRef.current = audio;
     registerAudioElement(audio);
 
-    audio.addEventListener("loadedmetadata", () => {
-      setDuration(audio.duration);
-    });
+    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const handleEnded = () => setIsPlaying(false);
+    const handleError = (e: Event) => console.error(LOG_PREFIX, "Audio error:", e);
 
-    audio.addEventListener("timeupdate", () => {
-      setCurrentTime(audio.currentTime);
-    });
-
-    audio.addEventListener("ended", () => {
-      setIsPlaying(false);
-    });
-
-    audio.addEventListener("error", (e) => {
-      console.error(LOG_PREFIX, "Audio error:", e);
-    });
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("ended", handleEnded);
+    audio.addEventListener("error", handleError);
 
     return () => {
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("ended", handleEnded);
+      audio.removeEventListener("error", handleError);
       audio.pause();
       audio.src = "";
       if (objectUrlRef.current) {

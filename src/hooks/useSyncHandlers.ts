@@ -55,19 +55,23 @@ function useSyncHandlers({
     const isLastWord = wordIndex === lineWords.length - 1;
     const textWithSpace = isLastWord ? wordText : `${wordText} `;
 
-    const existingWords = wordIndex === 0 ? [] : (line.words ?? []);
+    const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
       const updatedWords = [...existingWords];
-      updatedWords[updatedWords.length - 1] = {
-        ...updatedWords[updatedWords.length - 1],
-        end: currentTime,
-      };
-      updatedWords.push({
-        text: textWithSpace,
-        begin: currentTime,
-        end: currentTime,
-      });
+      if (wordIndex === 0) {
+        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
+      } else {
+        updatedWords[updatedWords.length - 1] = {
+          ...updatedWords[updatedWords.length - 1],
+          end: currentTime,
+        };
+        updatedWords.push({
+          text: textWithSpace,
+          begin: currentTime,
+          end: currentTime,
+        });
+      }
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {

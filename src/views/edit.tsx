@@ -187,15 +187,6 @@ const LinePreview: React.FC<{
         isSelected ? "bg-composer-accent/15" : line.hasBrackets ? "bg-composer-error/5" : "hover:bg-composer-button/30"
       }`}
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          onSelect(line.lineNumber, e.altKey);
-        }
-      }}
-      // biome-ignore lint/a11y/useSemanticElements: contains nested interactive elements
-      role="button"
-      tabIndex={0}
     >
       <span className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums">
         {line.lineNumber}

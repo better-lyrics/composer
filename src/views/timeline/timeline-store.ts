@@ -78,14 +78,5 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  useTimelineStore,
-  GUTTER_WIDTH,
-  MIN_ZOOM,
-  MAX_ZOOM,
-  DEFAULT_ZOOM,
-  MIN_ROW_HEIGHT,
-  MAX_ROW_HEIGHT,
-  DEFAULT_ROW_HEIGHT,
-};
+export { useTimelineStore, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ZOOM, DEFAULT_ROW_HEIGHT };
 export type { WordSelection };

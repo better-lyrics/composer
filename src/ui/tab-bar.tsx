@@ -37,4 +37,4 @@ const TabBar: React.FC = () => {
   );
 };
 
-export { TabBar, TABS };
+export { TabBar };

@@ -78,12 +78,6 @@ const WordBlock: React.FC<WordBlockProps> = ({
         e.stopPropagation();
         onClick();
       }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.stopPropagation();
-          onClick();
-        }
-      }}
       {...attributes}
       {...listeners}
     >
