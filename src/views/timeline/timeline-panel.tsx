@@ -74,6 +74,10 @@ const TimelinePanel: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
+
+  const isPanningRef = useRef(false);
+  const panStartXRef = useRef(0);
+  const panStartScrollRef = useRef(0);
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
 
   const sensors = useSensors(
@@ -305,6 +309,32 @@ const TimelinePanel: React.FC = () => {
     [zoom, duration],
   );
 
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      isPanningRef.current = true;
+      panStartXRef.current = e.clientX;
+      panStartScrollRef.current = scrollContainerRef.current?.scrollLeft ?? 0;
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isPanningRef.current || !scrollContainerRef.current) return;
+      const delta = panStartXRef.current - e.clientX;
+      scrollContainerRef.current.scrollLeft = panStartScrollRef.current + delta;
+    };
+    const handleMouseUp = () => {
+      isPanningRef.current = false;
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
   if (!source) {
     return (
       <div className="flex flex-col flex-1 p-4">
@@ -341,6 +371,8 @@ const TimelinePanel: React.FC = () => {
                 className="flex-1 overflow-x-auto"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
+                onMouseDown={handleMouseDown}
+                onAuxClick={(e) => e.preventDefault()}
                 onKeyDown={(e) => {
                   if (e.key === " " || e.key === "Enter") {
                     e.preventDefault();
