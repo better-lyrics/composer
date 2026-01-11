@@ -38,8 +38,10 @@
   --color-composer-warning: #f5a623;
 
   /* Typography */
-  --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
-  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji";
+  --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono",
+    Menlo, Consolas, monospace;
 
   /* Animation */
   --transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
@@ -68,6 +70,16 @@ body {
 @layer base {
   .font-mono {
     font-weight: 500;
+  }
+}
+
+/* Timeline panning mode */
+@layer components {
+  .is-panning {
+    @apply cursor-grabbing!;
+  }
+  .is-panning * {
+    @apply pointer-events-none!;
   }
 }
 

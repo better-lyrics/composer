@@ -321,6 +321,7 @@ const TimelinePanel: React.FC = () => {
       panStartScrollRef.current = scrollContainerRef.current?.scrollLeft ?? 0;
       panStartScrollTopRef.current = scrollContainerRef.current?.scrollTop ?? 0;
       panAxisLockRef.current = null;
+      scrollContainerRef.current?.classList.add("is-panning");
     }
   }, []);
 
@@ -345,6 +346,7 @@ const TimelinePanel: React.FC = () => {
     };
     const handleMouseUp = () => {
       isPanningRef.current = false;
+      scrollContainerRef.current?.classList.remove("is-panning");
     };
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
