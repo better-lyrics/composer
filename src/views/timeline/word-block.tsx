@@ -47,6 +47,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   });
 
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
     const edge = e.currentTarget.dataset.edge as "left" | "right";

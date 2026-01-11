@@ -73,11 +73,15 @@ body {
 
 /* Timeline panning mode */
 @layer components {
-  .is-panning {
+  .is-panning,
+  .is-panning * {
     @apply cursor-grabbing!;
   }
   .is-panning * {
     @apply pointer-events-none!;
+  }
+  .is-panning *:hover {
+    background-color: transparent !important;
   }
 }
 

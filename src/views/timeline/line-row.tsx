@@ -51,6 +51,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
       e.preventDefault();
       setIsResizing(true);
       const startY = e.clientY;

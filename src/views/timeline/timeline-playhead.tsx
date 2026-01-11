@@ -67,6 +67,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
       e.preventDefault();
       setIsPlaying(false);
 
