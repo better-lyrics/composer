@@ -68,7 +68,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
         )}
       >
         {title && (
-          <div className="flex items-center justify-between px-5 py-4 border-b border-composer-border">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-composer-border bg-composer-bg-dark sticky top-0 z-10">
             <h2 id="modal-title" className="text-lg font-medium">
               {title}
             </h2>
