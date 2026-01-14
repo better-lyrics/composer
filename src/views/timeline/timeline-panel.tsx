@@ -32,6 +32,13 @@ interface DragData {
   end: number;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+const WAVEFORM_HEIGHT = 80;
+const BG_DROP_ZONE_HEIGHT = 24;
+const DRAG_TRACK_SWITCH_THRESHOLD = 30;
+const DRAG_X_MIN_THRESHOLD = 5;
+
 // -- Components ----------------------------------------------------------------
 
 const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
@@ -142,9 +149,6 @@ const TimelinePanel: React.FC = () => {
       const scrollContainer = scrollContainerRef.current;
 
       if (fromPlayhead && scrollContainer) {
-        const WAVEFORM_HEIGHT = 80;
-        const BG_DROP_ZONE_HEIGHT = 24;
-
         let rowTop = WAVEFORM_HEIGHT;
         for (let i = 0; i < targetWord.lineIndex; i++) {
           const l = lines[i];
@@ -255,7 +259,17 @@ const TimelinePanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, setIsPlaying, setSelectedWord, toggleFollow, togglePreviewSidebar, handleSetWordTiming, undo, redo, activeTab]);
+  }, [
+    isPlaying,
+    setIsPlaying,
+    setSelectedWord,
+    toggleFollow,
+    togglePreviewSidebar,
+    handleSetWordTiming,
+    undo,
+    redo,
+    activeTab,
+  ]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
@@ -281,8 +295,8 @@ const TimelinePanel: React.FC = () => {
       const line = lines.find((l) => l.id === activeData.lineId);
       if (!line) return;
 
-      const movedDownToBg = delta.y > 30;
-      const movedUpToMain = delta.y < -30;
+      const movedDownToBg = delta.y > DRAG_TRACK_SWITCH_THRESHOLD;
+      const movedUpToMain = delta.y < -DRAG_TRACK_SWITCH_THRESHOLD;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
         moveWordToBg(activeData.lineId, activeData.wordIndex);
@@ -294,7 +308,7 @@ const TimelinePanel: React.FC = () => {
         return;
       }
 
-      if (Math.abs(delta.x) < 5) return;
+      if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
       const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
       if (!wordsArray) return;
