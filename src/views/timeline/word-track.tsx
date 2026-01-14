@@ -40,6 +40,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
 
   const [dragState, setDragState] = useState<DragState | null>(null);
+  const dragStateRef = useRef<DragState | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -51,44 +52,46 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const handleResizeStart = useCallback(
     (wordIndex: number, edge: "left" | "right", startX: number) => {
       const word = words[wordIndex];
-      setDragState({ wordIndex, edge, begin: word.begin, end: word.end });
+      const initialState = { wordIndex, edge, begin: word.begin, end: word.end };
+      dragStateRef.current = initialState;
+      setDragState(initialState);
 
       const handleMouseMove = (e: MouseEvent) => {
         const deltaX = e.clientX - startX;
         const deltaTime = deltaX / zoom;
+        const originalWord = words[wordIndex];
 
-        setDragState((prev) => {
-          if (!prev) return null;
-
-          const originalWord = words[wordIndex];
-
-          if (edge === "left") {
-            const newBegin = originalWord.begin + deltaTime;
-            const maxBegin = originalWord.end - 0.05;
-            const prevEnd = wordIndex > 0 ? words[wordIndex - 1].end : 0;
-            const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, newBegin)));
-            return { ...prev, begin: clampedBegin };
-          }
-
+        let newState: DragState;
+        if (edge === "left") {
+          const newBegin = originalWord.begin + deltaTime;
+          const maxBegin = originalWord.end - 0.05;
+          const prevEnd = wordIndex > 0 ? words[wordIndex - 1].end : 0;
+          const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, newBegin)));
+          newState = { wordIndex, edge, begin: clampedBegin, end: originalWord.end };
+        } else {
           const newEnd = originalWord.end + deltaTime;
           const minEnd = originalWord.begin + 0.05;
           const nextBegin = wordIndex < words.length - 1 ? words[wordIndex + 1].begin : duration;
           const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, newEnd)));
-          return { ...prev, end: clampedEnd };
-        });
+          newState = { wordIndex, edge, begin: originalWord.begin, end: clampedEnd };
+        }
+
+        dragStateRef.current = newState;
+        setDragState(newState);
       };
 
       const handleMouseUp = () => {
-        setDragState((prev) => {
-          if (prev) {
-            if (edge === "left") {
-              onUpdateWord(wordIndex, { begin: prev.begin });
-            } else {
-              onUpdateWord(wordIndex, { end: prev.end });
-            }
+        const finalState = dragStateRef.current;
+        dragStateRef.current = null;
+        setDragState(null);
+
+        if (finalState) {
+          if (edge === "left") {
+            onUpdateWord(wordIndex, { begin: finalState.begin });
+          } else {
+            onUpdateWord(wordIndex, { end: finalState.end });
           }
-          return null;
-        });
+        }
 
         cleanupRef.current = null;
         document.removeEventListener("mousemove", handleMouseMove);

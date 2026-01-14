@@ -144,22 +144,40 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   updateLine: (id, updates) =>
     set((state) => ({
-      lines: state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line)),
+      lines: state.lines.map((line) =>
+        line.id === id ? { ...line, ...updates } : line
+      ),
       isDirty: true,
     })),
 
   updateLineWithHistory: (id, updates) =>
     set((state) => {
+      // If history is empty, save the initial state first
       const newHistory = state.history.slice(0, state.historyIndex + 1);
+      if (newHistory.length === 0) {
+        newHistory.push({
+          lines: JSON.parse(JSON.stringify(state.lines)),
+          timestamp: Date.now(),
+        });
+      }
+
+      // Apply the edit
+      const newLines = state.lines.map((line) =>
+        line.id === id ? { ...line, ...updates } : line
+      );
+
+      // Save the new state (after edit)
       newHistory.push({
-        lines: JSON.parse(JSON.stringify(state.lines)),
+        lines: JSON.parse(JSON.stringify(newLines)),
         timestamp: Date.now(),
       });
+
       if (newHistory.length > MAX_HISTORY_SIZE) {
         newHistory.shift();
       }
+
       return {
-        lines: state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line)),
+        lines: newLines,
         isDirty: true,
         history: newHistory,
         historyIndex: newHistory.length - 1,
@@ -203,8 +221,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   undo: () =>
     set((state) => {
-      if (state.historyIndex < 0) return state;
-      const entry = state.history[state.historyIndex];
+      // historyIndex points to current state, so we need > 0 to have something to undo to
+      if (state.historyIndex <= 0) return state;
+      const entry = state.history[state.historyIndex - 1];
       return {
         lines: JSON.parse(JSON.stringify(entry.lines)),
         historyIndex: state.historyIndex - 1,
@@ -223,7 +242,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       };
     }),
 
-  canUndo: () => get().historyIndex >= 0,
+  canUndo: () => get().historyIndex > 0,
 
   canRedo: () => get().historyIndex < get().history.length - 1,
 
@@ -235,7 +254,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (line.id !== lineId || !line.words) return line;
         const word = line.words[wordIndex];
         if (!word) return line;
-        const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
+        const bgWords = [...(line.backgroundWords || []), word].sort(
+          (a, b) => a.begin - b.begin
+        );
         // Concatenate without adding spaces - trailing spaces are embedded in word.text
         const bgText = bgWords.map((w) => w.text).join("");
         return {
@@ -254,13 +275,21 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (line.id !== lineId || !line.backgroundWords) return line;
         const word = line.backgroundWords[wordIndex];
         if (!word) return line;
-        const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
-        const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
+        const mainWords = [...(line.words || []), word].sort(
+          (a, b) => a.begin - b.begin
+        );
+        const remainingBgWords = line.backgroundWords.filter(
+          (_, i) => i !== wordIndex
+        );
         // Concatenate without adding spaces - trailing spaces are embedded in word.text
-        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join("") : undefined;
+        const bgText =
+          remainingBgWords.length > 0
+            ? remainingBgWords.map((w) => w.text).join("")
+            : undefined;
         return {
           ...line,
-          backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
+          backgroundWords:
+            remainingBgWords.length > 0 ? remainingBgWords : undefined,
           backgroundText: bgText,
           words: mainWords,
         };
@@ -273,7 +302,14 @@ function getAgentColor(agentId: string): string {
   return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
 }
 
-export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, AGENT_COLORS, getAgentColor, INITIAL_STATE };
+export {
+  useProjectStore,
+  DEFAULT_AGENTS,
+  AGENT_PRESETS,
+  AGENT_COLORS,
+  getAgentColor,
+  INITIAL_STATE,
+};
 export type {
   Agent,
   AgentType,

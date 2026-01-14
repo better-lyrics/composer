@@ -61,6 +61,39 @@ function formatTime(seconds: number): string {
   return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
 }
 
+interface WordAtTimeResult {
+  lineId: string;
+  lineIndex: number;
+  wordIndex: number;
+  type: "word" | "bg";
+}
+
+function findWordAtTime(lines: LyricLine[], time: number): WordAtTimeResult | null {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+
+    if (line.words) {
+      for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
+        const word = line.words[wordIndex];
+        if (time >= word.begin && time < word.end) {
+          return { lineId: line.id, lineIndex, wordIndex, type: "word" };
+        }
+      }
+    }
+
+    if (line.backgroundWords) {
+      for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
+        const word = line.backgroundWords[wordIndex];
+        if (time >= word.begin && time < word.end) {
+          return { lineId: line.id, lineIndex, wordIndex, type: "bg" };
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { distributeWordsInLine, distributeLinesTiming, getLineTiming, formatTime };
+export { distributeWordsInLine, distributeLinesTiming, getLineTiming, formatTime, findWordAtTime };

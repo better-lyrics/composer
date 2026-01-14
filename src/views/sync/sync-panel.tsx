@@ -40,6 +40,7 @@ const SyncPanel: React.FC = () => {
   const setLines = useProjectStore((s) => s.setLines);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
+  const activeTab = useProjectStore((s) => s.activeTab);
   const granularity = useProjectStore((s) => s.granularity);
   const setGranularity = useProjectStore((s) => s.setGranularity);
   const source = useAudioStore((s) => s.source);
@@ -215,6 +216,7 @@ const SyncPanel: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== "sync") return;
       if (e.code === "Space" && !e.repeat) {
         e.preventDefault();
         if (editMode) return;
@@ -245,6 +247,7 @@ const SyncPanel: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
+    activeTab,
     syncState.isActive,
     lines.length,
     handleStartSync,
