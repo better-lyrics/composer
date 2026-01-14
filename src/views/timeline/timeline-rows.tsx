@@ -62,31 +62,22 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     [lines, rowHeights],
   );
 
-  const itemContent = useCallback(
-    (index: number) => {
-      const line = lines[index];
-      if (!line) return null;
-      return (
-        <LineRow
-          key={line.id}
-          line={line}
-          lineIndex={index}
-          duration={duration}
-          onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
-          onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
-        />
-      );
-    },
-    [lines, duration, handleUpdateWord, handleUpdateBgWord],
-  );
-
   const totalHeight = useMemo(() => lines.reduce((sum, _, i) => sum + getRowHeight(i), 0), [lines, getRowHeight]);
 
   return (
     <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
-        totalCount={lines.length}
-        itemContent={itemContent}
+        data={lines}
+        computeItemKey={(_, line) => line.id}
+        itemContent={(index, line) => (
+          <LineRow
+            line={line}
+            lineIndex={index}
+            duration={duration}
+            onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
+            onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
+          />
+        )}
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}

@@ -16,6 +16,7 @@ import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { IconHelp } from "@tabler/icons-react";
 import { Activity, useEffect, useMemo, useState } from "react";
+import { Toaster } from "sonner";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
 
@@ -178,7 +179,22 @@ const AppContent: React.FC = () => {
 };
 
 const App: React.FC = () => {
-  return <AppContent />;
+  return (
+    <>
+      <AppContent />
+      <Toaster
+        theme="dark"
+        position="bottom-center"
+        toastOptions={{
+          style: {
+            background: "var(--color-composer-bg-elevated)",
+            border: "1px solid var(--color-composer-border)",
+            color: "var(--color-composer-text)",
+          },
+        }}
+      />
+    </>
+  );
 };
 
 export { App };

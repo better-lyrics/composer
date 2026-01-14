@@ -16,8 +16,9 @@ import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
-import { distributeLinesTiming } from "@/views/timeline/utils";
+import { distributeLinesTiming, findWordAtTime } from "@/views/timeline/utils";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -63,6 +64,9 @@ const TimelinePanel: React.FC = () => {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const moveWordToBg = useProjectStore((s) => s.moveWordToBg);
   const moveWordFromBg = useProjectStore((s) => s.moveWordFromBg);
+  const undo = useProjectStore((s) => s.undo);
+  const redo = useProjectStore((s) => s.redo);
+  const activeTab = useProjectStore((s) => s.activeTab);
 
   const zoom = useTimelineStore((s) => s.zoom);
   const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
@@ -117,21 +121,70 @@ const TimelinePanel: React.FC = () => {
 
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
-      const selectedWord = useTimelineStore.getState().selectedWord;
-      if (!selectedWord) return;
-
-      const line = lines[selectedWord.lineIndex];
-      if (!line) return;
-
-      const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
-      if (!wordsArray) return;
-
       const audioEl = useAudioStore.getState().audioElement;
       const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
 
-      const wordIndex = selectedWord.wordIndex;
+      const { selectedWord, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
+      const fromPlayhead = !selectedWord;
+      const targetWord = selectedWord ?? findWordAtTime(lines, currentTime);
+      if (!targetWord) return;
+
+      const line = lines[targetWord.lineIndex];
+      if (!line) return;
+
+      const wordsArray = targetWord.type === "word" ? line.words : line.backgroundWords;
+      if (!wordsArray) return;
+
+      const wordIndex = targetWord.wordIndex;
       const word = wordsArray[wordIndex];
       if (!word) return;
+
+      const scrollContainer = scrollContainerRef.current;
+
+      if (fromPlayhead && scrollContainer) {
+        const WAVEFORM_HEIGHT = 80;
+        const BG_DROP_ZONE_HEIGHT = 24;
+
+        let rowTop = WAVEFORM_HEIGHT;
+        for (let i = 0; i < targetWord.lineIndex; i++) {
+          const l = lines[i];
+          const mainHeight = rowHeights[l.id] ?? defaultRowHeight;
+          const hasBg = l.backgroundWords && l.backgroundWords.length > 0;
+          rowTop += mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+        }
+        const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
+        const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+        const rowHeight = mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+
+        const visibleTop = scrollContainer.scrollTop;
+        const visibleBottom = visibleTop + scrollContainer.clientHeight;
+        const rowBottom = rowTop + rowHeight;
+        const isRowVisible = rowTop >= visibleTop && rowBottom <= visibleBottom;
+
+        if (!isRowVisible) {
+          scrollContainer.scrollTo({ top: rowTop - WAVEFORM_HEIGHT, behavior: "instant" });
+        }
+
+        const wordLeft = word.begin * zoom;
+        const wordRight = word.end * zoom;
+        const visibleLeft = scrollContainer.scrollLeft;
+        const visibleRight = visibleLeft + scrollContainer.clientWidth - GUTTER_WIDTH;
+        const isWordHorizontallyVisible = wordLeft >= visibleLeft && wordRight <= visibleRight;
+
+        if (!isWordHorizontallyVisible) {
+          toast("Word is off-screen", {
+            action: {
+              label: "Jump to word",
+              onClick: () => {
+                scrollContainer.scrollTo({
+                  left: Math.max(0, wordLeft - 50),
+                  behavior: "smooth",
+                });
+              },
+            },
+          });
+        }
+      }
 
       const updatedWords = [...wordsArray];
 
@@ -147,7 +200,7 @@ const TimelinePanel: React.FC = () => {
         updatedWords[wordIndex] = { ...word, end: clampedEnd };
       }
 
-      if (selectedWord.type === "word") {
+      if (targetWord.type === "word") {
         updateLineWithHistory(line.id, { words: updatedWords });
       } else {
         updateLineWithHistory(line.id, { backgroundWords: updatedWords });
@@ -158,8 +211,19 @@ const TimelinePanel: React.FC = () => {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== "timeline") return;
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+
+      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+        e.preventDefault();
+        if (e.shiftKey) {
+          redo();
+        } else {
+          undo();
+        }
+        return;
+      }
 
       switch (e.key) {
         case " ":
@@ -191,7 +255,7 @@ const TimelinePanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isPlaying, setIsPlaying, setSelectedWord, toggleFollow, togglePreviewSidebar, handleSetWordTiming]);
+  }, [isPlaying, setIsPlaying, setSelectedWord, toggleFollow, togglePreviewSidebar, handleSetWordTiming, undo, redo, activeTab]);
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
