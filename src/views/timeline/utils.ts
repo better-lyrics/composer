@@ -97,4 +97,3 @@ function findWordAtTime(lines: LyricLine[], time: number): WordAtTimeResult | nu
 // -- Exports -------------------------------------------------------------------
 
 export { distributeWordsInLine, distributeLinesTiming, getLineTiming, formatTime, findWordAtTime };
-export type { WordAtTimeResult };
