@@ -35,7 +35,10 @@ const AudioEngine: React.FC = () => {
     objectUrlRef.current = objectUrl;
 
     const audio = new Audio();
+    audio.id = "composer-audio";
     audio.src = objectUrl;
+    audio.style.display = "none";
+    document.body.appendChild(audio);
     audioRef.current = audio;
     registerAudioElement(audio);
 
@@ -56,6 +59,7 @@ const AudioEngine: React.FC = () => {
       audio.removeEventListener("error", handleError);
       audio.pause();
       audio.src = "";
+      audio.remove();
       if (objectUrlRef.current) {
         URL.revokeObjectURL(objectUrlRef.current);
         objectUrlRef.current = null;

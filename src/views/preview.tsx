@@ -1,136 +1,11 @@
+import "@braccato/core";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { generateTTML } from "@/utils/ttml";
 import { Button } from "@/ui/button";
-import { PreviewLine } from "@/views/preview/preview-line";
 import { getLineTiming } from "@/views/timeline/utils";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
-import { useEffect, useMemo, useRef } from "react";
-
-// -- Hooks --------------------------------------------------------------------
-
-interface CachedWord {
-  el: HTMLElement;
-  begin: number;
-  end: number;
-  duration: number;
-  lineIdx: number;
-}
-
-interface CachedLine {
-  el: HTMLElement;
-  begin: number;
-  end: number;
-}
-
-function usePreviewAnimation(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-  isActive: boolean,
-  linesVersion: number,
-) {
-  const rafRef = useRef<number | null>(null);
-  const lastScrolledLineRef = useRef<number>(-1);
-  const cachedWordsRef = useRef<CachedWord[]>([]);
-  const cachedLinesRef = useRef<CachedLine[]>([]);
-  const lineElsRef = useRef<Map<number, HTMLElement>>(new Map());
-
-  // Cache element references when lines change
-  // biome-ignore lint/correctness/useExhaustiveDependencies: linesVersion triggers recache intentionally
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const container = containerRef.current;
-
-    // Small delay to ensure React has rendered
-    const timeoutId = setTimeout(() => {
-      const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
-      cachedWordsRef.current = Array.from(wordEls).map((el) => ({
-        el,
-        begin: Number.parseFloat(el.dataset.wordBegin ?? "0"),
-        end: Number.parseFloat(el.dataset.wordEnd ?? "0"),
-        duration: Number.parseFloat(el.dataset.wordEnd ?? "0") - Number.parseFloat(el.dataset.wordBegin ?? "0"),
-        lineIdx: Number.parseInt(el.dataset.lineIdx ?? "-1", 10),
-      }));
-
-      const lineEls = container.querySelectorAll<HTMLElement>("[data-line-begin]");
-      cachedLinesRef.current = Array.from(lineEls).map((el) => ({
-        el,
-        begin: Number.parseFloat(el.dataset.lineBegin ?? "0"),
-        end: Number.parseFloat(el.dataset.lineEnd ?? "0"),
-      }));
-
-      lineElsRef.current.clear();
-      for (const el of lineEls) {
-        const idx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
-        if (idx >= 0) lineElsRef.current.set(idx, el);
-      }
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
-  }, [linesVersion, containerRef]);
-
-  useEffect(() => {
-    if (!isActive) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    const update = () => {
-      // Read directly from audio element for smooth 60fps updates (store only updates ~4x/sec)
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      let currentLineIdx = -1;
-
-      // Update word progress using cached refs
-      for (const word of cachedWordsRef.current) {
-        const isOpen = word.end === word.begin;
-        const isWordActive = currentTime >= word.begin && (isOpen || currentTime < word.end);
-        const isComplete = word.end > word.begin && currentTime >= word.end;
-
-        let progress = 0;
-        if (isWordActive && word.duration > 0) {
-          progress = (currentTime - word.begin) / word.duration;
-        } else if (isComplete) {
-          progress = 1;
-        }
-
-        word.el.style.clipPath = `inset(0 ${(1 - progress) * 100}% 0 0)`;
-
-        if (isWordActive && word.lineIdx > currentLineIdx) {
-          currentLineIdx = word.lineIdx;
-        }
-      }
-
-      // Update line opacities using cached refs
-      for (const line of cachedLinesRef.current) {
-        const isComplete = line.end > line.begin && currentTime >= line.end;
-        const isLineActive = currentTime >= line.begin && (line.end === line.begin || currentTime < line.end);
-
-        if (isLineActive) {
-          line.el.style.opacity = "1";
-        } else if (isComplete) {
-          line.el.style.opacity = "0.6";
-        } else {
-          line.el.style.opacity = "0.3";
-        }
-      }
-
-      // Scroll to current line
-      if (currentLineIdx !== -1 && currentLineIdx !== lastScrolledLineRef.current) {
-        const lineEl = lineElsRef.current.get(currentLineIdx);
-        if (lineEl) {
-          lineEl.scrollIntoView({ behavior: "smooth", block: "center" });
-          lastScrolledLineRef.current = currentLineIdx;
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [isActive]);
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -143,29 +18,48 @@ const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint
 
 const PreviewPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
+  const agents = useProjectStore((s) => s.agents);
+  const metadata = useProjectStore((s) => s.metadata);
   const granularity = useProjectStore((s) => s.granularity);
-  const activeTab = useProjectStore((s) => s.activeTab);
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const versionRef = useRef(0);
-  const prevLinesRef = useRef(lines);
-  const prevGranularityRef = useRef(granularity);
-
-  // Increment version when lines or granularity change
-  if (lines !== prevLinesRef.current || granularity !== prevGranularityRef.current) {
-    versionRef.current++;
-    prevLinesRef.current = lines;
-    prevGranularityRef.current = granularity;
-  }
-
-  const isActive = activeTab === "preview";
-  usePreviewAnimation(containerRef, isActive, versionRef.current);
+  const braccatoRef = useRef<HTMLElement>(null);
+  const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
   const hasSyncedContent = useMemo(() => {
     return lines.some((line) => getLineTiming(line) !== null);
   }, [lines]);
+
+  const ttmlString = useMemo(() => {
+    if (!hasSyncedContent) return null;
+    return generateTTML({ metadata, agents, lines, granularity });
+  }, [metadata, agents, lines, granularity, hasSyncedContent]);
+
+  useEffect(() => {
+    if (!ttmlString) {
+      setBlobUrl(null);
+      return;
+    }
+    const blob = new Blob([ttmlString], { type: "application/ttml+xml" });
+    const url = URL.createObjectURL(blob);
+    setBlobUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [ttmlString]);
+
+  const handleLineClick = useCallback((e: Event) => {
+    const detail = (e as CustomEvent).detail;
+    if (detail?.time != null) {
+      useAudioStore.getState().seekTo(detail.time / 1000);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = braccatoRef.current;
+    if (!el) return;
+    el.addEventListener("braccato:line-click", handleLineClick);
+    return () => el.removeEventListener("braccato:line-click", handleLineClick);
+  }, [handleLineClick]);
 
   if (!source) {
     return (
@@ -201,13 +95,17 @@ const PreviewPanel: React.FC = () => {
         </Button>
       </div>
 
-      <div ref={containerRef} className="flex-1 overflow-y-auto py-8">
-        <div className="max-w-3xl mx-auto">
-          {lines.map((line, index) => (
-            <PreviewLine key={line.id} line={line} lineIndex={index} granularity={granularity} />
-          ))}
-        </div>
-      </div>
+      <braccato-lyrics
+        ref={braccatoRef}
+        source="#composer-audio"
+        src={blobUrl ?? undefined}
+        className="flex-1 mx-auto w-full max-w-3xl px-6"
+        style={{
+          "--braccato-font-family": "'Satoshi', sans-serif",
+          "--braccato-font-size": "2.5rem",
+          "--braccato-inactive-opacity": "0.2",
+        } as React.CSSProperties}
+      />
     </div>
   );
 };
