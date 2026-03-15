@@ -34,9 +34,10 @@ interface TTMLOptions {
   lines: LyricLine[];
   granularity: "line" | "word";
   minify?: boolean;
+  duration?: number;
 }
 
-function generateTTML({ metadata, agents, lines, granularity, minify = false }: TTMLOptions): string {
+function generateTTML({ metadata, agents, lines, granularity, minify = false, duration }: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
@@ -66,7 +67,8 @@ function generateTTML({ metadata, agents, lines, granularity, minify = false }: 
   parts.push(`${ind(1)}</head>`);
 
   // Body section
-  parts.push(`${ind(1)}<body>`);
+  const durAttr = duration ? ` dur="${formatTime(duration)}"` : "";
+  parts.push(`${ind(1)}<body${durAttr}>`);
   parts.push(`${ind(2)}<div>`);
 
   for (const line of lines) {

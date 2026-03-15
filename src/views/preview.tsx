@@ -21,6 +21,7 @@ const PreviewPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const metadata = useProjectStore((s) => s.metadata);
   const granularity = useProjectStore((s) => s.granularity);
+  const duration = useAudioStore((s) => s.duration);
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
@@ -33,8 +34,8 @@ const PreviewPanel: React.FC = () => {
 
   const ttmlString = useMemo(() => {
     if (!hasSyncedContent) return null;
-    return generateTTML({ metadata, agents, lines, granularity });
-  }, [metadata, agents, lines, granularity, hasSyncedContent]);
+    return generateTTML({ metadata, agents, lines, granularity, duration });
+  }, [metadata, agents, lines, granularity, duration, hasSyncedContent]);
 
   useEffect(() => {
     if (!ttmlString) {

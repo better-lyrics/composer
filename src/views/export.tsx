@@ -49,6 +49,7 @@ const ExportPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const granularity = useProjectStore((s) => s.granularity);
+  const duration = useAudioStore((s) => s.duration);
   const setMetadata = useProjectStore((s) => s.setMetadata);
   const setLines = useProjectStore((s) => s.setLines);
   const setGranularity = useProjectStore((s) => s.setGranularity);
@@ -71,13 +72,13 @@ const ExportPanel: React.FC = () => {
 
   const generatedTtml = useMemo(() => {
     if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, granularity });
-  }, [metadata, agents, lines, granularity, hasSyncedContent]);
+    return generateTTML({ metadata, agents, lines, granularity, duration });
+  }, [metadata, agents, lines, granularity, duration, hasSyncedContent]);
 
   const minifiedTtml = useMemo(() => {
     if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, granularity, minify: true });
-  }, [metadata, agents, lines, granularity, hasSyncedContent]);
+    return generateTTML({ metadata, agents, lines, granularity, minify: true, duration });
+  }, [metadata, agents, lines, granularity, duration, hasSyncedContent]);
 
   // Reset edited content when generated content changes
   // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when generated content changes
