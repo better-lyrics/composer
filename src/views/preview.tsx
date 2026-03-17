@@ -87,7 +87,7 @@ const PreviewPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden select-none">
+    <div data-tour="preview-panel" className="flex flex-col flex-1 overflow-hidden select-none">
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <h2 className="text-lg font-medium">Preview</h2>
         <Button variant="primary" hasIcon onClick={() => setIsPlaying(!isPlaying)}>
@@ -101,11 +101,13 @@ const PreviewPanel: React.FC = () => {
         source="#composer-audio"
         src={blobUrl ?? undefined}
         className="flex-1 mx-auto w-full max-w-3xl px-6"
-        style={{
-          "--braccato-font-family": "'Satoshi', sans-serif",
-          "--braccato-font-size": "2.5rem",
-          "--braccato-inactive-opacity": "0.2",
-        } as React.CSSProperties}
+        style={
+          {
+            "--braccato-font-family": "'Satoshi', sans-serif",
+            "--braccato-font-size": "2.5rem",
+            "--braccato-inactive-opacity": "0.2",
+          } as React.CSSProperties
+        }
       />
     </div>
   );

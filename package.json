@@ -21,6 +21,7 @@
     "@tabler/icons-react": "^3.36.1",
     "@wavesurfer/react": "^1.0.12",
     "clsx": "^2.1.1",
+    "driver.js": "^1.4.0",
     "motion": "^12.24.12",
     "prism-react-renderer": "^2.4.1",
     "react": "^19.0.0",
@@ -32,10 +33,7 @@
     "zustand": "^5.0.0"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@biomejs/biome",
-      "esbuild"
-    ],
+    "ignoredBuiltDependencies": ["@biomejs/biome", "esbuild"],
     "overrides": {
       "@braccato/parsers": "^0.1.1"
     }

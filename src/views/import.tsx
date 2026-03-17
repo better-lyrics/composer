@@ -50,7 +50,7 @@ const ImportPanel: React.FC = () => {
     const fileName = file.name.replace(/\.[^/.]+$/, "");
 
     return (
-      <div className="flex flex-col-reverse flex-1 size-full">
+      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
         {/* Audio info row - matches LineRow design */}
         <div className="flex border-t border-composer-border">
           {/* Gutter */}
@@ -94,7 +94,7 @@ const ImportPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center flex-1 size-full">
+    <div data-tour="import-dropzone" className="flex flex-col items-center justify-center flex-1 size-full">
       <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
         <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
         <p className="text-composer-text-secondary">Drop audio file here</p>

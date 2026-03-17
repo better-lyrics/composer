@@ -279,7 +279,7 @@ const SyncPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden select-none">
+    <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <div className="flex items-baseline gap-3">

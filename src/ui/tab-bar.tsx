@@ -15,13 +15,14 @@ const TabBar: React.FC = () => {
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
 
   return (
-    <nav className="flex border-b border-composer-border select-none">
+    <nav data-tour="tab-bar" className="flex border-b border-composer-border select-none">
       {TABS.map((tab) => {
         const isActive = activeTab === tab.id;
         return (
           <button
             key={tab.id}
             type="button"
+            data-tour={`tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
             className={`cursor-pointer px-4 py-3 text-sm font-medium transition-colors ${
               isActive

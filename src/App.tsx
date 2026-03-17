@@ -5,6 +5,9 @@ import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
 import { debouncedSave, flushPendingSave, loadCurrentProject, saveCurrentProject } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { GuideCard } from "@/tour/guide-card";
+import { useTour } from "@/tour/use-tour";
+import "@/tour/tour-theme.css";
 import { Button } from "@/ui/button";
 import { HelpModal } from "@/ui/help-modal";
 import { TabBar } from "@/ui/tab-bar";
@@ -14,8 +17,8 @@ import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { IconHelp } from "@tabler/icons-react";
-import { Activity, useEffect, useMemo, useState } from "react";
+import { IconHelp, IconRoute } from "@tabler/icons-react";
+import { Activity, useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
@@ -25,8 +28,18 @@ const AppContent: React.FC = () => {
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const [helpOpen, setHelpOpen] = useState(false);
+  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
+  const startTourRef = useRef(startTour);
+  startTourRef.current = startTour;
 
   const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
+
+  // Auto-start quick tour on first visit
+  useEffect(() => {
+    if (!shouldShowTour) return;
+    const timer = setTimeout(() => startTourRef.current(), 500);
+    return () => clearTimeout(timer);
+  }, [shouldShowTour]);
 
   // Load saved project on mount
   useEffect(() => {
@@ -134,9 +147,14 @@ const AppContent: React.FC = () => {
           <img src="/logo.svg" alt="Composer Logo" className="inline-block w-6 h-6 mr-2 -mt-1" />
           Composer
         </h1>
-        <Button size="icon" variant="ghost" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">
-          <IconHelp className="w-5 h-5" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" onClick={resumeOrStartTour} title="Product tour">
+            <IconRoute className="w-5 h-5" />
+          </Button>
+          <Button size="icon" variant="ghost" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">
+            <IconHelp className="w-5 h-5" />
+          </Button>
+        </div>
       </header>
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <TabBar />
@@ -174,6 +192,7 @@ const AppContent: React.FC = () => {
       </main>
       {source && <AudioEngine />}
       {showPlayer && <AudioPlayer />}
+      <GuideCard state={guideCard} onSkip={skipGuideCard} />
     </div>
   );
 };

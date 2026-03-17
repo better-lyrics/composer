@@ -459,7 +459,7 @@ const TimelinePanel: React.FC = () => {
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className="flex flex-col flex-1 overflow-hidden select-none">
+      <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
         <TimelineHeader />
 
         <div className="flex flex-1 overflow-hidden">

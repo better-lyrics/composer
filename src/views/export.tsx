@@ -178,7 +178,7 @@ const ExportPanel: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div data-tour="export-panel" className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <div className="flex items-baseline gap-3">

@@ -413,7 +413,12 @@ const EditPanel: React.FC = () => {
   const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   return (
-    <div className="flex flex-col flex-1 gap-4 p-4 overflow-hidden" onDrop={handleDrop} onDragOver={handleDragOver}>
+    <div
+      data-tour="edit-panel"
+      className="flex flex-col flex-1 gap-4 p-4 overflow-hidden"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       <div className="flex items-center justify-between select-none">
         <h2 className="text-lg font-medium">Lyrics Editor</h2>
         <div className="flex items-center gap-3">

@@ -144,9 +144,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   updateLine: (id, updates) =>
     set((state) => ({
-      lines: state.lines.map((line) =>
-        line.id === id ? { ...line, ...updates } : line
-      ),
+      lines: state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line)),
       isDirty: true,
     })),
 
@@ -162,9 +160,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       }
 
       // Apply the edit
-      const newLines = state.lines.map((line) =>
-        line.id === id ? { ...line, ...updates } : line
-      );
+      const newLines = state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line));
 
       // Save the new state (after edit)
       newHistory.push({
@@ -254,9 +250,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (line.id !== lineId || !line.words) return line;
         const word = line.words[wordIndex];
         if (!word) return line;
-        const bgWords = [...(line.backgroundWords || []), word].sort(
-          (a, b) => a.begin - b.begin
-        );
+        const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
         // Concatenate without adding spaces - trailing spaces are embedded in word.text
         const bgText = bgWords.map((w) => w.text).join("");
         return {
@@ -275,21 +269,13 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (line.id !== lineId || !line.backgroundWords) return line;
         const word = line.backgroundWords[wordIndex];
         if (!word) return line;
-        const mainWords = [...(line.words || []), word].sort(
-          (a, b) => a.begin - b.begin
-        );
-        const remainingBgWords = line.backgroundWords.filter(
-          (_, i) => i !== wordIndex
-        );
+        const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
+        const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
         // Concatenate without adding spaces - trailing spaces are embedded in word.text
-        const bgText =
-          remainingBgWords.length > 0
-            ? remainingBgWords.map((w) => w.text).join("")
-            : undefined;
+        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join("") : undefined;
         return {
           ...line,
-          backgroundWords:
-            remainingBgWords.length > 0 ? remainingBgWords : undefined,
+          backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
           backgroundText: bgText,
           words: mainWords,
         };
@@ -302,14 +288,7 @@ function getAgentColor(agentId: string): string {
   return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
 }
 
-export {
-  useProjectStore,
-  DEFAULT_AGENTS,
-  AGENT_PRESETS,
-  AGENT_COLORS,
-  getAgentColor,
-  INITIAL_STATE,
-};
+export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, AGENT_COLORS, getAgentColor, INITIAL_STATE };
 export type {
   Agent,
   AgentType,
