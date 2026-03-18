@@ -1,6 +1,6 @@
-import { WordBlock } from "@/views/timeline/word-block";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { WordTiming } from "@/stores/project";
+import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
+import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -36,8 +36,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   onUpdateWord,
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
-  const selectedWord = useTimelineStore((s) => s.selectedWord);
-  const setSelectedWord = useTimelineStore((s) => s.setSelectedWord);
+  const selectedWords = useTimelineStore((s) => s.selectedWords);
+  const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
+  const toggleSelection = useTimelineStore((s) => s.toggleSelection);
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
@@ -109,10 +110,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     [words, zoom, duration, onUpdateWord],
   );
 
-  const isSelected = (wordIndex: number) =>
-    selectedWord?.lineId === lineId && selectedWord?.wordIndex === wordIndex && selectedWord?.type === trackType;
-
-  const hasSelection = selectedWord !== null;
+  const hasSelection = selectedWords.length > 0;
 
   const getDisplay = (wordIndex: number) => {
     if (dragState && dragState.wordIndex === wordIndex) {
@@ -123,19 +121,20 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleTrackClick = () => {
-    setSelectedWord(null);
+    setSelectedWords([]);
   };
 
-  const handleSelect = (wordIndex: number) => {
-    if (isSelected(wordIndex)) {
-      setSelectedWord(null);
+  const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
+    const selection = { lineId, lineIndex, wordIndex, type: trackType };
+    if (e.metaKey || e.ctrlKey) {
+      toggleSelection(selection);
     } else {
-      setSelectedWord({
-        lineId,
-        lineIndex,
-        wordIndex,
-        type: trackType,
-      });
+      const alreadySelected = isWordSelected(selectedWords, lineId, wordIndex, trackType);
+      if (alreadySelected && selectedWords.length === 1) {
+        setSelectedWords([]);
+      } else {
+        setSelectedWords([selection]);
+      }
     }
   };
 
@@ -157,8 +156,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
             end={display.end}
             color={color}
             zoom={zoom}
-            isDimmed={hasSelection && !isSelected(wordIndex)}
-            onClick={() => handleSelect(wordIndex)}
+            isDimmed={hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
           />
         );

@@ -1,5 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore, getAgentColor } from "@/stores/project";
+import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
 import { getLineTiming } from "@/views/timeline/utils";
 import { useEffect, useRef } from "react";

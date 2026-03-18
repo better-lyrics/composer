@@ -1,8 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore, type WordTiming } from "@/stores/project";
+import { type WordTiming, useProjectStore } from "@/stores/project";
 import { LineRow } from "@/views/timeline/line-row";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { useCallback, useMemo, type RefObject } from "react";
+import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 
 // -- Types ---------------------------------------------------------------------

@@ -1,5 +1,5 @@
-import { useDraggable } from "@dnd-kit/core";
 import { cn } from "@/utils/cn";
+import { useDraggable } from "@dnd-kit/core";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -15,7 +15,8 @@ interface WordBlockProps {
   color: string;
   zoom: number;
   isDimmed: boolean;
-  onClick: () => void;
+  isSelected: boolean;
+  onClick: (e: React.MouseEvent) => void;
   onResizeStart: (edge: "left" | "right", startX: number) => void;
 }
 
@@ -33,6 +34,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   color,
   zoom,
   isDimmed,
+  isSelected,
   onClick,
   onResizeStart,
 }) => {
@@ -57,22 +59,24 @@ const WordBlock: React.FC<WordBlockProps> = ({
   return (
     <div
       ref={setNodeRef}
+      data-word-block
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
         "text-xs text-white truncate select-none cursor-grab",
         "border rounded-xl transition-opacity duration-100",
         isDimmed && "opacity-30",
+        isSelected && "ring-2 ring-white/60",
         isDragging && "opacity-50 cursor-grabbing z-50",
       )}
       style={{
         left,
         width,
-        backgroundColor: `${color}30`,
-        borderColor: `${color}50`,
+        backgroundColor: isSelected ? `${color}50` : `${color}30`,
+        borderColor: isSelected ? `${color}90` : `${color}50`,
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onClick(e);
       }}
       {...attributes}
       {...listeners}
