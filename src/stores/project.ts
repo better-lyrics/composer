@@ -76,6 +76,7 @@ interface ProjectActions {
   canUndo: () => boolean;
   canRedo: () => boolean;
   clearHistory: () => void;
+  updateLinesWithHistory: (updates: Array<{ id: string; updates: Partial<LyricLine> }>) => void;
   moveWordToBg: (lineId: string, wordIndex: number) => void;
   moveWordFromBg: (lineId: string, wordIndex: number) => void;
 }
@@ -163,6 +164,38 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const newLines = state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line));
 
       // Save the new state (after edit)
+      newHistory.push({
+        lines: JSON.parse(JSON.stringify(newLines)),
+        timestamp: Date.now(),
+      });
+
+      if (newHistory.length > MAX_HISTORY_SIZE) {
+        newHistory.shift();
+      }
+
+      return {
+        lines: newLines,
+        isDirty: true,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+      };
+    }),
+
+  updateLinesWithHistory: (updates) =>
+    set((state) => {
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      if (newHistory.length === 0) {
+        newHistory.push({
+          lines: JSON.parse(JSON.stringify(state.lines)),
+          timestamp: Date.now(),
+        });
+      }
+
+      let newLines = [...state.lines];
+      for (const { id, updates: lineUpdates } of updates) {
+        newLines = newLines.map((line) => (line.id === id ? { ...line, ...lineUpdates } : line));
+      }
+
       newHistory.push({
         lines: JSON.parse(JSON.stringify(newLines)),
         timestamp: Date.now(),

@@ -1,8 +1,8 @@
-import { useDroppable } from "@dnd-kit/core";
-import { getAgentColor, type LyricLine, type WordTiming } from "@/stores/project";
+import { type LyricLine, type WordTiming, getAgentColor } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
+import { useDroppable } from "@dnd-kit/core";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------

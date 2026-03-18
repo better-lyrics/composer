@@ -1,8 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { describe, it, expect } from "vitest";
-import { distributeWordsInLine, distributeLinesTiming, getLineTiming, formatTime } from "./utils";
+import { describe, expect, it } from "vitest";
+import { distributeLinesTiming, distributeWordsInLine, formatTime, getLineTiming } from "./utils";
 
 // -- distributeWordsInLine -----------------------------------------------------
 

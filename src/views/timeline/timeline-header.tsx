@@ -1,7 +1,7 @@
 import { Button } from "@/ui/button";
-import { useTimelineStore, MIN_ZOOM, MAX_ZOOM } from "@/views/timeline/timeline-store";
-import { IconMinus, IconPlus, IconFocusCentered, IconEye } from "@tabler/icons-react";
 import { cn } from "@/utils/cn";
+import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconEye, IconFocusCentered, IconMinus, IconPlus } from "@tabler/icons-react";
 
 // -- Component -----------------------------------------------------------------
 

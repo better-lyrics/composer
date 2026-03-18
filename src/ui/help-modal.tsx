@@ -72,7 +72,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     shortcuts: [
       { keys: ["F"], description: "Toggle follow playhead" },
       { keys: ["P"], description: "Toggle preview sidebar" },
-      { keys: ["Escape"], description: "Deselect word" },
+      { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead" },
       { keys: ["]"], description: "Set word end to playhead" },
       { keys: ["Mod", "Z"], description: "Undo" },
@@ -80,6 +80,20 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "Scroll"], description: "Zoom in / out" },
       { keys: ["Middle", "Drag"], description: "Pan timeline" },
       { keys: ["Shift", "Middle", "Drag"], description: "Pan locked to axis" },
+    ],
+  },
+  {
+    title: "Timeline Selection",
+    shortcuts: [
+      { keys: ["Click"], description: "Select word" },
+      { keys: ["Mod", "Click"], description: "Toggle word in selection" },
+      { keys: ["Drag"], description: "Marquee select words" },
+      { keys: ["Shift", "Drag"], description: "Add to selection with marquee" },
+      { keys: ["Mod", "C"], description: "Copy selected words" },
+      { keys: ["Mod", "X"], description: "Cut selected words" },
+      { keys: ["Mod", "V"], description: "Paste (ghost preview, click to place)" },
+      { keys: ["Delete"], description: "Delete selected words" },
+      { keys: ["Alt", "Drag"], description: "Duplicate selected words" },
     ],
   },
   {

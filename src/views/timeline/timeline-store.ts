@@ -1,3 +1,4 @@
+import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
@@ -13,7 +14,9 @@ interface TimelineState {
   zoom: number;
   followEnabled: boolean;
   previewSidebarOpen: boolean;
-  selectedWord: WordSelection | null;
+  selectedWords: WordSelection[];
+  clipboard: ClipboardData | null;
+  pasteMode: PasteMode;
   scrollLeft: number;
   rowHeights: Record<string, number>;
   defaultRowHeight: number;
@@ -27,7 +30,11 @@ interface TimelineActions {
   zoomOut: () => void;
   toggleFollow: () => void;
   togglePreviewSidebar: () => void;
-  setSelectedWord: (selection: WordSelection | null) => void;
+  setSelectedWords: (selections: WordSelection[]) => void;
+  toggleSelection: (selection: WordSelection) => void;
+  clearSelection: () => void;
+  setClipboard: (clipboard: ClipboardData | null) => void;
+  setPasteMode: (mode: PasteMode) => void;
   setScrollLeft: (scrollLeft: number) => void;
   setRowHeight: (lineId: string, height: number) => void;
   setDraggingPlayhead: (isDragging: boolean, time?: number) => void;
@@ -51,7 +58,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   zoom: DEFAULT_ZOOM,
   followEnabled: true,
   previewSidebarOpen: false,
-  selectedWord: null,
+  selectedWords: [],
+  clipboard: null,
+  pasteMode: { status: "idle" },
   scrollLeft: 0,
   rowHeights: {},
   defaultRowHeight: DEFAULT_ROW_HEIGHT,
@@ -63,7 +72,24 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
   toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
   togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
-  setSelectedWord: (selectedWord) => set({ selectedWord }),
+  setSelectedWords: (selectedWords) => set({ selectedWords }),
+  toggleSelection: (selection) =>
+    set((s) => {
+      const exists = s.selectedWords.some(
+        (w) => w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type,
+      );
+      if (exists) {
+        return {
+          selectedWords: s.selectedWords.filter(
+            (w) => !(w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type),
+          ),
+        };
+      }
+      return { selectedWords: [...s.selectedWords, selection] };
+    }),
+  clearSelection: () => set({ selectedWords: [] }),
+  setClipboard: (clipboard) => set({ clipboard }),
+  setPasteMode: (pasteMode) => set({ pasteMode }),
   setScrollLeft: (scrollLeft) => set({ scrollLeft }),
   setRowHeight: (lineId, height) =>
     set((s) => ({
@@ -76,7 +102,11 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   setDragTime: (dragTime) => set({ dragTime }),
 }));
 
+function isWordSelected(selectedWords: WordSelection[], lineId: string, wordIndex: number, type: "word" | "bg") {
+  return selectedWords.some((w) => w.lineId === lineId && w.wordIndex === wordIndex && w.type === type);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
+export { useTimelineStore, isWordSelected, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
 export type { WordSelection };

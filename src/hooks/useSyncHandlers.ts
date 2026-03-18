@@ -71,10 +71,12 @@ function useSyncHandlers({
     if (existingWords.length > 0) {
       const updatedWords = [...existingWords];
       if (wordIndex === 0) {
+        updatedWords.length = 1;
         updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
       } else {
-        updatedWords[updatedWords.length - 1] = {
-          ...updatedWords[updatedWords.length - 1],
+        updatedWords.length = wordIndex;
+        updatedWords[wordIndex - 1] = {
+          ...updatedWords[wordIndex - 1],
           end: currentTime,
         };
         updatedWords.push({
