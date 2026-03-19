@@ -97,9 +97,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       );
     }
     return (
-      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>
-        {displayText}
-      </span>
+      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{displayText}</span>
     );
   };
 

@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/stores/project";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -161,7 +162,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const time = clickX / zoom;
 
     const audioDuration = useAudioStore.getState().duration;
-    const wordDuration = 0.3;
+    const wordDuration = useSettingsStore.getState().defaultWordDuration;
     const begin = Math.max(0, time - wordDuration / 2);
     const end = Math.min(audioDuration, time + wordDuration / 2);
 

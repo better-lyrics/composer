@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { findWordAtTime } from "@/views/timeline/utils";
@@ -90,11 +91,11 @@ function useTimelineKeyboard(
 
       if (edge === "begin") {
         const prevEnd = wordIndex > 0 ? wordsArray[wordIndex - 1].end : 0;
-        const maxBegin = word.end - 0.05;
+        const maxBegin = word.end - useSettingsStore.getState().minWordDuration;
         const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, currentTime)));
         updatedWords[wordIndex] = { ...word, begin: clampedBegin };
       } else {
-        const minEnd = word.begin + 0.05;
+        const minEnd = word.begin + useSettingsStore.getState().minWordDuration;
         const nextBegin = wordIndex < wordsArray.length - 1 ? wordsArray[wordIndex + 1].begin : duration;
         const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, currentTime)));
         updatedWords[wordIndex] = { ...word, end: clampedEnd };

@@ -1,4 +1,5 @@
 import type { Agent, GranularityMode, LyricLine, ProjectMetadata } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
@@ -181,7 +182,6 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let pendingSaveArgs: [ProjectMetadata, Agent[], LyricLine[], GranularityMode, string?] | null = null;
-const SAVE_DELAY = 2000;
 
 function debouncedSave(
   metadata: ProjectMetadata,
@@ -194,15 +194,14 @@ function debouncedSave(
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
+  const saveDelay = useSettingsStore.getState().autoSaveDelay;
   saveTimeout = setTimeout(() => {
     if (pendingSaveArgs) {
-      saveCurrentProject(...pendingSaveArgs).catch((err) =>
-        console.error(LOG_PREFIX, "Auto-save failed:", err),
-      );
+      saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Auto-save failed:", err));
       pendingSaveArgs = null;
     }
     saveTimeout = null;
-  }, SAVE_DELAY);
+  }, saveDelay);
 }
 
 function cancelPendingSave(): void {
@@ -219,9 +218,7 @@ function flushPendingSave(): void {
     saveTimeout = null;
   }
   if (pendingSaveArgs) {
-    saveCurrentProject(...pendingSaveArgs).catch((err) =>
-      console.error(LOG_PREFIX, "Flush save failed:", err),
-    );
+    saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Flush save failed:", err));
     pendingSaveArgs = null;
   }
 }

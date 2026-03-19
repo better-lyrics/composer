@@ -1,4 +1,4 @@
-import { NUDGE_AMOUNT, formatTimeMs, parseTimeMs } from "@/utils/sync-helpers";
+import { getNudgeAmount, formatTimeMs, parseTimeMs } from "@/utils/sync-helpers";
 import { useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -62,7 +62,7 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
     <span className="flex items-center gap-1 font-mono text-[10px] tabular-nums">
       <button
         type="button"
-        onClick={(e) => canDecrease && handleNudgeClick(e, -NUDGE_AMOUNT)}
+        onClick={(e) => canDecrease && handleNudgeClick(e, -getNudgeAmount())}
         className={`px-1 ${
           canDecrease
             ? "text-composer-text-muted hover:text-composer-text cursor-pointer"
@@ -94,7 +94,7 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
       )}
       <button
         type="button"
-        onClick={(e) => canIncrease && handleNudgeClick(e, NUDGE_AMOUNT)}
+        onClick={(e) => canIncrease && handleNudgeClick(e, getNudgeAmount())}
         className={`px-1 ${
           canIncrease
             ? "text-composer-text-muted hover:text-composer-text cursor-pointer"

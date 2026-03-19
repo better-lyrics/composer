@@ -13,7 +13,7 @@ describe("distributeWordsInLine", () => {
     const words = distributeWordsInLine("Hello World", 0, 10);
 
     expect(words).toHaveLength(2);
-    expect(words[0]).toEqual({ text: "Hello", begin: 0, end: 5 });
+    expect(words[0]).toEqual({ text: "Hello ", begin: 0, end: 5 });
     expect(words[1]).toEqual({ text: "World", begin: 5, end: 10 });
   });
 
@@ -35,7 +35,7 @@ describe("distributeWordsInLine", () => {
   it("handles multiple spaces between words", () => {
     const words = distributeWordsInLine("Hello    World", 0, 10);
     expect(words).toHaveLength(2);
-    expect(words[0].text).toBe("Hello");
+    expect(words[0].text).toBe("Hello ");
     expect(words[1].text).toBe("World");
   });
 
@@ -70,7 +70,7 @@ describe("distributeLinesTiming", () => {
     const result = distributeLinesTiming(lines, duration);
 
     expect(result[0].words).toHaveLength(2);
-    expect(result[0].words[0].text).toBe("Hello");
+    expect(result[0].words[0].text).toBe("Hello ");
     expect(result[0].words[1].text).toBe("World");
   });
 

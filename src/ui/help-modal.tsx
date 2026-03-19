@@ -224,7 +224,11 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       </div>
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
-        Press <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">?</kbd> to open anytime
+        Press{" "}
+        <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">
+          ?
+        </kbd>{" "}
+        to open anytime
       </div>
     </Modal>
   );
