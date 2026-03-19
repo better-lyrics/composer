@@ -63,6 +63,16 @@ const GettingStartedSection: React.FC = () => (
       The tabs are meant to be followed left-to-right, but you can jump between
       them anytime using {MOD_KEY} + 1 through 6.
     </p>
+
+    <div className="aspect-video w-full rounded-lg overflow-hidden border border-composer-border">
+      <iframe
+        src="https://www.youtube.com/embed/IEA0W4qpRIs?rel=0"
+        title="Composer tutorial"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        className="w-full h-full"
+      />
+    </div>
   </div>
 );
 
@@ -366,8 +376,8 @@ const PreviewSection: React.FC = () => (
       >
         Better Lyrics
       </a>
-      ' rendering engine. Words fill in progressively as they're sung,
-      matching the timing you set.
+      ' rendering engine. Words fill in progressively as they're sung, matching
+      the timing you set.
     </p>
     <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
       <li>
