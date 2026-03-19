@@ -2,7 +2,7 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { debouncedSave, flushPendingSave, loadCurrentProject } from "@/lib/persistence";
+import { debouncedSave, flushPendingSave, loadAudioFile, loadCurrentProject, saveAudioFile } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { GuideCard } from "@/tour/guide-card";
@@ -57,6 +57,12 @@ const AppContent: React.FC = () => {
         state.markClean();
       }
     });
+
+    loadAudioFile().then((file) => {
+      if (file) {
+        useAudioStore.getState().setSource({ type: "file", file });
+      }
+    });
   }, []);
 
   // Auto-save on state changes
@@ -70,6 +76,21 @@ const AppContent: React.FC = () => {
       }
     });
 
+    return () => unsubscribe();
+  }, []);
+
+  // Save audio file to IndexedDB when source changes
+  useEffect(() => {
+    let prevSource = useAudioStore.getState().source;
+    const unsubscribe = useAudioStore.subscribe((state) => {
+      if (state.source === prevSource) return;
+      prevSource = state.source;
+      if (state.source?.type === "file") {
+        saveAudioFile(state.source.file).catch((err) =>
+          console.error("[Persistence] Audio save failed:", err),
+        );
+      }
+    });
     return () => unsubscribe();
   }, []);
 

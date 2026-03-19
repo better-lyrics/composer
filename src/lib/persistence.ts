@@ -18,6 +18,8 @@ const DB_NAME = "ttml-composer";
 const DB_VERSION = 1;
 const STORE_NAME = "projects";
 const CURRENT_PROJECT_KEY = "current";
+const AUDIO_FILE_KEY = "current-audio";
+const LOG_PREFIX = "[Persistence]";
 
 // -- IndexedDB Helpers --------------------------------------------------------
 
@@ -106,6 +108,34 @@ async function loadCurrentProject(): Promise<SavedProject | undefined> {
 
 async function clearCurrentProject(): Promise<void> {
   await deleteFromStore(CURRENT_PROJECT_KEY);
+  await clearAudioFile();
+}
+
+// -- Audio File Persistence ---------------------------------------------------
+
+interface SavedAudioFile {
+  name: string;
+  type: string;
+  data: ArrayBuffer;
+}
+
+async function saveAudioFile(file: File): Promise<void> {
+  const data = await file.arrayBuffer();
+  await setInStore<SavedAudioFile>(AUDIO_FILE_KEY, {
+    name: file.name,
+    type: file.type,
+    data,
+  });
+}
+
+async function loadAudioFile(): Promise<File | undefined> {
+  const saved = await getFromStore<SavedAudioFile>(AUDIO_FILE_KEY);
+  if (!saved) return undefined;
+  return new File([saved.data], saved.name, { type: saved.type });
+}
+
+async function clearAudioFile(): Promise<void> {
+  await deleteFromStore(AUDIO_FILE_KEY);
 }
 
 function exportProjectToFile(
@@ -167,7 +197,7 @@ function debouncedSave(
   saveTimeout = setTimeout(() => {
     if (pendingSaveArgs) {
       saveCurrentProject(...pendingSaveArgs).catch((err) =>
-        console.error("[Persistence] Auto-save failed:", err),
+        console.error(LOG_PREFIX, "Auto-save failed:", err),
       );
       pendingSaveArgs = null;
     }
@@ -190,7 +220,7 @@ function flushPendingSave(): void {
   }
   if (pendingSaveArgs) {
     saveCurrentProject(...pendingSaveArgs).catch((err) =>
-      console.error("[Persistence] Flush save failed:", err),
+      console.error(LOG_PREFIX, "Flush save failed:", err),
     );
     pendingSaveArgs = null;
   }
@@ -207,5 +237,8 @@ export {
   debouncedSave,
   flushPendingSave,
   cancelPendingSave,
+  saveAudioFile,
+  loadAudioFile,
+  clearAudioFile,
 };
 export type { SavedProject };
