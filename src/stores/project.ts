@@ -60,6 +60,7 @@ interface ProjectState {
 interface ProjectActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
   setLines: (lines: LyricLine[]) => void;
+  setLinesWithHistory: (lines: LyricLine[]) => void;
   updateLine: (id: string, updates: Partial<LyricLine>) => void;
   updateLineWithHistory: (id: string, updates: Partial<LyricLine>) => void;
   addAgent: (agent: Agent) => void;
@@ -142,6 +143,30 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
     })),
 
   setLines: (lines) => set({ lines, isDirty: true }),
+
+  setLinesWithHistory: (lines) =>
+    set((state) => {
+      const newHistory = state.history.slice(0, state.historyIndex + 1);
+      if (newHistory.length === 0) {
+        newHistory.push({
+          lines: JSON.parse(JSON.stringify(state.lines)),
+          timestamp: Date.now(),
+        });
+      }
+      newHistory.push({
+        lines: JSON.parse(JSON.stringify(lines)),
+        timestamp: Date.now(),
+      });
+      if (newHistory.length > MAX_HISTORY_SIZE) {
+        newHistory.shift();
+      }
+      return {
+        lines,
+        isDirty: true,
+        history: newHistory,
+        historyIndex: newHistory.length - 1,
+      };
+    }),
 
   updateLine: (id, updates) =>
     set((state) => ({

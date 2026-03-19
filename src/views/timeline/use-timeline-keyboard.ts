@@ -188,14 +188,14 @@ function useTimelineKeyboard(
         case "n":
         case "N": {
           const { selectedWords: nSel } = useTimelineStore.getState();
-          const nWord = nSel[0];
-          const lineIndex = nWord ? nWord.lineIndex : lines.length - 1;
+          if (nSel.length === 0) break;
+          const lineIndex = nSel[0].lineIndex;
           const agents = useProjectStore.getState().agents;
           const defaultAgentId = agents[0]?.id ?? "v1";
           const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
           const newLines = [...lines];
           newLines.splice(lineIndex + 1, 0, newLine);
-          useProjectStore.getState().setLines(newLines);
+          useProjectStore.getState().setLinesWithHistory(newLines);
           break;
         }
         case "F2":

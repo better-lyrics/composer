@@ -382,8 +382,8 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Other features</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Press <strong>N</strong> to insert a new empty line after the current
-          selection.
+          Press <strong>N</strong> with a word selected to insert a new empty
+          line below it.
         </li>
         <li>
           The info panel at the bottom shows details for the selected word,

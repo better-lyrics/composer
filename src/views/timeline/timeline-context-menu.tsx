@@ -35,7 +35,7 @@ const TimelineContextMenu: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const agents = useProjectStore((s) => s.agents);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const setLines = useProjectStore((s) => s.setLines);
+  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const duration = useAudioStore((s) => s.duration);
 
   useEffect(() => {
@@ -130,19 +130,19 @@ const TimelineContextMenu: React.FC = () => {
       const newLines = [...lines];
       const insertIndex = position === "above" ? lineIndex : lineIndex + 1;
       newLines.splice(insertIndex, 0, newLine);
-      setLines(newLines);
+      setLinesWithHistory(newLines);
       clearContextMenu();
     },
-    [contextMenu, lines, agents, setLines, clearContextMenu],
+    [contextMenu, lines, agents, setLinesWithHistory, clearContextMenu],
   );
 
   const handleDeleteLine = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return;
     const { lineIndex } = contextMenu.target;
     const newLines = lines.filter((_, i) => i !== lineIndex);
-    setLines(newLines);
+    setLinesWithHistory(newLines);
     clearContextMenu();
-  }, [contextMenu, lines, setLines, clearContextMenu]);
+  }, [contextMenu, lines, setLinesWithHistory, clearContextMenu]);
 
   const handleAssignAgent = useCallback(
     (agentId: string) => {

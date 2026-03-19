@@ -90,7 +90,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     shortcuts: [
       { keys: ["F"], description: "Toggle follow playhead" },
       { keys: ["P"], description: "Toggle preview sidebar" },
-      { keys: ["N"], description: "Add new line after selection" },
+      { keys: ["N"], description: "Insert line below selected word" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead" },
       { keys: ["]"], description: "Set word end to playhead" },
