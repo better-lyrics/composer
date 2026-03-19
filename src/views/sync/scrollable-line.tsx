@@ -1,4 +1,6 @@
 import { getAgentColor, type WordTiming } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { computeSyllableGroups } from "@/utils/syllable-groups";
 import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
@@ -62,7 +64,10 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onSetBgWordEndTime,
 }) => {
   const lineRef = useRef<HTMLDivElement>(null);
-  const wordTexts = useMemo(() => (words?.length ? words.map((w) => w.text) : splitIntoWords(text)), [text, words]);
+  const wordTexts = useMemo(
+    () => (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
+    [text, words],
+  );
   const bgWordTexts = useMemo(
     () =>
       backgroundWords?.length
@@ -97,9 +102,37 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       );
     }
     return (
-      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{displayText}</span>
+      <span
+        className={
+          lineBegin !== undefined
+            ? "text-composer-text-muted"
+            : "text-composer-text"
+        }
+      >
+        {displayText}
+      </span>
     );
   };
+
+  const showSyllableIndicators = useSettingsStore(
+    (s) => s.showSyllableIndicators,
+  );
+
+  const mainSyllableGroups = useMemo(
+    () =>
+      showSyllableIndicators && words?.length
+        ? computeSyllableGroups(words)
+        : [],
+    [words, showSyllableIndicators],
+  );
+
+  const bgSyllableGroups = useMemo(
+    () =>
+      showSyllableIndicators && backgroundWords?.length
+        ? computeSyllableGroups(backgroundWords)
+        : [],
+    [backgroundWords, showSyllableIndicators],
+  );
 
   const mainWordHandlers: WordHandlers = {
     onNudge: onNudgeWord,
@@ -116,12 +149,113 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     onSetEndTime: onSetBgWordEndTime,
   };
 
+  const renderWordList = (
+    texts: string[],
+    timings: WordTiming[] | undefined,
+    handlers: WordHandlers,
+    groups: ReturnType<typeof computeSyllableGroups>,
+    prefix: string,
+    isBackground?: boolean,
+  ) => {
+    if (groups.length === 0) {
+      return texts.map((word, idx) => (
+        <WordRenderer
+          // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
+          key={`${lineNumber}-${prefix}-${idx}`}
+          word={word}
+          idx={idx}
+          lineNumber={lineNumber}
+          timing={timings?.[idx]}
+          allWords={timings}
+          handlers={handlers}
+          isBackground={isBackground}
+          editMode={editMode}
+          currentTime={currentTime}
+        />
+      ));
+    }
+
+    const groupByStart = new Map(groups.map((g) => [g.startIndex, g]));
+    const inGroup = new Set(
+      groups.flatMap((g) =>
+        Array.from(
+          { length: g.endIndex - g.startIndex + 1 },
+          (_, i) => g.startIndex + i,
+        ),
+      ),
+    );
+    const elements: React.ReactNode[] = [];
+    let i = 0;
+
+    while (i < texts.length) {
+      const group = groupByStart.get(i);
+      if (group) {
+        elements.push(
+          <span
+            key={`${lineNumber}-${prefix}-group-${group.startIndex}`}
+            className="inline-flex flex-col items-center shrink-0"
+          >
+            <span className="w-full text-center text-sm text-composer-text-muted border-t border-l border-r border-composer-border rounded-t-lg px-1.5 leading-relaxed">
+              {group.originalWord}
+            </span>
+            <span className="inline-flex flex-nowrap gap-x-3 bg-composer-button/30 rounded-b-lg px-1.5 py-0.5 border border-composer-border">
+              {texts
+                .slice(group.startIndex, group.endIndex + 1)
+                .map((word, j) => {
+                  const idx = group.startIndex + j;
+                  return (
+                    <WordRenderer
+                      // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
+                      key={`${lineNumber}-${prefix}-${idx}`}
+                      word={word}
+                      idx={idx}
+                      lineNumber={lineNumber}
+                      timing={timings?.[idx]}
+                      allWords={timings}
+                      handlers={handlers}
+                      isBackground={isBackground}
+                      editMode={editMode}
+                      currentTime={currentTime}
+                    />
+                  );
+                })}
+            </span>
+          </span>,
+        );
+        i = group.endIndex + 1;
+      } else if (!inGroup.has(i)) {
+        elements.push(
+          <WordRenderer
+            // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
+            key={`${lineNumber}-${prefix}-${i}`}
+            word={texts[i]}
+            idx={i}
+            lineNumber={lineNumber}
+            timing={timings?.[i]}
+            allWords={timings}
+            handlers={handlers}
+            isBackground={isBackground}
+            editMode={editMode}
+            currentTime={currentTime}
+          />,
+        );
+        i++;
+      } else {
+        i++;
+      }
+    }
+
+    return elements;
+  };
+
   return (
     <div
       ref={lineRef}
       onClick={onClick}
       className={`flex items-start gap-3 px-4 py-2 w-full text-left cursor-pointer transition-colors hover:bg-composer-button/50 border-l ${
-        isCurrent ? "bg-composer-accent/10 border-composer-accent" : "border-transparent"
+        isCurrent
+          ? "bg-composer-accent/10 border-composer-accent"
+          : "border-transparent"
       }`}
     >
       <span className="flex items-center gap-1.5 mt-1 w-10 shrink-0">
@@ -132,7 +266,9 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
           }}
           title={agentId}
         />
-        <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">{lineNumber}</span>
+        <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">
+          {lineNumber}
+        </span>
       </span>
       <div className="flex flex-col flex-1 gap-1">
         {granularity === "line" ? (
@@ -150,40 +286,26 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
             )}
           </div>
         ) : (
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {wordTexts.map((word, idx) => (
-              <WordRenderer
-                // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
-                key={`${lineNumber}-main-${idx}`}
-                word={word}
-                idx={idx}
-                lineNumber={lineNumber}
-                timing={words?.[idx]}
-                allWords={words}
-                handlers={mainWordHandlers}
-                editMode={editMode}
-                currentTime={currentTime}
-              />
-            ))}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 items-end">
+            {renderWordList(
+              wordTexts,
+              words,
+              mainWordHandlers,
+              mainSyllableGroups,
+              "main",
+            )}
           </div>
         )}
         {bgWordTexts.length > 0 && (
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {bgWordTexts.map((word, idx) => (
-              <WordRenderer
-                // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
-                key={`${lineNumber}-bg-${idx}`}
-                word={word}
-                idx={idx}
-                lineNumber={lineNumber}
-                timing={backgroundWords?.[idx]}
-                allWords={backgroundWords}
-                handlers={bgWordHandlers}
-                isBackground
-                editMode={editMode}
-                currentTime={currentTime}
-              />
-            ))}
+          <div className="flex flex-wrap gap-x-3 gap-y-1 items-end">
+            {renderWordList(
+              bgWordTexts,
+              backgroundWords,
+              bgWordHandlers,
+              bgSyllableGroups,
+              "bg",
+              true,
+            )}
           </div>
         )}
       </div>

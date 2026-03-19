@@ -20,6 +20,9 @@ interface SettingsState {
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
+
+  showShortcutHints: boolean;
+  showSyllableIndicators: boolean;
 }
 
 interface SettingsActions {
@@ -44,6 +47,9 @@ const DEFAULTS: SettingsState = {
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
+
+  showShortcutHints: true,
+  showSyllableIndicators: true,
 };
 
 // -- Store --------------------------------------------------------------------

@@ -1,5 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import type { SimpleTab } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 
 const TABS: { id: SimpleTab; label: string }[] = [
   { id: "import", label: "Import" },
@@ -13,10 +15,11 @@ const TABS: { id: SimpleTab; label: string }[] = [
 const TabBar: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
+  const showHints = useSettingsStore((s) => s.showShortcutHints);
 
   return (
     <nav data-tour="tab-bar" className="flex border-b border-composer-border select-none">
-      {TABS.map((tab) => {
+      {TABS.map((tab, index) => {
         const isActive = activeTab === tab.id;
         return (
           <button
@@ -31,6 +34,7 @@ const TabBar: React.FC = () => {
             }`}
           >
             {tab.label}
+            {showHints && <InlineKeyBadge keys={["Mod", String(index + 1)]} />}
           </button>
         );
       })}

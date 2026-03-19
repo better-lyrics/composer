@@ -1,4 +1,6 @@
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconEye, IconFocusCentered, IconMinus, IconPlus, IconPointer, IconTextPlus } from "@tabler/icons-react";
@@ -21,6 +23,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const togglePreviewSidebar = useTimelineStore((s) => s.togglePreviewSidebar);
   const selectOnlyMode = useTimelineStore((s) => s.selectOnlyMode);
   const toggleSelectOnlyMode = useTimelineStore((s) => s.toggleSelectOnlyMode);
+  const showHints = useSettingsStore((s) => s.showShortcutHints);
 
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
 
@@ -39,6 +42,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
         >
           <IconFocusCentered size={16} />
           <span>Follow</span>
+          {showHints && <InlineKeyBadge keys={["F"]} />}
         </Button>
 
         {/* Select-only mode toggle */}
@@ -64,6 +68,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
         >
           <IconEye size={16} />
           <span>Preview</span>
+          {showHints && <InlineKeyBadge keys={["P"]} />}
         </Button>
 
         {/* Import lyrics */}
@@ -71,6 +76,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           <Button variant="ghost" size="sm" onClick={onImportLyrics} hasIcon>
             <IconTextPlus size={16} />
             <span>Import</span>
+            {showHints && <InlineKeyBadge keys={["Mod", "Shift", "V"]} />}
           </Button>
         )}
 

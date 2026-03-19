@@ -2,9 +2,10 @@ import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/stores/project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordBlock } from "@/views/timeline/word-block";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -42,6 +43,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
+
+  const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
+  const syllablePositions = useMemo(
+    () => (showSyllableIndicators ? getSyllablePositions(words) : null),
+    [words, showSyllableIndicators],
+  );
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const dragStateRef = useRef<DragState | null>(null);
@@ -128,6 +135,22 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleSelect = (wordIndex: number, e: React.MouseEvent) => {
+    if (e.shiftKey && syllablePositions) {
+      const pos = syllablePositions[wordIndex];
+      if (pos !== "none") {
+        const groups = computeSyllableGroups(words);
+        const group = groups.find((g) => wordIndex >= g.startIndex && wordIndex <= g.endIndex);
+        if (group) {
+          const selections = Array.from(
+            { length: group.endIndex - group.startIndex + 1 },
+            (_, i) => ({ lineId, lineIndex, wordIndex: group.startIndex + i, type: trackType }),
+          );
+          setSelectedWords(selections);
+          return;
+        }
+      }
+    }
+
     const selection = { lineId, lineIndex, wordIndex, type: trackType };
     if (e.metaKey || e.ctrlKey) {
       toggleSelection(selection);
@@ -236,6 +259,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
             zoom={zoom}
             isDimmed={hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
+            syllablePosition={syllablePositions?.[wordIndex] ?? "none"}
             onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
             onDoubleClick={() => handleWordDoubleClick(wordIndex)}

@@ -1,4 +1,5 @@
 import { cn } from "@/utils/cn";
+import type { SyllablePosition } from "@/utils/syllable-groups";
 import { useDraggable } from "@dnd-kit/core";
 
 // -- Types ---------------------------------------------------------------------
@@ -16,6 +17,7 @@ interface WordBlockProps {
   zoom: number;
   isDimmed: boolean;
   isSelected: boolean;
+  syllablePosition?: SyllablePosition;
   onClick: (e: React.MouseEvent) => void;
   onResizeStart: (edge: "left" | "right", startX: number) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
@@ -23,6 +25,13 @@ interface WordBlockProps {
 }
 
 // -- Component -----------------------------------------------------------------
+
+const SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
+  none: "rounded-xl",
+  first: "rounded-l-xl rounded-r-none",
+  middle: "rounded-none",
+  last: "rounded-r-xl rounded-l-none",
+};
 
 const WordBlock: React.FC<WordBlockProps> = ({
   id,
@@ -37,6 +46,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   zoom,
   isDimmed,
   isSelected,
+  syllablePosition = "none",
   onClick,
   onResizeStart,
   onDoubleClick,
@@ -68,7 +78,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
         "text-xs text-white truncate select-none cursor-grab",
-        "border rounded-xl transition-opacity duration-100",
+        "border transition-opacity duration-100",
+        SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
         isSelected && "ring-2 ring-white/60",
         isDragging && "opacity-50 cursor-grabbing z-50",
@@ -78,6 +89,12 @@ const WordBlock: React.FC<WordBlockProps> = ({
         width,
         backgroundColor: isSelected ? `${color}50` : `${color}30`,
         borderColor: isSelected ? `${color}90` : `${color}50`,
+        ...(syllablePosition === "first" || syllablePosition === "middle"
+          ? { borderRightStyle: "dashed" }
+          : {}),
+        ...(syllablePosition === "middle" || syllablePosition === "last"
+          ? { borderLeftStyle: "dashed" }
+          : {}),
       }}
       onClick={(e) => {
         e.stopPropagation();

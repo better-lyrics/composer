@@ -255,7 +255,8 @@ function useTimelineKeyboard(
           const defaultAgentId = agents[0]?.id ?? "v1";
           const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
           const newLines = [...lines];
-          newLines.splice(lineIndex + 1, 0, newLine);
+          const insertIndex = e.shiftKey ? lineIndex : lineIndex + 1;
+          newLines.splice(insertIndex, 0, newLine);
           useProjectStore.getState().setLinesWithHistory(newLines);
           break;
         }

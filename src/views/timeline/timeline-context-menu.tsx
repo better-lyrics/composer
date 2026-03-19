@@ -2,22 +2,44 @@ import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { formatKey } from "@/ui/help-modal";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconCommand } from "@tabler/icons-react";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
-function MenuItem({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) {
+const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
+
+function MenuItem({
+  label,
+  onClick,
+  danger,
+  shortcut,
+}: { label: string; onClick: () => void; danger?: boolean; shortcut?: string[] }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer rounded-md transition-colors ${
+      className={`w-full flex items-center justify-between gap-4 px-3 py-1.5 text-sm cursor-pointer rounded-md transition-colors ${
         danger ? "text-composer-error hover:bg-composer-error/10" : "text-composer-text hover:bg-composer-button"
       }`}
     >
-      {label}
+      <span>{label}</span>
+      {shortcut && (
+        <span className="inline-flex items-center gap-0.5">
+          {shortcut.map((key, i) => (
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+              key={`${key}-${i}`}
+              className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
+            >
+              {key === "Mod" && isMac ? <IconCommand className="w-2.5 h-2.5" /> : formatKey(key)}
+            </span>
+          ))}
+        </span>
+      )}
     </button>
   );
 }
@@ -249,24 +271,25 @@ const TimelineContextMenu: React.FC = () => {
       >
         {target.kind === "word" && (
           <>
-            <MenuItem label="Edit text" onClick={handleEditWord} />
-            <MenuItem label="Split syllables" onClick={handleSplitSyllables} />
-            {mergeInfo && <MenuItem label="Merge words" onClick={handleMergeWords} />}
+            <MenuItem label="Edit text" shortcut={["E"]} onClick={handleEditWord} />
+            <MenuItem label="Split syllables" shortcut={["S"]} onClick={handleSplitSyllables} />
+            {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
             <MenuDivider />
-            <MenuItem label="Delete word" onClick={handleDeleteWord} danger />
+            <MenuItem label="Delete word" shortcut={["Del"]} onClick={handleDeleteWord} danger />
           </>
         )}
 
-        {target.kind === "track" && <MenuItem label="Add word here" onClick={handleAddWordHere} />}
+        {target.kind === "track" && <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />}
 
         {target.kind === "gutter" && (
           <>
-            <MenuItem label="Add line above" onClick={() => handleAddLine("above")} />
-            <MenuItem label="Add line below" onClick={() => handleAddLine("below")} />
+            <MenuItem label="Add line above" shortcut={["Shift", "N"]} onClick={() => handleAddLine("above")} />
+            <MenuItem label="Add line below" shortcut={["N"]} onClick={() => handleAddLine("below")} />
             <MenuDivider />
             {agents.length > 1 && (
               <>
                 <p className="px-3 py-1 text-xs text-composer-text-muted">Assign agent</p>
+                <div className="flex flex-col gap-px">
                 {agents.map((agent) => {
                   const color = getAgentColor(agent.id);
                   const line = lines[target.lineIndex];
@@ -276,9 +299,9 @@ const TimelineContextMenu: React.FC = () => {
                       key={agent.id}
                       type="button"
                       onClick={() => handleAssignAgent(agent.id)}
-                      className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
+                      className={`w-full text-left px-2 py-1 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
                         isActive
-                          ? "bg-composer-button text-composer-text"
+                          ? "bg-composer-accent/15 text-composer-text"
                           : "text-composer-text hover:bg-composer-button"
                       }`}
                     >
@@ -287,6 +310,7 @@ const TimelineContextMenu: React.FC = () => {
                     </button>
                   );
                 })}
+                </div>
                 <MenuDivider />
               </>
             )}
