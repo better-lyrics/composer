@@ -2,7 +2,7 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { debouncedSave, flushPendingSave, loadCurrentProject, saveCurrentProject } from "@/lib/persistence";
+import { debouncedSave, flushPendingSave, loadCurrentProject } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { GuideCard } from "@/tour/guide-card";
@@ -62,6 +62,7 @@ const AppContent: React.FC = () => {
   // Auto-save on state changes
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
+      if (!state.isDirty) return;
       if (state.lines.length > 0 || state.metadata.title) {
         const audioSource = useAudioStore.getState().source;
         const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
@@ -78,9 +79,6 @@ const AppContent: React.FC = () => {
       const state = useProjectStore.getState();
       if (state.isDirty && state.lines.length > 0) {
         flushPendingSave();
-        const audioSource = useAudioStore.getState().source;
-        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-        saveCurrentProject(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
         e.preventDefault();
         return "";
       }

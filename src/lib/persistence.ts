@@ -150,6 +150,7 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
 // -- Debounced Auto-save ------------------------------------------------------
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let pendingSaveArgs: [ProjectMetadata, Agent[], LyricLine[], GranularityMode, string?] | null = null;
 const SAVE_DELAY = 2000;
 
 function debouncedSave(
@@ -159,21 +160,39 @@ function debouncedSave(
   granularity: GranularityMode,
   audioFileName?: string,
 ): void {
+  pendingSaveArgs = [metadata, agents, lines, granularity, audioFileName];
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
   saveTimeout = setTimeout(() => {
-    saveCurrentProject(metadata, agents, lines, granularity, audioFileName).catch((err) =>
-      console.error("[Persistence] Auto-save failed:", err),
-    );
+    if (pendingSaveArgs) {
+      saveCurrentProject(...pendingSaveArgs).catch((err) =>
+        console.error("[Persistence] Auto-save failed:", err),
+      );
+      pendingSaveArgs = null;
+    }
     saveTimeout = null;
   }, SAVE_DELAY);
+}
+
+function cancelPendingSave(): void {
+  if (saveTimeout) {
+    clearTimeout(saveTimeout);
+    saveTimeout = null;
+  }
+  pendingSaveArgs = null;
 }
 
 function flushPendingSave(): void {
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
+  }
+  if (pendingSaveArgs) {
+    saveCurrentProject(...pendingSaveArgs).catch((err) =>
+      console.error("[Persistence] Flush save failed:", err),
+    );
+    pendingSaveArgs = null;
   }
 }
 
@@ -187,5 +206,6 @@ export {
   importProjectFromFile,
   debouncedSave,
   flushPendingSave,
+  cancelPendingSave,
 };
 export type { SavedProject };
