@@ -1,3 +1,4 @@
+import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -32,17 +33,22 @@ interface AudioActions {
 
 // -- Constants ----------------------------------------------------------------
 
-const INITIAL_STATE: AudioState = {
-  source: null,
-  isPlaying: false,
-  currentTime: 0,
-  duration: 0,
-  playbackRate: 0.75,
-  volume: 1,
-  isMuted: false,
-  isLoading: false,
-  audioElement: null,
-};
+function createInitialState(): AudioState {
+  const settings = useSettingsStore.getState();
+  return {
+    source: null,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    playbackRate: settings.defaultPlaybackRate,
+    volume: settings.rememberVolume ? settings.lastVolume : 1,
+    isMuted: false,
+    isLoading: false,
+    audioElement: null,
+  };
+}
+
+const INITIAL_STATE: AudioState = createInitialState();
 
 // -- Store --------------------------------------------------------------------
 
@@ -65,7 +71,7 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
     }
     set({ currentTime: time });
   },
-  reset: () => set(INITIAL_STATE),
+  reset: () => set(createInitialState()),
 }));
 
 export { useAudioStore, INITIAL_STATE };

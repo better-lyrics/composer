@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
-import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
+import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useState } from "react";
 
@@ -23,6 +23,34 @@ const DRAG_X_MIN_THRESHOLD = 5;
 
 // -- Helpers -------------------------------------------------------------------
 
+function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelection[]): WordSelection[] {
+  const isDraggedWordSelected = isWordSelected(
+    selectedWords,
+    activeData.lineId,
+    activeData.wordIndex,
+    activeData.trackType,
+  );
+  if (isDraggedWordSelected && selectedWords.length > 0) return selectedWords;
+  return [
+    {
+      lineId: activeData.lineId,
+      lineIndex: activeData.lineIndex,
+      wordIndex: activeData.wordIndex,
+      type: activeData.trackType,
+    },
+  ];
+}
+
+function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
+  const grouped = new Map<string, WordSelection[]>();
+  for (const sel of selections) {
+    const arr = grouped.get(sel.lineId) ?? [];
+    arr.push(sel);
+    grouped.set(sel.lineId, arr);
+  }
+  return grouped;
+}
+
 function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: number, duration: number) {
   const { active, delta } = event;
   const activeData = active.data.current as DragData | undefined;
@@ -30,34 +58,12 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
   const { selectedWords } = useTimelineStore.getState();
-  const isDraggedWordSelected = isWordSelected(
-    selectedWords,
-    activeData.lineId,
-    activeData.wordIndex,
-    activeData.trackType,
-  );
-
-  const wordsToDuplicate =
-    isDraggedWordSelected && selectedWords.length > 0
-      ? selectedWords
-      : [
-          {
-            lineId: activeData.lineId,
-            lineIndex: activeData.lineIndex,
-            wordIndex: activeData.wordIndex,
-            type: activeData.trackType,
-          },
-        ];
+  const wordsToDuplicate = resolveWordsToOperate(activeData, selectedWords);
 
   const timeDelta = delta.x / zoom;
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
 
-  const grouped = new Map<string, typeof wordsToDuplicate>();
-  for (const sel of wordsToDuplicate) {
-    const arr = grouped.get(sel.lineId) ?? [];
-    arr.push(sel);
-    grouped.set(sel.lineId, arr);
-  }
+  const grouped = groupSelectionsByLine(wordsToDuplicate);
 
   for (const [lineId, selections] of grouped) {
     const line = lines.find((l) => l.id === lineId);
@@ -133,12 +139,14 @@ function useTimelineDnd(lines: LyricLine[]) {
     const data = event.active.data.current as DragData | undefined;
     if (data) {
       setActiveDrag(data);
+      document.body.style.cursor = "grabbing";
     }
   }, []);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveDrag(null);
+      document.body.style.cursor = "";
 
       const { active, over, delta, activatorEvent } = event;
       const isAltDrag = activatorEvent instanceof PointerEvent && activatorEvent.altKey;
@@ -178,44 +186,92 @@ function useTimelineDnd(lines: LyricLine[]) {
 
       if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
-      const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
-      if (!wordsArray) return;
-
-      const wordIndex = activeData.wordIndex;
+      const { selectedWords } = useTimelineStore.getState();
+      const wordsToMove = resolveWordsToOperate(activeData, selectedWords);
       const timeDelta = delta.x / zoom;
-      const wordDuration = activeData.end - activeData.begin;
-      const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
-      const newEnd = newBegin + wordDuration;
 
-      const words = [...wordsArray];
-      words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
-      words.sort((a, b) => a.begin - b.begin);
+      if (wordsToMove.length > 1) {
+        const grouped = groupSelectionsByLine(wordsToMove);
+        const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
 
-      for (let i = 1; i < words.length; i++) {
-        if (words[i].begin < words[i - 1].end) {
-          const overlap = words[i - 1].end - words[i].begin;
-          words[i] = {
-            ...words[i],
-            begin: words[i].begin + overlap,
-            end: words[i].end + overlap,
-          };
+        for (const [lineId, selections] of grouped) {
+          const moveLine = lines.find((l) => l.id === lineId);
+          if (!moveLine) continue;
+
+          const lineUpdates: Partial<LyricLine> = {};
+          const wordIndices = new Set(selections.filter((s) => s.type === "word").map((s) => s.wordIndex));
+          const bgIndices = new Set(selections.filter((s) => s.type === "bg").map((s) => s.wordIndex));
+
+          for (const [indices, trackKey] of [
+            [wordIndices, "words"],
+            [bgIndices, "backgroundWords"],
+          ] as const) {
+            if (indices.size === 0) continue;
+            const source = moveLine[trackKey];
+            if (!source) continue;
+
+            const words = source.map((w, i) => {
+              if (!indices.has(i)) return { ...w };
+              const wordDur = w.end - w.begin;
+              const newBegin = Math.max(0, Math.min(duration - wordDur, w.begin + timeDelta));
+              return { ...w, begin: newBegin, end: newBegin + wordDur };
+            });
+            words.sort((a, b) => a.begin - b.begin);
+
+            for (let i = 1; i < words.length; i++) {
+              if (words[i].begin < words[i - 1].end) {
+                const overlap = words[i - 1].end - words[i].begin;
+                words[i] = { ...words[i], begin: words[i].begin + overlap, end: words[i].end + overlap };
+              }
+            }
+            const last = words[words.length - 1];
+            if (last.end > duration) {
+              const overflow = last.end - duration;
+              words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
+            }
+
+            lineUpdates[trackKey] = words;
+          }
+
+          if (Object.keys(lineUpdates).length > 0) {
+            updates.push({ id: lineId, updates: lineUpdates });
+          }
         }
-      }
 
-      const lastWord = words[words.length - 1];
-      if (lastWord.end > duration) {
-        const overflow = lastWord.end - duration;
-        words[words.length - 1] = {
-          ...lastWord,
-          begin: lastWord.begin - overflow,
-          end: duration,
-        };
-      }
-
-      if (activeData.trackType === "word") {
-        updateLineWithHistory(activeData.lineId, { words });
+        if (updates.length > 0) {
+          useProjectStore.getState().updateLinesWithHistory(updates);
+        }
       } else {
-        updateLineWithHistory(activeData.lineId, { backgroundWords: words });
+        const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
+        if (!wordsArray) return;
+
+        const wordIndex = activeData.wordIndex;
+        const wordDuration = activeData.end - activeData.begin;
+        const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
+        const newEnd = newBegin + wordDuration;
+
+        const words = [...wordsArray];
+        words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
+        words.sort((a, b) => a.begin - b.begin);
+
+        for (let i = 1; i < words.length; i++) {
+          if (words[i].begin < words[i - 1].end) {
+            const overlap = words[i - 1].end - words[i].begin;
+            words[i] = { ...words[i], begin: words[i].begin + overlap, end: words[i].end + overlap };
+          }
+        }
+
+        const lastWord = words[words.length - 1];
+        if (lastWord.end > duration) {
+          const overflow = lastWord.end - duration;
+          words[words.length - 1] = { ...lastWord, begin: lastWord.begin - overflow, end: duration };
+        }
+
+        if (activeData.trackType === "word") {
+          updateLineWithHistory(activeData.lineId, { words });
+        } else {
+          updateLineWithHistory(activeData.lineId, { backgroundWords: words });
+        }
       }
     },
     [moveWordToBg, moveWordFromBg, updateLineWithHistory, zoom, duration, lines],
@@ -223,6 +279,7 @@ function useTimelineDnd(lines: LyricLine[]) {
 
   const handleDragCancel = useCallback(() => {
     setActiveDrag(null);
+    document.body.style.cursor = "";
   }, []);
 
   return { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel };

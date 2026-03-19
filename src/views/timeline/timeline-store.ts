@@ -1,3 +1,4 @@
+import { useSettingsStore } from "@/stores/settings";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
 
@@ -72,68 +73,71 @@ const GUTTER_WIDTH = 48;
 const MIN_ZOOM = 20;
 const MAX_ZOOM = 500;
 const ZOOM_STEP = 20;
-const DEFAULT_ZOOM = 100;
 const MIN_ROW_HEIGHT = 32;
 const MAX_ROW_HEIGHT = 120;
 const DEFAULT_ROW_HEIGHT = 44;
 
 // -- Store ---------------------------------------------------------------------
 
-const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => ({
-  zoom: DEFAULT_ZOOM,
-  followEnabled: true,
-  previewSidebarOpen: false,
-  selectedWords: [],
-  clipboard: null,
-  pasteMode: { status: "idle" },
-  scrollLeft: 0,
-  rowHeights: {},
-  defaultRowHeight: DEFAULT_ROW_HEIGHT,
-  isDraggingPlayhead: false,
-  dragTime: 0,
-  contextMenu: null,
-  editingWord: null,
-  selectOnlyMode: false,
+const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
+  const settings = useSettingsStore.getState();
+  return {
+    zoom: settings.defaultZoom,
+    followEnabled: settings.followPlayhead,
+    previewSidebarOpen: false,
+    selectedWords: [],
+    clipboard: null,
+    pasteMode: { status: "idle" },
+    scrollLeft: 0,
+    rowHeights: {},
+    defaultRowHeight: settings.defaultRowHeight,
+    isDraggingPlayhead: false,
+    dragTime: 0,
+    contextMenu: null,
+    editingWord: null,
+    selectOnlyMode: false,
 
-  setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
-  zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
-  zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
-  toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
-  togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
-  setSelectedWords: (selectedWords) => set({ selectedWords }),
-  toggleSelection: (selection) =>
-    set((s) => {
-      const exists = s.selectedWords.some(
-        (w) => w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type,
-      );
-      if (exists) {
-        return {
-          selectedWords: s.selectedWords.filter(
-            (w) => !(w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type),
-          ),
-        };
-      }
-      return { selectedWords: [...s.selectedWords, selection] };
-    }),
-  clearSelection: () => set({ selectedWords: [] }),
-  setClipboard: (clipboard) => set({ clipboard }),
-  setPasteMode: (pasteMode) => set({ pasteMode }),
-  setScrollLeft: (scrollLeft) => set({ scrollLeft }),
-  setRowHeight: (lineId, height) =>
-    set((s) => ({
-      rowHeights: {
-        ...s.rowHeights,
-        [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)),
-      },
-    })),
-  setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
-  setDragTime: (dragTime) => set({ dragTime }),
-  setContextMenu: (contextMenu) => set({ contextMenu }),
-  clearContextMenu: () => set({ contextMenu: null }),
-  setEditingWord: (editingWord) => set({ editingWord }),
-  clearEditingWord: () => set({ editingWord: null }),
-  toggleSelectOnlyMode: () => set((s) => ({ selectOnlyMode: !s.selectOnlyMode })),
-}));
+    setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
+    zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
+    zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
+    toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
+    togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
+    setSelectedWords: (selectedWords) => set({ selectedWords }),
+    toggleSelection: (selection) =>
+      set((s) => {
+        const exists = s.selectedWords.some(
+          (w) => w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type,
+        );
+        if (exists) {
+          return {
+            selectedWords: s.selectedWords.filter(
+              (w) =>
+                !(w.lineId === selection.lineId && w.wordIndex === selection.wordIndex && w.type === selection.type),
+            ),
+          };
+        }
+        return { selectedWords: [...s.selectedWords, selection] };
+      }),
+    clearSelection: () => set({ selectedWords: [] }),
+    setClipboard: (clipboard) => set({ clipboard }),
+    setPasteMode: (pasteMode) => set({ pasteMode }),
+    setScrollLeft: (scrollLeft) => set({ scrollLeft }),
+    setRowHeight: (lineId, height) =>
+      set((s) => ({
+        rowHeights: {
+          ...s.rowHeights,
+          [lineId]: Math.max(MIN_ROW_HEIGHT, Math.min(MAX_ROW_HEIGHT, height)),
+        },
+      })),
+    setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
+    setDragTime: (dragTime) => set({ dragTime }),
+    setContextMenu: (contextMenu) => set({ contextMenu }),
+    clearContextMenu: () => set({ contextMenu: null }),
+    setEditingWord: (editingWord) => set({ editingWord }),
+    clearEditingWord: () => set({ editingWord: null }),
+    toggleSelectOnlyMode: () => set((s) => ({ selectOnlyMode: !s.selectOnlyMode })),
+  };
+});
 
 function isWordSelected(selectedWords: WordSelection[], lineId: string, wordIndex: number, type: "word" | "bg") {
   return selectedWords.some((w) => w.lineId === lineId && w.wordIndex === wordIndex && w.type === type);

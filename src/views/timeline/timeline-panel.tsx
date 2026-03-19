@@ -12,7 +12,7 @@ import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -26,15 +26,37 @@ import { Activity, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
-const DragGhost: React.FC<{ text: string; color: string }> = ({ text, color }) => (
-  <div
-    className="px-3 py-1 text-xs text-white rounded-xl border cursor-grabbing shadow-lg"
-    style={{
-      backgroundColor: `${color}80`,
-      borderColor: color,
-    }}
-  >
-    {text}
+interface DragGhostCell {
+  text: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+const DragGhost: React.FC<{ cells: DragGhostCell[]; anchorWidth: number; anchorHeight: number; color: string }> = ({
+  cells,
+  anchorWidth,
+  anchorHeight,
+  color,
+}) => (
+  <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
+    {cells.map((cell) => (
+      <div
+        key={`${cell.left}-${cell.top}`}
+        className="absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none"
+        style={{
+          left: cell.left,
+          top: cell.top,
+          width: cell.width,
+          height: cell.height,
+          backgroundColor: `${color}50`,
+          borderColor: `${color}90`,
+        }}
+      >
+        <span className="px-1 truncate">{cell.text}</span>
+      </div>
+    ))}
   </div>
 );
 
@@ -167,6 +189,64 @@ const TimelinePanel: React.FC = () => {
 
   const dragColor = activeDrag ? getAgentColor(lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "") : "#888";
 
+  const dragCells = (() => {
+    if (!activeDrag) return null;
+    const { selectedWords, rowHeights, defaultRowHeight } = useTimelineStore.getState();
+    const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
+
+    const WAVEFORM_HEIGHT = 80;
+    const BG_DROP_ZONE_HEIGHT = 24;
+
+    const rowTops: Record<string, number> = {};
+    const rowMainHeights: Record<string, number> = {};
+    const rowBgTops: Record<string, number> = {};
+    const rowBgHeights: Record<string, number> = {};
+    let top = WAVEFORM_HEIGHT;
+    for (const line of lines) {
+      rowTops[line.id] = top;
+      const mainH = rowHeights[line.id] ?? defaultRowHeight;
+      rowMainHeights[line.id] = mainH;
+      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+      const bgH = hasBg ? mainH : BG_DROP_ZONE_HEIGHT;
+      rowBgTops[line.id] = top + mainH;
+      rowBgHeights[line.id] = bgH;
+      top += mainH + bgH + 1;
+    }
+
+    const anchorLeft = activeDrag.begin * zoom;
+    const anchorTop = activeDrag.trackType === "bg" ? rowBgTops[activeDrag.lineId] : rowTops[activeDrag.lineId];
+    const anchorHeight =
+      activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
+
+    const wordsToShow = inSelection && selectedWords.length > 1 ? selectedWords : null;
+
+    if (!wordsToShow) {
+      const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
+      return {
+        cells: [{ text: activeDrag.text, left: 0, top: 0, width: w, height: anchorHeight - 8 }],
+        anchorWidth: w,
+        anchorHeight: anchorHeight - 8,
+      };
+    }
+
+    const cells = wordsToShow.map((sel) => {
+      const line = lines.find((l) => l.id === sel.lineId);
+      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
+      const word = wordsArray?.[sel.wordIndex];
+      if (!word || !line) return { text: "", left: 0, top: 0, width: 0, height: 0 };
+
+      const cellLeft = word.begin * zoom - anchorLeft;
+      const cellTop = (sel.type === "bg" ? rowBgTops[line.id] : rowTops[line.id]) - anchorTop;
+      const cellWidth = Math.max((word.end - word.begin) * zoom, 4);
+      const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - 8;
+
+      return { text: word.text.trimEnd(), left: cellLeft, top: cellTop, width: cellWidth, height: cellHeight };
+    });
+
+    const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
+    return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
+  })();
+
   return (
     <DndContext
       sensors={sensors}
@@ -183,7 +263,7 @@ const TimelinePanel: React.FC = () => {
               <div
                 ref={scrollContainerRef}
                 data-scroll-container
-                className="flex-1 overflow-auto"
+                className="flex-1 overflow-auto overscroll-none"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
@@ -238,7 +318,14 @@ const TimelinePanel: React.FC = () => {
       </div>
 
       <DragOverlay dropAnimation={null}>
-        {activeDrag && <DragGhost text={activeDrag.text} color={dragColor} />}
+        {activeDrag && dragCells && (
+          <DragGhost
+            cells={dragCells.cells}
+            anchorWidth={dragCells.anchorWidth}
+            anchorHeight={dragCells.anchorHeight}
+            color={dragColor}
+          />
+        )}
       </DragOverlay>
 
       <TimelineContextMenu />

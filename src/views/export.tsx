@@ -1,4 +1,4 @@
-import { exportProjectToFile, importProjectFromFile, clearCurrentProject } from "@/lib/persistence";
+import { exportProjectToFile, importProjectFromFile, clearCurrentProject, cancelPendingSave } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -157,6 +157,7 @@ const ExportPanel: React.FC = () => {
 
   const handleClearProject = useCallback(async () => {
     if (!confirm("This will clear all project data. Are you sure?")) return;
+    cancelPendingSave();
     reset();
     await clearCurrentProject();
   }, [reset]);

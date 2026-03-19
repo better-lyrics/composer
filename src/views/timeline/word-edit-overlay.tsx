@@ -38,7 +38,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
     const findAndPosition = () => {
       const wordEl = container.querySelector(`[data-word-block][id="${CSS.escape(key)}"]`) as HTMLElement | null;
       if (!wordEl) return false;
-      const elLeft = parseFloat(wordEl.style.left || "0");
+      const elLeft = Number.parseFloat(wordEl.style.left || "0");
       if (Math.abs(elLeft - expectedLeft) > 1) return false;
       const rect = wordEl.getBoundingClientRect();
       setPos({ top: rect.top - 32, left: rect.left, width: Math.max(rect.width, 80) });

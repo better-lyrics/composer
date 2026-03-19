@@ -1,5 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { getLineTiming } from "@/views/timeline/utils";
 import { useCallback, useEffect, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -22,6 +24,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const lastFollowedLineRef = useRef<number>(-1);
+  const verticalTargetRef = useRef<number | null>(null);
 
   // RAF loop - always runs, reads directly from audio element and stores
   useEffect(() => {
@@ -44,7 +48,59 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
         const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
         container.scrollLeft = targetScrollLeft;
+
+        const lines = useProjectStore.getState().lines;
+        let activeLineIndex = -1;
+        for (let i = 0; i < lines.length; i++) {
+          const timing = getLineTiming(lines[i]);
+          if (timing && currentTime >= timing.begin && currentTime < timing.end) {
+            activeLineIndex = i;
+            break;
+          }
+        }
+
+        if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
+          lastFollowedLineRef.current = activeLineIndex;
+          const WAVEFORM_HEIGHT = 80;
+          const BG_DROP_ZONE_HEIGHT = 24;
+          const { rowHeights, defaultRowHeight } = useTimelineStore.getState();
+
+          let rowTop = WAVEFORM_HEIGHT;
+          for (let i = 0; i < activeLineIndex; i++) {
+            const l = lines[i];
+            const mainHeight = rowHeights[l.id] ?? defaultRowHeight;
+            const hasBg = l.backgroundWords && l.backgroundWords.length > 0;
+            rowTop += mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+          }
+          const line = lines[activeLineIndex];
+          const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
+          const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+          const rowHeight = mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+
+          const viewportHeight = container.clientHeight;
+          const rowCenter = rowTop + rowHeight / 2;
+          verticalTargetRef.current = Math.max(
+            0,
+            Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
+          );
+        }
+
+        // Lerp vertical scroll only while animating toward target
+        if (verticalTargetRef.current !== null) {
+          const diff = verticalTargetRef.current - container.scrollTop;
+          if (Math.abs(diff) > 0.5) {
+            container.scrollTop += diff * 0.15;
+          } else {
+            container.scrollTop = verticalTargetRef.current;
+            verticalTargetRef.current = null;
+          }
+        }
+      } else {
+        lastFollowedLineRef.current = -1;
+        verticalTargetRef.current = null;
       }
+
+      container?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
 
       const displayTime = isDraggingPlayhead ? dragTime : currentTime;
       const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
@@ -109,7 +165,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden z-50">
       <div
         ref={playheadRef}
-        className="absolute top-0 left-0 w-0.5 bg-indigo-400 cursor-ew-resize pointer-events-auto"
+        className="absolute top-0 left-0 w-0.5 bg-indigo-400 cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{
           height: containerHeight,
           willChange: "transform",
@@ -117,7 +173,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         }}
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-indigo-400 rounded-t" />
+        <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-indigo-400 rounded-t expanded-hit-lg" />
       </div>
     </div>
   );

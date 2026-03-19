@@ -91,6 +91,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["F"], description: "Toggle follow playhead" },
       { keys: ["P"], description: "Toggle preview sidebar" },
       { keys: ["N"], description: "Insert line below selected word" },
+      { keys: ["Space"], description: "Jump viewport to playhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead" },
       { keys: ["]"], description: "Set word end to playhead" },
@@ -106,6 +107,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     title: "Timeline Selection",
     shortcuts: [
       { keys: ["Click"], description: "Select word" },
+      { keys: ["Mod", "A"], description: "Select all words" },
       { keys: ["Mod", "Click"], description: "Toggle word in selection" },
       { keys: ["Drag"], description: "Marquee select words" },
       { keys: ["Shift", "Drag"], description: "Add to selection with marquee" },
@@ -224,7 +226,11 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       </div>
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
-        Press <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">?</kbd> to open anytime
+        Press{" "}
+        <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">
+          ?
+        </kbd>{" "}
+        to open anytime
       </div>
     </Modal>
   );

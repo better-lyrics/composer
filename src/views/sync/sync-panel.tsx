@@ -9,7 +9,7 @@ import {
   syncPulseVariants,
 } from "@/utils/animationVariants";
 import {
-  NUDGE_AMOUNT,
+  getNudgeAmount,
   type SyncState,
   convertLineToWord,
   getLineTiming,
@@ -234,10 +234,10 @@ const SyncPanel: React.FC = () => {
         }
       } else if (e.code === "ArrowLeft" && !e.repeat) {
         e.preventDefault();
-        handleNudgeLastSynced(-NUDGE_AMOUNT);
+        handleNudgeLastSynced(-getNudgeAmount());
       } else if (e.code === "ArrowRight" && !e.repeat) {
         e.preventDefault();
-        handleNudgeLastSynced(NUDGE_AMOUNT);
+        handleNudgeLastSynced(getNudgeAmount());
       }
     };
 
@@ -250,7 +250,6 @@ const SyncPanel: React.FC = () => {
     handleStartSync,
     handleTap,
     isPlaying,
-    setIsPlaying,
     undo,
     redo,
     handleNudgeLastSynced,

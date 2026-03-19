@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -103,7 +104,7 @@ const TimelineContextMenu: React.FC = () => {
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordDuration = 0.3;
+    const wordDuration = useSettingsStore.getState().defaultWordDuration;
     const newWord: WordTiming = {
       text: "...",
       begin: Math.max(0, time - wordDuration / 2),

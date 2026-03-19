@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -114,22 +115,26 @@ const DEFAULT_AGENTS: Agent[] = [AGENT_PRESETS[0]];
 
 const MAX_HISTORY_SIZE = 100;
 
-const INITIAL_STATE: ProjectState = {
-  metadata: {
-    title: "",
-    artist: "",
-    album: "",
-    duration: 0,
-  },
-  agents: DEFAULT_AGENTS,
-  lines: [],
-  granularity: "word",
-  editorMode: "simple",
-  activeTab: "import",
-  isDirty: false,
-  history: [],
-  historyIndex: -1,
-};
+function createInitialState(): ProjectState {
+  return {
+    metadata: {
+      title: "",
+      artist: "",
+      album: "",
+      duration: 0,
+    },
+    agents: DEFAULT_AGENTS,
+    lines: [],
+    granularity: useSettingsStore.getState().defaultGranularity,
+    editorMode: "simple",
+    activeTab: "import",
+    isDirty: false,
+    history: [],
+    historyIndex: -1,
+  };
+}
+
+const INITIAL_STATE: ProjectState = createInitialState();
 
 // -- Store --------------------------------------------------------------------
 
@@ -271,7 +276,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   markClean: () => set({ isDirty: false }),
 
-  reset: () => set(INITIAL_STATE),
+  reset: () => set(createInitialState()),
 
   undo: () =>
     set((state) => {

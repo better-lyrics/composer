@@ -2,14 +2,16 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { debouncedSave, flushPendingSave, loadCurrentProject, saveCurrentProject } from "@/lib/persistence";
+import { debouncedSave, flushPendingSave, loadAudioFile, loadCurrentProject, saveAudioFile } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { Button } from "@/ui/button";
 import { HelpModal } from "@/ui/help-modal";
+import { SettingsModal } from "@/ui/settings-modal";
 import { TabBar } from "@/ui/tab-bar";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
@@ -17,7 +19,7 @@ import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { IconHelp, IconRoute } from "@tabler/icons-react";
+import { IconHelp, IconRoute, IconSettings } from "@tabler/icons-react";
 import { Activity, useEffect, useMemo, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
@@ -28,6 +30,7 @@ const AppContent: React.FC = () => {
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
@@ -57,11 +60,18 @@ const AppContent: React.FC = () => {
         state.markClean();
       }
     });
+
+    loadAudioFile().then((file) => {
+      if (file) {
+        useAudioStore.getState().setSource({ type: "file", file });
+      }
+    });
   }, []);
 
   // Auto-save on state changes
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
+      if (!state.isDirty) return;
       if (state.lines.length > 0 || state.metadata.title) {
         const audioSource = useAudioStore.getState().source;
         const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
@@ -72,15 +82,42 @@ const AppContent: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
+  // Save audio file to IndexedDB when source changes
+  useEffect(() => {
+    let prevSource = useAudioStore.getState().source;
+    const unsubscribe = useAudioStore.subscribe((state) => {
+      if (state.source === prevSource) return;
+      prevSource = state.source;
+      if (state.source?.type === "file") {
+        saveAudioFile(state.source.file).catch((err) => console.error("[Persistence] Audio save failed:", err));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Persist volume to settings store
+  useEffect(() => {
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    const unsubscribe = useAudioStore.subscribe((state, prev) => {
+      if (state.volume === prev.volume) return;
+      if (!useSettingsStore.getState().rememberVolume) return;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        useSettingsStore.getState().set("lastVolume", state.volume);
+      }, 500);
+    });
+    return () => {
+      unsubscribe();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
+  }, []);
+
   // Warn on tab close if dirty
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const state = useProjectStore.getState();
       if (state.isDirty && state.lines.length > 0) {
         flushPendingSave();
-        const audioSource = useAudioStore.getState().source;
-        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-        saveCurrentProject(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
         e.preventDefault();
         return "";
       }
@@ -156,6 +193,9 @@ const AppContent: React.FC = () => {
           Composer
         </h1>
         <div className="flex items-center gap-1">
+          <Button size="icon" variant="ghost" onClick={() => setSettingsOpen(true)} title="Settings">
+            <IconSettings className="w-5 h-5" />
+          </Button>
           <Button size="icon" variant="ghost" onClick={resumeOrStartTour} title="Product tour">
             <IconRoute className="w-5 h-5" />
           </Button>
@@ -165,6 +205,14 @@ const AppContent: React.FC = () => {
         </div>
       </header>
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
+      <SettingsModal
+        isOpen={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        onResetTour={() => {
+          localStorage.removeItem("composer-tour-seen");
+          localStorage.removeItem("composer-tour-resume");
+        }}
+      />
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
         <Activity mode={activeTab === "import" ? "visible" : "hidden"}>

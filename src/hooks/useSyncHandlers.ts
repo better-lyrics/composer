@@ -2,7 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import {
-  NUDGE_AMOUNT,
+  getNudgeAmount,
   type SyncState,
   getLineTiming,
   splitIntoWords,
@@ -326,4 +326,4 @@ function useSyncHandlers({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useSyncHandlers, NUDGE_AMOUNT };
+export { useSyncHandlers, getNudgeAmount };

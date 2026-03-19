@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
@@ -19,7 +20,9 @@ interface LineTiming {
 
 // -- Constants ----------------------------------------------------------------
 
-const NUDGE_AMOUNT = 0.05;
+function getNudgeAmount(): number {
+  return useSettingsStore.getState().nudgeAmount;
+}
 
 // -- Functions ----------------------------------------------------------------
 
@@ -153,7 +156,7 @@ function hasLineTiming(lines: ConvertibleLine[]): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export {
-  NUDGE_AMOUNT,
+  getNudgeAmount,
   convertLineToWord,
   convertWordToLine,
   formatTimeMs,
