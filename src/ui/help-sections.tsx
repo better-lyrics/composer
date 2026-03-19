@@ -353,11 +353,34 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
-      <h4 className={HEADING}>Other features</h4>
+      <h4 className={HEADING}>Header toolbar</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Press <strong>P</strong> to toggle the preview sidebar on the right.
+          <strong>Follow</strong> (<strong>F</strong>) - Auto-scrolls the view
+          to keep the playhead visible during playback.
         </li>
+        <li>
+          <strong>Select</strong> - Disables double-click word creation so you
+          can click freely without accidentally adding words.
+        </li>
+        <li>
+          <strong>Preview</strong> (<strong>P</strong>) - Opens a live lyrics
+          preview sidebar on the right.
+        </li>
+        <li>
+          <strong>Import</strong> ({MOD_KEY} + Shift + V) - Import lyrics
+          directly into the Timeline without switching tabs.
+        </li>
+        <li>
+          <strong>Zoom</strong> - Use the +/- buttons or {MOD_KEY} + scroll
+          wheel to zoom in and out.
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Other features</h4>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Press <strong>N</strong> to insert a new empty line after the current
           selection.

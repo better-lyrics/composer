@@ -160,13 +160,6 @@ function useTimelineKeyboard(
       }
 
       switch (e.key) {
-        case " ":
-        case "Enter": {
-          e.preventDefault();
-          const { isPlaying, setIsPlaying } = useAudioStore.getState();
-          setIsPlaying(!isPlaying);
-          break;
-        }
         case "Escape": {
           const { pasteMode } = useTimelineStore.getState();
           if (pasteMode.status === "preview") {

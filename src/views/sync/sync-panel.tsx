@@ -225,9 +225,6 @@ const SyncPanel: React.FC = () => {
         } else if (isPlaying) {
           handleTap();
         }
-      } else if (e.code === "Enter" && !e.repeat) {
-        e.preventDefault();
-        setIsPlaying(!isPlaying);
       } else if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         if (e.shiftKey) {

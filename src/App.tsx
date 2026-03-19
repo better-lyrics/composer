@@ -129,6 +129,14 @@ const AppContent: React.FC = () => {
         description: "Export",
       },
       {
+        key: "Enter",
+        action: () => {
+          const { isPlaying, setIsPlaying } = useAudioStore.getState();
+          setIsPlaying(!isPlaying);
+        },
+        description: "Play / Pause",
+      },
+      {
         key: "?",
         shift: true,
         action: () => setHelpOpen(true),

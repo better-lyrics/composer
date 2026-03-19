@@ -61,7 +61,6 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     title: "General",
     shortcuts: [
       { keys: ["Shift", "?"], description: "Show keyboard shortcuts" },
-      { keys: ["Space"], description: "Play / Pause audio" },
       { keys: ["Enter"], description: "Play / Pause audio" },
     ],
   },
