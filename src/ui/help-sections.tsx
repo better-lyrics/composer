@@ -15,7 +15,16 @@ const HEADING = "text-sm font-medium";
 const GettingStartedSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
-      Composer guides you through four steps to create synced lyrics. Follow the
+      Composer is the lyrics editor behind{" "}
+      <a
+        href="https://better-lyrics.boidu.dev"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+      >
+        Better Lyrics
+      </a>
+      . It guides you through four steps to create synced lyrics. Follow the
       tabs left-to-right for a guided experience, or jump straight to the
       Timeline for a DAW-like workflow.
     </p>
