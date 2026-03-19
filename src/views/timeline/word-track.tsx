@@ -1,4 +1,6 @@
+import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -138,8 +140,73 @@ const WordTrack: React.FC<WordTrackProps> = ({
     }
   };
 
+  const handleWordDoubleClick = (wordIndex: number) => {
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type: trackType });
+  };
+
+  const handleWordContextMenu = (wordIndex: number, e: React.MouseEvent) => {
+    useTimelineStore.getState().setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      target: { kind: "word", lineId, lineIndex, wordIndex, type: trackType },
+    });
+  };
+
+  const handleTrackDoubleClick = (e: React.MouseEvent) => {
+    if (useTimelineStore.getState().selectOnlyMode) return;
+    if ((e.target as HTMLElement).closest("[data-word-block]")) return;
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const time = clickX / zoom;
+
+    const audioDuration = useAudioStore.getState().duration;
+    const wordDuration = 0.3;
+    const begin = Math.max(0, time - wordDuration / 2);
+    const end = Math.min(audioDuration, time + wordDuration / 2);
+
+    // Check for overlap with existing words
+    for (const w of words) {
+      if (begin < w.end && end > w.begin) return;
+    }
+
+    const newWord: WordTiming = { text: "...", begin, end };
+    const newWords = [...words, newWord].sort((a, b) => a.begin - b.begin);
+    const newIndex = newWords.indexOf(newWord);
+
+    const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
+    if (trackType === "word") {
+      updateLineWithHistory(lineId, { words: newWords });
+    } else {
+      updateLineWithHistory(lineId, { backgroundWords: newWords });
+    }
+
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: trackType });
+  };
+
+  const handleTrackContextMenu = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest("[data-word-block]")) return;
+    e.preventDefault();
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const time = clickX / zoom;
+
+    useTimelineStore.getState().setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      target: { kind: "track", lineId, lineIndex, time },
+    });
+  };
+
   return (
-    <div className="relative" style={{ height, width: duration * zoom }} onClick={handleTrackClick}>
+    <div
+      className="relative"
+      style={{ height, width: duration * zoom }}
+      onClick={handleTrackClick}
+      onDoubleClick={handleTrackDoubleClick}
+      onContextMenu={handleTrackContextMenu}
+    >
       {words.map((word, wordIndex) => {
         const display = getDisplay(wordIndex);
         const wordKey = `${lineId}-${trackType}-${wordIndex}`;
@@ -160,6 +227,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
+            onDoubleClick={() => handleWordDoubleClick(wordIndex)}
+            onContextMenu={(e) => handleWordContextMenu(wordIndex, e)}
           />
         );
       })}

@@ -4,9 +4,58 @@ import { Button } from "@/ui/button";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart } from "@tabler/icons-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// -- Component -----------------------------------------------------------------
+// -- Components ----------------------------------------------------------------
+
+const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }> = ({ lineId, backgroundText }) => {
+  const [value, setValue] = useState(backgroundText ?? "");
+  const [isEditing, setIsEditing] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+
+  useEffect(() => {
+    if (isEditing) inputRef.current?.focus();
+  }, [isEditing]);
+
+  const handleCommit = useCallback(() => {
+    updateLineWithHistory(lineId, { backgroundText: value.trim() || undefined });
+    setIsEditing(false);
+  }, [lineId, value, updateLineWithHistory]);
+
+  if (!isEditing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValue(backgroundText ?? "");
+          setIsEditing(true);
+        }}
+        className="text-xs cursor-pointer text-composer-text-muted hover:text-composer-text px-1.5 py-0.5 rounded hover:bg-composer-button"
+        title="Edit background vocals"
+      >
+        {backgroundText ? `BG: ${backgroundText}` : "Add BG"}
+      </button>
+    );
+  }
+
+  return (
+    <input
+      ref={inputRef}
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onBlur={handleCommit}
+      onKeyDown={(e) => {
+        e.stopPropagation();
+        if (e.key === "Enter") handleCommit();
+        if (e.key === "Escape") setIsEditing(false);
+      }}
+      placeholder="Background vocals"
+      className="w-32 px-1.5 py-0.5 text-xs border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
+    />
+  );
+};
 
 const TimelineInfoPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
@@ -159,6 +208,8 @@ const TimelineInfoPanel: React.FC = () => {
           <span className="font-mono text-composer-text select-text">{formatTime(itemDuration)}</span>
         </div>
       </div>
+
+      <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
 
       <div className="flex items-center gap-2 ml-auto">
         <Button variant="secondary" size="sm" hasIcon onClick={handleSetBeginToCursor} title="Set begin to cursor ([)">

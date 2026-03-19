@@ -12,11 +12,12 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   className?: string;
+  bodyClassName?: string;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className, bodyClassName }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDialogElement>(null);
 
@@ -63,7 +64,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
         open
         aria-labelledby={title ? "modal-title" : undefined}
         className={cn(
-          "relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none",
+          "relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none overflow-clip",
           className,
         )}
       >
@@ -77,7 +78,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
             </Button>
           </div>
         )}
-        <div className={title ? "p-5" : "p-5 pt-4"}>{children}</div>
+        <div className={cn(title ? "p-5" : "p-5 pt-4", bodyClassName)}>{children}</div>
       </dialog>
     </div>,
     document.body,

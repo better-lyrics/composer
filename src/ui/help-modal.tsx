@@ -1,5 +1,18 @@
+import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
-import { IconCommand, IconKeyboard } from "@tabler/icons-react";
+import { cn } from "@/utils/cn";
+import {
+  IconCommand,
+  IconDownload,
+  IconEye,
+  IconHandClick,
+  IconKeyboard,
+  IconMusic,
+  IconPencil,
+  IconRocket,
+  IconLayoutRows,
+} from "@tabler/icons-react";
+import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -16,6 +29,12 @@ interface ShortcutSectionProps {
 interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
+}
+
+interface HelpSectionDef {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -72,11 +91,13 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     shortcuts: [
       { keys: ["F"], description: "Toggle follow playhead" },
       { keys: ["P"], description: "Toggle preview sidebar" },
+      { keys: ["N"], description: "Add new line after selection" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead" },
       { keys: ["]"], description: "Set word end to playhead" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
+      { keys: ["Mod", "Shift", "V"], description: "Import lyrics" },
       { keys: ["Mod", "Scroll"], description: "Zoom in / out" },
       { keys: ["Middle", "Drag"], description: "Pan timeline" },
       { keys: ["Shift", "Middle", "Drag"], description: "Pan locked to axis" },
@@ -94,6 +115,11 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "V"], description: "Paste (ghost preview, click to place)" },
       { keys: ["Delete"], description: "Delete selected words" },
       { keys: ["Alt", "Drag"], description: "Duplicate selected words" },
+      { keys: ["E"], description: "Edit selected word text" },
+      { keys: ["F2"], description: "Edit selected word text" },
+      { keys: ["S"], description: "Split selected word into syllables" },
+      { keys: ["M"], description: "Merge adjacent selected words" },
+      { keys: ["Double Click"], description: "Edit word / create word" },
     ],
   },
   {
@@ -105,7 +131,18 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   },
 ];
 
-// -- Components ---------------------------------------------------------------
+const HELP_SECTIONS: HelpSectionDef[] = [
+  { id: "getting-started", label: "Getting Started", icon: IconRocket },
+  { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
+  { id: "importing", label: "Importing Audio", icon: IconMusic },
+  { id: "editing", label: "Editing Lyrics", icon: IconPencil },
+  { id: "syncing", label: "Syncing", icon: IconHandClick },
+  { id: "timeline", label: "Timeline", icon: IconLayoutRows },
+  { id: "preview", label: "Preview", icon: IconEye },
+  { id: "exporting", label: "Exporting", icon: IconDownload },
+];
+
+// -- Shared Components --------------------------------------------------------
 
 const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
   const formatted = formatKey(keyName);
@@ -122,49 +159,73 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
   );
 };
 
-const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => {
-  return (
-    <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm text-composer-text-secondary">{description}</span>
-      <div className="flex items-center gap-1">
-        {keys.map((key, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-          <KeyBadge key={`${key}-${i}`} keyName={key} />
-        ))}
-      </div>
+const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
+  <div className="flex items-center justify-between py-1.5">
+    <span className="text-sm text-composer-text-secondary">{description}</span>
+    <div className="flex items-center gap-1">
+      {keys.map((key, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+        <KeyBadge key={`${key}-${i}`} keyName={key} />
+      ))}
     </div>
-  );
-};
+  </div>
+);
 
-const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) => {
-  return (
-    <div>
-      <h3 className="mb-2 text-xs font-medium tracking-wide text-composer-text-muted">{title}</h3>
-      <div className="flex flex-col">
-        {shortcuts.map((shortcut, i) => (
-          <ShortcutItem key={`${shortcut.description}-${i}`} {...shortcut} />
-        ))}
-      </div>
+const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) => (
+  <div>
+    <h3 className="mb-2 text-xs font-medium tracking-wide text-composer-text-muted">{title}</h3>
+    <div className="flex flex-col">
+      {shortcuts.map((shortcut, i) => (
+        <ShortcutItem key={`${shortcut.description}-${i}`} {...shortcut} />
+      ))}
     </div>
-  );
-};
+  </div>
+);
+
+// -- Help Modal ---------------------------------------------------------------
 
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
+  const [activeSection, setActiveSection] = useState("getting-started");
+
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Keyboard Shortcuts"
-      className="max-w-3xl max-h-[80%] overflow-y-auto"
+      title="Help"
+      className="max-w-4xl h-[80%] flex flex-col"
+      bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
     >
-      <div className="flex items-center gap-2 mb-6 text-sm text-composer-text-muted">
-        <IconKeyboard className="w-4 h-4" />
-        <span>Use these shortcuts to speed up your workflow</span>
+      <div className="flex flex-1 min-h-0">
+        <nav className="w-48 shrink-0 border-r border-composer-border p-2 space-y-px overflow-y-auto">
+          {HELP_SECTIONS.map((section) => {
+            const Icon = section.icon;
+            const isActive = activeSection === section.id;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                onClick={() => setActiveSection(section.id)}
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-left cursor-pointer transition-colors",
+                  isActive
+                    ? "bg-composer-button text-composer-text font-medium"
+                    : "text-composer-text-secondary hover:bg-composer-button/50 hover:text-composer-text",
+                )}
+              >
+                <Icon size={16} className="shrink-0" />
+                {section.label}
+              </button>
+            );
+          })}
+        </nav>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <HelpSectionContent section={activeSection} />
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-12 gap-y-6">
-        {SHORTCUT_SECTIONS.map((section) => (
-          <ShortcutSection key={section.title} {...section} />
-        ))}
+
+      <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
+        Press <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">?</kbd> to open anytime
       </div>
     </Modal>
   );
@@ -172,4 +233,4 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { HelpModal };
+export { HelpModal, KeyBadge, ShortcutItem, ShortcutSection, SHORTCUT_SECTIONS, formatKey };

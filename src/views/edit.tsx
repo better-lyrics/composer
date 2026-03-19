@@ -3,6 +3,7 @@ import type { LyricLine } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
+import { textToLyricLines } from "@/utils/lyrics-text";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
@@ -43,51 +44,6 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       hasTiming,
       agentId: lyricLine?.agentId ?? defaultAgentId,
       backgroundText: lyricLine?.backgroundText,
-    };
-  });
-}
-
-function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
-  // Build a map of text -> line data for exact matching
-  const textToLine = new Map<string, LyricLine>();
-  for (const line of existingLines) {
-    // Only use first occurrence to handle duplicates
-    if (!textToLine.has(line.text)) {
-      textToLine.set(line.text, line);
-    }
-  }
-
-  const usedExistingIds = new Set<string>();
-  const newLines = text.split("\n").filter((line) => line.trim() !== "");
-
-  return newLines.map((lineText, index) => {
-    const trimmed = lineText.trim();
-
-    // Try exact text match first
-    const exactMatch = textToLine.get(trimmed);
-    if (exactMatch && !usedExistingIds.has(exactMatch.id)) {
-      usedExistingIds.add(exactMatch.id);
-      return { ...exactMatch };
-    }
-
-    // Try position-based match (for typo fixes) - preserve agent but not timing
-    const positionMatch = existingLines[index];
-    if (positionMatch && !usedExistingIds.has(positionMatch.id)) {
-      usedExistingIds.add(positionMatch.id);
-      return {
-        id: crypto.randomUUID(),
-        text: trimmed,
-        agentId: positionMatch.agentId,
-        backgroundText: positionMatch.backgroundText,
-        // Don't preserve timing since text changed
-      };
-    }
-
-    // New line - use defaults
-    return {
-      id: crypto.randomUUID(),
-      text: trimmed,
-      agentId: defaultAgentId,
     };
   });
 }

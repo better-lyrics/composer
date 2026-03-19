@@ -1,0 +1,291 @@
+import { useAudioStore } from "@/stores/audio";
+import { getAgentColor, useProjectStore } from "@/stores/project";
+import type { WordTiming } from "@/stores/project";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { FloatingPortal } from "@floating-ui/react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+
+// -- Helpers ------------------------------------------------------------------
+
+function MenuItem({ label, onClick, danger }: { label: string; onClick: () => void; danger?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer rounded-md transition-colors ${
+        danger ? "text-composer-error hover:bg-composer-error/10" : "text-composer-text hover:bg-composer-button"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function MenuDivider() {
+  return <div className="my-1 border-t border-composer-border" />;
+}
+
+// -- Component ----------------------------------------------------------------
+
+const TimelineContextMenu: React.FC = () => {
+  const contextMenu = useTimelineStore((s) => s.contextMenu);
+  const clearContextMenu = useTimelineStore((s) => s.clearContextMenu);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const lines = useProjectStore((s) => s.lines);
+  const agents = useProjectStore((s) => s.agents);
+  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+  const setLines = useProjectStore((s) => s.setLines);
+  const duration = useAudioStore((s) => s.duration);
+
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        clearContextMenu();
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clearContextMenu();
+    };
+    window.addEventListener("mousedown", handleClick);
+    window.addEventListener("keydown", handleKey);
+    return () => {
+      window.removeEventListener("mousedown", handleClick);
+      window.removeEventListener("keydown", handleKey);
+    };
+  }, [contextMenu, clearContextMenu]);
+
+  const handleEditWord = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type });
+    clearContextMenu();
+  }, [contextMenu, clearContextMenu]);
+
+  const handleSplitSyllables = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    useTimelineStore.getState().setEditingWord(null);
+    // Store target info and open syllable splitter via editingWord with a flag
+    // For now, use the keyboard shortcut approach - set selection and close menu
+    const lineIndex = contextMenu.target.lineIndex;
+    useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
+    clearContextMenu();
+    // Dispatch a custom event so the syllable splitter can pick it up
+    window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
+  }, [contextMenu, clearContextMenu]);
+
+  const handleDeleteWord = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    const line = lines.find((l) => l.id === lineId);
+    if (!line) return;
+
+    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    if (!wordsArray) return;
+
+    const remaining = wordsArray.filter((_, i) => i !== wordIndex);
+    if (type === "word") {
+      updateLineWithHistory(lineId, { words: remaining });
+    } else {
+      updateLineWithHistory(lineId, {
+        backgroundWords: remaining.length > 0 ? remaining : undefined,
+        backgroundText: remaining.length > 0 ? remaining.map((w) => w.text).join("") : undefined,
+      });
+    }
+    clearContextMenu();
+  }, [contextMenu, lines, updateLineWithHistory, clearContextMenu]);
+
+  const handleAddWordHere = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "track") return;
+    const { lineId, time } = contextMenu.target;
+    const line = lines.find((l) => l.id === lineId);
+    if (!line) return;
+
+    const wordDuration = 0.3;
+    const newWord: WordTiming = {
+      text: "...",
+      begin: Math.max(0, time - wordDuration / 2),
+      end: Math.min(duration, time + wordDuration / 2),
+    };
+
+    const words = [...(line.words ?? []), newWord].sort((a, b) => a.begin - b.begin);
+    const newIndex = words.indexOf(newWord);
+    updateLineWithHistory(lineId, { words });
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: "word" });
+    clearContextMenu();
+  }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
+
+  const handleAddLine = useCallback(
+    (position: "above" | "below") => {
+      if (!contextMenu || contextMenu.target.kind !== "gutter") return;
+      const { lineIndex } = contextMenu.target;
+      const defaultAgentId = agents[0]?.id ?? "v1";
+      const newLine = {
+        id: crypto.randomUUID(),
+        text: "",
+        agentId: defaultAgentId,
+      };
+      const newLines = [...lines];
+      const insertIndex = position === "above" ? lineIndex : lineIndex + 1;
+      newLines.splice(insertIndex, 0, newLine);
+      setLines(newLines);
+      clearContextMenu();
+    },
+    [contextMenu, lines, agents, setLines, clearContextMenu],
+  );
+
+  const handleDeleteLine = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "gutter") return;
+    const { lineIndex } = contextMenu.target;
+    const newLines = lines.filter((_, i) => i !== lineIndex);
+    setLines(newLines);
+    clearContextMenu();
+  }, [contextMenu, lines, setLines, clearContextMenu]);
+
+  const handleAssignAgent = useCallback(
+    (agentId: string) => {
+      if (!contextMenu || contextMenu.target.kind !== "gutter") return;
+      const { lineId } = contextMenu.target;
+      updateLineWithHistory(lineId, { agentId });
+      clearContextMenu();
+    },
+    [contextMenu, updateLineWithHistory, clearContextMenu],
+  );
+
+  const selectedWords = useTimelineStore((s) => s.selectedWords);
+
+  const mergeInfo = useMemo(() => {
+    if (selectedWords.length < 2) return null;
+    const first = selectedWords[0];
+    const allSameLine = selectedWords.every((w) => w.lineId === first.lineId && w.type === first.type);
+    if (!allSameLine) return null;
+
+    const sorted = [...selectedWords].sort((a, b) => a.wordIndex - b.wordIndex);
+    for (let i = 1; i < sorted.length; i++) {
+      if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) return null;
+    }
+
+    const line = lines.find((l) => l.id === first.lineId);
+    if (!line) return null;
+    const wordsArray = first.type === "word" ? line.words : line.backgroundWords;
+    if (!wordsArray) return null;
+
+    // Check no trailing spaces between merged words (except the last one)
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const w = wordsArray[sorted[i].wordIndex];
+      if (!w) return null;
+      if (w.text.endsWith(" ")) return null;
+    }
+
+    return { sorted, lineId: first.lineId, type: first.type };
+  }, [selectedWords, lines]);
+
+  const handleMergeWords = useCallback(() => {
+    if (!mergeInfo) return;
+    const { sorted, lineId, type } = mergeInfo;
+    const line = lines.find((l) => l.id === lineId);
+    if (!line) return;
+
+    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    if (!wordsArray) return;
+
+    const firstIdx = sorted[0].wordIndex;
+    const lastIdx = sorted[sorted.length - 1].wordIndex;
+    const mergedText = sorted.map((s) => wordsArray[s.wordIndex].text).join("");
+    const merged: WordTiming = {
+      text: mergedText,
+      begin: wordsArray[firstIdx].begin,
+      end: wordsArray[lastIdx].end,
+    };
+
+    const updatedWords = [...wordsArray.slice(0, firstIdx), merged, ...wordsArray.slice(lastIdx + 1)];
+
+    if (type === "word") {
+      updateLineWithHistory(lineId, {
+        words: updatedWords,
+        text: updatedWords
+          .map((w) => w.text)
+          .join("")
+          .trimEnd(),
+      });
+    } else {
+      updateLineWithHistory(lineId, {
+        backgroundWords: updatedWords,
+        backgroundText: updatedWords
+          .map((w) => w.text)
+          .join("")
+          .trimEnd(),
+      });
+    }
+
+    useTimelineStore.getState().clearSelection();
+    clearContextMenu();
+  }, [mergeInfo, lines, updateLineWithHistory, clearContextMenu]);
+
+  if (!contextMenu) return null;
+
+  const { x, y, target } = contextMenu;
+
+  return (
+    <FloatingPortal>
+      <div
+        ref={menuRef}
+        className="fixed z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none"
+        style={{ left: x, top: y }}
+      >
+        {target.kind === "word" && (
+          <>
+            <MenuItem label="Edit text" onClick={handleEditWord} />
+            <MenuItem label="Split syllables" onClick={handleSplitSyllables} />
+            {mergeInfo && <MenuItem label="Merge words" onClick={handleMergeWords} />}
+            <MenuDivider />
+            <MenuItem label="Delete word" onClick={handleDeleteWord} danger />
+          </>
+        )}
+
+        {target.kind === "track" && <MenuItem label="Add word here" onClick={handleAddWordHere} />}
+
+        {target.kind === "gutter" && (
+          <>
+            <MenuItem label="Add line above" onClick={() => handleAddLine("above")} />
+            <MenuItem label="Add line below" onClick={() => handleAddLine("below")} />
+            <MenuDivider />
+            {agents.length > 1 && (
+              <>
+                <p className="px-3 py-1 text-xs text-composer-text-muted">Assign agent</p>
+                {agents.map((agent) => {
+                  const color = getAgentColor(agent.id);
+                  const line = lines[target.lineIndex];
+                  const isActive = line?.agentId === agent.id;
+                  return (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => handleAssignAgent(agent.id)}
+                      className={`w-full text-left px-3 py-1.5 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
+                        isActive
+                          ? "bg-composer-button text-composer-text"
+                          : "text-composer-text hover:bg-composer-button"
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      {agent.name || agent.id}
+                    </button>
+                  );
+                })}
+                <MenuDivider />
+              </>
+            )}
+            <MenuItem label="Delete line" onClick={handleDeleteLine} danger />
+          </>
+        )}
+      </div>
+    </FloatingPortal>
+  );
+};
+
+// -- Exports ------------------------------------------------------------------
+
+export { TimelineContextMenu };

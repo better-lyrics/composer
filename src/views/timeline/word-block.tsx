@@ -18,6 +18,8 @@ interface WordBlockProps {
   isSelected: boolean;
   onClick: (e: React.MouseEvent) => void;
   onResizeStart: (edge: "left" | "right", startX: number) => void;
+  onDoubleClick?: (e: React.MouseEvent) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -37,6 +39,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
   isSelected,
   onClick,
   onResizeStart,
+  onDoubleClick,
+  onContextMenu,
 }) => {
   const left = begin * zoom;
   const naturalWidth = (end - begin) * zoom;
@@ -59,6 +63,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   return (
     <div
       ref={setNodeRef}
+      id={id}
       data-word-block
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
@@ -77,6 +82,15 @@ const WordBlock: React.FC<WordBlockProps> = ({
       onClick={(e) => {
         e.stopPropagation();
         onClick(e);
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        onDoubleClick?.(e);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onContextMenu?.(e);
       }}
       {...attributes}
       {...listeners}
