@@ -89,6 +89,22 @@ body {
   .is-panning *:hover {
     background-color: transparent !important;
   }
+
+  .expanded-hit-sm {
+    @apply before:content-[''] before:absolute before:-inset-2 before:pointer-events-auto;
+  }
+
+  .expanded-hit-lg {
+    @apply before:content-[''] before:absolute before:-inset-2 before:pointer-events-auto;
+  }
+
+  .expanded-hit-x-lg {
+    @apply before:content-[''] before:absolute before:top-0 before:-left-4 before:-right-4 before:bottom-0 before:pointer-events-auto;
+  }
+
+  .expanded-hit-x-sm {
+    @apply before:content-[''] before:absolute before:top-0 before:-left-2 before:-right-2 before:bottom-0 before:pointer-events-auto;
+  }
 }
 
 /* Range input styling */

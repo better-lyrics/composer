@@ -111,6 +111,7 @@ function useTimelineKeyboard(
     [lines, duration, scrollContainerRef],
   );
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: scrollContainerRef is a stable ref, .current should not be a dep
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (useProjectStore.getState().activeTab !== "timeline") return;
@@ -201,10 +202,10 @@ function useTimelineKeyboard(
 
           const viewportHeight = scrollContainer.clientHeight;
           const rowCenter = rowTop + rowHeight / 2;
-          const targetTop = Math.max(0, Math.min(
-            scrollContainer.scrollHeight - viewportHeight,
-            rowCenter - viewportHeight / 2,
-          ));
+          const targetTop = Math.max(
+            0,
+            Math.min(scrollContainer.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
+          );
           scrollContainer.scrollTo({ top: targetTop, behavior: "instant" });
         }
         return;

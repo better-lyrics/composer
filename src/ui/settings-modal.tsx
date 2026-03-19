@@ -1,4 +1,6 @@
+import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { SettingsState } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
@@ -48,7 +50,8 @@ const SliderSetting: React.FC<{
   max: number;
   step: number;
   format?: (v: number) => string;
-}> = ({ label, description, settingKey, min, max, step, format }) => {
+  action?: { label: string; onClick: () => void };
+}> = ({ label, description, settingKey, min, max, step, format, action }) => {
   const value = useSettingsStore((s) => s[settingKey]) as number;
   const set = useSettingsStore((s) => s.set);
   const percent = ((value - min) / (max - min)) * 100;
@@ -60,9 +63,20 @@ const SliderSetting: React.FC<{
           <span className="text-sm font-medium text-composer-text">{label}</span>
           <span className="text-xs text-composer-text-muted">{description}</span>
         </div>
-        <span className="text-sm font-mono text-composer-text-secondary tabular-nums min-w-12 text-right">
-          {format ? format(value) : value}
-        </span>
+        <div className="flex items-center gap-2">
+          {action && (
+            <button
+              type="button"
+              onClick={action.onClick}
+              className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer transition-colors"
+            >
+              {action.label}
+            </button>
+          )}
+          <span className="text-sm font-mono text-composer-text-secondary tabular-nums min-w-12 text-right">
+            {format ? format(value) : value}
+          </span>
+        </div>
       </div>
       <input
         type="range"
@@ -147,52 +161,77 @@ const SelectSetting: React.FC<{
 
 // -- Section Content ----------------------------------------------------------
 
-const PlaybackSection: React.FC = () => (
-  <div className="divide-y divide-composer-border">
-    <SliderSetting
-      label="Default playback rate"
-      description="Starting playback speed when audio is loaded."
-      settingKey="defaultPlaybackRate"
-      min={0.25}
-      max={2}
-      step={0.05}
-      format={(v) => `${v.toFixed(2)}x`}
-    />
-    <ToggleSetting
-      label="Remember volume"
-      description="Keep your volume level between sessions."
-      settingKey="rememberVolume"
-    />
-  </div>
-);
+const PlaybackSection: React.FC = () => {
+  const set = useSettingsStore((s) => s.set);
+  const hasAudio = useAudioStore((s) => s.source !== null);
 
-const TimelineSection: React.FC = () => (
-  <div className="divide-y divide-composer-border">
-    <SliderSetting
-      label="Default zoom"
-      description="Initial zoom level (px/sec) when opening the timeline."
-      settingKey="defaultZoom"
-      min={20}
-      max={500}
-      step={20}
-      format={(v) => `${v} px/s`}
-    />
-    <SliderSetting
-      label="Default row height"
-      description="Starting height of each lyric row in the timeline."
-      settingKey="defaultRowHeight"
-      min={32}
-      max={120}
-      step={4}
-      format={(v) => `${v}px`}
-    />
-    <ToggleSetting
-      label="Follow playhead"
-      description="Auto-scroll the timeline to keep the playhead visible."
-      settingKey="followPlayhead"
-    />
-  </div>
-);
+  return (
+    <div className="divide-y divide-composer-border">
+      <SliderSetting
+        label="Default playback rate"
+        description="Starting playback speed when audio is loaded."
+        settingKey="defaultPlaybackRate"
+        min={0.25}
+        max={2}
+        step={0.05}
+        format={(v) => `${v.toFixed(2)}x`}
+        action={
+          hasAudio
+            ? {
+                label: "Use current",
+                onClick: () => set("defaultPlaybackRate", useAudioStore.getState().playbackRate),
+              }
+            : undefined
+        }
+      />
+      <ToggleSetting
+        label="Remember volume"
+        description="Keep your volume level between sessions."
+        settingKey="rememberVolume"
+      />
+    </div>
+  );
+};
+
+const TimelineSection: React.FC = () => {
+  const set = useSettingsStore((s) => s.set);
+
+  return (
+    <div className="divide-y divide-composer-border">
+      <SliderSetting
+        label="Default zoom"
+        description="Initial zoom level (px/sec) when opening the timeline."
+        settingKey="defaultZoom"
+        min={20}
+        max={500}
+        step={20}
+        format={(v) => `${v} px/s`}
+        action={{
+          label: "Use current",
+          onClick: () => set("defaultZoom", useTimelineStore.getState().zoom),
+        }}
+      />
+      <SliderSetting
+        label="Default row height"
+        description="Starting height of each lyric row in the timeline."
+        settingKey="defaultRowHeight"
+        min={32}
+        max={120}
+        step={4}
+        format={(v) => `${v}px`}
+        action={{
+          label: "Use current",
+          onClick: () => set("defaultRowHeight", useTimelineStore.getState().defaultRowHeight),
+        }}
+      />
+      <ToggleSetting
+        label="Follow playhead"
+        description="Auto-scroll the timeline to keep the playhead visible."
+        settingKey="followPlayhead"
+      />
+    </div>
+  );
+};
 
 const SyncSection: React.FC = () => (
   <div className="divide-y divide-composer-border">

@@ -41,9 +41,9 @@ const DragGhost: React.FC<{ cells: DragGhostCell[]; anchorWidth: number; anchorH
   color,
 }) => (
   <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
-    {cells.map((cell, i) => (
+    {cells.map((cell) => (
       <div
-        key={i}
+        key={`${cell.left}-${cell.top}`}
         className="absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none"
         style={{
           left: cell.left,
@@ -215,13 +215,18 @@ const TimelinePanel: React.FC = () => {
 
     const anchorLeft = activeDrag.begin * zoom;
     const anchorTop = activeDrag.trackType === "bg" ? rowBgTops[activeDrag.lineId] : rowTops[activeDrag.lineId];
-    const anchorHeight = activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
+    const anchorHeight =
+      activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
 
     const wordsToShow = inSelection && selectedWords.length > 1 ? selectedWords : null;
 
     if (!wordsToShow) {
       const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
-      return { cells: [{ text: activeDrag.text, left: 0, top: 0, width: w, height: anchorHeight - 8 }], anchorWidth: w, anchorHeight: anchorHeight - 8 };
+      return {
+        cells: [{ text: activeDrag.text, left: 0, top: 0, width: w, height: anchorHeight - 8 }],
+        anchorWidth: w,
+        anchorHeight: anchorHeight - 8,
+      };
     }
 
     const cells = wordsToShow.map((sel) => {
@@ -258,7 +263,7 @@ const TimelinePanel: React.FC = () => {
               <div
                 ref={scrollContainerRef}
                 data-scroll-container
-                className="flex-1 overflow-auto"
+                className="flex-1 overflow-auto overscroll-none"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}

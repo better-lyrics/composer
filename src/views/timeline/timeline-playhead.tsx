@@ -79,10 +79,10 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
           const viewportHeight = container.clientHeight;
           const rowCenter = rowTop + rowHeight / 2;
-          verticalTargetRef.current = Math.max(0, Math.min(
-            container.scrollHeight - viewportHeight,
-            rowCenter - viewportHeight / 2,
-          ));
+          verticalTargetRef.current = Math.max(
+            0,
+            Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
+          );
         }
 
         // Lerp vertical scroll only while animating toward target
@@ -165,7 +165,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden z-50">
       <div
         ref={playheadRef}
-        className="absolute top-0 left-0 w-0.5 bg-indigo-400 cursor-ew-resize pointer-events-auto"
+        className="absolute top-0 left-0 w-0.5 bg-indigo-400 cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{
           height: containerHeight,
           willChange: "transform",
@@ -173,7 +173,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         }}
         onMouseDown={handleMouseDown}
       >
-        <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-indigo-400 rounded-t" />
+        <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-indigo-400 rounded-t expanded-hit-lg" />
       </div>
     </div>
   );
