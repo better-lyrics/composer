@@ -19,7 +19,6 @@ interface SettingsState {
   minWordDuration: number;
   defaultGranularity: GranularityDefault;
 
-  autoSaveEnabled: boolean;
   autoSaveDelay: number;
 }
 
@@ -44,7 +43,6 @@ const DEFAULTS: SettingsState = {
   minWordDuration: 0.05,
   defaultGranularity: "word",
 
-  autoSaveEnabled: true,
   autoSaveDelay: 2000,
 };
 

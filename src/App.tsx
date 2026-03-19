@@ -72,7 +72,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
       if (!state.isDirty) return;
-      if (!useSettingsStore.getState().autoSaveEnabled) return;
       if (state.lines.length > 0 || state.metadata.title) {
         const audioSource = useAudioStore.getState().source;
         const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;

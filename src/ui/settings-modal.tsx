@@ -237,11 +237,6 @@ const SyncSection: React.FC = () => (
 
 const StorageSection: React.FC = () => (
   <div className="divide-y divide-composer-border">
-    <ToggleSetting
-      label="Auto-save"
-      description="Automatically save your project as you work."
-      settingKey="autoSaveEnabled"
-    />
     <SliderSetting
       label="Auto-save delay"
       description="How long to wait after your last edit before auto-saving."
