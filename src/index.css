@@ -59,6 +59,12 @@ body {
   font-family: var(--font-family-sans);
 }
 
+/* Text selection */
+::selection {
+  background-color: rgba(129, 140, 248, 0.4);
+  color: #fff;
+}
+
 /* Focus visible indicators - minimal for utility app */
 :focus-visible {
   outline: none;

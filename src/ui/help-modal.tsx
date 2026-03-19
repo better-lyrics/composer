@@ -195,7 +195,7 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
     >
       <div className="flex flex-1 min-h-0">
-        <nav className="w-48 shrink-0 border-r border-composer-border p-2 space-y-px overflow-y-auto">
+        <nav className="w-48 shrink-0 border-r border-composer-border p-2 space-y-px overflow-y-auto select-none">
           {HELP_SECTIONS.map((section) => {
             const Icon = section.icon;
             const isActive = activeSection === section.id;
