@@ -24,7 +24,30 @@ const NUDGE_AMOUNT = 0.05;
 // -- Functions ----------------------------------------------------------------
 
 function splitIntoWords(text: string): string[] {
-  return text.split(/\s+/).filter((w) => w.length > 0);
+  return text
+    .split(/\s+/)
+    .filter((w) => w.length > 0)
+    .flatMap((w) => w.split("|").filter((p) => p.length > 0));
+}
+
+function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace: boolean[] } {
+  const tokens = text.split(/\s+/).filter((w) => w.length > 0);
+  const parts: string[] = [];
+  const trailingSpace: boolean[] = [];
+  for (let t = 0; t < tokens.length; t++) {
+    const syllables = tokens[t].split("|").filter((p) => p.length > 0);
+    const isLastToken = t === tokens.length - 1;
+    for (let s = 0; s < syllables.length; s++) {
+      parts.push(syllables[s]);
+      const isLastSyllable = s === syllables.length - 1;
+      trailingSpace.push(isLastSyllable && !isLastToken);
+    }
+  }
+  return { parts, trailingSpace };
+}
+
+function stripPipes(text: string): string {
+  return text.replaceAll("|", "");
 }
 
 function formatTimeMs(seconds: number): string {
@@ -90,14 +113,14 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
 
   const lineBegin = line.begin;
   const lineEnd = line.end;
-  const wordTexts = splitIntoWords(line.text);
+  const { parts: wordTexts, trailingSpace } = splitIntoWordsWithMeta(line.text);
   if (wordTexts.length === 0) return line;
 
   const duration = lineEnd - lineBegin;
   const wordDuration = duration / wordTexts.length;
 
   const words: WordTiming[] = wordTexts.map((text, i) => ({
-    text,
+    text: trailingSpace[i] ? `${text} ` : text,
     begin: lineBegin + i * wordDuration,
     end: lineBegin + (i + 1) * wordDuration,
   }));
@@ -142,5 +165,7 @@ export {
   hasWordTiming,
   parseTimeMs,
   splitIntoWords,
+  splitIntoWordsWithMeta,
+  stripPipes,
 };
 export type { LineTiming, SyncPosition, SyncState };

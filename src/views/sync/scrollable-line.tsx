@@ -1,5 +1,5 @@
 import { getAgentColor, type WordTiming } from "@/stores/project";
-import { splitIntoWords } from "@/utils/sync-helpers";
+import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
 import { memo, useEffect, useMemo, useRef } from "react";
@@ -80,22 +80,27 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   }, [isCurrent]);
 
   const renderLineContent = () => {
+    const displayText = stripPipes(text);
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
-          <span className="text-composer-text-muted">{text}</span>
+          <span className="text-composer-text-muted">{displayText}</span>
           <span
             className="absolute inset-0 overflow-hidden text-composer-accent-text"
             data-word-begin={lineBegin}
             data-word-end={lineEnd}
             style={{ width: "0%" }}
           >
-            {text}
+            {displayText}
           </span>
         </span>
       );
     }
-    return <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{text}</span>;
+    return (
+      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>
+        {displayText}
+      </span>
+    );
   };
 
   const mainWordHandlers: WordHandlers = {

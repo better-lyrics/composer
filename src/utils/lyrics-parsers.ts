@@ -1,4 +1,5 @@
 import type { Agent, AgentType, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
+import { cleanPipes } from "@/utils/split-by-pipe";
 
 // -- Types --------------------------------------------------------------------
 
@@ -41,11 +42,14 @@ function parseTxt(content: string): ParseResult {
     .split(/\r?\n/)
     .map((text) => text.trim())
     .filter((text) => text.length > 0)
-    .map((text) => ({
-      id: generateLineId(),
-      text,
-      agentId: "v1",
-    }));
+    .map((text) => {
+      const displayText = text.includes("|") ? cleanPipes(text) : text;
+      return {
+        id: generateLineId(),
+        text: displayText,
+        agentId: "v1",
+      };
+    });
 
   return {
     lines,

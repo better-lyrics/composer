@@ -1,7 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine, WordTiming } from "@/stores/project";
-import { NUDGE_AMOUNT, type SyncState, getLineTiming, splitIntoWords } from "@/utils/sync-helpers";
+import {
+  NUDGE_AMOUNT,
+  type SyncState,
+  getLineTiming,
+  splitIntoWords,
+  splitIntoWordsWithMeta,
+} from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
@@ -23,9 +29,9 @@ interface UseSyncHandlersProps {
 // -- Helpers ------------------------------------------------------------------
 
 function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
-  const bgWordTexts = splitIntoWords(backgroundText);
-  return bgWordTexts.map((text, i) => ({
-    text: i === bgWordTexts.length - 1 ? text : `${text} `,
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(backgroundText);
+  return parts.map((text, i) => ({
+    text: trailingSpace[i] ? `${text} ` : text,
     begin: time,
     end: time,
   }));
@@ -58,13 +64,11 @@ function useSyncHandlers({
     const line = lines[lineIndex];
     if (!line) return;
 
-    const lineWords = splitIntoWords(line.text);
+    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
     const wordText = lineWords[wordIndex];
     if (!wordText) return;
 
-    // Add trailing space to all words except the last one (matches TTML format)
-    const isLastWord = wordIndex === lineWords.length - 1;
-    const textWithSpace = isLastWord ? wordText : `${wordText} `;
+    const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
 
     const existingWords = line.words ?? [];
 

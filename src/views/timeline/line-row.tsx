@@ -1,5 +1,7 @@
 import { type LyricLine, type WordTiming, getAgentColor } from "@/stores/project";
 import { cn } from "@/utils/cn";
+import { stripPipes } from "@/utils/sync-helpers";
+import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { useDroppable } from "@dnd-kit/core";
@@ -23,6 +25,7 @@ const BG_DROP_ZONE_HEIGHT = 24;
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
+  const displayText = stripPipes(line.text);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 
@@ -86,7 +89,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border)] bg-composer-bg w-12 sticky left-0 z-60"
         style={{ borderRightColor: color }}
       >
-        {lineIndex + 1}
+        <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} />
       </div>
 
       <div className="flex-1 overflow-hidden border-b border-composer-border">
@@ -110,8 +113,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               className="flex items-center px-3 text-xs text-composer-text-muted italic truncate"
               style={{ height: rowHeight }}
             >
-              {line.text.slice(0, 60)}
-              {line.text.length > 60 ? "..." : ""}
+              {displayText.slice(0, 60)}
+              {displayText.length > 60 ? "..." : ""}
             </div>
           )}
         </div>

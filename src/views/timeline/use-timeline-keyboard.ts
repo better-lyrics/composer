@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
-import type { ClipboardEntry } from "@/views/timeline/selection-types";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { findWordAtTime } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -17,7 +17,10 @@ function useTimelineKeyboard(
   scrollContainerRef: RefObject<HTMLDivElement | null>,
   lines: LyricLine[],
   duration: number,
+  onOpenLyricsModal?: () => void,
 ) {
+  const { handleCopy, handleDelete, handleCut, handlePaste } = useTimelineClipboard(lines);
+
   const handleSetWordTiming = useCallback(
     (edge: "begin" | "end") => {
       const audioEl = useAudioStore.getState().audioElement;
@@ -107,93 +110,6 @@ function useTimelineKeyboard(
     [lines, duration, scrollContainerRef],
   );
 
-  const handleCopy = useCallback(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-
-    const minLineIndex = Math.min(...selectedWords.map((w) => w.lineIndex));
-    const entries: ClipboardEntry[] = [];
-
-    for (const sel of selectedWords) {
-      const line = lines[sel.lineIndex];
-      if (!line) continue;
-      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
-      const word = wordsArray?.[sel.wordIndex];
-      if (!word) continue;
-
-      entries.push({
-        word: { ...word },
-        lineOffset: sel.lineIndex - minLineIndex,
-        trackType: sel.type,
-      });
-    }
-
-    if (entries.length > 0) {
-      useTimelineStore.getState().setClipboard({ entries });
-      toast(`Copied ${entries.length} word${entries.length > 1 ? "s" : ""}`);
-    }
-  }, [lines]);
-
-  const handleDelete = useCallback(() => {
-    const { selectedWords } = useTimelineStore.getState();
-    if (selectedWords.length === 0) return;
-
-    const grouped = new Map<string, { wordIndices: number[]; bgIndices: number[] }>();
-    for (const sel of selectedWords) {
-      let entry = grouped.get(sel.lineId);
-      if (!entry) {
-        entry = { wordIndices: [], bgIndices: [] };
-        grouped.set(sel.lineId, entry);
-      }
-      if (sel.type === "word") {
-        entry.wordIndices.push(sel.wordIndex);
-      } else {
-        entry.bgIndices.push(sel.wordIndex);
-      }
-    }
-
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-    for (const [lineId, { wordIndices, bgIndices }] of grouped) {
-      const line = lines.find((l) => l.id === lineId);
-      if (!line) continue;
-
-      const lineUpdates: Partial<LyricLine> = {};
-      if (wordIndices.length > 0 && line.words) {
-        const wordSet = new Set(wordIndices);
-        lineUpdates.words = line.words.filter((_, i) => !wordSet.has(i));
-      }
-      if (bgIndices.length > 0 && line.backgroundWords) {
-        const bgSet = new Set(bgIndices);
-        const remaining = line.backgroundWords.filter((_, i) => !bgSet.has(i));
-        lineUpdates.backgroundWords = remaining.length > 0 ? remaining : undefined;
-        lineUpdates.backgroundText = remaining.length > 0 ? remaining.map((w) => w.text).join("") : undefined;
-      }
-
-      updates.push({ id: lineId, updates: lineUpdates });
-    }
-
-    if (updates.length > 0) {
-      useProjectStore.getState().updateLinesWithHistory(updates);
-      useTimelineStore.getState().clearSelection();
-    }
-  }, [lines]);
-
-  const handleCut = useCallback(() => {
-    handleCopy();
-    handleDelete();
-  }, [handleCopy, handleDelete]);
-
-  const handlePaste = useCallback(() => {
-    const { clipboard, pasteMode } = useTimelineStore.getState();
-    if (!clipboard || clipboard.entries.length === 0) return;
-
-    if (pasteMode.status === "preview") {
-      useTimelineStore.getState().setPasteMode({ status: "idle" });
-    } else {
-      useTimelineStore.getState().setPasteMode({ status: "preview", clipboard });
-    }
-  }, []);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (useProjectStore.getState().activeTab !== "timeline") return;
@@ -222,6 +138,12 @@ function useTimelineKeyboard(
         return;
       }
 
+      if (e.code === "KeyV" && (e.metaKey || e.ctrlKey) && e.shiftKey && !e.repeat) {
+        e.preventDefault();
+        onOpenLyricsModal?.();
+        return;
+      }
+
       if (e.code === "KeyV" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         handlePaste();
@@ -238,13 +160,6 @@ function useTimelineKeyboard(
       }
 
       switch (e.key) {
-        case " ":
-        case "Enter": {
-          e.preventDefault();
-          const { isPlaying, setIsPlaying } = useAudioStore.getState();
-          setIsPlaying(!isPlaying);
-          break;
-        }
         case "Escape": {
           const { pasteMode } = useTimelineStore.getState();
           if (pasteMode.status === "preview") {
@@ -270,12 +185,102 @@ function useTimelineKeyboard(
           e.preventDefault();
           handleSetWordTiming("end");
           break;
+        case "n":
+        case "N": {
+          const { selectedWords: nSel } = useTimelineStore.getState();
+          if (nSel.length === 0) break;
+          const lineIndex = nSel[0].lineIndex;
+          const agents = useProjectStore.getState().agents;
+          const defaultAgentId = agents[0]?.id ?? "v1";
+          const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
+          const newLines = [...lines];
+          newLines.splice(lineIndex + 1, 0, newLine);
+          useProjectStore.getState().setLinesWithHistory(newLines);
+          break;
+        }
+        case "F2":
+        case "e":
+        case "E": {
+          const { selectedWords: eSel } = useTimelineStore.getState();
+          if (eSel.length === 1) {
+            e.preventDefault();
+            useTimelineStore.getState().setEditingWord({
+              lineId: eSel[0].lineId,
+              wordIndex: eSel[0].wordIndex,
+              type: eSel[0].type,
+            });
+          }
+          break;
+        }
+        case "s":
+        case "S": {
+          const { selectedWords: sSel } = useTimelineStore.getState();
+          if (sSel.length === 1) {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
+          }
+          break;
+        }
+        case "m":
+        case "M": {
+          const { selectedWords: mSel } = useTimelineStore.getState();
+          if (mSel.length < 2) break;
+          const first = mSel[0];
+          if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
+          const sorted = [...mSel].sort((a, b) => a.wordIndex - b.wordIndex);
+          let consecutive = true;
+          for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) {
+              consecutive = false;
+              break;
+            }
+          }
+          if (!consecutive) break;
+          const mLine = lines.find((l) => l.id === first.lineId);
+          if (!mLine) break;
+          const mWords = first.type === "word" ? mLine.words : mLine.backgroundWords;
+          if (!mWords) break;
+          let spaceFree = true;
+          for (let i = 0; i < sorted.length - 1; i++) {
+            if (mWords[sorted[i].wordIndex].text.endsWith(" ")) {
+              spaceFree = false;
+              break;
+            }
+          }
+          if (!spaceFree) break;
+          e.preventDefault();
+          const firstIdx = sorted[0].wordIndex;
+          const lastIdx = sorted[sorted.length - 1].wordIndex;
+          const mergedText = sorted.map((s) => mWords[s.wordIndex].text).join("");
+          const merged = { text: mergedText, begin: mWords[firstIdx].begin, end: mWords[lastIdx].end };
+          const updatedWords = [...mWords.slice(0, firstIdx), merged, ...mWords.slice(lastIdx + 1)];
+          const { updateLineWithHistory: mergeUpdate } = useProjectStore.getState();
+          if (first.type === "word") {
+            mergeUpdate(first.lineId, {
+              words: updatedWords,
+              text: updatedWords
+                .map((w) => w.text)
+                .join("")
+                .trimEnd(),
+            });
+          } else {
+            mergeUpdate(first.lineId, {
+              backgroundWords: updatedWords,
+              backgroundText: updatedWords
+                .map((w) => w.text)
+                .join("")
+                .trimEnd(),
+            });
+          }
+          useTimelineStore.getState().clearSelection();
+          break;
+        }
       }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleSetWordTiming, handleCopy, handleCut, handlePaste, handleDelete]);
+  }, [handleSetWordTiming, handleCopy, handleCut, handlePaste, handleDelete, onOpenLyricsModal, lines]);
 }
 
 // -- Exports -------------------------------------------------------------------

@@ -10,6 +10,23 @@ interface WordSelection {
   type: "word" | "bg";
 }
 
+type ContextMenuTarget =
+  | { kind: "word"; lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }
+  | { kind: "track"; lineId: string; lineIndex: number; time: number }
+  | { kind: "gutter"; lineId: string; lineIndex: number };
+
+interface ContextMenuState {
+  x: number;
+  y: number;
+  target: ContextMenuTarget;
+}
+
+interface EditingWord {
+  lineId: string;
+  wordIndex: number;
+  type: "word" | "bg";
+}
+
 interface TimelineState {
   zoom: number;
   followEnabled: boolean;
@@ -22,6 +39,9 @@ interface TimelineState {
   defaultRowHeight: number;
   isDraggingPlayhead: boolean;
   dragTime: number;
+  contextMenu: ContextMenuState | null;
+  editingWord: EditingWord | null;
+  selectOnlyMode: boolean;
 }
 
 interface TimelineActions {
@@ -39,6 +59,11 @@ interface TimelineActions {
   setRowHeight: (lineId: string, height: number) => void;
   setDraggingPlayhead: (isDragging: boolean, time?: number) => void;
   setDragTime: (time: number) => void;
+  setContextMenu: (menu: ContextMenuState | null) => void;
+  clearContextMenu: () => void;
+  setEditingWord: (editing: EditingWord | null) => void;
+  clearEditingWord: () => void;
+  toggleSelectOnlyMode: () => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -66,6 +91,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
   defaultRowHeight: DEFAULT_ROW_HEIGHT,
   isDraggingPlayhead: false,
   dragTime: 0,
+  contextMenu: null,
+  editingWord: null,
+  selectOnlyMode: false,
 
   setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
   zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -100,6 +128,11 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => (
     })),
   setDraggingPlayhead: (isDraggingPlayhead, time) => set({ isDraggingPlayhead, dragTime: time ?? get().dragTime }),
   setDragTime: (dragTime) => set({ dragTime }),
+  setContextMenu: (contextMenu) => set({ contextMenu }),
+  clearContextMenu: () => set({ contextMenu: null }),
+  setEditingWord: (editingWord) => set({ editingWord }),
+  clearEditingWord: () => set({ editingWord: null }),
+  toggleSelectOnlyMode: () => set((s) => ({ selectOnlyMode: !s.selectOnlyMode })),
 }));
 
 function isWordSelected(selectedWords: WordSelection[], lineId: string, wordIndex: number, type: "word" | "bg") {
@@ -109,4 +142,4 @@ function isWordSelected(selectedWords: WordSelection[], lineId: string, wordInde
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, isWordSelected, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
-export type { WordSelection };
+export type { WordSelection, ContextMenuTarget, ContextMenuState, EditingWord };

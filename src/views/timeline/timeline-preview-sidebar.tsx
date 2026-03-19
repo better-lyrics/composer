@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
+import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
 import { getLineTiming } from "@/views/timeline/utils";
 import { useEffect, useRef } from "react";
 
@@ -90,7 +91,7 @@ const MiniPreviewLine: React.FC<{
         <div className="flex items-center gap-2 text-sm font-medium">
           {alignment === "left" && AgentDotLeft}
           <span className="relative block truncate">
-            <span className="text-composer-text-muted">{line.text}</span>
+            <span className="text-composer-text-muted">{stripPipes(line.text)}</span>
             <span
               className="absolute inset-0 text-composer-accent-text truncate"
               data-word-begin={timing?.begin ?? 0}
@@ -98,7 +99,7 @@ const MiniPreviewLine: React.FC<{
               data-line-idx={lineIndex}
               style={{ clipPath: "inset(0 100% 0 0)" }}
             >
-              {line.text}
+              {stripPipes(line.text)}
             </span>
           </span>
           {alignment === "right" && AgentDotRight}
@@ -122,7 +123,7 @@ const MiniPreviewLine: React.FC<{
           ? words.map((word) => (
               <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
             ))
-          : line.text.split(/\s+/).map((word, idx) => (
+          : splitIntoWords(line.text).map((word, idx) => (
               <span key={`${idx}-${word}`} className="text-composer-text-muted">
                 {word}{" "}
               </span>

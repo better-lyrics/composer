@@ -1,6 +1,6 @@
 import type { WordTiming } from "@/stores/project";
 import { syncCarouselTransition } from "@/utils/animationVariants";
-import { splitIntoWords } from "@/utils/sync-helpers";
+import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
 import { motion } from "motion/react";
 
 // -- Constants ----------------------------------------------------------------
@@ -65,7 +65,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
                     }}
                     transition={syncCarouselTransition}
                   >
-                    {line.text}
+                    {stripPipes(line.text)}
                   </motion.span>
                 ) : (
                   (() => {

@@ -1,7 +1,12 @@
+import { FileDropZone } from "@/audio/file-drop-zone";
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
+import { LyricsImportModal } from "@/views/timeline/lyrics-import-modal";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
+import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
+import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
@@ -14,17 +19,12 @@ import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { distributeLinesTiming } from "@/views/timeline/utils";
+import { Button } from "@/ui/button";
+import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
-
-const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
-  <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center">
-    <p className="text-lg text-composer-text-secondary">{message}</p>
-    <p className="text-sm text-composer-text-muted">{hint}</p>
-  </div>
-);
 
 const DragGhost: React.FC<{ text: string; color: string }> = ({ text, color }) => (
   <div
@@ -47,15 +47,18 @@ const TimelinePanel: React.FC = () => {
   const setScrollLeft = useTimelineStore((s) => s.setScrollLeft);
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
   const pasteMode = useTimelineStore((s) => s.pasteMode);
+  const editingWord = useTimelineStore((s) => s.editingWord);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
+  const [lyricsModalOpen, setLyricsModalOpen] = useState(false);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(lines);
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
-  useTimelineKeyboard(scrollContainerRef, lines, duration);
+  const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
+  useTimelineKeyboard(scrollContainerRef, lines, duration, openLyricsModal);
 
   const lastDistributedDurationRef = useRef<number | null>(null);
 
@@ -124,18 +127,40 @@ const TimelinePanel: React.FC = () => {
     [handlePanMouseDown, handleMarqueeMouseDown, pasteMode],
   );
 
+  const handleAudioDrop = useCallback((file: File) => {
+    useAudioStore.getState().setSource({ type: "file", file });
+  }, []);
+
   if (!source) {
     return (
-      <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No audio loaded" hint="Import audio in the Import tab first" />
+      <div className="flex flex-col flex-1 overflow-hidden select-none">
+        <TimelineHeader />
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <FileDropZone accept="audio/*" onFileDrop={handleAudioDrop}>
+            <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
+            <p className="text-composer-text-secondary">Drop audio file here</p>
+            <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
+            <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
+          </FileDropZone>
+        </div>
       </div>
     );
   }
 
   if (lines.length === 0) {
     return (
-      <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to display" hint="Add lyrics in the Edit tab first" />
+      <div className="flex flex-col flex-1 overflow-hidden select-none">
+        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+          <IconFileMusic className="w-12 h-12 text-composer-text opacity-50" strokeWidth={1} />
+          <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
+          <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
+          <Button variant="primary" hasIcon onClick={() => setLyricsModalOpen(true)} className="mt-2">
+            <IconFileImport size={16} />
+            Import Lyrics
+          </Button>
+        </div>
+        <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
       </div>
     );
   }
@@ -150,13 +175,14 @@ const TimelinePanel: React.FC = () => {
       onDragCancel={handleDragCancel}
     >
       <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader />
+        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex flex-col flex-1 overflow-hidden">
             <div ref={contentRef} className="relative flex-1 flex flex-col overflow-hidden isolate">
               <div
                 ref={scrollContainerRef}
+                data-scroll-container
                 className="flex-1 overflow-auto"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
@@ -191,6 +217,15 @@ const TimelinePanel: React.FC = () => {
               {pasteMode.status === "preview" && (
                 <PastePreview clipboard={pasteMode.clipboard} scrollContainerRef={scrollContainerRef} />
               )}
+
+              {editingWord && (
+                <WordEditOverlay
+                  lineId={editingWord.lineId}
+                  wordIndex={editingWord.wordIndex}
+                  type={editingWord.type}
+                  scrollContainerRef={scrollContainerRef}
+                />
+              )}
             </div>
 
             <TimelineInfoPanel />
@@ -205,6 +240,10 @@ const TimelinePanel: React.FC = () => {
       <DragOverlay dropAnimation={null}>
         {activeDrag && <DragGhost text={activeDrag.text} color={dragColor} />}
       </DragOverlay>
+
+      <TimelineContextMenu />
+      <TimelineSyllableSplitter />
+      <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
     </DndContext>
   );
 };

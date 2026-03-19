@@ -74,7 +74,7 @@ const ImportPanel: React.FC = () => {
 
             {/* Duration */}
             <div className="flex items-center gap-1.5">
-              <IconClock size={14} className="text-composer-text-muted" />
+              <IconClock size={14} className="text-composer-text opacity-50" />
               <span className="text-sm font-mono text-composer-text tabular-nums">{formatDuration(duration)}</span>
             </div>
 

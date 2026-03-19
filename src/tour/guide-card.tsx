@@ -44,9 +44,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ state, onSkip }) => {
                   state.task
                 )}
               </p>
-              <p className="mt-1 text-xs text-composer-text-muted">
-                {state.stepLabel}
-              </p>
+              <p className="mt-1 text-xs text-composer-text-muted">{state.stepLabel}</p>
             </div>
             {!state.isComplete && (
               <Button size="sm" variant="ghost" onClick={onSkip}>
