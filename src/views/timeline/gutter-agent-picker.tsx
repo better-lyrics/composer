@@ -74,6 +74,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
       {(close) => (
         <div className="w-48 p-2">
           <p className="px-2 mb-1 text-xs text-composer-text-muted">Assign agent</p>
+          <div className="flex flex-col gap-px">
           {agents.map((agent) => {
             const agentColor = getAgentColor(agent.id);
             const isActive = agent.id === agentId;
@@ -91,6 +92,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
               </button>
             );
           })}
+          </div>
           <div className="mt-2 pt-2 border-t border-composer-border">
             <div className="flex gap-1">
               <input

@@ -293,6 +293,16 @@ const GeneralSection: React.FC<{ onResetTour: () => void; onClose: () => void }>
 
   return (
     <div className="divide-y divide-composer-border">
+      <ToggleSetting
+        label="Show shortcut hints"
+        description="Display keyboard shortcut badges on toolbar buttons."
+        settingKey="showShortcutHints"
+      />
+      <ToggleSetting
+        label="Show syllable indicators"
+        description="Visually group syllables split from one word."
+        settingKey="showSyllableIndicators"
+      />
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-composer-text">Reset product tour</span>
