@@ -91,6 +91,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["F"], description: "Toggle follow playhead" },
       { keys: ["P"], description: "Toggle preview sidebar" },
       { keys: ["N"], description: "Insert line below selected word" },
+      { keys: ["Space"], description: "Jump viewport to playhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead" },
       { keys: ["]"], description: "Set word end to playhead" },
@@ -106,6 +107,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     title: "Timeline Selection",
     shortcuts: [
       { keys: ["Click"], description: "Select word" },
+      { keys: ["Mod", "A"], description: "Select all words" },
       { keys: ["Mod", "Click"], description: "Toggle word in selection" },
       { keys: ["Drag"], description: "Marquee select words" },
       { keys: ["Shift", "Drag"], description: "Add to selection with marquee" },
