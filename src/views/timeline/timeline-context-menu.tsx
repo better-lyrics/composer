@@ -112,6 +112,17 @@ const TimelineContextMenu: React.FC = () => {
 
     const words = [...(line.words ?? []), newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = words.indexOf(newWord);
+
+    for (let i = 0; i < words.length; i++) {
+      const isLast = i === words.length - 1;
+      const hasSpace = words[i].text.endsWith(" ");
+      if (!isLast && !hasSpace) {
+        words[i] = { ...words[i], text: `${words[i].text} ` };
+      } else if (isLast && hasSpace) {
+        words[i] = { ...words[i], text: words[i].text.trimEnd() };
+      }
+    }
+
     updateLineWithHistory(lineId, { words });
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: "word" });
     clearContextMenu();

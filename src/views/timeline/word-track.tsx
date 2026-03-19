@@ -174,6 +174,16 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const newWords = [...words, newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = newWords.indexOf(newWord);
 
+    for (let i = 0; i < newWords.length; i++) {
+      const isLast = i === newWords.length - 1;
+      const hasSpace = newWords[i].text.endsWith(" ");
+      if (!isLast && !hasSpace) {
+        newWords[i] = { ...newWords[i], text: `${newWords[i].text} ` };
+      } else if (isLast && hasSpace) {
+        newWords[i] = { ...newWords[i], text: newWords[i].text.trimEnd() };
+      }
+    }
+
     const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
     if (trackType === "word") {
       updateLineWithHistory(lineId, { words: newWords });

@@ -152,7 +152,7 @@ const TimelinePanel: React.FC = () => {
       <div className="flex flex-col flex-1 overflow-hidden select-none">
         <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
         <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
-          <IconFileMusic className="w-12 h-12 text-composer-text opacity-50" />
+          <IconFileMusic className="w-12 h-12 text-composer-text opacity-50" strokeWidth={1} />
           <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
           <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
           <Button variant="primary" hasIcon onClick={() => setLyricsModalOpen(true)} className="mt-2">
