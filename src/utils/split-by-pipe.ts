@@ -1,17 +1,21 @@
 // -- Helpers ------------------------------------------------------------------
 
-function splitWordsByPipe(text: string): string[] {
+function cleanPipes(text: string): string {
   return text
     .split(/\s+/)
     .filter((token) => token.length > 0)
-    .flatMap((token) => {
-      const parts = token.split("|").filter((p) => p.length > 0);
-      if (parts.length <= 1) return [token];
-      // Add trailing space to all but the last part (last gets it from normal word spacing)
-      return parts.map((part, i) => (i < parts.length - 1 ? `${part} ` : part));
-    });
+    .map((token) => {
+      // Strip leading/trailing pipes, collapse consecutive pipes
+      const cleaned = token
+        .replace(/^\|+/, "")
+        .replace(/\|+$/, "")
+        .replace(/\|{2,}/g, "|");
+      return cleaned || token.replace(/\|/g, "");
+    })
+    .filter(Boolean)
+    .join(" ");
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { splitWordsByPipe };
+export { cleanPipes };

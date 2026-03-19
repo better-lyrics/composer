@@ -4,6 +4,7 @@ import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { textToLyricLines } from "@/utils/lyrics-text";
+import { stripPipes } from "@/utils/sync-helpers";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
@@ -38,7 +39,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
     return {
       lineNumber: index + 1,
       lineId: lyricLine?.id ?? "",
-      text: line,
+      text: lyricLine?.text ?? line,
       isEmpty,
       hasBrackets: /\[.*?\]/.test(line),
       hasTiming,
@@ -152,7 +153,7 @@ const LinePreview: React.FC<{
         className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
         style={{ borderLeft: `2px solid ${agentColor}`, paddingLeft: "6px" }}
       >
-        {line.text}
+        {stripPipes(line.text)}
       </span>
 
       {line.backgroundText && <span className="text-xs italic text-composer-text-muted">{line.backgroundText}</span>}

@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/stores/project";
-import { splitWordsByPipe } from "@/utils/split-by-pipe";
+import { cleanPipes } from "@/utils/split-by-pipe";
+import { stripPipes } from "@/utils/sync-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -7,9 +8,9 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // Build a map of text -> line data for exact matching
   const textToLine = new Map<string, LyricLine>();
   for (const line of existingLines) {
-    // Only use first occurrence to handle duplicates
-    if (!textToLine.has(line.text)) {
-      textToLine.set(line.text, line);
+    const key = stripPipes(line.text);
+    if (!textToLine.has(key)) {
+      textToLine.set(key, line);
     }
   }
 
@@ -19,19 +20,20 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   return newLines.map((lineText, index) => {
     const trimmed = lineText.trim();
 
-    // Apply pipe splitting to generate the display text (pipes removed, words split)
-    const splitWords = splitWordsByPipe(trimmed);
-    const displayText = splitWords.join("").trimEnd();
+    // Clean pipe syntax (strip leading/trailing/consecutive pipes per token)
+    const cleanedText = cleanPipes(trimmed);
+    // Strip pipes entirely for matching against existing lines
+    const matchText = stripPipes(cleanedText);
 
-    // Try exact text match first (match against original or display text)
-    const exactMatch = textToLine.get(trimmed) ?? textToLine.get(displayText);
+    // Try exact text match first (match against pipe-stripped text or original)
+    const exactMatch = textToLine.get(matchText);
     if (exactMatch && !usedExistingIds.has(exactMatch.id)) {
       usedExistingIds.add(exactMatch.id);
       // If text has pipes, update the text and clear timing (structure changed)
-      if (trimmed.includes("|")) {
+      if (cleanedText.includes("|")) {
         return {
           ...exactMatch,
-          text: displayText,
+          text: cleanedText,
           words: undefined,
           begin: undefined,
           end: undefined,
@@ -46,7 +48,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
       usedExistingIds.add(positionMatch.id);
       return {
         id: crypto.randomUUID(),
-        text: displayText,
+        text: cleanedText,
         agentId: positionMatch.agentId,
         backgroundText: positionMatch.backgroundText,
       };
@@ -55,7 +57,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
     // New line - use defaults
     return {
       id: crypto.randomUUID(),
-      text: displayText,
+      text: cleanedText,
       agentId: defaultAgentId,
     };
   });

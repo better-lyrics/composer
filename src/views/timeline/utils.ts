@@ -1,9 +1,10 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
+import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
 
 function distributeWordsInLine(text: string, begin: number, end: number): WordTiming[] {
-  const words = text.trim().split(/\s+/).filter(Boolean);
+  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text);
   if (words.length === 0) return [];
 
   const totalChars = words.reduce((sum, w) => sum + w.length, 0);
@@ -12,10 +13,8 @@ function distributeWordsInLine(text: string, begin: number, end: number): WordTi
   let currentTime = begin;
   return words.map((word, i) => {
     const wordDuration = (word.length / totalChars) * duration;
-    // Add trailing space to all words except the last one (matches TTML format)
-    const isLastWord = i === words.length - 1;
     const wordTiming: WordTiming = {
-      text: isLastWord ? word : `${word} `,
+      text: trailingSpace[i] ? `${word} ` : word,
       begin: currentTime,
       end: currentTime + wordDuration,
     };
