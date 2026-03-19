@@ -138,6 +138,14 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: var(--color-composer-accent);
 }
 
+/* Hide scrollbars during playback */
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden {
+  scrollbar-width: none;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,
