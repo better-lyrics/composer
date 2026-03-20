@@ -201,9 +201,9 @@ const SyncSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Hold mode</h4>
       <p className={PROSE}>
-        Press and hold <strong>F</strong> for the duration of each word. The key-down marks the word's start, and
-        key-up marks the end. This gives you explicit control over word duration and allows natural gaps between words.
-        The current word highlights while you hold.
+        Press and hold <strong>F</strong> for the duration of each word. The key-down marks the word's start, and key-up
+        marks the end. This gives you explicit control over word duration and allows natural gaps between words. The
+        current word highlights while you hold.
       </p>
     </div>
 

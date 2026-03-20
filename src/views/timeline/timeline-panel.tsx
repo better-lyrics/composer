@@ -22,7 +22,7 @@ import { distributeLinesTiming } from "@/views/timeline/utils";
 import { Button } from "@/ui/button";
 import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { Activity, useCallback, useEffect, useRef, useState } from "react";
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -189,7 +189,7 @@ const TimelinePanel: React.FC = () => {
 
   const dragColor = activeDrag ? getAgentColor(lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "") : "#888";
 
-  const dragCells = (() => {
+  const dragCells = useMemo(() => {
     if (!activeDrag) return null;
     const { selectedWords, rowHeights, defaultRowHeight } = useTimelineStore.getState();
     const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
@@ -245,7 +245,7 @@ const TimelinePanel: React.FC = () => {
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
-  })();
+  }, [activeDrag, zoom, lines]);
 
   return (
     <DndContext

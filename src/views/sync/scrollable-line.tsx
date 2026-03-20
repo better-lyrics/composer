@@ -179,7 +179,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
                 const idx = group.startIndex + j;
                 return (
                   <WordRenderer
-                    // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
                     key={`${lineNumber}-${prefix}-${idx}`}
                     word={word}
                     idx={idx}
@@ -200,7 +199,6 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       } else if (!inGroup.has(i)) {
         elements.push(
           <WordRenderer
-            // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
             key={`${lineNumber}-${prefix}-${i}`}
             word={texts[i]}
             idx={i}

@@ -62,6 +62,7 @@ const SyncPanel: React.FC = () => {
   const [isHolding, setIsHolding] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+  const heldKeyCodeRef = useRef<string | null>(null);
 
   const {
     handleTap,
@@ -263,6 +264,7 @@ const SyncPanel: React.FC = () => {
         case "sync.holdSync":
           e.preventDefault();
           if (editMode || syncMethod === "tap") return;
+          heldKeyCodeRef.current = e.code;
           if (!syncState.isActive && lines.length > 0) {
             handleStartSync();
             handleHoldStart();
@@ -286,9 +288,9 @@ const SyncPanel: React.FC = () => {
     const handleKeyUp = (e: KeyboardEvent) => {
       if (activeTab !== "sync" || syncMethod !== "hold" || !isHolding) return;
 
-      const matched = findMatchingShortcut(e, "sync");
-      if (matched === "sync.holdSync") {
+      if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
+        heldKeyCodeRef.current = null;
         handleHoldEnd();
         setIsHolding(false);
       }
@@ -296,6 +298,7 @@ const SyncPanel: React.FC = () => {
 
     const handleBlur = () => {
       if (isHolding) {
+        heldKeyCodeRef.current = null;
         handleHoldEnd();
         setIsHolding(false);
       }

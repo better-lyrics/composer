@@ -31,10 +31,81 @@ const RippleRing: React.FC<{ onComplete: () => void }> = ({ onComplete }) => (
     className="absolute inset-0 rounded-[50%] border border-composer-accent/20 bg-composer-accent/20 pointer-events-none blur-sm"
     initial={{ scale: 0.8, opacity: 0.5 }}
     animate={{ scale: 2.2, opacity: 0 }}
-    transition={{ duration: 0.25, ease: "easeOut" }}
+    transition={{ duration: 0.33, ease: "easeOut" }}
     onAnimationComplete={onComplete}
   />
 );
+
+interface WordGranularityLineProps {
+  line: SyncCarouselProps["lines"][number];
+  idx: number;
+  lineIndex: number;
+  wordIndex: number;
+  syncMethod: "tap" | "hold";
+  isHolding: boolean;
+  isCurrent: boolean;
+  rippleKey: string | null;
+  rippleCounter: number;
+  setRippleKey: (key: string | null) => void;
+}
+
+const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
+  line,
+  idx,
+  lineIndex,
+  wordIndex,
+  syncMethod,
+  isHolding,
+  isCurrent,
+  rippleKey,
+  rippleCounter,
+  setRippleKey,
+}) => {
+  const lineWords = splitIntoWords(line.text);
+  return lineWords.map((word, widx) => {
+    const isPrevLine = idx === lineIndex - 1;
+    const holdActive = syncMethod === "hold" && isHolding;
+    const isCurrentHeld = holdActive && isCurrent && widx === wordIndex;
+    const isLastSyncedOnCurrent =
+      !holdActive && isCurrent && wordIndex > 0 && widx === wordIndex - 1;
+    const isLastWordOfPrevLine =
+      !holdActive &&
+      isPrevLine &&
+      wordIndex === 0 &&
+      widx === lineWords.length - 1;
+    const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
+
+    const color = isCurrentHeld
+      ? "rgb(129, 140, 248)"
+      : isLastSynced
+        ? "rgb(129, 140, 248)"
+        : isCurrent
+          ? "rgba(255, 255, 255, 0.7)"
+          : "rgba(255, 255, 255, 0.4)";
+
+    const wordKey = `${line.id}-${widx}`;
+    const hasRipple = rippleKey === wordKey;
+
+    return (
+      <motion.span
+        key={wordKey}
+        animate={{ color, scale: isCurrentHeld ? 0.95 : 1 }}
+        transition={syncCarouselTransition}
+        className="relative inline-flex items-center justify-center origin-center"
+      >
+        {word}
+        <AnimatePresence>
+          {hasRipple && (
+            <RippleRing
+              key={rippleCounter}
+              onComplete={() => setRippleKey(null)}
+            />
+          )}
+        </AnimatePresence>
+      </motion.span>
+    );
+  });
+};
 
 const SyncCarousel: React.FC<SyncCarouselProps> = ({
   lines,
@@ -112,57 +183,18 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                     {stripPipes(line.text)}
                   </motion.span>
                 ) : (
-                  (() => {
-                    const lineWords = splitIntoWords(line.text);
-                    return lineWords.map((word, widx) => {
-                      const isPrevLine = idx === lineIndex - 1;
-                      const holdActive = syncMethod === "hold" && isHolding;
-                      const isCurrentHeld =
-                        holdActive && isCurrent && widx === wordIndex;
-                      const isLastSyncedOnCurrent =
-                        !holdActive &&
-                        isCurrent &&
-                        wordIndex > 0 &&
-                        widx === wordIndex - 1;
-                      const isLastWordOfPrevLine =
-                        !holdActive &&
-                        isPrevLine &&
-                        wordIndex === 0 &&
-                        widx === lineWords.length - 1;
-                      const isLastSynced =
-                        isLastSyncedOnCurrent || isLastWordOfPrevLine;
-
-                      const color = isCurrentHeld
-                        ? "rgb(129, 140, 248)"
-                        : isLastSynced
-                          ? "rgb(129, 140, 248)"
-                          : isCurrent
-                            ? "rgba(255, 255, 255, 0.7)"
-                            : "rgba(255, 255, 255, 0.4)";
-
-                      const wordKey = `${line.id}-${widx}`;
-                      const hasRipple = rippleKey === wordKey;
-
-                      return (
-                        <motion.span
-                          key={wordKey}
-                          animate={{ color }}
-                          transition={syncCarouselTransition}
-                          className="relative inline-flex items-center justify-center"
-                        >
-                          {word}
-                          <AnimatePresence>
-                            {hasRipple && (
-                              <RippleRing
-                                key={rippleCounter}
-                                onComplete={() => setRippleKey(null)}
-                              />
-                            )}
-                          </AnimatePresence>
-                        </motion.span>
-                      );
-                    });
-                  })()
+                  <WordGranularityLine
+                    line={line}
+                    idx={idx}
+                    lineIndex={lineIndex}
+                    wordIndex={wordIndex}
+                    syncMethod={syncMethod}
+                    isHolding={isHolding}
+                    isCurrent={isCurrent}
+                    rippleKey={rippleKey}
+                    rippleCounter={rippleCounter}
+                    setRippleKey={setRippleKey}
+                  />
                 )}
               </div>
             </motion.div>

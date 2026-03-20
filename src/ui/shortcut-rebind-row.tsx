@@ -4,7 +4,7 @@ import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/help-modal";
 import { Modal } from "@/ui/modal";
 import { detectConflicts } from "@/utils/shortcut-matcher";
-import { forwardRef, useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,7 +21,6 @@ type CaptureState =
 
 const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => {
   const [captureState, setCaptureState] = useState<CaptureState>({ status: "idle" });
-  const overlayRef = useRef<HTMLDivElement>(null);
   const setBinding = useShortcutBindingsStore((s) => s.setBinding);
   const resetBinding = useShortcutBindingsStore((s) => s.resetBinding);
   const overrides = useShortcutBindingsStore((s) => s.overrides);
@@ -108,7 +107,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
         </div>
       </div>
 
-      {captureState.status === "listening" && <KeyCaptureOverlay onCancel={cancelCapture} ref={overlayRef} />}
+      {captureState.status === "listening" && <KeyCaptureOverlay onCancel={cancelCapture} />}
 
       {captureState.status === "conflict" && (
         <ConflictModal
@@ -124,9 +123,8 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
 // -- Key Capture Overlay ------------------------------------------------------
 
-const KeyCaptureOverlay = forwardRef<HTMLDivElement, { onCancel: () => void }>(({ onCancel }, ref) => (
+const KeyCaptureOverlay: React.FC<{ onCancel: () => void }> = ({ onCancel }) => (
   <div
-    ref={ref}
     className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
     onClick={onCancel}
     onKeyDown={(e) => e.stopPropagation()}
@@ -139,7 +137,7 @@ const KeyCaptureOverlay = forwardRef<HTMLDivElement, { onCancel: () => void }>((
       <p className="text-sm text-composer-text-muted">Press Escape to cancel</p>
     </div>
   </div>
-));
+);
 
 // -- Conflict Modal -----------------------------------------------------------
 
