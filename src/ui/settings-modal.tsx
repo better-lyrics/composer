@@ -5,8 +5,10 @@ import type { SettingsState } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
+import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
 import {
   IconClock,
+  IconKeyboard,
   IconPlayerPlay,
   IconRefresh,
   IconRoute,
@@ -36,6 +38,7 @@ const SECTIONS: SectionDef[] = [
   { id: "playback", label: "Playback", icon: IconPlayerPlay },
   { id: "timeline", label: "Timeline", icon: IconLayoutRows },
   { id: "sync", label: "Sync & Timing", icon: IconClock },
+  { id: "shortcuts", label: "Shortcuts", icon: IconKeyboard },
   { id: "storage", label: "Save & Storage", icon: IconDeviceFloppy },
   { id: "general", label: "General", icon: IconSettings },
 ];
@@ -343,6 +346,7 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
   playback: PlaybackSection,
   timeline: TimelineSection,
   sync: SyncSection,
+  shortcuts: ShortcutsSettingsSection,
   storage: StorageSection,
   general: GeneralSection,
 };

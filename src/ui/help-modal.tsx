@@ -1,3 +1,4 @@
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
@@ -19,6 +20,7 @@ import { useState } from "react";
 interface ShortcutItemProps {
   keys: string[];
   description: string;
+  shortcutId?: string;
 }
 
 interface ShortcutSectionProps {
@@ -60,8 +62,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "General",
     shortcuts: [
-      { keys: ["Shift", "?"], description: "Show keyboard shortcuts" },
-      { keys: ["Enter"], description: "Play / Pause audio" },
+      { keys: ["Shift", "?"], description: "Show keyboard shortcuts", shortcutId: "global.help" },
+      { keys: ["Enter"], description: "Play / Pause audio", shortcutId: "global.playPause" },
     ],
   },
   {
@@ -78,9 +80,9 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "Sync Mode",
     shortcuts: [
-      { keys: ["Space"], description: "Start sync / Tap to sync word" },
-      { keys: ["ArrowLeft"], description: "Nudge last synced -50ms" },
-      { keys: ["ArrowRight"], description: "Nudge last synced +50ms" },
+      { keys: ["Space"], description: "Start sync / Tap to sync word", shortcutId: "sync.tap" },
+      { keys: ["ArrowLeft"], description: "Nudge last synced -50ms", shortcutId: "sync.nudgeLeft" },
+      { keys: ["ArrowRight"], description: "Nudge last synced +50ms", shortcutId: "sync.nudgeRight" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
     ],
@@ -88,14 +90,14 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "Timeline Mode",
     shortcuts: [
-      { keys: ["F"], description: "Toggle follow playhead" },
-      { keys: ["P"], description: "Toggle preview sidebar" },
-      { keys: ["N"], description: "Insert line below selected word" },
-      { keys: ["Shift", "N"], description: "Insert line above selected word" },
-      { keys: ["Space"], description: "Jump viewport to playhead" },
+      { keys: ["F"], description: "Toggle follow playhead", shortcutId: "timeline.toggleFollow" },
+      { keys: ["P"], description: "Toggle preview sidebar", shortcutId: "timeline.togglePreview" },
+      { keys: ["N"], description: "Insert line below selected word", shortcutId: "timeline.insertLineBelow" },
+      { keys: ["Shift", "N"], description: "Insert line above selected word", shortcutId: "timeline.insertLineAbove" },
+      { keys: ["Space"], description: "Jump viewport to playhead", shortcutId: "timeline.jumpToPlayhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
-      { keys: ["["], description: "Set word begin to playhead" },
-      { keys: ["]"], description: "Set word end to playhead" },
+      { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },
+      { keys: ["]"], description: "Set word end to playhead", shortcutId: "timeline.setWordEnd" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
       { keys: ["Mod", "Shift", "V"], description: "Import lyrics" },
@@ -118,10 +120,10 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "V"], description: "Paste (ghost preview, click to place)" },
       { keys: ["Delete"], description: "Delete selected words" },
       { keys: ["Alt", "Drag"], description: "Duplicate selected words" },
-      { keys: ["E"], description: "Edit selected word text" },
+      { keys: ["E"], description: "Edit selected word text", shortcutId: "timeline.editWord" },
       { keys: ["F2"], description: "Edit selected word text" },
-      { keys: ["S"], description: "Split selected word into syllables" },
-      { keys: ["M"], description: "Merge adjacent selected words" },
+      { keys: ["S"], description: "Split selected word into syllables", shortcutId: "timeline.splitSyllable" },
+      { keys: ["M"], description: "Merge adjacent selected words", shortcutId: "timeline.mergeWords" },
       { keys: ["Double Click"], description: "Edit word / create word" },
     ],
   },
@@ -162,17 +164,20 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
   );
 };
 
-const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
-  <div className="flex items-center justify-between py-1.5">
-    <span className="text-sm text-composer-text-secondary">{description}</span>
-    <div className="flex items-center gap-1">
-      {keys.map((key, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-        <KeyBadge key={`${key}-${i}`} keyName={key} />
-      ))}
+const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description, shortcutId }) => {
+  const resolvedKeys = shortcutId ? getEffectiveKeysArray(shortcutId) : keys;
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-composer-text-secondary">{description}</span>
+      <div className="flex items-center gap-1">
+        {resolvedKeys.map((key, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+          <KeyBadge key={`${key}-${i}`} keyName={key} />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) => (
   <div>

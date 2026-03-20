@@ -2,6 +2,8 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
+import { getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { debouncedSave, flushPendingSave, loadAudioFile, loadCurrentProject, saveAudioFile } from "@/lib/persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -127,46 +129,22 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 
-  const shortcuts: Shortcut[] = useMemo(
-    () => [
+  const overrides = useShortcutBindingsStore((s) => s.overrides);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: overrides triggers recomputation when bindings change
+  const shortcuts: Shortcut[] = useMemo(() => {
+    const playPause = getEffectiveBinding("global.playPause");
+    const help = getEffectiveBinding("global.help");
+    return [
+      { key: "1", ctrl: true, action: () => setActiveTab("import"), description: "Import" },
+      { key: "2", ctrl: true, action: () => setActiveTab("edit"), description: "Edit" },
+      { key: "3", ctrl: true, action: () => setActiveTab("sync"), description: "Sync" },
+      { key: "4", ctrl: true, action: () => setActiveTab("timeline"), description: "Timeline" },
+      { key: "5", ctrl: true, action: () => setActiveTab("preview"), description: "Preview" },
+      { key: "6", ctrl: true, action: () => setActiveTab("export"), description: "Export" },
       {
-        key: "1",
-        ctrl: true,
-        action: () => setActiveTab("import"),
-        description: "Import",
-      },
-      {
-        key: "2",
-        ctrl: true,
-        action: () => setActiveTab("edit"),
-        description: "Edit",
-      },
-      {
-        key: "3",
-        ctrl: true,
-        action: () => setActiveTab("sync"),
-        description: "Sync",
-      },
-      {
-        key: "4",
-        ctrl: true,
-        action: () => setActiveTab("timeline"),
-        description: "Timeline",
-      },
-      {
-        key: "5",
-        ctrl: true,
-        action: () => setActiveTab("preview"),
-        description: "Preview",
-      },
-      {
-        key: "6",
-        ctrl: true,
-        action: () => setActiveTab("export"),
-        description: "Export",
-      },
-      {
-        key: "Enter",
+        key: playPause.key,
+        shift: playPause.shift,
+        alt: playPause.alt,
         action: () => {
           const { isPlaying, setIsPlaying } = useAudioStore.getState();
           setIsPlaying(!isPlaying);
@@ -174,14 +152,14 @@ const AppContent: React.FC = () => {
         description: "Play / Pause",
       },
       {
-        key: "?",
-        shift: true,
+        key: help.key,
+        shift: help.shift,
+        alt: help.alt,
         action: () => setHelpOpen(true),
         description: "Show keyboard shortcuts",
       },
-    ],
-    [setActiveTab],
-  );
+    ];
+  }, [setActiveTab, overrides]);
 
   useKeyboardShortcuts(shortcuts);
 

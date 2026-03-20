@@ -1,3 +1,4 @@
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -42,7 +43,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
         >
           <IconFocusCentered size={16} />
           <span>Follow</span>
-          {showHints && <InlineKeyBadge keys={["F"]} />}
+          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />}
         </Button>
 
         {/* Select-only mode toggle */}
@@ -68,7 +69,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
         >
           <IconEye size={16} />
           <span>Preview</span>
-          {showHints && <InlineKeyBadge keys={["P"]} />}
+          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />}
         </Button>
 
         {/* Import lyrics */}

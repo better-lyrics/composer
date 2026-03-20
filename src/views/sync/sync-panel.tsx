@@ -1,7 +1,9 @@
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
   shimmerTransition,
   shimmerVariants,
@@ -217,27 +219,40 @@ const SyncPanel: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
-      if (e.code === "Space" && !e.repeat) {
-        e.preventDefault();
-        if (editMode) return;
-        if (!syncState.isActive && lines.length > 0) {
-          handleStartSync();
-        } else if (isPlaying) {
-          handleTap();
-        }
-      } else if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+
+      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         if (e.shiftKey) {
           redo();
         } else {
           undo();
         }
-      } else if (e.code === "ArrowLeft" && !e.repeat) {
-        e.preventDefault();
-        handleNudgeLastSynced(-getNudgeAmount());
-      } else if (e.code === "ArrowRight" && !e.repeat) {
-        e.preventDefault();
-        handleNudgeLastSynced(getNudgeAmount());
+        return;
+      }
+
+      if (e.repeat) return;
+
+      const matched = findMatchingShortcut(e, "sync");
+      if (!matched) return;
+
+      switch (matched) {
+        case "sync.tap":
+          e.preventDefault();
+          if (editMode) return;
+          if (!syncState.isActive && lines.length > 0) {
+            handleStartSync();
+          } else if (isPlaying) {
+            handleTap();
+          }
+          break;
+        case "sync.nudgeLeft":
+          e.preventDefault();
+          handleNudgeLastSynced(-getNudgeAmount());
+          break;
+        case "sync.nudgeRight":
+          e.preventDefault();
+          handleNudgeLastSynced(getNudgeAmount());
+          break;
       }
     };
 
@@ -413,7 +428,9 @@ const SyncPanel: React.FC = () => {
                 transition={syncCarouselTransition}
                 className="flex items-center justify-center border-2 rounded-full w-14 h-14 bg-composer-bg-elevated"
               >
-                <span className="text-xs font-medium text-composer-text-muted">Space</span>
+                <span className="text-xs font-medium text-composer-text-muted">
+                  {getEffectiveKeysArray("sync.tap").join(" ")}
+                </span>
               </motion.div>
             </div>
           )}

@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { findWordAtTime, getLineTiming } from "@/views/timeline/utils";
@@ -166,51 +167,6 @@ function useTimelineKeyboard(
         return;
       }
 
-      if (e.code === "Space") {
-        e.preventDefault();
-        const scrollContainer = scrollContainerRef.current;
-        if (!scrollContainer) return;
-
-        const audioEl = useAudioStore.getState().audioElement;
-        const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-        const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
-
-        const viewportWidth = scrollContainer.clientWidth;
-        scrollContainer.scrollLeft = Math.max(0, currentTime * zoom - viewportWidth / 2 + GUTTER_WIDTH);
-
-        let activeLineIndex = -1;
-        for (let i = 0; i < lines.length; i++) {
-          const timing = getLineTiming(lines[i]);
-          if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-            activeLineIndex = i;
-            break;
-          }
-        }
-
-        if (activeLineIndex >= 0) {
-          let rowTop = WAVEFORM_HEIGHT;
-          for (let i = 0; i < activeLineIndex; i++) {
-            const l = lines[i];
-            const mainHeight = rowHeights[l.id] ?? defaultRowHeight;
-            const hasBg = l.backgroundWords && l.backgroundWords.length > 0;
-            rowTop += mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
-          }
-          const line = lines[activeLineIndex];
-          const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-          const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
-          const rowHeight = mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
-
-          const viewportHeight = scrollContainer.clientHeight;
-          const rowCenter = rowTop + rowHeight / 2;
-          const targetTop = Math.max(
-            0,
-            Math.min(scrollContainer.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
-          );
-          scrollContainer.scrollTo({ top: targetTop, behavior: "instant" });
-        }
-        return;
-      }
-
       if (e.key === "Delete" || e.key === "Backspace") {
         const { selectedWords } = useTimelineStore.getState();
         if (selectedWords.length > 0) {
@@ -220,34 +176,93 @@ function useTimelineKeyboard(
         }
       }
 
-      switch (e.key) {
-        case "Escape": {
-          const { pasteMode } = useTimelineStore.getState();
-          if (pasteMode.status === "preview") {
-            useTimelineStore.getState().setPasteMode({ status: "idle" });
-          } else {
-            useTimelineStore.getState().clearSelection();
+      if (e.key === "Escape") {
+        const { pasteMode } = useTimelineStore.getState();
+        if (pasteMode.status === "preview") {
+          useTimelineStore.getState().setPasteMode({ status: "idle" });
+        } else {
+          useTimelineStore.getState().clearSelection();
+        }
+        return;
+      }
+
+      if (e.key === "F2") {
+        const { selectedWords: eSel } = useTimelineStore.getState();
+        if (eSel.length === 1) {
+          e.preventDefault();
+          useTimelineStore.getState().setEditingWord({
+            lineId: eSel[0].lineId,
+            wordIndex: eSel[0].wordIndex,
+            type: eSel[0].type,
+          });
+        }
+        return;
+      }
+
+      const matched = findMatchingShortcut(e, "timeline");
+      if (!matched) return;
+
+      switch (matched) {
+        case "timeline.jumpToPlayhead": {
+          e.preventDefault();
+          const scrollContainer = scrollContainerRef.current;
+          if (!scrollContainer) return;
+
+          const audioEl = useAudioStore.getState().audioElement;
+          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
+
+          const viewportWidth = scrollContainer.clientWidth;
+          scrollContainer.scrollLeft = Math.max(0, currentTime * zoom - viewportWidth / 2 + GUTTER_WIDTH);
+
+          let activeLineIndex = -1;
+          for (let i = 0; i < lines.length; i++) {
+            const timing = getLineTiming(lines[i]);
+            if (timing && currentTime >= timing.begin && currentTime < timing.end) {
+              activeLineIndex = i;
+              break;
+            }
+          }
+
+          if (activeLineIndex >= 0) {
+            let rowTop = WAVEFORM_HEIGHT;
+            for (let i = 0; i < activeLineIndex; i++) {
+              const l = lines[i];
+              const mainHeight = rowHeights[l.id] ?? defaultRowHeight;
+              const hasBg = l.backgroundWords && l.backgroundWords.length > 0;
+              rowTop += mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+            }
+            const line = lines[activeLineIndex];
+            const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
+            const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
+            const rowHeight = mainHeight + (hasBg ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+
+            const viewportHeight = scrollContainer.clientHeight;
+            const rowCenter = rowTop + rowHeight / 2;
+            const targetTop = Math.max(
+              0,
+              Math.min(scrollContainer.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
+            );
+            scrollContainer.scrollTo({ top: targetTop, behavior: "instant" });
           }
           break;
         }
-        case "f":
-        case "F":
+        case "timeline.toggleFollow":
           useTimelineStore.getState().toggleFollow();
           break;
-        case "p":
-        case "P":
+        case "timeline.togglePreview":
           useTimelineStore.getState().togglePreviewSidebar();
           break;
-        case "[":
+        case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");
           break;
-        case "]":
+        case "timeline.setWordEnd":
           e.preventDefault();
           handleSetWordTiming("end");
           break;
-        case "n":
-        case "N": {
+        case "timeline.insertLineBelow":
+        case "timeline.insertLineAbove": {
           const { selectedWords: nSel } = useTimelineStore.getState();
           if (nSel.length === 0) break;
           const lineIndex = nSel[0].lineIndex;
@@ -255,14 +270,12 @@ function useTimelineKeyboard(
           const defaultAgentId = agents[0]?.id ?? "v1";
           const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
           const newLines = [...lines];
-          const insertIndex = e.shiftKey ? lineIndex : lineIndex + 1;
+          const insertIndex = matched === "timeline.insertLineAbove" ? lineIndex : lineIndex + 1;
           newLines.splice(insertIndex, 0, newLine);
           useProjectStore.getState().setLinesWithHistory(newLines);
           break;
         }
-        case "F2":
-        case "e":
-        case "E": {
+        case "timeline.editWord": {
           const { selectedWords: eSel } = useTimelineStore.getState();
           if (eSel.length === 1) {
             e.preventDefault();
@@ -274,8 +287,7 @@ function useTimelineKeyboard(
           }
           break;
         }
-        case "s":
-        case "S": {
+        case "timeline.splitSyllable": {
           const { selectedWords: sSel } = useTimelineStore.getState();
           if (sSel.length === 1) {
             e.preventDefault();
@@ -283,8 +295,7 @@ function useTimelineKeyboard(
           }
           break;
         }
-        case "m":
-        case "M": {
+        case "timeline.mergeWords": {
           const { selectedWords: mSel } = useTimelineStore.getState();
           if (mSel.length < 2) break;
           const first = mSel[0];
