@@ -37,6 +37,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: " " },
   },
   {
+    id: "sync.holdSync",
+    scope: "sync",
+    description: "Hold to sync",
+    defaultBinding: { key: "f" },
+  },
+  {
     id: "sync.nudgeLeft",
     scope: "sync",
     description: "Nudge left",

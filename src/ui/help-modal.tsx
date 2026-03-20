@@ -81,6 +81,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     title: "Sync Mode",
     shortcuts: [
       { keys: ["Space"], description: "Start sync / Tap to sync word", shortcutId: "sync.tap" },
+      { keys: ["F"], description: "Hold to sync word (hold mode)", shortcutId: "sync.holdSync" },
       { keys: ["ArrowLeft"], description: "Nudge last synced -50ms", shortcutId: "sync.nudgeLeft" },
       { keys: ["ArrowRight"], description: "Nudge last synced +50ms", shortcutId: "sync.nudgeRight" },
       { keys: ["Mod", "Z"], description: "Undo" },

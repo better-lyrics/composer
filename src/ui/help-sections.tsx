@@ -65,9 +65,10 @@ const GettingStartedSection: React.FC = () => (
       <div>
         <h4 className={HEADING}>3. Sync the timing</h4>
         <p className={PROSE}>
-          The Sync tab lets you tap along with the music to stamp each word. Press Space to start playback, then tap
-          Space again on every word as it's sung. If you miss one, use the arrow keys to nudge the timing. For finer
-          control, switch to Timeline and drag word blocks directly on the waveform.
+          The Sync tab lets you tap or hold along with the music to stamp each word. In Tap mode, press Space on every
+          word as it's sung. In Hold mode, hold F for the duration of each word to capture both start and end times. If
+          you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and drag word
+          blocks directly on the waveform.
         </p>
       </div>
       <div>
@@ -185,19 +186,33 @@ const SyncSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
       The Sync tab shows your lyrics as a scrolling carousel. One line is active at a time, with each word waiting to be
-      tapped.
+      synced. There are two sync methods you can switch between using the toggle in the header.
     </p>
 
-    <p className={PROSE}>
-      Press <strong>Space</strong> to start playback and begin syncing. As the music plays, tap <strong>Space</strong>{" "}
-      on each word right when the singer says it. The word lights up and the next one becomes active.
-    </p>
+    <div>
+      <h4 className={HEADING}>Tap mode</h4>
+      <p className={PROSE}>
+        Press <strong>Space</strong> to start playback and begin syncing. As the music plays, tap <strong>Space</strong>{" "}
+        on each word right when the singer says it. Each tap marks the word's start time, and the previous word's end
+        time is inferred from the next tap.
+      </p>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Hold mode</h4>
+      <p className={PROSE}>
+        Press and hold <strong>F</strong> for the duration of each word. The key-down marks the word's start, and
+        key-up marks the end. This gives you explicit control over word duration and allows natural gaps between words.
+        The current word highlights while you hold.
+      </p>
+    </div>
 
     <div>
       <h4 className={HEADING}>Made a mistake?</h4>
       <p className={PROSE}>
-        Press the left arrow key to nudge the last tapped word 50ms earlier. Right arrow nudges it 50ms later. You can
-        also press {MOD_KEY} + Z to undo the last tap entirely.
+        Press the left arrow key to nudge the last synced word 50ms earlier. Right arrow nudges it 50ms later. You can
+        also press {MOD_KEY} + Z to undo. In hold mode, each hold produces two undo steps (start and end) so you can
+        step back precisely.
       </p>
     </div>
 

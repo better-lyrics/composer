@@ -274,6 +274,15 @@ const SyncSection: React.FC = () => (
         { value: "line", label: "Line" },
       ]}
     />
+    <SelectSetting
+      label="Default sync method"
+      description="Whether sync uses tap (mark start) or hold (mark start and end)."
+      settingKey="defaultSyncMethod"
+      options={[
+        { value: "tap", label: "Tap" },
+        { value: "hold", label: "Hold" },
+      ]}
+    />
   </div>
 );
 
