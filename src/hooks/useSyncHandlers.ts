@@ -60,8 +60,7 @@ function useSyncHandlers({
     if (!wordText) return;
 
     const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
-    const isLastWord = wordIndex === lineWords.length - 1;
-    const fallbackEnd = isLastWord ? currentTime + useSettingsStore.getState().defaultWordDuration : currentTime;
+    const fallbackEnd = currentTime + useSettingsStore.getState().defaultWordDuration;
 
     const existingWords = line.words ?? [];
 
