@@ -1,3 +1,4 @@
+import { useSettingsStore } from "@/stores/settings";
 import { ShortcutSection, SHORTCUT_SECTIONS } from "@/ui/help-modal";
 import { isMac } from "@/utils/platform";
 
@@ -139,46 +140,52 @@ const ImportSection: React.FC = () => (
 
 // -- Editing Lyrics -----------------------------------------------------------
 
-const EditSection: React.FC = () => (
-  <div className="space-y-5">
-    <p className={PROSE}>
-      Each row is one line of lyrics. Type normally, press Enter for a new line. To reorder lines, drag them using the
-      handle on the left side.
-    </p>
+const EditSection: React.FC = () => {
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
 
-    <div>
-      <h4 className={HEADING}>Agents (singers)</h4>
+  return (
+    <div className="space-y-5">
       <p className={PROSE}>
-        Click a line's agent dot to assign it to a different singer. Each agent gets a unique color. Add new agents with
-        the "+" button in the agent manager at the top.
+        Each row is one line of lyrics. Type normally, press Enter for a new line. To reorder lines, drag them using the
+        handle on the left side.
       </p>
-    </div>
 
-    <div>
-      <h4 className={HEADING}>Background vocals</h4>
-      <p className={PROSE}>
-        If a line has backing vocals, add them in the "Background" field that appears below the main text. These show up
-        as a separate track in the Timeline and get the x-bg role in TTML output.
-      </p>
-    </div>
+      <div>
+        <h4 className={HEADING}>Agents (singers)</h4>
+        <p className={PROSE}>
+          Click a line's agent dot to assign it to a different singer. Each agent gets a unique color. Add new agents
+          with the "+" button in the agent manager at the top.
+        </p>
+      </div>
 
-    <div>
-      <h4 className={HEADING}>Syllable pre-splitting</h4>
-      <p className={PROSE}>
-        Use the pipe character | to mark where you want words split. For example, typing beau|ti|ful creates three
-        separate timed blocks instead of one. This is useful when a word stretches across several beats.
-      </p>
-    </div>
+      <div>
+        <h4 className={HEADING}>Background vocals</h4>
+        <p className={PROSE}>
+          If a line has backing vocals, add them in the "Background" field that appears below the main text. These show
+          up as a separate track in the Timeline and get the x-bg role in TTML output.
+        </p>
+      </div>
 
-    <div>
-      <h4 className={HEADING}>Selecting multiple lines</h4>
-      <p className={PROSE}>
-        Click a line to select it. Alt + Click to select a range. Selected lines can be deleted or have agents
-        reassigned in bulk.
-      </p>
+      <div>
+        <h4 className={HEADING}>Syllable pre-splitting</h4>
+        <p className={PROSE}>
+          Use the <span className="font-mono text-composer-text">{splitCharacter}</span> character to mark where you
+          want words split. For example, typing beau{splitCharacter}ti{splitCharacter}ful creates three separate timed
+          blocks instead of one. This is useful when a word stretches across several beats. You can change this
+          character in Settings.
+        </p>
+      </div>
+
+      <div>
+        <h4 className={HEADING}>Selecting multiple lines</h4>
+        <p className={PROSE}>
+          Click a line to select it. Alt + Click to select a range. Selected lines can be deleted or have agents
+          reassigned in bulk.
+        </p>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 // -- Syncing ------------------------------------------------------------------
 

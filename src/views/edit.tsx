@@ -4,7 +4,7 @@ import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { textToLyricLines } from "@/utils/lyrics-text";
-import { stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
 import { useCallback, useId, useMemo, useRef, useState } from "react";
@@ -153,7 +153,7 @@ const LinePreview: React.FC<{
         className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
         style={{ borderLeft: `2px solid ${agentColor}`, paddingLeft: "6px" }}
       >
-        {stripPipes(line.text)}
+        {stripSplitCharacter(line.text)}
       </span>
 
       {line.backgroundText && <span className="text-xs italic text-composer-text-muted">{line.backgroundText}</span>}

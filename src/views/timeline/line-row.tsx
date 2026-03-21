@@ -1,6 +1,6 @@
 import { type LyricLine, type WordTiming, getAgentColor } from "@/stores/project";
 import { cn } from "@/utils/cn";
-import { stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -25,7 +25,7 @@ const BG_DROP_ZONE_HEIGHT = 24;
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
-  const displayText = stripPipes(line.text);
+  const displayText = stripSplitCharacter(line.text);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 

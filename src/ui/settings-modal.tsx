@@ -1,5 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
-import { useSettingsStore } from "@/stores/settings";
+import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { SettingsState } from "@/stores/settings";
 import { Button } from "@/ui/button";
@@ -16,7 +16,7 @@ import {
   IconSettings,
   IconDeviceFloppy,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -63,8 +63,12 @@ const SliderSetting: React.FC<{
     <div className="flex flex-col gap-2 py-3">
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-composer-text">{label}</span>
-          <span className="text-xs text-composer-text-muted">{description}</span>
+          <span className="text-sm font-medium text-composer-text">
+            {label}
+          </span>
+          <span className="text-xs text-composer-text-muted">
+            {description}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           {action && (
@@ -149,7 +153,9 @@ const SelectSetting: React.FC<{
       </div>
       <select
         value={value}
-        onChange={(e) => set(settingKey, e.target.value as SettingsState[typeof settingKey])}
+        onChange={(e) =>
+          set(settingKey, e.target.value as SettingsState[typeof settingKey])
+        }
         className="h-7 px-2 text-sm rounded-lg bg-composer-input text-composer-text border border-composer-border focus:outline-none focus:border-composer-accent cursor-pointer"
       >
         {options.map((opt) => (
@@ -159,6 +165,188 @@ const SelectSetting: React.FC<{
         ))}
       </select>
     </div>
+  );
+};
+
+// -- Split Character Setting --------------------------------------------------
+
+const BLOCKED_CHARS = new Set([" ", "\n", "\t", "\r"]);
+const WARNED_CHARS = new Set([
+  ",",
+  ".",
+  "'",
+  '"',
+  "-",
+  "!",
+  "?",
+  ":",
+  ";",
+  "(",
+  ")",
+  "&",
+]);
+
+type SplitCaptureState =
+  | { status: "idle" }
+  | { status: "listening"; error?: string }
+  | { status: "warning"; char: string };
+
+function validateSplitChar(char: string): "blocked" | "warned" | "allowed" {
+  if (BLOCKED_CHARS.has(char) || /[a-zA-Z0-9]/.test(char)) return "blocked";
+  if (WARNED_CHARS.has(char)) return "warned";
+  return "allowed";
+}
+
+const SplitCharacterSetting: React.FC = () => {
+  const splitCharacter = useSettingsStore((s) => s.splitCharacter);
+  const set = useSettingsStore((s) => s.set);
+  const isDefault = splitCharacter === DEFAULTS.splitCharacter;
+  const [captureState, setCaptureState] = useState<SplitCaptureState>({
+    status: "idle",
+  });
+
+  const cancelCapture = useCallback(() => {
+    setCaptureState({ status: "idle" });
+  }, []);
+
+  useEffect(() => {
+    if (captureState.status !== "listening") return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === "Escape") {
+        cancelCapture();
+        return;
+      }
+
+      if (
+        e.key === "Shift" ||
+        e.key === "Alt" ||
+        e.key === "Control" ||
+        e.key === "Meta"
+      )
+        return;
+      if (e.key.length !== 1) return;
+
+      const result = validateSplitChar(e.key);
+
+      if (result === "blocked") {
+        setCaptureState({
+          status: "listening",
+          error: "Letters, numbers, and whitespace cannot be used",
+        });
+        return;
+      }
+
+      if (result === "warned") {
+        setCaptureState({ status: "warning", char: e.key });
+        return;
+      }
+
+      set("splitCharacter", e.key);
+      setCaptureState({ status: "idle" });
+    };
+
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => window.removeEventListener("keydown", handleKeyDown, true);
+  }, [captureState.status, set, cancelCapture]);
+
+  return (
+    <>
+      <div className="flex items-center justify-between py-3">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium text-composer-text">
+            Split character
+          </span>
+          <span className="text-xs text-composer-text-muted">
+            Character used to mark syllable boundaries in the edit view
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          {!isDefault && (
+            <button
+              type="button"
+              onClick={() => set("splitCharacter", DEFAULTS.splitCharacter)}
+              className="text-xs text-composer-text-muted hover:text-composer-text cursor-pointer transition-colors"
+            >
+              Reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setCaptureState({ status: "listening" })}
+            className="flex items-center justify-center min-w-8 h-7 px-2 rounded-lg bg-composer-input border border-composer-border cursor-pointer transition-colors hover:border-composer-accent"
+          >
+            <span className="text-sm font-mono text-composer-text">
+              {splitCharacter}
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <Modal
+        isOpen={captureState.status === "listening"}
+        onClose={cancelCapture}
+        title="Change split character"
+      >
+        <div className="text-center py-4 pb-0 space-y-10">
+          <div className="space-y-2">
+            <p className="text-sm text-composer-text-secondary">
+              Press a character to use as the syllable split marker
+            </p>
+            <p className="text-xs text-composer-text-muted">
+              Press Escape to cancel
+            </p>
+          </div>
+          <p className="text-xs text-composer-text-muted bg-composer-button/50 rounded-lg px-3 py-2 text-left">
+            Pick a symbol you won't use in lyrics. Characters like commas,
+            apostrophes, and hyphens appear in lyrics and will cause unintended
+            splits.
+          </p>
+        </div>
+        {captureState.status === "listening" && captureState.error && (
+          <p className="text-xs text-red-400 text-center mt-4">
+            {captureState.error}
+          </p>
+        )}
+      </Modal>
+
+      {captureState.status === "warning" && (
+        <Modal isOpen onClose={cancelCapture} title="Character warning">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-sm text-composer-text">
+              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
+                {captureState.char}
+              </span>
+              <span className="text-composer-text-secondary">
+                commonly appears in lyrics.
+              </span>
+            </div>
+            <p className="text-xs text-composer-text-muted">
+              Using it as a split marker means every occurrence in your text
+              will be treated as a syllable break.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button variant="secondary" size="sm" onClick={cancelCapture}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => {
+                  set("splitCharacter", captureState.char);
+                  setCaptureState({ status: "idle" });
+                }}
+              >
+                Use anyway
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      )}
+    </>
   );
 };
 
@@ -182,7 +370,11 @@ const PlaybackSection: React.FC = () => {
           hasAudio
             ? {
                 label: "Use current",
-                onClick: () => set("defaultPlaybackRate", useAudioStore.getState().playbackRate),
+                onClick: () =>
+                  set(
+                    "defaultPlaybackRate",
+                    useAudioStore.getState().playbackRate,
+                  ),
               }
             : undefined
         }
@@ -224,7 +416,11 @@ const TimelineSection: React.FC = () => {
         format={(v) => `${v}px`}
         action={{
           label: "Use current",
-          onClick: () => set("defaultRowHeight", useTimelineStore.getState().defaultRowHeight),
+          onClick: () =>
+            set(
+              "defaultRowHeight",
+              useTimelineStore.getState().defaultRowHeight,
+            ),
         }}
       />
       <ToggleSetting
@@ -238,6 +434,7 @@ const TimelineSection: React.FC = () => {
 
 const SyncSection: React.FC = () => (
   <div className="divide-y divide-composer-border">
+    <SplitCharacterSetting />
     <SliderSetting
       label="Nudge amount"
       description="How far timing shifts when using nudge controls."
@@ -300,7 +497,10 @@ const StorageSection: React.FC = () => (
   </div>
 );
 
-const GeneralSection: React.FC<{ onResetTour: () => void; onClose: () => void }> = ({ onResetTour, onClose }) => {
+const GeneralSection: React.FC<{
+  onResetTour: () => void;
+  onClose: () => void;
+}> = ({ onResetTour, onClose }) => {
   const resetToDefaults = useSettingsStore((s) => s.resetToDefaults);
 
   return (
@@ -317,7 +517,9 @@ const GeneralSection: React.FC<{ onResetTour: () => void; onClose: () => void }>
       />
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-composer-text">Reset product tour</span>
+          <span className="text-sm font-medium text-composer-text">
+            Reset product tour
+          </span>
           <span className="text-xs text-composer-text-muted">
             Restart the guided walkthrough that introduces Composer's features.
           </span>
@@ -337,8 +539,12 @@ const GeneralSection: React.FC<{ onResetTour: () => void; onClose: () => void }>
       </div>
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-composer-text">Reset to defaults</span>
-          <span className="text-xs text-composer-text-muted">Restore all settings to their original values.</span>
+          <span className="text-sm font-medium text-composer-text">
+            Reset to defaults
+          </span>
+          <span className="text-xs text-composer-text-muted">
+            Restore all settings to their original values.
+          </span>
         </div>
         <Button size="sm" variant="secondary" hasIcon onClick={resetToDefaults}>
           <IconRefresh size={14} />
@@ -351,7 +557,10 @@ const GeneralSection: React.FC<{ onResetTour: () => void; onClose: () => void }>
 
 // -- Section Map --------------------------------------------------------------
 
-const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClose: () => void }>> = {
+const SECTION_CONTENT: Record<
+  string,
+  React.FC<{ onResetTour: () => void; onClose: () => void }>
+> = {
   playback: PlaybackSection,
   timeline: TimelineSection,
   sync: SyncSection,
@@ -362,7 +571,11 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
 
 // -- Settings Modal -----------------------------------------------------------
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetTour }) => {
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
+  onResetTour,
+}) => {
   const [activeSection, setActiveSection] = useState("playback");
 
   const Content = SECTION_CONTENT[activeSection];

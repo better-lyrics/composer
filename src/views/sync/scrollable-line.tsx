@@ -1,7 +1,8 @@
 import { getAgentColor, type WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups } from "@/utils/syllable-groups";
-import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
+import { splitIntoWords } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
 import { memo, useEffect, useMemo, useRef } from "react";
@@ -82,7 +83,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   }, [isCurrent]);
 
   const renderLineContent = () => {
-    const displayText = stripPipes(text);
+    const displayText = stripSplitCharacter(text);
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
