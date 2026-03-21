@@ -134,6 +134,7 @@ const AppContent: React.FC = () => {
   const shortcuts: Shortcut[] = useMemo(() => {
     const playPause = getEffectiveBinding("global.playPause");
     const help = getEffectiveBinding("global.help");
+    const settings = getEffectiveBinding("global.settings");
     return [
       { key: "1", ctrl: true, action: () => setActiveTab("import"), description: "Import" },
       { key: "2", ctrl: true, action: () => setActiveTab("edit"), description: "Edit" },
@@ -157,6 +158,13 @@ const AppContent: React.FC = () => {
         alt: help.alt,
         action: () => setHelpOpen(true),
         description: "Show keyboard shortcuts",
+      },
+      {
+        key: settings.key,
+        shift: settings.shift,
+        alt: settings.alt,
+        action: () => setSettingsOpen(true),
+        description: "Open settings",
       },
     ];
   }, [setActiveTab, overrides]);

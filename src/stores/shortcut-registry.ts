@@ -33,6 +33,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "?", shift: true },
   },
   {
+    id: "global.settings",
+    scope: "global",
+    description: "Open settings",
+    defaultBinding: { key: "," },
+  },
+  {
     id: "sync.tap",
     scope: "sync",
     description: "Tap to sync",
