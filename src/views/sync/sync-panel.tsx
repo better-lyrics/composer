@@ -105,7 +105,7 @@ const SyncPanel: React.FC = () => {
         const timing = getLineTiming(line);
         if (timing) {
           updateLine(line.id, {
-            backgroundWords: createInitialBgWords(line.backgroundText, timing.begin, timing.end),
+            backgroundWords: createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end),
           });
         }
       }
