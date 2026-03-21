@@ -2,6 +2,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
+import { isMac } from "@/utils/platform";
 import {
   IconCommand,
   IconDownload,
@@ -40,8 +41,6 @@ interface HelpSectionDef {
 }
 
 // -- Helpers ------------------------------------------------------------------
-
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 function formatKey(key: string): string {
   if (key === "Mod") return isMac ? "⌘" : "Ctrl";

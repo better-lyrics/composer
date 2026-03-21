@@ -3,14 +3,11 @@ import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { formatKey } from "@/ui/help-modal";
+import { isMac } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconCommand } from "@tabler/icons-react";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-
-// -- Helpers ------------------------------------------------------------------
-
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 function MenuItem({
   label,

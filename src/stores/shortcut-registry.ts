@@ -6,6 +6,7 @@ interface ShortcutBinding {
   alt?: boolean;
   ctrl?: boolean;
   meta?: boolean;
+  mod?: boolean;
 }
 
 type ShortcutScope = "global" | "sync" | "timeline";
@@ -37,6 +38,42 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     scope: "global",
     description: "Open settings",
     defaultBinding: { key: "," },
+  },
+  {
+    id: "global.goToImport",
+    scope: "global",
+    description: "Go to Import",
+    defaultBinding: { key: "1", mod: true },
+  },
+  {
+    id: "global.goToEdit",
+    scope: "global",
+    description: "Go to Edit",
+    defaultBinding: { key: "2", mod: true },
+  },
+  {
+    id: "global.goToSync",
+    scope: "global",
+    description: "Go to Sync",
+    defaultBinding: { key: "3", mod: true },
+  },
+  {
+    id: "global.goToTimeline",
+    scope: "global",
+    description: "Go to Timeline",
+    defaultBinding: { key: "4", mod: true },
+  },
+  {
+    id: "global.goToPreview",
+    scope: "global",
+    description: "Go to Preview",
+    defaultBinding: { key: "5", mod: true },
+  },
+  {
+    id: "global.goToExport",
+    scope: "global",
+    description: "Go to Export",
+    defaultBinding: { key: "6", mod: true },
   },
   {
     id: "sync.tap",

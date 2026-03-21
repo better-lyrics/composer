@@ -6,6 +6,7 @@ import {
   SHORTCUT_REGISTRY,
   getShortcutsByScope,
 } from "@/stores/shortcut-registry";
+import { isMac } from "@/utils/platform";
 
 // -- Matching -----------------------------------------------------------------
 
@@ -16,6 +17,13 @@ function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean
   if (eventKey !== bindingKey) return false;
   if (!!binding.shift !== event.shiftKey) return false;
   if (!!binding.alt !== event.altKey) return false;
+
+  if (binding.mod) {
+    const modActive = isMac ? event.metaKey : event.ctrlKey;
+    if (!modActive) return false;
+    return true;
+  }
+
   if (!!binding.ctrl !== event.ctrlKey) return false;
   if (!!binding.meta !== event.metaKey) return false;
 
@@ -37,7 +45,12 @@ function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {
   const aKey = a.key.length === 1 ? a.key.toLowerCase() : a.key;
   const bKey = b.key.length === 1 ? b.key.toLowerCase() : b.key;
   return (
-    aKey === bKey && !!a.shift === !!b.shift && !!a.alt === !!b.alt && !!a.ctrl === !!b.ctrl && !!a.meta === !!b.meta
+    aKey === bKey &&
+    !!a.shift === !!b.shift &&
+    !!a.alt === !!b.alt &&
+    !!a.ctrl === !!b.ctrl &&
+    !!a.meta === !!b.meta &&
+    !!a.mod === !!b.mod
   );
 }
 
@@ -62,63 +75,54 @@ function detectConflicts(id: string, newBinding: ShortcutBinding): ShortcutDefin
 
 const RESERVED_BROWSER_SHORTCUTS: ShortcutBinding[] = [
   // Tab/window management
-  { key: "t", meta: true },
-  { key: "t", ctrl: true },
-  { key: "n", meta: true },
-  { key: "n", ctrl: true },
-  { key: "n", meta: true, shift: true },
-  { key: "n", ctrl: true, shift: true },
-  { key: "w", meta: true },
-  { key: "w", ctrl: true },
-  { key: "w", meta: true, shift: true },
-  { key: "w", ctrl: true, shift: true },
-  { key: "Tab", meta: true, alt: true },
+  { key: "t", mod: true },
+  { key: "n", mod: true },
+  { key: "n", mod: true, shift: true },
+  { key: "w", mod: true },
+  { key: "w", mod: true, shift: true },
   { key: "Tab", ctrl: true },
-  { key: "q", meta: true },
+  ...(isMac ? [{ key: "Tab", meta: true, alt: true }] : []),
+  ...(isMac ? [{ key: "q", meta: true }] : []),
 
   // Navigation
-  { key: "l", meta: true },
-  { key: "l", ctrl: true },
-  { key: "r", meta: true },
-  { key: "r", ctrl: true },
-  { key: "r", meta: true, shift: true },
-  { key: "r", ctrl: true, shift: true },
+  { key: "l", mod: true },
+  { key: "r", mod: true },
+  { key: "r", mod: true, shift: true },
 
   // Find
-  { key: "f", meta: true },
-  { key: "f", ctrl: true },
-  { key: "g", meta: true },
-  { key: "g", ctrl: true },
+  { key: "f", mod: true },
+  { key: "g", mod: true },
 
   // Page actions
-  { key: "p", meta: true },
-  { key: "p", ctrl: true },
-  { key: "s", meta: true },
-  { key: "s", ctrl: true },
-  { key: "d", meta: true },
-  { key: "d", ctrl: true },
+  { key: "p", mod: true },
+  { key: "s", mod: true },
+  { key: "d", mod: true },
 
   // Developer tools
-  { key: "i", meta: true, alt: true },
-  { key: "I", ctrl: true, shift: true },
-  { key: "j", meta: true, alt: true },
-  { key: "J", ctrl: true, shift: true },
-  { key: "u", meta: true },
-  { key: "u", ctrl: true },
+  ...(isMac
+    ? [
+        { key: "i", meta: true, alt: true },
+        { key: "j", meta: true, alt: true },
+      ]
+    : [
+        { key: "I", ctrl: true, shift: true },
+        { key: "J", ctrl: true, shift: true },
+      ]),
+  { key: "u", mod: true },
 
   // History
-  { key: "h", meta: true },
-  { key: "h", ctrl: true },
-  { key: "[", meta: true },
-  { key: "]", meta: true },
+  ...(isMac
+    ? [
+        { key: "h", meta: true },
+        { key: "[", meta: true },
+        { key: "]", meta: true },
+      ]
+    : [{ key: "h", ctrl: true }]),
 
   // Zoom
-  { key: "=", meta: true },
-  { key: "=", ctrl: true },
-  { key: "-", meta: true },
-  { key: "-", ctrl: true },
-  { key: "0", meta: true },
-  { key: "0", ctrl: true },
+  { key: "=", mod: true },
+  { key: "-", mod: true },
+  { key: "0", mod: true },
 ];
 
 function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {

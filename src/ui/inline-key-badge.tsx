@@ -1,9 +1,6 @@
 import { formatKey } from "@/ui/help-modal";
+import { isMac } from "@/utils/platform";
 import { IconCommand } from "@tabler/icons-react";
-
-// -- Helpers ------------------------------------------------------------------
-
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 // -- Types --------------------------------------------------------------------
 

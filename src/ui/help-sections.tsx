@@ -1,8 +1,8 @@
 import { ShortcutSection, SHORTCUT_SECTIONS } from "@/ui/help-modal";
+import { isMac } from "@/utils/platform";
 
 // -- Constants ----------------------------------------------------------------
 
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 const MOD_KEY = isMac ? "Cmd" : "Ctrl";
 
 const PROSE = "text-sm text-composer-text-secondary leading-relaxed";

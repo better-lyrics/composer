@@ -1,3 +1,4 @@
+import { isMac } from "@/utils/platform";
 import { useCallback, useEffect } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -8,6 +9,7 @@ interface Shortcut {
   shift?: boolean;
   alt?: boolean;
   meta?: boolean;
+  mod?: boolean;
   action: () => void;
   description: string;
 }
@@ -20,11 +22,22 @@ interface ShortcutOptions {
 
 function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut): boolean {
   const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
-  const ctrlMatches = !!shortcut.ctrl === (event.ctrlKey || event.metaKey);
   const shiftMatches = !!shortcut.shift === event.shiftKey;
   const altMatches = !!shortcut.alt === event.altKey;
 
-  return keyMatches && ctrlMatches && shiftMatches && altMatches;
+  const modActive = isMac ? event.metaKey : event.ctrlKey;
+  const modMatches = !!shortcut.mod === modActive;
+
+  const ctrlExpected = !!shortcut.ctrl;
+  const metaExpected = !!shortcut.meta;
+  const ctrlMatches = ctrlExpected === event.ctrlKey;
+  const metaMatches = metaExpected === event.metaKey;
+
+  if (shortcut.mod) {
+    return keyMatches && modMatches && shiftMatches && altMatches;
+  }
+
+  return keyMatches && ctrlMatches && metaMatches && shiftMatches && altMatches;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -41,7 +54,7 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
 
       for (const shortcut of shortcuts) {
         if (matchesShortcut(event, shortcut)) {
-          if (isInput && !shortcut.ctrl && !shortcut.meta) {
+          if (isInput && !shortcut.ctrl && !shortcut.meta && !shortcut.mod) {
             continue;
           }
           event.preventDefault();

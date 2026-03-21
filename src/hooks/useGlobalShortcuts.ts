@@ -20,13 +20,19 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
     const playPause = getEffectiveBinding("global.playPause");
     const help = getEffectiveBinding("global.help");
     const settings = getEffectiveBinding("global.settings");
+    const goToImport = getEffectiveBinding("global.goToImport");
+    const goToEdit = getEffectiveBinding("global.goToEdit");
+    const goToSync = getEffectiveBinding("global.goToSync");
+    const goToTimeline = getEffectiveBinding("global.goToTimeline");
+    const goToPreview = getEffectiveBinding("global.goToPreview");
+    const goToExport = getEffectiveBinding("global.goToExport");
     return [
-      { key: "1", ctrl: true, action: () => setActiveTab("import"), description: "Import" },
-      { key: "2", ctrl: true, action: () => setActiveTab("edit"), description: "Edit" },
-      { key: "3", ctrl: true, action: () => setActiveTab("sync"), description: "Sync" },
-      { key: "4", ctrl: true, action: () => setActiveTab("timeline"), description: "Timeline" },
-      { key: "5", ctrl: true, action: () => setActiveTab("preview"), description: "Preview" },
-      { key: "6", ctrl: true, action: () => setActiveTab("export"), description: "Export" },
+      { ...goToImport, action: () => setActiveTab("import"), description: "Go to Import" },
+      { ...goToEdit, action: () => setActiveTab("edit"), description: "Go to Edit" },
+      { ...goToSync, action: () => setActiveTab("sync"), description: "Go to Sync" },
+      { ...goToTimeline, action: () => setActiveTab("timeline"), description: "Go to Timeline" },
+      { ...goToPreview, action: () => setActiveTab("preview"), description: "Go to Preview" },
+      { ...goToExport, action: () => setActiveTab("export"), description: "Go to Export" },
       {
         key: playPause.key,
         shift: playPause.shift,

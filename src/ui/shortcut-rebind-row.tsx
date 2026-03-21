@@ -3,6 +3,7 @@ import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-regi
 import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/help-modal";
 import { Modal } from "@/ui/modal";
+import { isMac } from "@/utils/platform";
 import { detectConflicts, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useState } from "react";
 
@@ -75,12 +76,17 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
 
       if (e.key === "Shift" || e.key === "Alt" || e.key === "Control" || e.key === "Meta") return;
 
+      const modPressed = isMac ? e.metaKey : e.ctrlKey;
+      const rawCtrl = isMac ? e.ctrlKey : false;
+      const rawMeta = isMac ? false : e.metaKey;
+
       const newBinding: ShortcutBinding = {
         key: e.key,
         ...(e.shiftKey && { shift: true }),
         ...(e.altKey && { alt: true }),
-        ...(e.ctrlKey && { ctrl: true }),
-        ...(e.metaKey && { meta: true }),
+        ...(modPressed && { mod: true }),
+        ...(rawCtrl && { ctrl: true }),
+        ...(rawMeta && { meta: true }),
       };
 
       if (isReservedBrowserShortcut(newBinding)) {
@@ -164,6 +170,7 @@ const BrowserWarningModal: React.FC<{
 }> = ({ binding, onCancel, onContinue }) => {
   const displayKey = binding.key === " " ? "Space" : binding.key;
   const bindingKeys: string[] = [];
+  if (binding.mod) bindingKeys.push("Mod");
   if (binding.meta) bindingKeys.push("Meta");
   if (binding.ctrl) bindingKeys.push("Ctrl");
   if (binding.shift) bindingKeys.push("Shift");
@@ -215,6 +222,7 @@ const ConflictModal: React.FC<{
 }> = ({ newBinding, conflicts, onReplace, onCancel }) => {
   const displayKey = newBinding.key === " " ? "Space" : newBinding.key;
   const bindingKeys: string[] = [];
+  if (newBinding.mod) bindingKeys.push("Mod");
   if (newBinding.meta) bindingKeys.push("Meta");
   if (newBinding.ctrl) bindingKeys.push("Ctrl");
   if (newBinding.shift) bindingKeys.push("Shift");

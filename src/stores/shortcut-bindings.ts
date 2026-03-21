@@ -45,6 +45,7 @@ function getEffectiveBinding(id: string): ShortcutBinding {
 function getEffectiveKeysArray(id: string): string[] {
   const binding = getEffectiveBinding(id);
   const keys: string[] = [];
+  if (binding.mod) keys.push("Mod");
   if (binding.meta) keys.push("Meta");
   if (binding.ctrl) keys.push("Ctrl");
   if (binding.shift) keys.push("Shift");
