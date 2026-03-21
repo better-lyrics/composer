@@ -172,6 +172,84 @@ function useSyncHandlers({
     setSyncState,
   ]);
 
+  const handleHoldStart = useCallback(() => {
+    if (lines.length === 0 || isComplete) return;
+
+    const line = lines[lineIndex];
+    if (!line) return;
+
+    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
+    const wordText = lineWords[wordIndex];
+    if (!wordText) return;
+
+    const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
+
+    const existingWords = line.words ?? [];
+
+    if (existingWords.length > 0) {
+      const updatedWords = [...existingWords];
+      if (wordIndex === 0) {
+        updatedWords.length = 1;
+        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
+      } else {
+        updatedWords.length = wordIndex;
+        updatedWords.push({
+          text: textWithSpace,
+          begin: currentTime,
+          end: currentTime,
+        });
+      }
+      updateLineWithHistory(line.id, { words: updatedWords });
+    } else {
+      const updates: Partial<LyricLine> = {
+        words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
+      };
+      if (line.backgroundText && !line.backgroundWords?.length) {
+        updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
+      }
+      updateLineWithHistory(line.id, updates);
+    }
+
+    if (wordIndex === 0 && prevLine?.words?.length) {
+      const prevWords = [...prevLine.words];
+      const lastPrevWord = prevWords[prevWords.length - 1];
+      if (lastPrevWord.end === lastPrevWord.begin) {
+        prevWords[prevWords.length - 1] = { ...lastPrevWord, end: currentTime };
+        updateLine(prevLine.id, { words: prevWords });
+      }
+    }
+  }, [lines, lineIndex, wordIndex, currentTime, updateLine, updateLineWithHistory, isComplete, prevLine]);
+
+  const handleHoldEnd = useCallback(() => {
+    if (lines.length === 0 || isComplete) return;
+
+    const line = lines[lineIndex];
+    if (!line?.words?.length) return;
+
+    const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
+
+    const updatedWords = [...line.words];
+    const currentWordEntry = updatedWords[updatedWords.length - 1];
+    updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
+    updateLineWithHistory(line.id, { words: updatedWords });
+
+    setShowPulse(true);
+    setTimeout(() => setShowPulse(false), 100);
+
+    const nextWordIndex = wordIndex + 1;
+    if (nextWordIndex >= lineWords.length) {
+      setSyncState((prev) => ({
+        ...prev,
+        position: { lineIndex: lineIndex + 1, wordIndex: 0 },
+      }));
+    } else {
+      setSyncState((prev) => ({
+        ...prev,
+        position: { ...prev.position, wordIndex: nextWordIndex },
+      }));
+    }
+  }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
+
   const handleTap = granularity === "word" ? handleTapWord : handleTapLine;
 
   const handleReset = useCallback(() => {
@@ -303,6 +381,8 @@ function useSyncHandlers({
 
   return {
     handleTap,
+    handleHoldStart,
+    handleHoldEnd,
     handleReset,
     handleStartSync,
     handleJumpToLine,

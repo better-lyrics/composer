@@ -30,6 +30,7 @@ interface LyricLine {
 }
 
 type GranularityMode = "line" | "word";
+type SyncMethod = "tap" | "hold";
 type EditorMode = "simple" | "advanced";
 type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
 
@@ -51,6 +52,7 @@ interface ProjectState {
   agents: Agent[];
   lines: LyricLine[];
   granularity: GranularityMode;
+  syncMethod: SyncMethod;
   editorMode: EditorMode;
   activeTab: SimpleTab;
   isDirty: boolean;
@@ -68,6 +70,7 @@ interface ProjectActions {
   updateAgent: (id: string, updates: Partial<Agent>) => void;
   removeAgent: (id: string) => void;
   setGranularity: (mode: GranularityMode) => void;
+  setSyncMethod: (method: SyncMethod) => void;
   setEditorMode: (mode: EditorMode) => void;
   setActiveTab: (tab: SimpleTab) => void;
   markDirty: () => void;
@@ -126,6 +129,7 @@ function createInitialState(): ProjectState {
     agents: DEFAULT_AGENTS,
     lines: [],
     granularity: useSettingsStore.getState().defaultGranularity,
+    syncMethod: useSettingsStore.getState().defaultSyncMethod,
     editorMode: "simple",
     activeTab: "import",
     isDirty: false,
@@ -263,6 +267,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   setGranularity: (granularity) => set({ granularity, isDirty: true }),
 
+  setSyncMethod: (syncMethod) => set({ syncMethod }),
+
   setEditorMode: (editorMode) => set({ editorMode }),
 
   setActiveTab: (activeTab) => {
@@ -361,5 +367,6 @@ export type {
   ProjectMetadata,
   ProjectState,
   SimpleTab,
+  SyncMethod,
   WordTiming,
 };

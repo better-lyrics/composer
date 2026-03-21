@@ -141,10 +141,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const groups = computeSyllableGroups(words);
         const group = groups.find((g) => wordIndex >= g.startIndex && wordIndex <= g.endIndex);
         if (group) {
-          const selections = Array.from(
-            { length: group.endIndex - group.startIndex + 1 },
-            (_, i) => ({ lineId, lineIndex, wordIndex: group.startIndex + i, type: trackType }),
-          );
+          const selections = Array.from({ length: group.endIndex - group.startIndex + 1 }, (_, i) => ({
+            lineId,
+            lineIndex,
+            wordIndex: group.startIndex + i,
+            type: trackType,
+          }));
           setSelectedWords(selections);
           return;
         }

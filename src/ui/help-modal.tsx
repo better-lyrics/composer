@@ -1,6 +1,8 @@
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
+import { isMac } from "@/utils/platform";
 import {
   IconCommand,
   IconDownload,
@@ -19,6 +21,7 @@ import { useState } from "react";
 interface ShortcutItemProps {
   keys: string[];
   description: string;
+  shortcutId?: string;
 }
 
 interface ShortcutSectionProps {
@@ -39,10 +42,10 @@ interface HelpSectionDef {
 
 // -- Helpers ------------------------------------------------------------------
 
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
-
 function formatKey(key: string): string {
   if (key === "Mod") return isMac ? "⌘" : "Ctrl";
+  if (key === "Meta") return isMac ? "⌘" : "Meta";
+  if (key === "Ctrl") return isMac ? "⌃" : "Ctrl";
   if (key === "Shift") return "⇧";
   if (key === "Alt") return isMac ? "⌥" : "Alt";
   if (key === "Space") return "Space";
@@ -60,8 +63,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "General",
     shortcuts: [
-      { keys: ["Shift", "?"], description: "Show keyboard shortcuts" },
-      { keys: ["Enter"], description: "Play / Pause audio" },
+      { keys: ["Shift", "?"], description: "Show keyboard shortcuts", shortcutId: "global.help" },
+      { keys: ["Enter"], description: "Play / Pause audio", shortcutId: "global.playPause" },
     ],
   },
   {
@@ -78,9 +81,10 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "Sync Mode",
     shortcuts: [
-      { keys: ["Space"], description: "Start sync / Tap to sync word" },
-      { keys: ["ArrowLeft"], description: "Nudge last synced -50ms" },
-      { keys: ["ArrowRight"], description: "Nudge last synced +50ms" },
+      { keys: ["Space"], description: "Start sync / Tap to sync word", shortcutId: "sync.tap" },
+      { keys: ["F"], description: "Hold to sync word (hold mode)", shortcutId: "sync.holdSync" },
+      { keys: ["ArrowLeft"], description: "Nudge last synced -50ms", shortcutId: "sync.nudgeLeft" },
+      { keys: ["ArrowRight"], description: "Nudge last synced +50ms", shortcutId: "sync.nudgeRight" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
     ],
@@ -88,14 +92,14 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   {
     title: "Timeline Mode",
     shortcuts: [
-      { keys: ["F"], description: "Toggle follow playhead" },
-      { keys: ["P"], description: "Toggle preview sidebar" },
-      { keys: ["N"], description: "Insert line below selected word" },
-      { keys: ["Shift", "N"], description: "Insert line above selected word" },
-      { keys: ["Space"], description: "Jump viewport to playhead" },
+      { keys: ["F"], description: "Toggle follow playhead", shortcutId: "timeline.toggleFollow" },
+      { keys: ["P"], description: "Toggle preview sidebar", shortcutId: "timeline.togglePreview" },
+      { keys: ["N"], description: "Insert line below selected word", shortcutId: "timeline.insertLineBelow" },
+      { keys: ["Shift", "N"], description: "Insert line above selected word", shortcutId: "timeline.insertLineAbove" },
+      { keys: ["Space"], description: "Jump viewport to playhead", shortcutId: "timeline.jumpToPlayhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
-      { keys: ["["], description: "Set word begin to playhead" },
-      { keys: ["]"], description: "Set word end to playhead" },
+      { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },
+      { keys: ["]"], description: "Set word end to playhead", shortcutId: "timeline.setWordEnd" },
       { keys: ["Mod", "Z"], description: "Undo" },
       { keys: ["Mod", "Shift", "Z"], description: "Redo" },
       { keys: ["Mod", "Shift", "V"], description: "Import lyrics" },
@@ -118,10 +122,10 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Mod", "V"], description: "Paste (ghost preview, click to place)" },
       { keys: ["Delete"], description: "Delete selected words" },
       { keys: ["Alt", "Drag"], description: "Duplicate selected words" },
-      { keys: ["E"], description: "Edit selected word text" },
+      { keys: ["E"], description: "Edit selected word text", shortcutId: "timeline.editWord" },
       { keys: ["F2"], description: "Edit selected word text" },
-      { keys: ["S"], description: "Split selected word into syllables" },
-      { keys: ["M"], description: "Merge adjacent selected words" },
+      { keys: ["S"], description: "Split selected word into syllables", shortcutId: "timeline.splitSyllable" },
+      { keys: ["M"], description: "Merge adjacent selected words", shortcutId: "timeline.mergeWords" },
       { keys: ["Double Click"], description: "Edit word / create word" },
     ],
   },
@@ -157,22 +161,25 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
         isSymbol ? "text-base" : ""
       }`}
     >
-      {keyName === "Mod" && isMac ? <IconCommand className="w-3.5 h-3.5" /> : formatted}
+      {(keyName === "Mod" || keyName === "Meta") && isMac ? <IconCommand className="w-3.5 h-3.5" /> : formatted}
     </span>
   );
 };
 
-const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description }) => (
-  <div className="flex items-center justify-between py-1.5">
-    <span className="text-sm text-composer-text-secondary">{description}</span>
-    <div className="flex items-center gap-1">
-      {keys.map((key, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-        <KeyBadge key={`${key}-${i}`} keyName={key} />
-      ))}
+const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description, shortcutId }) => {
+  const resolvedKeys = shortcutId ? getEffectiveKeysArray(shortcutId) : keys;
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-sm text-composer-text-secondary">{description}</span>
+      <div className="flex items-center gap-1">
+        {resolvedKeys.map((key, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+          <KeyBadge key={`${key}-${i}`} keyName={key} />
+        ))}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) => (
   <div>
@@ -229,9 +236,10 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
         Press{" "}
-        <kbd className="inline-flex items-center justify-center min-w-5 h-5 px-1 text-[11px] font-medium rounded bg-composer-button border border-composer-border">
-          ?
-        </kbd>{" "}
+        {getEffectiveKeysArray("global.help").map((key, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+          <KeyBadge key={`${key}-${i}`} keyName={key} />
+        ))}{" "}
         to open anytime
       </div>
     </Modal>

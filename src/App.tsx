@@ -1,15 +1,13 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { debouncedSave, flushPendingSave, loadAudioFile, loadCurrentProject, saveAudioFile } from "@/lib/persistence";
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { usePersistence } from "@/hooks/usePersistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
-import { Button } from "@/ui/button";
+import { AppHeader } from "@/ui/app-header";
 import { HelpModal } from "@/ui/help-modal";
 import { SettingsModal } from "@/ui/settings-modal";
 import { TabBar } from "@/ui/tab-bar";
@@ -19,8 +17,7 @@ import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { IconHelp, IconRoute, IconSettings } from "@tabler/icons-react";
-import { Activity, useEffect, useMemo, useRef, useState } from "react";
+import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
@@ -44,166 +41,24 @@ const AppContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [shouldShowTour]);
 
-  // Load saved project on mount
-  useEffect(() => {
-    loadCurrentProject().then((project) => {
-      if (project) {
-        const state = useProjectStore.getState();
-        state.setMetadata(project.metadata);
-        state.setLines(project.lines);
-        state.setGranularity(project.granularity);
-        for (const agent of project.agents) {
-          if (!state.agents.find((a) => a.id === agent.id)) {
-            state.addAgent(agent);
-          }
-        }
-        state.markClean();
-      }
-    });
+  usePersistence();
 
-    loadAudioFile().then((file) => {
-      if (file) {
-        useAudioStore.getState().setSource({ type: "file", file });
-      }
-    });
-  }, []);
+  const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
+  const setSettingsOpenCb = useCallback((open: boolean) => setSettingsOpen(open), []);
 
-  // Auto-save on state changes
-  useEffect(() => {
-    const unsubscribe = useProjectStore.subscribe((state) => {
-      if (!state.isDirty) return;
-      if (state.lines.length > 0 || state.metadata.title) {
-        const audioSource = useAudioStore.getState().source;
-        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-        debouncedSave(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  // Save audio file to IndexedDB when source changes
-  useEffect(() => {
-    let prevSource = useAudioStore.getState().source;
-    const unsubscribe = useAudioStore.subscribe((state) => {
-      if (state.source === prevSource) return;
-      prevSource = state.source;
-      if (state.source?.type === "file") {
-        saveAudioFile(state.source.file).catch((err) => console.error("[Persistence] Audio save failed:", err));
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Persist volume to settings store
-  useEffect(() => {
-    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
-    const unsubscribe = useAudioStore.subscribe((state, prev) => {
-      if (state.volume === prev.volume) return;
-      if (!useSettingsStore.getState().rememberVolume) return;
-      if (debounceTimer) clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(() => {
-        useSettingsStore.getState().set("lastVolume", state.volume);
-      }, 500);
-    });
-    return () => {
-      unsubscribe();
-      if (debounceTimer) clearTimeout(debounceTimer);
-    };
-  }, []);
-
-  // Warn on tab close if dirty
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      const state = useProjectStore.getState();
-      if (state.isDirty && state.lines.length > 0) {
-        flushPendingSave();
-        e.preventDefault();
-        return "";
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
-
-  const shortcuts: Shortcut[] = useMemo(
-    () => [
-      {
-        key: "1",
-        ctrl: true,
-        action: () => setActiveTab("import"),
-        description: "Import",
-      },
-      {
-        key: "2",
-        ctrl: true,
-        action: () => setActiveTab("edit"),
-        description: "Edit",
-      },
-      {
-        key: "3",
-        ctrl: true,
-        action: () => setActiveTab("sync"),
-        description: "Sync",
-      },
-      {
-        key: "4",
-        ctrl: true,
-        action: () => setActiveTab("timeline"),
-        description: "Timeline",
-      },
-      {
-        key: "5",
-        ctrl: true,
-        action: () => setActiveTab("preview"),
-        description: "Preview",
-      },
-      {
-        key: "6",
-        ctrl: true,
-        action: () => setActiveTab("export"),
-        description: "Export",
-      },
-      {
-        key: "Enter",
-        action: () => {
-          const { isPlaying, setIsPlaying } = useAudioStore.getState();
-          setIsPlaying(!isPlaying);
-        },
-        description: "Play / Pause",
-      },
-      {
-        key: "?",
-        shift: true,
-        action: () => setHelpOpen(true),
-        description: "Show keyboard shortcuts",
-      },
-    ],
-    [setActiveTab],
-  );
-
-  useKeyboardShortcuts(shortcuts);
+  useGlobalShortcuts({
+    setActiveTab,
+    setHelpOpen: setHelpOpenCb,
+    setSettingsOpen: setSettingsOpenCb,
+  });
 
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
-      <header className="flex items-center justify-between p-4 border-b select-none border-composer-border">
-        <h1 className="text-xl font-bold">
-          <img src="/logo.svg" alt="Composer Logo" className="inline-block w-6 h-6 mr-2 -mt-1" />
-          Composer
-        </h1>
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="ghost" onClick={() => setSettingsOpen(true)} title="Settings">
-            <IconSettings className="w-5 h-5" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={resumeOrStartTour} title="Product tour">
-            <IconRoute className="w-5 h-5" />
-          </Button>
-          <Button size="icon" variant="ghost" onClick={() => setHelpOpen(true)} title="Keyboard shortcuts (?)">
-            <IconHelp className="w-5 h-5" />
-          </Button>
-        </div>
-      </header>
+      <AppHeader
+        onSettingsOpen={() => setSettingsOpen(true)}
+        onHelpOpen={() => setHelpOpen(true)}
+        onTourStart={resumeOrStartTour}
+      />
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsModal
         isOpen={settingsOpen}

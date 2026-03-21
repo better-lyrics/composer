@@ -22,7 +22,7 @@ import { distributeLinesTiming } from "@/views/timeline/utils";
 import { Button } from "@/ui/button";
 import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
-import { Activity, useCallback, useEffect, useRef, useState } from "react";
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
@@ -153,43 +153,9 @@ const TimelinePanel: React.FC = () => {
     useAudioStore.getState().setSource({ type: "file", file });
   }, []);
 
-  if (!source) {
-    return (
-      <div className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader />
-        <div className="flex-1 flex flex-col items-center justify-center p-4">
-          <FileDropZone accept="audio/*" onFileDrop={handleAudioDrop}>
-            <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
-            <p className="text-composer-text-secondary">Drop audio file here</p>
-            <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
-            <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
-          </FileDropZone>
-        </div>
-      </div>
-    );
-  }
-
-  if (lines.length === 0) {
-    return (
-      <div className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
-          <IconFileMusic className="w-12 h-12 text-composer-text opacity-50" strokeWidth={1} />
-          <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
-          <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
-          <Button variant="primary" hasIcon onClick={() => setLyricsModalOpen(true)} className="mt-2">
-            <IconFileImport size={16} />
-            Import Lyrics
-          </Button>
-        </div>
-        <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
-      </div>
-    );
-  }
-
   const dragColor = activeDrag ? getAgentColor(lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "") : "#888";
 
-  const dragCells = (() => {
+  const dragCells = useMemo(() => {
     if (!activeDrag) return null;
     const { selectedWords, rowHeights, defaultRowHeight } = useTimelineStore.getState();
     const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
@@ -245,7 +211,41 @@ const TimelinePanel: React.FC = () => {
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
-  })();
+  }, [activeDrag, zoom, lines]);
+
+  if (!source) {
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden select-none">
+        <TimelineHeader />
+        <div className="flex-1 flex flex-col items-center justify-center p-4">
+          <FileDropZone accept="audio/*" onFileDrop={handleAudioDrop}>
+            <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
+            <p className="text-composer-text-secondary">Drop audio file here</p>
+            <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
+            <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
+          </FileDropZone>
+        </div>
+      </div>
+    );
+  }
+
+  if (lines.length === 0) {
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden select-none">
+        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
+          <IconFileMusic className="w-12 h-12 text-composer-text opacity-50" strokeWidth={1} />
+          <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
+          <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
+          <Button variant="primary" hasIcon onClick={() => setLyricsModalOpen(true)} className="mt-2">
+            <IconFileImport size={16} />
+            Import Lyrics
+          </Button>
+        </div>
+        <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
+      </div>
+    );
+  }
 
   return (
     <DndContext

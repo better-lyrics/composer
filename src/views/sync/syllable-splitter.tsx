@@ -3,7 +3,7 @@ import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { IconScissors } from "@tabler/icons-react";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -24,7 +24,7 @@ const SplitModeContent: React.FC<{
 }> = ({ text, splitPoints, onToggleSplit, onConfirm, onCancel }) => {
   const chars = text.split("");
 
-  const previewParts = (() => {
+  const previewParts = useMemo(() => {
     if (splitPoints.length === 0) return [text];
     const sorted = [...splitPoints].sort((a, b) => a - b);
     const result: string[] = [];
@@ -37,7 +37,7 @@ const SplitModeContent: React.FC<{
     }
     result.push(text.slice(lastIdx));
     return result;
-  })();
+  }, [text, splitPoints]);
 
   return (
     <div className="flex flex-col gap-5">

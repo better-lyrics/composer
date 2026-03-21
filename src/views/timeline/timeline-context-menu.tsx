@@ -3,14 +3,11 @@ import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { formatKey } from "@/ui/help-modal";
+import { isMac } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconCommand } from "@tabler/icons-react";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-
-// -- Helpers ------------------------------------------------------------------
-
-const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(navigator.userAgent);
 
 function MenuItem({
   label,
@@ -279,7 +276,9 @@ const TimelineContextMenu: React.FC = () => {
           </>
         )}
 
-        {target.kind === "track" && <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />}
+        {target.kind === "track" && (
+          <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
+        )}
 
         {target.kind === "gutter" && (
           <>
@@ -290,26 +289,26 @@ const TimelineContextMenu: React.FC = () => {
               <>
                 <p className="px-3 py-1 text-xs text-composer-text-muted">Assign agent</p>
                 <div className="flex flex-col gap-px">
-                {agents.map((agent) => {
-                  const color = getAgentColor(agent.id);
-                  const line = lines[target.lineIndex];
-                  const isActive = line?.agentId === agent.id;
-                  return (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      onClick={() => handleAssignAgent(agent.id)}
-                      className={`w-full text-left px-2 py-1 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
-                        isActive
-                          ? "bg-composer-accent/15 text-composer-text"
-                          : "text-composer-text hover:bg-composer-button"
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                      {agent.name || agent.id}
-                    </button>
-                  );
-                })}
+                  {agents.map((agent) => {
+                    const color = getAgentColor(agent.id);
+                    const line = lines[target.lineIndex];
+                    const isActive = line?.agentId === agent.id;
+                    return (
+                      <button
+                        key={agent.id}
+                        type="button"
+                        onClick={() => handleAssignAgent(agent.id)}
+                        className={`w-full text-left px-2 py-1 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
+                          isActive
+                            ? "bg-composer-accent/15 text-composer-text"
+                            : "text-composer-text hover:bg-composer-button"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        {agent.name || agent.id}
+                      </button>
+                    );
+                  })}
                 </div>
                 <MenuDivider />
               </>
