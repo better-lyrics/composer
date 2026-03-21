@@ -154,12 +154,12 @@ function hasLineTiming(lines: ConvertibleLine[]): boolean {
 
 // -- BG Word Creation ---------------------------------------------------------
 
-function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
+function createInitialBgWords(backgroundText: string, begin: number, end?: number): WordTiming[] {
   const { parts, trailingSpace } = splitIntoWordsWithMeta(backgroundText);
   return parts.map((text, i) => ({
     text: trailingSpace[i] ? `${text} ` : text,
-    begin: time,
-    end: time,
+    begin,
+    end: end ?? begin,
   }));
 }
 
