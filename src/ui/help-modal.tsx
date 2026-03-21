@@ -45,6 +45,8 @@ const isMac = typeof navigator !== "undefined" && /Mac|iPod|iPhone|iPad/.test(na
 
 function formatKey(key: string): string {
   if (key === "Mod") return isMac ? "⌘" : "Ctrl";
+  if (key === "Meta") return isMac ? "⌘" : "Meta";
+  if (key === "Ctrl") return isMac ? "⌃" : "Ctrl";
   if (key === "Shift") return "⇧";
   if (key === "Alt") return isMac ? "⌥" : "Alt";
   if (key === "Space") return "Space";
@@ -160,7 +162,7 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
         isSymbol ? "text-base" : ""
       }`}
     >
-      {keyName === "Mod" && isMac ? <IconCommand className="w-3.5 h-3.5" /> : formatted}
+      {(keyName === "Mod" || keyName === "Meta") && isMac ? <IconCommand className="w-3.5 h-3.5" /> : formatted}
     </span>
   );
 };

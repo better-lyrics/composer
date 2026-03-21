@@ -4,6 +4,8 @@ interface ShortcutBinding {
   key: string;
   shift?: boolean;
   alt?: boolean;
+  ctrl?: boolean;
+  meta?: boolean;
 }
 
 type ShortcutScope = "global" | "sync" | "timeline";

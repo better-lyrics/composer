@@ -3,7 +3,7 @@ import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-regi
 import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/help-modal";
 import { Modal } from "@/ui/modal";
-import { detectConflicts } from "@/utils/shortcut-matcher";
+import { detectConflicts, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -15,6 +15,7 @@ interface ShortcutRebindRowProps {
 type CaptureState =
   | { status: "idle" }
   | { status: "listening" }
+  | { status: "warning"; newBinding: ShortcutBinding }
   | { status: "conflict"; newBinding: ShortcutBinding; conflicts: ShortcutDefinition[] };
 
 // -- Component ----------------------------------------------------------------
@@ -47,6 +48,19 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
     [definition.id, setBinding, resetBinding],
   );
 
+  const continueFromWarning = useCallback(
+    (binding: ShortcutBinding) => {
+      const conflicts = detectConflicts(definition.id, binding);
+      if (conflicts.length > 0) {
+        setCaptureState({ status: "conflict", newBinding: binding, conflicts });
+      } else {
+        setBinding(definition.id, binding);
+        setCaptureState({ status: "idle" });
+      }
+    },
+    [definition.id, setBinding],
+  );
+
   useEffect(() => {
     if (captureState.status !== "listening") return;
 
@@ -65,7 +79,14 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
         key: e.key,
         ...(e.shiftKey && { shift: true }),
         ...(e.altKey && { alt: true }),
+        ...(e.ctrlKey && { ctrl: true }),
+        ...(e.metaKey && { meta: true }),
       };
+
+      if (isReservedBrowserShortcut(newBinding)) {
+        setCaptureState({ status: "warning", newBinding });
+        return;
+      }
 
       const conflicts = detectConflicts(definition.id, newBinding);
       if (conflicts.length > 0) {
@@ -107,7 +128,20 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
         </div>
       </div>
 
-      {captureState.status === "listening" && <KeyCaptureOverlay onCancel={cancelCapture} />}
+      <Modal isOpen={captureState.status === "listening"} onClose={cancelCapture} title="Rebind shortcut">
+        <div className="text-center py-4">
+          <p className="text-sm text-composer-text-secondary mb-1">Press a new key combination</p>
+          <p className="text-xs text-composer-text-muted">Press Escape to cancel</p>
+        </div>
+      </Modal>
+
+      {captureState.status === "warning" && (
+        <BrowserWarningModal
+          binding={captureState.newBinding}
+          onContinue={() => continueFromWarning(captureState.newBinding)}
+          onCancel={cancelCapture}
+        />
+      )}
 
       {captureState.status === "conflict" && (
         <ConflictModal
@@ -121,23 +155,49 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   );
 };
 
-// -- Key Capture Overlay ------------------------------------------------------
+// -- Browser Warning Modal ----------------------------------------------------
 
-const KeyCaptureOverlay: React.FC<{ onCancel: () => void }> = ({ onCancel }) => (
-  <div
-    className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-    onClick={onCancel}
-    onKeyDown={(e) => e.stopPropagation()}
-  >
-    <div
-      className="rounded-xl bg-composer-bg-dark border border-composer-border px-8 py-6 text-center shadow-2xl"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <p className="text-lg font-medium text-composer-text mb-2">Press new shortcut</p>
-      <p className="text-sm text-composer-text-muted">Press Escape to cancel</p>
-    </div>
-  </div>
-);
+const BrowserWarningModal: React.FC<{
+  binding: ShortcutBinding;
+  onContinue: () => void;
+  onCancel: () => void;
+}> = ({ binding, onCancel, onContinue }) => {
+  const displayKey = binding.key === " " ? "Space" : binding.key;
+  const bindingKeys: string[] = [];
+  if (binding.meta) bindingKeys.push("Meta");
+  if (binding.ctrl) bindingKeys.push("Ctrl");
+  if (binding.shift) bindingKeys.push("Shift");
+  if (binding.alt) bindingKeys.push("Alt");
+  bindingKeys.push(displayKey);
+
+  return (
+    <Modal isOpen onClose={onCancel} title="Browser shortcut">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 text-sm text-composer-text">
+          <span className="inline-flex items-center gap-1">
+            {bindingKeys.map((key, i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
+              <KeyBadge key={`${key}-${i}`} keyName={key} />
+            ))}
+          </span>
+          <span className="text-composer-text-secondary">may be reserved by the browser.</span>
+        </div>
+        <p className="text-xs text-composer-text-muted">
+          This combination might be handled by your browser before it reaches the app. You can still assign it, but it
+          may not work in all browsers.
+        </p>
+        <div className="flex gap-2 justify-end">
+          <Button variant="secondary" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={onContinue}>
+            Assign anyway
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
 
 // -- Conflict Modal -----------------------------------------------------------
 
@@ -155,6 +215,8 @@ const ConflictModal: React.FC<{
 }> = ({ newBinding, conflicts, onReplace, onCancel }) => {
   const displayKey = newBinding.key === " " ? "Space" : newBinding.key;
   const bindingKeys: string[] = [];
+  if (newBinding.meta) bindingKeys.push("Meta");
+  if (newBinding.ctrl) bindingKeys.push("Ctrl");
   if (newBinding.shift) bindingKeys.push("Shift");
   if (newBinding.alt) bindingKeys.push("Alt");
   bindingKeys.push(displayKey);

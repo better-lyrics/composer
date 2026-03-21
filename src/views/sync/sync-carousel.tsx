@@ -66,13 +66,8 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
     const isPrevLine = idx === lineIndex - 1;
     const holdActive = syncMethod === "hold" && isHolding;
     const isCurrentHeld = holdActive && isCurrent && widx === wordIndex;
-    const isLastSyncedOnCurrent =
-      !holdActive && isCurrent && wordIndex > 0 && widx === wordIndex - 1;
-    const isLastWordOfPrevLine =
-      !holdActive &&
-      isPrevLine &&
-      wordIndex === 0 &&
-      widx === lineWords.length - 1;
+    const isLastSyncedOnCurrent = !holdActive && isCurrent && wordIndex > 0 && widx === wordIndex - 1;
+    const isLastWordOfPrevLine = !holdActive && isPrevLine && wordIndex === 0 && widx === lineWords.length - 1;
     const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
 
     const color = isCurrentHeld
@@ -95,12 +90,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
       >
         {word}
         <AnimatePresence>
-          {hasRipple && (
-            <RippleRing
-              key={rippleCounter}
-              onComplete={() => setRippleKey(null)}
-            />
-          )}
+          {hasRipple && <RippleRing key={rippleCounter} onComplete={() => setRippleKey(null)} />}
         </AnimatePresence>
       </motion.span>
     );
@@ -142,10 +132,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   const translateY = LINE_HEIGHT - lineIndex * LINE_HEIGHT;
 
   return (
-    <div
-      className="relative overflow-hidden"
-      style={{ height: containerHeight }}
-    >
+    <div className="relative overflow-hidden" style={{ height: containerHeight }}>
       <motion.div
         initial={{ y: translateY }}
         animate={{ y: translateY }}

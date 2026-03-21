@@ -45,6 +45,8 @@ function getEffectiveBinding(id: string): ShortcutBinding {
 function getEffectiveKeysArray(id: string): string[] {
   const binding = getEffectiveBinding(id);
   const keys: string[] = [];
+  if (binding.meta) keys.push("Meta");
+  if (binding.ctrl) keys.push("Ctrl");
   if (binding.shift) keys.push("Shift");
   if (binding.alt) keys.push("Alt");
   const displayKey = binding.key === " " ? "Space" : binding.key;
