@@ -4,6 +4,7 @@ import type { LyricLine, WordTiming } from "@/stores/project";
 import {
   getNudgeAmount,
   type SyncState,
+  createInitialBgWords,
   getLineTiming,
   splitIntoWords,
   splitIntoWordsWithMeta,
@@ -24,17 +25,6 @@ interface UseSyncHandlersProps {
   granularity: "line" | "word";
   setShowPulse: (show: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
-}
-
-// -- Helpers ------------------------------------------------------------------
-
-function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(backgroundText);
-  return parts.map((text, i) => ({
-    text: trailingSpace[i] ? `${text} ` : text,
-    begin: time,
-    end: time,
-  }));
 }
 
 // -- Hook ---------------------------------------------------------------------
