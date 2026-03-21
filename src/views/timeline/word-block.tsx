@@ -118,9 +118,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         onPointerDown={(e) => e.stopPropagation()}
       />
 
-      {showText && (
-        <span className="px-1 pointer-events-none truncate">{text}</span>
-      )}
+      {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
 
       <div
         data-edge="right"

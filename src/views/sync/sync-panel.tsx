@@ -15,12 +15,12 @@ import {
   getNudgeAmount,
   type SyncState,
   convertLineToWord,
+  createInitialBgWords,
   getLineTiming,
   getSyncedLineCount,
   getSyncedWordCount,
   getTotalWords,
   hasLineTiming,
-  splitIntoWords,
 } from "@/utils/sync-helpers";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { SyncCarousel } from "@/views/sync/sync-carousel";
@@ -104,13 +104,8 @@ const SyncPanel: React.FC = () => {
       if (line.backgroundText && !line.backgroundWords?.length) {
         const timing = getLineTiming(line);
         if (timing) {
-          const bgWordTexts = splitIntoWords(line.backgroundText);
           updateLine(line.id, {
-            backgroundWords: bgWordTexts.map((text) => ({
-              text,
-              begin: timing.begin,
-              end: timing.end,
-            })),
+            backgroundWords: createInitialBgWords(line.backgroundText, timing.begin),
           });
         }
       }

@@ -152,9 +152,21 @@ function hasLineTiming(lines: ConvertibleLine[]): boolean {
   return lines.some((line) => line.begin !== undefined && line.end !== undefined && !line.words?.length);
 }
 
+// -- BG Word Creation ---------------------------------------------------------
+
+function createInitialBgWords(backgroundText: string, time: number): WordTiming[] {
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(backgroundText);
+  return parts.map((text, i) => ({
+    text: trailingSpace[i] ? `${text} ` : text,
+    begin: time,
+    end: time,
+  }));
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  createInitialBgWords,
   getNudgeAmount,
   convertLineToWord,
   convertWordToLine,
