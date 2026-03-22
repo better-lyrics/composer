@@ -22,6 +22,8 @@ import { distributeLinesTiming, getEffectiveLines } from "@/views/timeline/utils
 import { Button } from "@/ui/button";
 import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { useOverlayScrollbars } from "overlayscrollbars-react";
+import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
@@ -34,12 +36,12 @@ interface DragGhostCell {
   height: number;
 }
 
-const DragGhost: React.FC<{ cells: DragGhostCell[]; anchorWidth: number; anchorHeight: number; color: string }> = ({
-  cells,
-  anchorWidth,
-  anchorHeight,
-  color,
-}) => (
+const DragGhost: React.FC<{
+  cells: DragGhostCell[];
+  anchorWidth: number;
+  anchorHeight: number;
+  color: string;
+}> = ({ cells, anchorWidth, anchorHeight, color }) => (
   <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
     {cells.map((cell) => (
       <div
@@ -78,6 +80,24 @@ const TimelinePanel: React.FC = () => {
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
 
+  const [initOverlayScrollbars] = useOverlayScrollbars({
+    defer: true,
+    options: {
+      scrollbars: {
+        theme: "os-theme-light",
+        autoHide: "scroll",
+        autoHideDelay: 800,
+      },
+    },
+  });
+
+  useEffect(() => {
+    const target = contentRef.current;
+    const viewport = scrollContainerRef.current;
+    if (!target || !viewport) return;
+    initOverlayScrollbars({ target, elements: { viewport } });
+  }, [initOverlayScrollbars]);
+
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
@@ -98,6 +118,20 @@ const TimelinePanel: React.FC = () => {
     }
     lastDistributedDurationRef.current = duration;
   }, [duration, lines, setLines]);
+
+  useEffect(() => {
+    const { selectedWords } = useTimelineStore.getState();
+    if (selectedWords.length === 0) return;
+    const valid = selectedWords.filter((sel) => {
+      const line = effectiveLines[sel.lineIndex];
+      if (!line || line.id !== sel.lineId) return false;
+      const words = sel.type === "word" ? line.words : line.backgroundWords;
+      return !!words?.[sel.wordIndex];
+    });
+    if (valid.length < selectedWords.length) {
+      useTimelineStore.getState().setSelectedWords(valid);
+    }
+  }, [effectiveLines]);
 
   useEffect(() => {
     if (!contentRef.current) return;
@@ -193,7 +227,15 @@ const TimelinePanel: React.FC = () => {
     if (!wordsToShow) {
       const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
       return {
-        cells: [{ text: activeDrag.text, left: 0, top: 0, width: w, height: anchorHeight - 8 }],
+        cells: [
+          {
+            text: activeDrag.text,
+            left: 0,
+            top: 0,
+            width: w,
+            height: anchorHeight - 8,
+          },
+        ],
         anchorWidth: w,
         anchorHeight: anchorHeight - 8,
       };
@@ -210,7 +252,13 @@ const TimelinePanel: React.FC = () => {
       const cellWidth = Math.max((word.end - word.begin) * zoom, 4);
       const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - 8;
 
-      return { text: word.text.trimEnd(), left: cellLeft, top: cellTop, width: cellWidth, height: cellHeight };
+      return {
+        text: word.text.trimEnd(),
+        left: cellLeft,
+        top: cellTop,
+        width: cellWidth,
+        height: cellHeight,
+      };
     });
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
@@ -267,7 +315,7 @@ const TimelinePanel: React.FC = () => {
               <div
                 ref={scrollContainerRef}
                 data-scroll-container
-                className="flex-1 overflow-auto overscroll-none"
+                className="flex-1 overflow-auto overscroll-none static! z-[unset]"
                 onScroll={handleScroll}
                 onWheel={handleWheel}
                 onMouseDown={handleMouseDown}

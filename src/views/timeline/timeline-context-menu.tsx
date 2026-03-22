@@ -197,9 +197,7 @@ const TimelineContextMenu: React.FC = () => {
     const { lineId } = contextMenu.target;
 
     const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0
-      ? [...selectedLineIds]
-      : [lineId];
+    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
 
     const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
     for (const id of targetIds) {
@@ -305,9 +303,8 @@ const TimelineContextMenu: React.FC = () => {
     const target = contextMenu.target;
 
     const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds = selectedLineIds.has(target.lineId) && selectedLineIds.size > 0
-      ? [...selectedLineIds]
-      : [target.lineId];
+    const targetIds =
+      selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
 
     const lineSyncedIds = targetIds.filter((id) => {
       const realLine = rawLines.find((l) => l.id === id);
@@ -338,9 +335,11 @@ const TimelineContextMenu: React.FC = () => {
               <>
                 <MenuDivider />
                 <MenuItem
-                  label={splitIntoWordsInfo.count > 1
-                    ? `Split ${splitIntoWordsInfo.count} lines into words`
-                    : "Split into words"}
+                  label={
+                    splitIntoWordsInfo.count > 1
+                      ? `Split ${splitIntoWordsInfo.count} lines into words`
+                      : "Split into words"
+                  }
                   shortcut={getEffectiveKeysArray("timeline.splitIntoWords")}
                   onClick={handleSplitIntoWords}
                 />

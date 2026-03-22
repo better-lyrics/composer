@@ -101,6 +101,7 @@ const TimelineInfoPanel: React.FC = () => {
         if (realLine && isLineSynced(realLine)) lineCount++;
       }
     }
+    if (minBegin === Number.POSITIVE_INFINITY) return null;
     const wordCount = selectedWords.length - lineCount;
     return { count: selectedWords.length, wordCount, lineCount, begin: minBegin, end: maxEnd };
   }, [selectedWords, lines, rawLines]);

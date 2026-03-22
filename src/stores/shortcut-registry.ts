@@ -171,6 +171,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     description: "Expand all lines",
     defaultBinding: { key: "x" },
   },
+  {
+    id: "timeline.importLyrics",
+    scope: "timeline",
+    description: "Import lyrics",
+    defaultBinding: { key: "v", mod: true, shift: true },
+  },
 ];
 
 // -- Helpers ------------------------------------------------------------------

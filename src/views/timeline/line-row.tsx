@@ -27,24 +27,20 @@ const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- AddWordsButton ------------------------------------------------------------
 
-const AddWordsButton: React.FC<{ lineId: string; text: string }> = ({ lineId, text }) => {
+const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineId, wordCount }) => {
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       const currentTime = useAudioStore.getState().currentTime;
       const wordDuration = useSettingsStore.getState().defaultWordDuration;
-      const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
-      if (parts.length === 0) return;
+      const lineDuration = Math.max(wordCount, 1) * wordDuration;
 
-      const words: WordTiming[] = parts.map((part, i) => ({
-        text: trailingSpace[i] ? `${part} ` : part,
-        begin: currentTime + i * wordDuration,
-        end: currentTime + (i + 1) * wordDuration,
-      }));
-
-      useProjectStore.getState().updateLineWithHistory(lineId, { words });
+      useProjectStore.getState().updateLineWithHistory(lineId, {
+        begin: currentTime,
+        end: currentTime + lineDuration,
+      });
     },
-    [lineId, text],
+    [lineId, wordCount],
   );
 
   return (
@@ -54,7 +50,7 @@ const AddWordsButton: React.FC<{ lineId: string; text: string }> = ({ lineId, te
       className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
     >
       <IconPlus size={12} />
-      Add
+      Place
     </button>
   );
 };
@@ -155,7 +151,9 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
                 {displayText.slice(0, 60)}
                 {displayText.length > 60 ? "..." : ""}
               </span>
-              {displayText.length > 0 && <AddWordsButton lineId={line.id} text={line.text} />}
+              {displayText.length > 0 && (
+                <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(line.text).parts.length} />
+              )}
             </div>
           )}
         </div>

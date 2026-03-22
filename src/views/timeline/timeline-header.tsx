@@ -40,10 +40,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const lines = useProjectStore((s) => s.lines);
 
-  const hasUnexpandedLines = useMemo(
-    () => lines.some((l) => !l.words?.length && l.text.trim().length > 0),
-    [lines],
-  );
+  const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
 
   const handleExpandAll = useCallback(() => {
     const currentTime = useAudioStore.getState().currentTime;
@@ -149,7 +146,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           <Button variant="ghost" size="sm" onClick={onImportLyrics} hasIcon className="opacity-60">
             <IconTextPlus size={16} />
             <span>Import</span>
-            {showHints && <InlineKeyBadge keys={["Mod", "Shift", "V"]} />}
+            {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />}
           </Button>
         )}
 
