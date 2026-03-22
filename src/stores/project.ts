@@ -194,7 +194,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
       }
 
-      // Apply the edit — when words are written to a line-synced line, auto-clear begin/end
+      // Apply the edit - when words are written to a line-synced line, auto-clear begin/end
       const newLines = state.lines.map((line) => {
         if (line.id !== id) return line;
         const merged = { ...line, ...updates };
