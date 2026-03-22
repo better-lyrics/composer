@@ -81,16 +81,19 @@ const WordBlock: React.FC<WordBlockProps> = ({
         "border transition-opacity duration-100",
         SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
-        isSelected && "ring-2 ring-white/60",
         isDragging && "opacity-50 cursor-grabbing z-50",
       )}
       style={{
         left,
         width,
-        backgroundColor: isSelected ? `${color}50` : `${color}30`,
-        borderColor: isSelected ? `${color}90` : `${color}50`,
-        ...(syllablePosition === "first" || syllablePosition === "middle" ? { borderRightStyle: "dashed" } : {}),
-        ...(syllablePosition === "middle" || syllablePosition === "last" ? { borderLeftStyle: "dashed" } : {}),
+        backgroundColor: isSelected ? `${color}60` : `${color}40`,
+        borderColor: isSelected ? `${color}B0` : `${color}70`,
+        ...(!isSelected && (syllablePosition === "first" || syllablePosition === "middle")
+          ? { borderRightStyle: "dashed" }
+          : {}),
+        ...(!isSelected && (syllablePosition === "middle" || syllablePosition === "last")
+          ? { borderLeftWidth: 0 }
+          : {}),
       }}
       onClick={(e) => {
         e.stopPropagation();

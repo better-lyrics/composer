@@ -1,5 +1,6 @@
 import type { WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,18 +28,20 @@ function getNudgeAmount(): number {
 // -- Functions ----------------------------------------------------------------
 
 function splitIntoWords(text: string): string[] {
+  const char = getSplitCharacter();
   return text
     .split(/\s+/)
     .filter((w) => w.length > 0)
-    .flatMap((w) => w.split("|").filter((p) => p.length > 0));
+    .flatMap((w) => w.split(char).filter((p) => p.length > 0));
 }
 
 function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace: boolean[] } {
+  const char = getSplitCharacter();
   const tokens = text.split(/\s+/).filter((w) => w.length > 0);
   const parts: string[] = [];
   const trailingSpace: boolean[] = [];
   for (let t = 0; t < tokens.length; t++) {
-    const syllables = tokens[t].split("|").filter((p) => p.length > 0);
+    const syllables = tokens[t].split(char).filter((p) => p.length > 0);
     const isLastToken = t === tokens.length - 1;
     for (let s = 0; s < syllables.length; s++) {
       parts.push(syllables[s]);
@@ -47,10 +50,6 @@ function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace:
     }
   }
   return { parts, trailingSpace };
-}
-
-function stripPipes(text: string): string {
-  return text.replaceAll("|", "");
 }
 
 function formatTimeMs(seconds: number): string {
@@ -153,9 +152,44 @@ function hasLineTiming(lines: ConvertibleLine[]): boolean {
   return lines.some((line) => line.begin !== undefined && line.end !== undefined && !line.words?.length);
 }
 
+// -- Word Distribution --------------------------------------------------------
+
+const DEFAULT_BG_WORD_DURATION = 0.3;
+
+function distributeWordsInLine(text: string, begin: number, end: number): WordTiming[] {
+  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text);
+  if (words.length === 0) return [];
+
+  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+  const duration = end - begin;
+
+  let currentTime = begin;
+  return words.map((word, i) => {
+    const wordDuration = (word.length / totalChars) * duration;
+    const wordTiming: WordTiming = {
+      text: trailingSpace[i] ? `${word} ` : word,
+      begin: currentTime,
+      end: currentTime + wordDuration,
+    };
+    currentTime += wordDuration;
+    return wordTiming;
+  });
+}
+
+// -- BG Word Creation ---------------------------------------------------------
+
+function createInitialBgWords(backgroundText: string, begin: number, end?: number): WordTiming[] {
+  const wordCount = splitIntoWords(backgroundText).length;
+  if (wordCount === 0) return [];
+  const resolvedEnd = end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION;
+  return distributeWordsInLine(backgroundText, begin, resolvedEnd);
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
+  createInitialBgWords,
+  distributeWordsInLine,
   getNudgeAmount,
   convertLineToWord,
   convertWordToLine,
@@ -169,6 +203,5 @@ export {
   parseTimeMs,
   splitIntoWords,
   splitIntoWordsWithMeta,
-  stripPipes,
 };
 export type { LineTiming, SyncPosition, SyncState };

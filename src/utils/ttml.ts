@@ -1,5 +1,5 @@
 import type { Agent, LyricLine, ProjectMetadata } from "@/stores/project";
-import { stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -88,7 +88,7 @@ function generateTTML({ metadata, agents, lines, granularity, minify = false, du
         content += `<span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}">${escapeXml(text)}</span>${needsSpace ? " " : ""}`;
       }
     } else {
-      content = escapeXml(stripPipes(line.text));
+      content = escapeXml(stripSplitCharacter(line.text));
     }
 
     // Background vocals

@@ -1,27 +1,8 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
-import { splitIntoWordsWithMeta, stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
+import { distributeWordsInLine } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
-
-function distributeWordsInLine(text: string, begin: number, end: number): WordTiming[] {
-  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text);
-  if (words.length === 0) return [];
-
-  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
-  const duration = end - begin;
-
-  let currentTime = begin;
-  return words.map((word, i) => {
-    const wordDuration = (word.length / totalChars) * duration;
-    const wordTiming: WordTiming = {
-      text: trailingSpace[i] ? `${word} ` : word,
-      begin: currentTime,
-      end: currentTime + wordDuration,
-    };
-    currentTime += wordDuration;
-    return wordTiming;
-  });
-}
 
 function distributeLinesTiming<T extends { id: string; text: string }>(
   lines: T[],
@@ -102,7 +83,7 @@ function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
     if (!isLineSynced(line)) return line;
     return {
       ...line,
-      words: [{ text: stripPipes(line.text), begin: line.begin!, end: line.end! }],
+      words: [{ text: stripSplitCharacter(line.text), begin: line.begin!, end: line.end! }],
     };
   });
 }

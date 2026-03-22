@@ -2,7 +2,8 @@ import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, type WordTiming, getAgentColor, useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
-import { splitIntoWordsWithMeta, stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
+import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -62,7 +63,7 @@ const AddWordsButton: React.FC<{ lineId: string; text: string }> = ({ lineId, te
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
-  const displayText = stripPipes(line.text);
+  const displayText = stripSplitCharacter(line.text);
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 

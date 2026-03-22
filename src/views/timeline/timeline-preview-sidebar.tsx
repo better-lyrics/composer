@@ -1,7 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
-import { splitIntoWords, stripPipes } from "@/utils/sync-helpers";
+import { stripSplitCharacter } from "@/utils/split-character";
+import { splitIntoWords } from "@/utils/sync-helpers";
 import { getLineTiming } from "@/views/timeline/utils";
 import { useEffect, useRef } from "react";
 
@@ -91,7 +92,7 @@ const MiniPreviewLine: React.FC<{
         <div className="flex items-center gap-2 text-sm font-medium">
           {alignment === "left" && AgentDotLeft}
           <span className="relative block truncate">
-            <span className="text-composer-text-muted">{stripPipes(line.text)}</span>
+            <span className="text-composer-text-muted">{stripSplitCharacter(line.text)}</span>
             <span
               className="absolute inset-0 text-composer-accent-text truncate"
               data-word-begin={timing?.begin ?? 0}
@@ -99,7 +100,7 @@ const MiniPreviewLine: React.FC<{
               data-line-idx={lineIndex}
               style={{ clipPath: "inset(0 100% 0 0)" }}
             >
-              {stripPipes(line.text)}
+              {stripSplitCharacter(line.text)}
             </span>
           </span>
           {alignment === "right" && AgentDotRight}

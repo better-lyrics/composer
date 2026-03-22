@@ -25,6 +25,7 @@ interface SettingsState {
 
   showShortcutHints: boolean;
   showSyllableIndicators: boolean;
+  splitCharacter: string;
 }
 
 interface SettingsActions {
@@ -53,6 +54,7 @@ const DEFAULTS: SettingsState = {
 
   showShortcutHints: true,
   showSyllableIndicators: true,
+  splitCharacter: "|",
 };
 
 // -- Store --------------------------------------------------------------------
