@@ -18,7 +18,7 @@ import { useMarquee } from "@/views/timeline/use-marquee";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
-import { distributeLinesTiming } from "@/views/timeline/utils";
+import { distributeLinesTiming, getEffectiveLines } from "@/views/timeline/utils";
 import { Button } from "@/ui/button";
 import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
@@ -76,11 +76,13 @@ const TimelinePanel: React.FC = () => {
   const [contentHeight, setContentHeight] = useState(400);
   const [lyricsModalOpen, setLyricsModalOpen] = useState(false);
 
+  const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
+
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(lines);
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
-  useTimelineKeyboard(scrollContainerRef, lines, duration, openLyricsModal);
+  useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
 
   const lastDistributedDurationRef = useRef<number | null>(null);
 
@@ -153,7 +155,9 @@ const TimelinePanel: React.FC = () => {
     useAudioStore.getState().setSource({ type: "file", file });
   }, []);
 
-  const dragColor = activeDrag ? getAgentColor(lines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "") : "#888";
+  const dragColor = activeDrag
+    ? getAgentColor(effectiveLines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "")
+    : "#888";
 
   const dragCells = useMemo(() => {
     if (!activeDrag) return null;
@@ -168,7 +172,7 @@ const TimelinePanel: React.FC = () => {
     const rowBgTops: Record<string, number> = {};
     const rowBgHeights: Record<string, number> = {};
     let top = WAVEFORM_HEIGHT;
-    for (const line of lines) {
+    for (const line of effectiveLines) {
       rowTops[line.id] = top;
       const mainH = rowHeights[line.id] ?? defaultRowHeight;
       rowMainHeights[line.id] = mainH;
@@ -196,7 +200,7 @@ const TimelinePanel: React.FC = () => {
     }
 
     const cells = wordsToShow.map((sel) => {
-      const line = lines.find((l) => l.id === sel.lineId);
+      const line = effectiveLines.find((l) => l.id === sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
       if (!word || !line) return { text: "", left: 0, top: 0, width: 0, height: 0 };
@@ -211,7 +215,7 @@ const TimelinePanel: React.FC = () => {
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
-  }, [activeDrag, zoom, lines]);
+  }, [activeDrag, zoom, effectiveLines]);
 
   if (!source) {
     return (

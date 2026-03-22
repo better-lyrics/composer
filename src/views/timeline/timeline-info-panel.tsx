@@ -2,7 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { formatTime } from "@/views/timeline/utils";
+import { formatTime, getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -58,11 +58,13 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
 };
 
 const TimelineInfoPanel: React.FC = () => {
-  const lines = useProjectStore((s) => s.lines);
+  const rawLines = useProjectStore((s) => s.lines);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const selectedWord = selectedWords[0] ?? null;
+
+  const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
 
   const selectedItem = useMemo(() => {
     if (!selectedWord) return null;
@@ -82,6 +84,8 @@ const TimelineInfoPanel: React.FC = () => {
     if (selectedWords.length <= 1) return null;
     let minBegin = Number.POSITIVE_INFINITY;
     let maxEnd = 0;
+    let lineCount = 0;
+    const seenLineIds = new Set<string>();
     for (const sel of selectedWords) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
@@ -90,9 +94,16 @@ const TimelineInfoPanel: React.FC = () => {
       if (!word) continue;
       minBegin = Math.min(minBegin, word.begin);
       maxEnd = Math.max(maxEnd, word.end);
+
+      if (sel.type === "word" && !seenLineIds.has(line.id)) {
+        seenLineIds.add(line.id);
+        const realLine = rawLines.find((l) => l.id === line.id);
+        if (realLine && isLineSynced(realLine)) lineCount++;
+      }
     }
-    return { count: selectedWords.length, begin: minBegin, end: maxEnd };
-  }, [selectedWords, lines]);
+    const wordCount = selectedWords.length - lineCount;
+    return { count: selectedWords.length, wordCount, lineCount, begin: minBegin, end: maxEnd };
+  }, [selectedWords, lines, rawLines]);
 
   const handleSetBeginToCursor = useCallback(() => {
     if (!selectedWord) return;
@@ -156,7 +167,13 @@ const TimelineInfoPanel: React.FC = () => {
     const spanDuration = multiSelectionInfo.end - multiSelectionInfo.begin;
     return (
       <div className="flex items-center gap-6 px-6 py-3 border-t border-composer-border bg-composer-bg-elevated">
-        <span className="text-sm font-medium text-composer-text">{multiSelectionInfo.count} words selected</span>
+        <span className="text-sm font-medium text-composer-text">
+          {multiSelectionInfo.lineCount > 0 && multiSelectionInfo.wordCount > 0
+            ? `${multiSelectionInfo.wordCount} words, ${multiSelectionInfo.lineCount} lines selected`
+            : multiSelectionInfo.lineCount > 0
+              ? `${multiSelectionInfo.lineCount} lines selected`
+              : `${multiSelectionInfo.wordCount} words selected`}
+        </span>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">
             <span className="text-composer-text-muted">Range:</span>

@@ -1,10 +1,11 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { convertLineToWord } from "@/utils/sync-helpers";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findWordAtTime, getLineTiming } from "@/views/timeline/utils";
+import { findWordAtTime, getLineTiming, isLineSynced } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -346,6 +347,48 @@ function useTimelineKeyboard(
             });
           }
           useTimelineStore.getState().clearSelection();
+          break;
+        }
+        case "timeline.splitIntoWords": {
+          const { selectedWords: wSel } = useTimelineStore.getState();
+          if (wSel.length === 0) break;
+          e.preventDefault();
+
+          const realLines = useProjectStore.getState().lines;
+          const lineIds = new Set(wSel.map((w) => w.lineId));
+          const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
+
+          for (const lineId of lineIds) {
+            const realLine = realLines.find((l) => l.id === lineId);
+            if (!realLine || !isLineSynced(realLine)) continue;
+            const converted = convertLineToWord(realLine);
+            if (converted.words) {
+              updates.push({ id: lineId, updates: { words: converted.words, begin: undefined, end: undefined } });
+            }
+          }
+
+          if (updates.length === 1) {
+            useProjectStore.getState().updateLineWithHistory(updates[0].id, updates[0].updates);
+          } else if (updates.length > 1) {
+            useProjectStore.getState().updateLinesWithHistory(updates);
+          }
+
+          const newSelections: WordSelection[] = [];
+          for (const u of updates) {
+            const lineIndex = lines.findIndex((l) => l.id === u.id);
+            if (lineIndex < 0 || !u.updates.words) continue;
+            for (let wi = 0; wi < u.updates.words.length; wi++) {
+              newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
+            }
+          }
+          if (newSelections.length > 0) {
+            useTimelineStore.getState().setSelectedWords(newSelections);
+          }
+          break;
+        }
+        case "timeline.expandAll": {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent("timeline:expand-all"));
           break;
         }
       }

@@ -159,6 +159,18 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     description: "Merge words",
     defaultBinding: { key: "m" },
   },
+  {
+    id: "timeline.splitIntoWords",
+    scope: "timeline",
+    description: "Split line into words",
+    defaultBinding: { key: "w" },
+  },
+  {
+    id: "timeline.expandAll",
+    scope: "timeline",
+    description: "Expand all lines",
+    defaultBinding: { key: "x" },
+  },
 ];
 
 // -- Helpers ------------------------------------------------------------------

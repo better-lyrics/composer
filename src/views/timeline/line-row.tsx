@@ -1,10 +1,13 @@
-import { type LyricLine, type WordTiming, getAgentColor } from "@/stores/project";
+import { useAudioStore } from "@/stores/audio";
+import { type LyricLine, type WordTiming, getAgentColor, useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
-import { stripPipes } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta, stripPipes } from "@/utils/sync-helpers";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { useDroppable } from "@dnd-kit/core";
+import { IconPlus } from "@tabler/icons-react";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -20,6 +23,40 @@ interface LineRowProps {
 // -- Constants -----------------------------------------------------------------
 
 const BG_DROP_ZONE_HEIGHT = 24;
+
+// -- AddWordsButton ------------------------------------------------------------
+
+const AddWordsButton: React.FC<{ lineId: string; text: string }> = ({ lineId, text }) => {
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const currentTime = useAudioStore.getState().currentTime;
+      const wordDuration = useSettingsStore.getState().defaultWordDuration;
+      const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+      if (parts.length === 0) return;
+
+      const words: WordTiming[] = parts.map((part, i) => ({
+        text: trailingSpace[i] ? `${part} ` : part,
+        begin: currentTime + i * wordDuration,
+        end: currentTime + (i + 1) * wordDuration,
+      }));
+
+      useProjectStore.getState().updateLineWithHistory(lineId, { words });
+    },
+    [lineId, text],
+  );
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
+    >
+      <IconPlus size={12} />
+      Add
+    </button>
+  );
+};
 
 // -- Component -----------------------------------------------------------------
 
@@ -110,11 +147,14 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             />
           ) : (
             <div
-              className="flex items-center px-3 text-xs text-composer-text-muted italic truncate"
+              className="flex items-center gap-2 px-3 text-xs text-composer-text-muted italic truncate"
               style={{ height: rowHeight }}
             >
-              {displayText.slice(0, 60)}
-              {displayText.length > 60 ? "..." : ""}
+              <span className="truncate">
+                {displayText.slice(0, 60)}
+                {displayText.length > 60 ? "..." : ""}
+              </span>
+              {displayText.length > 0 && <AddWordsButton lineId={line.id} text={line.text} />}
             </div>
           )}
         </div>

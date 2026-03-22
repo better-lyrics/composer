@@ -194,8 +194,16 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
       }
 
-      // Apply the edit
-      const newLines = state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line));
+      // Apply the edit — when words are written to a line-synced line, auto-clear begin/end
+      const newLines = state.lines.map((line) => {
+        if (line.id !== id) return line;
+        const merged = { ...line, ...updates };
+        if (updates.words?.length && line.begin !== undefined && !line.words?.length) {
+          merged.begin = undefined;
+          merged.end = undefined;
+        }
+        return merged;
+      });
 
       // Save the new state (after edit)
       newHistory.push({
@@ -227,7 +235,15 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       let newLines = [...state.lines];
       for (const { id, updates: lineUpdates } of updates) {
-        newLines = newLines.map((line) => (line.id === id ? { ...line, ...lineUpdates } : line));
+        newLines = newLines.map((line) => {
+          if (line.id !== id) return line;
+          const merged = { ...line, ...lineUpdates };
+          if (lineUpdates.words?.length && line.begin !== undefined && !line.words?.length) {
+            merged.begin = undefined;
+            merged.end = undefined;
+          }
+          return merged;
+        });
       }
 
       newHistory.push({

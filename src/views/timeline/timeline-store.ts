@@ -33,6 +33,7 @@ interface TimelineState {
   followEnabled: boolean;
   previewSidebarOpen: boolean;
   selectedWords: WordSelection[];
+
   clipboard: ClipboardData | null;
   pasteMode: PasteMode;
   scrollLeft: number;
@@ -52,6 +53,7 @@ interface TimelineActions {
   toggleFollow: () => void;
   togglePreviewSidebar: () => void;
   setSelectedWords: (selections: WordSelection[]) => void;
+
   toggleSelection: (selection: WordSelection) => void;
   clearSelection: () => void;
   setClipboard: (clipboard: ClipboardData | null) => void;
@@ -86,6 +88,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     followEnabled: settings.followPlayhead,
     previewSidebarOpen: false,
     selectedWords: [],
+
     clipboard: null,
     pasteMode: { status: "idle" },
     scrollLeft: 0,
@@ -103,6 +106,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
     togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
     setSelectedWords: (selectedWords) => set({ selectedWords }),
+
     toggleSelection: (selection) =>
       set((s) => {
         const exists = s.selectedWords.some(
