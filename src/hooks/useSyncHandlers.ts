@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine, WordTiming } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import {
   getNudgeAmount,
   type SyncState,
@@ -59,6 +60,7 @@ function useSyncHandlers({
     if (!wordText) return;
 
     const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
+    const fallbackEnd = currentTime + useSettingsStore.getState().defaultWordDuration;
 
     const existingWords = line.words ?? [];
 
@@ -66,7 +68,7 @@ function useSyncHandlers({
       const updatedWords = [...existingWords];
       if (wordIndex === 0) {
         updatedWords.length = 1;
-        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
+        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime, end: fallbackEnd };
       } else {
         updatedWords.length = wordIndex;
         updatedWords[wordIndex - 1] = {
@@ -76,13 +78,13 @@ function useSyncHandlers({
         updatedWords.push({
           text: textWithSpace,
           begin: currentTime,
-          end: currentTime,
+          end: fallbackEnd,
         });
       }
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {
-        words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
+        words: [{ text: textWithSpace, begin: currentTime, end: fallbackEnd }],
       };
       if (line.backgroundText && !line.backgroundWords?.length) {
         updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);

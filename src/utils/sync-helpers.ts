@@ -152,21 +152,44 @@ function hasLineTiming(lines: ConvertibleLine[]): boolean {
   return lines.some((line) => line.begin !== undefined && line.end !== undefined && !line.words?.length);
 }
 
+// -- Word Distribution --------------------------------------------------------
+
+const DEFAULT_BG_WORD_DURATION = 0.3;
+
+function distributeWordsInLine(text: string, begin: number, end: number): WordTiming[] {
+  const { parts: words, trailingSpace } = splitIntoWordsWithMeta(text);
+  if (words.length === 0) return [];
+
+  const totalChars = words.reduce((sum, w) => sum + w.length, 0);
+  const duration = end - begin;
+
+  let currentTime = begin;
+  return words.map((word, i) => {
+    const wordDuration = (word.length / totalChars) * duration;
+    const wordTiming: WordTiming = {
+      text: trailingSpace[i] ? `${word} ` : word,
+      begin: currentTime,
+      end: currentTime + wordDuration,
+    };
+    currentTime += wordDuration;
+    return wordTiming;
+  });
+}
+
 // -- BG Word Creation ---------------------------------------------------------
 
 function createInitialBgWords(backgroundText: string, begin: number, end?: number): WordTiming[] {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(backgroundText);
-  return parts.map((text, i) => ({
-    text: trailingSpace[i] ? `${text} ` : text,
-    begin,
-    end: end ?? begin,
-  }));
+  const wordCount = splitIntoWords(backgroundText).length;
+  if (wordCount === 0) return [];
+  const resolvedEnd = end ?? begin + wordCount * DEFAULT_BG_WORD_DURATION;
+  return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
   createInitialBgWords,
+  distributeWordsInLine,
   getNudgeAmount,
   convertLineToWord,
   convertWordToLine,
