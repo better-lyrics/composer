@@ -120,7 +120,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   return (
     <div className="relative flex">
       <div
-        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border)] bg-composer-bg w-12 sticky left-0 z-60"
+        className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] bg-composer-bg w-12 sticky left-0 z-60"
         style={{ borderRightColor: color }}
       >
         <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} />
@@ -181,12 +181,36 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           <div
             ref={setBgDropRef}
             className={cn(
-              "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30",
+              "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30 cursor-pointer",
               isOverBg
                 ? "bg-composer-accent/20 text-composer-text"
                 : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
             )}
             style={{ height: BG_DROP_ZONE_HEIGHT }}
+            onDoubleClick={(e) => {
+              if (useTimelineStore.getState().selectOnlyMode) return;
+              const zoom = useTimelineStore.getState().zoom;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const time = (e.clientX - rect.left) / zoom;
+              const audioDuration = useAudioStore.getState().duration;
+              const wordDuration = useSettingsStore.getState().defaultWordDuration;
+              const begin = Math.max(0, time - wordDuration / 2);
+              const end = Math.min(audioDuration, time + wordDuration / 2);
+              const newWord: WordTiming = { text: "...", begin, end };
+              useProjectStore.getState().updateLineWithHistory(line.id, { backgroundWords: [newWord] });
+              useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              const zoom = useTimelineStore.getState().zoom;
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              const time = (e.clientX - rect.left) / zoom;
+              useTimelineStore.getState().setContextMenu({
+                x: e.clientX,
+                y: e.clientY,
+                target: { kind: "track", lineId: line.id, lineIndex, time, type: "bg" },
+              });
+            }}
           >
             {line.backgroundText
               ? `${line.backgroundText.slice(0, 40)}${line.backgroundText.length > 40 ? "..." : ""}`

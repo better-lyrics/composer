@@ -15,7 +15,7 @@ import {
   getNudgeAmount,
   type SyncState,
   convertLineToWord,
-  createInitialBgWords,
+  createBgWordsFromLine,
   getLineTiming,
   getSyncedLineCount,
   getSyncedWordCount,
@@ -102,11 +102,9 @@ const SyncPanel: React.FC = () => {
   useEffect(() => {
     for (const line of lines) {
       if (line.backgroundText && !line.backgroundWords?.length) {
-        const timing = getLineTiming(line);
-        if (timing) {
-          updateLine(line.id, {
-            backgroundWords: createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end),
-          });
+        const bgWords = createBgWordsFromLine(line);
+        if (bgWords) {
+          updateLine(line.id, { backgroundWords: bgWords });
         }
       }
     }

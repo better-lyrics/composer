@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime, getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart } from "@tabler/icons-react";
@@ -19,7 +20,14 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
   }, [isEditing]);
 
   const handleCommit = useCallback(() => {
-    updateLineWithHistory(lineId, { backgroundText: value.trim() || undefined });
+    const trimmed = value.trim() || undefined;
+    if (trimmed) {
+      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
+      const bgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
+      updateLineWithHistory(lineId, { backgroundText: trimmed, backgroundWords: bgWords ?? undefined });
+    } else {
+      updateLineWithHistory(lineId, { backgroundText: undefined, backgroundWords: undefined });
+    }
     setIsEditing(false);
   }, [lineId, value, updateLineWithHistory]);
 
@@ -167,7 +175,7 @@ const TimelineInfoPanel: React.FC = () => {
   if (multiSelectionInfo) {
     const spanDuration = multiSelectionInfo.end - multiSelectionInfo.begin;
     return (
-      <div className="flex items-center gap-6 px-6 py-3 border-t border-composer-border bg-composer-bg-elevated">
+      <div className="flex items-center gap-6 px-6 h-[54px] border-t border-composer-border bg-composer-bg-elevated">
         <span className="text-sm font-medium text-composer-text">
           {multiSelectionInfo.lineCount > 0 && multiSelectionInfo.wordCount > 0
             ? `${multiSelectionInfo.wordCount} words, ${multiSelectionInfo.lineCount} lines selected`

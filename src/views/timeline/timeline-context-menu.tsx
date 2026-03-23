@@ -124,7 +124,7 @@ const TimelineContextMenu: React.FC = () => {
 
   const handleAddWordHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;
-    const { lineId, time } = contextMenu.target;
+    const { lineId, time, type } = contextMenu.target;
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
@@ -135,7 +135,8 @@ const TimelineContextMenu: React.FC = () => {
       end: Math.min(duration, time + wordDuration / 2),
     };
 
-    const words = [...(line.words ?? []), newWord].sort((a, b) => a.begin - b.begin);
+    const existingWords = type === "word" ? line.words : line.backgroundWords;
+    const words = [...(existingWords ?? []), newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = words.indexOf(newWord);
 
     for (let i = 0; i < words.length; i++) {
@@ -148,8 +149,12 @@ const TimelineContextMenu: React.FC = () => {
       }
     }
 
-    updateLineWithHistory(lineId, { words });
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: "word" });
+    if (type === "word") {
+      updateLineWithHistory(lineId, { words });
+    } else {
+      updateLineWithHistory(lineId, { backgroundWords: words });
+    }
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
     clearContextMenu();
   }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
 

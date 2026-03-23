@@ -231,7 +231,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     useTimelineStore.getState().setContextMenu({
       x: e.clientX,
       y: e.clientY,
-      target: { kind: "track", lineId, lineIndex, time },
+      target: { kind: "track", lineId, lineIndex, time, type: trackType },
     });
   };
 

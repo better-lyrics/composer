@@ -13,7 +13,7 @@ interface WordSelection {
 
 type ContextMenuTarget =
   | { kind: "word"; lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }
-  | { kind: "track"; lineId: string; lineIndex: number; time: number }
+  | { kind: "track"; lineId: string; lineIndex: number; time: number; type: "word" | "bg" }
   | { kind: "gutter"; lineId: string; lineIndex: number };
 
 interface ContextMenuState {
