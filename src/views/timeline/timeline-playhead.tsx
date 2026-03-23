@@ -162,7 +162,11 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   if (duration === 0) return null;
 
   return (
-    <div ref={containerRef} className="absolute inset-0 pointer-events-none overflow-hidden z-50" style={{ clipPath: `inset(0 0 0 ${GUTTER_WIDTH}px)` }}>
+    <div
+      ref={containerRef}
+      className="absolute inset-0 pointer-events-none overflow-hidden z-50"
+      style={{ clipPath: `inset(0 0 0 ${GUTTER_WIDTH}px)` }}
+    >
       <div
         ref={playheadRef}
         className="absolute top-0 left-0 w-0.5 bg-indigo-400 cursor-ew-resize pointer-events-auto expanded-hit-x-sm"

@@ -5,9 +5,4 @@ const { nudgeBegin, setBegin, nudgeEnd, setEnd } = createWordTimingOps({
   updateKey: "words",
 });
 
-export {
-  nudgeBegin as nudgeWordBegin,
-  setBegin as setWordBegin,
-  nudgeEnd as nudgeWordEnd,
-  setEnd as setWordEnd,
-};
+export { nudgeBegin as nudgeWordBegin, setBegin as setWordBegin, nudgeEnd as nudgeWordEnd, setEnd as setWordEnd };

@@ -182,9 +182,9 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
-function createBgWordsFromLine(
-  line: { begin?: number; end?: number; words?: WordTiming[]; backgroundText?: string },
-): WordTiming[] | null {
+function createBgWordsFromLine(line: { begin?: number; end?: number; words?: WordTiming[]; backgroundText?: string }):
+  | WordTiming[]
+  | null {
   if (!line.backgroundText) return null;
   const timing = getLineTiming(line);
   if (!timing) return null;
