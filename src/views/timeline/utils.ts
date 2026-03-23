@@ -1,6 +1,7 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
+import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { distributeWordsInLine } from "@/utils/sync-helpers";
+import { distributeWordsInLine, getLineTiming } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -24,22 +25,7 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
   });
 }
 
-function getLineTiming(line: LyricLine): { begin: number; end: number } | null {
-  if (line.words?.length) {
-    return { begin: line.words[0].begin, end: line.words[line.words.length - 1].end };
-  }
-  if (line.begin !== undefined && line.end !== undefined) {
-    return { begin: line.begin, end: line.end };
-  }
-  return null;
-}
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 100);
-  return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(2, "0")}`;
-}
+const formatTime = (seconds: number) => formatTimeBase(seconds, 2);
 
 interface WordAtTimeResult {
   lineId: string;

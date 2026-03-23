@@ -1,30 +1,12 @@
 import type { Agent, LyricLine, ProjectMetadata } from "@/stores/project";
+import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { getLineTiming } from "@/utils/sync-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
-function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "0:00.000";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 1000);
-  return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
-}
-
 function escapeXml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-}
-
-function getLineTiming(line: LyricLine): { begin: number; end: number } | null {
-  if (line.words?.length) {
-    const firstWord = line.words[0];
-    const lastWord = line.words[line.words.length - 1];
-    return { begin: firstWord.begin, end: lastWord.end };
-  }
-  if (line.begin !== undefined && line.end !== undefined) {
-    return { begin: line.begin, end: line.end };
-  }
-  return null;
 }
 
 // -- Generator ----------------------------------------------------------------
@@ -42,11 +24,13 @@ function generateTTML({ metadata, agents, lines, granularity, minify = false, du
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
+  const effectiveGranularity = granularity === "word" && lines.some((l) => l.words?.length) ? "word" : "line";
+
   const parts: string[] = [];
 
   // Root element with namespaces
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:composer="https://composer.boidu.dev/ttml" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" composer:timing="${granularity === "word" ? "Word" : "Line"}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:composer="https://composer.boidu.dev/ttml" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" composer:timing="${effectiveGranularity === "word" ? "Word" : "Line"}">`,
   );
 
   // Head section
@@ -119,4 +103,4 @@ function generateTTML({ metadata, agents, lines, granularity, minify = false, du
 
 // -- Exports ------------------------------------------------------------------
 
-export { generateTTML, formatTime };
+export { generateTTML };

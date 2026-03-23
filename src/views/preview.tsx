@@ -3,18 +3,12 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { generateTTML } from "@/utils/ttml";
 import { Button } from "@/ui/button";
+import { EmptyState } from "@/ui/empty-state";
 import { getLineTiming } from "@/views/timeline/utils";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
-
-const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
-  <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center">
-    <p className="text-lg text-composer-text-secondary">{message}</p>
-    <p className="text-sm text-composer-text-muted">{hint}</p>
-  </div>
-);
 
 const PreviewPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);

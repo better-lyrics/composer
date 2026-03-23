@@ -2,6 +2,8 @@ import { exportProjectToFile, importProjectFromFile, clearCurrentProject, cancel
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { EmptyState } from "@/ui/empty-state";
+import { getLineTiming } from "@/utils/sync-helpers";
 import { generateTTML } from "@/utils/ttml";
 import {
   IconCheck,
@@ -16,33 +18,7 @@ import {
 import { Highlight, themes } from "prism-react-renderer";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// -- Helpers ------------------------------------------------------------------
-
-function getLineTiming(line: {
-  begin?: number;
-  end?: number;
-  words?: { begin: number; end: number }[];
-}) {
-  if (line.words?.length) {
-    return {
-      begin: line.words[0].begin,
-      end: line.words[line.words.length - 1].end,
-    };
-  }
-  if (line.begin !== undefined && line.end !== undefined) {
-    return { begin: line.begin, end: line.end };
-  }
-  return null;
-}
-
 // -- Components ---------------------------------------------------------------
-
-const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
-  <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center">
-    <p className="text-lg text-composer-text-secondary">{message}</p>
-    <p className="text-sm text-composer-text-muted">{hint}</p>
-  </div>
-);
 
 const ExportPanel: React.FC = () => {
   const metadata = useProjectStore((s) => s.metadata);

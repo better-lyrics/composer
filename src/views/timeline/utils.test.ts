@@ -127,6 +127,8 @@ describe("getLineTiming", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
+      begin: undefined,
+      end: undefined,
     };
 
     const timing = getLineTiming(line);
