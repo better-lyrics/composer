@@ -30,7 +30,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
 
   const handleUpdateWord = useCallback(
-    (lineId: string, wordIndex: number, updates: Partial<WordTiming>) => {
+    (lineId: string, wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) => {
       const realLine = lines.find((l) => l.id === lineId);
       if (!realLine) return;
 
@@ -45,18 +45,24 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!realLine.words) return;
       const updatedWords = [...realLine.words];
       updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
+      if (adjacentIndex !== undefined && adjacentUpdates) {
+        updatedWords[adjacentIndex] = { ...updatedWords[adjacentIndex], ...adjacentUpdates };
+      }
       updateLineWithHistory(lineId, { words: updatedWords });
     },
     [lines, updateLineWithHistory],
   );
 
   const handleUpdateBgWord = useCallback(
-    (lineId: string, wordIndex: number, updates: Partial<WordTiming>) => {
+    (lineId: string, wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) => {
       const line = lines.find((l) => l.id === lineId);
       if (!line?.backgroundWords) return;
 
       const updatedWords = [...line.backgroundWords];
       updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
+      if (adjacentIndex !== undefined && adjacentUpdates) {
+        updatedWords[adjacentIndex] = { ...updatedWords[adjacentIndex], ...adjacentUpdates };
+      }
       updateLineWithHistory(lineId, { backgroundWords: updatedWords });
     },
     [lines, updateLineWithHistory],
@@ -90,8 +96,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
             line={line}
             lineIndex={index}
             duration={duration}
-            onUpdateWord={(wordIndex, updates) => handleUpdateWord(line.id, wordIndex, updates)}
-            onUpdateBgWord={(wordIndex, updates) => handleUpdateBgWord(line.id, wordIndex, updates)}
+            onUpdateWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) => handleUpdateWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)}
+            onUpdateBgWord={(wordIndex, updates, adjacentIndex, adjacentUpdates) => handleUpdateBgWord(line.id, wordIndex, updates, adjacentIndex, adjacentUpdates)}
           />
         )}
         style={{ height: "100%", width: "100%" }}

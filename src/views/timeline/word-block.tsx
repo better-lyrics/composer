@@ -18,8 +18,11 @@ interface WordBlockProps {
   isDimmed: boolean;
   isSelected: boolean;
   syllablePosition?: SyllablePosition;
+  leftHighlighted?: boolean;
+  rightHighlighted?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onResizeStart: (edge: "left" | "right", startX: number) => void;
+  onEdgeHover?: (edge: "left" | "right", hovering: boolean) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -47,8 +50,11 @@ const WordBlock: React.FC<WordBlockProps> = ({
   isDimmed,
   isSelected,
   syllablePosition = "none",
+  leftHighlighted,
+  rightHighlighted,
   onClick,
   onResizeStart,
+  onEdgeHover,
   onDoubleClick,
   onContextMenu,
 }) => {
@@ -113,18 +119,30 @@ const WordBlock: React.FC<WordBlockProps> = ({
     >
       <div
         data-edge="left"
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
+        className={cn(
+          "absolute left-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
+          syllablePosition === "middle" || syllablePosition === "last" ? "cursor-col-resize" : "cursor-ew-resize",
+          leftHighlighted && "bg-white/10",
+        )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
+        onMouseEnter={() => onEdgeHover?.("left", true)}
+        onMouseLeave={() => onEdgeHover?.("left", false)}
       />
 
       {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
 
       <div
         data-edge="right"
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/10 z-10"
+        className={cn(
+          "absolute right-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
+          syllablePosition === "first" || syllablePosition === "middle" ? "cursor-col-resize" : "cursor-ew-resize",
+          rightHighlighted && "bg-white/10",
+        )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
+        onMouseEnter={() => onEdgeHover?.("right", true)}
+        onMouseLeave={() => onEdgeHover?.("right", false)}
       />
     </div>
   );
