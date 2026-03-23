@@ -41,17 +41,26 @@ const TimelineWaveform: React.FC = () => {
     [duration, totalWidth, seekTo],
   );
 
+  const onDestroy = useCallback(() => setWs(null), []);
+
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
     setWs(wavesurfer);
+    const audio = useAudioStore.getState().audioElement;
+    if (audio && audio.currentTime > 0) {
+      wavesurfer.setTime(audio.currentTime);
+    }
   }, []);
 
   if (!source) return null;
 
   return (
-    <>
+    <div
+      className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg transition-opacity duration-150 ease-in"
+      style={{ opacity: ws ? 1 : 0 }}
+    >
       <WavesurferPlayer
         height={WAVEFORM_HEIGHT}
-        waveColor="rgba(255, 255, 255, 0.35)"
+        waveColor="#737476"
         progressColor="#818cf8"
         cursorColor="transparent"
         barWidth={2}
@@ -62,6 +71,7 @@ const TimelineWaveform: React.FC = () => {
         hideScrollbar={true}
         fillParent={false}
         minPxPerSec={useTimelineStore.getState().zoom}
+        onDestroy={onDestroy}
         onReady={onReady}
       />
       <div
@@ -73,7 +83,7 @@ const TimelineWaveform: React.FC = () => {
         }}
         onClick={handleClick}
       />
-    </>
+    </div>
   );
 };
 

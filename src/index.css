@@ -182,11 +182,10 @@ input[type="range"].settings-slider::-moz-range-progress {
 }
 
 /* Hide scrollbars during playback */
-.scrollbar-hidden::-webkit-scrollbar {
-  display: none;
-}
-.scrollbar-hidden {
-  scrollbar-width: none;
+.scrollbar-hidden > .os-scrollbar {
+  opacity: 0 !important;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
 /* Reduced motion */
