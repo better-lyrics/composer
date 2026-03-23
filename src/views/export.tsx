@@ -138,10 +138,26 @@ const ExportPanel: React.FC = () => {
     await clearCurrentProject();
   }, [reset]);
 
+  const importAction = (
+    <>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json,.ttml-project.json"
+        onChange={handleImportProject}
+        className="hidden"
+      />
+      <Button hasIcon variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-2">
+        <IconFolderOpen className="w-4 h-4 text-composer-text opacity-50" />
+        Import Project
+      </Button>
+    </>
+  );
+
   if (lines.length === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" />
+        <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" action={importAction} />
       </div>
     );
   }
@@ -149,7 +165,7 @@ const ExportPanel: React.FC = () => {
   if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
-        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" />
+        <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" action={importAction} />
       </div>
     );
   }

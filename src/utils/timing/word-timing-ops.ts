@@ -22,6 +22,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     updateLineWithHistory: UpdateLineWithHistory,
   ) {
     const line = lines[lineIdx];
+    if (!line) return;
     const words = getWords(line);
     if (!words?.[wordIdx]) return;
 
@@ -43,6 +44,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     updateLineWithHistory: UpdateLineWithHistory,
   ) {
     const line = lines[lineIdx];
+    if (!line) return;
     const words = getWords(line);
     if (!words?.[wordIdx]) return;
 
@@ -63,6 +65,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     updateLineWithHistory: UpdateLineWithHistory,
   ) {
     const line = lines[lineIdx];
+    if (!line) return;
     const words = getWords(line);
     if (!words?.[wordIdx]) return;
 
@@ -84,6 +87,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     updateLineWithHistory: UpdateLineWithHistory,
   ) {
     const line = lines[lineIdx];
+    if (!line) return;
     const words = getWords(line);
     if (!words?.[wordIdx]) return;
 
@@ -102,4 +106,3 @@ function createWordTimingOps(config: WordFieldConfig) {
 // -- Exports -------------------------------------------------------------------
 
 export { createWordTimingOps };
-export type { UpdateLineWithHistory };
