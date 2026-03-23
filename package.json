@@ -35,10 +35,7 @@
     "zustand": "^5.0.0"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@biomejs/biome",
-      "esbuild"
-    ],
+    "ignoredBuiltDependencies": ["@biomejs/biome", "esbuild"],
     "overrides": {
       "@braccato/parsers": "^0.1.1"
     }
