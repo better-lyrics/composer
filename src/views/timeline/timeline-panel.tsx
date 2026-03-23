@@ -335,9 +335,7 @@ const TimelinePanel: React.FC = () => {
                     />
                   </svg>
                 </div>
-                <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg">
-                  <TimelineWaveform />
-                </div>
+                <TimelineWaveform />
 
                 <TimelineRows scrollContainerRef={scrollContainerRef} />
               </div>

@@ -100,7 +100,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         verticalTargetRef.current = null;
       }
 
-      container?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
+      container?.parentElement?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
 
       const displayTime = isDraggingPlayhead ? dragTime : currentTime;
       const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
