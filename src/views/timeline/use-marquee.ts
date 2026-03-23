@@ -1,5 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
+import { getEffectiveLines } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -53,7 +54,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
   }, [scrollContainerRef]);
 
   const computeSelection = useCallback((rect: MarqueeRect): WordSelection[] => {
-    const lines = useProjectStore.getState().lines;
+    const lines = getEffectiveLines(useProjectStore.getState().lines);
     const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
     const selections: WordSelection[] = [];
 

@@ -1,4 +1,5 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
+import { stripSplitCharacter } from "@/utils/split-character";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
@@ -73,6 +74,28 @@ function findWordAtTime(lines: LyricLine[], time: number): WordAtTimeResult | nu
   return null;
 }
 
+function isLineSynced(line: LyricLine): boolean {
+  return !line.words?.length && line.begin !== undefined && line.end !== undefined;
+}
+
+function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
+  return lines.map((line) => {
+    if (!isLineSynced(line)) return line;
+    return {
+      ...line,
+      words: [{ text: stripSplitCharacter(line.text), begin: line.begin!, end: line.end! }],
+    };
+  });
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { distributeWordsInLine, distributeLinesTiming, getLineTiming, formatTime, findWordAtTime };
+export {
+  distributeWordsInLine,
+  distributeLinesTiming,
+  getLineTiming,
+  formatTime,
+  findWordAtTime,
+  isLineSynced,
+  getEffectiveLines,
+};

@@ -1,10 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
-import type { WordTiming } from "@/stores/project";
+import type { LyricLine, WordTiming } from "@/stores/project";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
 import { formatKey } from "@/ui/help-modal";
 import { isMac } from "@/utils/platform";
+import { convertLineToWord } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconCommand } from "@tabler/icons-react";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -52,11 +55,13 @@ const TimelineContextMenu: React.FC = () => {
   const clearContextMenu = useTimelineStore((s) => s.clearContextMenu);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const lines = useProjectStore((s) => s.lines);
+  const rawLines = useProjectStore((s) => s.lines);
   const agents = useProjectStore((s) => s.agents);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const duration = useAudioStore((s) => s.duration);
+
+  const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -119,7 +124,7 @@ const TimelineContextMenu: React.FC = () => {
 
   const handleAddWordHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;
-    const { lineId, time } = contextMenu.target;
+    const { lineId, time, type } = contextMenu.target;
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
@@ -130,7 +135,8 @@ const TimelineContextMenu: React.FC = () => {
       end: Math.min(duration, time + wordDuration / 2),
     };
 
-    const words = [...(line.words ?? []), newWord].sort((a, b) => a.begin - b.begin);
+    const existingWords = type === "word" ? line.words : line.backgroundWords;
+    const words = [...(existingWords ?? []), newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = words.indexOf(newWord);
 
     for (let i = 0; i < words.length; i++) {
@@ -143,8 +149,12 @@ const TimelineContextMenu: React.FC = () => {
       }
     }
 
-    updateLineWithHistory(lineId, { words });
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: "word" });
+    if (type === "word") {
+      updateLineWithHistory(lineId, { words });
+    } else {
+      updateLineWithHistory(lineId, { backgroundWords: words });
+    }
+    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
     clearContextMenu();
   }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
 
@@ -186,6 +196,44 @@ const TimelineContextMenu: React.FC = () => {
   );
 
   const selectedWords = useTimelineStore((s) => s.selectedWords);
+
+  const handleSplitIntoWords = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return;
+    const { lineId } = contextMenu.target;
+
+    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
+    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
+
+    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
+    for (const id of targetIds) {
+      const realLine = rawLines.find((l) => l.id === id);
+      if (!realLine || !isLineSynced(realLine)) continue;
+      const converted = convertLineToWord(realLine);
+      if (converted.words) {
+        updates.push({ id, updates: { words: converted.words, begin: undefined, end: undefined } });
+      }
+    }
+
+    if (updates.length === 1) {
+      updateLineWithHistory(updates[0].id, updates[0].updates);
+    } else if (updates.length > 1) {
+      useProjectStore.getState().updateLinesWithHistory(updates);
+    }
+
+    const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
+    for (const u of updates) {
+      const lineIndex = lines.findIndex((l) => l.id === u.id);
+      if (lineIndex < 0 || !u.updates.words) continue;
+      for (let wi = 0; wi < u.updates.words.length; wi++) {
+        newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
+      }
+    }
+    if (newSelections.length > 0) {
+      useTimelineStore.getState().setSelectedWords(newSelections);
+    }
+
+    clearContextMenu();
+  }, [contextMenu, rawLines, selectedWords, lines, updateLineWithHistory, clearContextMenu]);
 
   const mergeInfo = useMemo(() => {
     if (selectedWords.length < 2) return null;
@@ -255,6 +303,23 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [mergeInfo, lines, updateLineWithHistory, clearContextMenu]);
 
+  const splitIntoWordsInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    const target = contextMenu.target;
+
+    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
+    const targetIds =
+      selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
+
+    const lineSyncedIds = targetIds.filter((id) => {
+      const realLine = rawLines.find((l) => l.id === id);
+      return realLine && isLineSynced(realLine);
+    });
+
+    if (lineSyncedIds.length === 0) return null;
+    return { count: lineSyncedIds.length };
+  }, [contextMenu, selectedWords, rawLines]);
+
   if (!contextMenu) return null;
 
   const { x, y, target } = contextMenu;
@@ -271,6 +336,20 @@ const TimelineContextMenu: React.FC = () => {
             <MenuItem label="Edit text" shortcut={["E"]} onClick={handleEditWord} />
             <MenuItem label="Split syllables" shortcut={["S"]} onClick={handleSplitSyllables} />
             {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
+            {splitIntoWordsInfo && (
+              <>
+                <MenuDivider />
+                <MenuItem
+                  label={
+                    splitIntoWordsInfo.count > 1
+                      ? `Split ${splitIntoWordsInfo.count} lines into words`
+                      : "Split into words"
+                  }
+                  shortcut={getEffectiveKeysArray("timeline.splitIntoWords")}
+                  onClick={handleSplitIntoWords}
+                />
+              </>
+            )}
             <MenuDivider />
             <MenuItem label="Delete word" shortcut={["Del"]} onClick={handleDeleteWord} danger />
           </>

@@ -1,7 +1,8 @@
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getEffectiveLines } from "@/views/timeline/utils";
 import { FloatingPortal } from "@floating-ui/react";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -16,11 +17,12 @@ interface WordEditOverlayProps {
 
 const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, type, scrollContainerRef }) => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const lines = useProjectStore((s) => s.lines);
+  const rawLines = useProjectStore((s) => s.lines);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const clearEditingWord = useTimelineStore((s) => s.clearEditingWord);
 
-  const line = lines.find((l) => l.id === lineId);
+  const effectiveLines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
+  const line = effectiveLines.find((l) => l.id === lineId);
   const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
   const word = wordsArray?.[wordIndex];
 

@@ -50,7 +50,8 @@ function getEffectiveKeysArray(id: string): string[] {
   if (binding.ctrl) keys.push("Ctrl");
   if (binding.shift) keys.push("Shift");
   if (binding.alt) keys.push("Alt");
-  const displayKey = binding.key === " " ? "Space" : binding.key;
+  const rawKey = binding.key === " " ? "Space" : binding.key;
+  const displayKey = rawKey.length === 1 ? rawKey.toUpperCase() : rawKey;
   keys.push(displayKey);
   return keys;
 }

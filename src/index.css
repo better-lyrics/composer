@@ -154,6 +154,33 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: var(--color-composer-accent);
 }
 
+/* OverlayScrollbars: ensure tracks render above timeline content */
+.os-scrollbar {
+  z-index: 200;
+}
+
+/* Offset scrollbars to account for gutter (48px) and waveform (80px) */
+.os-scrollbar-horizontal {
+  left: 48px !important;
+  width: calc(100% - 48px) !important;
+}
+
+.os-scrollbar-vertical {
+  top: 80px !important;
+  height: calc(100% - 80px) !important;
+}
+
+.os-theme-light {
+  --os-handle-bg: rgba(255, 255, 255, 0.3);
+  --os-handle-bg-hover: rgba(255, 255, 255, 0.4);
+  --os-handle-bg-active: rgba(255, 255, 255, 0.5);
+}
+
+/* Ensure Virtuoso wrappers don't break sticky gutters */
+[data-scroll-container] [data-virtuoso-scroller] {
+  overflow: visible !important;
+}
+
 /* Hide scrollbars during playback */
 .scrollbar-hidden::-webkit-scrollbar {
   display: none;
