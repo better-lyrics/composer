@@ -2,17 +2,9 @@ import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Slider } from "@/ui/slider";
+import { formatTime } from "@/utils/format-time";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
 import { useCallback } from "react";
-
-// -- Helpers ------------------------------------------------------------------
-
-function formatTime(seconds: number): string {
-  if (!Number.isFinite(seconds)) return "0:00";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
-}
 
 // -- Components ---------------------------------------------------------------
 
@@ -24,7 +16,7 @@ const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isP
 
 const TimeDisplay: React.FC<{ current: number; duration: number }> = ({ current, duration }) => (
   <span className="font-mono text-sm select-text text-composer-text-secondary tabular-nums">
-    {formatTime(current)} / {formatTime(duration)}
+    {formatTime(current, 0)} / {formatTime(duration, 0)}
   </span>
 );
 
@@ -174,4 +166,4 @@ const AudioPlayer: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { AudioPlayer, formatTime };
+export { AudioPlayer };

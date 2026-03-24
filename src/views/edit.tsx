@@ -7,7 +7,7 @@ import { textToLyricLines } from "@/utils/lyrics-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
-import { useCallback, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -234,13 +234,25 @@ const EditPanel: React.FC = () => {
   const updateLine = useProjectStore((s) => s.updateLine);
   const addAgent = useProjectStore((s) => s.addAgent);
 
-  const [rawText, setRawText] = useState("");
+  const [rawText, setRawText] = useState(() =>
+    lines.length > 0 ? lines.map((l) => l.text).join("\n") : "",
+  );
+  const linesSetByUs = useRef<LyricLine[] | null>(null);
   const [importResult, setImportResult] = useState<{
     result: ParseResult;
     filename: string;
   } | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
   const [lastSelectedLine, setLastSelectedLine] = useState<number | null>(null);
+
+  // Sync rawText when lines change externally (persistence restore, project import, etc.)
+  useEffect(() => {
+    if (linesSetByUs.current === lines) {
+      linesSetByUs.current = null;
+      return;
+    }
+    setRawText(lines.length > 0 ? lines.map((l) => l.text).join("\n") : "");
+  }, [lines]);
 
   const defaultAgentId = agents[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
@@ -290,6 +302,7 @@ const EditPanel: React.FC = () => {
       const selectedLineIds = parsed.filter((p) => selectedLines.has(p.lineNumber) && p.lineId).map((p) => p.lineId);
 
       const updatedLines = lines.map((line) => (selectedLineIds.includes(line.id) ? { ...line, agentId } : line));
+      linesSetByUs.current = updatedLines;
       setLines(updatedLines);
       setSelectedLines(new Set());
     },
@@ -306,6 +319,7 @@ const EditPanel: React.FC = () => {
       setRawText(text);
 
       const lyricLines = textToLyricLines(text, defaultAgentId, lines);
+      linesSetByUs.current = lyricLines;
       setLines(lyricLines);
       setImportResult(null);
     },
@@ -318,6 +332,7 @@ const EditPanel: React.FC = () => {
       const result = parseLyricsFile(file.name, content);
 
       if (result.lines.length > 0) {
+        linesSetByUs.current = result.lines;
         setLines(result.lines);
         setRawText(result.lines.map((l) => l.text).join("\n"));
 

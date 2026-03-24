@@ -1,5 +1,6 @@
 import type { WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
@@ -17,6 +18,12 @@ interface SyncState {
 interface LineTiming {
   begin: number;
   end: number;
+}
+
+interface LineTimingInput {
+  begin?: number;
+  end?: number;
+  words?: WordTiming[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -52,13 +59,7 @@ function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace:
   return { parts, trailingSpace };
 }
 
-function formatTimeMs(seconds: number): string {
-  if (!Number.isFinite(seconds)) return "0:00.000";
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  const ms = Math.floor((seconds % 1) * 1000);
-  return `${mins}:${secs.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
-}
+const formatTimeMs = (seconds: number) => formatTime(seconds, 3);
 
 function parseTimeMs(str: string): number | null {
   const trimmed = str.trim();
@@ -80,11 +81,7 @@ function getSyncedWordCount(lines: { words?: WordTiming[] }[]): number {
   return lines.reduce((acc, line) => acc + (line.words?.length ?? 0), 0);
 }
 
-function getLineTiming(line: {
-  begin?: number;
-  end?: number;
-  words?: WordTiming[];
-}): LineTiming | null {
+function getLineTiming(line: LineTimingInput): LineTiming | null {
   if (line.words?.length) {
     const firstWord = line.words[0];
     const lastWord = line.words[line.words.length - 1];
@@ -96,7 +93,7 @@ function getLineTiming(line: {
   return null;
 }
 
-function getSyncedLineCount(lines: { begin?: number; end?: number; words?: WordTiming[] }[]): number {
+function getSyncedLineCount(lines: LineTimingInput[]): number {
   return lines.filter((line) => getLineTiming(line) !== null).length;
 }
 
@@ -185,9 +182,9 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
-function createBgWordsFromLine(
-  line: { begin?: number; end?: number; words?: WordTiming[]; backgroundText?: string },
-): WordTiming[] | null {
+function createBgWordsFromLine(line: { begin?: number; end?: number; words?: WordTiming[]; backgroundText?: string }):
+  | WordTiming[]
+  | null {
   if (!line.backgroundText) return null;
   const timing = getLineTiming(line);
   if (!timing) return null;

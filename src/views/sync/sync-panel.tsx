@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import type { SyncMethod } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
+import { EmptyState } from "@/ui/empty-state";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
   shimmerTransition,
@@ -30,13 +31,6 @@ import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
-
-const EmptyState: React.FC<{ message: string; hint: string }> = ({ message, hint }) => (
-  <div className="flex flex-col items-center justify-center flex-1 gap-2 text-center">
-    <p className="text-lg text-composer-text-secondary">{message}</p>
-    <p className="text-sm text-composer-text-muted">{hint}</p>
-  </div>
-);
 
 const SyncPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);

@@ -5,6 +5,7 @@ import { isMac } from "@/utils/platform";
 // -- Constants ----------------------------------------------------------------
 
 const MOD_KEY = isMac ? "Cmd" : "Ctrl";
+const ALT_KEY = isMac ? "Option" : "Alt";
 
 const PROSE = "text-sm text-composer-text-secondary leading-relaxed";
 const HEADING = "text-sm font-medium";
@@ -311,8 +312,23 @@ const TimelineSection: React.FC = () => (
           {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
           words.
         </li>
-        <li>Alt + drag selected words to duplicate them.</li>
+        <li>{ALT_KEY} + drag selected words to duplicate them.</li>
         <li>Press Delete or Backspace to remove selected words.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Boundary dragging</h4>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
+          Syllables of the same word have <strong>conjoined boundaries</strong> by default. Dragging the boundary between
+          them moves both sides together, preventing gaps.
+        </li>
+        <li>
+          Hold <strong>{ALT_KEY}</strong> while dragging to flip the mode: syllable boundaries become independent (gaps
+          allowed), and separate word boundaries become conjoined.
+        </li>
+        <li>You can toggle {ALT_KEY} mid-drag to switch modes on the fly.</li>
       </ul>
     </div>
 

@@ -17,8 +17,8 @@ interface LineRowProps {
   line: LyricLine;
   lineIndex: number;
   duration: number;
-  onUpdateWord: (wordIndex: number, updates: Partial<WordTiming>) => void;
-  onUpdateBgWord: (wordIndex: number, updates: Partial<WordTiming>) => void;
+  onUpdateWord: (wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) => void;
+  onUpdateBgWord: (wordIndex: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
