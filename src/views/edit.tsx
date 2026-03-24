@@ -234,9 +234,7 @@ const EditPanel: React.FC = () => {
   const updateLine = useProjectStore((s) => s.updateLine);
   const addAgent = useProjectStore((s) => s.addAgent);
 
-  const [rawText, setRawText] = useState(() =>
-    lines.length > 0 ? lines.map((l) => l.text).join("\n") : "",
-  );
+  const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => l.text).join("\n") : ""));
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const [importResult, setImportResult] = useState<{
     result: ParseResult;

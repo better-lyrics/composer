@@ -17,7 +17,12 @@ interface WordTrackProps {
   trackType: "word" | "bg";
   duration: number;
   height: number;
-  onUpdateWord: (index: number, updates: Partial<WordTiming>, adjacentIndex?: number, adjacentUpdates?: Partial<WordTiming>) => void;
+  onUpdateWord: (
+    index: number,
+    updates: Partial<WordTiming>,
+    adjacentIndex?: number,
+    adjacentUpdates?: Partial<WordTiming>,
+  ) => void;
 }
 
 interface DragState {
@@ -62,7 +67,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const cleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    return () => { cleanupRef.current?.(); };
+    return () => {
+      cleanupRef.current?.();
+    };
   }, []);
 
   useEffect(() => {
@@ -107,8 +114,13 @@ const WordTrack: React.FC<WordTrackProps> = ({
             const max = originalWord.end - MIN_WORD_DURATION;
             const clamped = Math.max(min, Math.min(max, Math.max(0, newBoundary)));
             newState = {
-              wordIndex, edge, begin: clamped, end: originalWord.end,
-              adjacentWordIndex: wordIndex - 1, adjacentBegin: prevWord.begin, adjacentEnd: clamped,
+              wordIndex,
+              edge,
+              begin: clamped,
+              end: originalWord.end,
+              adjacentWordIndex: wordIndex - 1,
+              adjacentBegin: prevWord.begin,
+              adjacentEnd: clamped,
             };
           } else {
             const newBegin = originalWord.begin + deltaTime;
@@ -125,8 +137,13 @@ const WordTrack: React.FC<WordTrackProps> = ({
             const max = nextWord.end - MIN_WORD_DURATION;
             const clamped = Math.max(min, Math.min(max, Math.min(duration, newBoundary)));
             newState = {
-              wordIndex, edge, begin: originalWord.begin, end: clamped,
-              adjacentWordIndex: wordIndex + 1, adjacentBegin: clamped, adjacentEnd: nextWord.end,
+              wordIndex,
+              edge,
+              begin: originalWord.begin,
+              end: clamped,
+              adjacentWordIndex: wordIndex + 1,
+              adjacentBegin: clamped,
+              adjacentEnd: nextWord.end,
             };
           } else {
             const newEnd = originalWord.end + deltaTime;
@@ -146,7 +163,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
         dragStateRef.current = null;
         setDragState(null);
         justResizedRef.current = true;
-        requestAnimationFrame(() => { justResizedRef.current = false; });
+        requestAnimationFrame(() => {
+          justResizedRef.current = false;
+        });
 
         if (finalState) {
           if (finalState.adjacentWordIndex !== undefined) {
@@ -198,19 +217,16 @@ const WordTrack: React.FC<WordTrackProps> = ({
     return { begin: word.begin, end: word.end };
   };
 
-  const handleEdgeHover = useCallback(
-    (wordIndex: number, edge: "left" | "right", hovering: boolean) => {
-      if (!hovering) {
-        setHoveredBoundary(null);
-        return;
-      }
-      // Boundary index = the gap between words[i] and words[i+1]
-      // Right edge of word N → boundary N
-      // Left edge of word N → boundary N-1
-      setHoveredBoundary(edge === "right" ? wordIndex : wordIndex - 1);
-    },
-    [],
-  );
+  const handleEdgeHover = useCallback((wordIndex: number, edge: "left" | "right", hovering: boolean) => {
+    if (!hovering) {
+      setHoveredBoundary(null);
+      return;
+    }
+    // Boundary index = the gap between words[i] and words[i+1]
+    // Right edge of word N → boundary N
+    // Left edge of word N → boundary N-1
+    setHoveredBoundary(edge === "right" ? wordIndex : wordIndex - 1);
+  }, []);
 
   const handleTrackClick = () => {
     setSelectedWords([]);

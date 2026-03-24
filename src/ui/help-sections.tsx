@@ -68,9 +68,9 @@ const GettingStartedSection: React.FC = () => (
         <h4 className={HEADING}>3. Sync the timing</h4>
         <p className={PROSE}>
           The Sync tab lets you tap or hold along with the music to stamp each word. In Tap mode, press Space on every
-          word as it's sung. In Hold mode, hold F for the duration of each word to capture both start and end times. If
-          you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and drag word
-          blocks directly on the waveform.
+          word as it's sung. In Hold mode, hold F for the duration of each word to capture both start and end times. You
+          can also tap Space while holding F to create gapless syllable boundaries. If you miss one, use the arrow keys
+          to nudge the timing. For finer control, switch to Timeline and drag word blocks directly on the waveform.
         </p>
       </div>
       <div>
@@ -213,6 +213,36 @@ const SyncSection: React.FC = () => (
         marks the end. This gives you explicit control over word duration and allows natural gaps between words. The
         current word highlights while you hold.
       </p>
+      <p className={`${PROSE} mt-2`}>For words with natural gaps between them, just hold and release for each word:</p>
+      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>Hold F: "hello" starts</li>
+        <li>Release F: "hello" ends</li>
+        <li>(wait for gap)</li>
+        <li>Hold F: "world" starts</li>
+        <li>Release F: "world" ends</li>
+      </ul>
+      <p className={`${PROSE} mt-2`}>
+        For syllables that flow together without pauses, tap <strong>Space</strong> while holding <strong>F</strong> to
+        create gapless boundaries. Each tap ends the current syllable and immediately starts the next. Release{" "}
+        <strong>F</strong> to end the last one:
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>Hold F: "beau" starts</li>
+        <li>Tap Space (still holding F): "beau" ends, "ti" starts at the same moment</li>
+        <li>Tap Space (still holding F): "ti" ends, "ful" starts at the same moment</li>
+        <li>Release F: "ful" ends</li>
+      </ul>
+      <p className={`${PROSE} mt-2`}>
+        You can mix both styles naturally within the same line. Use hold-release for standalone words and
+        hold+tap+release for connected syllables:
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>Hold F, release F: "oh" gets its own timing</li>
+        <li>(gap)</li>
+        <li>Hold F: "beau" starts</li>
+        <li>Tap Space, tap Space: gapless boundaries for "ti" and "ful"</li>
+        <li>Release F: "ful" ends</li>
+      </ul>
     </div>
 
     <div>
@@ -321,8 +351,8 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Boundary dragging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Syllables of the same word have <strong>conjoined boundaries</strong> by default. Dragging the boundary between
-          them moves both sides together, preventing gaps.
+          Syllables of the same word have <strong>conjoined boundaries</strong> by default. Dragging the boundary
+          between them moves both sides together, preventing gaps.
         </li>
         <li>
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the mode: syllable boundaries become independent (gaps

@@ -62,6 +62,7 @@ const SyncPanel: React.FC = () => {
     handleTap,
     handleHoldStart,
     handleHoldEnd,
+    handleHoldTap,
     handleReset,
     handleStartSync,
     handleJumpToLine,
@@ -241,7 +242,11 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
-          if (editMode || syncMethod === "hold") return;
+          if (editMode) return;
+          if (syncMethod === "hold") {
+            if (isHolding && isPlaying) handleHoldTap();
+            return;
+          }
           if (!syncState.isActive && lines.length > 0) {
             handleStartSync();
           } else if (isPlaying) {
@@ -307,6 +312,7 @@ const SyncPanel: React.FC = () => {
     handleTap,
     handleHoldStart,
     handleHoldEnd,
+    handleHoldTap,
     isPlaying,
     undo,
     redo,
