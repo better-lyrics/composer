@@ -1,7 +1,6 @@
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import type { SyncMethod } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -40,8 +39,6 @@ const SyncPanel: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
   const granularity = useProjectStore((s) => s.granularity);
   const setGranularity = useProjectStore((s) => s.setGranularity);
-  const syncMethod = useProjectStore((s) => s.syncMethod);
-  const setSyncMethod = useProjectStore((s) => s.setSyncMethod);
   const source = useAudioStore((s) => s.source);
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -171,15 +168,6 @@ const SyncPanel: React.FC = () => {
     [granularity, lines, setLines, setGranularity],
   );
 
-  const handleSyncMethodChange = useCallback(
-    (method: SyncMethod) => {
-      if (method === syncMethod) return;
-      setIsHolding(false);
-      setSyncMethod(method);
-    },
-    [syncMethod, setSyncMethod],
-  );
-
   const playingLineIndex = useMemo(() => {
     for (let i = 0; i < lines.length; i++) {
       const timing = getLineTiming(lines[i]);
@@ -243,11 +231,9 @@ const SyncPanel: React.FC = () => {
         case "sync.tap":
           e.preventDefault();
           if (editMode) return;
-          if (syncMethod === "hold") {
-            if (isHolding && isPlaying) handleHoldTap();
-            return;
-          }
-          if (!syncState.isActive && lines.length > 0) {
+          if (isHolding && isPlaying) {
+            handleHoldTap();
+          } else if (!syncState.isActive && lines.length > 0) {
             handleStartSync();
           } else if (isPlaying) {
             handleTap();
@@ -255,7 +241,7 @@ const SyncPanel: React.FC = () => {
           break;
         case "sync.holdSync":
           e.preventDefault();
-          if (editMode || syncMethod === "tap") return;
+          if (editMode) return;
           heldKeyCodeRef.current = e.code;
           if (!syncState.isActive && lines.length > 0) {
             handleStartSync();
@@ -278,7 +264,7 @@ const SyncPanel: React.FC = () => {
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (activeTab !== "sync" || syncMethod !== "hold" || !isHolding) return;
+      if (activeTab !== "sync" || !isHolding) return;
 
       if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
@@ -318,7 +304,6 @@ const SyncPanel: React.FC = () => {
     redo,
     handleNudgeLastSynced,
     editMode,
-    syncMethod,
     isHolding,
   ]);
 
@@ -371,30 +356,6 @@ const SyncPanel: React.FC = () => {
               }`}
             >
               Word
-            </button>
-          </div>
-          <div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
-            <button
-              type="button"
-              onClick={() => handleSyncMethodChange("tap")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                syncMethod === "tap"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Tap
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSyncMethodChange("hold")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                syncMethod === "hold"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Hold
             </button>
           </div>
           <Button
@@ -488,7 +449,6 @@ const SyncPanel: React.FC = () => {
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}
-              syncMethod={syncMethod}
               isHolding={isHolding}
             />
           )}
@@ -503,23 +463,36 @@ const SyncPanel: React.FC = () => {
           {!isComplete && isPlaying && (
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
-              <motion.div
-                variants={syncPulseVariants}
-                initial={false}
-                animate={showPulse || (syncMethod === "hold" && isHolding) ? "pulse" : "idle"}
-                transition={syncCarouselTransition}
-                className={`flex items-center justify-center border-2 rounded-full w-14 h-14 ${
-                  syncMethod === "hold" && isHolding
-                    ? "bg-composer-accent/20 border-composer-accent"
-                    : "bg-composer-bg-elevated"
-                }`}
-              >
-                <span className="text-xs font-medium text-composer-text-muted">
-                  {getEffectiveKeysArray(syncMethod === "hold" ? "sync.holdSync" : "sync.tap")
-                    .map((k) => k.toUpperCase())
-                    .join(" ")}
-                </span>
-              </motion.div>
+              <div className="flex items-center gap-2">
+                <motion.div
+                  variants={syncPulseVariants}
+                  initial={false}
+                  animate={isHolding ? "pulse" : "idle"}
+                  transition={syncCarouselTransition}
+                  className={`flex items-center justify-center border-2 rounded-full w-14 h-14 ${
+                    isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
+                  }`}
+                >
+                  <span className="text-xs font-medium text-composer-text-muted">
+                    {getEffectiveKeysArray("sync.holdSync")
+                      .map((k) => k.toUpperCase())
+                      .join(" ")}
+                  </span>
+                </motion.div>
+                <motion.div
+                  variants={syncPulseVariants}
+                  initial={false}
+                  animate={showPulse ? "pulse" : "idle"}
+                  transition={syncCarouselTransition}
+                  className="flex items-center justify-center border-2 rounded-full w-14 h-14 bg-composer-bg-elevated"
+                >
+                  <span className="text-xs font-medium text-composer-text-muted">
+                    {getEffectiveKeysArray("sync.tap")
+                      .map((k) => k.toUpperCase())
+                      .join(" ")}
+                  </span>
+                </motion.div>
+              </div>
             </div>
           )}
 

@@ -4,8 +4,6 @@ import { persist } from "zustand/middleware";
 // -- Types --------------------------------------------------------------------
 
 type GranularityDefault = "word" | "line";
-type SyncMethodDefault = "tap" | "hold";
-
 interface SettingsState {
   defaultPlaybackRate: number;
   rememberVolume: boolean;
@@ -19,7 +17,6 @@ interface SettingsState {
   defaultWordDuration: number;
   minWordDuration: number;
   defaultGranularity: GranularityDefault;
-  defaultSyncMethod: SyncMethodDefault;
 
   autoSaveDelay: number;
 
@@ -48,7 +45,6 @@ const DEFAULTS: SettingsState = {
   defaultWordDuration: 0.3,
   minWordDuration: 0.05,
   defaultGranularity: "word",
-  defaultSyncMethod: "tap",
 
   autoSaveDelay: 2000,
 

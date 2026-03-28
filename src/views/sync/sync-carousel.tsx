@@ -21,7 +21,6 @@ interface SyncCarouselProps {
   lineIndex: number;
   wordIndex: number;
   granularity: "line" | "word";
-  syncMethod?: "tap" | "hold";
   isHolding?: boolean;
 }
 
@@ -42,7 +41,6 @@ interface WordGranularityLineProps {
   idx: number;
   lineIndex: number;
   wordIndex: number;
-  syncMethod: "tap" | "hold";
   isHolding: boolean;
   isCurrent: boolean;
   rippleKey: string | null;
@@ -55,7 +53,6 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   idx,
   lineIndex,
   wordIndex,
-  syncMethod,
   isHolding,
   isCurrent,
   rippleKey,
@@ -65,7 +62,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   const lineWords = splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
     const isPrevLine = idx === lineIndex - 1;
-    const holdActive = syncMethod === "hold" && isHolding;
+    const holdActive = isHolding;
     const isCurrentHeld = holdActive && isCurrent && widx === wordIndex;
     const isLastSyncedOnCurrent = !holdActive && isCurrent && wordIndex > 0 && widx === wordIndex - 1;
     const isLastWordOfPrevLine = !holdActive && isPrevLine && wordIndex === 0 && widx === lineWords.length - 1;
@@ -103,7 +100,6 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   lineIndex,
   wordIndex,
   granularity,
-  syncMethod = "tap",
   isHolding = false,
 }) => {
   const [rippleKey, setRippleKey] = useState<string | null>(null);
@@ -114,7 +110,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
     const wasHolding = prevHoldingRef.current;
     prevHoldingRef.current = isHolding;
 
-    if (syncMethod !== "hold" || !wasHolding || isHolding) return;
+    if (!wasHolding || isHolding) return;
 
     const prevWordIndex = wordIndex - 1;
     if (prevWordIndex >= 0) {
@@ -125,7 +121,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
       setRippleKey(`${prevLine.id}-${prevLineWords.length - 1}`);
     }
     setRippleCounter((c) => c + 1);
-  }, [isHolding, syncMethod, lineIndex, wordIndex, lines]);
+  }, [isHolding, lineIndex, wordIndex, lines]);
 
   // Container height shows 3 lines (prev, current, next)
   const containerHeight = LINE_HEIGHT * 3;
@@ -176,7 +172,6 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                     idx={idx}
                     lineIndex={lineIndex}
                     wordIndex={wordIndex}
-                    syncMethod={syncMethod}
                     isHolding={isHolding}
                     isCurrent={isCurrent}
                     rippleKey={rippleKey}

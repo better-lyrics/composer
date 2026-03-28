@@ -67,10 +67,10 @@ const GettingStartedSection: React.FC = () => (
       <div>
         <h4 className={HEADING}>3. Sync the timing</h4>
         <p className={PROSE}>
-          The Sync tab lets you tap or hold along with the music to stamp each word. In Tap mode, press Space on every
-          word as it's sung. In Hold mode, hold F for the duration of each word to capture both start and end times. You
-          can also tap Space while holding F to create gapless syllable boundaries. If you miss one, use the arrow keys
-          to nudge the timing. For finer control, switch to Timeline and drag word blocks directly on the waveform.
+          The Sync tab lets you sync words to the music using two keys: tap Space to mark gapless word boundaries, or
+          hold F to capture a word's full duration. You can also tap Space while holding F to create gapless syllable
+          boundaries. If you miss one, use the arrow keys to nudge the timing. For finer control, switch to Timeline and
+          drag word blocks directly on the waveform.
         </p>
       </div>
       <div>
@@ -194,20 +194,20 @@ const SyncSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
       The Sync tab shows your lyrics as a scrolling carousel. One line is active at a time, with each word waiting to be
-      synced. There are two sync methods you can switch between using the toggle in the header.
+      synced. You have two keys available, and you can use them freely in combination.
     </p>
 
     <div>
-      <h4 className={HEADING}>Tap mode</h4>
+      <h4 className={HEADING}>Tap (Space)</h4>
       <p className={PROSE}>
         Press <strong>Space</strong> to start playback and begin syncing. As the music plays, tap <strong>Space</strong>{" "}
         on each word right when the singer says it. Each tap marks the word's start time, and the previous word's end
-        time is inferred from the next tap.
+        time is set to the same moment, creating gapless transitions.
       </p>
     </div>
 
     <div>
-      <h4 className={HEADING}>Hold mode</h4>
+      <h4 className={HEADING}>Hold (F)</h4>
       <p className={PROSE}>
         Press and hold <strong>F</strong> for the duration of each word. The key-down marks the word's start, and key-up
         marks the end. This gives you explicit control over word duration and allows natural gaps between words. The
@@ -221,7 +221,11 @@ const SyncSection: React.FC = () => (
         <li>Hold F: "world" starts</li>
         <li>Release F: "world" ends</li>
       </ul>
-      <p className={`${PROSE} mt-2`}>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Gapless syllables (Hold F + Tap Space)</h4>
+      <p className={PROSE}>
         For syllables that flow together without pauses, tap <strong>Space</strong> while holding <strong>F</strong> to
         create gapless boundaries. Each tap ends the current syllable and immediately starts the next. Release{" "}
         <strong>F</strong> to end the last one:
@@ -233,8 +237,8 @@ const SyncSection: React.FC = () => (
         <li>Release F: "ful" ends</li>
       </ul>
       <p className={`${PROSE} mt-2`}>
-        You can mix both styles naturally within the same line. Use hold-release for standalone words and
-        hold+tap+release for connected syllables:
+        You can mix all styles naturally within the same line. Use hold-release for standalone words, tap for quick
+        gapless words, and hold+tap for connected syllables:
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>Hold F, release F: "oh" gets its own timing</li>
@@ -249,8 +253,8 @@ const SyncSection: React.FC = () => (
       <h4 className={HEADING}>Made a mistake?</h4>
       <p className={PROSE}>
         Press the left arrow key to nudge the last synced word 50ms earlier. Right arrow nudges it 50ms later. You can
-        also press {MOD_KEY} + Z to undo. In hold mode, each hold produces two undo steps (start and end) so you can
-        step back precisely.
+        also press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back
+        precisely.
       </p>
     </div>
 
