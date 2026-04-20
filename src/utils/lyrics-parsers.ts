@@ -60,14 +60,67 @@ function parseTxt(content: string): ParseResult {
 
 // -- LRC Parser ---------------------------------------------------------------
 
+const LINE_TIMESTAMP_REGEX = /\[(\d{1,2}:\d{2}(?:[.:]\d{2,3})?)\]/g;
+const INLINE_WORD_TAG_REGEX = /<(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?>/g;
+const PENDING_WORD_END = -1;
+
+function lrcTimeToSeconds(minutes: string, seconds: string, ms?: string): number {
+  const m = Number.parseInt(minutes, 10);
+  const s = Number.parseInt(seconds, 10);
+  const milli = ms ? Number.parseInt(ms.padEnd(3, "0"), 10) : 0;
+  return m * 60 + s + milli / 1000;
+}
+
 function parseLrcTimestamp(timestamp: string): number {
-  // Format: [mm:ss.xx] or [mm:ss:xx] or [mm:ss]
   const match = timestamp.match(/\[(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?\]/);
   if (!match) return 0;
-  const minutes = Number.parseInt(match[1], 10);
-  const seconds = Number.parseInt(match[2], 10);
-  const ms = match[3] ? Number.parseInt(match[3].padEnd(3, "0"), 10) : 0;
-  return minutes * 60 + seconds + ms / 1000;
+  return lrcTimeToSeconds(match[1], match[2], match[3]);
+}
+
+interface InlineWordParseResult {
+  cleanText: string;
+  words: WordTiming[];
+}
+
+function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseResult | null {
+  const markers: { timestamp: number; matchStart: number; matchEnd: number }[] = [];
+  const regex = new RegExp(INLINE_WORD_TAG_REGEX.source, "g");
+  let match: RegExpExecArray | null = regex.exec(text);
+  while (match !== null) {
+    markers.push({
+      timestamp: lrcTimeToSeconds(match[1], match[2], match[3]),
+      matchStart: match.index,
+      matchEnd: match.index + match[0].length,
+    });
+    match = regex.exec(text);
+  }
+
+  if (markers.length === 0) return null;
+
+  const words: WordTiming[] = [];
+
+  const leadingText = text.substring(0, markers[0].matchStart);
+  if (leadingText.trim().length > 0) {
+    words.push({ text: leadingText, begin: lineBegin, end: markers[0].timestamp });
+  }
+
+  for (let i = 0; i < markers.length; i++) {
+    const marker = markers[i];
+    const nextMarker = markers[i + 1];
+    const segmentStart = marker.matchEnd;
+    const segmentEnd = nextMarker ? nextMarker.matchStart : text.length;
+    const wordText = text.substring(segmentStart, segmentEnd);
+    if (wordText.length === 0) continue;
+    words.push({
+      text: wordText,
+      begin: marker.timestamp,
+      end: nextMarker ? nextMarker.timestamp : PENDING_WORD_END,
+    });
+  }
+
+  if (words.length === 0) return null;
+
+  return { cleanText: words.map((w) => w.text).join(""), words };
 }
 
 function parseLrc(content: string): ParseResult {
@@ -80,7 +133,6 @@ function parseLrc(content: string): ParseResult {
     const trimmed = line.trim();
     if (!trimmed) continue;
 
-    // Parse metadata tags
     const metaMatch = trimmed.match(/^\[([a-z]+):(.+)\]$/i);
     if (metaMatch) {
       const [, tag, value] = metaMatch;
@@ -95,37 +147,53 @@ function parseLrc(content: string): ParseResult {
       continue;
     }
 
-    // Parse timed lyrics - can have multiple timestamps per line
-    const timestampRegex = /\[(\d{1,2}:\d{2}(?:[.:]\d{2,3})?)\]/g;
+    const timestampRegex = new RegExp(LINE_TIMESTAMP_REGEX.source, "g");
     const timestamps: number[] = [];
     const matches = trimmed.matchAll(timestampRegex);
-
-    for (const match of matches) {
-      timestamps.push(parseLrcTimestamp(`[${match[1]}]`));
+    for (const timestampMatch of matches) {
+      timestamps.push(parseLrcTimestamp(`[${timestampMatch[1]}]`));
     }
 
-    if (timestamps.length > 0) {
-      const text = trimmed.replace(timestampRegex, "").trim();
-      if (text) {
-        // Create a line for each timestamp (some LRC files have multiple timestamps per text)
-        for (const begin of timestamps) {
-          lines.push({
-            id: generateLineId(),
-            text,
-            agentId: "v1",
-            begin,
-          });
-        }
+    if (timestamps.length === 0) continue;
+
+    const textWithoutLineTags = trimmed.replace(timestampRegex, "");
+
+    if (timestamps.length === 1) {
+      const parsed = parseInlineWordTags(textWithoutLineTags, timestamps[0]);
+      if (parsed) {
+        lines.push({
+          id: generateLineId(),
+          text: parsed.cleanText,
+          agentId: "v1",
+          begin: timestamps[0],
+          words: parsed.words,
+        });
+        continue;
       }
+    }
+
+    const cleanText = textWithoutLineTags.replace(INLINE_WORD_TAG_REGEX, "").trim();
+    if (!cleanText) continue;
+    for (const begin of timestamps) {
+      lines.push({ id: generateLineId(), text: cleanText, agentId: "v1", begin });
     }
   }
 
-  // Sort by begin time and calculate end times
   lines.sort((a, b) => (a.begin ?? 0) - (b.begin ?? 0));
   for (let i = 0; i < lines.length - 1; i++) {
     if (lines[i].begin !== undefined) {
       lines[i].end = lines[i + 1].begin;
     }
+  }
+
+  for (const line of lines) {
+    if (!line.words || line.words.length === 0) continue;
+    const lastWord = line.words[line.words.length - 1];
+    if (lastWord.end === PENDING_WORD_END) {
+      lastWord.end = line.end ?? lastWord.begin;
+    }
+    line.begin = line.words[0].begin;
+    line.end = lastWord.end;
   }
 
   return {
