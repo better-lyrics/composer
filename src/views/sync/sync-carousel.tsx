@@ -95,13 +95,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   });
 };
 
-const SyncCarousel: React.FC<SyncCarouselProps> = ({
-  lines,
-  lineIndex,
-  wordIndex,
-  granularity,
-  isHolding = false,
-}) => {
+const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex, granularity, isHolding = false }) => {
   const [rippleKey, setRippleKey] = useState<string | null>(null);
   const [rippleCounter, setRippleCounter] = useState(0);
   const prevHoldingRef = useRef(isHolding);
