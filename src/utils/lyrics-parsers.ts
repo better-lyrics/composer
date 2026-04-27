@@ -259,6 +259,40 @@ function parseSrt(content: string): ParseResult {
 
 // -- TTML Parser --------------------------------------------------------------
 
+const ELEMENT_PREFIX_REGEX = /<\/?([A-Za-z][\w.-]*):/g;
+const ATTRIBUTE_PREFIX_REGEX = /\s([A-Za-z][\w.-]*):[\w.-]+\s*=/g;
+const DECLARED_PREFIX_REGEX = /xmlns:([A-Za-z][\w.-]*)\s*=/g;
+const ROOT_TT_TAG_REGEX = /<tt\b[^>]*>/;
+
+function declareMissingNamespaces(content: string): string {
+  const rootMatch = content.match(ROOT_TT_TAG_REGEX);
+  if (!rootMatch) return content;
+
+  const rootTag = rootMatch[0];
+  const declared = new Set<string>(["xml", "xmlns"]);
+  for (const match of rootTag.matchAll(DECLARED_PREFIX_REGEX)) {
+    declared.add(match[1]);
+  }
+
+  const used = new Set<string>();
+  for (const match of content.matchAll(ELEMENT_PREFIX_REGEX)) {
+    used.add(match[1]);
+  }
+  for (const match of content.matchAll(ATTRIBUTE_PREFIX_REGEX)) {
+    used.add(match[1]);
+  }
+
+  const missing: string[] = [];
+  for (const prefix of used) {
+    if (!declared.has(prefix)) missing.push(prefix);
+  }
+  if (missing.length === 0) return content;
+
+  const additions = missing.map((prefix) => ` xmlns:${prefix}="urn:composer:unbound:${prefix}"`).join("");
+  const patchedRootTag = rootTag.replace(/>$/, `${additions}>`);
+  return content.replace(rootTag, patchedRootTag);
+}
+
 function parseTtmlTimestamp(timestamp: string): number {
   // Format: HH:MM:SS.mmm or MM:SS.mmm or SS.mmm
   if (!timestamp) return 0;
@@ -328,8 +362,8 @@ function parseTtml(content: string): ParseResult {
   const lines: LyricLine[] = [];
 
   const parser = new DOMParser();
-  // Clean escaped quotes that might come from JSON-escaped content
-  const cleanedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
+  const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
+  const cleanedContent = declareMissingNamespaces(unescapedContent);
   const doc = parser.parseFromString(cleanedContent, "text/xml");
 
   // Check for parse errors
