@@ -1,5 +1,7 @@
 import { App } from "@/App";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
+import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
+import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { PageHead } from "@/seo/page-head";
 import { organizationSchema, softwareApplicationSchema } from "@/seo/schemas";
 import { ClientOnly } from "@/ui/client-only";
@@ -32,6 +34,8 @@ const HomePage: React.FC = () => {
 
 const HomeApp: React.FC = () => {
   useImportFromHash();
+  useResolveYouTubeTunnel();
+  useImportFromYouTube();
   return <App />;
 };
 

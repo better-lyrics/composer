@@ -3,7 +3,10 @@ import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
-type AudioSource = { type: "file"; file: File } | { type: "youtube"; videoId: string } | null;
+type AudioSource =
+  | { type: "file"; file: File }
+  | { type: "youtube"; videoId: string; tunnelUrl?: string; tunnelExpiresAt?: number }
+  | null;
 
 interface AudioState {
   source: AudioSource;
@@ -19,6 +22,8 @@ interface AudioState {
 
 interface AudioActions {
   setSource: (source: AudioSource) => void;
+  setYouTubeSource: (videoId: string, tunnelUrl?: string, tunnelExpiresAt?: number) => void;
+  setYouTubeTunnel: (tunnelUrl: string, tunnelExpiresAt: number) => void;
   setIsPlaying: (isPlaying: boolean) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
@@ -56,6 +61,20 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   ...INITIAL_STATE,
 
   setSource: (source) => set({ source, currentTime: 0, duration: 0, isPlaying: false }),
+  setYouTubeSource: (videoId, tunnelUrl, tunnelExpiresAt) =>
+    set({
+      source: { type: "youtube", videoId, tunnelUrl, tunnelExpiresAt },
+      currentTime: 0,
+      duration: 0,
+      isPlaying: false,
+    }),
+  setYouTubeTunnel: (tunnelUrl, tunnelExpiresAt) =>
+    set((s) => {
+      if (!s.source || s.source.type !== "youtube") return {};
+      return {
+        source: { ...s.source, tunnelUrl, tunnelExpiresAt },
+      };
+    }),
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),

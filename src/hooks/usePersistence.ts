@@ -1,13 +1,31 @@
-import { debouncedSave, flushPendingSave, loadAudioFile, loadCurrentProject, saveAudioFile } from "@/lib/persistence";
-import { useAudioStore } from "@/stores/audio";
+import {
+  clearAudioFile,
+  debouncedSave,
+  flushPendingSave,
+  loadAudioFile,
+  loadCurrentProject,
+  saveAudioFile,
+  type SavedAudioSource,
+} from "@/lib/persistence";
+import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 
+// -- Helpers ------------------------------------------------------------------
+
+function toSavedAudioSource(source: AudioSource): SavedAudioSource | undefined {
+  if (!source) return undefined;
+  if (source.type === "file") return { kind: "file", name: source.file.name };
+  if (source.type === "youtube") return { kind: "youtube", videoId: source.videoId };
+  return undefined;
+}
+
+// -- Hook ---------------------------------------------------------------------
+
 function usePersistence(): void {
-  // Load saved project on mount
   useEffect(() => {
-    loadCurrentProject().then((project) => {
+    Promise.all([loadCurrentProject(), loadAudioFile()]).then(([project, file]) => {
       if (project) {
         const state = useProjectStore.getState();
         state.setMetadata(project.metadata);
@@ -20,43 +38,46 @@ function usePersistence(): void {
         }
         state.markClean();
       }
-    });
 
-    loadAudioFile().then((file) => {
-      if (file) {
+      const savedSource = project?.audioSource;
+      if (savedSource?.kind === "youtube") {
+        useAudioStore.getState().setYouTubeSource(savedSource.videoId);
+      } else if (file) {
         useAudioStore.getState().setSource({ type: "file", file });
       }
     });
   }, []);
 
-  // Auto-save on state changes
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
       if (!state.isDirty) return;
       if (state.lines.length > 0 || state.metadata.title) {
-        const audioSource = useAudioStore.getState().source;
-        const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-        debouncedSave(state.metadata, state.agents, state.lines, state.granularity, audioFileName);
+        const audioSource = toSavedAudioSource(useAudioStore.getState().source);
+        debouncedSave(state.metadata, state.agents, state.lines, state.granularity, audioSource);
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Save audio file to IndexedDB when source changes
   useEffect(() => {
     let prevSource = useAudioStore.getState().source;
     const unsubscribe = useAudioStore.subscribe((state) => {
       if (state.source === prevSource) return;
+      const previous = prevSource;
       prevSource = state.source;
+
       if (state.source?.type === "file") {
         saveAudioFile(state.source.file).catch((err) => console.error("[Persistence] Audio save failed:", err));
+        return;
+      }
+      if (previous?.type === "file") {
+        clearAudioFile().catch((err) => console.error("[Persistence] Audio clear failed:", err));
       }
     });
     return () => unsubscribe();
   }, []);
 
-  // Persist volume to settings store
   useEffect(() => {
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
     const unsubscribe = useAudioStore.subscribe((state, prev) => {
@@ -73,7 +94,6 @@ function usePersistence(): void {
     };
   }, []);
 
-  // Warn on tab close if dirty
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       const state = useProjectStore.getState();
@@ -88,5 +108,7 @@ function usePersistence(): void {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
 }
+
+// -- Exports ------------------------------------------------------------------
 
 export { usePersistence };

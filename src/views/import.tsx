@@ -1,8 +1,9 @@
+import { IconBrandYoutube, IconClock, IconFile, IconMusic } from "@tabler/icons-react";
+import { useCallback } from "react";
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { IconMusic, IconClock, IconFile } from "@tabler/icons-react";
-import { useCallback } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,6 +29,32 @@ function getFileExtension(filename: string): string {
 const GUTTER_WIDTH = 56;
 const ROW_HEIGHT = 56;
 
+// -- Sub-components -----------------------------------------------------------
+
+const OrDivider: React.FC = () => (
+  <div className="flex items-center gap-3 w-full max-w-md select-none">
+    <div className="flex-1 h-px bg-composer-border" />
+    <span className="text-xs text-composer-text-muted">or</span>
+    <div className="flex-1 h-px bg-composer-border" />
+  </div>
+);
+
+interface ReplaceControlsProps {
+  onFileDrop: (file: File) => void;
+}
+
+const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
+  <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
+    <div className="w-full max-w-md flex-1 min-h-32">
+      <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
+        <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
+      </FileDropZone>
+    </div>
+    <OrDivider />
+    <YouTubeUrlInput placeholder="Or load a different YouTube URL" />
+  </div>
+);
+
 // -- Component ----------------------------------------------------------------
 
 const ImportPanel: React.FC = () => {
@@ -51,9 +78,7 @@ const ImportPanel: React.FC = () => {
 
     return (
       <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
-        {/* Audio info row - matches LineRow design */}
         <div className="flex border-t border-composer-border">
-          {/* Gutter */}
           <div
             className="shrink-0 flex items-center justify-center bg-composer-accent/10"
             style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
@@ -61,48 +86,85 @@ const ImportPanel: React.FC = () => {
             <IconFile size={16} className="text-composer-accent" />
           </div>
 
-          {/* Content */}
           <div
             className="flex-1 flex items-center gap-6 px-4 border-l border-composer-accent/25"
             style={{ height: ROW_HEIGHT }}
           >
-            {/* File name */}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-composer-text">{fileName}</p>
+              <p className="text-sm font-medium truncate text-composer-text select-text">{fileName}</p>
               <p className="text-xs text-composer-text-muted">{extension}</p>
             </div>
 
-            {/* Duration */}
             <div className="flex items-center gap-1.5">
               <IconClock size={14} className="text-composer-text opacity-50" />
-              <span className="text-sm font-mono text-composer-text tabular-nums">{formatDuration(duration)}</span>
+              <span className="text-sm font-mono text-composer-text tabular-nums select-text">
+                {formatDuration(duration)}
+              </span>
             </div>
 
-            {/* File size */}
             <div className="text-sm text-composer-text-muted">{formatFileSize(file.size)}</div>
           </div>
         </div>
 
-        {/* Replace drop zone */}
-        <div className="flex-1 flex items-center justify-center">
-          <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-            <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
-          </FileDropZone>
+        <ReplaceControls onFileDrop={handleFileDrop} />
+      </div>
+    );
+  }
+
+  if (source && source.type === "youtube") {
+    const videoId = source.videoId;
+
+    return (
+      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
+        <div className="flex border-t border-composer-border">
+          <div
+            className="shrink-0 flex items-center justify-center bg-composer-accent/10"
+            style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
+          >
+            <IconBrandYoutube size={16} className="text-composer-accent" />
+          </div>
+
+          <div
+            className="flex-1 flex items-center gap-6 px-4 border-l border-composer-accent/25"
+            style={{ height: ROW_HEIGHT }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate text-composer-text select-text">{videoId}</p>
+              <p className="text-xs text-composer-text-muted">from YouTube</p>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <IconClock size={14} className="text-composer-text opacity-50" />
+              <span className="text-sm font-mono text-composer-text tabular-nums select-text">
+                {formatDuration(duration)}
+              </span>
+            </div>
+          </div>
         </div>
+
+        <ReplaceControls onFileDrop={handleFileDrop} />
       </div>
     );
   }
 
   return (
-    <div data-tour="import-dropzone" className="flex flex-col items-center justify-center flex-1 size-full">
-      <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-        <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
-        <p className="text-composer-text-secondary">Drop audio file here</p>
-        <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
-        <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
-      </FileDropZone>
+    <div data-tour="import-dropzone" className="flex flex-col items-center justify-center gap-6 flex-1 size-full p-6">
+      <div className="w-full max-w-md flex-1 max-h-72 min-h-40">
+        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
+          <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
+          <p className="text-composer-text-secondary">Drop audio file here</p>
+          <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
+          <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
+        </FileDropZone>
+      </div>
+
+      <OrDivider />
+
+      <YouTubeUrlInput />
     </div>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { ImportPanel };

@@ -3,6 +3,8 @@ import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
+type SavedAudioSource = { kind: "file"; name: string } | { kind: "youtube"; videoId: string };
+
 interface SavedProject {
   version: 1;
   savedAt: number;
@@ -11,6 +13,7 @@ interface SavedProject {
   lines: LyricLine[];
   granularity: GranularityMode;
   audioFileName?: string;
+  audioSource?: SavedAudioSource;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -89,8 +92,9 @@ async function saveCurrentProject(
   agents: Agent[],
   lines: LyricLine[],
   granularity: GranularityMode,
-  audioFileName?: string,
+  audioSource?: SavedAudioSource,
 ): Promise<void> {
+  const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
     version: 1,
     savedAt: Date.now(),
@@ -99,6 +103,7 @@ async function saveCurrentProject(
     lines,
     granularity,
     audioFileName,
+    audioSource,
   };
   await setInStore(CURRENT_PROJECT_KEY, project);
 }
@@ -181,16 +186,16 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
 // -- Debounced Auto-save ------------------------------------------------------
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingSaveArgs: [ProjectMetadata, Agent[], LyricLine[], GranularityMode, string?] | null = null;
+let pendingSaveArgs: [ProjectMetadata, Agent[], LyricLine[], GranularityMode, SavedAudioSource?] | null = null;
 
 function debouncedSave(
   metadata: ProjectMetadata,
   agents: Agent[],
   lines: LyricLine[],
   granularity: GranularityMode,
-  audioFileName?: string,
+  audioSource?: SavedAudioSource,
 ): void {
-  pendingSaveArgs = [metadata, agents, lines, granularity, audioFileName];
+  pendingSaveArgs = [metadata, agents, lines, granularity, audioSource];
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
@@ -238,4 +243,4 @@ export {
   loadAudioFile,
   clearAudioFile,
 };
-export type { SavedProject };
+export type { SavedProject, SavedAudioSource };
