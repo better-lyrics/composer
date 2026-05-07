@@ -158,3 +158,55 @@ describe("moveWordFromBg", () => {
     expect(line.words?.map((w) => w.text)).toEqual(["ah ", "yeah"]);
   });
 });
+
+// -- history -------------------------------------------------------------------
+
+describe("cross-track moves and history", () => {
+  it("moveWordToBg is undoable", () => {
+    useProjectStore.getState().setLines([seedLine()]);
+    const before = useProjectStore.getState().lines[0];
+
+    useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeTruthy();
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+
+    useProjectStore.getState().undo();
+    const restored = useProjectStore.getState().lines[0];
+    expect(restored.words?.map((w) => w.text)).toEqual(before.words?.map((w) => w.text));
+    expect(restored.backgroundWords).toBeUndefined();
+  });
+
+  it("moveWordFromBg is undoable and redoable", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+        backgroundText: "ooh",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0], -7, DURATION);
+    const after = useProjectStore.getState().lines[0];
+    expect(after.backgroundWords).toBeUndefined();
+
+    useProjectStore.getState().undo();
+    const undone = useProjectStore.getState().lines[0];
+    expect(undone.backgroundWords).toEqual([{ text: "ooh", begin: 10, end: 11 }]);
+    expect(useProjectStore.getState().canRedo()).toBe(true);
+
+    useProjectStore.getState().redo();
+    const redone = useProjectStore.getState().lines[0];
+    expect(redone.backgroundWords).toBeUndefined();
+    expect(redone.words?.find((w) => w.text.trimEnd() === "ooh")).toBeTruthy();
+  });
+
+  it("does not push history when no words match the indices", () => {
+    useProjectStore.getState().setLines([seedLine()]);
+    const beforeIndex = useProjectStore.getState().historyIndex;
+
+    useProjectStore.getState().moveWordToBg("line-1", [], 0, DURATION);
+    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
+
+    useProjectStore.getState().moveWordToBg("nonexistent", [0], 0, DURATION);
+    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
+  });
+});

@@ -325,8 +325,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   clearHistory: () => set({ history: [], historyIndex: -1 }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
-    set((state) => ({
-      lines: state.lines.map((line) => {
+    set((state) => {
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
         if (line.id !== lineId || !line.words || wordIndices.length === 0) return line;
 
         const indexSet = new Set(wordIndices);
@@ -349,19 +350,23 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           ),
         );
 
+        mutated = true;
         return {
           ...line,
           words: remainingMain,
           backgroundWords: mergedBg,
           backgroundText: mergedBg.map((w) => w.text).join(""),
         };
-      }),
-      isDirty: true,
-    })),
+      });
+
+      if (!mutated) return state;
+      return commitHistory(state, newLines);
+    }),
 
   moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
-    set((state) => ({
-      lines: state.lines.map((line) => {
+    set((state) => {
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
         if (line.id !== lineId || !line.backgroundWords || wordIndices.length === 0) return line;
 
         const indexSet = new Set(wordIndices);
@@ -385,16 +390,34 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         );
 
         const hasBg = remainingBg.length > 0;
+        mutated = true;
         return {
           ...line,
           words: mergedMain,
           backgroundWords: hasBg ? remainingBg : undefined,
           backgroundText: hasBg ? remainingBg.map((w) => w.text).join("") : undefined,
         };
-      }),
-      isDirty: true,
-    })),
+      });
+
+      if (!mutated) return state;
+      return commitHistory(state, newLines);
+    }),
 }));
+
+function commitHistory(state: ProjectState, newLines: LyricLine[]) {
+  const newHistory = state.history.slice(0, state.historyIndex + 1);
+  if (newHistory.length === 0) {
+    newHistory.push({ lines: JSON.parse(JSON.stringify(state.lines)), timestamp: Date.now() });
+  }
+  newHistory.push({ lines: JSON.parse(JSON.stringify(newLines)), timestamp: Date.now() });
+  if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
+  return {
+    lines: newLines,
+    isDirty: true,
+    history: newHistory,
+    historyIndex: newHistory.length - 1,
+  };
+}
 
 function getAgentColor(agentId: string): string {
   return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
