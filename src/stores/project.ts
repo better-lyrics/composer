@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { normalizeTrailingSpaces, resolveOverlapsForward } from "@/utils/word-spaces";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -79,8 +80,8 @@ interface ProjectActions {
   canRedo: () => boolean;
   clearHistory: () => void;
   updateLinesWithHistory: (updates: Array<{ id: string; updates: Partial<LyricLine> }>) => void;
-  moveWordToBg: (lineId: string, wordIndex: number) => void;
-  moveWordFromBg: (lineId: string, wordIndex: number) => void;
+  moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
+  moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -323,40 +324,72 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   clearHistory: () => set({ history: [], historyIndex: -1 }),
 
-  moveWordToBg: (lineId, wordIndex) =>
+  moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => ({
       lines: state.lines.map((line) => {
-        if (line.id !== lineId || !line.words) return line;
-        const word = line.words[wordIndex];
-        if (!word) return line;
-        const bgWords = [...(line.backgroundWords || []), word].sort((a, b) => a.begin - b.begin);
-        // Concatenate without adding spaces - trailing spaces are embedded in word.text
-        const bgText = bgWords.map((w) => w.text).join("");
+        if (line.id !== lineId || !line.words || wordIndices.length === 0) return line;
+
+        const indexSet = new Set(wordIndices);
+        const movedWords = line.words
+          .map((w, i) => ({ word: w, index: i }))
+          .filter(({ index }) => indexSet.has(index))
+          .map(({ word }) => {
+            const dur = word.end - word.begin;
+            const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
+            return { ...word, begin: newBegin, end: newBegin + dur };
+          });
+
+        if (movedWords.length === 0) return line;
+
+        const remainingMain = normalizeTrailingSpaces(line.words.filter((_, i) => !indexSet.has(i)));
+        const mergedBg = normalizeTrailingSpaces(
+          resolveOverlapsForward(
+            [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin),
+            duration,
+          ),
+        );
+
         return {
           ...line,
-          words: line.words.filter((_, i) => i !== wordIndex),
-          backgroundWords: bgWords,
-          backgroundText: bgText,
+          words: remainingMain,
+          backgroundWords: mergedBg,
+          backgroundText: mergedBg.map((w) => w.text).join(""),
         };
       }),
       isDirty: true,
     })),
 
-  moveWordFromBg: (lineId, wordIndex) =>
+  moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => ({
       lines: state.lines.map((line) => {
-        if (line.id !== lineId || !line.backgroundWords) return line;
-        const word = line.backgroundWords[wordIndex];
-        if (!word) return line;
-        const mainWords = [...(line.words || []), word].sort((a, b) => a.begin - b.begin);
-        const remainingBgWords = line.backgroundWords.filter((_, i) => i !== wordIndex);
-        // Concatenate without adding spaces - trailing spaces are embedded in word.text
-        const bgText = remainingBgWords.length > 0 ? remainingBgWords.map((w) => w.text).join("") : undefined;
+        if (line.id !== lineId || !line.backgroundWords || wordIndices.length === 0) return line;
+
+        const indexSet = new Set(wordIndices);
+        const movedWords = line.backgroundWords
+          .map((w, i) => ({ word: w, index: i }))
+          .filter(({ index }) => indexSet.has(index))
+          .map(({ word }) => {
+            const dur = word.end - word.begin;
+            const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
+            return { ...word, begin: newBegin, end: newBegin + dur };
+          });
+
+        if (movedWords.length === 0) return line;
+
+        const remainingBg = normalizeTrailingSpaces(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
+        const mergedMain = normalizeTrailingSpaces(
+          resolveOverlapsForward(
+            [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin),
+            duration,
+          ),
+        );
+
+        const hasBg = remainingBg.length > 0;
         return {
           ...line,
-          backgroundWords: remainingBgWords.length > 0 ? remainingBgWords : undefined,
-          backgroundText: bgText,
-          words: mainWords,
+          words: mergedMain,
+          backgroundWords: hasBg ? remainingBg : undefined,
+          backgroundText: hasBg ? remainingBg.map((w) => w.text).join("") : undefined,
         };
       }),
       isDirty: true,

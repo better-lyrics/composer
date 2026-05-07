@@ -3,6 +3,7 @@ import type { WordTiming } from "@/stores/project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
+import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -287,33 +288,22 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
     const audioDuration = useAudioStore.getState().duration;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const begin = Math.max(0, time - wordDuration / 2);
-    const end = Math.min(audioDuration, time + wordDuration / 2);
+    const slot = findInsertionSlot(words, time, wordDuration, audioDuration);
+    if (!slot) return;
 
-    // Check for overlap with existing words
-    for (const w of words) {
-      if (begin < w.end && end > w.begin) return;
-    }
-
-    const newWord: WordTiming = { text: "...", begin, end };
-    const newWords = [...words, newWord].sort((a, b) => a.begin - b.begin);
-    const newIndex = newWords.indexOf(newWord);
-
-    for (let i = 0; i < newWords.length; i++) {
-      const isLast = i === newWords.length - 1;
-      const hasSpace = newWords[i].text.endsWith(" ");
-      if (!isLast && !hasSpace) {
-        newWords[i] = { ...newWords[i], text: `${newWords[i].text} ` };
-      } else if (isLast && hasSpace) {
-        newWords[i] = { ...newWords[i], text: newWords[i].text.trimEnd() };
-      }
-    }
+    const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
+    const sorted = [...words, newWord].sort((a, b) => a.begin - b.begin);
+    const newIndex = sorted.indexOf(newWord);
+    const newWords = normalizeTrailingSpaces(sorted);
 
     const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
     if (trackType === "word") {
       updateLineWithHistory(lineId, { words: newWords });
     } else {
-      updateLineWithHistory(lineId, { backgroundWords: newWords });
+      updateLineWithHistory(lineId, {
+        backgroundWords: newWords,
+        backgroundText: newWords.map((w) => w.text).join(""),
+      });
     }
 
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: trackType });

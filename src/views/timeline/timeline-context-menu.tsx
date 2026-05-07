@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { formatKey } from "@/ui/help-modal";
 import { isMac } from "@/utils/platform";
 import { convertLineToWord } from "@/utils/sync-helpers";
+import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconCommand } from "@tabler/icons-react";
@@ -129,30 +130,25 @@ const TimelineContextMenu: React.FC = () => {
     if (!line) return;
 
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const newWord: WordTiming = {
-      text: "...",
-      begin: Math.max(0, time - wordDuration / 2),
-      end: Math.min(duration, time + wordDuration / 2),
-    };
-
     const existingWords = type === "word" ? line.words : line.backgroundWords;
-    const words = [...(existingWords ?? []), newWord].sort((a, b) => a.begin - b.begin);
-    const newIndex = words.indexOf(newWord);
-
-    for (let i = 0; i < words.length; i++) {
-      const isLast = i === words.length - 1;
-      const hasSpace = words[i].text.endsWith(" ");
-      if (!isLast && !hasSpace) {
-        words[i] = { ...words[i], text: `${words[i].text} ` };
-      } else if (isLast && hasSpace) {
-        words[i] = { ...words[i], text: words[i].text.trimEnd() };
-      }
+    const slot = findInsertionSlot(existingWords ?? [], time, wordDuration, duration);
+    if (!slot) {
+      clearContextMenu();
+      return;
     }
+
+    const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
+    const sorted = [...(existingWords ?? []), newWord].sort((a, b) => a.begin - b.begin);
+    const newIndex = sorted.indexOf(newWord);
+    const words = normalizeTrailingSpaces(sorted);
 
     if (type === "word") {
       updateLineWithHistory(lineId, { words });
     } else {
-      updateLineWithHistory(lineId, { backgroundWords: words });
+      updateLineWithHistory(lineId, {
+        backgroundWords: words,
+        backgroundText: words.map((w) => w.text).join(""),
+      });
     }
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
     clearContextMenu();

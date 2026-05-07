@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { findInsertionSlot } from "@/utils/word-spaces";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -204,10 +205,13 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               const time = (e.clientX - rect.left) / zoom;
               const audioDuration = useAudioStore.getState().duration;
               const wordDuration = useSettingsStore.getState().defaultWordDuration;
-              const begin = Math.max(0, time - wordDuration / 2);
-              const end = Math.min(audioDuration, time + wordDuration / 2);
-              const newWord: WordTiming = { text: "...", begin, end };
-              useProjectStore.getState().updateLineWithHistory(line.id, { backgroundWords: [newWord] });
+              const slot = findInsertionSlot([], time, wordDuration, audioDuration);
+              if (!slot) return;
+              const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
+              useProjectStore.getState().updateLineWithHistory(line.id, {
+                backgroundWords: [newWord],
+                backgroundText: newWord.text,
+              });
               useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
             }}
             onContextMenu={(e) => {

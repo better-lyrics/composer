@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
+import { normalizeTrailingSpaces } from "@/utils/word-spaces";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useState } from "react";
@@ -92,7 +93,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const existing = line.words ?? [];
       const hasOverlap = wordDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
       if (!hasOverlap) {
-        lineUpdates.words = [...existing, ...wordDups].sort((a, b) => a.begin - b.begin);
+        lineUpdates.words = normalizeTrailingSpaces([...existing, ...wordDups].sort((a, b) => a.begin - b.begin));
       }
     }
 
@@ -100,7 +101,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const existing = line.backgroundWords ?? [];
       const hasOverlap = bgDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
       if (!hasOverlap) {
-        const merged = [...existing, ...bgDups].sort((a, b) => a.begin - b.begin);
+        const merged = normalizeTrailingSpaces([...existing, ...bgDups].sort((a, b) => a.begin - b.begin));
         lineUpdates.backgroundWords = merged;
         lineUpdates.backgroundText = merged.map((w) => w.text).join("");
       }
@@ -174,21 +175,27 @@ function useTimelineDnd(lines: LyricLine[]) {
       const movedDownToBg = delta.y > DRAG_TRACK_SWITCH_THRESHOLD;
       const movedUpToMain = delta.y < -DRAG_TRACK_SWITCH_THRESHOLD;
 
+      const { selectedWords } = useTimelineStore.getState();
+      const wordsToMove = resolveWordsToOperate(activeData, selectedWords);
+      const timeDelta = delta.x / zoom;
+
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
-        moveWordToBg(activeData.lineId, activeData.wordIndex);
+        const indices = wordsToMove
+          .filter((s) => s.lineId === activeData.lineId && s.type === "word")
+          .map((s) => s.wordIndex);
+        moveWordToBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
 
       if (dropId.startsWith("main-drop-") && activeData.trackType === "bg" && movedUpToMain) {
-        moveWordFromBg(activeData.lineId, activeData.wordIndex);
+        const indices = wordsToMove
+          .filter((s) => s.lineId === activeData.lineId && s.type === "bg")
+          .map((s) => s.wordIndex);
+        moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
 
       if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
-
-      const { selectedWords } = useTimelineStore.getState();
-      const wordsToMove = resolveWordsToOperate(activeData, selectedWords);
-      const timeDelta = delta.x / zoom;
 
       if (wordsToMove.length > 1) {
         const grouped = groupSelectionsByLine(wordsToMove);
@@ -230,7 +237,11 @@ function useTimelineDnd(lines: LyricLine[]) {
               words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
             }
 
-            lineUpdates[trackKey] = words;
+            const normalized = normalizeTrailingSpaces(words);
+            lineUpdates[trackKey] = normalized;
+            if (trackKey === "backgroundWords") {
+              lineUpdates.backgroundText = normalized.map((w) => w.text).join("");
+            }
           }
 
           if (Object.keys(lineUpdates).length > 0) {
@@ -267,10 +278,14 @@ function useTimelineDnd(lines: LyricLine[]) {
           words[words.length - 1] = { ...lastWord, begin: lastWord.begin - overflow, end: duration };
         }
 
+        const normalized = normalizeTrailingSpaces(words);
         if (activeData.trackType === "word") {
-          updateLineWithHistory(activeData.lineId, { words });
+          updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {
-          updateLineWithHistory(activeData.lineId, { backgroundWords: words });
+          updateLineWithHistory(activeData.lineId, {
+            backgroundWords: normalized,
+            backgroundText: normalized.map((w) => w.text).join(""),
+          });
         }
       }
     },

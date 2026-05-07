@@ -3,10 +3,7 @@ import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
-type AudioSource =
-  | { type: "file"; file: File }
-  | { type: "youtube"; videoId: string; file?: File }
-  | null;
+type AudioSource = { type: "file"; file: File } | { type: "youtube"; videoId: string; file?: File } | null;
 
 interface AudioState {
   source: AudioSource;
