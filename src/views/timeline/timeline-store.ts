@@ -47,6 +47,7 @@ interface TimelineState {
   selectOnlyMode: boolean;
   collapsedInstances: Record<string, boolean>;
   pingingGroupId: string | null;
+  renamingGroupId: string | null;
 }
 
 interface TimelineActions {
@@ -73,6 +74,7 @@ interface TimelineActions {
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
   setPingingGroupId: (groupId: string | null) => void;
+  setRenamingGroupId: (groupId: string | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -107,6 +109,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     selectOnlyMode: false,
     collapsedInstances: {},
     pingingGroupId: null,
+    renamingGroupId: null,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -153,6 +156,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     toggleInstanceCollapsed: (key) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: !s.collapsedInstances[key] } })),
     setPingingGroupId: (pingingGroupId) => set({ pingingGroupId }),
+    setRenamingGroupId: (renamingGroupId) => set({ renamingGroupId }),
   };
 });
 

@@ -125,6 +125,21 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     [group.id, instanceIdx, setContextMenu],
   );
 
+  const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
+  const handleLabelDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setContextMenu({
+        x: e.clientX,
+        y: e.clientY,
+        target: { kind: "group-banner", groupId: group.id, instanceIdx },
+      });
+      setRenamingGroupId(group.id);
+    },
+    [group.id, instanceIdx, setContextMenu, setRenamingGroupId],
+  );
+
   const left = instanceStart * zoom;
   const width = Math.max(BANNER_MIN_WIDTH, (instanceEnd - instanceStart) * zoom);
   const deltaSecondsLive = dragOffsetPx / Math.max(zoom, 1);
@@ -138,7 +153,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       variants={groupPingVariants}
       animate={isPinging ? "ping" : "idle"}
       className={cn(
-        "absolute flex items-center gap-2 rounded-md cursor-grab select-none pl-1.5 pr-2.5",
+        "absolute flex items-center gap-1 rounded-md cursor-grab select-none pl-1.5 pr-2.5",
         "border text-[10px] font-medium text-composer-text z-[45]",
       )}
       onPointerDown={handlePointerDown}
@@ -165,7 +180,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
           className={cn("w-3 h-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
         />
       </button>
-      <span className="font-semibold whitespace-nowrap">{group.label}</span>
+      <span className="font-semibold whitespace-nowrap" onDoubleClick={handleLabelDoubleClick}>
+        {group.label}
+      </span>
       <span
         className="flex items-center gap-1 text-composer-text-muted tabular-nums whitespace-nowrap ml-auto"
         onMouseEnter={handleBadgeMouseEnter}

@@ -70,8 +70,15 @@ const TimelineContextMenu: React.FC = () => {
 
   const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
 
-  const [renamingGroupId, setRenamingGroupId] = useState<string | null>(null);
+  const renamingGroupId = useTimelineStore((s) => s.renamingGroupId);
+  const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
   const [renameValue, setRenameValue] = useState("");
+
+  useEffect(() => {
+    if (!renamingGroupId) return;
+    const g = groups.find((gr) => gr.id === renamingGroupId);
+    if (g) setRenameValue(g.label);
+  }, [renamingGroupId, groups]);
 
   useEffect(() => {
     if (!contextMenu) return;
@@ -438,7 +445,7 @@ const TimelineContextMenu: React.FC = () => {
     if (!group) return;
     setRenamingGroupId(groupId);
     setRenameValue(group.label);
-  }, [contextMenu, groups]);
+  }, [contextMenu, groups, setRenamingGroupId]);
 
   const handleRenameCommit = useCallback(() => {
     if (!renamingGroupId) return;
@@ -449,7 +456,7 @@ const TimelineContextMenu: React.FC = () => {
     setRenamingGroupId(null);
     setRenameValue("");
     clearContextMenu();
-  }, [renamingGroupId, renameValue, clearContextMenu]);
+  }, [renamingGroupId, renameValue, clearContextMenu, setRenamingGroupId]);
 
   const handleRecolorGroup = useCallback(
     (color: string) => {
@@ -580,15 +587,16 @@ const TimelineContextMenu: React.FC = () => {
               <MenuItem label="Shift instance to playhead" onClick={handleShiftToPlayhead} />
               <MenuDivider />
               <MenuItem label="Rename" onClick={handleRenameStart} />
+              <MenuDivider />
               <p className="px-3 pt-1.5 pb-1 text-xs text-composer-text-muted">Recolor</p>
-              <div className="px-2 pb-1 grid grid-cols-5 gap-1">
+              <div className="px-3 pb-1.5 grid grid-cols-5 gap-1.5">
                 {GROUP_COLORS.map((c) => (
                   <button
                     key={c}
                     type="button"
                     aria-label={`Color ${c}`}
                     onClick={() => handleRecolorGroup(c)}
-                    className="w-6 h-6 rounded-md cursor-pointer border border-white/10 hover:scale-110 transition-transform"
+                    className="w-6 h-6 rounded-md cursor-pointer border border-white/10 hover:ring-2 hover:ring-white/40 transition-[box-shadow]"
                     style={{ backgroundColor: c }}
                   />
                 ))}

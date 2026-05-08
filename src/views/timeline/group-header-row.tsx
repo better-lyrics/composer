@@ -15,7 +15,7 @@ interface GroupHeaderRowProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_HEADER_HEIGHT = 26;
+const GROUP_HEADER_HEIGHT = 38;
 
 // -- Component -----------------------------------------------------------------
 
@@ -54,10 +54,11 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
         type="button"
         onClick={openGroupMenu}
         onContextMenu={openGroupMenu}
-        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] cursor-pointer hover:brightness-110 transition-[filter]"
+        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2 cursor-pointer hover:brightness-110 transition-[filter]"
         style={{
           background: `color-mix(in srgb, ${group.color} 30%, var(--color-composer-bg))`,
           borderRightColor: group.color,
+          boxShadow: `0 -1px 0 0 color-mix(in srgb, ${group.color} 40%, var(--color-composer-border)), inset 0 -1px 0 0 color-mix(in srgb, ${group.color} 35%, var(--color-composer-border)), 10px 0 15px -3px rgb(0 0 0 / 0.1), 4px 0 6px -4px rgb(0 0 0 / 0.1)`,
         }}
         title={`${group.label} · ${instanceIdx + 1} of ${totalInstances}`}
       >
