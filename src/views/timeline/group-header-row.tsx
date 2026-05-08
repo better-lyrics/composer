@@ -37,9 +37,10 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
       data-group-header={`${group.id}:${instanceIdx}`}
     >
       <div
-        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r border-composer-border"
+        className="shrink-0 w-12 sticky left-0 z-[60] flex items-center justify-center px-1 select-none overflow-hidden border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)]"
         style={{
-          background: `color-mix(in srgb, ${group.color} 60%, transparent)`,
+          background: `color-mix(in srgb, ${group.color} 30%, var(--color-composer-bg))`,
+          borderRightColor: group.color,
         }}
         title={`${group.label} · ${instanceIdx + 1} of ${totalInstances}`}
       >
