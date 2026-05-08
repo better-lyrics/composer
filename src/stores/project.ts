@@ -55,6 +55,7 @@ interface ProjectMetadata {
 
 interface HistoryEntry {
   lines: LyricLine[];
+  groups: LinkGroup[];
   timestamp: number;
 }
 
@@ -169,11 +170,13 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (newHistory.length === 0) {
         newHistory.push({
           lines: JSON.parse(JSON.stringify(state.lines)),
+          groups: JSON.parse(JSON.stringify(state.groups)),
           timestamp: Date.now(),
         });
       }
       newHistory.push({
         lines: JSON.parse(JSON.stringify(lines)),
+        groups: JSON.parse(JSON.stringify(state.groups)),
         timestamp: Date.now(),
       });
       if (newHistory.length > MAX_HISTORY_SIZE) {
@@ -195,16 +198,15 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   updateLineWithHistory: (id, updates) =>
     set((state) => {
-      // If history is empty, save the initial state first
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       if (newHistory.length === 0) {
         newHistory.push({
           lines: JSON.parse(JSON.stringify(state.lines)),
+          groups: JSON.parse(JSON.stringify(state.groups)),
           timestamp: Date.now(),
         });
       }
 
-      // Apply the edit - when words are written to a line-synced line, auto-clear begin/end
       const newLines = state.lines.map((line) => {
         if (line.id !== id) return line;
         const merged = { ...line, ...updates };
@@ -215,9 +217,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         return merged;
       });
 
-      // Save the new state (after edit)
       newHistory.push({
         lines: JSON.parse(JSON.stringify(newLines)),
+        groups: JSON.parse(JSON.stringify(state.groups)),
         timestamp: Date.now(),
       });
 
@@ -239,6 +241,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (newHistory.length === 0) {
         newHistory.push({
           lines: JSON.parse(JSON.stringify(state.lines)),
+          groups: JSON.parse(JSON.stringify(state.groups)),
           timestamp: Date.now(),
         });
       }
@@ -258,6 +261,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       newHistory.push({
         lines: JSON.parse(JSON.stringify(newLines)),
+        groups: JSON.parse(JSON.stringify(state.groups)),
         timestamp: Date.now(),
       });
 
@@ -315,6 +319,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const entry = state.history[state.historyIndex - 1];
       return {
         lines: JSON.parse(JSON.stringify(entry.lines)),
+        groups: JSON.parse(JSON.stringify(entry.groups)),
         historyIndex: state.historyIndex - 1,
         isDirty: true,
       };
@@ -326,6 +331,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const entry = state.history[state.historyIndex + 1];
       return {
         lines: JSON.parse(JSON.stringify(entry.lines)),
+        groups: JSON.parse(JSON.stringify(entry.groups)),
         historyIndex: state.historyIndex + 1,
         isDirty: true,
       };
@@ -420,9 +426,17 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 function commitHistory(state: ProjectState, newLines: LyricLine[]) {
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   if (newHistory.length === 0) {
-    newHistory.push({ lines: JSON.parse(JSON.stringify(state.lines)), timestamp: Date.now() });
+    newHistory.push({
+      lines: JSON.parse(JSON.stringify(state.lines)),
+      groups: JSON.parse(JSON.stringify(state.groups)),
+      timestamp: Date.now(),
+    });
   }
-  newHistory.push({ lines: JSON.parse(JSON.stringify(newLines)), timestamp: Date.now() });
+  newHistory.push({
+    lines: JSON.parse(JSON.stringify(newLines)),
+    groups: JSON.parse(JSON.stringify(state.groups)),
+    timestamp: Date.now(),
+  });
   if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
   return {
     lines: newLines,
