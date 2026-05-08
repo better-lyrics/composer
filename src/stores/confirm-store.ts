@@ -37,6 +37,10 @@ const useConfirmStore = create<ConfirmStore>((set, get) => ({
     if (options.settingsKey && useSettingsStore.getState()[options.settingsKey] === false) {
       return Promise.resolve(true);
     }
+    if (get().isOpen) {
+      console.warn("[Composer] confirm() called while a modal is already open; auto-cancelling the second call");
+      return Promise.resolve(false);
+    }
     return new Promise<boolean>((resolve) => {
       set({ isOpen: true, options, resolve });
     });
