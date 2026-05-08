@@ -5,9 +5,17 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
 import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
+import { IconLink } from "@tabler/icons-react";
 import { memo, useEffect, useMemo, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
+
+interface ScrollableLineLinkInfo {
+  color: string;
+  label: string;
+  instanceIdx: number;
+  totalInstances: number;
+}
 
 interface ScrollableLineProps {
   text: string;
@@ -22,6 +30,7 @@ interface ScrollableLineProps {
   granularity: "line" | "word";
   currentTime: number;
   editMode: boolean;
+  linkInfo?: ScrollableLineLinkInfo;
   onClick: () => void;
   onNudgeWord?: (wordIndex: number, delta: number) => void;
   onSetWordTime?: (wordIndex: number, newBegin: number) => void;
@@ -51,6 +60,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   granularity,
   currentTime,
   editMode,
+  linkInfo,
   onClick,
   onNudgeWord,
   onSetWordTime,
@@ -239,6 +249,21 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         />
         <span className="flex-1 font-mono text-xs text-right text-composer-text-muted tabular-nums">{lineNumber}</span>
       </span>
+      {linkInfo && (
+        <span
+          className="flex items-center gap-1 mt-1 px-1.5 h-4 text-[10px] rounded-md select-none"
+          title={`Linked: ${linkInfo.label} ${linkInfo.instanceIdx + 1}/${linkInfo.totalInstances}`}
+          style={{
+            background: `color-mix(in srgb, ${linkInfo.color} 18%, transparent)`,
+            color: linkInfo.color,
+          }}
+        >
+          <IconLink className="w-2.5 h-2.5" />
+          <span className="tabular-nums">
+            {linkInfo.instanceIdx + 1}/{linkInfo.totalInstances}
+          </span>
+        </span>
+      )}
       <div className="flex flex-col flex-1 gap-1">
         {granularity === "line" ? (
           <div className="flex items-start justify-between gap-2">

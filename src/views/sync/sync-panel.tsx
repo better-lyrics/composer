@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const SyncPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
+  const groups = useProjectStore((s) => s.groups);
   const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const undo = useProjectStore((s) => s.undo);
   const redo = useProjectStore((s) => s.redo);
@@ -388,6 +389,22 @@ const SyncPanel: React.FC = () => {
           <div className="py-2">
             {lines.map((line, index) => {
               const timing = getLineTiming(line);
+              const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
+              const totalInstances = linkedGroup
+                ? new Set(
+                    lines
+                      .filter((l) => l.groupId === linkedGroup.id && l.instanceIdx !== undefined)
+                      .map((l) => l.instanceIdx),
+                  ).size
+                : 0;
+              const linkInfo = linkedGroup && line.instanceIdx !== undefined
+                ? {
+                    color: linkedGroup.color,
+                    label: linkedGroup.label,
+                    instanceIdx: line.instanceIdx,
+                    totalInstances,
+                  }
+                : undefined;
               return (
                 <ScrollableLine
                   key={line.id}
@@ -403,6 +420,7 @@ const SyncPanel: React.FC = () => {
                   granularity={granularity}
                   currentTime={currentTime}
                   editMode={editMode}
+                  linkInfo={linkInfo}
                   onClick={() => handleJumpToLine(index)}
                   onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
                   onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
