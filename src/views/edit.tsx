@@ -21,6 +21,9 @@ interface ParsedLine {
   hasTiming: boolean;
   agentId: string;
   backgroundText?: string;
+  groupId?: string;
+  instanceIdx?: number;
+  templateLineIdx?: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -46,6 +49,9 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       hasTiming,
       agentId: lyricLine?.agentId ?? defaultAgentId,
       backgroundText: lyricLine?.backgroundText,
+      groupId: lyricLine?.groupId,
+      instanceIdx: lyricLine?.instanceIdx,
+      templateLineIdx: lyricLine?.templateLineIdx,
     };
   });
 }
@@ -262,6 +268,7 @@ const EditPanel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
+  const groups = useProjectStore((s) => s.groups);
   const setLines = useProjectStore((s) => s.setLines);
   const setMetadata = useProjectStore((s) => s.setMetadata);
   const updateLine = useProjectStore((s) => s.updateLine);
@@ -554,22 +561,56 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
               </div>
             ) : (
               <div className="py-2">
-                {parsed.map((line) => (
-                  <LinePreview
-                    key={line.lineNumber}
-                    line={line}
-                    agents={agents}
-                    isSelected={selectedLines.has(line.lineNumber)}
-                    hasMultipleSelected={selectedLines.size > 1}
-                    onSelect={handleLineSelect}
-                    onAgentChange={handleAgentChange}
-                    onBulkAgentChange={handleBulkAgentChange}
-                    onBackgroundChange={handleBackgroundChange}
-                    onGutterMouseDown={handleGutterMouseDown}
-                    onGutterMouseEnter={handleGutterMouseEnter}
-                    didDragRef={didDragRef}
-                  />
-                ))}
+                {parsed.map((line, index) => {
+                  const prev = index > 0 ? parsed[index - 1] : null;
+                  const showDivider =
+                    line.groupId !== undefined &&
+                    line.instanceIdx !== undefined &&
+                    (prev?.groupId !== line.groupId || prev?.instanceIdx !== line.instanceIdx);
+                  const group = line.groupId
+                    ? groups.find((g) => g.id === line.groupId)
+                    : undefined;
+                  const totalInstances = group
+                    ? new Set(
+                        lines
+                          .filter((l) => l.groupId === group.id && l.instanceIdx !== undefined)
+                          .map((l) => l.instanceIdx),
+                      ).size
+                    : 0;
+                  return (
+                    <div key={line.lineNumber}>
+                      {showDivider && group && (
+                        <div
+                          className="mx-3 my-1 flex items-center gap-2 text-xs text-composer-text-muted select-none"
+                          aria-hidden
+                        >
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: group.color }}
+                          />
+                          <span className="font-medium text-composer-text">{group.label}</span>
+                          <span className="tabular-nums">
+                            · {(line.instanceIdx ?? 0) + 1} of {totalInstances}
+                          </span>
+                          <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.3 }} />
+                        </div>
+                      )}
+                      <LinePreview
+                        line={line}
+                        agents={agents}
+                        isSelected={selectedLines.has(line.lineNumber)}
+                        hasMultipleSelected={selectedLines.size > 1}
+                        onSelect={handleLineSelect}
+                        onAgentChange={handleAgentChange}
+                        onBulkAgentChange={handleBulkAgentChange}
+                        onBackgroundChange={handleBackgroundChange}
+                        onGutterMouseDown={handleGutterMouseDown}
+                        onGutterMouseEnter={handleGutterMouseEnter}
+                        didDragRef={didDragRef}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
