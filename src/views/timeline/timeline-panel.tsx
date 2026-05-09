@@ -1,6 +1,7 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
+import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
 import { LyricsImportModal } from "@/views/timeline/lyrics-import-modal";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
@@ -308,6 +309,7 @@ const TimelinePanel: React.FC = () => {
     >
       <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
         <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
+        <GroupingSuggestionsBanner />
 
         <div className="flex flex-1 overflow-hidden">
           <div className="flex flex-col flex-1 overflow-hidden">

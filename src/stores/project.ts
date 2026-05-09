@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { normalizeTrailingSpaces, resolveOverlapsForward } from "@/utils/word-spaces";
 import { create } from "zustand";
 
@@ -115,6 +116,7 @@ interface ProjectActions {
   setGroups: (groups: LinkGroup[]) => void;
   addGroup: (group: LinkGroup) => void;
   addGroupWithLines: (group: LinkGroup, lines: LyricLine[]) => void;
+  groupRepeatingSections: (starts: number[], length: number, options?: { label?: string; color?: string }) => void;
   updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
   removeGroup: (id: string) => void;
   addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
@@ -483,6 +485,52 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   addGroupWithLines: (group, lines) =>
     set((state) => commitHistory(state, { groups: [...state.groups, group], lines })),
+
+  groupRepeatingSections: (starts, length, options = {}) =>
+    set((state) => {
+      if (starts.length < 2 || length < 1) return state;
+
+      const covered = new Set<number>();
+      for (const start of starts) {
+        for (let p = start; p < start + length; p++) {
+          if (p < 0 || p >= state.lines.length) return state;
+          if (state.lines[p].groupId !== undefined) return state;
+          if (covered.has(p)) return state;
+          covered.add(p);
+        }
+      }
+
+      const usedGroupIds = new Set(state.groups.map((g) => g.id));
+      let n = 1;
+      while (usedGroupIds.has(`g${n}`)) n++;
+      const groupId = `g${n}`;
+
+      const usedColors = state.groups.map((g) => g.color);
+      const color = options.color ?? pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
+      const label = options.label ?? `Group ${state.groups.length + 1}`;
+
+      const startToInstanceIdx = new Map<number, number>();
+      const sortedStarts = [...starts].sort((a, b) => a - b);
+      sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
+
+      const updatedLines = state.lines.map((line, idx) => {
+        for (const start of sortedStarts) {
+          if (idx >= start && idx < start + length) {
+            return {
+              ...line,
+              groupId,
+              instanceIdx: startToInstanceIdx.get(start) ?? 0,
+              templateLineIdx: idx - start,
+            };
+          }
+        }
+        return line;
+      });
+
+      const group: LinkGroup = { id: groupId, label, color, templateVersion: 1 };
+
+      return commitHistory(state, { groups: [...state.groups, group], lines: updatedLines });
+    }),
 
   updateGroup: (id, updates) =>
     set((state) =>
