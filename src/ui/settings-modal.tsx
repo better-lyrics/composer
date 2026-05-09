@@ -514,7 +514,7 @@ const CobaltInstanceRow: React.FC<{
         <span
           aria-label="Composer's default instance"
           title="Composer's default instance"
-          className="inline-flex items-center justify-center shrink-0 text-composer-accent"
+          className="inline-flex items-center justify-center shrink-0 text-composer-text-faint"
         >
           <IconMoodHappy size={14} />
         </span>
@@ -556,7 +556,7 @@ const CobaltInstanceStatusIcon: React.FC<{ status: CobaltInstanceStatus }> = ({ 
       aria-label={tooltip}
       className={cn(
         "inline-flex items-center justify-center shrink-0",
-        status.status === "success" ? "text-composer-accent" : "text-amber-400",
+        status.status === "success" ? "text-emerald-400" : "text-amber-400",
       )}
     >
       {status.status === "success" ? <IconMoodCheck size={14} /> : <IconMoodSadDizzy size={14} />}
