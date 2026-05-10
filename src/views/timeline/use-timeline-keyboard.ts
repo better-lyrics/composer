@@ -226,38 +226,6 @@ function useTimelineKeyboard(
         }
       }
 
-      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const selectedWords = useTimelineStore.getState().selectedWords;
-        if (selectedWords.length === 0) return;
-
-        const projectLines = useProjectStore.getState().lines;
-        let targetGroupId: string | null = null;
-        let targetInstanceIdx: number | null = null;
-        let allInSameInstance = true;
-        for (const sel of selectedWords) {
-          const line = projectLines.find((l) => l.id === sel.lineId);
-          if (!line || line.groupId === undefined || line.instanceIdx === undefined) {
-            allInSameInstance = false;
-            break;
-          }
-          if (targetGroupId === null) {
-            targetGroupId = line.groupId;
-            targetInstanceIdx = line.instanceIdx;
-          } else if (line.groupId !== targetGroupId || line.instanceIdx !== targetInstanceIdx) {
-            allInSameInstance = false;
-            break;
-          }
-        }
-
-        if (allInSameInstance && targetGroupId !== null && targetInstanceIdx !== null) {
-          e.preventDefault();
-          const nudge = useSettingsStore.getState().nudgeAmount;
-          const delta = e.key === "ArrowLeft" ? -nudge : nudge;
-          useProjectStore.getState().shiftInstance(targetGroupId, targetInstanceIdx, delta);
-          return;
-        }
-      }
-
       if (e.key === "Escape") {
         const { pasteMode } = useTimelineStore.getState();
         if (pasteMode.status === "preview") {
