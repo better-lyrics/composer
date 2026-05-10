@@ -699,6 +699,10 @@ function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
   if ("text" in updates) linked.text = updates.text;
   if ("agentId" in updates) linked.agentId = updates.agentId;
   if ("backgroundText" in updates) linked.backgroundText = updates.backgroundText;
+  if ("words" in updates && updates.words === undefined) linked.words = undefined;
+  if ("begin" in updates && updates.begin === undefined) linked.begin = undefined;
+  if ("end" in updates && updates.end === undefined) linked.end = undefined;
+  if ("backgroundWords" in updates && updates.backgroundWords === undefined) linked.backgroundWords = undefined;
   return linked;
 }
 
@@ -852,6 +856,8 @@ function getAgentColor(agentId: string): string {
 }
 
 export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, AGENT_COLORS, getAgentColor, INITIAL_STATE };
+export { extractLinkedFields };
+
 export type {
   Agent,
   AgentType,

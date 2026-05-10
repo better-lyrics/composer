@@ -811,4 +811,104 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     expect(a1?.words?.length).toBe(1);
     expect(a1?.words?.[0].text).toBe("hi");
   });
+
+  it("clears sibling words/begin/end when source explicitly clears them with a text edit", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "a0",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 30,
+          end: 32,
+          words: [
+            { text: "I ", begin: 30, end: 30.4 },
+            { text: "love ", begin: 30.4, end: 30.8 },
+            { text: "you", begin: 30.8, end: 31.2 },
+          ],
+        },
+        {
+          id: "a1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          begin: 60,
+          end: 62,
+          words: [
+            { text: "I ", begin: 60, end: 60.5 },
+            { text: "love ", begin: 60.5, end: 61.0 },
+            { text: "you", begin: 61.0, end: 61.5 },
+          ],
+        },
+      ],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("a0", {
+      text: "I luv you",
+      words: undefined,
+      begin: undefined,
+      end: undefined,
+    });
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+    expect(a0?.text).toBe("I luv you");
+    expect(a0?.words).toBeUndefined();
+    expect(a0?.begin).toBeUndefined();
+    expect(a0?.end).toBeUndefined();
+    expect(a1?.text).toBe("I luv you");
+    expect(a1?.words).toBeUndefined();
+    expect(a1?.begin).toBeUndefined();
+    expect(a1?.end).toBeUndefined();
+  });
+
+  it("clears sibling backgroundWords when source clears them with a text edit", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "a0",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          backgroundText: "ohh ahh",
+          backgroundWords: [
+            { text: "ohh ", begin: 30, end: 30.5 },
+            { text: "ahh", begin: 30.5, end: 31 },
+          ],
+        },
+        {
+          id: "a1",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          backgroundText: "ohh ahh",
+          backgroundWords: [
+            { text: "ohh ", begin: 60, end: 60.5 },
+            { text: "ahh", begin: 60.5, end: 61 },
+          ],
+        },
+      ],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("a0", {
+      backgroundText: "yeah",
+      backgroundWords: undefined,
+    });
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.backgroundText).toBe("yeah");
+    expect(a1?.backgroundWords).toBeUndefined();
+  });
 });
