@@ -1,9 +1,11 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
 import { normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -167,7 +169,21 @@ function useTimelineDnd(lines: LyricLine[]) {
       }
 
       const targetLineId = over.data.current?.lineId;
-      if (targetLineId !== activeData.lineId) return;
+      if (targetLineId !== activeData.lineId) {
+        // Today every drop is scoped to the source line; surface a toast if a
+        // cross-line drop would have crossed an instance boundary so future
+        // code paths that allow cross-line moves get user feedback for free.
+        const sourceLineForGuard = lines.find((l) => l.id === activeData.lineId);
+        const targetLineForGuard = lines.find((l) => l.id === targetLineId);
+        if (
+          sourceLineForGuard &&
+          targetLineForGuard &&
+          wouldDropCrossInstance(sourceLineForGuard, targetLineForGuard)
+        ) {
+          toast.error("Detach the line first to move it out of the group");
+        }
+        return;
+      }
 
       const line = lines.find((l) => l.id === activeData.lineId);
       if (!line) return;
