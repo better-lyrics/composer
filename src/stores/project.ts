@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { applySiblingWords } from "@/utils/word-diff";
 import { normalizeTrailingSpaces, resolveOverlapsForward } from "@/utils/word-spaces";
 import { create } from "zustand";
 
@@ -794,6 +795,8 @@ function propagateWordChanges(
 ): WordTiming[] | undefined {
   if (!sourceAfter || !siblingWords) return undefined;
 
+  // Fast path for the common text-rename case (count unchanged): only update
+  // word texts on the sibling, keep timing exactly. Avoids running the LCS diff.
   if (sourceBefore && sourceAfter.length === sourceBefore.length) {
     if (sourceAfter.length !== siblingWords.length) return undefined;
     let changed = false;
@@ -805,23 +808,10 @@ function propagateWordChanges(
     return changed ? next : undefined;
   }
 
-  if (sourceAfter.length === 0 || siblingWords.length === 0) return undefined;
-
-  const sourceStart = Math.min(...sourceAfter.map((w) => w.begin));
-  const sourceEnd = Math.max(...sourceAfter.map((w) => w.end));
-  const sourceSpan = sourceEnd - sourceStart;
-  if (sourceSpan <= 0) return undefined;
-
-  const siblingStart = Math.min(...siblingWords.map((w) => w.begin));
-  const siblingEnd = Math.max(...siblingWords.map((w) => w.end));
-  const siblingSpan = siblingEnd - siblingStart;
-  if (siblingSpan <= 0) return undefined;
-
-  return sourceAfter.map((w) => ({
-    text: w.text,
-    begin: siblingStart + ((w.begin - sourceStart) / sourceSpan) * siblingSpan,
-    end: siblingStart + ((w.end - sourceStart) / sourceSpan) * siblingSpan,
-  }));
+  // Structural change: defer to the smart-sync diff that preserves sibling
+  // timing for words that didn't structurally change.
+  const result = applySiblingWords(sourceAfter, sourceBefore, siblingWords);
+  return result ?? undefined;
 }
 
 function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; groups?: LinkGroup[] }) {

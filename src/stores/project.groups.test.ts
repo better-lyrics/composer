@@ -912,3 +912,273 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
     expect(a1?.backgroundWords).toBeUndefined();
   });
 });
+
+// -- Smart word-count propagation regression tests ----------------------------
+//
+// These pin the fix for the silent-retiming bug. Before the fix, a split or
+// merge on chorus 1 would proportionally rewrite every sibling's per-word
+// timing, including words that didn't structurally change. Smart propagation
+// preserves the timing of unchanged words on each sibling.
+
+describe("propagateWordChanges · smart sync preserves unchanged-word timing", () => {
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+    useProjectStore.getState().clearHistory();
+  });
+
+  it("split on source: sibling 'I' and 'you' keep their original begin/end (different rhythm than source)", () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "A",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 0, end: 0.3 },
+            { text: "love ", begin: 0.3, end: 0.6 },
+            { text: "you", begin: 0.6, end: 1 },
+          ],
+        },
+        {
+          id: "B",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            // Sibling B has DIFFERENT rhythm from source A
+            { text: "I ", begin: 30, end: 30.4 },
+            { text: "love ", begin: 30.4, end: 30.7 },
+            { text: "you", begin: 30.7, end: 31.2 },
+          ],
+        },
+      ],
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("A", {
+      words: [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "lo", begin: 0.3, end: 0.45 },
+        { text: "ve ", begin: 0.45, end: 0.6 },
+        { text: "you", begin: 0.6, end: 1 },
+      ],
+    });
+
+    const b = useProjectStore.getState().lines.find((l) => l.id === "B");
+    expect(b?.words).toHaveLength(4);
+    // Sibling B's "I" preserved exactly
+    expect(b?.words?.[0]).toEqual({ text: "I ", begin: 30, end: 30.4 });
+    // Sibling B's "you" preserved exactly
+    expect(b?.words?.[3]).toEqual({ text: "you", begin: 30.7, end: 31.2 });
+    // The split lands inside B's love-slot proportionally
+    expect(b?.words?.[1].text).toBe("lo");
+    expect(b?.words?.[1].begin).toBeCloseTo(30.4);
+    expect(b?.words?.[1].end).toBeCloseTo(30.55);
+    expect(b?.words?.[2].text).toBe("ve ");
+    expect(b?.words?.[2].begin).toBeCloseTo(30.55);
+    expect(b?.words?.[2].end).toBeCloseTo(30.7);
+  });
+
+  it("merge on source: sibling unchanged words keep their original timings", () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "A",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 0, end: 0.3 },
+            { text: "love ", begin: 0.3, end: 0.6 },
+            { text: "you", begin: 0.6, end: 1 },
+          ],
+        },
+        {
+          id: "B",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 30, end: 30.4 },
+            { text: "love ", begin: 30.4, end: 30.7 },
+            { text: "you", begin: 30.7, end: 31.2 },
+          ],
+        },
+      ],
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("A", {
+      words: [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "loveyou", begin: 0.3, end: 1 },
+      ],
+    });
+
+    const b = useProjectStore.getState().lines.find((l) => l.id === "B");
+    expect(b?.words).toHaveLength(2);
+    expect(b?.words?.[0]).toEqual({ text: "I ", begin: 30, end: 30.4 });
+    expect(b?.words?.[1]).toEqual({ text: "loveyou", begin: 30.4, end: 31.2 });
+  });
+
+  it("identical-rhythm siblings: unchanged-word timing preserved (matches source rhythm)", () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "A",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 0, end: 0.3 },
+            { text: "love ", begin: 0.3, end: 0.6 },
+            { text: "you", begin: 0.6, end: 1 },
+          ],
+        },
+        {
+          id: "B",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 30, end: 30.3 },
+            { text: "love ", begin: 30.3, end: 30.6 },
+            { text: "you", begin: 30.6, end: 31 },
+          ],
+        },
+      ],
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("A", {
+      words: [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "lo", begin: 0.3, end: 0.45 },
+        { text: "ve ", begin: 0.45, end: 0.6 },
+        { text: "you", begin: 0.6, end: 1 },
+      ],
+    });
+
+    const b = useProjectStore.getState().lines.find((l) => l.id === "B");
+    expect(b?.words).toHaveLength(4);
+    expect(b?.words?.[0]).toEqual({ text: "I ", begin: 30, end: 30.3 });
+    expect(b?.words?.[3]).toEqual({ text: "you", begin: 30.6, end: 31 });
+  });
+
+  it("BG word split on source: sibling BG words preserve unchanged-word timings", () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "A",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          backgroundText: "ah ah",
+          backgroundWords: [
+            { text: "ah ", begin: 0, end: 0.3 },
+            { text: "ah", begin: 0.3, end: 0.6 },
+          ],
+        },
+        {
+          id: "B",
+          text: "main",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          backgroundText: "ah ah",
+          backgroundWords: [
+            { text: "ah ", begin: 30, end: 30.4 },
+            { text: "ah", begin: 30.4, end: 30.8 },
+          ],
+        },
+      ],
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("A", {
+      backgroundWords: [
+        { text: "ah ", begin: 0, end: 0.3 },
+        { text: "a", begin: 0.3, end: 0.45 },
+        { text: "h", begin: 0.45, end: 0.6 },
+      ],
+    });
+
+    const b = useProjectStore.getState().lines.find((l) => l.id === "B");
+    expect(b?.backgroundWords).toHaveLength(3);
+    // First "ah" preserved on sibling B
+    expect(b?.backgroundWords?.[0]).toEqual({ text: "ah ", begin: 30, end: 30.4 });
+    // The new "a" + "h" split inside B's old second-ah slot
+    expect(b?.backgroundWords?.[1].text).toBe("a");
+    expect(b?.backgroundWords?.[1].begin).toBeCloseTo(30.4);
+    expect(b?.backgroundWords?.[1].end).toBeCloseTo(30.6);
+    expect(b?.backgroundWords?.[2].text).toBe("h");
+    expect(b?.backgroundWords?.[2].begin).toBeCloseTo(30.6);
+    expect(b?.backgroundWords?.[2].end).toBeCloseTo(30.8);
+  });
+
+  it("detached siblings are NOT touched by structural propagation", () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "A",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { text: "I ", begin: 0, end: 0.3 },
+            { text: "love ", begin: 0.3, end: 0.6 },
+            { text: "you", begin: 0.6, end: 1 },
+          ],
+        },
+        {
+          id: "B",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          detached: true,
+          words: [
+            { text: "I ", begin: 30, end: 30.4 },
+            { text: "love ", begin: 30.4, end: 30.7 },
+            { text: "you", begin: 30.7, end: 31.2 },
+          ],
+        },
+      ],
+      groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
+    });
+
+    useProjectStore.getState().updateLineWithHistory("A", {
+      words: [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "lo", begin: 0.3, end: 0.45 },
+        { text: "ve ", begin: 0.45, end: 0.6 },
+        { text: "you", begin: 0.6, end: 1 },
+      ],
+    });
+
+    const b = useProjectStore.getState().lines.find((l) => l.id === "B");
+    // Detached sibling untouched: original 3-word array preserved
+    expect(b?.words).toHaveLength(3);
+    expect(b?.words?.[1].text).toBe("love ");
+    expect(b?.detached).toBe(true);
+  });
+});
