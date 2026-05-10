@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { type LinkedDivergenceAction, useSettingsStore } from "@/stores/settings";
 
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[Composer]";
+
 // -- Types --------------------------------------------------------------------
 
 type DivergenceResolution = "apply" | "detach" | "cancel";
@@ -31,7 +35,7 @@ const useDivergenceStore = create<DivergenceStore>((set, get) => ({
       return Promise.resolve(pref);
     }
     if (get().isOpen) {
-      console.warn("[Composer] divergence modal already open; cancelling the second call");
+      console.warn(`${LOG_PREFIX} divergence modal already open; cancelling the second call`);
       return Promise.resolve("cancel");
     }
     return new Promise<DivergenceResolution>((resolve) => {
