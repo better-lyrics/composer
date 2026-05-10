@@ -10,6 +10,8 @@ import { showGroupActionToast } from "@/utils/group-toast";
 import { isMac } from "@/utils/platform";
 import { convertLineToWord } from "@/utils/sync-helpers";
 import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
+import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -428,13 +430,20 @@ const TimelineContextMenu: React.FC = () => {
     const { groupId, instanceIdx } = contextMenu.target;
     const audioEl = useAudioStore.getState().audioElement;
     const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-    const template = instanceToTemplate(useProjectStore.getState().lines, groupId, instanceIdx);
+    const projectLines = useProjectStore.getState().lines;
+    const template = instanceToTemplate(projectLines, groupId, instanceIdx);
     if (template.length === 0) {
       toast.error("Could not derive instance template");
       return;
     }
-    useProjectStore.getState().addInstance(groupId, template, playheadTime);
-    toast.success("Linked instance added at playhead");
+    const placement = decideAddInstancePlacement(projectLines, template, playheadTime);
+    if (placement.kind === "insert") {
+      useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+      toast.success("Linked instance added at playhead");
+    } else {
+      copyInstanceToClipboardAndPreview(projectLines, groupId, instanceIdx);
+      toast("No room at the playhead. Cmd+V to paste somewhere clear.");
+    }
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 

@@ -7,6 +7,8 @@ import { showGroupActionToast } from "@/utils/group-toast";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { convertLineToWord } from "@/utils/sync-helpers";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
+import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
@@ -501,8 +503,14 @@ function useTimelineKeyboard(
             toast.error("Could not derive instance template");
             break;
           }
-          projectState.addInstance(groupId, template, playheadTime);
-          toast.success("Linked instance added at playhead");
+          const placement = decideAddInstancePlacement(projectState.lines, template, playheadTime);
+          if (placement.kind === "insert") {
+            projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
+            toast.success("Linked instance added at playhead");
+          } else {
+            copyInstanceToClipboardAndPreview(projectState.lines, groupId, sourceInstanceIdx);
+            toast("No room at the playhead. Cmd+V to paste somewhere clear.");
+          }
           break;
         }
         case "timeline.toggleCollapseInstance": {
