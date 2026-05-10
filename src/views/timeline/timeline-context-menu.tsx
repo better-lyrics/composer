@@ -10,8 +10,8 @@ import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces"
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconCommand } from "@tabler/icons-react";
-import { FloatingPortal } from "@floating-ui/react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
+import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
 
 function MenuItem({
   label,
@@ -54,7 +54,11 @@ function MenuDivider() {
 const TimelineContextMenu: React.FC = () => {
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const clearContextMenu = useTimelineStore((s) => s.clearContextMenu);
-  const menuRef = useRef<HTMLDivElement>(null);
+
+  const { refs, floatingStyles } = useFloating({
+    placement: "bottom-start",
+    middleware: [flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }), shift({ padding: 8 })],
+  });
 
   const rawLines = useProjectStore((s) => s.lines);
   const agents = useProjectStore((s) => s.agents);
@@ -64,10 +68,28 @@ const TimelineContextMenu: React.FC = () => {
 
   const lines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
 
+  useLayoutEffect(() => {
+    if (!contextMenu) return;
+    const { x, y } = contextMenu;
+    refs.setPositionReference({
+      getBoundingClientRect: () => ({
+        width: 0,
+        height: 0,
+        x,
+        y,
+        top: y,
+        left: x,
+        right: x,
+        bottom: y,
+      }),
+    });
+  }, [contextMenu, refs]);
+
   useEffect(() => {
     if (!contextMenu) return;
     const handleClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const el = refs.floating.current;
+      if (el && !el.contains(e.target as Node)) {
         clearContextMenu();
       }
     };
@@ -80,7 +102,7 @@ const TimelineContextMenu: React.FC = () => {
       window.removeEventListener("mousedown", handleClick);
       window.removeEventListener("keydown", handleKey);
     };
-  }, [contextMenu, clearContextMenu]);
+  }, [contextMenu, clearContextMenu, refs.floating]);
 
   const handleEditWord = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
@@ -318,14 +340,14 @@ const TimelineContextMenu: React.FC = () => {
 
   if (!contextMenu) return null;
 
-  const { x, y, target } = contextMenu;
+  const { target } = contextMenu;
 
   return (
     <FloatingPortal>
       <div
-        ref={menuRef}
-        className="fixed z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none"
-        style={{ left: x, top: y }}
+        ref={refs.setFloating}
+        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none"
+        style={floatingStyles}
       >
         {target.kind === "word" && (
           <>
