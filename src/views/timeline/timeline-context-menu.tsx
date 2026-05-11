@@ -188,19 +188,17 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
 
-  const handlePlaceLineAtPlayhead = useCallback(() => {
+  const handlePlaceLineHere = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return;
-    const lineId = contextMenu.target.lineId;
+    const { lineId, time } = contextMenu.target;
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
-    const audio = useAudioStore.getState().audioElement;
-    const currentTime = audio?.currentTime ?? useAudioStore.getState().currentTime;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
     const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
     updateLineWithHistory(lineId, {
-      begin: currentTime,
-      end: currentTime + lineDuration,
+      begin: time,
+      end: time + lineDuration,
     });
     clearContextMenu();
   }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
@@ -633,7 +631,7 @@ const TimelineContextMenu: React.FC = () => {
                 targetLine.text.trim() !== "" &&
                 !targetLine.words?.length &&
                 targetLine.begin === undefined;
-              return canPlace ? <MenuItem label="Place line at playhead" onClick={handlePlaceLineAtPlayhead} /> : null;
+              return canPlace ? <MenuItem label="Place line here" onClick={handlePlaceLineHere} /> : null;
             })()}
             {groupableSelection && (
               <>
