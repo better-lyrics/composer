@@ -1,3 +1,4 @@
+import { AudioDriftDiagnostic } from "@/audio/audio-drift-diagnostic";
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
@@ -105,6 +106,7 @@ const AppContent: React.FC = () => {
       </main>
       {source && <AudioEngine />}
       {showPlayer && <AudioPlayer />}
+      <AudioDriftDiagnostic />
       <GuideCard state={guideCard} onSkip={skipGuideCard} />
     </div>
   );
