@@ -38,13 +38,23 @@ interface AudioSnapshot {
   seekable: Array<[number, number]>;
 }
 
+interface SourceDescriptor {
+  kind: "file" | "youtube" | "unknown";
+  label: string;
+  fileName: string | null;
+  fileSize: number | null;
+  fileMimeType: string | null;
+  fileLastModified: number | null;
+  youtubeVideoId: string | null;
+  youtubeResolved: boolean | null;
+}
+
 interface DriftSession {
   startedAt: string;
   startedAtPerformance: number;
   startedAtAudio: number;
   startedAtContext: number;
-  sourceKind: "file" | "youtube" | "unknown";
-  sourceLabel: string;
+  source: SourceDescriptor;
   audioAtStart: AudioSnapshot | null;
   samples: DriftSample[];
 }
@@ -156,8 +166,7 @@ const AudioDriftDiagnostic: React.FC = () => {
           startedAtPerformance: performanceTime,
           startedAtAudio: audioTime,
           startedAtContext: contextTime,
-          sourceKind: source?.type ?? "unknown",
-          sourceLabel: describeSource(source),
+          source: describeSource(source),
           audioAtStart: snapshotAudio(audio),
           samples: [],
         };
@@ -237,6 +246,8 @@ const AudioDriftDiagnostic: React.FC = () => {
         outputLatency: ctxRef.current?.outputLatency ?? null,
         state: ctxRef.current?.state ?? null,
       },
+      codecSupport: snapshotCodecSupport(audio),
+      sourceAtReport: describeSource(source),
       audioAtReport: snapshotAudio(audio),
       project: {
         title: project.metadata.title ?? null,
@@ -248,7 +259,7 @@ const AudioDriftDiagnostic: React.FC = () => {
       liveMetricsAtReport: metrics,
       sessions: sessionsRef.current,
     };
-  }, [audioElement, metrics]);
+  }, [audioElement, metrics, source]);
 
   const handleCopy = useCallback(async () => {
     if (sessionsRef.current.length === 0) {
@@ -353,11 +364,79 @@ const DiagRow: React.FC<{ label: string; value: string; emphasis?: boolean }> = 
 
 // -- Helpers ------------------------------------------------------------------
 
-function describeSource(source: ReturnType<typeof useAudioStore.getState>["source"]): string {
-  if (!source) return "none";
-  if (source.type === "file") return `file:${source.file.name}:${source.file.size}b:${source.file.type || "unknown"}`;
-  if (source.type === "youtube") return `youtube:${source.videoId}:${source.file ? "resolved" : "pending"}`;
-  return "unknown";
+function describeSource(source: ReturnType<typeof useAudioStore.getState>["source"]): SourceDescriptor {
+  if (!source) {
+    return {
+      kind: "unknown",
+      label: "none",
+      fileName: null,
+      fileSize: null,
+      fileMimeType: null,
+      fileLastModified: null,
+      youtubeVideoId: null,
+      youtubeResolved: null,
+    };
+  }
+  if (source.type === "file") {
+    return {
+      kind: "file",
+      label: `file:${source.file.name}`,
+      fileName: source.file.name,
+      fileSize: source.file.size,
+      fileMimeType: source.file.type || null,
+      fileLastModified: source.file.lastModified,
+      youtubeVideoId: null,
+      youtubeResolved: null,
+    };
+  }
+  if (source.type === "youtube") {
+    return {
+      kind: "youtube",
+      label: `youtube:${source.videoId}`,
+      fileName: source.file?.name ?? null,
+      fileSize: source.file?.size ?? null,
+      fileMimeType: source.file?.type ?? null,
+      fileLastModified: source.file?.lastModified ?? null,
+      youtubeVideoId: source.videoId,
+      youtubeResolved: !!source.file,
+    };
+  }
+  return {
+    kind: "unknown",
+    label: "unknown",
+    fileName: null,
+    fileSize: null,
+    fileMimeType: null,
+    fileLastModified: null,
+    youtubeVideoId: null,
+    youtubeResolved: null,
+  };
+}
+
+function snapshotCodecSupport(audio: HTMLAudioElement | null): Record<string, string> | null {
+  if (!audio) return null;
+  const types = [
+    "audio/mpeg",
+    "audio/mp4",
+    'audio/mp4; codecs="mp4a.40.2"',
+    "audio/aac",
+    "audio/wav",
+    "audio/flac",
+    "audio/ogg",
+    'audio/ogg; codecs="opus"',
+    'audio/ogg; codecs="vorbis"',
+    'audio/webm; codecs="opus"',
+    'audio/webm; codecs="vorbis"',
+  ];
+  const out: Record<string, string> = {};
+  for (const t of types) {
+    try {
+      out[t] = audio.canPlayType(t);
+    } catch {
+      out[t] = "error";
+    }
+  }
+  return out;
 }
 
 function timeRangesToArray(tr: TimeRanges | null): Array<[number, number]> {
