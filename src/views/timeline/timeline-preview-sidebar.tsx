@@ -4,6 +4,7 @@ import type { LyricLine } from "@/stores/project";
 import { Scroll } from "@/ui/scroll";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
+import { getTimingState } from "@/views/timeline/timeline-preview-sidebar-activity";
 import { getLineTiming } from "@/views/timeline/utils";
 import { useEffect, useRef } from "react";
 
@@ -157,42 +158,27 @@ const TimelinePreviewSidebar: React.FC = () => {
       const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
       let currentLineIdx = -1;
 
-      // Update word progress
       const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
       for (const el of wordEls) {
         const begin = Number.parseFloat(el.dataset.wordBegin ?? "0");
         const end = Number.parseFloat(el.dataset.wordEnd ?? "0");
-        const duration = end - begin;
         const lineIdx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
 
-        const isOpen = end === begin;
-        const isWordActive = currentTime >= begin && (isOpen || currentTime < end);
-        const isComplete = end > begin && currentTime >= end;
-
-        let progress = 0;
-        if (isWordActive && duration > 0) {
-          progress = (currentTime - begin) / duration;
-        } else if (isComplete) {
-          progress = 1;
-        }
-
+        const { isActive, progress } = getTimingState(begin, end, currentTime);
         el.style.clipPath = `inset(0 ${(1 - progress) * 100}% 0 0)`;
 
-        if (isWordActive && lineIdx > currentLineIdx) {
+        if (isActive && lineIdx > currentLineIdx) {
           currentLineIdx = lineIdx;
         }
       }
 
-      // Update line opacity
       const lineEls = container.querySelectorAll<HTMLElement>("[data-line-begin]");
       for (const el of lineEls) {
         const begin = Number.parseFloat(el.dataset.lineBegin ?? "0");
         const end = Number.parseFloat(el.dataset.lineEnd ?? "0");
+        const { isActive, isComplete } = getTimingState(begin, end, currentTime);
 
-        const isComplete = end > begin && currentTime >= end;
-        const isLineActive = currentTime >= begin && (end === begin || currentTime < end);
-
-        if (isLineActive) {
+        if (isActive) {
           el.style.opacity = "1";
         } else if (isComplete) {
           el.style.opacity = "0.6";

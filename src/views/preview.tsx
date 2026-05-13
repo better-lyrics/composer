@@ -95,7 +95,7 @@ const PreviewPanel: React.FC = () => {
         ref={braccatoRef}
         source="#composer-audio"
         src={blobUrl ?? undefined}
-        className="flex-1 mx-auto w-full max-w-3xl px-6"
+        className="flex-1 mx-auto w-full max-w-3xl px-6 [&::part(container)]:pb-[50cqh]"
         style={
           {
             "--braccato-font-family": "'Satoshi', sans-serif",
