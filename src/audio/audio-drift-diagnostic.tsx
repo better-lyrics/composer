@@ -130,6 +130,7 @@ interface RingEntry {
   performanceTime: number;
   audioTime: number;
   paused: boolean;
+  playbackRate: number;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -223,9 +224,9 @@ const AudioDriftDiagnostic: React.FC = () => {
     let raf = 0;
     let lastSampleAt = 0;
 
-    const pushRing = (performanceTime: number, audioTime: number, paused: boolean) => {
+    const pushRing = (performanceTime: number, audioTime: number, paused: boolean, playbackRate: number) => {
       const buf = ringBufferRef.current;
-      const entry: RingEntry = { performanceTime, audioTime, paused };
+      const entry: RingEntry = { performanceTime, audioTime, paused, playbackRate };
       if (buf.length < RING_BUFFER_SIZE) {
         buf.push(entry);
       } else {
@@ -248,7 +249,7 @@ const AudioDriftDiagnostic: React.FC = () => {
       }
       if (!bestEntry) return null;
       if (bestEntry.paused) return bestEntry.audioTime;
-      return bestEntry.audioTime + (targetPerfTime - bestEntry.performanceTime) / 1000;
+      return bestEntry.audioTime + ((targetPerfTime - bestEntry.performanceTime) / 1000) * bestEntry.playbackRate;
     };
 
     const readRms = (): number => {
@@ -285,7 +286,7 @@ const AudioDriftDiagnostic: React.FC = () => {
       }
 
       const rms = readRms();
-      pushRing(performanceTime, audioTime, audio.paused);
+      pushRing(performanceTime, audioTime, audio.paused, audio.playbackRate);
 
       let audibleMediaPosition: number | null = null;
       let audibleVsDisplayedMs: number | null = null;
