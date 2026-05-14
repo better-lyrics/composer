@@ -29,7 +29,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   downloadFilename,
 }) => {
   const [input, setInput] = useState("");
-  const [filename, setFilename] = useState(downloadFilename);
+  const [filename, setFilename] = useState(() => downloadFilename);
 
   const { ttml, error } = useMemo(() => {
     if (!input.trim()) return { ttml: "", error: null };

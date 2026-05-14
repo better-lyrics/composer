@@ -35,7 +35,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
   const isCollapsed = collapsedInstances[`${group.id}:${instanceIdx}`] ?? false;
   const renaming = renamingGroupId === group.id && renamingInstanceIdx === instanceIdx;
-  const [renameValue, setRenameValue] = useState(group.label);
+  const [renameValue, setRenameValue] = useState(() => group.label);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {

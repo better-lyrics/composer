@@ -1,6 +1,6 @@
 import "@braccato/core";
 import { useAudioStore } from "@/stores/audio";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -21,19 +21,18 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     return () => URL.revokeObjectURL(url);
   }, [ttmlString]);
 
-  const handleLineClick = useCallback((e: Event) => {
-    const detail = (e as CustomEvent).detail;
-    if (detail?.time != null) {
-      useAudioStore.getState().seekTo(detail.time / 1000);
-    }
-  }, []);
-
   useEffect(() => {
     const el = elementRef.current;
     if (!el) return;
+    const handleLineClick = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail?.time != null) {
+        useAudioStore.getState().seekTo(detail.time / 1000);
+      }
+    };
     el.addEventListener("braccato:line-click", handleLineClick);
     return () => el.removeEventListener("braccato:line-click", handleLineClick);
-  }, [handleLineClick]);
+  }, []);
 
   return (
     <braccato-lyrics

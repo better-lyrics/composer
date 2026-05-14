@@ -47,8 +47,8 @@ const EditAgentPopover: React.FC<{
   onRemove?: () => void;
 }> = ({ agent, removable = true, onRemove }) => {
   const updateAgent = useProjectStore((s) => s.updateAgent);
-  const [name, setName] = useState(agent.name || "");
-  const [type, setType] = useState<AgentType>(agent.type);
+  const [name, setName] = useState(() => agent.name || "");
+  const [type, setType] = useState<AgentType>(() => agent.type);
 
   const handleSave = useCallback(
     (close: () => void) => {

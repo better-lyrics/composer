@@ -38,15 +38,14 @@ const Modal: React.FC<ModalProps> = ({
     [onClose],
   );
 
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose],
-  );
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCloseRef.current();
+    };
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
     const { push, pop } = useModalStackStore.getState();
@@ -56,7 +55,7 @@ const Modal: React.FC<ModalProps> = ({
       document.body.style.overflow = "";
       pop();
     };
-  }, [isOpen, handleKeyDown]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

@@ -596,8 +596,8 @@ const CobaltInstanceEditRow: React.FC<{
   onSave: (label: string, url: string) => void;
   onCancel: () => void;
 }> = ({ initialLabel, initialUrl, onSave, onCancel }) => {
-  const [label, setLabel] = useState(initialLabel);
-  const [url, setUrl] = useState(displayHostFromUrl(initialUrl));
+  const [label, setLabel] = useState(() => initialLabel);
+  const [url, setUrl] = useState(() => displayHostFromUrl(initialUrl));
 
   const trimmedLabel = label.trim();
   const trimmedUrl = url.trim();

@@ -5,19 +5,17 @@ import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { formatTime, getEffectiveLines, isLineSynced } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 // -- Components ----------------------------------------------------------------
 
 const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }> = ({ lineId, backgroundText }) => {
-  const [value, setValue] = useState(backgroundText ?? "");
+  const [value, setValue] = useState(() => backgroundText ?? "");
   const [isEditing, setIsEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const focusOnMount = useCallback((el: HTMLInputElement | null) => {
+    el?.focus();
+  }, []);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-
-  useEffect(() => {
-    if (isEditing) inputRef.current?.focus();
-  }, [isEditing]);
 
   const handleCommit = useCallback(() => {
     const trimmed = value.trim() || undefined;
@@ -49,7 +47,7 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
 
   return (
     <input
-      ref={inputRef}
+      ref={focusOnMount}
       type="text"
       value={value}
       onChange={(e) => setValue(e.target.value)}

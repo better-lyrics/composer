@@ -1,6 +1,6 @@
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { isMac } from "@/utils/platform";
-import { useCallback, useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -46,15 +46,20 @@ function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut): boolean {
 function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = {}): void {
   const { enabled = true } = options;
 
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (!enabled) return;
+  const shortcutsRef = useRef(shortcuts);
+  shortcutsRef.current = shortcuts;
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!enabledRef.current) return;
       if (isAnyModalOpen()) return;
 
       const target = event.target as HTMLElement;
       const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 
-      for (const shortcut of shortcuts) {
+      for (const shortcut of shortcutsRef.current) {
         if (matchesShortcut(event, shortcut)) {
           if (isInput && !shortcut.ctrl && !shortcut.meta && !shortcut.mod) {
             continue;
@@ -64,14 +69,10 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
           return;
         }
       }
-    },
-    [shortcuts, enabled],
-  );
-
-  useEffect(() => {
+    };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  }, []);
 }
 
 export { useKeyboardShortcuts, matchesShortcut };
