@@ -72,4 +72,3 @@ function getExplicitSnippet(source: string, wordIndex: number, max: number): Exp
 // -- Exports -------------------------------------------------------------------
 
 export { getExplicitSnippet };
-export type { ExplicitSnippet };

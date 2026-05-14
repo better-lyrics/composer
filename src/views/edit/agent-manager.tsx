@@ -241,4 +241,4 @@ const AgentManager: React.FC = () => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { AgentManager, AgentBadge };
+export { AgentManager };

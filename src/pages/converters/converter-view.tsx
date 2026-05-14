@@ -152,5 +152,5 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   );
 };
 
-export { ConverterView, OPEN_IN_COMPOSER_HASH_PREFIX };
-export type { ConvertArgs, ConverterViewProps };
+export { ConverterView };
+export type { ConvertArgs };

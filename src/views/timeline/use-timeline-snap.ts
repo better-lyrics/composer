@@ -115,4 +115,3 @@ function useTimelineSnap(): UseTimelineSnap {
 // -- Exports ------------------------------------------------------------------
 
 export { useTimelineSnap };
-export type { BeginGestureArgs, UseTimelineSnap };

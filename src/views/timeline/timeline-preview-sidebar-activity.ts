@@ -15,4 +15,3 @@ function getTimingState(begin: number, end: number, currentTime: number): Timing
 }
 
 export { getTimingState };
-export type { TimingState };

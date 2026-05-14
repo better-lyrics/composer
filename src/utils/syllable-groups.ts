@@ -54,4 +54,4 @@ function getSyllablePositions(words: WordTiming[]): SyllablePosition[] {
 // -- Exports ------------------------------------------------------------------
 
 export { computeSyllableGroups, getSyllablePositions };
-export type { SyllableGroup, SyllablePosition };
+export type { SyllablePosition };

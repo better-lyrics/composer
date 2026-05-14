@@ -91,5 +91,5 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   reset: () => set(createInitialState()),
 }));
 
-export { useAudioStore, INITIAL_STATE };
-export type { AudioSource, AudioState };
+export { useAudioStore };
+export type { AudioSource };

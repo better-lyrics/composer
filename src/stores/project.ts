@@ -1027,19 +1027,17 @@ function getAgentColor(agentId: string): string {
   return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
 }
 
-export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, AGENT_COLORS, getAgentColor, INITIAL_STATE };
+export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, getAgentColor, INITIAL_STATE };
 export { extractLinkedFields, propagateWordChanges };
 
 export type {
   Agent,
   AgentType,
-  EditorMode,
   GranularityMode,
   LineTemplate,
   LinkGroup,
   LyricLine,
   ProjectMetadata,
-  ProjectState,
   SimpleTab,
   WordTemplate,
   WordTiming,

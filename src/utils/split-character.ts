@@ -35,4 +35,4 @@ function stripSplitCharacter(text: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { escapeRegex, getSplitCharacter, cleanSplitCharacters, stripSplitCharacter };
+export { getSplitCharacter, cleanSplitCharacters, stripSplitCharacter };

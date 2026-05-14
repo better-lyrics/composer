@@ -106,4 +106,4 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, childre
   );
 };
 
-export { FileDropZone, ACCEPTED_AUDIO_TYPES };
+export { FileDropZone };

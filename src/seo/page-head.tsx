@@ -50,4 +50,3 @@ const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, 
 };
 
 export { PageHead };
-export type { PageHeadProps };

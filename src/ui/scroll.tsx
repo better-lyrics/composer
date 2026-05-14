@@ -47,4 +47,3 @@ const Scroll: React.FC<ScrollProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { Scroll };
-export type { AutoHide };

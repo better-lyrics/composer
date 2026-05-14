@@ -240,4 +240,4 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
 // -- Exports -------------------------------------------------------------------
 
 export { findExplicitWords };
-export type { ExplicitSuggestion, LinkedInfo, LinkedInstance };
+export type { ExplicitSuggestion };

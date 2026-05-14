@@ -6,7 +6,6 @@ import { useSettingsStore } from "@/stores/settings";
 import {
   commitHeldWord,
   commitTappedWord,
-  getNudgeAmount,
   type SyncState,
   createInitialBgWords,
   getLineTiming,
@@ -451,4 +450,4 @@ function useSyncHandlers({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useSyncHandlers, getNudgeAmount };
+export { useSyncHandlers };

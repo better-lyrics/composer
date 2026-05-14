@@ -221,4 +221,4 @@ function propagateContentUpdates(
 // -- Exports ------------------------------------------------------------------
 
 export { detachInstancesFromLines, diffEditTextChange, findStructurallyImpactedInstances, propagateContentUpdates };
-export type { ContentUpdate, DiffResult, ImpactedInstance };
+export type { ImpactedInstance };

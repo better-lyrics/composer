@@ -269,7 +269,6 @@ function flushPendingSave(): void {
 // -- Exports ------------------------------------------------------------------
 
 export {
-  saveCurrentProject,
   loadCurrentProject,
   clearCurrentProject,
   exportProjectToFile,
@@ -281,4 +280,4 @@ export {
   loadAudioFile,
   clearAudioFile,
 };
-export type { SavedProject, SavedAudioSource };
+export type { SavedAudioSource };

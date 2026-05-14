@@ -183,11 +183,7 @@ function isWordSelected(selectedWords: WordSelection[], lineId: string, wordInde
   return selectedWords.some((w) => w.lineId === lineId && w.wordIndex === wordIndex && w.type === type);
 }
 
-function instanceKey(groupId: string, instanceIdx: number): string {
-  return `${groupId}:${instanceIdx}`;
-}
-
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, isWordSelected, instanceKey, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
-export type { WordSelection, ContextMenuTarget, ContextMenuState, EditingWord };
+export { useTimelineStore, isWordSelected, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
+export type { WordSelection };

@@ -63,4 +63,3 @@ function createGroup(opts: FactoryGroupOptions = {}) {
 }
 
 export { createLine, createWord, createGroup };
-export type { FactoryLineOptions, FactoryWordOptions, FactoryGroupOptions };

@@ -286,4 +286,4 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { HelpModal, KeyBadge, ShortcutItem, ShortcutSection, SHORTCUT_SECTIONS, formatKey };
+export { HelpModal, KeyBadge, ShortcutSection, SHORTCUT_SECTIONS, formatKey };

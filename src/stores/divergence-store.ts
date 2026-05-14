@@ -56,4 +56,3 @@ const useDivergenceStore = create<DivergenceStore>((set, get) => ({
 // -- Exports ------------------------------------------------------------------
 
 export { useDivergenceStore };
-export type { DivergenceOptions, DivergenceResolution };

@@ -37,4 +37,3 @@ function decidePasteInstanceAction({
 }
 
 export { decidePasteInstanceAction };
-export type { PasteInstanceDecision };

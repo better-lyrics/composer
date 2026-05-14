@@ -30,4 +30,3 @@ const FaqSection: React.FC<FaqSectionProps> = ({ title, entries }) => {
 };
 
 export { FaqSection };
-export type { FaqSectionProps };

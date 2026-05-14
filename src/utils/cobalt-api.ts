@@ -298,4 +298,3 @@ export {
   parseStandardCobaltResponse,
   stripFilenameExtension,
 };
-export type { AudioResponse, SessionResponse, ToastErrorContext };

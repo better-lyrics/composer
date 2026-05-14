@@ -153,4 +153,4 @@ function findSnapShift(args: FindSnapShiftArgs): SnapResult {
 // -- Exports -------------------------------------------------------------------
 
 export { collectSnapAnchors, findSnapShift, selfKey };
-export type { AnchorKind, FindSnapShiftArgs, SelfKey, SnapAnchor, SnapResult };
+export type { SnapAnchor };

@@ -63,4 +63,4 @@ async function writeSeoAssets(outDir: string, origin: string): Promise<void> {
   console.log(`[seo] wrote sitemap.xml with ${routes.length} routes`);
 }
 
-export { buildRobotsTxt, buildSitemapXml, collectRoutes, writeSeoAssets };
+export { writeSeoAssets };

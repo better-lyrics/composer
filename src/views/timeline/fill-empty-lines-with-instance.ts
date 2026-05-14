@@ -82,4 +82,3 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
 }
 
 export { fillEmptyLinesWithInstance, isEmptyFillable };
-export type { FillInput, FillResult };

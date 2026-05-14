@@ -177,4 +177,3 @@ export {
   instanceToTemplate,
   instanceLineRange,
 };
-export type { CreateGroupResult };

@@ -132,4 +132,4 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { matchesBinding, findMatchingShortcut, detectConflicts, bindingsEqual, isReservedBrowserShortcut };
+export { findMatchingShortcut, detectConflicts, isReservedBrowserShortcut };

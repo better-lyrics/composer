@@ -153,4 +153,3 @@ function decideAddInstancePlacement({ lines, groupId, template, playheadTime }: 
 // -- Exports ------------------------------------------------------------------
 
 export { decideAddInstancePlacement, templateDuration };
-export type { Placement, PlacementFill, PlacementInsert, PlacementFallback };

@@ -42,4 +42,4 @@ function extractVideoId(input: string): string | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractVideoId, VIDEO_ID_REGEX };
+export { extractVideoId };

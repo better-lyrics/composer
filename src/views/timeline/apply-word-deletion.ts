@@ -118,5 +118,5 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   return result;
 }
 
-export { applyWordDeletion, isLineFullyEmpty };
+export { applyWordDeletion };
 export type { DeletionSelection };

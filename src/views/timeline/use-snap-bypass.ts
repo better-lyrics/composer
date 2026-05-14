@@ -51,4 +51,3 @@ function useSnapBypass({ active, getLastPointer }: UseSnapBypassArgs) {
 
 // -- Exports -------------------------------------------------------------------
 export { useSnapBypass };
-export type { UseSnapBypassArgs };

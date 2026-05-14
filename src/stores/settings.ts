@@ -194,4 +194,4 @@ export {
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
 };
-export type { SettingsState, CobaltInstance, CobaltInstanceStatus, LinkedDivergenceAction, PreviewRenderer };
+export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction };

@@ -30,4 +30,3 @@ const HowItWorks: React.FC<HowItWorksProps> = ({ title, steps }) => {
 };
 
 export { HowItWorks };
-export type { HowItWorksProps, HowStep };

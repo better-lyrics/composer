@@ -565,5 +565,5 @@ function parseLyricsFile(filename: string, content: string): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { detectFileType, parseLyricsFile };
-export type { LyricsFileType, ParseResult };
+export { parseLyricsFile };
+export type { ParseResult };

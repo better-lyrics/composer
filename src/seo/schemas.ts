@@ -106,8 +106,7 @@ export {
   faqPageSchema,
   howToSchema,
   organizationSchema,
-  SITE_NAME,
   SITE_ORIGIN,
   softwareApplicationSchema,
 };
-export type { BreadcrumbEntry, FaqEntry, HowToStep };
+export type { FaqEntry };

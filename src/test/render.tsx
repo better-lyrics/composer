@@ -37,4 +37,3 @@ function render(ui: ReactElement, options: ComposerRenderOptions = {}): Promise<
 }
 
 export { render };
-export type { ComposerRenderOptions };

@@ -89,4 +89,3 @@ function useConfirm(): (options: ConfirmOptions) => Promise<boolean> {
 // -- Exports ------------------------------------------------------------------
 
 export { useConfirm, useConfirmStore };
-export type { ConfirmOptions };

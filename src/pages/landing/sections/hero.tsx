@@ -43,4 +43,3 @@ const Hero: React.FC<HeroProps> = ({ eyebrow, headline, subhead, primaryCta, sec
 };
 
 export { Hero };
-export type { HeroProps };

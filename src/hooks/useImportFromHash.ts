@@ -95,4 +95,4 @@ function useImportFromHash(): void {
   }, [confirm]);
 }
 
-export { IMPORT_HASH_PREFIX, useImportFromHash };
+export { useImportFromHash };

@@ -75,5 +75,5 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
   }, []);
 }
 
-export { useKeyboardShortcuts, matchesShortcut };
-export type { Shortcut, ShortcutOptions };
+export { useKeyboardShortcuts };
+export type { Shortcut };

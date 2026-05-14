@@ -257,4 +257,3 @@ const GroupBanner = memo(GroupBannerComponent);
 // -- Exports -------------------------------------------------------------------
 
 export { GroupBanner };
-export type { GroupBannerProps };

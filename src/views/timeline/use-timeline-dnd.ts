@@ -324,4 +324,3 @@ function useTimelineDnd(lines: LyricLine[]) {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineDnd };
-export type { DragData };

@@ -50,4 +50,4 @@ function useImportFromYouTube(): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useImportFromYouTube, YOUTUBE_PARAM_NAMES };
+export { useImportFromYouTube };

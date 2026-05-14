@@ -86,4 +86,4 @@ const routes: RouteRecord[] = [
   },
 ];
 
-export { GUIDE_SLUGS, routes };
+export { routes };

@@ -478,14 +478,4 @@ export {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 };
-export type {
-  EffectiveRow,
-  GroupHeaderRow,
-  LineEffectiveRow,
-  RowLayout,
-  RowPosition,
-  NudgeSelection,
-  NudgeUpdate,
-  NudgeResult,
-  PartitionedSelections,
-};
+export type { EffectiveRow, GroupHeaderRow, RowLayout };

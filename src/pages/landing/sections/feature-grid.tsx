@@ -36,4 +36,3 @@ const FeatureGrid: React.FC<FeatureGridProps> = ({ title, subtitle, features }) 
 };
 
 export { FeatureGrid };
-export type { FeatureCard, FeatureGridProps };

@@ -31,4 +31,3 @@ const useAuthStore = create<AuthState & AuthActions>((set) => ({
 // -- Exports ------------------------------------------------------------------
 
 export { useAuthStore };
-export type { AuthState };

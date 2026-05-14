@@ -86,4 +86,4 @@ const GuideLayout: React.FC<GuideLayoutProps> = ({ slug, title, description, dat
 };
 
 export { GuideLayout };
-export type { GuideLayoutProps, RelatedLink };
+export type { RelatedLink };

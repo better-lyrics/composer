@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "1.12.0",
+  "version": "1.13.0",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
@@ -14,7 +14,9 @@
     "test:component:watch": "vitest --project browser",
     "test:coverage": "vitest run --coverage",
     "lint:fix": "biome lint --write . && biome format --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "knip": "knip",
+    "knip:production": "knip --production"
   },
   "dependencies": {
     "@braccato/core": "^0.1.4",
@@ -43,10 +45,7 @@
     "zustand": "^5.0.0"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@biomejs/biome",
-      "esbuild"
-    ],
+    "ignoredBuiltDependencies": ["@biomejs/biome", "esbuild"],
     "overrides": {
       "@braccato/parsers": "^0.1.1"
     }
@@ -63,6 +62,7 @@
     "@vitest/browser-playwright": "^4.1.6",
     "@vitest/coverage-v8": "^4.1.6",
     "jsdom": "^29.0.1",
+    "knip": "^6.13.1",
     "playwright": "^1.60.0",
     "react-router-dom": "^6.30.3",
     "tailwindcss": "^4.0.0",

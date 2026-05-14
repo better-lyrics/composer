@@ -147,4 +147,3 @@ const GroupHeaderRow = memo(GroupHeaderRowComponent);
 // -- Exports -------------------------------------------------------------------
 
 export { GroupHeaderRow, GROUP_HEADER_HEIGHT };
-export type { GroupHeaderRowProps };

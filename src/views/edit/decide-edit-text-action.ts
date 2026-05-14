@@ -66,4 +66,3 @@ function decideEditTextAction({ text, defaultAgentId, lines, groups, modalPendin
 // -- Exports ------------------------------------------------------------------
 
 export { decideEditTextAction };
-export type { EditTextAction, DecideOptions };

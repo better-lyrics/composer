@@ -213,4 +213,3 @@ function wordsDeepEqual(a: WordTiming[] | null, b: WordTiming[] | null): boolean
 // -- Exports ------------------------------------------------------------------
 
 export { applySiblingWords, lcsPairs, proportionalRemap, wordKey, wordsDeepEqual, wouldDivergenceCauseRetiming };
-export type { LineWithWords };

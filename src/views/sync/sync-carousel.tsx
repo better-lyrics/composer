@@ -184,4 +184,4 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
 
 // -- Exports ------------------------------------------------------------------
 
-export { LINE_HEIGHT, SyncCarousel };
+export { SyncCarousel };

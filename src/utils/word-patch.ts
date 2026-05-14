@@ -28,4 +28,3 @@ function applyWordPatch(
 // -- Exports ------------------------------------------------------------------
 
 export { applyWordPatch };
-export type { AdjacentPatch };
