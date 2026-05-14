@@ -6,10 +6,6 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { Modifier } from "@dnd-kit/core";
 import { useCallback, useMemo, useRef } from "react";
 
-// -- Constants ----------------------------------------------------------------
-
-const SNAP_THRESHOLD_PX = 8;
-
 // -- Types --------------------------------------------------------------------
 
 interface BeginGestureArgs {
@@ -77,6 +73,7 @@ function useTimelineSnap(): UseTimelineSnap {
   const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
     const ctx = ctxRef.current;
     const enabled = useSettingsStore.getState().timelineSnap;
+    const threshold = useSettingsStore.getState().timelineSnapThreshold;
     const bypassing = useTimelineStore.getState().isBypassing;
     const zoom = useTimelineStore.getState().zoom;
     if (!enabled || bypassing || ctx.anchors.length === 0) {
@@ -90,7 +87,7 @@ function useTimelineSnap(): UseTimelineSnap {
       edges: proposedEdges,
       anchors: ctx.anchors,
       zoom,
-      threshold: SNAP_THRESHOLD_PX,
+      threshold,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
     writeSnappedLeader(ctx.leaderKey, result.anchor !== null);
@@ -114,5 +111,5 @@ function useTimelineSnap(): UseTimelineSnap {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useTimelineSnap, SNAP_THRESHOLD_PX };
+export { useTimelineSnap };
 export type { BeginGestureArgs, UseTimelineSnap };

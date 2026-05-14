@@ -389,6 +389,20 @@ const TimelineSection: React.FC = () => {
         }}
       />
       <ToggleSetting
+        label="Snap (magnet)"
+        description="Word edges snap to nearby anchors when dragging or resizing."
+        settingKey="timelineSnap"
+      />
+      <SliderSetting
+        label="Snap threshold"
+        description="Distance (in pixels) at which the moving block locks onto an anchor."
+        settingKey="timelineSnapThreshold"
+        min={4}
+        max={24}
+        step={1}
+        format={(v) => `${v}px`}
+      />
+      <ToggleSetting
         label="Follow playhead"
         description="Auto-scroll the timeline to keep the playhead visible."
         settingKey="followPlayhead"
