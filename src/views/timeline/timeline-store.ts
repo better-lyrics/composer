@@ -50,6 +50,7 @@ interface TimelineState {
   renamingGroupId: string | null;
   renamingInstanceIdx: number | null;
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
+  isBypassing: boolean;
 }
 
 interface TimelineActions {
@@ -78,6 +79,7 @@ interface TimelineActions {
   setPingingGroupId: (groupId: string | null) => void;
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
+  setIsBypassing: (v: boolean) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -115,6 +117,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     renamingGroupId: null,
     renamingInstanceIdx: null,
     draggedGroupShift: null,
+    isBypassing: false,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -164,6 +167,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setRenamingGroupId: (renamingGroupId, renamingInstanceIdx = null) =>
       set({ renamingGroupId, renamingInstanceIdx: renamingGroupId === null ? null : renamingInstanceIdx }),
     setDraggedGroupShift: (draggedGroupShift) => set({ draggedGroupShift }),
+    setIsBypassing: (v) => set({ isBypassing: v }),
   };
 });
 
