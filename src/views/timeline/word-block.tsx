@@ -1,5 +1,6 @@
 import { cn } from "@/utils/cn";
 import type { SyllablePosition } from "@/utils/syllable-groups";
+import { selfKey } from "@/views/timeline/snap";
 import { useDraggable } from "@dnd-kit/core";
 
 // -- Types ---------------------------------------------------------------------
@@ -67,7 +68,17 @@ const WordBlock: React.FC<WordBlockProps> = ({
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
-    data: { lineId, lineIndex, wordIndex, trackType, text, begin, end },
+    data: {
+      lineId,
+      lineIndex,
+      wordIndex,
+      trackType,
+      text,
+      begin,
+      end,
+      snap: { edgesAtStart: [begin, end] },
+      selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
+    },
   });
 
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {

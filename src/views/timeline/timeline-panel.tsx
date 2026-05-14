@@ -1,6 +1,9 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/stores/project";
+import { selfKey } from "@/views/timeline/snap";
+import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
 import { LyricsImportModal } from "@/views/timeline/lyrics-import-modal";
@@ -65,6 +68,23 @@ const DragGhost: React.FC<{
   </div>
 );
 
+function makeDragOverlapCheck(
+  data: { lineId: string; wordIndex: number; trackType: "word" | "bg"; begin: number; end: number },
+  lines: LyricLine[],
+) {
+  const line = lines.find((l) => l.id === data.lineId);
+  if (!line) return () => true;
+  const wordsArr = data.trackType === "word" ? (line.words ?? []) : (line.backgroundWords ?? []);
+  return (shift: number) => {
+    const newBegin = data.begin + shift;
+    const newEnd = data.end + shift;
+    return !wordsArr.some((w, i) => {
+      if (i === data.wordIndex) return false;
+      return newBegin < w.end && newEnd > w.begin;
+    });
+  };
+}
+
 const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
@@ -103,6 +123,7 @@ const TimelinePanel: React.FC = () => {
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
@@ -315,9 +336,43 @@ const TimelinePanel: React.FC = () => {
   return (
     <DndContext
       sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={handleDragCancel}
+      modifiers={[dragSnapModifier]}
+      onDragStart={(e) => {
+        handleDragStart(e);
+        const data = e.active.data.current as
+          | {
+              lineId: string;
+              wordIndex: number;
+              trackType: "word" | "bg";
+              begin: number;
+              end: number;
+              snap?: { edgesAtStart: number[] };
+            }
+          | undefined;
+        if (!data?.snap) return;
+        const { selectedWords } = useTimelineStore.getState();
+        const lines = useProjectStore.getState().lines;
+        const isLeaderInSelection = selectedWords.some(
+          (s) => s.lineId === data.lineId && s.wordIndex === data.wordIndex && s.type === data.trackType,
+        );
+        const draggedSet =
+          isLeaderInSelection && selectedWords.length > 0
+            ? selectedWords
+            : [{ lineId: data.lineId, lineIndex: 0, wordIndex: data.wordIndex, type: data.trackType }];
+        const selfIds = new Set(draggedSet.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
+        beginGesture({
+          selfIds,
+          overlapCheck: makeDragOverlapCheck(data, lines),
+        });
+      }}
+      onDragEnd={(e) => {
+        endGesture();
+        handleDragEnd(e);
+      }}
+      onDragCancel={() => {
+        endGesture();
+        handleDragCancel();
+      }}
     >
       <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
         <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
