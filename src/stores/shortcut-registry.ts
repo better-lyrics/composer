@@ -261,6 +261,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     description: "Toggle explicit on selected word(s)",
     defaultBinding: { key: "e", shift: true },
   },
+  {
+    id: "timeline.toggleSnap",
+    scope: "timeline",
+    description: "Toggle snap (magnet)",
+    defaultBinding: { key: "n" },
+  },
 ];
 
 // -- Helpers ------------------------------------------------------------------
