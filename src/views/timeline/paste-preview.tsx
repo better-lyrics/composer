@@ -54,7 +54,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
     return () => document.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const handleClick = useCallback(
+  const commitPaste = useCallback(
     async (e: React.MouseEvent) => {
       if (e.button !== 0) return;
 
@@ -263,7 +263,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   return (
     <div
       className={cn("absolute inset-0 z-55", hasOverlap ? "cursor-not-allowed" : "cursor-copy")}
-      onClick={handleClick}
+      onClick={commitPaste}
     >
       {ghosts.map((ghost) => (
         <div

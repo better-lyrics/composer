@@ -40,6 +40,24 @@ const WordWithProgress: React.FC<{
   </span>
 );
 
+const BgWordsRow: React.FC<{
+  backgroundWords: NonNullable<LyricLine["backgroundWords"]>;
+  lineIndex: number;
+  alignmentClass: string;
+}> = ({ backgroundWords, lineIndex, alignmentClass }) => (
+  <div className={`flex flex-wrap items-center gap-y-0.5 text-xs font-medium mt-0.5 ${alignmentClass}`}>
+    {backgroundWords.map((bgWord) => (
+      <WordWithProgress
+        key={`bg-${bgWord.begin}-${bgWord.text}`}
+        text={bgWord.text}
+        begin={bgWord.begin}
+        end={bgWord.end}
+        lineIndex={lineIndex}
+      />
+    ))}
+  </div>
+);
+
 const MiniPreviewLine: React.FC<{
   line: LyricLine;
   lineIndex: number;
@@ -66,23 +84,9 @@ const MiniPreviewLine: React.FC<{
   );
 
   const words = line.words ?? [];
-
-  const renderBgWords = () => {
-    if (!line.backgroundWords?.length) return null;
-    return (
-      <div className={`flex flex-wrap items-center gap-y-0.5 text-xs font-medium mt-0.5 ${alignmentClass}`}>
-        {line.backgroundWords.map((bgWord) => (
-          <WordWithProgress
-            key={`bg-${bgWord.begin}-${bgWord.text}`}
-            text={bgWord.text}
-            begin={bgWord.begin}
-            end={bgWord.end}
-            lineIndex={lineIndex}
-          />
-        ))}
-      </div>
-    );
-  };
+  const bgWords = line.backgroundWords?.length ? (
+    <BgWordsRow backgroundWords={line.backgroundWords} lineIndex={lineIndex} alignmentClass={alignmentClass} />
+  ) : null;
 
   if (granularity === "line") {
     return (
@@ -109,7 +113,7 @@ const MiniPreviewLine: React.FC<{
           </span>
           {alignment === "right" && AgentDotRight}
         </div>
-        {renderBgWords()}
+        {bgWords}
       </div>
     );
   }
@@ -141,7 +145,7 @@ const MiniPreviewLine: React.FC<{
             ))}
         {alignment === "right" && AgentDotRight}
       </div>
-      {renderBgWords()}
+      {bgWords}
     </div>
   );
 };

@@ -39,7 +39,7 @@ const BG_DROP_ZONE_HEIGHT = 24;
 // -- AddWordsButton ------------------------------------------------------------
 
 const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineId, wordCount }) => {
-  const handleClick = useCallback(
+  const selectLineWords = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
       const currentTime = useAudioStore.getState().currentTime;
@@ -57,7 +57,7 @@ const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineI
   return (
     <button
       type="button"
-      onClick={handleClick}
+      onClick={selectLineWords}
       className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
     >
       <IconPlus size={12} />

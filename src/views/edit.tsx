@@ -95,7 +95,7 @@ const LinePreview: React.FC<{
     }
   }, [line.lineId, bgInput, onBackgroundChange]);
 
-  const handleClick = useCallback(
+  const selectLineForBulkEdit = useCallback(
     (e: React.MouseEvent) => {
       if ((e.target as HTMLElement).closest("select, button")) return;
       if (e.shiftKey) window.getSelection()?.removeAllRanges();
@@ -140,7 +140,7 @@ const LinePreview: React.FC<{
         isSelected ? "bg-composer-accent/15" : line.hasBrackets ? "bg-composer-error/5" : "hover:bg-composer-button/30"
       }`}
       onMouseDown={handleMouseDown}
-      onClick={handleClick}
+      onClick={selectLineForBulkEdit}
       title={groupTooltip}
     >
       {groupColor && (

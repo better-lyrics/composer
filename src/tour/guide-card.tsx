@@ -1,7 +1,7 @@
 import { Button } from "@/ui/button";
 import { slideUpVariants, springSnappy } from "@/utils/animationVariants";
 import { IconCheck } from "@tabler/icons-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ state, onSkip }) => {
   return (
     <AnimatePresence>
       {state && (
-        <motion.div
+        <m.div
           variants={slideUpVariants}
           initial="hidden"
           animate="visible"
@@ -52,7 +52,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ state, onSkip }) => {
               </Button>
             )}
           </div>
-        </motion.div>
+        </m.div>
       )}
     </AnimatePresence>
   );

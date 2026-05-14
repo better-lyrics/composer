@@ -29,7 +29,7 @@ const TimelineWaveform: React.FC = () => {
   }, [ws, zoom]);
 
   // Handle click to seek
-  const handleClick = useCallback(
+  const seekToClickedPosition = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation();
       if (!duration || totalWidth <= 0) return;
@@ -81,7 +81,7 @@ const TimelineWaveform: React.FC = () => {
           width: totalWidth,
           height: WAVEFORM_HEIGHT,
         }}
-        onClick={handleClick}
+        onClick={seekToClickedPosition}
       />
     </div>
   );

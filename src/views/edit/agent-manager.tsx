@@ -3,7 +3,7 @@ import type { Agent, AgentType } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
-import { forwardRef, useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,23 +23,23 @@ function generateAgentId(existingAgents: { id: string }[]): string {
 
 // -- Components ---------------------------------------------------------------
 
-const AgentBadge = forwardRef<HTMLDivElement, { agent: Agent } & React.HTMLAttributes<HTMLDivElement>>(
-  ({ agent, ...props }, ref) => {
-    const color = getAgentColor(agent.id);
+const AgentBadge: React.FC<
+  { agent: Agent; ref?: React.Ref<HTMLDivElement> } & React.HTMLAttributes<HTMLDivElement>
+> = ({ agent, ref, ...props }) => {
+  const color = getAgentColor(agent.id);
 
-    return (
-      <div
-        ref={ref}
-        {...props}
-        className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-md bg-composer-button cursor-pointer"
-      >
-        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-        <span className="text-sm text-composer-text">{agent.name || agent.id}</span>
-        <span className="text-xs text-composer-text-muted">{agent.id}</span>
-      </div>
-    );
-  },
-);
+  return (
+    <div
+      ref={ref}
+      {...props}
+      className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-md bg-composer-button cursor-pointer"
+    >
+      <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+      <span className="text-sm text-composer-text">{agent.name || agent.id}</span>
+      <span className="text-xs text-composer-text-muted">{agent.id}</span>
+    </div>
+  );
+};
 
 const EditAgentPopover: React.FC<{
   agent: Agent;

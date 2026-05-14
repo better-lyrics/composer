@@ -6,7 +6,7 @@ import { registerBanner } from "@/views/timeline/banner-progress-registry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
 import { IconChevronDown, IconLink } from "@tabler/icons-react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -166,7 +166,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   }, [isCollapsed, instanceStart, instanceEnd, allLines, group.id, instanceIdx]);
 
   return (
-    <motion.div
+    <m.div
       ref={bannerRef}
       data-banner-progress=""
       data-instance-key={`${group.id}:${instanceIdx}`}
@@ -248,7 +248,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
           </span>
         </>
       )}
-    </motion.div>
+    </m.div>
   );
 };
 

@@ -19,6 +19,7 @@ import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
+import { LazyMotion, domAnimation } from "motion/react";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
@@ -112,7 +113,7 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <>
+    <LazyMotion features={domAnimation} strict>
       <AppContent />
       <ConfirmModalHost />
       <DivergenceModalHost />
@@ -127,7 +128,7 @@ const App: React.FC = () => {
           },
         }}
       />
-    </>
+    </LazyMotion>
   );
 };
 

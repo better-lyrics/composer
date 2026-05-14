@@ -27,7 +27,7 @@ import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
-import { motion } from "motion/react";
+import { m } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
@@ -456,7 +456,7 @@ const SyncPanel: React.FC = () => {
         <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
           {isComplete ? (
             <div className="text-center">
-              <motion.div
+              <m.div
                 className="mb-2 text-2xl font-medium"
                 variants={shimmerVariants}
                 initial="initial"
@@ -472,7 +472,7 @@ const SyncPanel: React.FC = () => {
                 }}
               >
                 Sync complete!
-              </motion.div>
+              </m.div>
               <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
             </div>
           ) : (
@@ -496,7 +496,7 @@ const SyncPanel: React.FC = () => {
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
               <div className="flex items-center gap-2">
-                <motion.div
+                <m.div
                   variants={syncPulseVariants}
                   initial={false}
                   animate={isHolding ? "pulse" : "idle"}
@@ -510,8 +510,8 @@ const SyncPanel: React.FC = () => {
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </motion.div>
-                <motion.div
+                </m.div>
+                <m.div
                   variants={syncPulseVariants}
                   initial={false}
                   animate={showPulse ? "pulse" : "idle"}
@@ -523,7 +523,7 @@ const SyncPanel: React.FC = () => {
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </motion.div>
+                </m.div>
               </div>
             </div>
           )}

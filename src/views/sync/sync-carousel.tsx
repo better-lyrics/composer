@@ -2,7 +2,7 @@ import type { WordTiming } from "@/stores/project";
 import { syncCarouselTransition } from "@/utils/animationVariants";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, m } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -27,7 +27,7 @@ interface SyncCarouselProps {
 // -- Components ---------------------------------------------------------------
 
 const RippleRing: React.FC<{ onComplete: () => void }> = ({ onComplete }) => (
-  <motion.span
+  <m.span
     className="absolute inset-0 rounded-[50%] border border-composer-accent/20 bg-composer-accent/20 pointer-events-none blur-sm"
     initial={{ scale: 0.8, opacity: 0.5 }}
     animate={{ scale: 2.2, opacity: 0 }}
@@ -80,7 +80,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
     const hasRipple = rippleKey === wordKey;
 
     return (
-      <motion.span
+      <m.span
         key={wordKey}
         animate={{ color, scale: isCurrentHeld ? 0.95 : 1 }}
         transition={syncCarouselTransition}
@@ -90,7 +90,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
         <AnimatePresence>
           {hasRipple && <RippleRing key={rippleCounter} onComplete={() => setRippleKey(null)} />}
         </AnimatePresence>
-      </motion.span>
+      </m.span>
     );
   });
 };
@@ -124,7 +124,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
 
   return (
     <div className="relative overflow-hidden" style={{ height: containerHeight }}>
-      <motion.div
+      <m.div
         initial={{ y: translateY }}
         animate={{ y: translateY }}
         transition={syncCarouselTransition}
@@ -137,7 +137,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
           const scale = distance === 0 ? 1 : 0.65;
 
           return (
-            <motion.div
+            <m.div
               key={line.id}
               initial={{ opacity, scale }}
               animate={{ opacity, scale }}
@@ -147,7 +147,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
             >
               <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
                 {granularity === "line" ? (
-                  <motion.span
+                  <m.span
                     animate={{
                       color:
                         idx === lineIndex - 1
@@ -159,7 +159,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
                     transition={syncCarouselTransition}
                   >
                     {stripSplitCharacter(line.text)}
-                  </motion.span>
+                  </m.span>
                 ) : (
                   <WordGranularityLine
                     line={line}
@@ -174,10 +174,10 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
                   />
                 )}
               </div>
-            </motion.div>
+            </m.div>
           );
         })}
-      </motion.div>
+      </m.div>
     </div>
   );
 };
