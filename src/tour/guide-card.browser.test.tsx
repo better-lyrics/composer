@@ -19,10 +19,7 @@ describe("GuideCard", () => {
   it("calls onSkip when the Skip button is clicked", async () => {
     let skipped = 0;
     const screen = await render(
-      <GuideCard
-        state={{ task: "Do thing", stepLabel: "Step 1", isComplete: false }}
-        onSkip={() => skipped++}
-      />,
+      <GuideCard state={{ task: "Do thing", stepLabel: "Step 1", isComplete: false }} onSkip={() => skipped++} />,
     );
     await screen.getByRole("button", { name: "Skip" }).click();
     expect(skipped).toBe(1);

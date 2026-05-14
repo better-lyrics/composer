@@ -122,7 +122,7 @@ const Slider: React.FC<SliderProps> = ({
     >
       <div className="absolute inset-y-0 left-0 rounded-full bg-composer-accent" style={{ width: `${percent}%` }} />
       <div
-        className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-composer-text opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute top-1/2 size-3 -translate-y-1/2 rounded-full bg-composer-text opacity-0 group-hover:opacity-100 transition-opacity"
         style={{ left: `calc(${percent}% - 6px)` }}
       />
     </div>

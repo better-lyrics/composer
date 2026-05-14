@@ -9,10 +9,7 @@ interface ComposerRenderOptions extends RenderOptions {
   withRouter?: boolean | { initialEntries?: string[]; initialIndex?: number };
 }
 
-function buildWrapper(
-  dndContext: boolean,
-  withRouter: ComposerRenderOptions["withRouter"],
-) {
+function buildWrapper(dndContext: boolean, withRouter: ComposerRenderOptions["withRouter"]) {
   return function ComposerWrapper({ children }: { children: ReactNode }) {
     let tree: ReactNode = <MotionConfig reducedMotion="always">{children}</MotionConfig>;
     if (dndContext) tree = <DndContext>{tree}</DndContext>;
@@ -31,10 +28,7 @@ function buildWrapper(
   };
 }
 
-function render(
-  ui: ReactElement,
-  options: ComposerRenderOptions = {},
-): Promise<RenderResult> {
+function render(ui: ReactElement, options: ComposerRenderOptions = {}): Promise<RenderResult> {
   const { dndContext = false, withRouter = false, ...rest } = options;
   return baseRender(ui, {
     ...rest,

@@ -31,7 +31,9 @@ describe("SyllableSplitter", () => {
       <SyllableSplitter
         word={{ text: "abcd", begin: 0, end: 1 }}
         wordIndex={0}
-        onSplit={(_, words) => (splits = words)}
+        onSplit={(_, words) => {
+          splits = words;
+        }}
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();

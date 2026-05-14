@@ -62,7 +62,7 @@ const PreviewPanel: React.FC = () => {
       <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
         <h2 className="text-lg font-medium">Preview</h2>
         <Button variant="primary" hasIcon onClick={() => setIsPlaying(!isPlaying)}>
-          {isPlaying ? <IconPlayerPauseFilled className="w-4 h-4" /> : <IconPlayerPlayFilled className="w-4 h-4" />}
+          {isPlaying ? <IconPlayerPauseFilled className="size-4" /> : <IconPlayerPlayFilled className="size-4" />}
           {isPlaying ? "Pause" : "Play"}
         </Button>
       </div>

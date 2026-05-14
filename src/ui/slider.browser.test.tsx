@@ -38,7 +38,15 @@ describe("Slider", () => {
   it("increments by step on ArrowRight", async () => {
     let value = 50;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} step={5} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        step={5}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -49,7 +57,15 @@ describe("Slider", () => {
   it("decrements by step on ArrowLeft", async () => {
     let value = 50;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} step={5} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        step={5}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -59,9 +75,7 @@ describe("Slider", () => {
 
   it("jumps to min on Home and max on End", async () => {
     const updates: number[] = [];
-    const screen = await render(
-      <ControlledHarness initial={50} min={0} max={100} onChange={(v) => updates.push(v)} />,
-    );
+    const screen = await render(<ControlledHarness initial={50} min={0} max={100} onChange={(v) => updates.push(v)} />);
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
     slider.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
@@ -73,7 +87,14 @@ describe("Slider", () => {
   it("steps up by 10% on PageUp", async () => {
     let value = 50;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -84,7 +105,14 @@ describe("Slider", () => {
   it("steps down by 10% on PageDown", async () => {
     let value = 50;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -95,7 +123,15 @@ describe("Slider", () => {
   it("clamps to min when decrementing past min", async () => {
     let value = 1;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} step={5} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        step={5}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -106,7 +142,15 @@ describe("Slider", () => {
   it("clamps to max when incrementing past max", async () => {
     let value = 99;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} step={5} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        step={5}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     slider.focus();
@@ -119,7 +163,15 @@ describe("Slider", () => {
   it("snaps value to step when clicking the track", async () => {
     let value = 0;
     const screen = await render(
-      <ControlledHarness initial={value} min={0} max={100} step={10} onChange={(v) => (value = v)} />,
+      <ControlledHarness
+        initial={value}
+        min={0}
+        max={100}
+        step={10}
+        onChange={(v) => {
+          value = v;
+        }}
+      />,
     );
     const slider = screen.getByRole("slider").element() as HTMLElement;
     const rect = slider.getBoundingClientRect();

@@ -127,7 +127,7 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, on
           title="Split into syllables"
           className="px-1.5 py-0.5 h-auto align-middle rounded-sm"
         >
-          <IconScissors className="w-3 h-3" />
+          <IconScissors className="size-3" />
         </Button>
       }
     >

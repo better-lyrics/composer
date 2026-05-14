@@ -5,11 +5,7 @@ import { render } from "@/test/render";
 describe("Hero", () => {
   it("renders the headline and primary CTA", async () => {
     const screen = await render(
-      <Hero
-        headline="Make synced lyrics"
-        subhead="The fastest way"
-        primaryCta={{ label: "Open", to: "/" }}
-      />,
+      <Hero headline="Make synced lyrics" subhead="The fastest way" primaryCta={{ label: "Open", to: "/" }} />,
       { withRouter: true },
     );
     await expect.element(screen.getByText("Make synced lyrics")).toBeInTheDocument();

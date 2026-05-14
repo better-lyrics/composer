@@ -73,9 +73,7 @@ function registerConsoleGuard(): void {
     uninstallConsoleGuard();
     const unexpected = state.captured.filter((entry) => !isAllowed(entry.args));
     if (unexpected.length > 0) {
-      const summary = unexpected
-        .map((entry) => `console.${entry.method}: ${formatArgs(entry.args)}`)
-        .join("\n");
+      const summary = unexpected.map((entry) => `console.${entry.method}: ${formatArgs(entry.args)}`).join("\n");
       throw new Error(`Unexpected console output:\n${summary}`);
     }
   });

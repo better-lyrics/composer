@@ -11,11 +11,11 @@ interface HowItWorksProps {
 const HowItWorks: React.FC<HowItWorksProps> = ({ title, steps }) => {
   return (
     <section className="px-6 py-20 max-w-4xl mx-auto">
-      <h2 className="text-3xl md:text-4xl font-bold text-composer-text mb-12 text-center">{title}</h2>
+      <h2 className="text-3xl md:text-4xl font-semibold text-composer-text mb-12 text-center">{title}</h2>
       <ol className="space-y-6">
         {steps.map((step, index) => (
           <li key={step.title} className="flex gap-5 items-start">
-            <div className="flex-shrink-0 w-9 h-9 rounded-full bg-composer-accent-dark/20 text-composer-accent-text flex items-center justify-center text-sm font-semibold">
+            <div className="flex-shrink-0 size-9 rounded-full bg-composer-accent-dark/20 text-composer-accent-text flex items-center justify-center text-sm font-semibold">
               {index + 1}
             </div>
             <div>

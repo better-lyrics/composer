@@ -175,7 +175,7 @@ const ExportPanel: React.FC = () => {
         className="hidden"
       />
       <Button hasIcon variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-2">
-        <IconFolderOpen className="w-4 h-4 text-composer-text opacity-50" />
+        <IconFolderOpen className="size-4 text-composer-text opacity-50" />
         Import Project
       </Button>
     </>
@@ -211,20 +211,20 @@ const ExportPanel: React.FC = () => {
         <div className="flex items-center gap-2">
           {editedContent !== null && (
             <Button hasIcon onClick={handleRegenerate}>
-              <IconRefresh className="w-4 h-4" />
+              <IconRefresh className="size-4" />
               Regenerate
             </Button>
           )}
           <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
-            <IconEdit className="w-4 h-4" />
+            <IconEdit className="size-4" />
             {isEditing ? "Done" : "Edit"}
           </Button>
           <Button hasIcon onClick={handleCopy}>
-            {copied ? <IconCheck className="w-4 h-4" /> : <IconCopy className="w-4 h-4" />}
+            {copied ? <IconCheck className="size-4" /> : <IconCopy className="size-4" />}
             {copied ? "Copied" : "Copy"}
           </Button>
           <Button hasIcon variant="primary" onClick={handleDownload}>
-            <IconDownload className="w-4 h-4" />
+            <IconDownload className="size-4" />
             Download TTML
           </Button>
         </div>
@@ -242,15 +242,15 @@ const ExportPanel: React.FC = () => {
             className="hidden"
           />
           <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <IconFolderOpen className="w-4 h-4 text-composer-text opacity-50" />
+            <IconFolderOpen className="size-4 text-composer-text opacity-50" />
             Import Project
           </Button>
           <Button hasIcon variant="ghost" size="sm" onClick={handleExportProject}>
-            <IconUpload className="w-4 h-4 text-composer-text opacity-50" />
+            <IconUpload className="size-4 text-composer-text opacity-50" />
             Export Project
           </Button>
           <Button hasIcon variant="ghost" size="sm" onClick={handleClearProject}>
-            <IconTrash className="w-4 h-4 text-composer-text opacity-50" />
+            <IconTrash className="size-4 text-composer-text opacity-50" />
             Clear
           </Button>
         </div>

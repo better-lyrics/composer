@@ -48,7 +48,7 @@ const GuideLayout: React.FC<GuideLayoutProps> = ({ slug, title, description, dat
           Back to all guides
         </Link>
         <header className="mb-10">
-          <h1 className="text-3xl md:text-5xl font-bold text-composer-text mb-5 leading-tight">{title}</h1>
+          <h1 className="text-3xl md:text-5xl font-semibold text-composer-text mb-5 leading-tight">{title}</h1>
           <p className="text-lg text-composer-text-secondary leading-relaxed">{description}</p>
         </header>
         <div className="prose-guide text-composer-text-secondary leading-relaxed space-y-6 select-text">{children}</div>

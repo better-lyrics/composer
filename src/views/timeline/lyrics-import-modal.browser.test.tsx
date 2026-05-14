@@ -31,7 +31,14 @@ describe("LyricsImportModal", () => {
   it("imports lines into the project store and closes when Import is clicked", async () => {
     let closed = false;
     useSettingsStore.setState({ confirmReplaceLyrics: false });
-    const screen = await render(<LyricsImportModal isOpen onClose={() => (closed = true)} />);
+    const screen = await render(
+      <LyricsImportModal
+        isOpen
+        onClose={() => {
+          closed = true;
+        }}
+      />,
+    );
     const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
     textarea.focus();
     await userEvent.fill(textarea, "First lyric\nSecond lyric");
@@ -42,7 +49,14 @@ describe("LyricsImportModal", () => {
 
   it("invokes onClose when Cancel is clicked", async () => {
     let closed = false;
-    const screen = await render(<LyricsImportModal isOpen onClose={() => (closed = true)} />);
+    const screen = await render(
+      <LyricsImportModal
+        isOpen
+        onClose={() => {
+          closed = true;
+        }}
+      />,
+    );
     await screen.getByRole("button", { name: "Cancel" }).click();
     expect(closed).toBe(true);
   });

@@ -242,7 +242,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
       <span className="flex flex-col items-center gap-1 mt-1 w-10 shrink-0">
         <span className="flex items-center gap-1.5 w-full">
           <span
-            className="w-2 h-2 rounded-full shrink-0"
+            className="size-2 rounded-full shrink-0"
             style={{
               backgroundColor: agentId ? getAgentColor(agentId) : "transparent",
             }}
@@ -261,7 +261,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
               color: linkInfo.color,
             }}
           >
-            <IconLink className="w-2.5 h-2.5" />
+            <IconLink className="size-2.5" />
             <span className="tabular-nums">
               {linkInfo.instanceIdx + 1}/{linkInfo.totalInstances}
             </span>

@@ -44,29 +44,29 @@ const GroupingSuggestionsBanner: React.FC = () => {
       {visible.length === 1 ? (
         <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-accent/8 text-sm">
           <div className="flex items-center gap-2 min-w-0">
-            <IconBulb className="w-4 h-4 shrink-0 text-composer-accent" />
+            <IconBulb className="size-4 shrink-0 text-composer-accent" />
             <span className="text-composer-text truncate">{summarizeInline(visible[0])}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button size="sm" variant="primary" hasIcon onClick={() => acceptOne(visible[0])}>
-              <IconLink className="w-3.5 h-3.5" />
+              <IconLink className="size-3.5" />
               Group them
             </Button>
             <Button
               size="icon"
               variant="ghost"
               onClick={() => dismissOne(visible[0])}
-              className="h-7 w-7"
+              className="size-7"
               aria-label="Dismiss suggestion"
             >
-              <IconX className="w-4 h-4" />
+              <IconX className="size-4" />
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-accent/8 text-sm">
           <div className="flex items-center gap-2 min-w-0">
-            <IconBulb className="w-4 h-4 shrink-0 text-composer-accent" />
+            <IconBulb className="size-4 shrink-0 text-composer-accent" />
             <span className="text-composer-text truncate">
               Found {visible.length} grouping suggestions across your lyrics
             </span>
@@ -79,10 +79,10 @@ const GroupingSuggestionsBanner: React.FC = () => {
               size="icon"
               variant="ghost"
               onClick={dismissAll}
-              className="h-7 w-7"
+              className="size-7"
               aria-label="Dismiss all suggestions"
             >
-              <IconX className="w-4 h-4" />
+              <IconX className="size-4" />
             </Button>
           </div>
         </div>
@@ -120,14 +120,14 @@ const SuggestionsModal: React.FC<SuggestionsModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Grouping suggestions" className="max-w-xl" bodyClassName="p-0">
       <div className="px-5 py-3 border-b border-composer-border flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-2 text-composer-text-muted min-w-0">
-          <IconBulb className="w-4 h-4 text-composer-text shrink-0 opacity-50" />
+          <IconBulb className="size-4 text-composer-text shrink-0 opacity-50" />
           <span className="truncate">
             {suggestions.length} repeating section{suggestions.length === 1 ? "" : "s"} detected
           </span>
         </div>
         {suggestions.length > 1 && (
           <Button size="sm" variant="primary" hasIcon onClick={onAcceptAll} className="h-6 pl-1.5 pr-2 text-[11px]">
-            <IconLink className="w-3 h-3" />
+            <IconLink className="size-3" />
             Group all
           </Button>
         )}
@@ -147,17 +147,17 @@ const SuggestionsModal: React.FC<SuggestionsModalProps> = ({
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <Button size="sm" variant="primary" hasIcon onClick={() => onAccept(s)}>
-                    <IconLink className="w-3.5 h-3.5" />
+                    <IconLink className="size-3.5" />
                     Group
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => onDismiss(s)}
-                    className="h-7 w-7"
+                    className="size-7"
                     aria-label="Dismiss suggestion"
                   >
-                    <IconX className="w-4 h-4" />
+                    <IconX className="size-4" />
                   </Button>
                 </div>
               </div>

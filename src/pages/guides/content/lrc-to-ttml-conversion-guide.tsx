@@ -5,7 +5,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       LRC differ in practice, and what happens to metadata along the way.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">The shortcut</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">The shortcut</h2>
     <p>
       If you just want the tool, use the{" "}
       <a href="/lrc-to-ttml" className="text-composer-accent-text hover:text-composer-accent">
@@ -14,7 +14,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       . Paste your input, download the TTML. Keep reading if you want to understand what is happening underneath.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Plain LRC to TTML</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Plain LRC to TTML</h2>
     <p>
       Plain LRC has one timestamp per line. Each line becomes a single{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> in TTML with a begin attribute equal to the
@@ -34,7 +34,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       leaves the end undefined.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Enhanced LRC (eLRC) to TTML</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Enhanced LRC (eLRC) to TTML</h2>
     <p>eLRC has inline word timestamps in angle brackets. Each inline timestamp becomes a word boundary in TTML:</p>
     <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
       {`[00:12.34]<00:12.34>Hello <00:12.80>world<00:13.20>
@@ -51,7 +51,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       last word. If there is no trailing timestamp, the last word's end falls through to the next line's begin.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Metadata handling</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Metadata handling</h2>
     <p>
       LRC metadata tags like <code className="font-mono text-composer-accent-text">[ti:Song Title]</code>,{" "}
       <code className="font-mono text-composer-accent-text">[ar:Artist]</code>, and{" "}
@@ -61,7 +61,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       ingestion schema.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">What does not convert</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What does not convert</h2>
     <p>LRC has no concept of:</p>
     <ul className="list-disc pl-6 space-y-2">
       <li>Multiple agents or singers (duets)</li>
@@ -73,7 +73,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       converted file in Composer and add agents, background vocals, and any other TTML- only structure.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Time format translation</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Time format translation</h2>
     <p>
       LRC uses <code className="font-mono text-composer-accent-text">[mm:ss.xx]</code>. TTML uses{" "}
       <code className="font-mono text-composer-accent-text">HH:MM:SS.mmm</code>. The converter normalizes the format:{" "}
@@ -82,7 +82,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       different text representations.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Multi-timestamp LRC lines</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Multi-timestamp LRC lines</h2>
     <p>Some LRC files use multiple timestamps per line for repeated choruses:</p>
     <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
       {"[00:30.00][01:30.00][02:30.00]Chorus line"}
@@ -94,7 +94,7 @@ const LrcToTtmlConversionContent: React.FC = () => (
       (because the inline times are absolute, not relative, and repeats need different absolute times).
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Sanity checking the output</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Sanity checking the output</h2>
     <p>
       After conversion, open the TTML in Composer with the matching audio. Play through and check that the timing feels
       right. LRC timing is often approximate; TTML is more demanding. You will likely want to tighten a few word

@@ -19,7 +19,15 @@ interface ModalProps {
 
 // -- Component ----------------------------------------------------------------
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className, bodyClassName, initialFocusRef }) => {
+const Modal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  title,
+  children,
+  className,
+  bodyClassName,
+  initialFocusRef,
+}) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const { refs, context } = useFloating({ open: isOpen, onOpenChange: (open) => !open && onClose() });
 
@@ -76,7 +84,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
                   {title}
                 </h2>
                 <Button size="icon" variant="ghost" onClick={onClose}>
-                  <IconX className="w-5 h-5" />
+                  <IconX className="size-5" />
                 </Button>
               </div>
             )}

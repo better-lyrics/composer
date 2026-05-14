@@ -16,11 +16,7 @@ describe("EmptyState", () => {
 
   it("renders an optional action node", async () => {
     const screen = await render(
-      <EmptyState
-        message="No lyrics yet"
-        hint="Try importing a file"
-        action={<Button>Import</Button>}
-      />,
+      <EmptyState message="No lyrics yet" hint="Try importing a file" action={<Button>Import</Button>} />,
     );
     await expect.element(screen.getByRole("button", { name: "Import" })).toBeInTheDocument();
   });

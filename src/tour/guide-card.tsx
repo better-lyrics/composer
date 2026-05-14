@@ -37,7 +37,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ state, onSkip }) => {
               <p className="text-sm font-medium text-composer-text">
                 {state.isComplete ? (
                   <span className="flex items-center gap-1.5">
-                    <IconCheck className="w-4 h-4 text-green-400" />
+                    <IconCheck className="size-4 text-green-400" />
                     Done!
                   </span>
                 ) : (

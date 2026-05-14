@@ -5,7 +5,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       agents, background vocals, and the last-mile checks before delivery.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">What Apple Music expects</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What Apple Music expects</h2>
     <p>
       Apple Music ingests TTML files. The baseline file has line-level timing. The animated sing-along experience
       requires word-level timing. Apple also renders secondary lyric lines when you mark them as background vocals with
@@ -16,7 +16,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">ttm:agent</code> attribute.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 1: prepare your source material</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 1: prepare your source material</h2>
     <p>
       Gather the final mastered audio file and a clean plain-text version of the lyrics. The lyrics should match the
       audio exactly, including repeats, ad libs, and featured verses.
@@ -26,7 +26,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       vocalist name and the line works well as a reference.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 2: set up the project in Composer</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 2: set up the project in Composer</h2>
     <p>
       Open{" "}
       <a href="/" className="text-composer-accent-text hover:text-composer-accent">
@@ -40,7 +40,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       right before syncing saves time: you will not have to retag hundreds of lines later.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 3: capture line-level timing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 3: capture line-level timing</h2>
     <p>
       Start with line-level sync. In the sync view, play the track and tap the key bound to "next line" as each line
       begins. Composer records the begin time for every line. The end time of one line becomes the begin time of the
@@ -51,7 +51,9 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       valid output. Use this pass as a foundation.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 4: upgrade key sections to word timing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">
+      Step 4: upgrade key sections to word timing
+    </h2>
     <p>
       Switch to word-sync for choruses, hooks, and any section the artist would want animated. In Composer, the sync
       view lets you tap per word. Play the track and tap as each word begins.
@@ -61,7 +63,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       waveform below the words, which makes it easy to snap a word boundary to the actual consonant or vowel onset.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 5: add background vocals</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 5: add background vocals</h2>
     <p>
       For ad libs and backing parts, use the background vocals field on the owning line. Composer wraps them in an x-bg
       span on export. Each background word can have its own timing if you need it.
@@ -71,7 +73,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       that echo the lead should be x-bg. Ad libs and spoken interjections are almost always x-bg.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 6: check your work</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 6: check your work</h2>
     <p>
       Use the preview view to watch the animated playback alongside the audio. Every word should land on the beat. Lines
       should appear slightly before the vocalist starts singing, not after.
@@ -81,7 +83,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       the wrong line. Catch these in preview rather than after delivery.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Step 7: export and deliver</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Step 7: export and deliver</h2>
     <p>
       Export the TTML from the export view. Inspect the file: the{" "}
       <code className="font-mono text-composer-accent-text">composer:timing</code> attribute should say "Word" for
@@ -93,7 +95,7 @@ const AppleMusicSyncedLyricsContent: React.FC = () => (
       your distributor or aggregator will handle delivery.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Related reading</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Related reading</h2>
     <p>
       Read the{" "}
       <a href="/guides/ttml-file-format-spec" className="text-composer-accent-text hover:text-composer-accent">

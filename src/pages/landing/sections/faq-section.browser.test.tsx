@@ -18,9 +18,7 @@ describe("FaqSection", () => {
   });
 
   it("expands a question when its summary is clicked", async () => {
-    const screen = await render(
-      <FaqSection title="FAQ" entries={[{ question: "Q", answer: "Hidden answer" }]} />,
-    );
+    const screen = await render(<FaqSection title="FAQ" entries={[{ question: "Q", answer: "Hidden answer" }]} />);
     const details = screen.container.querySelector("details") as HTMLDetailsElement;
     expect(details.open).toBe(false);
     details.open = true;

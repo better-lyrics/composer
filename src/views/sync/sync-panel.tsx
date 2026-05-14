@@ -384,18 +384,18 @@ const SyncPanel: React.FC = () => {
             onClick={() => setEditMode(!editMode)}
             title={editMode ? "Unlock sync mode" : "Lock to edit mode"}
           >
-            {editMode ? <IconLock className="w-4 h-4" /> : <IconLockOpen className="w-4 h-4" />}
+            {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
             Edit
           </Button>
           {syncState.isActive && !editMode && (
             <Button hasIcon onClick={handleReset}>
-              <IconRefresh className="w-4 h-4" />
+              <IconRefresh className="size-4" />
               Reset
             </Button>
           )}
           {!syncState.isActive && !editMode && (
             <Button hasIcon variant="primary" onClick={handleStartSync}>
-              <IconPlayerPlayFilled className="w-4 h-4" />
+              <IconPlayerPlayFilled className="size-4" />
               Start
             </Button>
           )}
@@ -501,7 +501,7 @@ const SyncPanel: React.FC = () => {
                   initial={false}
                   animate={isHolding ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className={`flex items-center justify-center border-2 rounded-full w-14 h-14 ${
+                  className={`flex items-center justify-center border-2 rounded-full size-14 ${
                     isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
                   }`}
                 >
@@ -516,7 +516,7 @@ const SyncPanel: React.FC = () => {
                   initial={false}
                   animate={showPulse ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className="flex items-center justify-center border-2 rounded-full w-14 h-14 bg-composer-bg-elevated"
+                  className="flex items-center justify-center border-2 rounded-full size-14 bg-composer-bg-elevated"
                 >
                   <span className="text-xs font-medium text-composer-text-muted">
                     {getEffectiveKeysArray("sync.tap")

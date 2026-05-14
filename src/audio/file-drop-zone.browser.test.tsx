@@ -25,7 +25,12 @@ describe("FileDropZone", () => {
   it("calls onFileDrop with a dropped audio file", async () => {
     let received: File | null = null;
     const screen = await render(
-      <FileDropZone accept="audio/*" onFileDrop={(f) => (received = f)}>
+      <FileDropZone
+        accept="audio/*"
+        onFileDrop={(f) => {
+          received = f;
+        }}
+      >
         <span>Drop here</span>
       </FileDropZone>,
     );
@@ -39,7 +44,12 @@ describe("FileDropZone", () => {
   it("rejects files that are not audio (by extension or mime)", async () => {
     let received: File | null = null;
     const screen = await render(
-      <FileDropZone accept="audio/*" onFileDrop={(f) => (received = f)}>
+      <FileDropZone
+        accept="audio/*"
+        onFileDrop={(f) => {
+          received = f;
+        }}
+      >
         <span>Drop</span>
       </FileDropZone>,
     );

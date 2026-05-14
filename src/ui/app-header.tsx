@@ -9,19 +9,19 @@ interface AppHeaderProps {
 
 const AppHeader: React.FC<AppHeaderProps> = ({ onSettingsOpen, onHelpOpen, onTourStart }) => (
   <header className="flex items-center justify-between p-4 border-b select-none border-composer-border">
-    <h1 className="text-xl font-bold">
-      <img src="/logo.svg" alt="Composer Logo" className="inline-block w-6 h-6 mr-2 -mt-1" />
+    <h1 className="text-xl font-semibold">
+      <img src="/logo.svg" alt="Composer Logo" className="inline-block size-6 mr-2 -mt-1" />
       Composer
     </h1>
     <div className="flex items-center gap-1">
       <Button size="icon" variant="ghost" onClick={onSettingsOpen} title="Settings">
-        <IconSettings className="w-5 h-5" />
+        <IconSettings className="size-5" />
       </Button>
       <Button size="icon" variant="ghost" onClick={onTourStart} title="Product tour">
-        <IconRoute className="w-5 h-5" />
+        <IconRoute className="size-5" />
       </Button>
       <Button size="icon" variant="ghost" onClick={onHelpOpen} title="Keyboard shortcuts (?)">
-        <IconHelp className="w-5 h-5" />
+        <IconHelp className="size-5" />
       </Button>
     </div>
   </header>

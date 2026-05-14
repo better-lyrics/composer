@@ -5,7 +5,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       parts all need a way to mark who is singing which line. TTML handles this with agents.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">What an agent is</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What an agent is</h2>
     <p>
       An agent is a named participant in the song. Each agent has an{" "}
       <code className="font-mono text-composer-accent-text">xml:id</code>, a{" "}
@@ -27,7 +27,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">&lt;body&gt;</code>.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Agent types</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Agent types</h2>
     <p>
       The <code className="font-mono text-composer-accent-text">type</code> attribute describes what kind of entity is
       singing:
@@ -51,7 +51,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       </li>
     </ul>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Assigning lines</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Assigning lines</h2>
     <p>
       Each line gets one agent. The attribute lives on the{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> element:
@@ -69,7 +69,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       different singers' lines rendering on different sides of the screen.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Duets with overlapping lines</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Duets with overlapping lines</h2>
     <p>
       If two singers sing at the same time on different lines, keep them in separate{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> elements with overlapping timing:
@@ -84,7 +84,7 @@ const MultiAgentDuetsContent: React.FC = () => (
     </pre>
     <p>If they sing the same line together, assign the line to a group agent instead of splitting.</p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Group vocals</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Group vocals</h2>
     <p>For choruses where everyone sings together, declare a group agent and use it for the group parts:</p>
     <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
       {`<ttm:agent xml:id="v1" type="person">
@@ -102,7 +102,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       stay tagged with the individual agents.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Agents and background vocals</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Agents and background vocals</h2>
     <p>
       Background vocals use <code className="font-mono text-composer-accent-text">ttm:role="x-bg"</code>, not a separate
       agent. The background span inherits the paragraph's agent. If the background part is sung by a different person
@@ -115,7 +115,7 @@ const MultiAgentDuetsContent: React.FC = () => (
       attribution for x-bg content is rarely visible.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Authoring agents in Composer</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Authoring agents in Composer</h2>
     <p>
       The settings modal has an agent editor. Add one agent per vocalist on the song, give each a clear name, and pick
       the right type. In the edit view, every line has an agent dropdown.

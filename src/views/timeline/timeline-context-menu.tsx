@@ -42,9 +42,9 @@ function MenuItem({
             <span
               // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
               key={`${key}-${i}`}
-              className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
+              className="inline-flex items-center justify-center min-size-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
             >
-              {key === "Mod" && isMac ? <IconCommand className="w-2.5 h-2.5" /> : formatKey(key)}
+              {key === "Mod" && isMac ? <IconCommand className="size-2.5" /> : formatKey(key)}
             </span>
           ))}
         </span>
@@ -736,7 +736,7 @@ const TimelineContextMenu: React.FC = () => {
                             : "text-composer-text hover:bg-composer-button"
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         {agent.name || agent.id}
                       </button>
                     );
@@ -808,7 +808,7 @@ const TimelineContextMenu: React.FC = () => {
                   type="button"
                   aria-label={`Color ${c}`}
                   onClick={() => handleRecolorGroup(c)}
-                  className="w-6 h-6 rounded-md cursor-pointer border border-white/10 hover:ring-2 hover:ring-white/40 transition-[box-shadow]"
+                  className="size-6 rounded-md cursor-pointer border border-white/10 hover:ring-2 hover:ring-white/40 transition-[box-shadow]"
                   style={{ backgroundColor: c }}
                 />
               ))}

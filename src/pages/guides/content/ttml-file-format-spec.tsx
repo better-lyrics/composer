@@ -5,7 +5,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       not the full W3C spec. It is the subset you actually need to ship.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Root element and namespaces</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Root element and namespaces</h2>
     <p>
       Every TTML file starts with a <code className="font-mono text-composer-accent-text">&lt;tt&gt;</code> element that
       declares the TTML and metadata namespaces:
@@ -24,7 +24,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       language the lyrics are in.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Head and metadata</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Head and metadata</h2>
     <p>
       The <code className="font-mono text-composer-accent-text">&lt;head&gt;</code> section carries song metadata and
       agent declarations:
@@ -51,7 +51,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">other</code>.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Body and paragraphs</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Body and paragraphs</h2>
     <p>
       The <code className="font-mono text-composer-accent-text">&lt;body&gt;</code> holds a single{" "}
       <code className="font-mono text-composer-accent-text">&lt;div&gt;</code> with one{" "}
@@ -74,7 +74,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       the head.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Word-level spans</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Word-level spans</h2>
     <p>
       Replace the plain text inside a paragraph with timed{" "}
       <code className="font-mono text-composer-accent-text">&lt;span&gt;</code> elements for per-word animation:
@@ -91,7 +91,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       If two words should not have a space between them, put them in the same span or skip the whitespace in the source.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Background vocals</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Background vocals</h2>
     <p>
       Background vocals and ad libs use a wrapper span with{" "}
       <code className="font-mono text-composer-accent-text">ttm:role="x-bg"</code>:
@@ -109,7 +109,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       smaller secondary lyric under the main line.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Time format</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Time format</h2>
     <p>
       Use <code className="font-mono text-composer-accent-text">HH:MM:SS.mmm</code> for every timestamp. Zero padding is
       required. Examples: <code className="font-mono text-composer-accent-text">00:00:12.000</code> is twelve seconds.{" "}
@@ -118,7 +118,7 @@ const TtmlFileFormatSpecContent: React.FC = () => (
       three-part form is safer.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Character escaping</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Character escaping</h2>
     <p>
       TTML is XML, so the standard XML escapes apply. Replace{" "}
       <code className="font-mono text-composer-accent-text">&amp;</code> with{" "}

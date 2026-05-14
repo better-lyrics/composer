@@ -74,7 +74,15 @@ describe("WordBlock", () => {
 
   it("fires onResizeStart with 'left' when the left handle is mousedowned", async () => {
     let edge: string | null = null;
-    await render(<WordBlock {...DEFAULT_PROPS} onResizeStart={(e) => (edge = e)} />, { dndContext: true });
+    await render(
+      <WordBlock
+        {...DEFAULT_PROPS}
+        onResizeStart={(e) => {
+          edge = e;
+        }}
+      />,
+      { dndContext: true },
+    );
     const leftEdge = document.querySelector('[data-edge="left"]') as HTMLElement;
     leftEdge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0 }));
     expect(edge).toBe("left");
@@ -82,7 +90,15 @@ describe("WordBlock", () => {
 
   it("ignores non-primary mouse buttons on the resize handle", async () => {
     let edge: string | null = null;
-    await render(<WordBlock {...DEFAULT_PROPS} onResizeStart={(e) => (edge = e)} />, { dndContext: true });
+    await render(
+      <WordBlock
+        {...DEFAULT_PROPS}
+        onResizeStart={(e) => {
+          edge = e;
+        }}
+      />,
+      { dndContext: true },
+    );
     const rightEdge = document.querySelector('[data-edge="right"]') as HTMLElement;
     rightEdge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 2 }));
     expect(edge).toBeNull();
@@ -90,10 +106,9 @@ describe("WordBlock", () => {
 
   it("dispatches onEdgeHover when the right edge is hovered and unhovered", async () => {
     const events: Array<{ edge: string; hovering: boolean }> = [];
-    await render(
-      <WordBlock {...DEFAULT_PROPS} onEdgeHover={(edge, hovering) => events.push({ edge, hovering })} />,
-      { dndContext: true },
-    );
+    await render(<WordBlock {...DEFAULT_PROPS} onEdgeHover={(edge, hovering) => events.push({ edge, hovering })} />, {
+      dndContext: true,
+    });
     const rightEdge = document.querySelector('[data-edge="right"]') as HTMLElement;
     rightEdge.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
     rightEdge.dispatchEvent(new MouseEvent("mouseout", { bubbles: true, relatedTarget: document.body }));

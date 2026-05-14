@@ -74,7 +74,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
 
   return (
     <section className="px-6 py-14 max-w-6xl mx-auto">
-      <h1 className="text-3xl md:text-5xl font-bold text-composer-text text-center mb-4">{title}</h1>
+      <h1 className="text-3xl md:text-5xl font-semibold text-composer-text text-center mb-4">{title}</h1>
       <p className="text-composer-text-secondary text-center max-w-2xl mx-auto mb-10">
         Paste your input on the left, download a standard TTML file on the right. Everything runs in your browser.
       </p>

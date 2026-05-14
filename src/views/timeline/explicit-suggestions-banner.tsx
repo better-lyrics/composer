@@ -51,7 +51,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
       {visible.length === 1 ? (
         <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-warning/8 text-sm">
           <div className="flex items-center gap-2 min-w-0">
-            <IconAlertTriangle className="w-4 h-4 shrink-0 text-composer-warning" />
+            <IconAlertTriangle className="size-4 shrink-0 text-composer-warning" />
             <span className="text-composer-text truncate">
               Possibly explicit word:{" "}
               <span className="text-composer-text-secondary">"{truncate(visible[0].word, INLINE_WORD_MAX)}"</span>
@@ -60,24 +60,24 @@ const ExplicitSuggestionsBanner: React.FC = () => {
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button size="sm" variant="primary" hasIcon onClick={() => acceptOne(visible[0])}>
-              <IconAlertTriangle className="w-3.5 h-3.5" />
+              <IconAlertTriangle className="size-3.5" />
               Mark explicit
             </Button>
             <Button
               size="icon"
               variant="ghost"
               onClick={() => dismissOne(visible[0])}
-              className="h-7 w-7"
+              className="size-7"
               aria-label="Dismiss suggestion"
             >
-              <IconX className="w-4 h-4" />
+              <IconX className="size-4" />
             </Button>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-warning/8 text-sm">
           <div className="flex items-center gap-2 min-w-0">
-            <IconAlertTriangle className="w-4 h-4 shrink-0 text-composer-warning" />
+            <IconAlertTriangle className="size-4 shrink-0 text-composer-warning" />
             <span className="text-composer-text truncate">
               Found {visible.length} possibly explicit words across your lyrics
             </span>
@@ -90,10 +90,10 @@ const ExplicitSuggestionsBanner: React.FC = () => {
               size="icon"
               variant="ghost"
               onClick={dismissAll}
-              className="h-7 w-7"
+              className="size-7"
               aria-label="Dismiss all suggestions"
             >
-              <IconX className="w-4 h-4" />
+              <IconX className="size-4" />
             </Button>
           </div>
         </div>
@@ -134,14 +134,14 @@ const ExplicitSuggestionsModal: React.FC<ExplicitSuggestionsModalProps> = ({
     <Modal isOpen={isOpen} onClose={onClose} title="Explicit-word suggestions" className="max-w-xl" bodyClassName="p-0">
       <div className="px-5 py-3 border-b border-composer-border flex items-center justify-between gap-3 text-sm">
         <div className="flex items-center gap-2 text-composer-text-muted min-w-0">
-          <IconAlertTriangle className="w-4 h-4 text-composer-text shrink-0 opacity-50" />
+          <IconAlertTriangle className="size-4 text-composer-text shrink-0 opacity-50" />
           <span className="truncate">
             {suggestions.length} possibly explicit word{suggestions.length === 1 ? "" : "s"} detected
           </span>
         </div>
         {suggestions.length > 1 && (
           <Button size="sm" variant="primary" hasIcon onClick={onAcceptAll} className="h-6 pl-1.5 pr-2 text-[11px]">
-            <IconAlertTriangle className="w-3 h-3" />
+            <IconAlertTriangle className="size-3" />
             Mark all
           </Button>
         )}
@@ -166,17 +166,17 @@ const ExplicitSuggestionsModal: React.FC<ExplicitSuggestionsModalProps> = ({
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button size="sm" variant="primary" hasIcon onClick={() => onAccept(s)}>
-                      <IconAlertTriangle className="w-3.5 h-3.5" />
+                      <IconAlertTriangle className="size-3.5" />
                       Mark
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => onDismiss(s)}
-                      className="h-7 w-7"
+                      className="size-7"
                       aria-label="Dismiss suggestion"
                     >
-                      <IconX className="w-4 h-4" />
+                      <IconX className="size-4" />
                     </Button>
                   </div>
                 </div>
@@ -198,7 +198,7 @@ const LinkedPill: React.FC<{ linked: NonNullable<ExplicitSuggestion["linked"]> }
       color: "var(--color-composer-accent-text)",
     }}
   >
-    <IconLink className="w-2.5 h-2.5" />
+    <IconLink className="size-2.5" />
     {linked.groupLabel} × {linked.instanceCount}
   </span>
 );

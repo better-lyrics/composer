@@ -9,8 +9,8 @@ import { useCallback } from "react";
 // -- Components ---------------------------------------------------------------
 
 const PlayButton: React.FC<{ isPlaying: boolean; onClick: () => void }> = ({ isPlaying, onClick }) => (
-  <Button onClick={onClick} className="w-10 h-10 rounded-full" aria-label={isPlaying ? "Pause" : "Play"}>
-    {isPlaying ? <IconPlayerPauseFilled className="w-5 h-5" /> : <IconPlayerPlayFilled className="w-5 h-5" />}
+  <Button onClick={onClick} className="size-10 rounded-full" aria-label={isPlaying ? "Pause" : "Play"}>
+    {isPlaying ? <IconPlayerPauseFilled className="size-5" /> : <IconPlayerPlayFilled className="size-5" />}
   </Button>
 );
 
@@ -98,8 +98,8 @@ const VolumeControl: React.FC<{
     <Popover
       placement="top-end"
       trigger={
-        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Volume">
-          <VolumeIcon className="w-4 h-4" />
+        <Button variant="ghost" size="icon" className="size-8" aria-label="Volume">
+          <VolumeIcon className="size-4" />
         </Button>
       }
     >
@@ -108,11 +108,11 @@ const VolumeControl: React.FC<{
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 shrink-0"
+            className="size-7 shrink-0"
             onClick={onToggleMute}
             aria-label={isMuted ? "Unmute" : "Mute"}
           >
-            <VolumeIcon className="w-4 h-4" />
+            <VolumeIcon className="size-4" />
           </Button>
           <span className="text-xs text-composer-text-muted tabular-nums w-8 text-right">{displayVolume}%</span>
         </div>

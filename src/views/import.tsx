@@ -166,7 +166,7 @@ const ImportPanel: React.FC = () => {
     <div data-tour="import-dropzone" className="flex flex-col items-center justify-center gap-6 flex-1 size-full p-6">
       <div className="w-full max-w-md flex-1 max-h-72 min-h-40">
         <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
-          <IconMusic className="w-12 h-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
+          <IconMusic className="size-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
           <p className="text-composer-text-secondary">Drop audio file here</p>
           <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
           <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>

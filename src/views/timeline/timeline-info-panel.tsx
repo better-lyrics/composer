@@ -228,7 +228,7 @@ const TimelineInfoPanel: React.FC = () => {
             }}
             title="Selected words belong to this linked group"
           >
-            <IconLink className="w-3 h-3" />
+            <IconLink className="size-3" />
             <span className="tabular-nums">{groupHighlight.label}</span>
           </span>
         )}
@@ -274,12 +274,12 @@ const TimelineInfoPanel: React.FC = () => {
           }}
           title="This word belongs to a linked group"
         >
-          <IconLink className="w-3 h-3" />
+          <IconLink className="size-3" />
           <span className="tabular-nums">{groupHighlight.label}</span>
         </span>
       )}
       <div className="flex items-center gap-2">
-        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+        <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
         <span className="text-sm text-composer-text-muted">Line {selectedWord.lineIndex + 1}</span>
       </div>
 
@@ -308,11 +308,11 @@ const TimelineInfoPanel: React.FC = () => {
 
       <div className="flex items-center gap-2 ml-auto">
         <Button variant="secondary" size="sm" hasIcon onClick={handleSetBeginToCursor} title="Set begin to cursor ([)">
-          <IconBracketsContainStart className="w-3.5 h-3.5" />
+          <IconBracketsContainStart className="size-3.5" />
           <span>Set Begin</span>
         </Button>
         <Button variant="secondary" size="sm" hasIcon onClick={handleSetEndToCursor} title="Set end to cursor (])">
-          <IconBracketsContainEnd className="w-3.5 h-3.5" />
+          <IconBracketsContainEnd className="size-3.5" />
           <span>Set End</span>
         </Button>
       </div>

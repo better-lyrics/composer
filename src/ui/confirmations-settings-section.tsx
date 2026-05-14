@@ -33,7 +33,7 @@ const ConfirmationToggle: React.FC<ConfirmationToggleProps> = ({ label, descript
       >
         <span
           className={cn(
-            "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
+            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
             value ? "translate-x-4.5" : "translate-x-0.5",
           )}
         />

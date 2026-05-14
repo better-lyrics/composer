@@ -46,7 +46,17 @@ describe("TimelineWaveform", () => {
     const screen = await render(<TimelineWaveform />);
     const clickLayer = screen.container.querySelector(".cursor-pointer") as HTMLElement;
     Object.defineProperty(clickLayer, "getBoundingClientRect", {
-      value: () => ({ left: 0, top: 0, right: 1500, bottom: 80, width: 1500, height: 80, x: 0, y: 0, toJSON: () => "" }),
+      value: () => ({
+        left: 0,
+        top: 0,
+        right: 1500,
+        bottom: 80,
+        width: 1500,
+        height: 80,
+        x: 0,
+        y: 0,
+        toJSON: () => "",
+      }),
     });
     clickLayer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
     expect(seeked).toBeCloseTo(15, 3);

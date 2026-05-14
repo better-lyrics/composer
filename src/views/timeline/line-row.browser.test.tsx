@@ -9,10 +9,7 @@ import { render } from "@/test/render";
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
     const line = createLine({
-      words: [
-        createWord({ text: "hello ", begin: 0, end: 1 }),
-        createWord({ text: "world", begin: 1, end: 2 }),
-      ],
+      words: [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
     });
     useProjectStore.setState({ lines: [line] });
     const screen = await render(
@@ -40,9 +37,7 @@ describe("LineRow", () => {
       <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
       { dndContext: true },
     );
-    const placeButton = Array.from(screen.container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Place",
-    );
+    const placeButton = Array.from(screen.container.querySelectorAll("button")).find((b) => b.textContent === "Place");
     expect(placeButton).toBeDefined();
     placeButton?.click();
     const updated = useProjectStore.getState().lines.find((l) => l.id === line.id);
@@ -59,9 +54,7 @@ describe("LineRow", () => {
       <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
       { dndContext: true },
     );
-    const placeButton = Array.from(screen.container.querySelectorAll("button")).find(
-      (b) => b.textContent === "Place",
-    );
+    const placeButton = Array.from(screen.container.querySelectorAll("button")).find((b) => b.textContent === "Place");
     expect(placeButton).toBeUndefined();
   });
 
@@ -96,8 +89,8 @@ describe("LineRow", () => {
       <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
       { dndContext: true },
     );
-    const transformed = Array.from(screen.container.querySelectorAll<HTMLElement>("[style*='translateX']")).find(
-      (el) => el.style.transform.includes("translateX(25"),
+    const transformed = Array.from(screen.container.querySelectorAll<HTMLElement>("[style*='translateX']")).find((el) =>
+      el.style.transform.includes("translateX(25"),
     );
     expect(transformed).toBeDefined();
   });

@@ -107,7 +107,7 @@ const LrcToTtmlPage: React.FC = () => {
         downloadFilename="lyrics.ttml"
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
-        <h2 className="text-2xl font-bold text-composer-text">About LRC and eLRC</h2>
+        <h2 className="text-2xl font-semibold text-composer-text">About LRC and eLRC</h2>
         <p>
           LRC is the most common lyric file format for line-synced playback. Each line begins with a timestamp in square
           brackets, like <code className="font-mono text-composer-accent-text">[00:12.34]</code>. Enhanced LRC, usually

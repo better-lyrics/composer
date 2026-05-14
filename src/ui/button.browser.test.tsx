@@ -54,9 +54,15 @@ describe("Button", () => {
   it("accepts all variant and size prop combinations without errors", async () => {
     const screen = await render(
       <>
-        <Button variant="primary" size="sm">A</Button>
-        <Button variant="secondary" size="md">B</Button>
-        <Button variant="ghost" size="md" hasIcon>C</Button>
+        <Button variant="primary" size="sm">
+          A
+        </Button>
+        <Button variant="secondary" size="md">
+          B
+        </Button>
+        <Button variant="ghost" size="md" hasIcon>
+          C
+        </Button>
       </>,
     );
     await expect.element(screen.getByRole("button", { name: "A" })).toBeInTheDocument();

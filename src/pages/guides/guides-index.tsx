@@ -76,7 +76,7 @@ const GuidesIndexPage: React.FC = () => {
       />
       <section className="px-6 py-16 md:py-24 max-w-4xl mx-auto">
         <p className="text-xs font-medium tracking-wide text-composer-accent-text mb-4 select-none">Guides</p>
-        <h1 className="text-3xl md:text-5xl font-bold text-composer-text mb-5">
+        <h1 className="text-3xl md:text-5xl font-semibold text-composer-text mb-5">
           Learn TTML and synced lyrics authoring.
         </h1>
         <p className="text-lg text-composer-text-secondary max-w-2xl">

@@ -10,9 +10,7 @@ const LINES = [
 
 describe("SyncCarousel", () => {
   it("renders the current line and adjacent lines", async () => {
-    const screen = await render(
-      <SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />,
-    );
+    const screen = await render(<SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />);
     expect(screen.container.textContent).toContain("Second");
   });
 

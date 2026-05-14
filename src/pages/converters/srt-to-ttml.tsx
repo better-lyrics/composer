@@ -109,7 +109,7 @@ const SrtToTtmlPage: React.FC = () => {
         downloadFilename="lyrics.ttml"
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
-        <h2 className="text-2xl font-bold text-composer-text">About SRT and TTML</h2>
+        <h2 className="text-2xl font-semibold text-composer-text">About SRT and TTML</h2>
         <p>
           SRT (SubRip) is the most widely used subtitle format. Each cue has a sequential index, a start and end
           timestamp, and one or more lines of text. SRT timing is cue-level; there is no concept of per-word timing.

@@ -6,7 +6,7 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       This guide covers the techniques that make karaoke lyrics feel right.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Word timing vs syllable timing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Word timing vs syllable timing</h2>
     <p>
       Word timing means one span per word. Syllable timing means one span per syllable. Platforms that render "bouncing"
       or "filling" lyrics usually support both, though each word-span still animates as a unit.
@@ -16,7 +16,7 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       the artist clearly pronounces each syllable beat by beat.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Splitting a word into syllables</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Splitting a word into syllables</h2>
     <p>
       In Composer, use the split action on any word to break it into smaller timed units. The split distributes the
       word's duration proportionally based on syllable length. Fine tune the boundary in the timeline.
@@ -35,7 +35,7 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       just subdividing.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Pacing and the vocal onset</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Pacing and the vocal onset</h2>
     <p>
       Each word's begin time should match the vocal onset, not the beat. Singers often lag slightly behind the beat or
       push slightly ahead. Match the voice, not the drum.
@@ -45,14 +45,14 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       being sung right now. If the highlight is slightly ahead, the begin time is too early.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Held notes and sustains</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Held notes and sustains</h2>
     <p>
       When a singer sustains a word, extend its end time rather than creating a gap. The word stays highlighted until
       the next word begins. Gaps between words feel wrong during slow sections.
     </p>
     <p>For a word that bleeds into the next line, end it at the next line's begin time. Never overlap timings.</p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Breaths and non-lyrical sounds</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Breaths and non-lyrical sounds</h2>
     <p>
       Do not create spans for breaths, "ooh", or "ah" unless they are in the lyric sheet. Keep the lyrics to what is
       actually written. The animation flows better with accurate lyric lines than with captured ad libs.
@@ -62,7 +62,7 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       secondary line.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Testing your karaoke timing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Testing your karaoke timing</h2>
     <p>
       Use the preview view in Composer. Watch the animation as the audio plays. The highlighted word should match the
       word being sung at all times.
@@ -75,7 +75,7 @@ const KaraokeStyleLyricsContent: React.FC = () => (
       <li>Multiple words highlighted at once: overlapping spans; re-check boundaries</li>
     </ul>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Keyboard flow for fast syncing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Keyboard flow for fast syncing</h2>
     <p>
       Composer is built for keyboard-first syncing. Bind the "next word" shortcut to a comfortable key and leave the
       mouse alone while the track plays. You will sync an entire song in one playthrough once the keybinding feels

@@ -10,7 +10,7 @@ const WhatIsTtmlContent: React.FC = () => (
       that animation is a TTML file that ships alongside the audio.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">The shape of a TTML file</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">The shape of a TTML file</h2>
     <p>
       A TTML file is XML with a small set of tags. The outer wrapper is{" "}
       <code className="font-mono text-composer-accent-text">&lt;tt&gt;</code>. Inside are a{" "}
@@ -40,7 +40,7 @@ const WhatIsTtmlContent: React.FC = () => (
       renders it as one block.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Word-level timing</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Word-level timing</h2>
     <p>
       The animated sing-along effect comes from nesting{" "}
       <code className="font-mono text-composer-accent-text">&lt;span&gt;</code> elements inside a line. Each span holds
@@ -60,7 +60,7 @@ const WhatIsTtmlContent: React.FC = () => (
       the bouncing-word effect on Apple Music is produced.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Why TTML instead of LRC</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Why TTML instead of LRC</h2>
     <p>
       LRC is simpler: one timestamp per line, plain text, easy to author in a notepad. It is enough for line-synced
       playback and remains popular for desktop players.
@@ -71,7 +71,7 @@ const WhatIsTtmlContent: React.FC = () => (
       TTML.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Who authors TTML files</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Who authors TTML files</h2>
     <p>
       Record labels, music distributors, and independent artists all ship TTML. Labels deliver TTML through partners
       like Musixmatch or direct via Apple's Content Collector. Independent artists usually author TTML themselves and
@@ -83,7 +83,7 @@ const WhatIsTtmlContent: React.FC = () => (
       serialize the XML for you.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Next steps</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Next steps</h2>
     <p>
       If you want to understand the details of the format, the{" "}
       <a href="/guides/ttml-file-format-spec" className="text-composer-accent-text hover:text-composer-accent">

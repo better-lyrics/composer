@@ -51,7 +51,7 @@ const DivergenceModalHost: React.FC = () => {
               type="checkbox"
               checked={dontAskAgain}
               onChange={(e) => setDontAskAgain(e.target.checked)}
-              className="h-3.5 w-3.5 rounded accent-composer-accent cursor-pointer"
+              className="size-3.5 rounded accent-composer-accent cursor-pointer"
             />
             Don't ask again
           </label>

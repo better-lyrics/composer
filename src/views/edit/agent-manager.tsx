@@ -32,7 +32,7 @@ const AgentBadge = forwardRef<HTMLDivElement, { agent: Agent } & React.HTMLAttri
         {...props}
         className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-md bg-composer-button cursor-pointer"
       >
-        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+        <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
         <span className="text-sm text-composer-text">{agent.name || agent.id}</span>
         <span className="text-xs text-composer-text-muted">{agent.id}</span>
       </div>
@@ -100,7 +100,7 @@ const EditAgentPopover: React.FC<{
                   onClick={() => handleDelete(close)}
                   className="text-composer-error-text bg-composer-error/80 hover:bg-composer-error flex items-center gap-2"
                 >
-                  <IconTrash className="w-4 h-4" />
+                  <IconTrash className="size-4" />
                 </Button>
               )}
             </div>
@@ -146,7 +146,7 @@ const AddAgentPopover: React.FC = () => {
       placement="bottom-start"
       trigger={
         <Button size="sm" hasIcon>
-          <IconPlus className="w-3.5 h-3.5" />
+          <IconPlus className="size-3.5" />
           Add
         </Button>
       }
@@ -165,7 +165,7 @@ const AddAgentPopover: React.FC = () => {
                     className="flex items-center gap-2 px-2 py-1.5 text-left rounded-md cursor-pointer hover:bg-composer-button"
                   >
                     <span
-                      className="w-2 h-2 rounded-full shrink-0"
+                      className="size-2 rounded-full shrink-0"
                       style={{ backgroundColor: getAgentColor(preset.id) }}
                     />
                     <span className="text-sm text-composer-text">{preset.name}</span>

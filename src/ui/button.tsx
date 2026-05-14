@@ -26,13 +26,13 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
 const SIZE_STYLES: Record<ButtonSize, string> = {
   sm: "h-7 px-2.5 text-xs",
   md: "h-8 px-3 text-sm",
-  icon: "h-8 w-8 p-0",
+  icon: "size-8 p-0",
 };
 
 const SIZE_STYLES_WITH_ICON: Record<ButtonSize, string> = {
   sm: "h-7 pl-2 pr-3 text-xs",
   md: "h-8 pl-2.5 pr-3.5 text-sm",
-  icon: "h-8 w-8 p-0",
+  icon: "size-8 p-0",
 };
 
 // -- Component ----------------------------------------------------------------

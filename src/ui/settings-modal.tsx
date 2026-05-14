@@ -137,7 +137,7 @@ const ToggleSetting: React.FC<{
       >
         <span
           className={cn(
-            "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
+            "pointer-events-none inline-block size-4 rounded-full bg-white shadow transform transition-transform mt-0.5",
             value ? "translate-x-4.5" : "translate-x-0.5",
           )}
         />
@@ -293,7 +293,7 @@ const SplitCharacterSetting: React.FC = () => {
         <Modal isOpen onClose={cancelCapture} title="Character warning">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm text-composer-text">
-              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
+              <span className="inline-flex items-center justify-center min-size-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
                 {captureState.char}
               </span>
               <span className="text-composer-text-secondary">commonly appears in lyrics.</span>
@@ -516,7 +516,7 @@ const CobaltInstanceRow: React.FC<{
   >
     <span
       className={cn(
-        "w-3.5 h-3.5 rounded-full border-[1.5px] shrink-0 relative transition-colors",
+        "size-3.5 rounded-full border-[1.5px] shrink-0 relative transition-colors",
         isSelected ? "border-composer-accent" : "border-composer-text opacity-50",
       )}
     >
@@ -548,12 +548,12 @@ const CobaltInstanceRow: React.FC<{
           e.stopPropagation();
           onRemove();
         }}
-        className="w-6 h-6 rounded text-composer-text-faint hover:text-composer-error hover:bg-transparent shrink-0"
+        className="size-6 rounded text-composer-text-faint hover:text-composer-error hover:bg-transparent shrink-0"
       >
         <IconTrash size={14} />
       </Button>
     ) : (
-      <span aria-hidden className="w-6 h-6 shrink-0 flex items-center justify-center text-composer-text-faint">
+      <span aria-hidden className="size-6 shrink-0 flex items-center justify-center text-composer-text-faint">
         <IconLock size={13} />
       </span>
     )}

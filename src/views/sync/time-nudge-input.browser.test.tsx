@@ -43,7 +43,14 @@ describe("TimeNudgeInput", () => {
   it("calls onNudge with negative delta when the minus button is clicked and canDecrease is true", async () => {
     let lastDelta = 0;
     useSettingsStore.setState({ nudgeAmount: 0.05 });
-    const screen = await render(<Harness value={5} onNudge={(d) => (lastDelta = d)} />);
+    const screen = await render(
+      <Harness
+        value={5}
+        onNudge={(d) => {
+          lastDelta = d;
+        }}
+      />,
+    );
     const minus = screen.container.querySelectorAll("button")[0];
     minus?.click();
     expect(lastDelta).toBeCloseTo(-0.05, 5);
@@ -60,7 +67,14 @@ describe("TimeNudgeInput", () => {
   it("calls onNudge with positive delta when the plus button is clicked", async () => {
     let lastDelta = 0;
     useSettingsStore.setState({ nudgeAmount: 0.1 });
-    const screen = await render(<Harness value={5} onNudge={(d) => (lastDelta = d)} />);
+    const screen = await render(
+      <Harness
+        value={5}
+        onNudge={(d) => {
+          lastDelta = d;
+        }}
+      />,
+    );
     const plus = screen.container.querySelectorAll("button")[2];
     plus?.click();
     expect(lastDelta).toBeCloseTo(0.1, 5);
@@ -78,7 +92,14 @@ describe("TimeNudgeInput", () => {
 
   it("commits a parsed value on Enter and exits edit mode", async () => {
     let setTime = -1;
-    const screen = await render(<Harness value={1} onSetTime={(t) => (setTime = t)} />);
+    const screen = await render(
+      <Harness
+        value={1}
+        onSetTime={(t) => {
+          setTime = t;
+        }}
+      />,
+    );
     await screen.getByRole("button", { name: formatTimeMs(1) }).click();
     const input = screen.container.querySelector("input") as HTMLInputElement;
     input.focus();
@@ -89,7 +110,14 @@ describe("TimeNudgeInput", () => {
 
   it("does not commit when Escape is pressed", async () => {
     let setTime = -1;
-    const screen = await render(<Harness value={1} onSetTime={(t) => (setTime = t)} />);
+    const screen = await render(
+      <Harness
+        value={1}
+        onSetTime={(t) => {
+          setTime = t;
+        }}
+      />,
+    );
     await screen.getByRole("button", { name: formatTimeMs(1) }).click();
     const input = screen.container.querySelector("input") as HTMLInputElement;
     input.focus();

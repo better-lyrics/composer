@@ -6,7 +6,7 @@ const BackgroundVocalsContent: React.FC = () => (
       to use them.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">What x-bg means</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What x-bg means</h2>
     <p>
       The <code className="font-mono text-composer-accent-text">ttm:role="x-bg"</code> attribute marks a span as
       background content. Apple Music and other players that support the feature render x-bg content visually distinct
@@ -17,7 +17,7 @@ const BackgroundVocalsContent: React.FC = () => (
       standard and most platforms render it.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">The structure</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">The structure</h2>
     <p>
       A background vocal lives inside the paragraph of the line it accompanies. The outer x-bg span carries no timing.
       Inner spans carry the timing.
@@ -39,7 +39,7 @@ const BackgroundVocalsContent: React.FC = () => (
       can overlap the main-line timing; both render together.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">When to use x-bg</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">When to use x-bg</h2>
     <p>Use x-bg for:</p>
     <ul className="list-disc pl-6 space-y-2">
       <li>Ad libs, interjections, and non-lead vocal phrases</li>
@@ -48,7 +48,7 @@ const BackgroundVocalsContent: React.FC = () => (
       <li>Featured vocalist phrases that overlap the lead line</li>
     </ul>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">When not to use x-bg</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">When not to use x-bg</h2>
     <p>Do not use x-bg for:</p>
     <ul className="list-disc pl-6 space-y-2">
       <li>
@@ -65,7 +65,7 @@ const BackgroundVocalsContent: React.FC = () => (
       </li>
     </ul>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Line-level background vocals</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Line-level background vocals</h2>
     <p>If the background part has no word-level timing, you can use a single timed span inside the x-bg wrapper:</p>
     <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
       {`<span ttm:role="x-bg">
@@ -74,7 +74,7 @@ const BackgroundVocalsContent: React.FC = () => (
     </pre>
     <p>This still follows the rule that the outer x-bg span has no timing and inner spans do.</p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Authoring x-bg in Composer</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Authoring x-bg in Composer</h2>
     <p>
       Open the edit view. Every line has a background text field. Type the background lyric there and the export will
       wrap it in an x-bg span automatically. For word-level background timing, switch to the sync view and sync the
@@ -85,7 +85,7 @@ const BackgroundVocalsContent: React.FC = () => (
       the export, and the outer x-bg wrapper never gets stray timing attributes.
     </p>
 
-    <h2 className="text-2xl font-bold text-composer-text mt-10 mb-4">Related reading</h2>
+    <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Related reading</h2>
     <p>
       The{" "}
       <a href="/guides/ttml-file-format-spec" className="text-composer-accent-text hover:text-composer-accent">

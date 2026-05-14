@@ -202,7 +202,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
       >
         <IconChevronDown
-          className={cn("w-3 h-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
+          className={cn("size-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
         />
       </Button>
       <span className="font-semibold whitespace-nowrap">{group.label}</span>
@@ -211,7 +211,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         onMouseEnter={handleBadgeMouseEnter}
         onMouseLeave={handleBadgeMouseLeave}
       >
-        <IconLink className="w-2.5 h-2.5" />
+        <IconLink className="size-2.5" />
         {instanceIdx + 1} of {totalInstances}
         {isDragging && (
           <span className="ml-1 text-composer-text">

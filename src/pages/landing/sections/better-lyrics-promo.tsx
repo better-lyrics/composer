@@ -17,7 +17,7 @@ const BetterLyricsPromo: React.FC = () => {
           className="absolute -right-16 -bottom-16 text-composer-accent-text opacity-10 group-hover:opacity-20 transition-opacity duration-500 ease-out pointer-events-none"
         />
         <div className="relative p-8 md:p-10 max-w-xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-composer-text mb-3">Better Lyrics</h2>
+          <h2 className="text-2xl md:text-3xl font-semibold text-composer-text mb-3">Better Lyrics</h2>
           <p className="text-composer-text-secondary leading-relaxed mb-6">
             A browser extension that adds time-synced, animated lyrics to YouTube Music. Free, open source, and the
             reason Composer exists.

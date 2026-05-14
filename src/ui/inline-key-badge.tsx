@@ -27,9 +27,9 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys }) => {
         <span
           // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
           key={`${key}-${i}`}
-          className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
+          className="inline-flex items-center justify-center min-size-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
         >
-          {key === "Mod" && isMac ? <IconCommand className="w-2.5 h-2.5" /> : formatKey(key)}
+          {key === "Mod" && isMac ? <IconCommand className="size-2.5" /> : formatKey(key)}
         </span>
       ))}
     </span>

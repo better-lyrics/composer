@@ -5,9 +5,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 describe("useKeyboardShortcuts", () => {
   it("invokes the action when the matching key is pressed", async () => {
     let count = 0;
-    await renderHook(() =>
-      useKeyboardShortcuts([{ key: "z", action: () => count++, description: "Bump" }]),
-    );
+    await renderHook(() => useKeyboardShortcuts([{ key: "z", action: () => count++, description: "Bump" }]));
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", bubbles: true }));
     expect(count).toBe(1);
   });

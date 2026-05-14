@@ -89,7 +89,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
                       : "text-composer-text hover:bg-composer-button"
                   }`}
                 >
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
+                  <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: agentColor }} />
                   {agent.name || agent.id}
                 </button>
               );
