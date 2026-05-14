@@ -124,7 +124,6 @@ const AudioEngine: React.FC = () => {
 
     const handleSeeking = () => {
       if (!analyserAvailable) return;
-      if (audio.paused) return;
       const store = useAudioStore.getState();
       store.setSeekFreezeTarget(audio.currentTime);
       store.setSeekFreeze(true);
