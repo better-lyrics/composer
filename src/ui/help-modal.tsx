@@ -193,7 +193,7 @@ const KeyBadge: React.FC<{ keyName: string }> = ({ keyName }) => {
 
   return (
     <span
-      className={`inline-flex items-center justify-center min-size-6 px-1.5 text-xs font-medium rounded bg-composer-button border border-composer-border ${
+      className={`inline-flex items-center justify-center min-w-6 h-6 px-1.5 text-xs font-medium rounded bg-composer-button border border-composer-border ${
         isSymbol ? "text-base" : ""
       }`}
     >

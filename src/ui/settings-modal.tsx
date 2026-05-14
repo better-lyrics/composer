@@ -293,7 +293,7 @@ const SplitCharacterSetting: React.FC = () => {
         <Modal isOpen onClose={cancelCapture} title="Character warning">
           <div className="space-y-4">
             <div className="flex items-center gap-2 text-sm text-composer-text">
-              <span className="inline-flex items-center justify-center min-size-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
+              <span className="inline-flex items-center justify-center min-w-7 h-7 px-2 rounded-md bg-composer-button border border-composer-border font-mono">
                 {captureState.char}
               </span>
               <span className="text-composer-text-secondary">commonly appears in lyrics.</span>
