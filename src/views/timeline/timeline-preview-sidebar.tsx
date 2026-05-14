@@ -20,6 +20,26 @@ function getAgentAlignment(agentId: string): "left" | "center" | "right" {
 
 // -- Components ---------------------------------------------------------------
 
+const WordWithProgress: React.FC<{
+  text: string;
+  begin: number;
+  end: number;
+  lineIndex: number;
+}> = ({ text, begin, end, lineIndex }) => (
+  <span className="relative inline-block whitespace-pre">
+    <span className="text-composer-text-muted">{text}</span>
+    <span
+      className="absolute inset-0 text-composer-accent-text"
+      data-word-begin={begin}
+      data-word-end={end}
+      data-line-idx={lineIndex}
+      style={{ clipPath: "inset(0 100% 0 0)" }}
+    >
+      {text}
+    </span>
+  </span>
+);
+
 const MiniPreviewLine: React.FC<{
   line: LyricLine;
   lineIndex: number;
@@ -34,34 +54,15 @@ const MiniPreviewLine: React.FC<{
 
   const AgentDotLeft = (
     <span
-      className="inline-block w-1.5 h-1.5 mr-2 rounded-full"
+      className="inline-block size-1.5 mr-2 rounded-full"
       style={{ backgroundColor: agentColor, verticalAlign: "0.1em" }}
     />
   );
   const AgentDotRight = (
     <span
-      className="inline-block w-1.5 h-1.5 ml-2 rounded-full"
+      className="inline-block size-1.5 ml-2 rounded-full"
       style={{ backgroundColor: agentColor, verticalAlign: "0.1em" }}
     />
-  );
-
-  const WordWithProgress: React.FC<{
-    text: string;
-    begin: number;
-    end: number;
-  }> = ({ text, begin, end }) => (
-    <span className="relative inline-block whitespace-pre">
-      <span className="text-composer-text-muted">{text}</span>
-      <span
-        className="absolute inset-0 text-composer-accent-text"
-        data-word-begin={begin}
-        data-word-end={end}
-        data-line-idx={lineIndex}
-        style={{ clipPath: "inset(0 100% 0 0)" }}
-      >
-        {text}
-      </span>
-    </span>
   );
 
   const words = line.words ?? [];
@@ -76,6 +77,7 @@ const MiniPreviewLine: React.FC<{
             text={bgWord.text}
             begin={bgWord.begin}
             end={bgWord.end}
+            lineIndex={lineIndex}
           />
         ))}
       </div>
@@ -124,7 +126,13 @@ const MiniPreviewLine: React.FC<{
         {alignment === "left" && AgentDotLeft}
         {words.length > 0
           ? words.map((word) => (
-              <WordWithProgress key={`${word.begin}-${word.text}`} text={word.text} begin={word.begin} end={word.end} />
+              <WordWithProgress
+                key={`${word.begin}-${word.text}`}
+                text={word.text}
+                begin={word.begin}
+                end={word.end}
+                lineIndex={lineIndex}
+              />
             ))
           : splitIntoWords(line.text).map((word, idx) => (
               <span key={`${idx}-${word}`} className="text-composer-text-muted">
