@@ -265,7 +265,7 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     id: "timeline.toggleSnap",
     scope: "timeline",
     description: "Toggle snap (magnet)",
-    defaultBinding: { key: "n" },
+    defaultBinding: { key: "t" },
   },
 ];
 
