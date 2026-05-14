@@ -363,7 +363,7 @@ const EditPanel: React.FC = () => {
   const handleBulkAgentChange = useCallback(
     (agentId: string) => {
       const selectedLineIds = new Set(
-        parsed.filter((p) => selectedLines.has(p.lineNumber) && p.lineId).map((p) => p.lineId),
+        parsed.flatMap((p) => (selectedLines.has(p.lineNumber) && p.lineId ? [p.lineId] : [])),
       );
       const updates = [...selectedLineIds].map((id) => ({ id: id as string, updates: { agentId } }));
       useProjectStore.getState().updateLinesWithHistory(updates);
@@ -424,7 +424,7 @@ const EditPanel: React.FC = () => {
           modalPendingRef.current = false;
           if (!ok) return;
           const detached = detachInstancesFromLines(action.lyricLines, action.impacted);
-          const remainingGroupIds = new Set(detached.map((l) => l.groupId).filter(Boolean) as string[]);
+          const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
           const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
           linesSetByUs.current = detached;
           setLines(detached);

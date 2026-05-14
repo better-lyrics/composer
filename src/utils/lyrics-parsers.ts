@@ -41,18 +41,18 @@ function detectFileType(filename: string, content: string): LyricsFileType {
 // -- Plain Text Parser --------------------------------------------------------
 
 function parseTxt(content: string): ParseResult {
-  const lines = content
-    .split(/\r?\n/)
-    .map((text) => text.trim())
-    .filter((text) => text.length > 0)
-    .map((text) => {
-      const displayText = text.includes(getSplitCharacter()) ? cleanSplitCharacters(text) : text;
-      return {
+  const lines = content.split(/\r?\n/).flatMap((raw) => {
+    const text = raw.trim();
+    if (text.length === 0) return [];
+    const displayText = text.includes(getSplitCharacter()) ? cleanSplitCharacters(text) : text;
+    return [
+      {
         id: generateLineId(),
         text: displayText,
         agentId: "v1",
-      };
-    });
+      },
+    ];
+  });
 
   return {
     lines,
@@ -150,16 +150,15 @@ function parseLrc(content: string): ParseResult {
       continue;
     }
 
-    const timestampRegex = new RegExp(LINE_TIMESTAMP_REGEX.source, "g");
     const timestamps: number[] = [];
-    const matches = trimmed.matchAll(timestampRegex);
+    const matches = trimmed.matchAll(LINE_TIMESTAMP_REGEX);
     for (const timestampMatch of matches) {
       timestamps.push(parseLrcTimestamp(`[${timestampMatch[1]}]`));
     }
 
     if (timestamps.length === 0) continue;
 
-    const textWithoutLineTags = trimmed.replace(timestampRegex, "");
+    const textWithoutLineTags = trimmed.replace(LINE_TIMESTAMP_REGEX, "");
 
     if (timestamps.length === 1) {
       const parsed = parseInlineWordTags(textWithoutLineTags, timestamps[0]);

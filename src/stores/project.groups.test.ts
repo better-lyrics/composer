@@ -249,9 +249,8 @@ describe("project store · instance mutators", () => {
 
     const indices = useProjectStore
       .getState()
-      .lines.filter((l) => l.groupId === "g1")
-      .map((l) => l.instanceIdx)
-      .sort();
+      .lines.flatMap((l) => (l.groupId === "g1" ? [l.instanceIdx] : []))
+      .toSorted();
     expect(indices).toEqual([0, 1, 2]);
   });
 

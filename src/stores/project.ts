@@ -546,7 +546,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const label = options.label ?? `Group ${state.groups.length + 1}`;
 
       const startToInstanceIdx = new Map<number, number>();
-      const sortedStarts = [...starts].sort((a, b) => a - b);
+      const sortedStarts = starts.toSorted((a, b) => a - b);
       sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
 
       const updatedLines = state.lines.map((line, idx) => {
@@ -596,9 +596,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   addInstance: (groupId, structure, instanceStart, insertAtIndex) =>
     set((state) => {
       const usedIndices = new Set(
-        state.lines
-          .filter((l) => l.groupId === groupId && l.instanceIdx !== undefined)
-          .map((l) => l.instanceIdx as number),
+        state.lines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
       );
       let instanceIdx = 0;
       while (usedIndices.has(instanceIdx)) instanceIdx++;
@@ -901,14 +899,12 @@ function isLinkedSibling(line: LyricLine, scope: LinkScope | null): boolean {
 function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number, duration: number): LyricLine | null {
   if (!line.words) return null;
   const indexSet = new Set(wordIndices);
-  const movedWords = line.words
-    .map((w, i) => ({ word: w, index: i }))
-    .filter(({ index }) => indexSet.has(index))
-    .map(({ word }) => {
-      const dur = word.end - word.begin;
-      const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
-      return { ...word, begin: newBegin, end: newBegin + dur };
-    });
+  const movedWords = line.words.flatMap((word, index) => {
+    if (!indexSet.has(index)) return [];
+    const dur = word.end - word.begin;
+    const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
+    return [{ ...word, begin: newBegin, end: newBegin + dur }];
+  });
 
   if (movedWords.length === 0) return null;
 
@@ -936,14 +932,12 @@ function applyMoveFromBg(
 ): LyricLine | null {
   if (!line.backgroundWords) return null;
   const indexSet = new Set(wordIndices);
-  const movedWords = line.backgroundWords
-    .map((w, i) => ({ word: w, index: i }))
-    .filter(({ index }) => indexSet.has(index))
-    .map(({ word }) => {
-      const dur = word.end - word.begin;
-      const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
-      return { ...word, begin: newBegin, end: newBegin + dur };
-    });
+  const movedWords = line.backgroundWords.flatMap((word, index) => {
+    if (!indexSet.has(index)) return [];
+    const dur = word.end - word.begin;
+    const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
+    return [{ ...word, begin: newBegin, end: newBegin + dur }];
+  });
 
   if (movedWords.length === 0) return null;
 

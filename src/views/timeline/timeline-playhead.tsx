@@ -143,8 +143,9 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         const mask = buildPlayheadMask(playheadCenterXViewport, containerRect.top);
         if (mask !== lastMaskRef.current) {
           lastMaskRef.current = mask;
-          playheadRef.current.style.maskImage = mask;
-          playheadRef.current.style.webkitMaskImage = mask;
+          const style = playheadRef.current.style;
+          style.maskImage = mask;
+          style.webkitMaskImage = mask;
         }
       }
 

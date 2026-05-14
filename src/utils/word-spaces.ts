@@ -41,7 +41,7 @@ function findInsertionSlot(
   audioDuration: number,
   minDuration: number = DEFAULT_MIN_WORD_DURATION,
 ): { begin: number; end: number } | null {
-  const sorted = [...existingWords].sort((a, b) => a.begin - b.begin);
+  const sorted = existingWords.toSorted((a, b) => a.begin - b.begin);
 
   let gapStart = 0;
   let gapEnd = audioDuration;

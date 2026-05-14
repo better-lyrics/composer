@@ -8,13 +8,14 @@ import { forwardRef, useCallback, useState } from "react";
 // -- Helpers ------------------------------------------------------------------
 
 function generateAgentId(existingAgents: { id: string }[]): string {
-  const usedNumbers = existingAgents
-    .map((a) => a.id.match(/^v(\d+)$/))
-    .filter((m): m is RegExpMatchArray => m !== null)
-    .map((m) => Number.parseInt(m[1], 10));
+  const usedNumbers = new Set<number>();
+  for (const a of existingAgents) {
+    const m = a.id.match(/^v(\d+)$/);
+    if (m) usedNumbers.add(Number.parseInt(m[1], 10));
+  }
 
   let next = 1;
-  while (usedNumbers.includes(next)) {
+  while (usedNumbers.has(next)) {
     next++;
   }
   return `v${next}`;

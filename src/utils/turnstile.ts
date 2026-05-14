@@ -71,11 +71,7 @@ async function runTurnstile(sitekey: string): Promise<string> {
   if (!api) throw new Error(`${LOG_PREFIX} window.turnstile is undefined after script load`);
 
   const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.width = "0";
-  container.style.height = "0";
-  container.style.overflow = "hidden";
-  container.style.pointerEvents = "none";
+  container.style.cssText = "position:absolute;width:0;height:0;overflow:hidden;pointer-events:none";
   document.body.appendChild(container);
 
   return new Promise<string>((resolve, reject) => {

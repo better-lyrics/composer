@@ -82,10 +82,12 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     let content = "";
 
     if (granularity === "word" && line.words?.length) {
-      for (let i = 0; i < line.words.length; i++) {
-        const word = line.words[i];
+      const words = line.words;
+      const wordCount = words.length;
+      for (let i = 0; i < wordCount; i++) {
+        const word = words[i];
         const text = word.text.trimEnd();
-        const needsSpace = i < line.words.length - 1 && word.text.endsWith(" ");
+        const needsSpace = i < wordCount - 1 && word.text.endsWith(" ");
         content += `${emitWordSpan(word, text)}${needsSpace ? " " : ""}`;
       }
     } else {
@@ -93,11 +95,13 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     }
 
     if (line.backgroundText && line.backgroundWords?.length) {
+      const bgWords = line.backgroundWords;
+      const bgCount = bgWords.length;
       let bgContent = "";
-      for (let i = 0; i < line.backgroundWords.length; i++) {
-        const bgWord = line.backgroundWords[i];
+      for (let i = 0; i < bgCount; i++) {
+        const bgWord = bgWords[i];
         const text = bgWord.text.trimEnd();
-        const needsSpace = i < line.backgroundWords.length - 1 && bgWord.text.endsWith(" ");
+        const needsSpace = i < bgCount - 1 && bgWord.text.endsWith(" ");
         bgContent += `${emitWordSpan(bgWord, text)}${needsSpace ? " " : ""}`;
       }
       content += `<span ttm:role="x-bg">${bgContent}</span>`;

@@ -19,12 +19,12 @@ function cleanSplitCharacters(text: string, char?: string): string {
 
   return text
     .split(/\s+/)
-    .filter((token) => token.length > 0)
-    .map((token) => {
+    .flatMap((token) => {
+      if (token.length === 0) return [];
       const cleaned = token.replace(leading, "").replace(trailing, "").replace(consecutive, c);
-      return cleaned || token.replace(new RegExp(escaped, "g"), "");
+      const final = cleaned || token.replace(new RegExp(escaped, "g"), "");
+      return final ? [final] : [];
     })
-    .filter(Boolean)
     .join(" ");
 }
 

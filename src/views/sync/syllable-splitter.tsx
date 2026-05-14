@@ -26,7 +26,7 @@ const SplitModeContent: React.FC<{
 
   const previewParts = useMemo(() => {
     if (splitPoints.length === 0) return [text];
-    const sorted = [...splitPoints].sort((a, b) => a - b);
+    const sorted = splitPoints.toSorted((a, b) => a - b);
     const result: string[] = [];
     let lastIdx = 0;
     for (const point of sorted) {

@@ -185,13 +185,14 @@ const TimelinePreviewSidebar: React.FC = () => {
         const begin = Number.parseFloat(el.dataset.lineBegin ?? "0");
         const end = Number.parseFloat(el.dataset.lineEnd ?? "0");
         const { isActive, isComplete } = getTimingState(begin, end, currentTime);
+        const style = el.style;
 
         if (isActive) {
-          el.style.opacity = "1";
+          style.opacity = "1";
         } else if (isComplete) {
-          el.style.opacity = "0.6";
+          style.opacity = "0.6";
         } else {
-          el.style.opacity = "0.3";
+          style.opacity = "0.3";
         }
       }
 

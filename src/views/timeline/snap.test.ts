@@ -76,28 +76,26 @@ describe("collectSnapAnchors", () => {
   it("excludes self words by composite selfKey(lineId, wordIndex, track)", () => {
     const selfIds = new Set([selfKey("l1", 1, "word")]);
     const anchors = collectSnapAnchors([wordTimedLine()], selfIds, null);
-    const selfWordTimes = anchors
-      .filter((a) => a.lineId === "l1" && a.wordIndex === 1 && a.track === "word")
-      .map((a) => a.t);
+    const selfWordTimes = anchors.flatMap((a) =>
+      a.lineId === "l1" && a.wordIndex === 1 && a.track === "word" ? [a.t] : [],
+    );
     expect(selfWordTimes).toEqual([]);
     const otherWordTimes = anchors
-      .filter((a) => a.lineId === "l1" && a.wordIndex === 2 && a.track === "word")
-      .map((a) => a.t)
-      .sort((a, b) => a - b);
+      .flatMap((a) => (a.lineId === "l1" && a.wordIndex === 2 && a.track === "word" ? [a.t] : []))
+      .toSorted((a, b) => a - b);
     expect(otherWordTimes).toEqual([0.6, 1]);
   });
 
   it("excludes self background words independently from main-track words at the same index", () => {
     const selfIds = new Set([selfKey("l1", 0, "bg")]);
     const anchors = collectSnapAnchors([wordTimedLine()], selfIds, null);
-    const selfBgTimes = anchors
-      .filter((a) => a.lineId === "l1" && a.wordIndex === 0 && a.track === "bg")
-      .map((a) => a.t);
+    const selfBgTimes = anchors.flatMap((a) =>
+      a.lineId === "l1" && a.wordIndex === 0 && a.track === "bg" ? [a.t] : [],
+    );
     expect(selfBgTimes).toEqual([]);
     const mainWordZero = anchors
-      .filter((a) => a.lineId === "l1" && a.wordIndex === 0 && a.track === "word")
-      .map((a) => a.t)
-      .sort((a, b) => a - b);
+      .flatMap((a) => (a.lineId === "l1" && a.wordIndex === 0 && a.track === "word" ? [a.t] : []))
+      .toSorted((a, b) => a - b);
     expect(mainWordZero).toEqual([0, 0.3]);
   });
 
@@ -115,7 +113,7 @@ describe("collectSnapAnchors", () => {
   it("returns anchors sorted by t", () => {
     const anchors = collectSnapAnchors([wordTimedLine(), lineSyncedLine()], new Set(), 1.5);
     const times = anchors.map((a) => a.t);
-    const sorted = [...times].sort((a, b) => a - b);
+    const sorted = times.toSorted((a, b) => a - b);
     expect(times).toEqual(sorted);
   });
 

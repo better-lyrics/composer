@@ -70,7 +70,7 @@ const ShortcutsSettingsSection: React.FC = () => {
 
   const filteredScopes = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
-    return SCOPE_GROUPS.map(({ scope, title }) => {
+    return SCOPE_GROUPS.flatMap(({ scope, title }) => {
       const shortcuts = getShortcutsByScope(scope).filter((def) => {
         if (trimmed.length === 0) return true;
         if (def.description.toLowerCase().includes(trimmed)) return true;
@@ -79,8 +79,8 @@ const ShortcutsSettingsSection: React.FC = () => {
         const keys = getEffectiveKeysArray(def.id).join(" ").toLowerCase();
         return keys.includes(trimmed);
       });
-      return { scope, title, shortcuts };
-    }).filter((g) => g.shortcuts.length > 0);
+      return shortcuts.length > 0 ? [{ scope, title, shortcuts }] : [];
+    });
   }, [query]);
 
   return (

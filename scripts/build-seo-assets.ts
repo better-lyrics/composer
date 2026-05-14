@@ -11,10 +11,11 @@ async function collectRoutes(outDir: string): Promise<string[]> {
 
   async function walk(dir: string, prefix: string) {
     const entries = await readdir(dir, { withFileTypes: true });
+    const dirWalks: Promise<void>[] = [];
     for (const entry of entries) {
       if (entry.isDirectory()) {
         if (SKIP_DIRS.has(entry.name)) continue;
-        await walk(join(dir, entry.name), `${prefix}/${entry.name}`);
+        dirWalks.push(walk(join(dir, entry.name), `${prefix}/${entry.name}`));
         continue;
       }
       if (!entry.isFile() || !entry.name.endsWith(".html")) continue;
@@ -31,10 +32,11 @@ async function collectRoutes(outDir: string): Promise<string[]> {
       if (EXCLUDED_PATHS.has(slugOnly)) continue;
       routes.add(normalized);
     }
+    await Promise.all(dirWalks);
   }
 
   await walk(root, "");
-  return [...routes].sort();
+  return Array.from(routes).sort();
 }
 
 function buildSitemapXml(origin: string, routes: string[]): string {

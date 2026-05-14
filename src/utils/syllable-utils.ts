@@ -6,7 +6,7 @@ function distributeTiming(text: string, splitPoints: number[], begin: number, en
   const parts: string[] = [];
   let lastIdx = 0;
 
-  const sortedPoints = [...splitPoints].sort((a, b) => a - b);
+  const sortedPoints = splitPoints.toSorted((a, b) => a - b);
   for (const point of sortedPoints) {
     if (point > lastIdx && point < text.length) {
       parts.push(text.slice(lastIdx, point));

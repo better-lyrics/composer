@@ -35,7 +35,7 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
   }
 
   const usedIndices = new Set(
-    lines.filter((l) => l.groupId === groupId && l.instanceIdx !== undefined).map((l) => l.instanceIdx as number),
+    lines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
   );
   let instanceIdx = 0;
   while (usedIndices.has(instanceIdx)) instanceIdx++;

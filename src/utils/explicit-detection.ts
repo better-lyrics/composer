@@ -201,7 +201,7 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
       continue;
     }
 
-    const sorted = [...hits].sort((a, b) => (a.line.instanceIdx ?? 0) - (b.line.instanceIdx ?? 0));
+    const sorted = hits.toSorted((a, b) => (a.line.instanceIdx ?? 0) - (b.line.instanceIdx ?? 0));
     const representative = sorted[0];
     out.push({
       lineId: representative.line.id,

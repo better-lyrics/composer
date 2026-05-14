@@ -37,10 +37,7 @@ function getNudgeAmount(): number {
 
 function splitIntoWords(text: string): string[] {
   const char = getSplitCharacter();
-  return text
-    .split(/\s+/)
-    .filter((w) => w.length > 0)
-    .flatMap((w) => w.split(char).filter((p) => p.length > 0));
+  return text.split(/\s+/).flatMap((w) => (w.length > 0 ? w.split(char).filter((p) => p.length > 0) : []));
 }
 
 function splitIntoWordsWithMeta(text: string): { parts: string[]; trailingSpace: boolean[] } {

@@ -4,12 +4,23 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 
+const TAB_NAME_REGEX = {
+  Import: /^Import/,
+  Edit: /^Edit/,
+  Sync: /^Sync/,
+  Timeline: /^Timeline/,
+  Preview: /^Preview/,
+  Export: /^Export/,
+} as const;
+
 describe("TabBar", () => {
   it("renders one button per tab", async () => {
     const screen = await render(<TabBar />);
-    for (const label of ["Import", "Edit", "Sync", "Timeline", "Preview", "Export"]) {
-      await expect.element(screen.getByRole("button", { name: new RegExp(`^${label}`) })).toBeInTheDocument();
-    }
+    await Promise.all(
+      Object.values(TAB_NAME_REGEX).map((nameRegex) =>
+        expect.element(screen.getByRole("button", { name: nameRegex })).toBeInTheDocument(),
+      ),
+    );
   });
 
   it("highlights the currently active tab from the project store", async () => {

@@ -47,11 +47,13 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
   const anchors: SnapAnchor[] = [];
 
   for (const line of lines) {
-    const wordTimed = line.words && line.words.length > 0;
+    const words = line.words;
+    const wordCount = words?.length ?? 0;
+    const wordTimed = wordCount > 0;
 
-    if (line.words && line.words.length > 0) {
-      for (let i = 0; i < line.words.length; i++) {
-        const word = line.words[i];
+    if (words && wordCount > 0) {
+      for (let i = 0; i < wordCount; i++) {
+        const word = words[i];
         if (!selfIds.has(selfKey(line.id, i, "word"))) {
           anchors.push({
             t: word.begin,
@@ -73,9 +75,11 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
       }
     }
 
-    if (line.backgroundWords && line.backgroundWords.length > 0) {
-      for (let i = 0; i < line.backgroundWords.length; i++) {
-        const word = line.backgroundWords[i];
+    const bgWords = line.backgroundWords;
+    const bgCount = bgWords?.length ?? 0;
+    if (bgWords && bgCount > 0) {
+      for (let i = 0; i < bgCount; i++) {
+        const word = bgWords[i];
         if (!selfIds.has(selfKey(line.id, i, "bg"))) {
           anchors.push({
             t: word.begin,

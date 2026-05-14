@@ -56,7 +56,7 @@ function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
   for (const line of lines) {
     if (line.groupId === groupId && line.instanceIdx !== undefined) set.add(line.instanceIdx);
   }
-  return [...set].sort((a, b) => a - b);
+  return Array.from(set).sort((a, b) => a - b);
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -369,7 +369,7 @@ function useTimelineKeyboard(
           if (mSel.length < 2) break;
           const first = mSel[0];
           if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
-          const sorted = [...mSel].sort((a, b) => a.wordIndex - b.wordIndex);
+          const sorted = mSel.toSorted((a, b) => a.wordIndex - b.wordIndex);
           let consecutive = true;
           for (let i = 1; i < sorted.length; i++) {
             if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) {

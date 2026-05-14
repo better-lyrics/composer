@@ -196,17 +196,17 @@ function useTimelineDnd(lines: LyricLine[]) {
       const timeDelta = delta.x / zoom;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
-        const indices = wordsToMove
-          .filter((s) => s.lineId === activeData.lineId && s.type === "word")
-          .map((s) => s.wordIndex);
+        const indices = wordsToMove.flatMap((s) =>
+          s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
+        );
         moveWordToBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
 
       if (dropId.startsWith("main-drop-") && activeData.trackType === "bg" && movedUpToMain) {
-        const indices = wordsToMove
-          .filter((s) => s.lineId === activeData.lineId && s.type === "bg")
-          .map((s) => s.wordIndex);
+        const indices = wordsToMove.flatMap((s) =>
+          s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
+        );
         moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
@@ -222,8 +222,8 @@ function useTimelineDnd(lines: LyricLine[]) {
           if (!moveLine) continue;
 
           const lineUpdates: Partial<LyricLine> = {};
-          const wordIndices = new Set(selections.filter((s) => s.type === "word").map((s) => s.wordIndex));
-          const bgIndices = new Set(selections.filter((s) => s.type === "bg").map((s) => s.wordIndex));
+          const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
+          const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 
           for (const [indices, trackKey] of [
             [wordIndices, "words"],

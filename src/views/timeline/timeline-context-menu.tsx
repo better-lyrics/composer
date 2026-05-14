@@ -152,7 +152,7 @@ const TimelineContextMenu: React.FC = () => {
     );
     const indices =
       selectionMatchesTarget && selectedWords.length > 1
-        ? selectedWords.filter((w) => w.lineId === lineId && w.type === type).map((w) => w.wordIndex)
+        ? selectedWords.flatMap((w) => (w.lineId === lineId && w.type === type ? [w.wordIndex] : []))
         : [wordIndex];
 
     const allMarked = indices.every((i) => wordsArray[i]?.explicit === true);
@@ -376,7 +376,7 @@ const TimelineContextMenu: React.FC = () => {
     const allSameLine = selectedWords.every((w) => w.lineId === first.lineId && w.type === first.type);
     if (!allSameLine) return null;
 
-    const sorted = [...selectedWords].sort((a, b) => a.wordIndex - b.wordIndex);
+    const sorted = selectedWords.toSorted((a, b) => a.wordIndex - b.wordIndex);
     for (let i = 1; i < sorted.length; i++) {
       if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) return null;
     }
@@ -521,9 +521,7 @@ const TimelineContextMenu: React.FC = () => {
     if (!group) return;
     const projectLines = useProjectStore.getState().lines;
     const instanceCount = new Set(
-      projectLines
-        .filter((l) => l.groupId === groupId && l.instanceIdx !== undefined)
-        .map((l) => l.instanceIdx as number),
+      projectLines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
     ).size;
 
     clearContextMenu();
@@ -561,7 +559,7 @@ const TimelineContextMenu: React.FC = () => {
       for (const l of projectLines) {
         if (l.groupId === groupId && l.instanceIdx !== undefined) indices.add(l.instanceIdx);
       }
-      const sorted = [...indices].sort((a, b) => a - b);
+      const sorted = Array.from(indices).sort((a, b) => a - b);
       if (sorted.length < 2) return;
       const here = sorted.indexOf(instanceIdx);
       const next = sorted[(here + direction + sorted.length) % sorted.length];

@@ -96,7 +96,7 @@ const TimelineInfoPanel: React.FC = () => {
     if (!group) return null;
     const sameInstance = instanceKeys.size === 1;
     const totalInstances = new Set(
-      rawLines.filter((l) => l.groupId === firstGroupId && l.instanceIdx !== undefined).map((l) => l.instanceIdx),
+      rawLines.flatMap((l) => (l.groupId === firstGroupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
     ).size;
     return {
       group,
