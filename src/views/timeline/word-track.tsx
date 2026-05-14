@@ -77,10 +77,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
   });
 
   const snap = useTimelineSnap();
-  useSnapBypass({
-    active: resizing,
-    getLastPointer: () => lastPointerRef.current,
-  });
+  const getLastPointer = useCallback(() => lastPointerRef.current, []);
+  useSnapBypass({ active: resizing, getLastPointer });
 
   useEffect(() => {
     return () => {
