@@ -105,6 +105,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       snap.beginGesture({
         selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
+        leaderKey: selfKey(lineId, wordIndex, trackType),
         overlapCheck: (shift) => {
           const w = words[wordIndex];
           const newBegin = edge === "left" ? w.begin + shift : w.begin;

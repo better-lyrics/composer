@@ -360,8 +360,10 @@ const TimelinePanel: React.FC = () => {
             ? selectedWords
             : [{ lineId: data.lineId, lineIndex: 0, wordIndex: data.wordIndex, type: data.trackType }];
         const selfIds = new Set(draggedSet.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
+        const leaderKey = selfKey(data.lineId, data.wordIndex, data.trackType);
         beginGesture({
           selfIds,
+          leaderKey,
           overlapCheck: makeDragOverlapCheck(data, lines),
         });
       }}

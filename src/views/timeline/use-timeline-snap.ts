@@ -10,10 +10,15 @@ import { useCallback, useMemo, useRef } from "react";
 
 const SNAP_THRESHOLD_PX = 8;
 
+// -- Module state -------------------------------------------------------------
+
+let pulseCounter = 0;
+
 // -- Types --------------------------------------------------------------------
 
 interface BeginGestureArgs {
   selfIds: Set<string>;
+  leaderKey: string;
   overlapCheck: (shift: number) => boolean;
 }
 
@@ -23,6 +28,7 @@ interface SnapCtx {
   zoom: number;
   anchors: SnapAnchor[];
   selfIds: Set<string>;
+  leaderKey: string;
   overlapCheck: ((shift: number) => boolean) | null;
 }
 
@@ -35,17 +41,13 @@ interface UseTimelineSnap {
 
 // -- Helpers ------------------------------------------------------------------
 
-function writeSnappedKey(anchor: SnapAnchor | null): void {
-  const store = useTimelineStore.getState() as {
-    setSnappedBlockId?: (key: string | null) => void;
-  };
-  if (!store.setSnappedBlockId) return;
-  if (!anchor) {
-    store.setSnappedBlockId(null);
+function writeSnappedLeader(leaderKey: string, snapped: boolean): void {
+  if (!snapped) {
+    useTimelineStore.getState().setSnappedBlockId(null);
     return;
   }
-  const key = `${anchor.kind}:${anchor.lineId ?? ""}:${anchor.wordIndex ?? ""}:${anchor.t.toFixed(6)}`;
-  store.setSnappedBlockId(key);
+  pulseCounter += 1;
+  useTimelineStore.getState().setSnappedBlockId(`${leaderKey}#${pulseCounter}`);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -61,6 +63,7 @@ function useTimelineSnap(): UseTimelineSnap {
     zoom: 100,
     anchors: [],
     selfIds: new Set(),
+    leaderKey: "",
     overlapCheck: null,
   });
 
@@ -74,20 +77,22 @@ function useTimelineSnap(): UseTimelineSnap {
     const playhead = audio.audioElement?.currentTime ?? audio.currentTime ?? null;
     ctxRef.current.anchors = collectSnapAnchors(lines, args.selfIds, playhead);
     ctxRef.current.selfIds = args.selfIds;
+    ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
   }, []);
 
   const endGesture = useCallback(() => {
     ctxRef.current.anchors = [];
     ctxRef.current.selfIds = new Set();
+    ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
-    writeSnappedKey(null);
+    useTimelineStore.getState().setSnappedBlockId(null);
   }, []);
 
   const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
     const ctx = ctxRef.current;
     if (!ctx.enabled || ctx.bypassing || ctx.anchors.length === 0) {
-      writeSnappedKey(null);
+      writeSnappedLeader(ctx.leaderKey, false);
       return 0;
     }
     const deltaT = proposedDeltaPx / ctx.zoom;
@@ -100,7 +105,7 @@ function useTimelineSnap(): UseTimelineSnap {
       threshold: SNAP_THRESHOLD_PX,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
-    writeSnappedKey(result.anchor);
+    writeSnappedLeader(ctx.leaderKey, result.anchor !== null);
     return result.shift * ctx.zoom;
   }, []);
 

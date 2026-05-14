@@ -51,6 +51,7 @@ interface TimelineState {
   renamingInstanceIdx: number | null;
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
   isBypassing: boolean;
+  snappedBlockId: string | null;
 }
 
 interface TimelineActions {
@@ -80,6 +81,7 @@ interface TimelineActions {
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
   setIsBypassing: (v: boolean) => void;
+  setSnappedBlockId: (id: string | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -118,6 +120,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     renamingInstanceIdx: null,
     draggedGroupShift: null,
     isBypassing: false,
+    snappedBlockId: null,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -168,6 +171,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
       set({ renamingGroupId, renamingInstanceIdx: renamingGroupId === null ? null : renamingInstanceIdx }),
     setDraggedGroupShift: (draggedGroupShift) => set({ draggedGroupShift }),
     setIsBypassing: (v) => set({ isBypassing: v }),
+    setSnappedBlockId: (id) => set({ snappedBlockId: id }),
   };
 });
 
