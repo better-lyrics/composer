@@ -413,7 +413,10 @@ const TimelinePanel: React.FC = () => {
             >
               <div
                 ref={scrollContainerRef}
+                role="application"
+                aria-label="Timeline"
                 data-scroll-container
+                tabIndex={0}
                 className="flex-1 overflow-auto overscroll-none static! z-[unset]"
                 onScroll={handleScroll}
                 onWheel={handleWheel}

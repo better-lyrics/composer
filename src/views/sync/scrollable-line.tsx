@@ -231,7 +231,12 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   return (
     <div
       ref={lineRef}
+      role="button"
+      tabIndex={-1}
       onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onClick();
+      }}
       className={`flex items-start gap-3 px-4 py-2 w-full text-left cursor-pointer transition-colors hover:bg-composer-button/50 border-l ${
         isCurrent ? "bg-composer-accent/10 border-composer-accent" : "border-transparent"
       }`}

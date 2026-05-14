@@ -136,11 +136,16 @@ const LinePreview: React.FC<{
 
   return (
     <div
+      role="button"
+      tabIndex={-1}
       className={`relative flex items-center gap-2 px-3 py-0.5 group cursor-pointer ${
         isSelected ? "bg-composer-accent/15" : line.hasBrackets ? "bg-composer-error/5" : "hover:bg-composer-button/30"
       }`}
       onMouseDown={handleMouseDown}
       onClick={selectLineForBulkEdit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onSelect(line.lineNumber, e.shiftKey);
+      }}
       title={groupTooltip}
     >
       {groupColor && (
@@ -151,10 +156,15 @@ const LinePreview: React.FC<{
         />
       )}
       <span
+        role="button"
+        tabIndex={-1}
         className="w-8 font-mono text-xs text-right shrink-0 text-composer-text-muted tabular-nums select-none cursor-pointer"
         onMouseDown={(e) => onGutterMouseDown(line.lineNumber, e)}
         onMouseEnter={(e) => onGutterMouseEnter(line.lineNumber, e)}
         onClick={handleGutterClick}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleGutterClick(e as unknown as React.MouseEvent);
+        }}
       >
         {line.lineNumber}
       </span>

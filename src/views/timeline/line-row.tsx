@@ -300,6 +300,9 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       </div>
 
       <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-hidden="true"
         className={cn(
           "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-10",
           isResizing && "bg-composer-accent/50",

@@ -262,8 +262,12 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
 
   return (
     <div
+      role="button"
+      tabIndex={-1}
+      aria-label="Place pasted content here"
       className={cn("absolute inset-0 z-55", hasOverlap ? "cursor-not-allowed" : "cursor-copy")}
       onClick={commitPaste}
+      onKeyDown={() => {}}
     >
       {ghosts.map((ghost) => (
         <div

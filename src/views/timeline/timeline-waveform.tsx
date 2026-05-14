@@ -75,6 +75,9 @@ const TimelineWaveform: React.FC = () => {
         onReady={onReady}
       />
       <div
+        role="button"
+        tabIndex={-1}
+        aria-label="Seek to position"
         className="absolute top-0 left-0 z-10 cursor-pointer"
         key="waveform-click-layer"
         style={{
@@ -82,6 +85,7 @@ const TimelineWaveform: React.FC = () => {
           height: WAVEFORM_HEIGHT,
         }}
         onClick={seekToClickedPosition}
+        onKeyDown={() => {}}
       />
     </div>
   );

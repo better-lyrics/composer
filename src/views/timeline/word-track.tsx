@@ -374,11 +374,13 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   return (
     <div
+      role="presentation"
       className="relative"
       style={{ height, width: duration * zoom }}
       onClick={handleTrackClick}
       onDoubleClick={handleTrackDoubleClick}
       onContextMenu={handleTrackContextMenu}
+      onKeyDown={() => {}}
     >
       {words.map((word, wordIndex) => {
         const display = getDisplay(wordIndex);

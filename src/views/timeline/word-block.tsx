@@ -135,9 +135,17 @@ const WordBlock: React.FC<WordBlockProps> = ({
       }}
       {...attributes}
       {...listeners}
+      role="button"
+      tabIndex={-1}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") onClick(e as unknown as React.MouseEvent);
+      }}
     >
       <div
         data-edge="left"
+        role="separator"
+        aria-orientation="vertical"
+        aria-hidden="true"
         className={cn(
           "absolute left-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
           syllablePosition === "middle" || syllablePosition === "last" ? "cursor-col-resize" : "cursor-ew-resize",
@@ -153,6 +161,9 @@ const WordBlock: React.FC<WordBlockProps> = ({
 
       <div
         data-edge="right"
+        role="separator"
+        aria-orientation="vertical"
+        aria-hidden="true"
         className={cn(
           "absolute right-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
           syllablePosition === "first" || syllablePosition === "middle" ? "cursor-col-resize" : "cursor-ew-resize",
