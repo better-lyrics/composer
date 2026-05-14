@@ -89,12 +89,14 @@ function detectFullInstance(
   lines: LyricLine[],
   selectedWords: ReadonlyArray<{ lineId: string; wordIndex: number; type: "word" | "bg" }>,
 ): { groupId: string; instanceIdx: number } | undefined {
-  const firstLine = lines.find((l) => l.id === selectedWords[0].lineId);
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
+  const firstLine = linesById.get(selectedWords[0].lineId);
   if (!firstLine?.groupId || firstLine.instanceIdx === undefined) return undefined;
   const { groupId, instanceIdx } = firstLine;
 
   for (const sel of selectedWords) {
-    const line = lines.find((l) => l.id === sel.lineId);
+    const line = linesById.get(sel.lineId);
     if (!line || line.groupId !== groupId || line.instanceIdx !== instanceIdx) return undefined;
   }
 

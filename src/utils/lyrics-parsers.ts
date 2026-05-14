@@ -226,16 +226,21 @@ function parseSrt(content: string): ParseResult {
     const blockLines = block.trim().split(/\r?\n/);
     if (blockLines.length < 2) continue;
 
-    // First line is index (skip), second is timestamps
-    const timestampLine = blockLines.find((l) => l.includes("-->"));
-    if (!timestampLine) continue;
+    let timestampIdx = -1;
+    for (let i = 0; i < blockLines.length; i++) {
+      if (blockLines[i].includes("-->")) {
+        timestampIdx = i;
+        break;
+      }
+    }
+    if (timestampIdx === -1) continue;
+    const timestampLine = blockLines[timestampIdx];
 
     const [startStr, endStr] = timestampLine.split("-->");
     const begin = parseSrtTimestamp(startStr.trim());
     const end = parseSrtTimestamp(endStr.trim());
 
-    // Remaining lines are text (join with space, strip HTML tags)
-    const textLines = blockLines.slice(blockLines.indexOf(timestampLine) + 1);
+    const textLines = blockLines.slice(timestampIdx + 1);
     const text = textLines
       .join(" ")
       .replace(/<[^>]+>/g, "")

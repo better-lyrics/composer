@@ -105,10 +105,12 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
     if (updates.length > 0) {
       updateLinesWithHistory(updates);
 
+      const lineIndexById = new Map<string, number>();
+      for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
       const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
       for (const u of updates) {
-        const lineIndex = lines.findIndex((l) => l.id === u.id);
-        if (lineIndex < 0 || !u.updates.words) continue;
+        const lineIndex = lineIndexById.get(u.id);
+        if (lineIndex === undefined || !u.updates.words) continue;
         for (let wi = 0; wi < u.updates.words.length; wi++) {
           newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
         }

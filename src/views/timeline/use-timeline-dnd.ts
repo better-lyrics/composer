@@ -67,9 +67,11 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
 
   const grouped = groupSelectionsByLine(wordsToDuplicate);
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
 
   for (const [lineId, selections] of grouped) {
-    const line = lines.find((l) => l.id === lineId);
+    const line = linesById.get(lineId);
     if (!line) continue;
 
     const wordDups: Array<{ text: string; begin: number; end: number }> = [];
@@ -216,9 +218,11 @@ function useTimelineDnd(lines: LyricLine[]) {
       if (wordsToMove.length > 1) {
         const grouped = groupSelectionsByLine(wordsToMove);
         const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
+        const moveLinesById = new Map<string, LyricLine>();
+        for (const l of lines) moveLinesById.set(l.id, l);
 
         for (const [lineId, selections] of grouped) {
-          const moveLine = lines.find((l) => l.id === lineId);
+          const moveLine = moveLinesById.get(lineId);
           if (!moveLine) continue;
 
           const lineUpdates: Partial<LyricLine> = {};

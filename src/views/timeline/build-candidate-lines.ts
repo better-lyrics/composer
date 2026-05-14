@@ -15,9 +15,12 @@ function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<Wo
     else entry.bgIdxs.add(sel.wordIndex);
   }
 
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
+
   const candidates: { line: LyricLine; lineIndex: number }[] = [];
   for (const [lineId, { mainIdxs, bgIdxs, lineIndex }] of byLine) {
-    const line = lines.find((l) => l.id === lineId);
+    const line = linesById.get(lineId);
     if (!line) return undefined;
     const totalMain = line.words?.length ?? 0;
     const totalBg = line.backgroundWords?.length ?? 0;

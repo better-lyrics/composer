@@ -26,10 +26,12 @@ interface DecideOptions {
 // -- Helpers ------------------------------------------------------------------
 
 function uniqueImpactedLabels(impacted: ImpactedInstance[], groups: LinkGroup[]): string[] {
+  const groupsById = new Map<string, LinkGroup>();
+  for (const g of groups) groupsById.set(g.id, g);
   const seen = new Set<string>();
   const out: string[] = [];
   for (const i of impacted) {
-    const label = groups.find((g) => g.id === i.groupId)?.label;
+    const label = groupsById.get(i.groupId)?.label;
     if (!label || seen.has(label)) continue;
     seen.add(label);
     out.push(label);

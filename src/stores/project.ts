@@ -337,9 +337,13 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
       }
 
-      let newLines = [...state.lines];
+      const newLines = [...state.lines];
+      const indexById = new Map<string, number>();
+      for (let i = 0; i < newLines.length; i++) indexById.set(newLines[i].id, i);
+
       for (const { id, updates: lineUpdates } of updates) {
-        const target = newLines.find((l) => l.id === id);
+        const targetIdx = indexById.get(id);
+        const target = targetIdx !== undefined ? newLines[targetIdx] : undefined;
         const linkScope = target ? getLinkScope(target) : null;
         const sourceWordsBefore = target?.words;
         const sourceWordsAfter = lineUpdates.words;
@@ -347,25 +351,28 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const sourceBgAfter = lineUpdates.backgroundWords;
         const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
-        newLines = newLines.map((line) => {
-          if (line.id === id) {
-            const merged = { ...line, ...lineUpdates };
-            if (lineUpdates.words?.length && line.begin !== undefined && !line.words?.length) {
-              merged.begin = undefined;
-              merged.end = undefined;
-            }
-            return merged;
+        if (targetIdx !== undefined && target) {
+          const merged = { ...target, ...lineUpdates };
+          if (lineUpdates.words?.length && target.begin !== undefined && !target.words?.length) {
+            merged.begin = undefined;
+            merged.end = undefined;
           }
-          if (isLinkedSibling(line, linkScope)) {
+          newLines[targetIdx] = merged;
+        }
+
+        if (linkScope) {
+          for (let i = 0; i < newLines.length; i++) {
+            const line = newLines[i];
+            if (line.id === id) continue;
+            if (!isLinkedSibling(line, linkScope)) continue;
             const siblingUpdates: Partial<LyricLine> = { ...(linkedUpdates ?? {}) };
             const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
             if (propagatedWords) siblingUpdates.words = propagatedWords;
             const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, line.backgroundWords);
             if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-            if (Object.keys(siblingUpdates).length > 0) return { ...line, ...siblingUpdates };
+            if (Object.keys(siblingUpdates).length > 0) newLines[i] = { ...line, ...siblingUpdates };
           }
-          return line;
-        });
+        }
       }
 
       newHistory.push({
@@ -793,8 +800,10 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (targets.length === 0) return state;
       let lines = state.lines;
       let changed = false;
+      let linesById = new Map<string, LyricLine>();
+      for (const l of lines) linesById.set(l.id, l);
       for (const target of targets) {
-        const line = lines.find((l) => l.id === target.lineId);
+        const line = linesById.get(target.lineId);
         if (!line) continue;
         const currentWords = line[target.field];
         if (!currentWords || target.wordIndex < 0 || target.wordIndex >= currentWords.length) continue;
@@ -808,6 +817,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
 
         lines = applyExplicitTargetToLines(lines, target.lineId, target.field, newWords);
+        linesById = new Map<string, LyricLine>();
+        for (const l of lines) linesById.set(l.id, l);
         changed = true;
       }
       if (!changed) return state;

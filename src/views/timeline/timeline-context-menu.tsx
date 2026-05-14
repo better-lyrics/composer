@@ -295,9 +295,10 @@ const TimelineContextMenu: React.FC = () => {
       selectedLineIds.add(target.lineId);
     }
     if (selectedLineIds.size < 1) return null;
-    // If any included line is already in a group, can't form a new one.
+    const rawLinesById = new Map<string, LyricLine>();
+    for (const l of rawLines) rawLinesById.set(l.id, l);
     for (const id of selectedLineIds) {
-      const line = rawLines.find((l) => l.id === id);
+      const line = rawLinesById.get(id);
       if (line?.groupId !== undefined) return null;
     }
     const filled = fillSelectionGaps(rawLines, selectedLineIds);
@@ -339,9 +340,11 @@ const TimelineContextMenu: React.FC = () => {
     const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
     const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
 
+    const rawLinesByIdSplit = new Map<string, LyricLine>();
+    for (const l of rawLines) rawLinesByIdSplit.set(l.id, l);
     const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
     for (const id of targetIds) {
-      const realLine = rawLines.find((l) => l.id === id);
+      const realLine = rawLinesByIdSplit.get(id);
       if (!realLine || !isLineSynced(realLine)) continue;
       const converted = convertLineToWord(realLine);
       if (converted.words) {
@@ -355,10 +358,12 @@ const TimelineContextMenu: React.FC = () => {
       useProjectStore.getState().updateLinesWithHistory(updates);
     }
 
+    const lineIndexById = new Map<string, number>();
+    for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
     const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
     for (const u of updates) {
-      const lineIndex = lines.findIndex((l) => l.id === u.id);
-      if (lineIndex < 0 || !u.updates.words) continue;
+      const lineIndex = lineIndexById.get(u.id);
+      if (lineIndex === undefined || !u.updates.words) continue;
       for (let wi = 0; wi < u.updates.words.length; wi++) {
         newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
       }
@@ -438,6 +443,15 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [mergeInfo, lines, updateLineWithHistory, clearContextMenu]);
 
+  const placeLineHereInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "track") return null;
+    const trackTarget = contextMenu.target;
+    const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
+    if (!targetLine) return null;
+    const canPlace = targetLine.text.trim() !== "" && !targetLine.words?.length && targetLine.begin === undefined;
+    return canPlace ? targetLine : null;
+  }, [contextMenu, rawLines]);
+
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const target = contextMenu.target;
@@ -446,8 +460,9 @@ const TimelineContextMenu: React.FC = () => {
     const targetIds =
       selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
 
+    const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
     const lineSyncedIds = targetIds.filter((id) => {
-      const realLine = rawLines.find((l) => l.id === id);
+      const realLine = rawLinesById.get(id);
       return realLine && isLineSynced(realLine);
     });
 
@@ -670,15 +685,7 @@ const TimelineContextMenu: React.FC = () => {
         {target.kind === "track" && (
           <>
             <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
-            {(() => {
-              const targetLine = rawLines.find((l) => l.id === target.lineId);
-              const canPlace =
-                targetLine &&
-                targetLine.text.trim() !== "" &&
-                !targetLine.words?.length &&
-                targetLine.begin === undefined;
-              return canPlace ? <MenuItem label="Place line here" onClick={handlePlaceLineHere} /> : null;
-            })()}
+            {placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
             {groupableSelection && (
               <>
                 <MenuDivider />

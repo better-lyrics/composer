@@ -11,14 +11,18 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 // the source instance and let the user place it via the existing paste-preview
 // flow.
 function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, instanceIdx: number): boolean {
-  const instanceLines = lines.filter((l) => l.groupId === groupId && l.instanceIdx === instanceIdx);
-  if (instanceLines.length === 0) return false;
+  const instanceLineIndices: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (l.groupId === groupId && l.instanceIdx === instanceIdx) instanceLineIndices.push(i);
+  }
+  if (instanceLineIndices.length === 0) return false;
 
-  const minLineIndex = Math.min(...instanceLines.map((l) => lines.indexOf(l)));
+  const minLineIndex = instanceLineIndices[0];
   const entries: ClipboardEntry[] = [];
 
-  for (const line of instanceLines) {
-    const lineIdx = lines.indexOf(line);
+  for (const lineIdx of instanceLineIndices) {
+    const line = lines[lineIdx];
     if (line.words?.length) {
       for (const word of line.words) {
         entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "word" });

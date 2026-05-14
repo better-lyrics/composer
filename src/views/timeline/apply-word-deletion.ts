@@ -29,10 +29,13 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     else entry.bgIdxs.add(sel.wordIndex);
   }
 
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
+
   const updatedById = new Map<string, LyricLine>();
 
   for (const [lineId, { mainIdxs, bgIdxs }] of byLine) {
-    const line = lines.find((l) => l.id === lineId);
+    const line = linesById.get(lineId);
     if (!line) continue;
 
     const realMainCount = line.words?.length ?? 0;
@@ -86,18 +89,30 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     }
   }
 
-  for (const key of affectedInstanceKeys) {
-    const sepIdx = key.indexOf(":");
-    const groupId = key.slice(0, sepIdx);
-    const instanceIdx = Number.parseInt(key.slice(sepIdx + 1), 10);
-    const instanceLines = result.filter((l) => l.groupId === groupId && l.instanceIdx === instanceIdx);
-    if (instanceLines.length === 0) continue;
-    if (!instanceLines.every(isLineFullyEmpty)) continue;
-    result = result.map((line) =>
-      line.groupId === groupId && line.instanceIdx === instanceIdx
-        ? { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined }
-        : line,
-    );
+  if (affectedInstanceKeys.size > 0) {
+    const linesByInstanceKey = new Map<string, LyricLine[]>();
+    for (const l of result) {
+      if (l.groupId === undefined || l.instanceIdx === undefined) continue;
+      const key = `${l.groupId}:${l.instanceIdx}`;
+      const bucket = linesByInstanceKey.get(key);
+      if (bucket) bucket.push(l);
+      else linesByInstanceKey.set(key, [l]);
+    }
+
+    const keysToStrip = new Set<string>();
+    for (const key of affectedInstanceKeys) {
+      const instanceLines = linesByInstanceKey.get(key);
+      if (!instanceLines || instanceLines.length === 0) continue;
+      if (instanceLines.every(isLineFullyEmpty)) keysToStrip.add(key);
+    }
+
+    if (keysToStrip.size > 0) {
+      result = result.map((line) => {
+        if (line.groupId === undefined || line.instanceIdx === undefined) return line;
+        if (!keysToStrip.has(`${line.groupId}:${line.instanceIdx}`)) return line;
+        return { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined };
+      });
+    }
   }
 
   return result;

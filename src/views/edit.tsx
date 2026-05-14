@@ -477,9 +477,9 @@ const EditPanel: React.FC = () => {
         // Reconcile imported agents: update name/type on matching id, add otherwise
         if (result.agents?.length) {
           const updateAgent = useProjectStore.getState().updateAgent;
+          const agentsById = new Map(agents.map((a) => [a.id, a] as const));
           for (const agent of result.agents) {
-            const existing = agents.find((a) => a.id === agent.id);
-            if (existing) {
+            if (agentsById.has(agent.id)) {
               updateAgent(agent.id, { name: agent.name, type: agent.type });
             } else {
               addAgent(agent);

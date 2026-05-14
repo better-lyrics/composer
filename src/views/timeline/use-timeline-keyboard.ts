@@ -35,10 +35,12 @@ function currentInstanceFromSelection(
   selectedWords: ReadonlyArray<{ lineId: string }>,
 ): { groupId: string; instanceIdx: number } | null {
   if (selectedWords.length === 0) return null;
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
   let groupId: string | null = null;
   let instanceIdx: number | null = null;
   for (const sel of selectedWords) {
-    const line = lines.find((l) => l.id === sel.lineId);
+    const line = linesById.get(sel.lineId);
     if (!line || line.groupId === undefined || line.instanceIdx === undefined) return null;
     if (groupId === null) {
       groupId = line.groupId;
@@ -416,11 +418,13 @@ function useTimelineKeyboard(
           e.preventDefault();
 
           const realLines = useProjectStore.getState().lines;
+          const realLinesById = new Map<string, LyricLine>();
+          for (const l of realLines) realLinesById.set(l.id, l);
           const lineIds = new Set(wSel.map((w) => w.lineId));
           const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
 
           for (const lineId of lineIds) {
-            const realLine = realLines.find((l) => l.id === lineId);
+            const realLine = realLinesById.get(lineId);
             if (!realLine || !isLineSynced(realLine)) continue;
             const converted = convertLineToWord(realLine);
             if (converted.words) {
@@ -434,10 +438,12 @@ function useTimelineKeyboard(
             useProjectStore.getState().updateLinesWithHistory(updates);
           }
 
+          const lineIndexById = new Map<string, number>();
+          for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
           const newSelections: WordSelection[] = [];
           for (const u of updates) {
-            const lineIndex = lines.findIndex((l) => l.id === u.id);
-            if (lineIndex < 0 || !u.updates.words) continue;
+            const lineIndex = lineIndexById.get(u.id);
+            if (lineIndex === undefined || !u.updates.words) continue;
             for (let wi = 0; wi < u.updates.words.length; wi++) {
               newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
             }
@@ -486,10 +492,11 @@ function useTimelineKeyboard(
           const { selectedWords } = useTimelineStore.getState();
           const projectState = useProjectStore.getState();
 
-          // Identify a single (groupId, instanceIdx) covered by the selection
+          const linesById = new Map<string, LyricLine>();
+          for (const l of projectState.lines) linesById.set(l.id, l);
           const groupKeys = new Set<string>();
           for (const w of selectedWords) {
-            const line = projectState.lines.find((l) => l.id === w.lineId);
+            const line = linesById.get(w.lineId);
             if (line?.groupId !== undefined && line.instanceIdx !== undefined) {
               groupKeys.add(`${line.groupId}:${line.instanceIdx}`);
             }

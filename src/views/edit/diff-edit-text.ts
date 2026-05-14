@@ -164,6 +164,9 @@ function propagateContentUpdates(
   const oldById = new Map<string, LyricLine>();
   for (const line of oldLines) oldById.set(line.id, line);
 
+  const newById = new Map<string, LyricLine>();
+  for (const line of newLines) newById.set(line.id, line);
+
   const updatesById = new Map<string, ContentUpdate>();
   for (const update of contentUpdates) {
     updatesById.set(update.id, update);
@@ -171,7 +174,7 @@ function propagateContentUpdates(
 
   const linkedScopes: LinkedScope[] = [];
   for (const update of contentUpdates) {
-    const sourceNew = newLines.find((line) => line.id === update.id);
+    const sourceNew = newById.get(update.id);
     const sourceOld = oldById.get(update.id);
     if (!sourceNew || !sourceOld) continue;
     if (sourceNew.groupId === undefined || sourceNew.templateLineIdx === undefined || sourceNew.detached) continue;

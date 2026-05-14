@@ -289,11 +289,13 @@ function partitionNudgeSelections(
   rawLines: LyricLine[],
   selections: ReadonlyArray<NudgeSelection>,
 ): PartitionedSelections {
+  const linesById = new Map<string, LyricLine>();
+  for (const l of rawLines) linesById.set(l.id, l);
   const wordSynced: NudgeSelection[] = [];
   const lineSynced: NudgeSelection[] = [];
   const seenLineSyncedIds = new Set<string>();
   for (const sel of selections) {
-    const line = rawLines.find((l) => l.id === sel.lineId);
+    const line = linesById.get(sel.lineId);
     if (!line) continue;
     if (sel.type === "bg") {
       wordSynced.push(sel);
@@ -360,8 +362,10 @@ function shiftLineSyncedRows(
   const direction = requestedDelta < 0 ? -1 : 1;
   let allowedMagnitude = Math.abs(requestedDelta);
   const targets: LyricLine[] = [];
+  const linesById = new Map<string, LyricLine>();
+  for (const l of rawLines) linesById.set(l.id, l);
   for (const sel of selections) {
-    const line = rawLines.find((l) => l.id === sel.lineId);
+    const line = linesById.get(sel.lineId);
     if (!line || line.begin === undefined || line.end === undefined) continue;
     targets.push(line);
     const headroom = direction < 0 ? line.begin : duration - line.end;
@@ -389,8 +393,10 @@ function nudgeSelectedWords(
 
   type Group = { line: LyricLine; type: "word" | "bg"; indices: Set<number> };
   const groups = new Map<string, Group>();
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
   for (const sel of selections) {
-    const line = lines.find((l) => l.id === sel.lineId);
+    const line = linesById.get(sel.lineId);
     if (!line) continue;
     const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray || wordsArray[sel.wordIndex] === undefined) continue;

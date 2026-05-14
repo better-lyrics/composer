@@ -77,11 +77,12 @@ const TimelineInfoPanel: React.FC = () => {
 
   const groupContext = useMemo(() => {
     if (selectedWords.length === 0) return null;
+    const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
     const instanceKeys = new Set<string>();
     let firstGroupId: string | undefined;
     let firstInstanceIdx: number | undefined;
     for (const sel of selectedWords) {
-      const realLine = rawLines.find((l) => l.id === sel.lineId);
+      const realLine = rawLinesById.get(sel.lineId);
       if (!realLine?.groupId || realLine.instanceIdx === undefined) return null;
       if (firstGroupId === undefined) {
         firstGroupId = realLine.groupId;
@@ -133,6 +134,7 @@ const TimelineInfoPanel: React.FC = () => {
 
   const multiSelectionInfo = useMemo(() => {
     if (selectedWords.length <= 1) return null;
+    const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
     let minBegin = Number.POSITIVE_INFINITY;
     let maxEnd = 0;
     let lineCount = 0;
@@ -148,7 +150,7 @@ const TimelineInfoPanel: React.FC = () => {
 
       if (sel.type === "word" && !seenLineIds.has(line.id)) {
         seenLineIds.add(line.id);
-        const realLine = rawLines.find((l) => l.id === line.id);
+        const realLine = rawLinesById.get(line.id);
         if (realLine && isLineSynced(realLine)) lineCount++;
       }
     }
