@@ -4,6 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
 import { selfKey } from "@/views/timeline/snap";
+import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
@@ -130,6 +131,19 @@ const TimelinePanel: React.FC = () => {
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
+  const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
+  useSnapBypass({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
+
+  useEffect(() => {
+    if (!activeDrag) return;
+    const onMove = (e: PointerEvent) => {
+      lastDragPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [activeDrag]);
+
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
