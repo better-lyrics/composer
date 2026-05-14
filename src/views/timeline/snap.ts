@@ -98,12 +98,9 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
       }
     }
 
-    const lineBegin = hasWords && line.words ? line.words[0].begin : line.begin;
-    const lineEnd = hasWords && line.words ? line.words[line.words.length - 1].end : line.end;
-
-    if (lineBegin !== undefined && lineEnd !== undefined) {
-      anchors.push({ t: lineBegin, kind: "line-begin", label: line.text, lineId: line.id });
-      anchors.push({ t: lineEnd, kind: "line-end", label: line.text, lineId: line.id });
+    if (!hasWords && line.begin !== undefined && line.end !== undefined) {
+      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
+      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
     }
   }
 

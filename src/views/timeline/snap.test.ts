@@ -3,7 +3,7 @@
  */
 import type { LyricLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
-import { collectSnapAnchors, findSnapShift, selfKey, type SnapAnchor } from "./snap";
+import { type SnapAnchor, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -56,14 +56,12 @@ describe("collectSnapAnchors", () => {
     expect(times).toEqual([0.4, 0.55, 0.55, 0.8]);
   });
 
-  it("includes line begin and line end for word-timed lines", () => {
+  it("does not emit line-begin or line-end anchors for word-timed lines", () => {
     const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null);
     const lineBegins = anchors.filter((a) => a.kind === "line-begin");
     const lineEnds = anchors.filter((a) => a.kind === "line-end");
-    expect(lineBegins.length).toBe(1);
-    expect(lineEnds.length).toBe(1);
-    expect(lineBegins[0].t).toBe(0);
-    expect(lineEnds[0].t).toBe(1);
+    expect(lineBegins.length).toBe(0);
+    expect(lineEnds.length).toBe(0);
   });
 
   it("uses line.begin / line.end for line-synced lines without a words array", () => {
