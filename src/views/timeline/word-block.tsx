@@ -68,7 +68,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   const showText = naturalWidth >= 20;
 
   const myKey = selfKey(lineId, wordIndex, trackType);
-  const isSnapped = useTimelineStore((s) => s.snappedBlockId?.startsWith(`${myKey}#`) ?? false);
+  const isSnapped = useTimelineStore((s) => s.snappedBlockId === myKey);
 
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id,
@@ -106,7 +106,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         isDimmed && "opacity-30",
         isDragging && "opacity-50 cursor-grabbing z-50",
         isExplicit && "is-explicit-word",
-        isSnapped && "is-snapped",
+        isSnapped && !isDragging && "is-snapped",
       )}
       style={{
         left,

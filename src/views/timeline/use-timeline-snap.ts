@@ -10,10 +10,6 @@ import { useCallback, useMemo, useRef } from "react";
 
 const SNAP_THRESHOLD_PX = 8;
 
-// -- Module state -------------------------------------------------------------
-
-let pulseCounter = 0;
-
 // -- Types --------------------------------------------------------------------
 
 interface BeginGestureArgs {
@@ -43,8 +39,7 @@ function writeSnappedLeader(leaderKey: string, snapped: boolean): void {
     useTimelineStore.getState().setSnappedBlockId(null);
     return;
   }
-  pulseCounter += 1;
-  useTimelineStore.getState().setSnappedBlockId(`${leaderKey}#${pulseCounter}`);
+  useTimelineStore.getState().setSnappedBlockId(leaderKey);
 }
 
 // -- Hook ---------------------------------------------------------------------

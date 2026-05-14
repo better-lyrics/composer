@@ -1,4 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
@@ -47,12 +48,16 @@ const DragGhost: React.FC<{
   anchorWidth: number;
   anchorHeight: number;
   color: string;
-}> = ({ cells, anchorWidth, anchorHeight, color }) => (
+  isSnapped: boolean;
+}> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
   <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
     {cells.map((cell) => (
       <div
         key={`${cell.left}-${cell.top}`}
-        className="absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none"
+        className={cn(
+          "absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none",
+          isSnapped && "is-snapped",
+        )}
         style={{
           left: cell.left,
           top: cell.top,
@@ -95,6 +100,7 @@ const TimelinePanel: React.FC = () => {
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
   const pasteMode = useTimelineStore((s) => s.pasteMode);
   const editingWord = useTimelineStore((s) => s.editingWord);
+  const ghostSnapped = useTimelineStore((s) => s.snappedBlockId !== null);
 
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -450,6 +456,7 @@ const TimelinePanel: React.FC = () => {
             anchorWidth={dragCells.anchorWidth}
             anchorHeight={dragCells.anchorHeight}
             color={dragColor}
+            isSnapped={ghostSnapped}
           />
         )}
       </DragOverlay>
