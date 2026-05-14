@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";

@@ -8,7 +8,7 @@ describe("Hero", () => {
       <Hero
         headline="Make synced lyrics"
         subhead="The fastest way"
-        primaryCta={{ label: "Open", href: "/" }}
+        primaryCta={{ label: "Open", to: "/" }}
       />,
       { withRouter: true },
     );
@@ -22,8 +22,8 @@ describe("Hero", () => {
         eyebrow="New"
         headline="Title"
         subhead="Sub"
-        primaryCta={{ label: "Go", href: "/" }}
-        secondaryCta={{ label: "Docs", href: "/docs" }}
+        primaryCta={{ label: "Go", to: "/" }}
+        secondaryCta={{ label: "Docs", to: "/docs" }}
       />,
       { withRouter: true },
     );

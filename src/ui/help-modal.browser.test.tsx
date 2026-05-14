@@ -16,7 +16,7 @@ describe("HelpModal", () => {
   });
 
   it("switches the visible section content when a sidebar button is clicked", async () => {
-    const screen = await render(<HelpModal isOpen onClose={() => {}} />);
+    await render(<HelpModal isOpen onClose={() => {}} />);
     const firstContent = document.querySelector("dialog")?.textContent ?? "";
     const sectionButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("dialog button"));
     const secondaryButton = sectionButtons.find((b) => b.textContent && b.textContent !== "");

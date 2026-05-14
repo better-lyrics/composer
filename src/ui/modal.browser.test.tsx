@@ -7,7 +7,7 @@ import { render } from "@/test/render";
 
 describe("Modal", () => {
   it("renders nothing when isOpen is false", async () => {
-    const screen = await render(
+    await render(
       <Modal isOpen={false} onClose={() => {}}>
         <div>Hidden</div>
       </Modal>,

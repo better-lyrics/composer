@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 
 describe("ExplicitSuggestionsBanner", () => {

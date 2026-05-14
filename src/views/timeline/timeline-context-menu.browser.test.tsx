@@ -12,7 +12,7 @@ function openWordContextMenu(lineId: string) {
       y: 100,
       target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "word" },
     },
-    selectedWords: [{ lineId, wordIndex: 0, type: "word" }],
+    selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }],
   });
 }
 
