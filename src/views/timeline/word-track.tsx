@@ -4,7 +4,10 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
 import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { selfKey } from "@/views/timeline/snap";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
+import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -63,9 +66,17 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [hoveredBoundary, setHoveredBoundary] = useState<number | null>(null);
   const [altPressed, setAltPressed] = useState(false);
+  const [resizing, setResizing] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
   const justResizedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+
+  const snap = useTimelineSnap();
+  useSnapBypass({
+    active: resizing,
+    getLastPointer: () => lastPointerRef.current,
+  });
 
   useEffect(() => {
     return () => {
@@ -90,16 +101,34 @@ const WordTrack: React.FC<WordTrackProps> = ({
       dragStateRef.current = initialState;
       setDragState(initialState);
 
+      setResizing(true);
+      lastPointerRef.current = { clientX: startX, clientY: 0 };
+      snap.beginGesture({
+        selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
+        overlapCheck: (shift) => {
+          const w = words[wordIndex];
+          const newBegin = edge === "left" ? w.begin + shift : w.begin;
+          const newEnd = edge === "right" ? w.end + shift : w.end;
+          return !words.some((other, i) => {
+            if (i === wordIndex) return false;
+            return newBegin < other.end && newEnd > other.begin;
+          });
+        },
+      });
+
       const isSyllableBoundary = (idx: number, side: "left" | "right"): boolean => {
         const pos = syllablePositions[idx];
         if (side === "right") return pos === "first" || pos === "middle";
         return pos === "middle" || pos === "last";
       };
 
-      const handleMouseMove = (e: MouseEvent) => {
-        const deltaX = e.clientX - startX;
-        const deltaTime = deltaX / zoom;
+      const handleMouseMove = (e: PointerEvent) => {
+        lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         const originalWord = words[wordIndex];
+        const rawDeltaPx = e.clientX - startX;
+        const edgesAtStart = edge === "left" ? [originalWord.begin] : [originalWord.end];
+        const snapShiftPx = snap.computeShiftPx(rawDeltaPx, edgesAtStart);
+        const deltaTime = (rawDeltaPx + snapShiftPx) / zoom;
         const altHeld = e.altKey;
 
         const isSyllable = isSyllableBoundary(wordIndex, edge);
@@ -160,6 +189,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
       };
 
       const handleMouseUp = () => {
+        setResizing(false);
+        snap.endGesture();
+
         const finalState = dragStateRef.current;
         dragStateRef.current = null;
         setDragState(null);
@@ -181,19 +213,21 @@ const WordTrack: React.FC<WordTrackProps> = ({
         }
 
         cleanupRef.current = null;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("pointermove", handleMouseMove);
+        document.removeEventListener("pointerup", handleMouseUp);
       };
 
       cleanupRef.current = () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        setResizing(false);
+        snap.endGesture();
+        document.removeEventListener("pointermove", handleMouseMove);
+        document.removeEventListener("pointerup", handleMouseUp);
       };
 
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("pointermove", handleMouseMove);
+      document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions],
+    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean => {
