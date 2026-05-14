@@ -71,6 +71,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const justResizedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const conjoinedRef = useRef<{ active: boolean; adjacentWordIndex: number | null }>({
+    active: false,
+    adjacentWordIndex: null,
+  });
 
   const snap = useTimelineSnap();
   useSnapBypass({
@@ -103,6 +107,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
+      conjoinedRef.current = { active: false, adjacentWordIndex: null };
       snap.beginGesture({
         selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
         leaderKey: selfKey(lineId, wordIndex, trackType),
@@ -110,8 +115,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
           const w = words[wordIndex];
           const newBegin = edge === "left" ? w.begin + shift : w.begin;
           const newEnd = edge === "right" ? w.end + shift : w.end;
+          const adj = conjoinedRef.current.adjacentWordIndex;
           return !words.some((other, i) => {
             if (i === wordIndex) return false;
+            if (conjoinedRef.current.active && i === adj) return false;
             return newBegin < other.end && newEnd > other.begin;
           });
         },
@@ -127,13 +134,21 @@ const WordTrack: React.FC<WordTrackProps> = ({
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
+        const altHeld = e.altKey;
+        const isSyllable = isSyllableBoundary(wordIndex, edge);
+        const conjoined = altHeld ? !isSyllable : isSyllable;
+
+        const adjacentWordIndex =
+          conjoined && edge === "left" && wordIndex > 0
+            ? wordIndex - 1
+            : conjoined && edge === "right" && wordIndex < words.length - 1
+              ? wordIndex + 1
+              : null;
+        conjoinedRef.current = { active: conjoined && adjacentWordIndex !== null, adjacentWordIndex };
+
         const edgesAtStart = edge === "left" ? [originalWord.begin] : [originalWord.end];
         const snapShiftPx = snap.computeShiftPx(rawDeltaPx, edgesAtStart);
         const deltaTime = (rawDeltaPx + snapShiftPx) / zoom;
-        const altHeld = e.altKey;
-
-        const isSyllable = isSyllableBoundary(wordIndex, edge);
-        const conjoined = altHeld ? !isSyllable : isSyllable;
 
         let newState: DragState;
 
