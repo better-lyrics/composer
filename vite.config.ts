@@ -4,11 +4,15 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import "vite-react-ssg";
 import { writeSeoAssets } from "./scripts/build-seo-assets";
+import pkg from "./package.json";
 
 const SITE_ORIGIN = "https://composer.boidu.dev";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
       "@": resolve(__dirname, "./src"),

@@ -10,6 +10,7 @@ import {
   IconDownload,
   IconEye,
   IconHandClick,
+  IconInfoHexagon,
   IconKeyboard,
   IconLayoutRows,
   IconLink,
@@ -171,6 +172,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
 ];
 
 const HELP_SECTIONS: HelpSectionDef[] = [
+  { id: "about", label: "About", icon: IconInfoHexagon },
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
   { id: "importing", label: "Importing Audio", icon: IconMusic },
@@ -229,7 +231,7 @@ const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) =
 // -- Help Modal ---------------------------------------------------------------
 
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-  const [activeSection, setActiveSection] = useState("getting-started");
+  const [activeSection, setActiveSection] = useState("about");
 
   return (
     <Modal

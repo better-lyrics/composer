@@ -833,6 +833,11 @@ const PreviewSection: React.FC = () => (
         Use this to spot timing issues. If a word highlights too early or too late, go back to Timeline and adjust.
       </li>
       <li>Playback controls (play/pause, seek) work the same as everywhere else.</li>
+      <li>
+        Instrumental sections appear automatically wherever there's a gap longer than 5 seconds between sung lines.
+        Better Lyrics handles this at render time. You can't add them manually or preview them here, just trust that
+        they'll show up in the final output.
+      </li>
     </ul>
   </div>
 );
@@ -985,10 +990,100 @@ const TtmlStandardsSection: React.FC = () => (
   </div>
 );
 
+// -- About --------------------------------------------------------------------
+
+const AboutSection: React.FC = () => (
+  <div className="space-y-5">
+    <div className="relative rounded-xl border border-composer-border overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-composer-accent/15 via-composer-accent/5 to-transparent pointer-events-none" />
+      <div className="relative px-6 py-7 flex items-center gap-5">
+        <img src="/logo.svg" alt="Composer" className="w-14 h-14 shrink-0" />
+        <div className="space-y-1">
+          <h2 className="text-2xl font-semibold leading-tight tracking-tight">Composer</h2>
+          <p className="text-sm text-composer-text-secondary">The lyrics editor for Better Lyrics.</p>
+          <p className="text-xs text-composer-text-muted font-mono mt-2">v{__APP_VERSION__}</p>
+        </div>
+      </div>
+    </div>
+
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
+        <h3 className="text-sm font-medium">What it is</h3>
+        <p className={PROSE}>
+          A free, open-source, browser-only tool for creating synchronized lyrics in TTML format. No accounts, no
+          uploads. Everything lives in your browser.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
+        <h3 className="text-sm font-medium">Open source</h3>
+        <p className={PROSE}>
+          Licensed under AGPL v3. Source code on{" "}
+          <a
+            href="https://github.com/better-lyrics/composer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+          >
+            GitHub
+          </a>
+          . Issues, ideas, and PRs welcome.
+        </p>
+      </div>
+
+      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
+        <h3 className="text-sm font-medium">Community</h3>
+        <ul className={`${PROSE} space-y-1`}>
+          <li>
+            <a
+              href="https://discord.gg/UsHE3d5fWF"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+            >
+              Discord
+            </a>{" "}
+            for questions, feedback, and chatter.
+          </li>
+          <li>
+            <a
+              href="https://github.com/better-lyrics/composer/issues/new/choose"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+            >
+              File an issue
+            </a>{" "}
+            if something's broken or missing.
+          </li>
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
+        <h3 className="text-sm font-medium">Made by</h3>
+        <p className={PROSE}>
+          Built and maintained by{" "}
+          <a
+            href="https://github.com/Boidushya"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+          >
+            Boidushya
+          </a>{" "}
+          with help from the Better Lyrics community. Thanks to everyone testing, reporting bugs, and shipping fixes.
+        </p>
+      </div>
+    </div>
+  </div>
+);
+
 // -- Section Router -----------------------------------------------------------
 
 const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
   switch (section) {
+    case "about":
+      return <AboutSection />;
     case "getting-started":
       return <GettingStartedSection />;
     case "keyboard-shortcuts":
@@ -1010,7 +1105,7 @@ const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
     case "ttml-standards":
       return <TtmlStandardsSection />;
     default:
-      return <GettingStartedSection />;
+      return <AboutSection />;
   }
 };
 
