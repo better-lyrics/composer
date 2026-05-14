@@ -994,9 +994,9 @@ const TtmlStandardsSection: React.FC = () => (
 
 const AboutSection: React.FC = () => (
   <div className="space-y-5">
-    <div className="relative rounded-xl border border-composer-border overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-composer-accent/15 via-composer-accent/5 to-transparent pointer-events-none" />
-      <div className="relative px-6 py-7 flex items-center gap-5">
+    <div className="relative -mx-6 -mt-6">
+      <div className="absolute inset-0 bg-gradient-to-b from-composer-accent/20 to-transparent pointer-events-none" />
+      <div className="relative px-6 pt-7 pb-8 flex items-center gap-5">
         <img src="/logo.svg" alt="Composer" className="w-14 h-14 shrink-0" />
         <div className="space-y-1">
           <h2 className="text-2xl font-semibold leading-tight tracking-tight">Composer</h2>
