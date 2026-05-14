@@ -23,9 +23,6 @@ interface BeginGestureArgs {
 }
 
 interface SnapCtx {
-  enabled: boolean;
-  bypassing: boolean;
-  zoom: number;
   anchors: SnapAnchor[];
   selfIds: Set<string>;
   leaderKey: string;
@@ -53,23 +50,16 @@ function writeSnappedLeader(leaderKey: string, snapped: boolean): void {
 // -- Hook ---------------------------------------------------------------------
 
 function useTimelineSnap(): UseTimelineSnap {
-  const enabled = useSettingsStore((s) => s.timelineSnap);
-  const zoom = useTimelineStore((s) => s.zoom);
-  const isBypassing = useTimelineStore((s) => s.isBypassing);
+  useSettingsStore((s) => s.timelineSnap);
+  useTimelineStore((s) => s.zoom);
+  useTimelineStore((s) => s.isBypassing);
 
   const ctxRef = useRef<SnapCtx>({
-    enabled: true,
-    bypassing: false,
-    zoom: 100,
     anchors: [],
     selfIds: new Set(),
     leaderKey: "",
     overlapCheck: null,
   });
-
-  ctxRef.current.enabled = enabled;
-  ctxRef.current.bypassing = isBypassing;
-  ctxRef.current.zoom = zoom;
 
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
@@ -91,22 +81,25 @@ function useTimelineSnap(): UseTimelineSnap {
 
   const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
     const ctx = ctxRef.current;
-    if (!ctx.enabled || ctx.bypassing || ctx.anchors.length === 0) {
+    const enabled = useSettingsStore.getState().timelineSnap;
+    const bypassing = useTimelineStore.getState().isBypassing;
+    const zoom = useTimelineStore.getState().zoom;
+    if (!enabled || bypassing || ctx.anchors.length === 0) {
       writeSnappedLeader(ctx.leaderKey, false);
       return 0;
     }
-    const deltaT = proposedDeltaPx / ctx.zoom;
+    const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);
     const overlapCheck = ctx.overlapCheck;
     const result = findSnapShift({
       edges: proposedEdges,
       anchors: ctx.anchors,
-      zoom: ctx.zoom,
+      zoom,
       threshold: SNAP_THRESHOLD_PX,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
     writeSnappedLeader(ctx.leaderKey, result.anchor !== null);
-    return result.shift * ctx.zoom;
+    return result.shift * zoom;
   }, []);
 
   const dragSnapModifier = useMemo<Modifier>(
