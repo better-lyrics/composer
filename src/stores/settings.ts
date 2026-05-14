@@ -28,6 +28,7 @@ interface SettingsState {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
+  timelineSnap: boolean;
 
   nudgeAmount: number;
   defaultWordDuration: number;
@@ -74,6 +75,7 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
+  timelineSnap: true,
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
