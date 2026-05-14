@@ -52,6 +52,7 @@ interface TimelineState {
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
   isBypassing: boolean;
   snappedBlockId: string | null;
+  snappedAnchorTime: number | null;
 }
 
 interface TimelineActions {
@@ -82,6 +83,7 @@ interface TimelineActions {
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
+  setSnappedAnchorTime: (t: number | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -121,6 +123,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     draggedGroupShift: null,
     isBypassing: false,
     snappedBlockId: null,
+    snappedAnchorTime: null,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -172,6 +175,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setDraggedGroupShift: (draggedGroupShift) => set({ draggedGroupShift }),
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set({ snappedBlockId: id }),
+    setSnappedAnchorTime: (t) => set({ snappedAnchorTime: t }),
   };
 });
 

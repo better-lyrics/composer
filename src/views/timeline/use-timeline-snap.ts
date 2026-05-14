@@ -30,12 +30,15 @@ interface UseTimelineSnap {
 
 // -- Helpers ------------------------------------------------------------------
 
-function writeSnappedLeader(leaderKey: string, snapped: boolean): void {
-  if (!snapped) {
-    useTimelineStore.getState().setSnappedBlockId(null);
+function writeSnappedLeader(leaderKey: string, anchorTime: number | null): void {
+  const store = useTimelineStore.getState();
+  if (anchorTime === null) {
+    store.setSnappedBlockId(null);
+    store.setSnappedAnchorTime(null);
     return;
   }
-  useTimelineStore.getState().setSnappedBlockId(leaderKey);
+  store.setSnappedBlockId(leaderKey);
+  store.setSnappedAnchorTime(anchorTime);
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -67,7 +70,7 @@ function useTimelineSnap(): UseTimelineSnap {
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
-    useTimelineStore.getState().setSnappedBlockId(null);
+    writeSnappedLeader("", null);
   }, []);
 
   const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
@@ -77,7 +80,7 @@ function useTimelineSnap(): UseTimelineSnap {
     const bypassing = useTimelineStore.getState().isBypassing;
     const zoom = useTimelineStore.getState().zoom;
     if (!enabled || bypassing || ctx.anchors.length === 0) {
-      writeSnappedLeader(ctx.leaderKey, false);
+      writeSnappedLeader(ctx.leaderKey, null);
       return 0;
     }
     const deltaT = proposedDeltaPx / zoom;
@@ -90,7 +93,7 @@ function useTimelineSnap(): UseTimelineSnap {
       threshold,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
-    writeSnappedLeader(ctx.leaderKey, result.anchor !== null);
+    writeSnappedLeader(ctx.leaderKey, result.anchor ? result.anchor.t : null);
     return result.shift * zoom;
   }, []);
 
