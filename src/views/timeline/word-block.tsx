@@ -81,7 +81,6 @@ const WordBlock: React.FC<WordBlockProps> = ({
       begin,
       end,
       snap: { edgesAtStart: [begin, end] },
-      selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
     },
   });
 
