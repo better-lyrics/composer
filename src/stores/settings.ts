@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 
 type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
+type PreviewRenderer = "braccato" | "am-lyrics";
 
 interface CobaltInstance {
   id: string;
@@ -50,6 +51,8 @@ interface SettingsState {
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
+
+  previewRenderer: PreviewRenderer;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -98,6 +101,8 @@ const DEFAULTS: SettingsState = {
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
   linkedDivergenceAction: "ask",
+
+  previewRenderer: "braccato",
 
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
@@ -189,4 +194,4 @@ export {
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
 };
-export type { SettingsState, CobaltInstance, CobaltInstanceStatus, LinkedDivergenceAction };
+export type { SettingsState, CobaltInstance, CobaltInstanceStatus, LinkedDivergenceAction, PreviewRenderer };

@@ -14,11 +14,12 @@ interface ModalProps {
   children: React.ReactNode;
   className?: string;
   bodyClassName?: string;
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className, bodyClassName }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, className, bodyClassName, initialFocusRef }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const { refs, context } = useFloating({ open: isOpen, onOpenChange: (open) => !open && onClose() });
 
@@ -53,7 +54,7 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, classNa
 
   return (
     <FloatingPortal>
-      <FloatingFocusManager context={context} modal returnFocus>
+      <FloatingFocusManager context={context} modal returnFocus initialFocus={initialFocusRef}>
         <div
           ref={overlayRef}
           onMouseDown={handleOverlayMouseDown}

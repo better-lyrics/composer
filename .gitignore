@@ -140,3 +140,11 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
 cspell.json
+
+# Vitest browser-mode failure screenshots
+**/__screenshots__/
+.vitest-attachments/
+
+# Playwright cache (test reports)
+playwright-report/
+test-results/

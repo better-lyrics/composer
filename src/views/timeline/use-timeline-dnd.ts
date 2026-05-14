@@ -273,6 +273,7 @@ function useTimelineDnd(lines: LyricLine[]) {
         if (!wordsArray) return;
 
         const wordIndex = activeData.wordIndex;
+        if (wordIndex < 0 || wordIndex >= wordsArray.length) return;
         const wordDuration = activeData.end - activeData.begin;
         const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
         const newEnd = newBegin + wordDuration;

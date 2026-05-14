@@ -7,7 +7,7 @@ import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { textToLyricLines } from "@/utils/lyrics-text";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { IconFileImport, IconUpload } from "@tabler/icons-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -22,10 +22,6 @@ const LyricsImportModal: React.FC<LyricsImportModalProps> = ({ isOpen, onClose }
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) textareaRef.current?.focus();
-  }, [isOpen]);
   const setLines = useProjectStore((s) => s.setLines);
   const setMetadata = useProjectStore((s) => s.setMetadata);
   const addAgent = useProjectStore((s) => s.addAgent);
@@ -125,7 +121,7 @@ const LyricsImportModal: React.FC<LyricsImportModalProps> = ({ isOpen, onClose }
   const lineCount = text.split("\n").filter((l) => l.trim() !== "").length;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Import Lyrics" className="max-w-lg">
+    <Modal isOpen={isOpen} onClose={onClose} title="Import Lyrics" className="max-w-lg" initialFocusRef={textareaRef}>
       <div className="flex flex-col gap-4" onDrop={handleDrop} onDragOver={handleDragOver}>
         <textarea
           ref={textareaRef}

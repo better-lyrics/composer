@@ -1,12 +1,14 @@
-import "@braccato/core";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { generateTTML } from "@/utils/ttml";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { generateTTML } from "@/utils/ttml";
+import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
+import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import { getLineTiming } from "@/views/timeline/utils";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -20,8 +22,7 @@ const PreviewPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
-  const braccatoRef = useRef<HTMLElement>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const renderer = useSettingsStore((s) => s.previewRenderer);
 
   const hasSyncedContent = useMemo(() => {
     return lines.some((line) => getLineTiming(line) !== null);
@@ -31,31 +32,6 @@ const PreviewPanel: React.FC = () => {
     if (!hasSyncedContent) return null;
     return generateTTML({ metadata, agents, lines, groups, granularity, duration });
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
-
-  useEffect(() => {
-    if (!ttmlString) {
-      setBlobUrl(null);
-      return;
-    }
-    const blob = new Blob([ttmlString], { type: "application/ttml+xml" });
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [ttmlString]);
-
-  const handleLineClick = useCallback((e: Event) => {
-    const detail = (e as CustomEvent).detail;
-    if (detail?.time != null) {
-      useAudioStore.getState().seekTo(detail.time / 1000);
-    }
-  }, []);
-
-  useEffect(() => {
-    const el = braccatoRef.current;
-    if (!el) return;
-    el.addEventListener("braccato:line-click", handleLineClick);
-    return () => el.removeEventListener("braccato:line-click", handleLineClick);
-  }, [handleLineClick]);
 
   if (!source) {
     return (
@@ -73,7 +49,7 @@ const PreviewPanel: React.FC = () => {
     );
   }
 
-  if (!hasSyncedContent) {
+  if (!hasSyncedContent || !ttmlString) {
     return (
       <div className="flex flex-col flex-1 p-4">
         <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" />
@@ -91,19 +67,11 @@ const PreviewPanel: React.FC = () => {
         </Button>
       </div>
 
-      <braccato-lyrics
-        ref={braccatoRef}
-        source="#composer-audio"
-        src={blobUrl ?? undefined}
-        className="flex-1 mx-auto w-full max-w-3xl px-6 [&::part(container)]:pb-[50cqh]"
-        style={
-          {
-            "--braccato-font-family": "'Satoshi', sans-serif",
-            "--braccato-font-size": "2.5rem",
-            "--braccato-inactive-opacity": "0.2",
-          } as React.CSSProperties
-        }
-      />
+      {renderer === "am-lyrics" ? (
+        <AmLyricsRenderer ttmlString={ttmlString} durationSeconds={duration} />
+      ) : (
+        <BraccatoRenderer ttmlString={ttmlString} />
+      )}
     </div>
   );
 };

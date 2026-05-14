@@ -730,50 +730,62 @@ const AdvancedSection: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <div className="py-3">
-      <div className="flex flex-col gap-0.5 mb-3">
-        <span className="text-sm font-medium text-composer-text">Cobalt instance</span>
-        <span className="text-xs text-composer-text-muted">
-          Composer uses a Cobalt backend to fetch YouTube audio. Switch instances if the default is slow or unreachable.
-          Self-hosting is encouraged for serious use.
-        </span>
+    <div>
+      <SelectSetting
+        label="Preview renderer"
+        description="Which engine renders synced lyrics in the Preview tab."
+        settingKey="previewRenderer"
+        options={[
+          { value: "braccato", label: "Braccato (default)" },
+          { value: "am-lyrics", label: "am-lyrics" },
+        ]}
+      />
+
+      <div className="pt-3 mt-3 border-t border-composer-border">
+        <div className="flex flex-col gap-0.5 mb-3">
+          <span className="text-sm font-medium text-composer-text">Cobalt instance</span>
+          <span className="text-xs text-composer-text-muted">
+            Composer uses a Cobalt backend to fetch YouTube audio. Switch instances if the default is slow or
+            unreachable. Self-hosting is encouraged for serious use.
+          </span>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <CobaltInstanceRow
+            instance={BUILTIN_COBALT_INSTANCE}
+            isSelected={selectedCobaltInstanceId === DEFAULT_COBALT_INSTANCE_ID}
+            onSelect={() => selectCobaltInstance(DEFAULT_COBALT_INSTANCE_ID)}
+          />
+          {cobaltInstances.map((inst) =>
+            editingId === inst.id ? (
+              <CobaltInstanceEditRow
+                key={inst.id}
+                initialLabel={inst.label}
+                initialUrl={inst.url}
+                onSave={(label, url) => {
+                  updateCobaltInstance(inst.id, { label, url });
+                  setEditingId(null);
+                }}
+                onCancel={() => setEditingId(null)}
+              />
+            ) : (
+              <CobaltInstanceRow
+                key={inst.id}
+                instance={inst}
+                isSelected={selectedCobaltInstanceId === inst.id}
+                onSelect={() => selectCobaltInstance(inst.id)}
+                onRemove={() => removeCobaltInstance(inst.id)}
+                onEdit={() => setEditingId(inst.id)}
+                status={cobaltInstanceStatus[inst.id]}
+              />
+            ),
+          )}
+        </div>
+
+        <CobaltInstanceAddForm onAdd={(label, url) => addCobaltInstance({ label, url })} />
+
+        <CobaltDirectoryLink />
       </div>
-
-      <div className="flex flex-col gap-1">
-        <CobaltInstanceRow
-          instance={BUILTIN_COBALT_INSTANCE}
-          isSelected={selectedCobaltInstanceId === DEFAULT_COBALT_INSTANCE_ID}
-          onSelect={() => selectCobaltInstance(DEFAULT_COBALT_INSTANCE_ID)}
-        />
-        {cobaltInstances.map((inst) =>
-          editingId === inst.id ? (
-            <CobaltInstanceEditRow
-              key={inst.id}
-              initialLabel={inst.label}
-              initialUrl={inst.url}
-              onSave={(label, url) => {
-                updateCobaltInstance(inst.id, { label, url });
-                setEditingId(null);
-              }}
-              onCancel={() => setEditingId(null)}
-            />
-          ) : (
-            <CobaltInstanceRow
-              key={inst.id}
-              instance={inst}
-              isSelected={selectedCobaltInstanceId === inst.id}
-              onSelect={() => selectCobaltInstance(inst.id)}
-              onRemove={() => removeCobaltInstance(inst.id)}
-              onEdit={() => setEditingId(inst.id)}
-              status={cobaltInstanceStatus[inst.id]}
-            />
-          ),
-        )}
-      </div>
-
-      <CobaltInstanceAddForm onAdd={(label, url) => addCobaltInstance({ label, url })} />
-
-      <CobaltDirectoryLink />
     </div>
   );
 };

@@ -7,6 +7,27 @@ import {
   useSettingsStore,
 } from "@/stores/settings";
 
+describe("preview renderer settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to braccato as the preview renderer", () => {
+    expect(useSettingsStore.getState().previewRenderer).toBe("braccato");
+  });
+
+  it("allows switching renderer via set()", () => {
+    useSettingsStore.getState().set("previewRenderer", "am-lyrics");
+    expect(useSettingsStore.getState().previewRenderer).toBe("am-lyrics");
+  });
+
+  it("resetToDefaults restores the renderer to braccato", () => {
+    useSettingsStore.getState().set("previewRenderer", "am-lyrics");
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().previewRenderer).toBe("braccato");
+  });
+});
+
 describe("cobalt instance helpers", () => {
   beforeEach(() => {
     useSettingsStore.setState({

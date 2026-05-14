@@ -9,19 +9,26 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:unit": "vitest run --project unit",
+    "test:component": "vitest run --project browser",
+    "test:component:watch": "vitest --project browser",
+    "test:coverage": "vitest run --coverage",
     "lint:fix": "biome lint --write . && biome format --write .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@braccato/core": "^0.1.2",
+    "@braccato/core": "^0.1.4",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@floating-ui/react": "^0.27.16",
+    "@lit/react": "^1.0.8",
     "@tabler/icons-react": "^3.36.1",
+    "@uimaxbai/am-lyrics": "^1.5.3",
     "@wavesurfer/react": "^1.0.12",
     "clsx": "^2.1.1",
     "driver.js": "^1.4.0",
+    "lit": "^3.3.2",
     "motion": "^12.24.12",
     "obscenity": "^0.4.6",
     "overlayscrollbars": "^2.14.0",
@@ -36,7 +43,10 @@
     "zustand": "^5.0.0"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": ["@biomejs/biome", "esbuild"],
+    "ignoredBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild"
+    ],
     "overrides": {
       "@braccato/parsers": "^0.1.1"
     }
@@ -49,12 +59,17 @@
     "@types/react-dom": "^19.0.0",
     "@vercel/og": "^0.11.1",
     "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/browser": "^4.1.6",
+    "@vitest/browser-playwright": "^4.1.6",
+    "@vitest/coverage-v8": "^4.1.6",
     "jsdom": "^29.0.1",
+    "playwright": "^1.60.0",
     "react-router-dom": "^6.30.3",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.0",
     "vite": "^6.4.2",
     "vite-react-ssg": "0.9.1-beta.1",
-    "vitest": "^4.0.16"
+    "vitest": "^4.1.6",
+    "vitest-browser-react": "^2.2.0"
   }
 }

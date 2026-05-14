@@ -4,6 +4,8 @@ import { useProjectStore } from "@/stores/project";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import {
+  commitHeldWord,
+  commitTappedWord,
   getNudgeAmount,
   type SyncState,
   createInitialBgWords,
@@ -67,22 +69,7 @@ function useSyncHandlers({
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
-      const updatedWords = [...existingWords];
-      if (wordIndex === 0) {
-        updatedWords.length = 1;
-        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime, end: fallbackEnd };
-      } else {
-        updatedWords.length = wordIndex;
-        updatedWords[wordIndex - 1] = {
-          ...updatedWords[wordIndex - 1],
-          end: currentTime,
-        };
-        updatedWords.push({
-          text: textWithSpace,
-          begin: currentTime,
-          end: fallbackEnd,
-        });
-      }
+      const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, currentTime, fallbackEnd);
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {
@@ -181,18 +168,7 @@ function useSyncHandlers({
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
-      const updatedWords = [...existingWords];
-      if (wordIndex === 0) {
-        updatedWords.length = 1;
-        updatedWords[0] = { ...updatedWords[0], text: textWithSpace, begin: currentTime };
-      } else {
-        updatedWords.length = wordIndex;
-        updatedWords.push({
-          text: textWithSpace,
-          begin: currentTime,
-          end: currentTime,
-        });
-      }
+      const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, currentTime);
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
       const updates: Partial<LyricLine> = {

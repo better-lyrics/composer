@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import type { LyricLine } from "@/stores/project";
 import { type WordTiming, useProjectStore } from "@/stores/project";
+import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -94,11 +95,13 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       }
 
       if (!realLine.words) return;
-      const updatedWords = [...realLine.words];
-      updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
-      if (adjacentIndex !== undefined && adjacentUpdates) {
-        updatedWords[adjacentIndex] = { ...updatedWords[adjacentIndex], ...adjacentUpdates };
-      }
+      const updatedWords = applyWordPatch(
+        realLine.words,
+        wordIndex,
+        updates,
+        adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
+      );
+      if (!updatedWords) return;
       updateLineWithHistory(lineId, { words: updatedWords });
     },
     [lines, updateLineWithHistory],
@@ -115,11 +118,13 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       const line = lines.find((l) => l.id === lineId);
       if (!line?.backgroundWords) return;
 
-      const updatedWords = [...line.backgroundWords];
-      updatedWords[wordIndex] = { ...updatedWords[wordIndex], ...updates };
-      if (adjacentIndex !== undefined && adjacentUpdates) {
-        updatedWords[adjacentIndex] = { ...updatedWords[adjacentIndex], ...adjacentUpdates };
-      }
+      const updatedWords = applyWordPatch(
+        line.backgroundWords,
+        wordIndex,
+        updates,
+        adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
+      );
+      if (!updatedWords) return;
       updateLineWithHistory(lineId, { backgroundWords: updatedWords });
     },
     [lines, updateLineWithHistory],
