@@ -60,8 +60,9 @@ const GettingStartedSection: React.FC = () => (
         <h4 className={HEADING}>2. Add your lyrics</h4>
         <p className={PROSE}>
           Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (.lrc, .srt,
-          .ttml, .txt), drop it there instead. You can also use {MOD_KEY} + Shift + V in Timeline to import lyrics
-          without leaving that view.
+          .ttml, .txt), drop it there instead. You can also use{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline to import lyrics without
+          leaving that view.
         </p>
       </div>
       <div>
@@ -154,7 +155,10 @@ const ImportSection: React.FC = () => (
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>In the Edit tab, use the import button at the top.</li>
-        <li>In Timeline, press {MOD_KEY} + Shift + V or click the import button in the header.</li>
+        <li>
+          In Timeline, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> or click the
+          import button in the header.
+        </li>
         <li>When importing .lrc, .srt, or .ttml files, existing timing is preserved.</li>
         <li>Plain .txt files get no timing. You'll sync them manually.</li>
       </ul>
@@ -243,18 +247,19 @@ const SyncSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Tap (Space)</h4>
       <p className={PROSE}>
-        Press <strong>Space</strong> to start playback and begin syncing. As the music plays, tap <strong>Space</strong>{" "}
-        on each word right when the singer says it. Each tap marks the word's start time, and the previous word's end
-        time is set to the same moment, creating gapless transitions.
+        Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> to start playback and begin syncing. As the
+        music plays, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> on each word right when the singer
+        says it. Each tap marks the word's start time, and the previous word's end time is set to the same moment,
+        creating gapless transitions.
       </p>
     </div>
 
     <div>
       <h4 className={HEADING}>Hold (F)</h4>
       <p className={PROSE}>
-        Press and hold <strong>F</strong> for the duration of each word. The key-down marks the word's start, and key-up
-        marks the end. This gives you explicit control over word duration and allows natural gaps between words. The
-        current word highlights while you hold.
+        Press and hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> for the duration of each word.
+        The key-down marks the word's start, and key-up marks the end. This gives you explicit control over word
+        duration and allows natural gaps between words. The current word highlights while you hold.
       </p>
       <p className={`${PROSE} mt-2`}>For words with natural gaps between them, just hold and release for each word:</p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
@@ -269,9 +274,10 @@ const SyncSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Gapless syllables (Hold F + Tap Space)</h4>
       <p className={PROSE}>
-        For syllables that flow together without pauses, tap <strong>Space</strong> while holding <strong>F</strong> to
-        create gapless boundaries. Each tap ends the current syllable and immediately starts the next. Release{" "}
-        <strong>F</strong> to end the last one:
+        For syllables that flow together without pauses, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />{" "}
+        while holding <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to create gapless boundaries.
+        Each tap ends the current syllable and immediately starts the next. Release{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to end the last one:
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>Hold F: "beau" starts</li>
@@ -295,9 +301,9 @@ const SyncSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Made a mistake?</h4>
       <p className={PROSE}>
-        Press the left arrow key to nudge the last synced word 50ms earlier. Right arrow nudges it 50ms later. You can
-        also press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back
-        precisely.
+        Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> to nudge the last synced word 50ms
+        earlier. <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> nudges it 50ms later. You can also
+        press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back precisely.
       </p>
     </div>
 
@@ -543,7 +549,8 @@ const GroupsSection: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Select the lines you want to group (click, then Shift-click the last line, or drag down the gutter).</li>
         <li>
-          Press <strong>{MOD_KEY} + G</strong>, or right-click any selected line and pick "Group N lines".
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />, or right-click any selected
+          line and pick "Group N lines".
         </li>
         <li>
           If your selection skips a line by accident, Composer fills the gap and tells you so in the toast. If a line in
@@ -556,8 +563,9 @@ const GroupsSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Adding more instances</h4>
       <p className={PROSE}>
-        Click the banner of the instance you want to copy, then press <strong>{MOD_KEY} + D</strong> (or right-click the
-        banner and pick "Add instance at playhead"). Composer picks one of three landings, in this order:
+        Click the banner of the instance you want to copy, then press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.duplicateAsLinked")} /> (or right-click the banner and
+        pick "Add instance at playhead"). Composer picks one of three landings, in this order:
       </p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
@@ -607,7 +615,9 @@ const GroupsSection: React.FC = () => (
         </li>
         <li>
           <strong>Hover the "1 of N" badge</strong>: every sibling instance pings briefly with the group's color so you
-          can spot them on the timeline. Or press <strong>H</strong> for the same effect from the keyboard.
+          can spot them on the timeline. Or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.pingSiblings")} /> for the same effect from the
+          keyboard.
         </li>
       </ul>
     </div>
@@ -620,37 +630,45 @@ const GroupsSection: React.FC = () => (
       </p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          <strong>{MOD_KEY} + G</strong>: group selected lines.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.createGroup")} />: group selected lines.
         </li>
         <li>
-          <strong>{MOD_KEY} + D</strong>: add a linked instance at the playhead.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.duplicateAsLinked")} />: add a linked instance at the
+          playhead.
         </li>
         <li>
-          <strong>C</strong> / <strong>Shift + C</strong>: collapse the current instance, or every instance.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleCollapseInstance")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleAllCollapsed")} />: collapse the current instance,
+          or every instance.
         </li>
         <li>
-          <strong>{MOD_KEY} + J</strong> / <strong>{MOD_KEY} + K</strong>: jump to the previous or next instance of the
-          same group. Wraps around.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevInstance")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextInstance")} />: jump to the previous or next
+          instance of the same group. Wraps around.
         </li>
         <li>
-          <strong>Arrow Left</strong> / <strong>Arrow Right</strong>: nudge the current instance earlier or later by the
-          nudge amount in Settings.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />: nudge the current instance earlier or
+          later by the nudge amount in Settings.
         </li>
         <li>
-          <strong>H</strong>: ping every sibling instance.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.pingSiblings")} />: ping every sibling instance.
         </li>
         <li>
-          <strong>{MOD_KEY} + Shift + D</strong>: detach the current instance from the group.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.detachInstance")} />: detach the current instance from
+          the group.
         </li>
         <li>
-          <strong>{MOD_KEY} + Shift + G</strong>: delete the current group (asks for confirmation first).
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.deleteGroup")} />: delete the current group (asks for
+          confirmation first).
         </li>
         <li>
-          <strong>Shift + P</strong>: shift the current instance so its first word lands on the playhead.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.shiftInstanceToPlayhead")} />: shift the current
+          instance so its first word lands on the playhead.
         </li>
         <li>
-          <strong>Shift + J</strong>: scroll the timeline to the start of the current instance without changing the
-          selection.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpToInstanceStart")} />: scroll the timeline to the
+          start of the current instance without changing the selection.
         </li>
       </ul>
       <p className={`${PROSE} mt-2`}>All of these are remappable in Settings → Shortcuts.</p>
