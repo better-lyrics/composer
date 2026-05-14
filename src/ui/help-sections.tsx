@@ -412,6 +412,30 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
+      <h4 className={HEADING}>Snap (magnet)</h4>
+      <p className={PROSE}>
+        Drag or resize a word and its edges lock onto nearby anchors: the begin and end of any other word (main or
+        background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
+        while snapped, and a thin dashed line marks the anchor on the timeline.
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
+          Press <strong>T</strong> or click the magnet button in the toolbar to toggle snap. The setting persists across
+          sessions.
+        </li>
+        <li>
+          Hold <strong>{MOD_KEY}</strong> mid-drag to bypass snap. The toolbar magnet dims while bypass is active.
+          Release the key and snap re-engages.
+        </li>
+        <li>Adjust the snap distance in Settings, under Timeline. Range is 4 to 24 pixels, default 12.</li>
+        <li>
+          Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the
+          next-best anchor or doesn't snap at all.
+        </li>
+      </ul>
+    </div>
+
+    <div>
       <h4 className={HEADING}>Splitting and merging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
@@ -458,6 +482,10 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>
           <strong>Preview</strong> (<strong>P</strong>) - Opens a live lyrics preview sidebar on the right.
+        </li>
+        <li>
+          <strong>Snap</strong> (<strong>T</strong>) - Magnet for word edges and the playhead. Hold {MOD_KEY} mid-drag
+          to bypass.
         </li>
         <li>
           <strong>Import</strong> ({MOD_KEY} + Shift + V) - Import lyrics directly into the Timeline without switching
