@@ -1,5 +1,7 @@
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { ShortcutSection, SHORTCUT_SECTIONS } from "@/ui/help-modal";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
 // -- Constants ----------------------------------------------------------------
@@ -349,7 +351,8 @@ const TimelineSection: React.FC = () => (
         <li>{MOD_KEY} + scroll wheel to zoom in and out.</li>
         <li>Middle-click and drag to pan freely. Hold Shift while middle-dragging to lock panning to one axis.</li>
         <li>
-          Press <strong>F</strong> to toggle "follow playhead" so the view scrolls automatically during playback.
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} /> to toggle "follow playhead" so
+          the view scrolls automatically during playback.
         </li>
       </ul>
     </div>
@@ -372,14 +375,18 @@ const TimelineSection: React.FC = () => (
         <li>Double-click a word block to edit its text inline. Press Enter to confirm, Escape to cancel.</li>
         <li>Double-click on empty track space to create a new word at that position.</li>
         <li>
-          Press <strong>E</strong> or <strong>F2</strong> with a word selected to start editing.
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.editWord")} /> with a word selected to start
+          editing.
         </li>
         <li>
-          Use <strong>[</strong> and <strong>]</strong> to snap a word's start or end to the current playhead position.
+          Use <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> and{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> to snap a word's start or end to the
+          current playhead position.
         </li>
         <li>
-          With one or more words selected, press <strong>←</strong> / <strong>→</strong> to nudge them as a group. Each
-          word keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
+          With one or more words selected, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} /> to nudge them as a group. Each word
+          keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
         </li>
       </ul>
     </div>
@@ -420,8 +427,8 @@ const TimelineSection: React.FC = () => (
       </p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Press <strong>T</strong> or click the magnet button in the toolbar to toggle snap. The setting persists across
-          sessions.
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} /> or click the magnet button in the
+          toolbar to toggle snap. The setting persists across sessions.
         </li>
         <li>
           Hold <strong>{MOD_KEY}</strong> mid-drag to bypass snap. The toolbar magnet dims while bypass is active.
@@ -439,12 +446,13 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Splitting and merging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Press <strong>S</strong> with a word selected to open the syllable splitter. Click between letters to mark
-          where the word should break. If the playhead is on the word when you confirm a single split, the timing
-          boundary snaps to the playhead position exactly.
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
+          the syllable splitter. Click between letters to mark where the word should break. If the playhead is on the
+          word when you confirm a single split, the timing boundary snaps to the playhead position exactly.
         </li>
         <li>
-          Select two or more adjacent words on the same line and press <strong>M</strong> to merge them into one block.
+          Select two or more adjacent words on the same line and press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block.
         </li>
       </ul>
     </div>
@@ -473,23 +481,24 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Header toolbar</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          <strong>Follow</strong> (<strong>F</strong>) - Auto-scrolls the view to keep the playhead visible during
-          playback.
+          <strong>Follow</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />) -
+          Auto-scrolls the view to keep the playhead visible during playback.
         </li>
         <li>
           <strong>Select</strong> - Disables double-click word creation so you can click freely without accidentally
           adding words.
         </li>
         <li>
-          <strong>Preview</strong> (<strong>P</strong>) - Opens a live lyrics preview sidebar on the right.
+          <strong>Preview</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />) - Opens a
+          live lyrics preview sidebar on the right.
         </li>
         <li>
-          <strong>Snap</strong> (<strong>T</strong>) - Magnet for word edges and the playhead. Hold {MOD_KEY} mid-drag
-          to bypass.
+          <strong>Snap</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} />) - Magnet for
+          word edges and the playhead. Hold {MOD_KEY} mid-drag to bypass.
         </li>
         <li>
-          <strong>Import</strong> ({MOD_KEY} + Shift + V) - Import lyrics directly into the Timeline without switching
-          tabs.
+          <strong>Import</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />) - Import
+          lyrics directly into the Timeline without switching tabs.
         </li>
         <li>
           <strong>Zoom</strong> - Use the +/- buttons or {MOD_KEY} + scroll wheel to zoom in and out.
@@ -501,7 +510,8 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Other features</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Press <strong>N</strong> with a word selected to insert a new empty line below it.
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.insertLineBelow")} /> with a word selected to
+          insert a new empty line below it.
         </li>
         <li>The info panel at the bottom shows details for the selected word, including background text editing.</li>
       </ul>
