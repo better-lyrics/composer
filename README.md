@@ -44,6 +44,7 @@ Four-step workflow:
 - **Tap-to-sync** - Press Space in time with the music to stamp each word
 - **YouTube import** - Paste a video URL to pull the audio straight in, no manual download needed
 - **Timeline editor** - DAW-style view with draggable word blocks on a waveform
+- **Snap (magnet)** - Word edges magnetically lock onto neighbors and the playhead when dragging or resizing
 - **Multiple agents** - Assign lines to different singers with distinct colors
 - **Background vocals** - Separate track for backing vocals with `x-bg` TTML role
 - **Syllable splitting** - Break words into individually timed syllables
@@ -81,10 +82,12 @@ npx serve dist
 
 ```bash
 pnpm install
-pnpm dev          # Start dev server with HMR
-pnpm test         # Run tests
-pnpm lint:fix     # Format and lint
-pnpm typecheck    # Type check
+pnpm dev               # Start dev server with HMR
+pnpm test              # Run all tests (unit + browser)
+pnpm test:unit         # Unit tests only (jsdom)
+pnpm test:component    # Component tests only (Chromium via Playwright)
+pnpm lint:fix          # Format and lint
+pnpm typecheck         # Type check
 ```
 
 ## Tech stack
