@@ -129,10 +129,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
             {keys.length === 0 ? (
               <span className="text-xs text-composer-text-muted italic">Unbound</span>
             ) : (
-              keys.map((key, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-                <KeyBadge key={`${key}-${i}`} keyName={key} />
-              ))
+              keys.map((key) => <KeyBadge key={key} keyName={key} />)
             )}
           </button>
         </div>
@@ -186,9 +183,8 @@ const BrowserWarningModal: React.FC<{
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-composer-text">
           <span className="inline-flex items-center gap-1">
-            {bindingKeys.map((key, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-              <KeyBadge key={`${key}-${i}`} keyName={key} />
+            {bindingKeys.map((key) => (
+              <KeyBadge key={key} keyName={key} />
             ))}
           </span>
           <span className="text-composer-text-secondary">may be reserved by the browser.</span>
@@ -238,9 +234,8 @@ const ConflictModal: React.FC<{
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-sm text-composer-text">
           <span className="inline-flex items-center gap-1">
-            {bindingKeys.map((key, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-              <KeyBadge key={`${key}-${i}`} keyName={key} />
+            {bindingKeys.map((key) => (
+              <KeyBadge key={key} keyName={key} />
             ))}
           </span>
           <span className="text-composer-text-secondary">is already used by:</span>

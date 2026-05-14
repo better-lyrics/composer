@@ -36,12 +36,14 @@ const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, 
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
         <meta name="twitter:image" content={image} />
-        {structured.map((schema, index) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: structured data order is stable per render
-          <script key={index} type="application/ld+json">
-            {JSON.stringify(schema)}
-          </script>
-        ))}
+        {structured.map((schema) => {
+          const json = JSON.stringify(schema);
+          return (
+            <script key={json} type="application/ld+json">
+              {json}
+            </script>
+          );
+        })}
       </Head>
     </>
   );

@@ -5,15 +5,7 @@ import { render } from "@/test/render";
 describe("WordRenderer", () => {
   it("renders an unsynced word with text only", async () => {
     const screen = await render(
-      <WordRenderer
-        word="hello"
-        idx={0}
-        lineNumber={0}
-        timing={undefined}
-        allWords={undefined}
-        handlers={{}}
-        editMode={false}
-      />,
+      <WordRenderer word="hello" idx={0} timing={undefined} allWords={undefined} handlers={{}} editMode={false} />,
     );
     expect(screen.container.textContent ?? "").toContain("hello");
   });
@@ -23,7 +15,6 @@ describe("WordRenderer", () => {
       <WordRenderer
         word="hello"
         idx={0}
-        lineNumber={0}
         timing={{ text: "hello", begin: 1, end: 2 }}
         allWords={[{ text: "hello", begin: 1, end: 2 }]}
         handlers={{}}
@@ -39,7 +30,6 @@ describe("WordRenderer", () => {
       <WordRenderer
         word="hello"
         idx={0}
-        lineNumber={0}
         timing={{ text: "hello", begin: 1.5, end: 1.5 }}
         allWords={[{ text: "hello", begin: 1.5, end: 1.5 }]}
         handlers={{}}
@@ -54,7 +44,6 @@ describe("WordRenderer", () => {
       <WordRenderer
         word="(echo)"
         idx={0}
-        lineNumber={0}
         timing={{ text: "(echo)", begin: 1, end: 2 }}
         allWords={[{ text: "(echo)", begin: 1, end: 2 }]}
         handlers={{}}

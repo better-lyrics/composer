@@ -17,7 +17,6 @@ interface WordHandlers {
 interface WordRendererProps {
   word: string;
   idx: number;
-  lineNumber: number;
   timing: WordTiming | undefined;
   allWords: WordTiming[] | undefined;
   handlers: WordHandlers;
@@ -58,7 +57,6 @@ function renderWordContent(word: string, timing: WordTiming | undefined, isBackg
 const WordRenderer: React.FC<WordRendererProps> = ({
   word,
   idx,
-  lineNumber,
   timing,
   allWords,
   handlers,
@@ -76,10 +74,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
   const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
 
   return (
-    <span
-      key={`${lineNumber}-${isBackground ? "bg" : "main"}-${word}-${idx}`}
-      className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}
-    >
+    <span className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}>
       <span className="flex items-center gap-1 group/word">
         {renderWordContent(word, timing, isBackground, editMode)}
         {isSynced && timing && timing.end === timing.begin && (

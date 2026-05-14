@@ -233,10 +233,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
             aria-hidden
             className="absolute left-1.5 right-1.5 bottom-0.5 h-[3px] pointer-events-none overflow-hidden"
           >
-            {wordTicks.map((t, i) => (
+            {wordTicks.map((t) => (
               <span
-                // biome-ignore lint/suspicious/noArrayIndexKey: order is stable for static word list
-                key={i}
+                key={`${t.leftPct}-${t.widthPct}`}
                 className="absolute top-0 bottom-0 rounded-[1px]"
                 style={{
                   left: `${t.leftPct}%`,

@@ -208,9 +208,8 @@ const ShortcutItem: React.FC<ShortcutItemProps> = ({ keys, description, shortcut
     <div className="flex items-center justify-between py-1.5">
       <span className="text-sm text-composer-text-secondary">{description}</span>
       <div className="flex items-center gap-1">
-        {resolvedKeys.map((key, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-          <KeyBadge key={`${key}-${i}`} keyName={key} />
+        {resolvedKeys.map((key) => (
+          <KeyBadge key={key} keyName={key} />
         ))}
       </div>
     </div>
@@ -221,8 +220,8 @@ const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) =
   <div>
     <h3 className="mb-2 text-xs font-medium tracking-wide text-composer-text-muted">{title}</h3>
     <div className="flex flex-col">
-      {shortcuts.map((shortcut, i) => (
-        <ShortcutItem key={`${shortcut.description}-${i}`} {...shortcut} />
+      {shortcuts.map((shortcut) => (
+        <ShortcutItem key={shortcut.shortcutId ?? shortcut.description} {...shortcut} />
       ))}
     </div>
   </div>
@@ -276,9 +275,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
         Press{" "}
-        {getEffectiveKeysArray("global.help").map((key, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: key order is fixed
-          <KeyBadge key={`${key}-${i}`} keyName={key} />
+        {getEffectiveKeysArray("global.help").map((key) => (
+          <KeyBadge key={key} keyName={key} />
         ))}{" "}
         to open anytime
       </div>
