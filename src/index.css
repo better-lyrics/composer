@@ -203,6 +203,14 @@ input[type="range"].settings-slider::-moz-range-progress {
   );
 }
 
+@keyframes playhead-buffer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+.playhead-buffering {
+  animation: playhead-buffer-pulse 1000ms ease-in-out infinite;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

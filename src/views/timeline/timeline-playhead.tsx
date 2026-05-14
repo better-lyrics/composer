@@ -137,7 +137,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       playheadRef.current.style.transform = `translate3d(${position}px, 0, 0)`;
 
       if (isFrozen !== wasFrozenRef.current) {
-        playheadRef.current.classList.toggle("animate-pulse", isFrozen);
+        playheadRef.current.classList.toggle("playhead-buffering", isFrozen);
         if (isFrozen) {
           playheadRef.current.style.backgroundImage =
             "repeating-linear-gradient(to bottom, rgb(129 140 248) 0 3px, transparent 3px 6px)";
