@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { useSettingsStore } from "@/stores/settings";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
@@ -30,5 +31,24 @@ describe("TimelineHeader", () => {
     const screen = await render(<TimelineHeader onImportLyrics={() => clicks++} />);
     await screen.getByRole("button", { name: /^Import/ }).click();
     expect(clicks).toBe(1);
+  });
+
+  it("renders the Snap button", async () => {
+    const screen = await render(<TimelineHeader />);
+    await expect.element(screen.getByRole("button", { name: /Snap/ })).toBeInTheDocument();
+  });
+
+  it("toggles settings.timelineSnap when the Snap button is clicked", async () => {
+    const initial = useSettingsStore.getState().timelineSnap;
+    const screen = await render(<TimelineHeader />);
+    await screen.getByRole("button", { name: /Snap/ }).click();
+    expect(useSettingsStore.getState().timelineSnap).toBe(!initial);
+  });
+
+  it("dims the Snap button when bypass is active", async () => {
+    useTimelineStore.setState({ isBypassing: true });
+    const screen = await render(<TimelineHeader />);
+    const snapButton = screen.container.querySelector("button[title*='Snap']") as HTMLElement;
+    expect(snapButton.className).toContain("opacity-50");
   });
 });

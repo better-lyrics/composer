@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WordBlock } from "@/views/timeline/word-block";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
 
 const DEFAULT_PROPS = {
@@ -157,5 +158,33 @@ describe("WordBlock", () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="middle" />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
     expect(block.className).toContain("rounded-none");
+  });
+
+  it("does not apply is-snapped when snappedBlockId is null", async () => {
+    useTimelineStore.setState({ snappedBlockId: null });
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.className).not.toContain("is-snapped");
+  });
+
+  it("applies is-snapped when snappedBlockId matches this block's selfKey", async () => {
+    useTimelineStore.setState({ snappedBlockId: "line-1:0:word" });
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.className).toContain("is-snapped");
+  });
+
+  it("does not apply is-snapped when snappedBlockId matches a different block", async () => {
+    useTimelineStore.setState({ snappedBlockId: "line-1:1:word" });
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.className).not.toContain("is-snapped");
+  });
+
+  it("distinguishes main and bg tracks at the same word index", async () => {
+    useTimelineStore.setState({ snappedBlockId: "line-1:0:bg" });
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} trackType="word" />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.className).not.toContain("is-snapped");
   });
 });

@@ -13,6 +13,7 @@ const SECTION_IDS = [
   "preview",
   "exporting",
   "ttml-standards",
+  "about",
 ] as const;
 
 describe("HelpSectionContent", () => {

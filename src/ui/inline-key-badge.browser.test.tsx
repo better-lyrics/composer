@@ -34,4 +34,14 @@ describe("InlineKeyBadge", () => {
     const labels = badges.map((badge) => badge.textContent?.trim() ?? "");
     expect(labels).toEqual(["A", "B", "C"]);
   });
+
+  it("renders an Unbound placeholder when keys is empty", async () => {
+    const screen = await render(<InlineKeyBadge keys={[]} />);
+    await expect.element(screen.getByText("Unbound")).toBeInTheDocument();
+  });
+
+  it("does not render key badges when keys is empty", async () => {
+    const screen = await render(<InlineKeyBadge keys={[]} />);
+    expect(screen.container.querySelectorAll("span > span").length).toBe(0);
+  });
 });
