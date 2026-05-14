@@ -172,7 +172,6 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
 ];
 
 const HELP_SECTIONS: HelpSectionDef[] = [
-  { id: "about", label: "About", icon: IconInfoHexagon },
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
   { id: "importing", label: "Importing Audio", icon: IconMusic },
@@ -183,6 +182,7 @@ const HELP_SECTIONS: HelpSectionDef[] = [
   { id: "preview", label: "Preview", icon: IconEye },
   { id: "exporting", label: "Exporting", icon: IconDownload },
   { id: "ttml-standards", label: "TTML & standards", icon: IconAward },
+  { id: "about", label: "About", icon: IconInfoHexagon },
 ];
 
 // -- Shared Components --------------------------------------------------------
@@ -231,7 +231,7 @@ const ShortcutSection: React.FC<ShortcutSectionProps> = ({ title, shortcuts }) =
 // -- Help Modal ---------------------------------------------------------------
 
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-  const [activeSection, setActiveSection] = useState("about");
+  const [activeSection, setActiveSection] = useState("getting-started");
 
   return (
     <Modal

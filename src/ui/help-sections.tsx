@@ -1006,74 +1006,81 @@ const AboutSection: React.FC = () => (
       </div>
     </div>
 
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
-        <h3 className="text-sm font-medium">What it is</h3>
-        <p className={PROSE}>
-          A free, open-source, browser-only tool for creating synchronized lyrics in TTML format. No accounts, no
-          uploads. Everything lives in your browser.
-        </p>
-      </div>
+    <div>
+      <h4 className={HEADING}>What it is</h4>
+      <p className={PROSE}>
+        Free, open-source, runs entirely in your browser. No accounts, no uploads, nothing server-side. Import your
+        audio and lyrics, sync them up, export TTML.
+      </p>
+    </div>
 
-      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
-        <h3 className="text-sm font-medium">Open source</h3>
-        <p className={PROSE}>
-          Licensed under AGPL v3. Source code on{" "}
+    <div>
+      <h4 className={HEADING}>Open source</h4>
+      <p className={PROSE}>
+        AGPL v3. Source on{" "}
+        <a
+          href="https://github.com/better-lyrics/composer"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        >
+          GitHub
+        </a>
+        . PRs welcome if you spot something to fix.
+      </p>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Community</h4>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
           <a
-            href="https://github.com/better-lyrics/composer"
+            href="https://discord.gg/UsHE3d5fWF"
             target="_blank"
             rel="noopener noreferrer"
             className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
           >
-            GitHub
-          </a>
-          . Issues, ideas, and PRs welcome.
-        </p>
-      </div>
-
-      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
-        <h3 className="text-sm font-medium">Community</h3>
-        <ul className={`${PROSE} space-y-1`}>
-          <li>
-            <a
-              href="https://discord.gg/UsHE3d5fWF"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-            >
-              Discord
-            </a>{" "}
-            for questions, feedback, and chatter.
-          </li>
-          <li>
-            <a
-              href="https://github.com/better-lyrics/composer/issues/new/choose"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-            >
-              File an issue
-            </a>{" "}
-            if something's broken or missing.
-          </li>
-        </ul>
-      </div>
-
-      <div className="rounded-lg border border-composer-border bg-composer-bg-elevated/40 p-4 space-y-2">
-        <h3 className="text-sm font-medium">Made by</h3>
-        <p className={PROSE}>
-          Built and maintained by{" "}
-          <a
-            href="https://github.com/Boidushya"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
-          >
-            Boidushya
+            Discord
           </a>{" "}
-          with help from the Better Lyrics community. Thanks to everyone testing, reporting bugs, and shipping fixes.
-        </p>
-      </div>
+          for questions and chat.
+        </li>
+        <li>
+          <a
+            href="https://github.com/better-lyrics/composer/issues/new/choose"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+          >
+            File an issue
+          </a>{" "}
+          if something's broken.
+        </li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Made by</h4>
+      <p className={PROSE}>
+        Made by{" "}
+        <a
+          href="https://boidu.dev"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        >
+          Boidu
+        </a>
+        . Thanks to everyone in the{" "}
+        <a
+          href="https://betterlyrics.org"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        >
+          Better Lyrics
+        </a>{" "}
+        community who's tested it, reported bugs, and put up with the rough edges.
+      </p>
     </div>
   </div>
 );
@@ -1105,7 +1112,7 @@ const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
     case "ttml-standards":
       return <TtmlStandardsSection />;
     default:
-      return <AboutSection />;
+      return <GettingStartedSection />;
   }
 };
 
