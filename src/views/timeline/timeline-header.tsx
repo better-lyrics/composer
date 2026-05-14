@@ -6,6 +6,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
+import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import {
@@ -14,6 +15,7 @@ import {
   IconEye,
   IconFocusCentered,
   IconLayoutDistributeHorizontal,
+  IconMagnet,
   IconMinus,
   IconPlus,
   IconPointer,
@@ -40,6 +42,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const selectOnlyMode = useTimelineStore((s) => s.selectOnlyMode);
   const toggleSelectOnlyMode = useTimelineStore((s) => s.toggleSelectOnlyMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
+  const snapEnabled = useSettingsStore((s) => s.timelineSnap);
+  const setSetting = useSettingsStore((s) => s.set);
+  const isBypassing = useTimelineStore((s) => s.isBypassing);
+  const toggleSnapKeys = getEffectiveKeysArray("timeline.toggleSnap");
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
@@ -163,6 +169,19 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           <IconEye size={16} />
           <span>Preview</span>
           {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />}
+        </Button>
+
+        <Button
+          variant={snapEnabled ? "primary" : "ghost"}
+          size="sm"
+          hasIcon
+          className={cn(!snapEnabled && "opacity-60", isBypassing && "opacity-50")}
+          onClick={() => setSetting("timelineSnap", !snapEnabled)}
+          title={`Snap${toggleSnapKeys.length ? ` (${toggleSnapKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
+        >
+          <IconMagnet size={16} />
+          <span>Snap</span>
+          {showHints && <InlineKeyBadge keys={toggleSnapKeys} />}
         </Button>
 
         {/* Import lyrics */}

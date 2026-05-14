@@ -317,6 +317,11 @@ function useTimelineKeyboard(
         case "timeline.togglePreview":
           useTimelineStore.getState().togglePreviewSidebar();
           break;
+        case "timeline.toggleSnap": {
+          const s = useSettingsStore.getState();
+          s.set("timelineSnap", !s.timelineSnap);
+          break;
+        }
         case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");
