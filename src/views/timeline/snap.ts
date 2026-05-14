@@ -47,10 +47,9 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
   const anchors: SnapAnchor[] = [];
 
   for (const line of lines) {
-    const hasWords = line.words !== undefined && line.words.length > 0;
-    const hasBgWords = line.backgroundWords !== undefined && line.backgroundWords.length > 0;
+    const wordTimed = line.words && line.words.length > 0;
 
-    if (hasWords && line.words) {
+    if (line.words && line.words.length > 0) {
       for (let i = 0; i < line.words.length; i++) {
         const word = line.words[i];
         if (!selfIds.has(selfKey(line.id, i, "word"))) {
@@ -74,7 +73,7 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
       }
     }
 
-    if (hasBgWords && line.backgroundWords) {
+    if (line.backgroundWords && line.backgroundWords.length > 0) {
       for (let i = 0; i < line.backgroundWords.length; i++) {
         const word = line.backgroundWords[i];
         if (!selfIds.has(selfKey(line.id, i, "bg"))) {
@@ -98,7 +97,7 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
       }
     }
 
-    if (!hasWords && line.begin !== undefined && line.end !== undefined) {
+    if (!wordTimed && line.begin !== undefined && line.end !== undefined) {
       anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
       anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
     }
