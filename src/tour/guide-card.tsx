@@ -30,7 +30,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ state, onSkip }) => {
           animate="visible"
           exit="exit"
           transition={reducedMotion ? { duration: 0 } : springSnappy}
-          className="fixed bottom-6 right-6 z-10001 w-72 rounded-r-xl border border-composer-border border-l-2 border-l-composer-accent/75 bg-composer-bg-dark p-4 pl-5 shadow-2xl select-none"
+          className="fixed bottom-6 right-6 z-10001 w-72 rounded-r-xl border border-composer-border bg-composer-bg-dark p-4 pl-5 shadow-2xl shadow-[inset_2px_0_0_0_var(--color-composer-accent)] select-none"
         >
           <div className="flex items-start justify-between gap-3">
             <div className="flex-1 min-w-0">

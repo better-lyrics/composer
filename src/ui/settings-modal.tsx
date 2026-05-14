@@ -624,8 +624,7 @@ const CobaltInstanceEditRow: React.FC<{
     <div className="flex flex-col gap-1.5 p-2 rounded-lg border border-composer-accent/50 bg-composer-accent/10">
       <div className="flex items-center gap-2">
         <input
-          // biome-ignore lint/a11y/noAutofocus: edit mode is opt-in via double-click
-          autoFocus
+          ref={(el) => el?.focus()}
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}

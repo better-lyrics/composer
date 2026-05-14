@@ -1,6 +1,12 @@
 import { getNudgeAmount, formatTimeMs, parseTimeMs } from "@/utils/sync-helpers";
 import { useState } from "react";
 
+const focusAndSelectOnMount = (el: HTMLInputElement | null) => {
+  if (!el) return;
+  el.focus();
+  el.select();
+};
+
 // -- Interfaces ---------------------------------------------------------------
 
 interface TimeNudgeInputProps {
@@ -73,14 +79,13 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
       </button>
       {isEditing ? (
         <input
+          ref={focusAndSelectOnMount}
           type="text"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleCommit}
           onKeyDown={handleKeyDown}
           onClick={(e) => e.stopPropagation()}
-          // biome-ignore lint/a11y/noAutofocus: intentional focus on user-initiated edit
-          autoFocus
           className="w-16 px-1 text-center border rounded select-text bg-composer-bg-elevated border-composer-accent text-composer-accent-text"
         />
       ) : (
