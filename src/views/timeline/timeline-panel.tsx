@@ -56,6 +56,8 @@ const DragGhost: React.FC<{
     {cells.map((cell) => (
       <div
         key={`${cell.left}-${cell.top}`}
+        data-word-block
+        data-syllable-position="none"
         className={cn(
           "absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none",
           isSnapped && "is-snapped",
