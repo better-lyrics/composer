@@ -266,7 +266,9 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         </Scroll>
 
         <Scroll className="flex-1 p-6">
-          <HelpSectionContent section={activeSection} />
+          <div data-help-content>
+            <HelpSectionContent section={activeSection} />
+          </div>
         </Scroll>
       </div>
 

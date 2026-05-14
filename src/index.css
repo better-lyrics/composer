@@ -203,6 +203,11 @@ input[type="range"].settings-slider::-moz-range-progress {
   );
 }
 
+[data-help-content] [data-inline-key-badge] {
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
+}
+
 .is-snapped {
   box-shadow: 0 0 0 1.5px rgba(255, 214, 107, 0.85), 0 0 14px 2px rgba(255, 214, 107, 0.28), 0 1px 2px
     rgba(0, 0, 0, 0.4);
