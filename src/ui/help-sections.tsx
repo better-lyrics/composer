@@ -1009,8 +1009,8 @@ const AboutSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>What it is</h4>
       <p className={PROSE}>
-        Free, open-source, runs entirely in your browser. No accounts, no uploads, nothing server-side. Import your
-        audio and lyrics, sync them up, export TTML.
+        Free and open-source, runs entirely in your browser. No accounts, nothing leaves your machine. Bring your audio
+        and lyrics, sync them up, export TTML.
       </p>
     </div>
 
@@ -1061,7 +1061,6 @@ const AboutSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Made by</h4>
       <p className={PROSE}>
-        Made by{" "}
         <a
           href="https://boidu.dev"
           target="_blank"
@@ -1070,7 +1069,7 @@ const AboutSection: React.FC = () => (
         >
           Boidu
         </a>
-        . Thanks to everyone in the{" "}
+        , with thanks to everyone in the{" "}
         <a
           href="https://betterlyrics.org"
           target="_blank"
