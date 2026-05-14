@@ -44,7 +44,6 @@ describe("Scroll", () => {
   it("sets the viewportRef once OverlayScrollbars initializes", async () => {
     let observed: HTMLDivElement | null = null;
     await render(<ViewportRefHarness onMount={(el) => (observed = el)} />);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(observed).not.toBeNull();
+    await expect.poll(() => observed).not.toBeNull();
   });
 });
