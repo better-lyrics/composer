@@ -6,7 +6,7 @@ const WORD_CORNER_RADIUS_PX = 12;
 // -- Helpers -------------------------------------------------------------------
 
 function cornerYInset(distFromEdge: number, radius: number): number {
-  if (distFromEdge >= radius || distFromEdge <= 0) return 0;
+  if (distFromEdge >= radius || distFromEdge < 0) return 0;
   const d = radius - distFromEdge;
   return radius - Math.sqrt(radius * radius - d * d);
 }
