@@ -146,32 +146,20 @@ const TimelinePanel: React.FC = () => {
   }, [initOverlayScrollbars]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
+  const { sensors, activeDrag, dragShiftPressed, handleDragStart, handleDragEnd, handleDragCancel } =
+    useTimelineDnd(effectiveLines);
   const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
   useSnapBypass({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
 
-  const [dragShiftPressed, setDragShiftPressed] = useState(false);
   useEffect(() => {
-    if (!activeDrag) {
-      setDragShiftPressed(false);
-      return;
-    }
-    setDragShiftPressed(activeDrag.initialShiftKey ?? false);
+    if (!activeDrag) return;
     const onMove = (e: PointerEvent) => {
       lastDragPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
-      setDragShiftPressed(e.shiftKey);
     };
-    const onKey = (e: KeyboardEvent) => setDragShiftPressed(e.shiftKey);
     window.addEventListener("pointermove", onMove);
-    document.addEventListener("keydown", onKey);
-    document.addEventListener("keyup", onKey);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      document.removeEventListener("keydown", onKey);
-      document.removeEventListener("keyup", onKey);
-    };
+    return () => window.removeEventListener("pointermove", onMove);
   }, [activeDrag]);
 
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);

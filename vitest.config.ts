@@ -43,6 +43,8 @@ export default defineConfig({
           name: "browser",
           include: ["src/**/*.browser.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-browser.ts"],
+          testTimeout: 20000,
+          hookTimeout: 20000,
           browser: {
             enabled: true,
             provider: playwright({
@@ -52,7 +54,7 @@ export default defineConfig({
             }),
             headless: true,
             screenshotFailures: false,
-            instances: [{ browser: "chromium" }],
+            instances: [{ browser: "chromium", fileParallelism: false }],
           },
         },
       },

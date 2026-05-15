@@ -7,7 +7,7 @@ import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -179,6 +179,33 @@ function useTimelineDnd(lines: LyricLine[]) {
   const zoom = useTimelineStore((s) => s.zoom);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
+  const [dragShiftPressed, setDragShiftPressed] = useState(false);
+  const dragShiftRef = useRef(false);
+
+  useEffect(() => {
+    if (!activeDrag) {
+      dragShiftRef.current = false;
+      setDragShiftPressed(false);
+      return;
+    }
+    const initial = activeDrag.initialShiftKey ?? false;
+    dragShiftRef.current = initial;
+    setDragShiftPressed(initial);
+    const update = (pressed: boolean) => {
+      dragShiftRef.current = pressed;
+      setDragShiftPressed(pressed);
+    };
+    const onPointer = (e: PointerEvent) => update(e.shiftKey);
+    const onKey = (e: KeyboardEvent) => update(e.shiftKey);
+    window.addEventListener("pointermove", onPointer);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("keyup", onKey);
+    return () => {
+      window.removeEventListener("pointermove", onPointer);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keyup", onKey);
+    };
+  }, [activeDrag]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -204,7 +231,7 @@ function useTimelineDnd(lines: LyricLine[]) {
 
       const { active, over, delta, activatorEvent } = event;
       const isAltDrag = activatorEvent instanceof PointerEvent && activatorEvent.altKey;
-      const isShiftDrag = activatorEvent instanceof PointerEvent && activatorEvent.shiftKey;
+      const isShiftDrag = dragShiftRef.current;
 
       if (!over) {
         if (isAltDrag) handleAltDuplicate(event, lines, zoom, duration);
@@ -393,7 +420,7 @@ function useTimelineDnd(lines: LyricLine[]) {
     document.body.style.cursor = "";
   }, []);
 
-  return { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel };
+  return { sensors, activeDrag, dragShiftPressed, handleDragStart, handleDragEnd, handleDragCancel };
 }
 
 // -- Exports -------------------------------------------------------------------
