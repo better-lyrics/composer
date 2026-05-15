@@ -33,4 +33,3 @@ describe("lastEnd", () => {
     expect(lastEnd([{ text: "hi", begin: 7, end: 8 }])).toBe(8);
   });
 });
-

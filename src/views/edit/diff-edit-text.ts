@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import { extractLinkedFields, propagateWordChanges } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
 
@@ -65,7 +66,7 @@ interface ImpactedInstance {
 function instancesByKey(lines: LyricLine[]): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();
   for (const line of lines) {
-    if (line.groupId === undefined || line.instanceIdx === undefined) continue;
+    if (!isLinked(line)) continue;
     const key = `${line.groupId}:${line.instanceIdx}`;
     let bucket = out.get(key);
     if (!bucket) {
@@ -132,7 +133,7 @@ function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstanc
   const impactedKeys = new Set(instances.map((i) => `${i.groupId}:${i.instanceIdx}`));
 
   return lines.map((line) => {
-    if (line.groupId === undefined || line.instanceIdx === undefined) return line;
+    if (!isLinked(line)) return line;
     if (!impactedKeys.has(`${line.groupId}:${line.instanceIdx}`)) return line;
     return {
       ...line,

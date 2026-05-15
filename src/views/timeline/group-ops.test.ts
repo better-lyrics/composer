@@ -5,7 +5,6 @@ import type { LinkGroup, LyricLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import {
   createGroupFromSelection,
-  instanceLineRange,
   instanceToTemplate,
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
@@ -94,7 +93,7 @@ describe("instanceToTemplate", () => {
     expect(tpl[1].words?.[0].relativeEnd).toBeCloseTo(3);
   });
 
-  it("uses min word begin as the start anchor", () => {
+  it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {
     const ls: LyricLine[] = [
       {
         id: "a",
@@ -107,24 +106,12 @@ describe("instanceToTemplate", () => {
         words: [{ text: "hi", begin: 30, end: 31 }],
       },
     ];
-    const range = instanceLineRange(ls, "g1", 0);
-    expect(range.startTime).toBe(28);
+    const tpl = instanceToTemplate(ls, "g1", 0);
+    expect(tpl[0].words?.[0].relativeBegin).toBeCloseTo(2);
+    expect(tpl[0].backgroundWords?.[0].relativeBegin).toBeCloseTo(0);
   });
-});
 
-describe("createGroupFromSelection · group color", () => {
-  it("picks an unused color from the palette", () => {
-    const existing: LinkGroup[] = [{ id: "g1", label: "x", color: "#f472b6", templateVersion: 1 }];
-    const ls = lines([{ id: "a" }]);
-    const result = createGroupFromSelection(ls, new Set(["a"]), existing);
-    expect(result?.group.color).not.toBe("#f472b6");
-  });
-});
-
-// -- instanceLineRange · stale line.begin/end ignored when words present -------
-
-describe("instanceLineRange · prefers word-level timing over stale line.begin/end", () => {
-  it("ignores stale line.begin/end when words are present (matches instanceBounds)", () => {
+  it("uses word-derived start anchor even when line.begin/end is stale (regression)", () => {
     const ls: LyricLine[] = [
       {
         id: "L1",
@@ -133,62 +120,6 @@ describe("instanceLineRange · prefers word-level timing over stale line.begin/e
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        // Stale line-level (e.g. from TTML import populating both)
-        begin: 100,
-        end: 200,
-        words: [
-          { text: "hello", begin: 5, end: 6 },
-          { text: "world", begin: 6, end: 7 },
-        ],
-      },
-    ];
-    const range = instanceLineRange(ls, "g1", 0);
-    expect(range.startTime).toBe(5);
-    expect(range.endTime).toBe(7);
-  });
-
-  it("uses bg words when no main words", () => {
-    const ls: LyricLine[] = [
-      {
-        id: "L1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        begin: 100,
-        end: 200,
-        backgroundWords: [{ text: "ah", begin: 5, end: 6 }],
-      },
-    ];
-    const range = instanceLineRange(ls, "g1", 0);
-    expect(range.startTime).toBe(5);
-    expect(range.endTime).toBe(6);
-  });
-
-  it("falls back to line.begin/end ONLY when truly line-synced (no words)", () => {
-    const ls: LyricLine[] = [
-      { id: "L1", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, begin: 5, end: 7 },
-    ];
-    const range = instanceLineRange(ls, "g1", 0);
-    expect(range.startTime).toBe(5);
-    expect(range.endTime).toBe(7);
-  });
-
-  it("instanceToTemplate uses word-derived startTime as the relative-offset anchor", () => {
-    // Regression for the would-corrupt scenario: if instanceLineRange returned
-    // a stale line.begin (smaller than real word begin), every relativeBegin
-    // in the produced template would be inflated, and pasting the template
-    // later would mis-position the new instance.
-    const ls: LyricLine[] = [
-      {
-        id: "L1",
-        text: "x",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        // Stale earlier line.begin
         begin: 1,
         end: 8,
         words: [
@@ -199,8 +130,16 @@ describe("instanceLineRange · prefers word-level timing over stale line.begin/e
     ];
     const template = instanceToTemplate(ls, "g1", 0);
     expect(template).toHaveLength(1);
-    // Anchor is 5 (first word begin), so first word's relativeBegin is 0
     expect(template[0].words?.[0].relativeBegin).toBeCloseTo(0);
     expect(template[0].words?.[1].relativeEnd).toBeCloseTo(2);
+  });
+});
+
+describe("createGroupFromSelection · group color", () => {
+  it("picks an unused color from the palette", () => {
+    const existing: LinkGroup[] = [{ id: "g1", label: "x", color: "#f472b6", templateVersion: 1 }];
+    const ls = lines([{ id: "a" }]);
+    const result = createGroupFromSelection(ls, new Set(["a"]), existing);
+    expect(result?.group.color).not.toBe("#f472b6");
   });
 });

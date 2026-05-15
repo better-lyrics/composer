@@ -5,6 +5,7 @@ import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useMemo } from "react";
@@ -65,7 +66,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     const seen = new Set<string>();
     const out: Record<string, number> = {};
     for (const line of lines) {
-      if (line.groupId === undefined || line.instanceIdx === undefined) continue;
+      if (!isLinked(line)) continue;
       const key = `${line.groupId}:${line.instanceIdx}`;
       if (seen.has(key)) continue;
       seen.add(key);

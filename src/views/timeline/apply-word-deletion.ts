@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/stores/project";
 
@@ -93,7 +94,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   if (affectedInstanceKeys.size > 0) {
     const linesByInstanceKey = new Map<string, LyricLine[]>();
     for (const l of result) {
-      if (l.groupId === undefined || l.instanceIdx === undefined) continue;
+      if (!isLinked(l)) continue;
       const key = `${l.groupId}:${l.instanceIdx}`;
       const bucket = linesByInstanceKey.get(key);
       if (bucket) bucket.push(l);
@@ -109,7 +110,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
 
     if (keysToStrip.size > 0) {
       result = result.map((line) => {
-        if (line.groupId === undefined || line.instanceIdx === undefined) return line;
+        if (!isLinked(line)) return line;
         if (!keysToStrip.has(`${line.groupId}:${line.instanceIdx}`)) return line;
         return { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined };
       });

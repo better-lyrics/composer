@@ -17,6 +17,7 @@ import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/time
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import {
@@ -42,7 +43,7 @@ function currentInstanceFromSelection(
   let instanceIdx: number | null = null;
   for (const sel of selectedWords) {
     const line = linesById.get(sel.lineId);
-    if (!line || line.groupId === undefined || line.instanceIdx === undefined) return null;
+    if (!line || !isLinked(line)) return null;
     if (groupId === null) {
       groupId = line.groupId;
       instanceIdx = line.instanceIdx;

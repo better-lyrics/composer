@@ -1,4 +1,5 @@
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/stores/project";
 
 // -- Helpers -------------------------------------------------------------------
@@ -39,7 +40,7 @@ function findMatchingTemplate(
 ): { groupId: string; instanceIdx: number } | null {
   const seen = new Set<string>();
   for (const line of lines) {
-    if (line.groupId === undefined || line.instanceIdx === undefined) continue;
+    if (!isLinked(line)) continue;
     const key = `${line.groupId}:${line.instanceIdx}`;
     if (seen.has(key)) continue;
     seen.add(key);
