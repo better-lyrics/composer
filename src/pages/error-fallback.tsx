@@ -1,3 +1,4 @@
+import { downloadRecoveryFile } from "@/lib/recovery";
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
 import {
@@ -5,6 +6,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconDiscOff,
+  IconDownload,
   IconGhost2,
   IconHome2,
   IconRefresh,
@@ -81,6 +83,7 @@ const ErrorFallback: React.FC = () => {
   const details = describeError(error);
   const Icon = useMemo(() => ERROR_ICONS[Math.floor(Math.random() * ERROR_ICONS.length)], []);
   const [showDetails, setShowDetails] = useState(false);
+  const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
 
   console.error(LOG_PREFIX, "route error", error);
 
@@ -91,6 +94,26 @@ const ErrorFallback: React.FC = () => {
   const handleGoHome = () => {
     window.location.href = "/";
   };
+
+  const handleRecover = async () => {
+    setRecoveryStatus("downloading");
+    try {
+      const result = await downloadRecoveryFile();
+      setRecoveryStatus(result.found ? "success" : "empty");
+    } catch (err) {
+      console.error(LOG_PREFIX, "recovery failed", err);
+      setRecoveryStatus("failed");
+    }
+  };
+
+  const recoveryMessage =
+    recoveryStatus === "success"
+      ? "Downloaded. Import it on the home page to continue."
+      : recoveryStatus === "empty"
+        ? "No saved project found in this browser."
+        : recoveryStatus === "failed"
+          ? "Couldn't read IndexedDB. Try the /recover page in a fresh tab."
+          : null;
 
   const responseDataString =
     details.responseData !== undefined && details.responseData !== null ? safeStringify(details.responseData) : null;
@@ -111,7 +134,7 @@ const ErrorFallback: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
           <Button variant="primary" hasIcon onClick={handleReload}>
             <IconRefresh size={16} />
             Reload
@@ -120,7 +143,12 @@ const ErrorFallback: React.FC = () => {
             <IconHome2 size={16} />
             Go home
           </Button>
+          <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
+            <IconDownload size={16} />
+            {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
+          </Button>
         </div>
+        {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
 
         {hasDetails && (
           <div className="w-full mt-2 flex flex-col items-center gap-2">

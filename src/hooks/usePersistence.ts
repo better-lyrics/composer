@@ -8,7 +8,7 @@ import {
   type SavedAudioSource,
 } from "@/lib/persistence";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
+import { DEFAULT_AGENTS, useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 
@@ -36,10 +36,10 @@ function usePersistence(): void {
       if (project) {
         const state = useProjectStore.getState();
         state.setMetadata(project.metadata);
-        state.setLines(project.lines);
+        state.setLines(project.lines ?? []);
         state.setGroups(project.groups ?? []);
         state.setGranularity(project.granularity);
-        state.setAgents(project.agents);
+        state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
         state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
         state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
         state.markClean();

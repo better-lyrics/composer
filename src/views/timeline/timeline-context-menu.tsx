@@ -245,7 +245,7 @@ const TimelineContextMenu: React.FC = () => {
       const lineId = contextMenu.target.lineId;
       const targetIndex = rawLines.findIndex((l) => l.id === lineId);
       if (targetIndex === -1) return;
-      const defaultAgentId = agents[0]?.id ?? "v1";
+      const defaultAgentId = agents?.[0]?.id ?? "v1";
       const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
       const newLines = [...rawLines];
       const insertIndex = position === "above" ? targetIndex : targetIndex + 1;

@@ -870,6 +870,26 @@ const ExportSection: React.FC = () => (
     <p className={PROSE}>
       The counter at the top shows how many lines have timing data. Unsynced lines are skipped in the export.
     </p>
+
+    <div>
+      <h4 className={HEADING}>Recovering a stuck or crashed session</h4>
+      <p className={PROSE}>
+        Composer autosaves to your browser's IndexedDB on every change. If the app errors out, the error screen has a{" "}
+        <strong>Download my work</strong> button that pulls the autosave directly. If the app is frozen and won't
+        respond to clicks, open{" "}
+        <a
+          href="/recover"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        >
+          /recover
+        </a>{" "}
+        in a new tab: it reads the same autosave and downloads it. You can also press{" "}
+        <strong>{MOD_KEY} + Shift + E</strong> anywhere in the app for the same download. Drop the file back into
+        Composer via <strong>Import Project</strong> to continue.
+      </p>
+    </div>
   </div>
 );
 
