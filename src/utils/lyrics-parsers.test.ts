@@ -1,6 +1,3 @@
-/**
- * @vitest-environment node
- */
 import { describe, expect, it } from "vitest";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 
@@ -123,6 +120,54 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
       expect(line.words).toBeUndefined();
     }
     expect(chorusLines.some((l) => l.text.includes("<"))).toBe(false);
+  });
+});
+
+describe("parseLyricsFile - TTML syllable-group inference", () => {
+  it("stamps a shared syllableGroupId on a multi-syllable word in TTML", () => {
+    const content = `<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata">
+  <body>
+    <div>
+      <p begin="00:00:00.000" end="00:00:02.500">
+        <span begin="00:00:00.000" end="00:00:00.500">hello</span>
+        <span begin="00:00:00.500" end="00:00:00.700">ev</span><span begin="00:00:00.700" end="00:00:01.000">er</span><span begin="00:00:01.000" end="00:00:01.500">y </span><span begin="00:00:01.500" end="00:00:02.500">world</span>
+      </p>
+    </div>
+  </body>
+</tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+
+    expect(result.lines).toHaveLength(1);
+    const words = result.lines[0].words;
+    expect(words).toBeDefined();
+    if (!words) return;
+    expect(words.map((w) => w.text.trimEnd())).toEqual(["hello", "ev", "er", "y", "world"]);
+
+    expect(words[0].syllableGroupId).toBeUndefined();
+    expect(words[1].syllableGroupId).toBeDefined();
+    expect(words[1].syllableGroupId).toBe(words[2].syllableGroupId);
+    expect(words[2].syllableGroupId).toBe(words[3].syllableGroupId);
+    expect(words[4].syllableGroupId).toBeUndefined();
+  });
+
+  it("does not assign syllable ids when every word in a TTML line is standalone", () => {
+    const content = `<?xml version="1.0" encoding="UTF-8"?>
+<tt xmlns="http://www.w3.org/ns/ttml">
+  <body>
+    <div>
+      <p begin="00:00:00.000" end="00:00:02.000">
+        <span begin="00:00:00.000" end="00:00:01.000">hello</span> <span begin="00:00:01.000" end="00:00:02.000">world</span>
+      </p>
+    </div>
+  </body>
+</tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+
+    const words = result.lines[0].words;
+    expect(words).toBeDefined();
+    if (!words) return;
+    expect(words.every((w) => w.syllableGroupId === undefined)).toBe(true);
   });
 });
 

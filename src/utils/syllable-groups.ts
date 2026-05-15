@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/stores/project";
+import { nanoid } from "nanoid";
 
 // -- Types --------------------------------------------------------------------
 
@@ -79,7 +80,22 @@ function getSyllablePositions(words: WordTiming[]): SyllablePosition[] {
   return positions;
 }
 
+function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
+  if (words.length === 0) return words;
+  if (words.some((w) => w.syllableGroupId !== undefined)) return words;
+  const groups = computeByTrailingSpace(words);
+  if (groups.length === 0) return words;
+  const result = words.slice();
+  for (const group of groups) {
+    const groupId = nanoid(8);
+    for (let i = group.startIndex; i <= group.endIndex; i++) {
+      result[i] = { ...result[i], syllableGroupId: groupId };
+    }
+  }
+  return result;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { computeSyllableGroups, getSyllablePositions };
+export { computeSyllableGroups, getSyllablePositions, inferSyllableGroupIds };
 export type { SyllablePosition };

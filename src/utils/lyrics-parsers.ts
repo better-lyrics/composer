@@ -1,5 +1,6 @@
 import type { Agent, AgentType, LinkGroup, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
+import { inferSyllableGroupIds } from "@/utils/syllable-groups";
 
 // -- Types --------------------------------------------------------------------
 
@@ -482,7 +483,7 @@ function parseTtml(content: string): ParseResult {
     let backgroundWords: WordTiming[] | undefined;
 
     if (bgContainer) {
-      backgroundWords = extractTimedWords(bgContainer, null);
+      backgroundWords = inferSyllableGroupIds(extractTimedWords(bgContainer, null));
       if (backgroundWords.length > 0) {
         backgroundText = backgroundWords.map((w) => w.text).join("");
       } else {
@@ -491,7 +492,7 @@ function parseTtml(content: string): ParseResult {
     }
 
     // Check for word-level timing (span elements NOT inside x-bg)
-    const words = extractTimedWords(p, bgContainer);
+    const words = inferSyllableGroupIds(extractTimedWords(p, bgContainer));
 
     if (words.length > 0) {
       lines.push({

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
+import { computeSyllableGroups, getSyllablePositions, inferSyllableGroupIds } from "@/utils/syllable-groups";
 import { describe, expect, it } from "vitest";
 
 // -- id-mode -------------------------------------------------------------------
@@ -88,6 +88,58 @@ describe("getSyllablePositions · trailing-space fallback", () => {
 });
 
 // -- computeSyllableGroups (lower-level invariants) ----------------------------
+
+describe("inferSyllableGroupIds", () => {
+  it("stamps a fresh shared id on each multi-word run inferred from trailing-space pattern", () => {
+    const result = inferSyllableGroupIds([
+      { text: "ev", begin: 0, end: 0.2 },
+      { text: "er", begin: 0.2, end: 0.4 },
+      { text: "y ", begin: 0.4, end: 0.6 },
+      { text: "world", begin: 0.6, end: 1 },
+    ]);
+    expect(result[0].syllableGroupId).toBeDefined();
+    expect(result[0].syllableGroupId).toBe(result[1].syllableGroupId);
+    expect(result[1].syllableGroupId).toBe(result[2].syllableGroupId);
+    expect(result[3].syllableGroupId).toBeUndefined();
+  });
+
+  it("emits independent ids for two separate runs in the same array", () => {
+    const result = inferSyllableGroupIds([
+      { text: "ev", begin: 0, end: 0.2 },
+      { text: "er ", begin: 0.2, end: 0.4 },
+      { text: "wi", begin: 0.4, end: 0.6 },
+      { text: "de", begin: 0.6, end: 0.8 },
+    ]);
+    expect(result[0].syllableGroupId).toBeDefined();
+    expect(result[2].syllableGroupId).toBeDefined();
+    expect(result[0].syllableGroupId).toBe(result[1].syllableGroupId);
+    expect(result[2].syllableGroupId).toBe(result[3].syllableGroupId);
+    expect(result[0].syllableGroupId).not.toBe(result[2].syllableGroupId);
+  });
+
+  it("is a no-op when every word is already standalone", () => {
+    const input = [
+      { text: "hello ", begin: 0, end: 1 },
+      { text: "world", begin: 1, end: 2 },
+    ];
+    const result = inferSyllableGroupIds(input);
+    expect(result).toBe(input);
+  });
+
+  it("is a no-op when any word already has an id", () => {
+    const input = [
+      { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+      { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
+      { text: "y", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
+    ];
+    const result = inferSyllableGroupIds(input);
+    expect(result).toBe(input);
+  });
+
+  it("returns an empty array as-is", () => {
+    expect(inferSyllableGroupIds([])).toEqual([]);
+  });
+});
 
 describe("computeSyllableGroups · id-mode", () => {
   it("emits one group per contiguous same-id run", () => {
