@@ -818,7 +818,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const newWords: WordTiming[] = currentWords.map((word, i) => {
         if (i < start || i > end) return word;
         const text = i < end ? word.text.trimEnd() : word.text;
-        return { ...word, syllableGroupId: groupId, text };
+        const nextBegin = i < end ? currentWords[i + 1].begin : undefined;
+        const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
+        return { ...word, syllableGroupId: groupId, text, end: closedEnd };
       });
 
       const lines = state.lines.map((line) => {

@@ -171,6 +171,31 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
 
+  it("closes internal gaps by extending each non-last syllable's end to the next syllable's begin", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "ev er y",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.2 },
+          { text: "er", begin: 0.5, end: 0.7 },
+          { text: "y", begin: 1.0, end: 1.3 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "words", [0, 1, 2]);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].end).toBe(0.5);
+    expect(words[1].end).toBe(1.0);
+    expect(words[2].end).toBe(1.3);
+    expect(words[0].begin).toBe(0);
+    expect(words[1].begin).toBe(0.5);
+    expect(words[2].begin).toBe(1.0);
+  });
+
   it("ignores a missing line", () => {
     useProjectStore.getState().setLines([seedMainLine()]);
     const beforeIndex = useProjectStore.getState().historyIndex;
