@@ -2,11 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { applySiblingWords } from "@/utils/word-diff";
-import {
-  addTrailingSpaceIfMissing,
-  resolveOverlapsForward,
-  trimTrailingSpaceFromLast,
-} from "@/utils/word-spaces";
+import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------

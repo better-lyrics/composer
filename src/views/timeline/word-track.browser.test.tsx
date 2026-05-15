@@ -4,10 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 
-const WORDS = [
-  createWord({ text: "hello ", begin: 0, end: 1 }),
-  createWord({ text: "world", begin: 1, end: 2 }),
-];
+const WORDS = [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })];
 
 const SYLLABLE_GROUP_WORDS = [
   createWord({ text: "hello ", begin: 0, end: 1 }),
