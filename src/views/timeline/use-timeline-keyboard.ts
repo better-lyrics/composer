@@ -412,6 +412,31 @@ function useTimelineKeyboard(
           useTimelineStore.getState().clearSelection();
           break;
         }
+        case "timeline.mergeIntoSyllables": {
+          const { selectedWords: ySel } = useTimelineStore.getState();
+          if (ySel.length < 2) break;
+          const first = ySel[0];
+          if (!ySel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
+          const sorted = ySel.toSorted((a, b) => a.wordIndex - b.wordIndex);
+          let consecutive = true;
+          for (let i = 1; i < sorted.length; i++) {
+            if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) {
+              consecutive = false;
+              break;
+            }
+          }
+          if (!consecutive) break;
+          e.preventDefault();
+          const field = first.type === "word" ? "words" : "backgroundWords";
+          useProjectStore
+            .getState()
+            .mergeWordsIntoSyllableGroup(
+              first.lineId,
+              field,
+              sorted.map((s) => s.wordIndex),
+            );
+          break;
+        }
         case "timeline.splitIntoWords": {
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
