@@ -908,8 +908,9 @@ const RecoverySection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Shortcut</h4>
       <p className={PROSE}>
-        <strong>{MOD_KEY} + Shift + E</strong> downloads your work from anywhere in the app. Handy when things look
-        weird but aren't fully stuck. If the whole tab is frozen, use the /recover tab approach instead.
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.panicRecovery")} /> downloads your work from anywhere in the
+        app. Handy when things look weird but aren't fully stuck. If the whole tab is frozen, use the /recover tab
+        approach instead.
       </p>
     </div>
 

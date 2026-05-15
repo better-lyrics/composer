@@ -35,6 +35,8 @@ describe("HelpSectionContent", () => {
     const text = screen.container.textContent ?? "";
     expect(text).toMatch(/Download my work/);
     expect(text).toMatch(/\/recover/);
-    expect(text).toMatch(/Shift \+ E/);
+    const shortcutBadge = screen.container.querySelector('[data-inline-key-badge]');
+    expect(shortcutBadge).not.toBeNull();
+    expect(shortcutBadge?.textContent).toContain("E");
   });
 });

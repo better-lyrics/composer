@@ -182,7 +182,7 @@ const HELP_SECTIONS: HelpSectionDef[] = [
   { id: "groups", label: "Linked groups", icon: IconLink },
   { id: "preview", label: "Preview", icon: IconEye },
   { id: "exporting", label: "Exporting", icon: IconDownload },
-  { id: "recovery", label: "Recovering your work", icon: IconLifebuoy },
+  { id: "recovery", label: "Recovery", icon: IconLifebuoy },
   { id: "ttml-standards", label: "TTML & standards", icon: IconAward },
   { id: "about", label: "About", icon: IconInfoHexagon },
 ];
