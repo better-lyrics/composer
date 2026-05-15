@@ -263,18 +263,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         role="separator"
         aria-label="Playhead"
         aria-orientation="vertical"
-        className="absolute top-0 left-0 w-0.5 bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
-        style={{
-          height: containerHeight,
-          willChange: "transform",
-          transition: "transform 32ms linear",
-          maskPosition: "-16px 0",
-          WebkitMaskPosition: "-16px 0",
-          maskSize: "calc(100% + 32px) 100%",
-          WebkitMaskSize: "calc(100% + 32px) 100%",
-          maskClip: "no-clip",
-          WebkitMaskClip: "no-clip",
-        }}
+        className="timeline-playhead-bar absolute top-0 left-0 w-0.5 bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
+        style={{ height: containerHeight }}
         onMouseDown={handleMouseDown}
       >
         <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-composer-accent rounded-t expanded-hit-lg" />

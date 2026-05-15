@@ -1,7 +1,38 @@
 import { useProjectStore, type LinkGroup } from "@/stores/project";
 import { GroupBanner } from "@/views/timeline/group-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useState } from "react";
+
+const focusAndSelectOnMount = (el: HTMLInputElement | null) => {
+  if (!el) return;
+  el.focus();
+  el.select();
+};
+
+const RenameInput: React.FC<{
+  initialValue: string;
+  onCommit: (next: string) => void;
+  onCancel: () => void;
+}> = ({ initialValue, onCommit, onCancel }) => {
+  const [value, setValue] = useState(() => initialValue);
+  return (
+    <input
+      ref={focusAndSelectOnMount}
+      type="text"
+      value={value}
+      onChange={(e) => setValue(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onCommit(value);
+        else if (e.key === "Escape") onCancel();
+        e.stopPropagation();
+      }}
+      onBlur={() => onCommit(value)}
+      onClick={(e) => e.stopPropagation()}
+      onDoubleClick={(e) => e.stopPropagation()}
+      className="w-full bg-transparent text-[10px] font-semibold text-composer-text text-center leading-none focus:outline-none px-0"
+    />
+  );
+};
 
 // -- Types ---------------------------------------------------------------------
 
@@ -35,16 +66,6 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
   const isCollapsed = collapsedInstances[`${group.id}:${instanceIdx}`] ?? false;
   const renaming = renamingGroupId === group.id && renamingInstanceIdx === instanceIdx;
-  const [renameValue, setRenameValue] = useState(() => group.label);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (renaming) {
-      setRenameValue(group.label);
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [renaming, group.label]);
 
   const openGroupMenu = useCallback(
     (e: React.MouseEvent) => {
@@ -69,18 +90,20 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
     [clearContextMenu, group.id, instanceIdx, setRenamingGroupId],
   );
 
-  const commitRename = useCallback(() => {
-    const trimmed = renameValue.trim();
-    if (trimmed.length > 0 && trimmed !== group.label) {
-      useProjectStore.getState().updateGroup(group.id, { label: trimmed });
-    }
-    setRenamingGroupId(null);
-  }, [renameValue, group.id, group.label, setRenamingGroupId]);
+  const commitRename = useCallback(
+    (nextValue: string) => {
+      const trimmed = nextValue.trim();
+      if (trimmed.length > 0 && trimmed !== group.label) {
+        useProjectStore.getState().updateGroup(group.id, { label: trimmed });
+      }
+      setRenamingGroupId(null);
+    },
+    [group.id, group.label, setRenamingGroupId],
+  );
 
   const cancelRename = useCallback(() => {
     setRenamingGroupId(null);
-    setRenameValue(group.label);
-  }, [group.label, setRenamingGroupId]);
+  }, [setRenamingGroupId]);
 
   return (
     <div
@@ -98,21 +121,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
         }}
       >
         {renaming ? (
-          <input
-            ref={inputRef}
-            type="text"
-            value={renameValue}
-            onChange={(e) => setRenameValue(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitRename();
-              else if (e.key === "Escape") cancelRename();
-              e.stopPropagation();
-            }}
-            onBlur={commitRename}
-            onClick={(e) => e.stopPropagation()}
-            onDoubleClick={(e) => e.stopPropagation()}
-            className="w-full bg-transparent text-[10px] font-semibold text-composer-text text-center leading-none focus:outline-none px-0"
-          />
+          <RenameInput initialValue={group.label} onCommit={commitRename} onCancel={cancelRename} />
         ) : (
           <button
             type="button"

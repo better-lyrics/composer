@@ -23,7 +23,6 @@ interface GroupBannerProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const BANNER_VERTICAL_INSET = 4;
 const BANNER_MIN_WIDTH = 80;
 const DRAG_THRESHOLD_PX = 3;
 
@@ -175,8 +174,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       variants={pingVariants}
       animate={isPinging ? "ping" : "idle"}
       className={cn(
-        "absolute flex items-center gap-1 rounded-md cursor-grab select-none pl-1.5 pr-2.5",
+        "absolute top-1 bottom-1 flex items-center gap-1 rounded-md select-none pl-1.5 pr-2.5",
         "border text-[10px] font-medium text-composer-text z-[30]",
+        isDragging ? "cursor-grabbing" : "cursor-grab",
       )}
       onPointerDown={handlePointerDown}
       onMouseDown={(e) => e.stopPropagation()}
@@ -184,12 +184,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       style={{
         left,
         width,
-        top: BANNER_VERTICAL_INSET,
-        bottom: BANNER_VERTICAL_INSET,
         background: `color-mix(in srgb, ${group.color} 18%, transparent)`,
         borderColor: `color-mix(in srgb, ${group.color} 60%, transparent)`,
         transform: isDragging ? `translateX(${dragOffsetPx}px)` : undefined,
-        cursor: isDragging ? "grabbing" : "grab",
       }}
     >
       <Button

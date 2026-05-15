@@ -18,7 +18,7 @@ import {
   IconUpload,
 } from "@tabler/icons-react";
 import { Highlight, themes } from "prism-react-renderer";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -38,8 +38,7 @@ const ExportPanel: React.FC = () => {
   const confirm = useConfirm();
 
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editedContent, setEditedContent] = useState<string | null>(null);
+  const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasSyncedContent = useMemo(() => {
@@ -60,13 +59,8 @@ const ExportPanel: React.FC = () => {
     return generateTTML({ metadata, agents, lines, groups, granularity, minify: true, duration });
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
-  // Reset edited content when generated content changes
-  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally reset when generated content changes
-  useEffect(() => {
-    setEditedContent(null);
-    setIsEditing(false);
-  }, [generatedTtml]);
-
+  const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
+  const isEditing = editedContent !== null;
   const displayContent = editedContent ?? generatedTtml;
   const exportContent = editedContent ?? minifiedTtml;
 
@@ -95,15 +89,11 @@ const ExportPanel: React.FC = () => {
   }, [exportContent]);
 
   const handleEdit = useCallback(() => {
-    if (!isEditing) {
-      setEditedContent(displayContent);
-    }
-    setIsEditing(!isEditing);
-  }, [isEditing, displayContent]);
+    setEditState((prev) => (prev ? null : { source: generatedTtml, content: displayContent }));
+  }, [generatedTtml, displayContent]);
 
   const handleRegenerate = useCallback(() => {
-    setEditedContent(null);
-    setIsEditing(false);
+    setEditState(null);
   }, []);
 
   const handleExportProject = useCallback(() => {
@@ -261,7 +251,7 @@ const ExportPanel: React.FC = () => {
         {isEditing ? (
           <textarea
             value={editedContent ?? ""}
-            onChange={(e) => setEditedContent(e.target.value)}
+            onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
             className="w-full h-full p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
             spellCheck={false}
           />

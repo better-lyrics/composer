@@ -112,6 +112,17 @@ body {
   .playhead-yield::before {
     pointer-events: none !important;
   }
+
+  .timeline-playhead-bar {
+    will-change: transform;
+    transition: transform 32ms linear;
+    mask-position: -16px 0;
+    -webkit-mask-position: -16px 0;
+    mask-size: calc(100% + 32px) 100%;
+    -webkit-mask-size: calc(100% + 32px) 100%;
+    mask-clip: no-clip;
+    -webkit-mask-clip: no-clip;
+  }
 }
 
 /* Range input styling */

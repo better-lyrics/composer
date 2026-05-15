@@ -20,10 +20,17 @@ import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { LazyMotion, domAnimation } from "motion/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
 const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: false, refetchOnWindowFocus: false },
+  },
+});
 
 const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
@@ -113,22 +120,24 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <LazyMotion features={domAnimation} strict>
-      <AppContent />
-      <ConfirmModalHost />
-      <DivergenceModalHost />
-      <Toaster
-        theme="dark"
-        position="bottom-center"
-        toastOptions={{
-          style: {
-            background: "var(--color-composer-bg-elevated)",
-            border: "1px solid var(--color-composer-border)",
-            color: "var(--color-composer-text)",
-          },
-        }}
-      />
-    </LazyMotion>
+    <QueryClientProvider client={queryClient}>
+      <LazyMotion features={domAnimation} strict>
+        <AppContent />
+        <ConfirmModalHost />
+        <DivergenceModalHost />
+        <Toaster
+          theme="dark"
+          position="bottom-center"
+          toastOptions={{
+            style: {
+              background: "var(--color-composer-bg-elevated)",
+              border: "1px solid var(--color-composer-border)",
+              color: "var(--color-composer-text)",
+            },
+          }}
+        />
+      </LazyMotion>
+    </QueryClientProvider>
   );
 };
 
