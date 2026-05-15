@@ -9,6 +9,7 @@ import { GROUP_COLORS } from "@/utils/group-colors";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { isMac, MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { absorbDeletedSyllablesIntoNeighbors } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -174,7 +175,8 @@ const TimelineContextMenu: React.FC = () => {
     const wordsArray = type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
-    const remaining = wordsArray.filter((_, i) => i !== wordIndex);
+    const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
+    const remaining = absorbed.filter((_, i) => i !== wordIndex);
     if (type === "word") {
       updateLineWithHistory(lineId, { words: remaining });
     } else {

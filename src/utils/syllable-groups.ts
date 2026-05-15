@@ -95,6 +95,58 @@ function expandSelectionToGroupmates(words: WordTiming[], indices: number[]): nu
   return Array.from(expanded).sort((a, b) => a - b);
 }
 
+function absorbDeletedSyllablesIntoNeighbors(words: WordTiming[], deletedIndices: Iterable<number>): WordTiming[] {
+  const deleted = new Set<number>();
+  for (const i of deletedIndices) deleted.add(i);
+  if (deleted.size === 0) return words;
+
+  const beginExtensions = new Map<number, number>();
+  const endExtensions = new Map<number, number>();
+
+  for (let i = 0; i < words.length; i++) {
+    if (!deleted.has(i)) continue;
+    const groupId = words[i].syllableGroupId;
+    if (groupId === undefined) continue;
+
+    let leftIdx = -1;
+    for (let j = i - 1; j >= 0; j--) {
+      if (words[j].syllableGroupId !== groupId) break;
+      if (!deleted.has(j)) {
+        leftIdx = j;
+        break;
+      }
+    }
+
+    if (leftIdx >= 0) {
+      const cur = endExtensions.get(leftIdx);
+      endExtensions.set(leftIdx, cur === undefined ? words[i].end : Math.max(cur, words[i].end));
+      continue;
+    }
+
+    for (let j = i + 1; j < words.length; j++) {
+      if (words[j].syllableGroupId !== groupId) break;
+      if (!deleted.has(j)) {
+        const cur = beginExtensions.get(j);
+        beginExtensions.set(j, cur === undefined ? words[i].begin : Math.min(cur, words[i].begin));
+        break;
+      }
+    }
+  }
+
+  if (beginExtensions.size === 0 && endExtensions.size === 0) return words;
+
+  return words.map((w, i) => {
+    const newBegin = beginExtensions.get(i);
+    const newEnd = endExtensions.get(i);
+    if (newBegin === undefined && newEnd === undefined) return w;
+    return {
+      ...w,
+      begin: newBegin !== undefined && newBegin < w.begin ? newBegin : w.begin,
+      end: newEnd !== undefined && newEnd > w.end ? newEnd : w.end,
+    };
+  });
+}
+
 function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   if (words.length === 0) return words;
   if (words.some((w) => w.syllableGroupId !== undefined)) return words;
@@ -112,5 +164,11 @@ function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { computeSyllableGroups, expandSelectionToGroupmates, getSyllablePositions, inferSyllableGroupIds };
+export {
+  absorbDeletedSyllablesIntoNeighbors,
+  computeSyllableGroups,
+  expandSelectionToGroupmates,
+  getSyllablePositions,
+  inferSyllableGroupIds,
+};
 export type { SyllablePosition };

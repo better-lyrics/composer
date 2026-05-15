@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import {
+  absorbDeletedSyllablesIntoNeighbors,
   computeSyllableGroups,
   expandSelectionToGroupmates,
   getSyllablePositions,
@@ -93,6 +94,99 @@ describe("getSyllablePositions · trailing-space fallback", () => {
 });
 
 // -- computeSyllableGroups (lower-level invariants) ----------------------------
+
+describe("absorbDeletedSyllablesIntoNeighbors", () => {
+  it("extends the left neighbor's end when a middle syllable is deleted", () => {
+    const result = absorbDeletedSyllablesIntoNeighbors(
+      [
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+      ],
+      [1],
+    );
+    expect(result[0].end).toBe(0.6);
+    expect(result[2].begin).toBe(0.6);
+  });
+
+  it("extends the right neighbor's begin when the first syllable is deleted", () => {
+    const result = absorbDeletedSyllablesIntoNeighbors(
+      [
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+      ],
+      [0],
+    );
+    expect(result[1].begin).toBe(0);
+    expect(result[1].end).toBe(0.6);
+  });
+
+  it("extends the left neighbor's end when the last syllable is deleted", () => {
+    const result = absorbDeletedSyllablesIntoNeighbors(
+      [
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+      ],
+      [2],
+    );
+    expect(result[1].end).toBe(1);
+  });
+
+  it("absorbs a run of consecutive deletes from the front into the right neighbor", () => {
+    const result = absorbDeletedSyllablesIntoNeighbors(
+      [
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+      ],
+      [0, 1],
+    );
+    expect(result[2].begin).toBe(0);
+    expect(result[2].end).toBe(1);
+  });
+
+  it("absorbs a run of consecutive deletes from the back into the left neighbor", () => {
+    const result = absorbDeletedSyllablesIntoNeighbors(
+      [
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+      ],
+      [1, 2],
+    );
+    expect(result[0].end).toBe(1);
+  });
+
+  it("does not touch words outside the deleted syllable's group", () => {
+    const input = [
+      { text: "hello ", begin: 0, end: 1 },
+      { text: "ev", begin: 1, end: 1.3, syllableGroupId: "g1" },
+      { text: "er", begin: 1.3, end: 1.6, syllableGroupId: "g1" },
+      { text: "y", begin: 1.6, end: 2, syllableGroupId: "g1" },
+      { text: "world", begin: 2, end: 3 },
+    ];
+    const result = absorbDeletedSyllablesIntoNeighbors(input, [2]);
+    expect(result[0]).toBe(input[0]);
+    expect(result[4]).toBe(input[4]);
+    expect(result[1].end).toBe(1.6);
+  });
+
+  it("is a no-op for a deleted standalone (non-group) word", () => {
+    const input = [
+      { text: "hello", begin: 0, end: 1 },
+      { text: "world", begin: 1, end: 2 },
+    ];
+    const result = absorbDeletedSyllablesIntoNeighbors(input, [0]);
+    expect(result).toBe(input);
+  });
+
+  it("returns the input array when nothing is deleted", () => {
+    const input = [{ text: "ev", begin: 0, end: 1, syllableGroupId: "g1" }];
+    expect(absorbDeletedSyllablesIntoNeighbors(input, [])).toBe(input);
+  });
+});
 
 describe("expandSelectionToGroupmates", () => {
   const words = [
