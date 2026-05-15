@@ -22,6 +22,17 @@ function formatSavedAt(savedAt: number | undefined): string {
   }
 }
 
+// Middle-ellipsis truncation so the extension stays visible. End-truncation
+// (CSS text-overflow) would hide ".ttml-project.json" which is the most
+// useful part for the user to recognise.
+function truncateMiddle(text: string, max: number): string {
+  if (text.length <= max) return text;
+  const keep = max - 1;
+  const head = Math.ceil(keep / 2);
+  const tail = Math.floor(keep / 2);
+  return `${text.slice(0, head)}…${text.slice(text.length - tail)}`;
+}
+
 // -- Component -----------------------------------------------------------------
 
 type RecoveryState =
@@ -93,10 +104,13 @@ const RecoverPanel: React.FC = () => {
         {state.phase === "reading" && <p className="text-xs text-composer-text-muted">Looking for your work…</p>}
 
         {state.phase === "downloaded" && (
-          <div className="flex flex-col items-center gap-2 text-sm">
-            <p className="inline-flex items-center gap-2 text-composer-text">
-              <IconCheck size={16} className="text-green-400" />
-              Downloaded as <span className="font-mono text-xs select-text">{state.result.filename}</span>
+          <div className="flex flex-col items-center gap-2 text-sm max-w-full">
+            <p className="inline-flex items-center gap-2 text-composer-text max-w-full flex-wrap justify-center">
+              <IconCheck size={16} className="text-green-400 shrink-0" />
+              <span className="shrink-0">Downloaded as</span>
+              <span className="font-mono text-xs select-text" title={state.result.filename}>
+                {truncateMiddle(state.result.filename, 44)}
+              </span>
             </p>
             <p className="text-xs text-composer-text-muted select-text">
               {state.result.lineCount} lines, last edited {formatSavedAt(state.result.savedAt)}
