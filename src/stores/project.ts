@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { nanoid } from "nanoid";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -142,6 +143,7 @@ interface ProjectActions {
     extraUpdates?: Partial<LyricLine>,
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
@@ -795,6 +797,36 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
     get().applyWordCountChange(lineId, newWords, field, "apply");
   },
+
+  mergeWordsIntoSyllableGroup: (lineId, field, wordIndices) =>
+    set((state) => {
+      if (wordIndices.length < 2) return state;
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const currentWords = target[field];
+      if (!currentWords || currentWords.length === 0) return state;
+
+      const sorted = [...wordIndices].sort((a, b) => a - b);
+      const start = sorted[0];
+      const end = sorted[sorted.length - 1];
+      if (start < 0 || end >= currentWords.length) return state;
+      for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] !== sorted[i - 1] + 1) return state;
+      }
+
+      const groupId = nanoid(8);
+      const newWords: WordTiming[] = currentWords.map((word, i) => {
+        if (i < start || i > end) return word;
+        const text = i < end ? word.text.trimEnd() : word.text;
+        return { ...word, syllableGroupId: groupId, text };
+      });
+
+      const lines = state.lines.map((line) => {
+        if (line.id !== lineId) return line;
+        return { ...line, [field]: newWords };
+      });
+      return commitHistory(state, { lines });
+    }),
 
   markWordsExplicit: (targets, value) =>
     set((state) => {
