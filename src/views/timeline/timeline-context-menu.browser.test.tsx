@@ -94,7 +94,7 @@ describe("TimelineContextMenu", () => {
     expect(words.every((w) => w.syllableGroupId === words[0].syllableGroupId)).toBe(true);
   });
 
-  it("shows 'Detach syllable from word' on a syllable-group word and strips its id when clicked", async () => {
+  it("shows 'Detach syllable from word' on a syllable-group word and dissolves the whole group when clicked", async () => {
     const line = createLine({
       words: [
         createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
@@ -120,9 +120,9 @@ describe("TimelineContextMenu", () => {
     detachBtn?.click();
 
     const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].syllableGroupId).toBe("g_every");
+    expect(words[0].syllableGroupId).toBeUndefined();
     expect(words[1].syllableGroupId).toBeUndefined();
-    expect(words[2].syllableGroupId).toBe("g_every");
+    expect(words[2].syllableGroupId).toBeUndefined();
   });
 
   it("hides 'Detach syllable from word' on a standalone word", async () => {

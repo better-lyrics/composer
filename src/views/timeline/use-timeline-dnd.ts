@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
-import { type LyricLine, useProjectStore } from "@/stores/project";
-import { absorbDeletedSyllablesIntoNeighbors, expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applyShiftDragCrossTrack } from "@/views/timeline/apply-shift-drag-cross-track";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
@@ -378,14 +378,21 @@ function useTimelineDnd(lines: LyricLine[]) {
         const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
         const newEnd = newBegin + wordDuration;
 
-        const baseWords = isShiftDrag ? absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]) : [...wordsArray];
-        const words = isShiftDrag ? [...baseWords] : baseWords;
-        if (isShiftDrag) {
-          const { syllableGroupId: _drop, ...rest } = words[wordIndex];
-          words[wordIndex] = { ...rest, begin: newBegin, end: newEnd };
-        } else {
-          words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
-        }
+        const draggedGroupId = isShiftDrag ? wordsArray[wordIndex].syllableGroupId : undefined;
+        const words: WordTiming[] = wordsArray.map((w, i) => {
+          if (i === wordIndex) {
+            if (isShiftDrag) {
+              const { syllableGroupId: _drop, ...rest } = w;
+              return { ...rest, begin: newBegin, end: newEnd };
+            }
+            return { ...w, begin: newBegin, end: newEnd };
+          }
+          if (draggedGroupId !== undefined && w.syllableGroupId === draggedGroupId) {
+            const { syllableGroupId: _drop, ...rest } = w;
+            return rest;
+          }
+          return { ...w };
+        });
         words.sort((a, b) => a.begin - b.begin);
 
         for (let i = 1; i < words.length; i++) {

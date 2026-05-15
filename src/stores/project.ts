@@ -841,11 +841,11 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (!target) return state;
       const currentWords = target[field];
       if (!currentWords || wordIndex < 0 || wordIndex >= currentWords.length) return state;
-      const word = currentWords[wordIndex];
-      if (word.syllableGroupId === undefined) return state;
+      const groupId = currentWords[wordIndex].syllableGroupId;
+      if (groupId === undefined) return state;
 
-      const newWords: WordTiming[] = currentWords.map((w, i) => {
-        if (i !== wordIndex) return w;
+      const newWords: WordTiming[] = currentWords.map((w) => {
+        if (w.syllableGroupId !== groupId) return w;
         const { syllableGroupId: _drop, ...rest } = w;
         return rest;
       });

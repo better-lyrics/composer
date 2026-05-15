@@ -1,6 +1,14 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+
+function dissolveGroupAround(words: WordTiming[], groupId: string | undefined): WordTiming[] {
+  if (groupId === undefined) return words;
+  return words.map((w) => {
+    if (w.syllableGroupId !== groupId) return w;
+    const { syllableGroupId: _drop, ...rest } = w;
+    return rest;
+  });
+}
 
 function applyShiftDragCrossTrack(
   line: LyricLine,
@@ -20,8 +28,8 @@ function applyShiftDragCrossTrack(
   const { syllableGroupId: _drop, ...rest } = sourceWord;
   const detachedWord: WordTiming = { ...rest, begin: newBegin, end: newEnd };
 
-  const absorbed = absorbDeletedSyllablesIntoNeighbors(sourceArray, [wordIndex]);
-  const remainingSource = trimTrailingSpaceFromLast(absorbed.filter((_, i) => i !== wordIndex));
+  const dissolved = dissolveGroupAround(sourceArray, sourceWord.syllableGroupId);
+  const remainingSource = trimTrailingSpaceFromLast(dissolved.filter((_, i) => i !== wordIndex));
 
   const destArray = fromTrack === "word" ? line.backgroundWords : line.words;
   const destExisting = destArray ?? [];

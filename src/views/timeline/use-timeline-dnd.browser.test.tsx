@@ -104,6 +104,8 @@ describe("useTimelineDnd · live shift state", () => {
     const after = useProjectStore.getState().lines[0];
     expect(after.words?.length).toBe(2);
     expect(after.words?.map((w) => w.text)).toEqual(["ev", "y"]);
+    expect(after.words?.[0].syllableGroupId).toBeUndefined();
+    expect(after.words?.[1].syllableGroupId).toBeUndefined();
     expect(after.backgroundWords?.length).toBe(1);
     expect(after.backgroundWords?.[0].text).toBe("er");
     expect(after.backgroundWords?.[0].syllableGroupId).toBeUndefined();

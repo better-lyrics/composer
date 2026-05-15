@@ -8,7 +8,7 @@ import { applyShiftDragCrossTrack } from "./apply-shift-drag-cross-track";
 const DURATION = 30;
 
 describe("applyShiftDragCrossTrack", () => {
-  it("detaches a single syllable from a 3-syllable group when moving main → bg", () => {
+  it("dissolves the entire source group when moving one syllable main → bg", () => {
     const line: LyricLine = {
       id: "l1",
       text: "every",
@@ -26,8 +26,8 @@ describe("applyShiftDragCrossTrack", () => {
     expect(result?.words?.length).toBe(2);
     expect(result?.words?.[0].text).toBe("ev");
     expect(result?.words?.[1].text).toBe("y");
-    expect(result?.words?.[0].syllableGroupId).toBe("g");
-    expect(result?.words?.[1].syllableGroupId).toBe("g");
+    expect(result?.words?.[0].syllableGroupId).toBeUndefined();
+    expect(result?.words?.[1].syllableGroupId).toBeUndefined();
 
     expect(result?.backgroundWords?.length).toBe(1);
     expect(result?.backgroundWords?.[0].text).toBe("er");
@@ -35,7 +35,7 @@ describe("applyShiftDragCrossTrack", () => {
     expect(result?.backgroundWords?.[0].begin).toBeCloseTo(5.3, 5);
   });
 
-  it("absorbs the dragged syllable's timing into the left neighbor", () => {
+  it("leaves the surviving syllables' timing intact (no absorb)", () => {
     const line: LyricLine = {
       id: "l1",
       text: "every",
@@ -49,12 +49,38 @@ describe("applyShiftDragCrossTrack", () => {
 
     const result = applyShiftDragCrossTrack(line, "word", 1, 5, DURATION);
 
-    expect(result?.words?.[0].end).toBeCloseTo(0.6, 5);
+    expect(result?.words?.[0].begin).toBeCloseTo(0, 5);
+    expect(result?.words?.[0].end).toBeCloseTo(0.3, 5);
     expect(result?.words?.[1].begin).toBeCloseTo(0.6, 5);
     expect(result?.words?.[1].end).toBeCloseTo(0.9, 5);
   });
 
-  it("detaches a syllable when moving bg → main", () => {
+  it("only dissolves the dragged word's group, leaving other groups in the line intact", () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "every wide",
+      agentId: "v1",
+      words: [
+        { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+        { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
+        { text: "y ", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
+        { text: "wi", begin: 0.6, end: 0.8, syllableGroupId: "g2" },
+        { text: "de", begin: 0.8, end: 1, syllableGroupId: "g2" },
+      ],
+    };
+
+    const result = applyShiftDragCrossTrack(line, "word", 1, 5, DURATION);
+
+    expect(result?.words?.length).toBe(4);
+    expect(result?.words?.[0].syllableGroupId).toBeUndefined();
+    expect(result?.words?.[1].syllableGroupId).toBeUndefined();
+    const wi = result?.words?.find((w) => w.text === "wi");
+    const de = result?.words?.find((w) => w.text === "de");
+    expect(wi?.syllableGroupId).toBe("g2");
+    expect(de?.syllableGroupId).toBe("g2");
+  });
+
+  it("dissolves the source group when moving one syllable bg → main", () => {
     const line: LyricLine = {
       id: "l1",
       text: "main",
@@ -72,7 +98,9 @@ describe("applyShiftDragCrossTrack", () => {
 
     expect(result?.backgroundWords?.length).toBe(2);
     expect(result?.backgroundWords?.[0].text).toBe("ev");
+    expect(result?.backgroundWords?.[0].syllableGroupId).toBeUndefined();
     expect(result?.backgroundWords?.[1].text).toBe("y");
+    expect(result?.backgroundWords?.[1].syllableGroupId).toBeUndefined();
 
     expect(result?.words?.length).toBe(2);
     const detached = result?.words?.find((w) => w.text === "er");

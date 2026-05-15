@@ -209,7 +209,7 @@ describe("mergeWordsIntoSyllableGroup", () => {
 // -- detachSyllableFromGroup --------------------------------------------------
 
 describe("detachSyllableFromGroup", () => {
-  it("strips the syllableGroupId from a single targeted syllable", () => {
+  it("dissolves the entire group, stripping syllableGroupId from every member", () => {
     useProjectStore.getState().setLines([
       {
         id: "line-1",
@@ -226,9 +226,35 @@ describe("detachSyllableFromGroup", () => {
     useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
 
     const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].syllableGroupId).toBe("g1");
+    expect(words[0].syllableGroupId).toBeUndefined();
     expect(words[1].syllableGroupId).toBeUndefined();
-    expect(words[2].syllableGroupId).toBe("g1");
+    expect(words[2].syllableGroupId).toBeUndefined();
+  });
+
+  it("only dissolves the target group, leaving other groups in the same line intact", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every wide",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
+          { text: "y ", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
+          { text: "wi", begin: 0.6, end: 0.8, syllableGroupId: "g2" },
+          { text: "de", begin: 0.8, end: 1, syllableGroupId: "g2" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].syllableGroupId).toBeUndefined();
+    expect(words[1].syllableGroupId).toBeUndefined();
+    expect(words[2].syllableGroupId).toBeUndefined();
+    expect(words[3].syllableGroupId).toBe("g2");
+    expect(words[4].syllableGroupId).toBe("g2");
   });
 
   it("is undoable", () => {
@@ -251,6 +277,26 @@ describe("detachSyllableFromGroup", () => {
 
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words.every((w) => w.syllableGroupId === "g1")).toBe(true);
+  });
+
+  it("dissolves the group when called on any member (not just the middle one)", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 0);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.every((w) => w.syllableGroupId === undefined)).toBe(true);
   });
 
   it("is a no-op when the target word has no syllableGroupId", () => {
