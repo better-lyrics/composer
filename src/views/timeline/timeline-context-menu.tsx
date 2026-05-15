@@ -9,7 +9,7 @@ import { GROUP_COLORS } from "@/utils/group-colors";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { isMac, MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
@@ -201,10 +201,13 @@ const TimelineContextMenu: React.FC = () => {
       return;
     }
 
-    const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
-    const sorted = [...(existingWords ?? []), newWord].sort((a, b) => a.begin - b.begin);
+    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
+    const existing = existingWords ?? [];
+    const prevLast = existing[existing.length - 1];
+    const sorted = [...existing, newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = sorted.indexOf(newWord);
-    const words = normalizeTrailingSpaces(sorted);
+    const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
+    const words = trimTrailingSpaceFromLast(reconciled);
 
     if (type === "word") {
       updateLineWithHistory(lineId, { words });

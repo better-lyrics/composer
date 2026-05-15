@@ -3,7 +3,7 @@ import type { WordTiming } from "@/stores/project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
-import { findInsertionSlot, normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { selfKey } from "@/views/timeline/snap";
 import { isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -339,10 +339,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const slot = findInsertionSlot(words, time, wordDuration, audioDuration);
     if (!slot) return;
 
-    const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
+    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
+    const prevLast = words[words.length - 1];
     const sorted = [...words, newWord].sort((a, b) => a.begin - b.begin);
     const newIndex = sorted.indexOf(newWord);
-    const newWords = normalizeTrailingSpaces(sorted);
+    const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
+    const newWords = trimTrailingSpaceFromLast(reconciled);
 
     const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
     if (trackType === "word") {
