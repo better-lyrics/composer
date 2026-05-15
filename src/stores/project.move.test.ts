@@ -210,6 +210,27 @@ describe("cross-track moves and history", () => {
     useProjectStore.getState().moveWordToBg("nonexistent", [0], 0, DURATION);
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
+
+  it("clears line.begin/end when bg→main populates main from empty", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "ooh",
+        agentId: "v1",
+        begin: 5,
+        end: 10,
+        backgroundWords: [{ text: "ooh", begin: 6, end: 7 }],
+        backgroundText: "ooh",
+      },
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.length).toBe(1);
+    expect(line.begin).toBeUndefined();
+    expect(line.end).toBeUndefined();
+  });
 });
 
 // -- linked-instance propagation -----------------------------------------------

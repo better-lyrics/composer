@@ -1022,11 +1022,15 @@ function applyMoveFromBg(
   const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
 
   const hasBg = remainingBg.length > 0;
+  const hadNoMainBefore = !line.words || line.words.length === 0;
+  const mainNowPopulated = mergedMain.length > 0;
   return {
     ...line,
     words: mergedMain,
     backgroundWords: hasBg ? remainingBg : undefined,
     backgroundText: hasBg ? remainingBg.map((w) => w.text).join("") : undefined,
+    begin: hadNoMainBefore && mainNowPopulated ? undefined : line.begin,
+    end: hadNoMainBefore && mainNowPopulated ? undefined : line.end,
   };
 }
 

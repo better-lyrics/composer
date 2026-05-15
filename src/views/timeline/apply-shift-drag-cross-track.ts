@@ -50,10 +50,14 @@ function applyShiftDragCrossTrack(
   }
 
   const hasBg = remainingSource.length > 0;
+  const hadNoMainBefore = !line.words || line.words.length === 0;
+  const mainNowPopulated = mergedDest.length > 0;
   return {
     words: mergedDest,
     backgroundWords: hasBg ? remainingSource : undefined,
     backgroundText: hasBg ? remainingSource.map((w) => w.text).join("") : undefined,
+    begin: hadNoMainBefore && mainNowPopulated ? undefined : line.begin,
+    end: hadNoMainBefore && mainNowPopulated ? undefined : line.end,
   };
 }
 

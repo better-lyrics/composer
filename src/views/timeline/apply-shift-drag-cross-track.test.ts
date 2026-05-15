@@ -109,6 +109,24 @@ describe("applyShiftDragCrossTrack", () => {
     expect(detached?.begin).toBeCloseTo(6.3, 5);
   });
 
+  it("clears line.begin/end when bg → main populates main from empty", () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "solo",
+      agentId: "v1",
+      begin: 5,
+      end: 10,
+      backgroundText: "solo",
+      backgroundWords: [{ text: "solo", begin: 6, end: 7 }],
+    };
+
+    const result = applyShiftDragCrossTrack(line, "bg", 0, 0, DURATION);
+
+    expect(result?.words?.length).toBe(1);
+    expect(result?.begin).toBeUndefined();
+    expect(result?.end).toBeUndefined();
+  });
+
   it("clears bg fields when bg → main empties the bg array", () => {
     const line: LyricLine = {
       id: "l1",
