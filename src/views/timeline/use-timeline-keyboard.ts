@@ -428,13 +428,11 @@ function useTimelineKeyboard(
           if (!consecutive) break;
           e.preventDefault();
           const field = first.type === "word" ? "words" : "backgroundWords";
-          useProjectStore
-            .getState()
-            .mergeWordsIntoSyllableGroup(
-              first.lineId,
-              field,
-              sorted.map((s) => s.wordIndex),
-            );
+          useProjectStore.getState().mergeWordsIntoSyllableGroup(
+            first.lineId,
+            field,
+            sorted.map((s) => s.wordIndex),
+          );
           break;
         }
         case "timeline.splitIntoWords": {

@@ -426,13 +426,11 @@ const TimelineContextMenu: React.FC = () => {
     if (!syllableGroupInfo) return;
     const { sorted, lineId, type } = syllableGroupInfo;
     const field = type === "word" ? "words" : "backgroundWords";
-    useProjectStore
-      .getState()
-      .mergeWordsIntoSyllableGroup(
-        lineId,
-        field,
-        sorted.map((s) => s.wordIndex),
-      );
+    useProjectStore.getState().mergeWordsIntoSyllableGroup(
+      lineId,
+      field,
+      sorted.map((s) => s.wordIndex),
+    );
     clearContextMenu();
   }, [syllableGroupInfo, clearContextMenu]);
 
