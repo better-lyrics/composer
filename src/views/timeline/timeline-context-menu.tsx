@@ -746,7 +746,12 @@ const TimelineContextMenu: React.FC = () => {
               </>
             )}
             <MenuDivider />
-            <MenuItem label="Delete word" shortcut={["Del"]} onClick={handleDeleteWord} danger />
+            <MenuItem
+              label={detachSyllableInfo ? "Delete syllable" : "Delete word"}
+              shortcut={["Del"]}
+              onClick={handleDeleteWord}
+              danger
+            />
           </>
         )}
 

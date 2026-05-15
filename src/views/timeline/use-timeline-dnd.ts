@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
-import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { absorbDeletedSyllablesIntoNeighbors, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
@@ -338,7 +338,8 @@ function useTimelineDnd(lines: LyricLine[]) {
         const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
         const newEnd = newBegin + wordDuration;
 
-        const words = [...wordsArray];
+        const baseWords = isShiftDrag ? absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]) : [...wordsArray];
+        const words = isShiftDrag ? [...baseWords] : baseWords;
         if (isShiftDrag) {
           const { syllableGroupId: _drop, ...rest } = words[wordIndex];
           words[wordIndex] = { ...rest, begin: newBegin, end: newEnd };

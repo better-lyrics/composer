@@ -23,6 +23,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
@@ -279,9 +280,33 @@ const TimelinePanel: React.FC = () => {
     const anchorHeight =
       activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
 
-    const wordsToShow = inSelection && selectedWords.length > 1 ? selectedWords : null;
+    const baseSelections =
+      inSelection && selectedWords.length > 1
+        ? selectedWords
+        : [
+            {
+              lineId: activeDrag.lineId,
+              lineIndex: activeDrag.lineIndex,
+              wordIndex: activeDrag.wordIndex,
+              type: activeDrag.trackType,
+            },
+          ];
 
-    if (!wordsToShow) {
+    const wordsToShow: typeof baseSelections = [];
+    const seen = new Set<string>();
+    for (const sel of baseSelections) {
+      const line = effectiveLines.find((l) => l.id === sel.lineId);
+      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
+      if (!line || !wordsArray) continue;
+      for (const idx of expandSelectionToGroupmates(wordsArray, [sel.wordIndex])) {
+        const key = `${sel.lineId}:${sel.type}:${idx}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        wordsToShow.push({ lineId: sel.lineId, lineIndex: sel.lineIndex, wordIndex: idx, type: sel.type });
+      }
+    }
+
+    if (wordsToShow.length <= 1) {
       const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
       return {
         cells: [
