@@ -274,6 +274,86 @@ describe("applySiblingWords · explicit flag propagation", () => {
   });
 });
 
+describe("applySiblingWords · syllableGroupId propagation", () => {
+  it("new-word run inherits syllableGroupId from bracket siblings when both share an id", () => {
+    const sourceBefore: WordTiming[] = [
+      { text: "ev", begin: 0, end: 0.3 },
+      { text: "er", begin: 0.3, end: 0.6 },
+      { text: "y", begin: 0.6, end: 0.9 },
+    ];
+    const sourceAfter: WordTiming[] = [
+      { text: "e", begin: 0, end: 0.15 },
+      { text: "v", begin: 0.15, end: 0.3 },
+      { text: "er", begin: 0.3, end: 0.6 },
+      { text: "y", begin: 0.6, end: 0.9 },
+    ];
+    const sibling: WordTiming[] = [
+      { text: "ev", begin: 30, end: 30.3, syllableGroupId: "g_s" },
+      { text: "er", begin: 30.3, end: 30.6, syllableGroupId: "g_s" },
+      { text: "y", begin: 30.6, end: 30.9, syllableGroupId: "g_s" },
+    ];
+    const result = applySiblingWords(sourceAfter, sourceBefore, sibling);
+    expect(result![0].syllableGroupId).toBe("g_s");
+    expect(result![1].syllableGroupId).toBe("g_s");
+    expect(result![2].syllableGroupId).toBe("g_s");
+    expect(result![3].syllableGroupId).toBe("g_s");
+  });
+
+  it("new-word run leaves syllableGroupId undefined when no bracket has an id", () => {
+    const sourceBefore: WordTiming[] = [
+      { text: "hello ", begin: 0, end: 0.5 },
+      { text: "world", begin: 0.5, end: 1 },
+    ];
+    const sourceAfter: WordTiming[] = [
+      { text: "hello ", begin: 0, end: 0.3 },
+      { text: "there ", begin: 0.3, end: 0.6 },
+      { text: "world", begin: 0.6, end: 1 },
+    ];
+    const sibling: WordTiming[] = [
+      { text: "hello ", begin: 30, end: 30.4 },
+      { text: "world", begin: 30.4, end: 31 },
+    ];
+    const result = applySiblingWords(sourceAfter, sourceBefore, sibling);
+    expect(result![1].syllableGroupId).toBeUndefined();
+  });
+
+  it("new-word run at array start inherits from right bracket only", () => {
+    const sourceBefore: WordTiming[] = [
+      { text: "er", begin: 0.3, end: 0.6 },
+      { text: "y", begin: 0.6, end: 0.9 },
+    ];
+    const sourceAfter: WordTiming[] = [
+      { text: "ev", begin: 0, end: 0.3 },
+      { text: "er", begin: 0.3, end: 0.6 },
+      { text: "y", begin: 0.6, end: 0.9 },
+    ];
+    const sibling: WordTiming[] = [
+      { text: "er", begin: 30.3, end: 30.6, syllableGroupId: "g_s" },
+      { text: "y", begin: 30.6, end: 30.9, syllableGroupId: "g_s" },
+    ];
+    const result = applySiblingWords(sourceAfter, sourceBefore, sibling);
+    expect(result![0].syllableGroupId).toBe("g_s");
+  });
+
+  it("matched words preserve their existing sibling syllableGroupId", () => {
+    const sourceBefore: WordTiming[] = [
+      { text: "ev", begin: 0, end: 0.3 },
+      { text: "er", begin: 0.3, end: 0.6 },
+    ];
+    const sourceAfter: WordTiming[] = [
+      { text: "ev", begin: 0, end: 0.3 },
+      { text: "er", begin: 0.3, end: 0.6 },
+    ];
+    const sibling: WordTiming[] = [
+      { text: "ev", begin: 30, end: 30.3, syllableGroupId: "g_s" },
+      { text: "er", begin: 30.3, end: 30.6, syllableGroupId: "g_s" },
+    ];
+    const result = applySiblingWords(sourceAfter, sourceBefore, sibling);
+    expect(result![0].syllableGroupId).toBe("g_s");
+    expect(result![1].syllableGroupId).toBe("g_s");
+  });
+});
+
 describe("applySiblingWords · fallback paths", () => {
   it("falls back to proportional remap when sibling word count differs from sourceBefore (sibling already diverged)", () => {
     const sourceBefore: WordTiming[] = [

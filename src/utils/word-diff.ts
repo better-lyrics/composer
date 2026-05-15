@@ -1,5 +1,6 @@
 import type { WordTiming } from "@/stores/project";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { synthesizeBracketedWord } from "@/utils/word-timing";
 
 // Normalizes a word's text for diff comparison: strips split characters and
 // trailing whitespace so "love" matches "love " etc.
@@ -130,27 +131,32 @@ function applySiblingWords(
     const slotSpan = slotEnd - slotStart;
     const runLen = runEnd - i;
 
+    const leftBracket = lastMatchedBefore >= 0 ? siblingWords[lastMatchedBefore] : undefined;
+    const rightBracket = nextMatchedBefore < siblingWords.length ? siblingWords[nextMatchedBefore] : undefined;
+
     for (let k = i; k < runEnd; k++) {
       const w = sourceAfter[k];
-      const explicitExtra = w.explicit ? { explicit: true as const } : {};
+      let begin: number;
+      let end: number;
       if (sourceSegSpan > 0 && slotSpan > 0) {
-        result[k] = {
-          text: w.text,
-          begin: slotStart + ((w.begin - sourceSegStart) / sourceSegSpan) * slotSpan,
-          end: slotStart + ((w.end - sourceSegStart) / sourceSegSpan) * slotSpan,
-          ...explicitExtra,
-        };
+        begin = slotStart + ((w.begin - sourceSegStart) / sourceSegSpan) * slotSpan;
+        end = slotStart + ((w.end - sourceSegStart) / sourceSegSpan) * slotSpan;
       } else if (slotSpan > 0) {
         const each = slotSpan / runLen;
-        result[k] = {
-          text: w.text,
-          begin: slotStart + each * (k - i),
-          end: slotStart + each * (k - i + 1),
-          ...explicitExtra,
-        };
+        begin = slotStart + each * (k - i);
+        end = slotStart + each * (k - i + 1);
       } else {
-        result[k] = { text: w.text, begin: slotStart, end: slotStart, ...explicitExtra };
+        begin = slotStart;
+        end = slotStart;
       }
+      result[k] = synthesizeBracketedWord({
+        text: w.text,
+        begin,
+        end,
+        leftBracket,
+        rightBracket,
+        explicit: w.explicit ?? false,
+      });
     }
 
     i = runEnd;
