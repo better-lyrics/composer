@@ -1,7 +1,12 @@
 /**
  * @vitest-environment node
  */
-import { computeSyllableGroups, getSyllablePositions, inferSyllableGroupIds } from "@/utils/syllable-groups";
+import {
+  computeSyllableGroups,
+  expandSelectionToGroupmates,
+  getSyllablePositions,
+  inferSyllableGroupIds,
+} from "@/utils/syllable-groups";
 import { describe, expect, it } from "vitest";
 
 // -- id-mode -------------------------------------------------------------------
@@ -88,6 +93,60 @@ describe("getSyllablePositions · trailing-space fallback", () => {
 });
 
 // -- computeSyllableGroups (lower-level invariants) ----------------------------
+
+describe("expandSelectionToGroupmates", () => {
+  const words = [
+    { text: "hello ", begin: 0, end: 1 },
+    { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g1" },
+    { text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g1" },
+    { text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g1" },
+    { text: "world", begin: 1.8, end: 2.5 },
+    { text: "wi", begin: 2.5, end: 2.7, syllableGroupId: "g2" },
+    { text: "de", begin: 2.7, end: 3, syllableGroupId: "g2" },
+  ];
+
+  it("returns the input set unchanged when no selected word is part of a group", () => {
+    expect(expandSelectionToGroupmates(words, [0])).toEqual([0]);
+    expect(expandSelectionToGroupmates(words, [0, 4])).toEqual([0, 4]);
+  });
+
+  it("expands a partial selection to include all groupmates of any selected syllable", () => {
+    expect(expandSelectionToGroupmates(words, [2])).toEqual([1, 2, 3]);
+    expect(expandSelectionToGroupmates(words, [1, 2])).toEqual([1, 2, 3]);
+    expect(expandSelectionToGroupmates(words, [3])).toEqual([1, 2, 3]);
+  });
+
+  it("preserves the indices of selected standalone words alongside expanded groupmates", () => {
+    expect(expandSelectionToGroupmates(words, [0, 2])).toEqual([0, 1, 2, 3]);
+    expect(expandSelectionToGroupmates(words, [4, 6])).toEqual([4, 5, 6]);
+  });
+
+  it("handles selection that touches multiple separate groups", () => {
+    expect(expandSelectionToGroupmates(words, [2, 5])).toEqual([1, 2, 3, 5, 6]);
+  });
+
+  it("returns sorted unique indices", () => {
+    expect(expandSelectionToGroupmates(words, [3, 2, 1])).toEqual([1, 2, 3]);
+    expect(expandSelectionToGroupmates(words, [2, 2])).toEqual([1, 2, 3]);
+  });
+
+  it("returns an empty array for empty input", () => {
+    expect(expandSelectionToGroupmates(words, [])).toEqual([]);
+  });
+
+  it("ignores out-of-bounds indices", () => {
+    expect(expandSelectionToGroupmates(words, [99])).toEqual([]);
+    expect(expandSelectionToGroupmates(words, [2, 99])).toEqual([1, 2, 3]);
+  });
+
+  it("does not expand a single-word group (since no group is emitted)", () => {
+    const single = [
+      { text: "hi", begin: 0, end: 1, syllableGroupId: "g1" },
+      { text: "world", begin: 1, end: 2 },
+    ];
+    expect(expandSelectionToGroupmates(single, [0])).toEqual([0]);
+  });
+});
 
 describe("inferSyllableGroupIds", () => {
   it("stamps a fresh shared id on each multi-word run inferred from trailing-space pattern", () => {

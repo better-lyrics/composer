@@ -80,6 +80,21 @@ function getSyllablePositions(words: WordTiming[]): SyllablePosition[] {
   return positions;
 }
 
+function expandSelectionToGroupmates(words: WordTiming[], indices: number[]): number[] {
+  const inBounds = indices.filter((i) => i >= 0 && i < words.length);
+  if (inBounds.length === 0) return [];
+  const expanded = new Set<number>(inBounds);
+  const groups = computeSyllableGroups(words);
+  for (const idx of inBounds) {
+    for (const group of groups) {
+      if (idx >= group.startIndex && idx <= group.endIndex) {
+        for (let i = group.startIndex; i <= group.endIndex; i++) expanded.add(i);
+      }
+    }
+  }
+  return Array.from(expanded).sort((a, b) => a - b);
+}
+
 function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   if (words.length === 0) return words;
   if (words.some((w) => w.syllableGroupId !== undefined)) return words;
@@ -97,5 +112,5 @@ function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { computeSyllableGroups, getSyllablePositions, inferSyllableGroupIds };
+export { computeSyllableGroups, expandSelectionToGroupmates, getSyllablePositions, inferSyllableGroupIds };
 export type { SyllablePosition };
