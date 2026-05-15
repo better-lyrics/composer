@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { RecoverPanel } from "@/pages/recover";
 import { render } from "@/test/render";
 
@@ -35,6 +35,9 @@ describe("RecoverPanel", () => {
   beforeEach(async () => {
     await wipeDB();
   });
+  afterEach(async () => {
+    await wipeDB();
+  });
 
   it("shows the empty-state message when IndexedDB has no project", async () => {
     const screen = await render(<RecoverPanel />);
@@ -46,7 +49,11 @@ describe("RecoverPanel", () => {
       version: 1,
       savedAt: 1715000000000,
       metadata: { title: "AutoSong" },
-      lines: [{ id: "a" }, { id: "b" }, { id: "c" }],
+      lines: [
+        { id: "a", text: "x", agentId: "v1" },
+        { id: "b", text: "y", agentId: "v1" },
+        { id: "c", text: "z", agentId: "v1" },
+      ],
     });
 
     let captured: string | null = null;
@@ -76,7 +83,7 @@ describe("RecoverPanel", () => {
   });
 
   it("offers a Download again button after the auto-download succeeds", async () => {
-    await seedProject({ version: 1, metadata: { title: "Again" }, lines: [{ id: "a" }] });
+    await seedProject({ version: 1, metadata: { title: "Again" }, lines: [{ id: "a", text: "x", agentId: "v1" }] });
     const originalCreate = document.createElement.bind(document);
     document.createElement = ((tag: string) => {
       const el = originalCreate(tag);

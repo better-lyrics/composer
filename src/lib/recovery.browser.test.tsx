@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { downloadRecoveryFile, readRecoveryMetadata } from "@/lib/recovery";
 
 // -- Helpers ------------------------------------------------------------------
@@ -88,6 +88,9 @@ describe("recovery", () => {
   beforeEach(async () => {
     await wipeDB();
   });
+  afterEach(async () => {
+    await wipeDB();
+  });
 
   describe("readRecoveryMetadata", () => {
     it("returns found=false when IndexedDB has no project", async () => {
@@ -101,7 +104,11 @@ describe("recovery", () => {
         version: 1,
         savedAt: 1715000000000,
         metadata: { title: "Drift" },
-        lines: [{ id: "a" }, { id: "b" }, { id: "c" }],
+        lines: [
+          { id: "a", text: "first", agentId: "v1" },
+          { id: "b", text: "second", agentId: "v1" },
+          { id: "c", text: "third", agentId: "v1" },
+        ],
       });
       const result = await readRecoveryMetadata();
       expect(result.found).toBe(true);
@@ -125,7 +132,7 @@ describe("recovery", () => {
         version: 1,
         savedAt: 1715000000000,
         metadata: { title: "Drift" },
-        lines: [{ id: "a", text: "first line" }],
+        lines: [{ id: "a", text: "first line", agentId: "v1" }],
       });
       const capture = captureDownload();
       try {

@@ -444,7 +444,7 @@ function useSyncHandlers({
     handleSetBgWordEndTime,
     isComplete,
     currentLine,
-    currentWord: currentLine ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
+    currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
   };
 }
 

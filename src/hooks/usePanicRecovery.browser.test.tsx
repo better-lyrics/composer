@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { isMac } from "@/utils/platform";
@@ -23,7 +23,10 @@ async function seedProject(): Promise<void> {
     open.onsuccess = () => {
       const db = open.result;
       const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put({ version: 1, metadata: { title: "Hooked" }, lines: [{ id: "x" }] }, "current");
+      tx.objectStore(STORE_NAME).put(
+        { version: 1, metadata: { title: "Hooked" }, lines: [{ id: "x", text: "x", agentId: "v1" }] },
+        "current",
+      );
       tx.oncomplete = () => {
         db.close();
         resolve();
@@ -71,6 +74,9 @@ function dispatchPanicCombo(extra: Partial<KeyboardEventInit> = {}): void {
 
 describe("usePanicRecovery", () => {
   beforeEach(async () => {
+    await wipeDB();
+  });
+  afterEach(async () => {
     await wipeDB();
   });
 

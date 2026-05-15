@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ErrorFallback } from "@/pages/error-fallback";
 import { render } from "@/test/render";
@@ -48,6 +48,9 @@ describe("ErrorFallback", () => {
   beforeEach(() => {
     allowConsole(/Boom for test|route error|RenderErrorBoundary|caught the following error|recovery failed/);
   });
+  afterEach(async () => {
+    await wipeDB();
+  });
 
   it("renders Reload and Go home buttons when a route throws", async () => {
     const screen = await renderFallback();
@@ -73,7 +76,7 @@ describe("ErrorFallback", () => {
       version: 1,
       savedAt: Date.now(),
       metadata: { title: "TestSong" },
-      lines: [{ id: "a" }],
+      lines: [{ id: "a", text: "x", agentId: "v1" }],
     });
 
     let capturedFilename: string | null = null;
