@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
-import { normalizeTrailingSpaces } from "@/utils/word-spaces";
+import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -97,7 +97,10 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const existing = line.words ?? [];
       const hasOverlap = wordDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
       if (!hasOverlap) {
-        lineUpdates.words = normalizeTrailingSpaces([...existing, ...wordDups].sort((a, b) => a.begin - b.begin));
+        const prevLast = existing[existing.length - 1];
+        const sorted = [...existing, ...wordDups].sort((a, b) => a.begin - b.begin);
+        const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
+        lineUpdates.words = trimTrailingSpaceFromLast(reconciled);
       }
     }
 
@@ -105,7 +108,10 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const existing = line.backgroundWords ?? [];
       const hasOverlap = bgDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
       if (!hasOverlap) {
-        const merged = normalizeTrailingSpaces([...existing, ...bgDups].sort((a, b) => a.begin - b.begin));
+        const prevLast = existing[existing.length - 1];
+        const sorted = [...existing, ...bgDups].sort((a, b) => a.begin - b.begin);
+        const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
+        const merged = trimTrailingSpaceFromLast(reconciled);
         lineUpdates.backgroundWords = merged;
         lineUpdates.backgroundText = merged.map((w) => w.text).join("");
       }
@@ -257,7 +263,7 @@ function useTimelineDnd(lines: LyricLine[]) {
               words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
             }
 
-            const normalized = normalizeTrailingSpaces(words);
+            const normalized = trimTrailingSpaceFromLast(words);
             lineUpdates[trackKey] = normalized;
             if (trackKey === "backgroundWords") {
               lineUpdates.backgroundText = normalized.map((w) => w.text).join("");
@@ -299,7 +305,7 @@ function useTimelineDnd(lines: LyricLine[]) {
           words[words.length - 1] = { ...lastWord, begin: lastWord.begin - overflow, end: duration };
         }
 
-        const normalized = normalizeTrailingSpaces(words);
+        const normalized = trimTrailingSpaceFromLast(words);
         if (activeData.trackType === "word") {
           updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {

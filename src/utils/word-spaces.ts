@@ -6,15 +6,22 @@ const DEFAULT_MIN_WORD_DURATION = 0.05;
 
 // -- Functions -----------------------------------------------------------------
 
-function normalizeTrailingSpaces(words: WordTiming[]): WordTiming[] {
+function trimTrailingSpaceFromLast(words: WordTiming[]): WordTiming[] {
   if (words.length === 0) return words;
-  return words.map((word, i) => {
-    const isLast = i === words.length - 1;
-    const hasSpace = word.text.endsWith(" ");
-    if (isLast && hasSpace) return { ...word, text: word.text.trimEnd() };
-    if (!isLast && !hasSpace) return { ...word, text: `${word.text} ` };
-    return word;
-  });
+  const last = words[words.length - 1];
+  if (!last.text.endsWith(" ")) return words;
+  const next = words.slice();
+  next[next.length - 1] = { ...last, text: last.text.trimEnd() };
+  return next;
+}
+
+function addTrailingSpaceIfMissing(words: WordTiming[], target: WordTiming): WordTiming[] {
+  if (target.text.endsWith(" ")) return words;
+  const idx = words.indexOf(target);
+  if (idx < 0 || idx === words.length - 1) return words;
+  const next = words.slice();
+  next[idx] = { ...target, text: `${target.text} ` };
+  return next;
 }
 
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {
@@ -83,4 +90,4 @@ function findInsertionSlot(
 
 // -- Exports -------------------------------------------------------------------
 
-export { normalizeTrailingSpaces, resolveOverlapsForward, findInsertionSlot };
+export { trimTrailingSpaceFromLast, addTrailingSpaceIfMissing, resolveOverlapsForward, findInsertionSlot };

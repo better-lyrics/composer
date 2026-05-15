@@ -2,51 +2,105 @@
  * @vitest-environment node
  */
 import type { WordTiming } from "@/stores/project";
-import { findInsertionSlot, normalizeTrailingSpaces, resolveOverlapsForward } from "@/utils/word-spaces";
+import {
+  addTrailingSpaceIfMissing,
+  findInsertionSlot,
+  resolveOverlapsForward,
+  trimTrailingSpaceFromLast,
+} from "@/utils/word-spaces";
 import { describe, expect, it } from "vitest";
 
-// -- normalizeTrailingSpaces ---------------------------------------------------
+// -- trimTrailingSpaceFromLast -------------------------------------------------
 
-describe("normalizeTrailingSpaces", () => {
+describe("trimTrailingSpaceFromLast", () => {
   it("returns empty array as-is", () => {
-    expect(normalizeTrailingSpaces([])).toEqual([]);
+    expect(trimTrailingSpaceFromLast([])).toEqual([]);
   });
 
   it("trims trailing space from the last word", () => {
-    const result = normalizeTrailingSpaces([{ text: "hello ", begin: 0, end: 1 }]);
+    const result = trimTrailingSpaceFromLast([{ text: "hello ", begin: 0, end: 1 }]);
     expect(result[0].text).toBe("hello");
   });
 
   it("leaves a single word without trailing space alone", () => {
-    const result = normalizeTrailingSpaces([{ text: "hello", begin: 0, end: 1 }]);
+    const result = trimTrailingSpaceFromLast([{ text: "hello", begin: 0, end: 1 }]);
     expect(result[0].text).toBe("hello");
   });
 
-  it("adds trailing space to non-last words missing one", () => {
-    const result = normalizeTrailingSpaces([
+  it("preserves missing trailing space on non-last words so syllable bonds survive", () => {
+    const result = trimTrailingSpaceFromLast([
       { text: "he", begin: 0, end: 0.5 },
       { text: "llo", begin: 0.5, end: 1 },
     ]);
-    expect(result[0].text).toBe("he ");
+    expect(result[0].text).toBe("he");
     expect(result[1].text).toBe("llo");
   });
 
-  it("preserves intentional trailing spaces on non-last words", () => {
-    const result = normalizeTrailingSpaces([
-      { text: "hello ", begin: 0, end: 1 },
-      { text: "world", begin: 1, end: 2 },
-    ]);
-    expect(result[0].text).toBe("hello ");
-    expect(result[1].text).toBe("world");
-  });
-
   it("trims a trailing space that drifted onto the last word", () => {
-    const result = normalizeTrailingSpaces([
+    const result = trimTrailingSpaceFromLast([
       { text: "hello ", begin: 0, end: 1 },
       { text: "world ", begin: 1, end: 2 },
     ]);
     expect(result[0].text).toBe("hello ");
     expect(result[1].text).toBe("world");
+  });
+
+  it("preserves the trailing-space pattern of every non-last syllable in a group", () => {
+    const result = trimTrailingSpaceFromLast([
+      { text: "ev", begin: 0, end: 0.2 },
+      { text: "er", begin: 0.2, end: 0.4 },
+      { text: "y ", begin: 0.4, end: 0.6 },
+      { text: "world", begin: 0.6, end: 1 },
+    ]);
+    expect(result.map((w) => w.text)).toEqual(["ev", "er", "y ", "world"]);
+  });
+});
+
+// -- addTrailingSpaceIfMissing -------------------------------------------------
+
+describe("addTrailingSpaceIfMissing", () => {
+  it("adds a trailing space to a non-last word that lacks one", () => {
+    const a = { text: "hello", begin: 0, end: 1 };
+    const b = { text: "world", begin: 1, end: 2 };
+    const result = addTrailingSpaceIfMissing([a, b], a);
+    expect(result[0].text).toBe("hello ");
+    expect(result[1]).toBe(b);
+  });
+
+  it("is a no-op when the target already has a trailing space", () => {
+    const a = { text: "hello ", begin: 0, end: 1 };
+    const b = { text: "world", begin: 1, end: 2 };
+    const input = [a, b];
+    const result = addTrailingSpaceIfMissing(input, a);
+    expect(result).toBe(input);
+    expect(result[0]).toBe(a);
+  });
+
+  it("is a no-op when the target is the array's last entry", () => {
+    const a = { text: "hello", begin: 0, end: 1 };
+    const b = { text: "world", begin: 1, end: 2 };
+    const input = [a, b];
+    const result = addTrailingSpaceIfMissing(input, b);
+    expect(result).toBe(input);
+    expect(result[1].text).toBe("world");
+  });
+
+  it("is a no-op when the target reference is not in the array", () => {
+    const a = { text: "hello", begin: 0, end: 1 };
+    const b = { text: "world", begin: 1, end: 2 };
+    const stranger = { text: "stranger", begin: 5, end: 6 };
+    const input = [a, b];
+    const result = addTrailingSpaceIfMissing(input, stranger);
+    expect(result).toBe(input);
+  });
+
+  it("does not mutate the input array or its entries", () => {
+    const a = { text: "hello", begin: 0, end: 1 };
+    const b = { text: "world", begin: 1, end: 2 };
+    const input = [a, b];
+    addTrailingSpaceIfMissing(input, a);
+    expect(a.text).toBe("hello");
+    expect(input[0]).toBe(a);
   });
 });
 

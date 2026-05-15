@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { type LyricLine, useProjectStore } from "@/stores/project";
+import { getSyllablePositions } from "@/utils/syllable-groups";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const DURATION = 30;
@@ -60,7 +61,7 @@ describe("moveWordToBg", () => {
     expect(line.backgroundText).toBe("hello goodbye");
   });
 
-  it("adds a trailing space to the previous last bg word when a new word lands at the end", () => {
+  it("adds a trailing space to the previous last bg word when a new word lands at the end without breaking syllable bonds before it", () => {
     useProjectStore.getState().setLines([
       seedLine({
         backgroundWords: [
@@ -74,8 +75,8 @@ describe("moveWordToBg", () => {
     useProjectStore.getState().moveWordToBg("line-1", [2], 7, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah ", "ooh ", "goodbye"]);
-    expect(line.backgroundText).toBe("ah ooh goodbye");
+    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah", "ooh ", "goodbye"]);
+    expect(line.backgroundText).toBe("ahooh goodbye");
   });
 
   it("resolves overlap when moved word collides with an existing bg word", () => {
@@ -321,6 +322,100 @@ describe("moveWordToBg · linked propagation", () => {
     const x = useProjectStore.getState().lines.find((l) => l.id === "x");
     expect(x?.backgroundWords).toBeUndefined();
     expect(x?.words?.length).toBe(3);
+  });
+});
+
+// -- cross-track moves preserve syllable bonds --------------------------------
+
+describe("cross-track moves preserve syllable bonds", () => {
+  it("moveWordToBg keeps remaining split-word syllables bonded", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "hello every world",
+        agentId: "v1",
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "ev", begin: 1, end: 1.2 },
+          { text: "er", begin: 1.2, end: 1.5 },
+          { text: "y ", begin: 1.5, end: 1.8 },
+          { text: "world", begin: 1.8, end: 2.5 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [4], 5, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "ev", "er", "y"]);
+    expect(getSyllablePositions(line.words ?? [])).toEqual(["none", "first", "middle", "last"]);
+  });
+
+  it("moveWordToBg keeps a whole syllable group bonded when all its indices move together", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "hello every world",
+        agentId: "v1",
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "ev", begin: 1, end: 1.2 },
+          { text: "er", begin: 1.2, end: 1.5 },
+          { text: "y ", begin: 1.5, end: 1.8 },
+          { text: "world", begin: 1.8, end: 2.5 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [1, 2, 3], 5, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
+  });
+
+  it("moveWordFromBg adds trailing space to previously-last main word when receiving a new tail", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "hello",
+        agentId: "v1",
+        words: [{ text: "hello", begin: 0, end: 1 }],
+        backgroundWords: [{ text: "world", begin: 2, end: 3 }],
+        backgroundText: "world",
+      },
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.backgroundWords).toBeUndefined();
+  });
+
+  it("moveWordFromBg returns a syllable group from bg intact when the whole group flips", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every",
+        agentId: "v1",
+        words: [],
+        backgroundWords: [
+          { text: "ev", begin: 5, end: 5.2 },
+          { text: "er", begin: 5.2, end: 5.5 },
+          { text: "y", begin: 5.5, end: 5.8 },
+        ],
+        backgroundText: "every",
+      },
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0, 1, 2], -4, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(getSyllablePositions(line.words ?? [])).toEqual(["first", "middle", "last"]);
+    expect(line.backgroundWords).toBeUndefined();
   });
 });
 
