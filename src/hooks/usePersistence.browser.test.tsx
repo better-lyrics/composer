@@ -74,4 +74,20 @@ describe("usePersistence malformed-project handling", () => {
     await waitForLoad();
     expect(useProjectStore.getState().agents[0].name).toBe("Lead");
   });
+
+  it("substitutes the settings default when granularity is missing instead of writing undefined", async () => {
+    allowConsole(/malformed fields/);
+    await seedProject({
+      version: 1,
+      savedAt: Date.now(),
+      metadata: { title: "NoGranularity" },
+      lines: [{ id: "a", text: "x", agentId: "v1" }],
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+    });
+    await renderHook(() => usePersistence());
+    await waitForLoad();
+    const granularity = useProjectStore.getState().granularity;
+    expect(granularity).toBeDefined();
+    expect(["line", "word"]).toContain(granularity);
+  });
 });

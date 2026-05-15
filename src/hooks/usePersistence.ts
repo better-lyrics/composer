@@ -43,6 +43,7 @@ function usePersistence(): void {
         if (!project.lines) issues.push("missing lines");
         const safeAgents = project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS;
         if (!project.agents || project.agents.length === 0) issues.push("missing or empty agents");
+        const safeGranularity = project.granularity ?? useSettingsStore.getState().defaultGranularity;
         if (project.granularity === undefined) issues.push("missing granularity");
         if (issues.length > 0) {
           console.warn(
@@ -54,7 +55,7 @@ function usePersistence(): void {
         state.setMetadata(project.metadata);
         state.setLines(safeLines);
         state.setGroups(project.groups ?? []);
-        state.setGranularity(project.granularity);
+        state.setGranularity(safeGranularity);
         state.setAgents(safeAgents);
         state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
         state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);

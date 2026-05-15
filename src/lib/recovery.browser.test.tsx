@@ -152,4 +152,37 @@ describe("recovery", () => {
       await expect(clearRecoveryStorage()).resolves.toBeUndefined();
     });
   });
+
+  describe("cold-start schema creation", () => {
+    // Regression: if recovery.ts opens IDB without onupgradeneeded on a fresh
+    // browser, the DB materialises at v1 with no object store. The main app
+    // would later open the same version, skip its own upgrade handler, and
+    // every read/write would throw NotFoundError until site data is cleared.
+    it("creates the projects store on a fresh DB so persistence can still write to it", async () => {
+      expect((await readRecoveryMetadata()).found).toBe(false);
+
+      await new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open(DB_NAME, 1);
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          expect(db.objectStoreNames.contains(STORE_NAME)).toBe(true);
+          const tx = db.transaction(STORE_NAME, "readwrite");
+          tx.objectStore(STORE_NAME).put({ version: 1, lines: [], metadata: { title: "After" } }, CURRENT_KEY);
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => {
+            db.close();
+            reject(tx.error);
+          };
+        };
+      });
+
+      const after = await readRecoveryMetadata();
+      expect(after.found).toBe(true);
+      expect(after.title).toBe("After");
+    });
+  });
 });
