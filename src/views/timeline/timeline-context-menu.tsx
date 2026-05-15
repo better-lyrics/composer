@@ -687,14 +687,14 @@ const TimelineContextMenu: React.FC = () => {
             {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
             {syllableGroupInfo && (
               <MenuItem
-                label="Merge into syllable group"
+                label="Merge into one word"
                 shortcut={getEffectiveKeysArray("timeline.mergeIntoSyllables")}
                 onClick={handleMergeIntoSyllables}
               />
             )}
             {detachSyllableInfo && (
               <MenuItem
-                label="Detach syllable from group"
+                label="Detach syllable from word"
                 shortcut={getEffectiveKeysArray("timeline.detachSyllable")}
                 onClick={handleDetachSyllable}
               />

@@ -60,7 +60,7 @@ describe("TimelineContextMenu", () => {
     expect(updated?.explicit).toBe(true);
   });
 
-  it("shows 'Merge into syllable group' for a contiguous multi-word selection and stamps a shared id when clicked", async () => {
+  it("shows 'Merge into one word' for a contiguous multi-word selection and stamps a shared id when clicked", async () => {
     const line = createLine({
       words: [
         createWord({ text: "ev", begin: 0, end: 0.3 }),
@@ -84,7 +84,7 @@ describe("TimelineContextMenu", () => {
     await render(<TimelineContextMenu />);
 
     const mergeIntoSyllablesBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Merge into syllable group/i.test(b.textContent ?? ""),
+      /Merge into one word/i.test(b.textContent ?? ""),
     );
     expect(mergeIntoSyllablesBtn).toBeDefined();
     mergeIntoSyllablesBtn?.click();
@@ -94,7 +94,7 @@ describe("TimelineContextMenu", () => {
     expect(words.every((w) => w.syllableGroupId === words[0].syllableGroupId)).toBe(true);
   });
 
-  it("shows 'Detach syllable from group' on a syllable-group word and strips its id when clicked", async () => {
+  it("shows 'Detach syllable from word' on a syllable-group word and strips its id when clicked", async () => {
     const line = createLine({
       words: [
         createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
@@ -114,7 +114,7 @@ describe("TimelineContextMenu", () => {
     await render(<TimelineContextMenu />);
 
     const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Detach syllable from group/i.test(b.textContent ?? ""),
+      /Detach syllable from word/i.test(b.textContent ?? ""),
     );
     expect(detachBtn).toBeDefined();
     detachBtn?.click();
@@ -125,7 +125,7 @@ describe("TimelineContextMenu", () => {
     expect(words[2].syllableGroupId).toBe("g_every");
   });
 
-  it("hides 'Detach syllable from group' on a standalone word", async () => {
+  it("hides 'Detach syllable from word' on a standalone word", async () => {
     const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
@@ -139,12 +139,12 @@ describe("TimelineContextMenu", () => {
     await render(<TimelineContextMenu />);
 
     const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Detach syllable from group/i.test(b.textContent ?? ""),
+      /Detach syllable from word/i.test(b.textContent ?? ""),
     );
     expect(detachBtn).toBeUndefined();
   });
 
-  it("hides 'Merge into syllable group' for a non-contiguous selection", async () => {
+  it("hides 'Merge into one word' for a non-contiguous selection", async () => {
     const line = createLine({
       words: [
         createWord({ text: "a", begin: 0, end: 0.3 }),
@@ -167,7 +167,7 @@ describe("TimelineContextMenu", () => {
     await render(<TimelineContextMenu />);
 
     const mergeIntoSyllablesBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Merge into syllable group/i.test(b.textContent ?? ""),
+      /Merge into one word/i.test(b.textContent ?? ""),
     );
     expect(mergeIntoSyllablesBtn).toBeUndefined();
   });

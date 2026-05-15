@@ -162,13 +162,13 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
   {
     id: "timeline.mergeIntoSyllables",
     scope: "timeline",
-    description: "Merge selected words into syllable group",
+    description: "Merge selected words into one word",
     defaultBinding: { key: "y" },
   },
   {
     id: "timeline.detachSyllable",
     scope: "timeline",
-    description: "Detach selected syllable from its group",
+    description: "Detach selected syllable from its word",
     defaultBinding: { key: "y", shift: true },
   },
   {

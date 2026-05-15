@@ -148,6 +148,21 @@ const TimelinePanel: React.FC = () => {
     return () => window.removeEventListener("pointermove", onMove);
   }, [activeDrag]);
 
+  const [dragShiftPressed, setDragShiftPressed] = useState(false);
+  useEffect(() => {
+    if (!activeDrag) {
+      setDragShiftPressed(false);
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => setDragShiftPressed(e.shiftKey);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("keyup", onKey);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keyup", onKey);
+    };
+  }, [activeDrag]);
+
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
@@ -298,7 +313,8 @@ const TimelinePanel: React.FC = () => {
       const line = effectiveLines.find((l) => l.id === sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       if (!line || !wordsArray) continue;
-      for (const idx of expandSelectionToGroupmates(wordsArray, [sel.wordIndex])) {
+      const indices = dragShiftPressed ? [sel.wordIndex] : expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
+      for (const idx of indices) {
         const key = `${sel.lineId}:${sel.type}:${idx}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -345,7 +361,7 @@ const TimelinePanel: React.FC = () => {
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
-  }, [activeDrag, zoom, effectiveLines]);
+  }, [activeDrag, zoom, effectiveLines, dragShiftPressed]);
 
   if (!source) {
     return (
