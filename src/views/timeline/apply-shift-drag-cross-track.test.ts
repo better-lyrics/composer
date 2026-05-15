@@ -175,6 +175,26 @@ describe("applyShiftDragCrossTrack", () => {
     expect(applyShiftDragCrossTrack(line, "bg", 0, 1, DURATION)).toBeNull();
   });
 
+  it("closes pre-existing intra-group gaps in untouched groups on the source side", () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "every wide",
+      agentId: "v1",
+      words: [
+        { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+        { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
+        { text: "y ", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
+        { text: "wi", begin: 0.6, end: 0.8, syllableGroupId: "g2" },
+        { text: "de", begin: 0.9, end: 1, syllableGroupId: "g2" },
+      ],
+    };
+
+    const result = applyShiftDragCrossTrack(line, "word", 1, 5, DURATION);
+
+    const wi = result?.words?.find((w) => w.text === "wi");
+    expect(wi?.end).toBe(0.9);
+  });
+
   it("works for a standalone (non-group) word: just moves it, no group state to strip", () => {
     const line: LyricLine = {
       id: "l1",

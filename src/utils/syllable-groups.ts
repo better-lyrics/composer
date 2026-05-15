@@ -162,10 +162,27 @@ function inferSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   return result;
 }
 
+function closeIntraGroupGaps(words: WordTiming[]): WordTiming[] {
+  if (words.length < 2) return words;
+  let changed = false;
+  const result = words.slice();
+  for (let i = 0; i < result.length - 1; i++) {
+    const id = result[i].syllableGroupId;
+    if (id === undefined) continue;
+    if (result[i + 1].syllableGroupId !== id) continue;
+    if (result[i].end < result[i + 1].begin) {
+      result[i] = { ...result[i], end: result[i + 1].begin };
+      changed = true;
+    }
+  }
+  return changed ? result : words;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
   absorbDeletedSyllablesIntoNeighbors,
+  closeIntraGroupGaps,
   computeSyllableGroups,
   expandSelectionToGroupmates,
   getSyllablePositions,

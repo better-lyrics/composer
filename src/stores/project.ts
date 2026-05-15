@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { nanoid } from "nanoid";
@@ -825,7 +825,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
           return { ...word, syllableGroupId: groupId, text, end: closedEnd };
         });
-        const newWords = trimTrailingSpaceFromLast(stamped);
+        const newWords = closeIntraGroupGaps(trimTrailingSpaceFromLast(stamped));
 
         const update: Partial<LyricLine> = { [field]: newWords };
         if (field === "backgroundWords") {
@@ -996,12 +996,12 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
 
   if (movedWords.length === 0) return null;
 
-  const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
+  const remainingMain = closeIntraGroupGaps(trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i))));
 
   const prevBgLast = line.backgroundWords?.[line.backgroundWords.length - 1];
   const sortedBg = [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
   const reconciledBg = prevBgLast ? addTrailingSpaceIfMissing(sortedBg, prevBgLast) : sortedBg;
-  const mergedBg = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration));
+  const mergedBg = closeIntraGroupGaps(trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration)));
 
   const mainEmptied = remainingMain.length === 0;
   return {
@@ -1031,12 +1031,14 @@ function applyMoveFromBg(
 
   if (movedWords.length === 0) return null;
 
-  const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
+  const remainingBg = closeIntraGroupGaps(
+    trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i))),
+  );
 
   const prevMainLast = line.words?.[line.words.length - 1];
   const sortedMain = [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
   const reconciledMain = prevMainLast ? addTrailingSpaceIfMissing(sortedMain, prevMainLast) : sortedMain;
-  const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
+  const mergedMain = closeIntraGroupGaps(trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration)));
 
   const hasBg = remainingBg.length > 0;
   const hadNoMainBefore = !line.words || line.words.length === 0;

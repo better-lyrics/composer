@@ -1,4 +1,5 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
+import { closeIntraGroupGaps } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
 function dissolveGroupAround(words: WordTiming[], groupId: string | undefined): WordTiming[] {
@@ -29,14 +30,14 @@ function applyShiftDragCrossTrack(
   const detachedWord: WordTiming = { ...rest, begin: newBegin, end: newEnd };
 
   const dissolved = dissolveGroupAround(sourceArray, sourceWord.syllableGroupId);
-  const remainingSource = trimTrailingSpaceFromLast(dissolved.filter((_, i) => i !== wordIndex));
+  const remainingSource = closeIntraGroupGaps(trimTrailingSpaceFromLast(dissolved.filter((_, i) => i !== wordIndex)));
 
   const destArray = fromTrack === "word" ? line.backgroundWords : line.words;
   const destExisting = destArray ?? [];
   const prevDestLast = destExisting[destExisting.length - 1];
   const sortedDest = [...destExisting, detachedWord].sort((a, b) => a.begin - b.begin);
   const reconciledDest = prevDestLast ? addTrailingSpaceIfMissing(sortedDest, prevDestLast) : sortedDest;
-  const mergedDest = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledDest, duration));
+  const mergedDest = closeIntraGroupGaps(trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledDest, duration)));
 
   if (fromTrack === "word") {
     const mainEmptied = remainingSource.length === 0;

@@ -3,6 +3,7 @@
  */
 import {
   absorbDeletedSyllablesIntoNeighbors,
+  closeIntraGroupGaps,
   computeSyllableGroups,
   expandSelectionToGroupmates,
   getSyllablePositions,
@@ -315,5 +316,58 @@ describe("computeSyllableGroups · id-mode", () => {
       { text: "y", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
     ]);
     expect(groups[0].originalWord).toBe("every");
+  });
+});
+
+// -- closeIntraGroupGaps -------------------------------------------------------
+
+describe("closeIntraGroupGaps", () => {
+  it("extends earlier word to close a gap inside a syllable group", () => {
+    const result = closeIntraGroupGaps([
+      { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+      { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+      { text: "y", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+    ]);
+    expect(result[0].end).toBe(0.3);
+    expect(result[1].begin).toBe(0.3);
+    expect(result[1].end).toBe(0.5);
+    expect(result[2].begin).toBe(0.5);
+  });
+
+  it("returns input by reference when there are no gaps", () => {
+    const input = [
+      { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+      { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+    ];
+    expect(closeIntraGroupGaps(input)).toBe(input);
+  });
+
+  it("only closes gaps between same-group neighbors", () => {
+    const result = closeIntraGroupGaps([
+      { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+      { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+      { text: "world", begin: 0.6, end: 0.8 },
+    ]);
+    expect(result[0].end).toBe(0.3);
+    expect(result[1].end).toBe(0.5);
+    expect(result[2].begin).toBe(0.6);
+  });
+
+  it("is a no-op when adjacent words have different groupIds", () => {
+    const input = [
+      { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+      { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g2" },
+    ];
+    expect(closeIntraGroupGaps(input)).toBe(input);
+  });
+
+  it("returns input by reference for a single word", () => {
+    const input = [{ text: "solo", begin: 0, end: 1, syllableGroupId: "g1" }];
+    expect(closeIntraGroupGaps(input)).toBe(input);
+  });
+
+  it("returns input by reference for empty array", () => {
+    const input: never[] = [];
+    expect(closeIntraGroupGaps(input)).toBe(input);
   });
 });

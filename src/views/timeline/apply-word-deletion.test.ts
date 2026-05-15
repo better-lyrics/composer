@@ -202,6 +202,24 @@ describe("applyWordDeletion", () => {
     const result = applyWordDeletion(lines, sel);
     expect(result).toEqual(lines);
   });
+
+  it("closes pre-existing intra-group gaps after deleting a non-group word", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "l1",
+        text: "every world",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+          { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+          { text: "y", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
+          { text: "world", begin: 0.7, end: 1 },
+        ],
+      },
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }]);
+    expect(result[0].words?.[0].end).toBe(0.3);
+  });
 });
 
 // -- Auto-cleanup of fully-empty instances ------------------------------------
