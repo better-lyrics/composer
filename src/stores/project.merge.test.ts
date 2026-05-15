@@ -124,6 +124,29 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(bg.map((w) => w.text)).toEqual(["ah", "ooh"]);
   });
 
+  it("keeps backgroundText in sync with backgroundWords after a bg merge", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "ev ", begin: 1, end: 1.2 },
+          { text: "er ", begin: 1.2, end: 1.4 },
+          { text: "y ", begin: 1.4, end: 1.6 },
+        ],
+        backgroundText: "ev er y ",
+      },
+    ]);
+
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "backgroundWords", [0, 1, 2]);
+
+    const line = useProjectStore.getState().lines[0];
+    const bgJoined = (line.backgroundWords ?? []).map((w) => w.text).join("");
+    expect(line.backgroundText).toBe(bgJoined);
+  });
+
   it("is undoable", () => {
     useProjectStore.getState().setLines([seedMainLine()]);
     const before = useProjectStore.getState().lines[0].words?.map((w) => w.text);

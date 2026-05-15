@@ -817,7 +817,11 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       const lines = state.lines.map((line) => {
         if (line.id !== lineId) return line;
-        return { ...line, [field]: newWords };
+        const update: Partial<LyricLine> = { [field]: newWords };
+        if (field === "backgroundWords") {
+          update.backgroundText = newWords.map((w) => w.text).join("");
+        }
+        return { ...line, ...update };
       });
       return commitHistory(state, { lines });
     }),
