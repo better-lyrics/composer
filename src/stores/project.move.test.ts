@@ -344,6 +344,50 @@ describe("moveWordToBg · linked propagation", () => {
     expect(x?.backgroundWords).toBeUndefined();
     expect(x?.words?.length).toBe(3);
   });
+
+  it("expands the syllable group per-sibling, not against the source layout", () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "every",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+        ],
+      },
+      {
+        id: "a1",
+        text: "ev er y",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev ", begin: 10, end: 10.3 },
+          { text: "er ", begin: 10.3, end: 10.6 },
+          { text: "y", begin: 10.6, end: 11 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().moveWordToBg("a0", [1], 5, DURATION);
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+
+    expect(a0?.words?.length).toBe(0);
+    expect(a0?.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+
+    expect(a1?.words?.map((w) => w.text.trimEnd())).toEqual(["ev", "y"]);
+    expect(a1?.backgroundWords?.map((w) => w.text)).toEqual(["er"]);
+  });
 });
 
 // -- cross-track moves preserve syllable bonds --------------------------------
