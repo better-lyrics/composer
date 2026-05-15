@@ -5,7 +5,7 @@ import { Scroll } from "@/ui/scroll";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { getTimingState } from "@/views/timeline/timeline-preview-sidebar-activity";
-import { getLineTiming } from "@/views/timeline/utils";
+import { effectiveBounds } from "@/domain/line/bounds";
 import { useEffect, useRef } from "react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -63,7 +63,7 @@ const MiniPreviewLine: React.FC<{
   lineIndex: number;
   granularity: "line" | "word";
 }> = ({ line, lineIndex, granularity }) => {
-  const timing = getLineTiming(line);
+  const timing = effectiveBounds(line);
   const alignment = getAgentAlignment(line.agentId);
   const alignmentClass =
     alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
@@ -221,7 +221,7 @@ const TimelinePreviewSidebar: React.FC = () => {
     };
   }, []);
 
-  const hasSyncedContent = lines.some((line) => getLineTiming(line) !== null);
+  const hasSyncedContent = lines.some((line) => effectiveBounds(line) !== null);
 
   if (lines.length === 0 || !hasSyncedContent) {
     return (

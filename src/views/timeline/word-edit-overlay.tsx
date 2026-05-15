@@ -1,6 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { getEffectiveLines } from "@/views/timeline/utils";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 

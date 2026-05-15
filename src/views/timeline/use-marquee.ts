@@ -1,7 +1,8 @@
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
-import { computeRowLayout, getEffectiveLines } from "@/views/timeline/utils";
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------

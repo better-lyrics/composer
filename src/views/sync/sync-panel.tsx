@@ -12,12 +12,12 @@ import {
   syncCarouselTransition,
   syncPulseVariants,
 } from "@/utils/animationVariants";
+import { effectiveBounds } from "@/domain/line/bounds";
 import {
   getNudgeAmount,
   type SyncState,
   convertLineToWord,
   createBgWordsFromLine,
-  getLineTiming,
   getSyncedLineCount,
   getSyncedWordCount,
   getTotalWords,
@@ -188,19 +188,19 @@ const SyncPanel: React.FC = () => {
 
   const playingLineIndex = useMemo(() => {
     for (let i = 0; i < lines.length; i++) {
-      const timing = getLineTiming(lines[i]);
+      const timing = effectiveBounds(lines[i]);
       if (timing && currentTime >= timing.begin && currentTime < timing.end) {
         return i;
       }
     }
     for (let i = lines.length - 1; i >= 0; i--) {
-      const timing = getLineTiming(lines[i]);
+      const timing = effectiveBounds(lines[i]);
       if (timing && currentTime >= timing.end) {
         return i;
       }
     }
     for (let i = 0; i < lines.length; i++) {
-      const timing = getLineTiming(lines[i]);
+      const timing = effectiveBounds(lines[i]);
       if (timing && currentTime < timing.begin) {
         return i;
       }
@@ -407,7 +407,7 @@ const SyncPanel: React.FC = () => {
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <div className="py-2">
             {lines.map((line, index) => {
-              const timing = getLineTiming(line);
+              const timing = effectiveBounds(line);
               const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
               const totalInstances = linkedGroup ? (instanceCountByGroup.get(linkedGroup.id) ?? 0) : 0;
               const linkInfo =

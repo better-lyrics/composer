@@ -15,13 +15,13 @@ import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from 
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
+import { effectiveBounds } from "@/domain/line/bounds";
+import { isLineSynced } from "@/domain/line/predicates";
 import {
   computeRowLayout,
   findWordAtTime,
-  getLineTiming,
   getWordsInInstance,
   instanceTimingBounds,
-  isLineSynced,
   partitionNudgeSelections,
   shiftSelectionsTogether,
 } from "@/views/timeline/utils";
@@ -273,7 +273,7 @@ function useTimelineKeyboard(
 
           let activeLineIndex = -1;
           for (let i = 0; i < lines.length; i++) {
-            const timing = getLineTiming(lines[i]);
+            const timing = effectiveBounds(lines[i]);
             if (timing && currentTime >= timing.begin && currentTime < timing.end) {
               activeLineIndex = i;
               break;

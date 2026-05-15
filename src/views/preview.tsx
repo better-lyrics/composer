@@ -6,7 +6,7 @@ import { EmptyState } from "@/ui/empty-state";
 import { generateTTML } from "@/utils/ttml";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
-import { getLineTiming } from "@/views/timeline/utils";
+import { effectiveBounds } from "@/domain/line/bounds";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -25,7 +25,7 @@ const PreviewPanel: React.FC = () => {
   const renderer = useSettingsStore((s) => s.previewRenderer);
 
   const hasSyncedContent = useMemo(() => {
-    return lines.some((line) => getLineTiming(line) !== null);
+    return lines.some((line) => effectiveBounds(line) !== null);
   }, [lines]);
 
   const ttmlString = useMemo(() => {

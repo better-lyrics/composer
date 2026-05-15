@@ -3,7 +3,7 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
-import { getEffectiveLines } from "@/views/timeline/utils";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 
 // These pin the Task 1.4 contract: gutter add/delete operations on a project
 // containing line-synced rows must NOT flip those rows to word-synced.

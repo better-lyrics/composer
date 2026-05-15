@@ -4,7 +4,8 @@ import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { computeRowLayout, getLineTiming } from "@/views/timeline/utils";
+import { effectiveBounds } from "@/domain/line/bounds";
+import { computeRowLayout } from "@/views/timeline/utils";
 import { useCallback, useEffect, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -62,7 +63,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         const lines = useProjectStore.getState().lines;
         let activeLineIndex = -1;
         for (let i = 0; i < lines.length; i++) {
-          const timing = getLineTiming(lines[i]);
+          const timing = effectiveBounds(lines[i]);
           if (timing && currentTime >= timing.begin && currentTime < timing.end) {
             activeLineIndex = i;
             break;

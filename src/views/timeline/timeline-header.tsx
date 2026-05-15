@@ -1,3 +1,4 @@
+import { isLineSynced } from "@/domain/line/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
@@ -83,9 +84,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
       if (line.words?.length) continue;
       if (!line.text.trim()) continue;
 
-      const isLineSynced = line.begin !== undefined && line.end !== undefined;
-
-      if (isLineSynced) {
+      if (isLineSynced(line)) {
         const converted = convertLineToWord(line);
         if (converted.words) {
           updates.push({ id: line.id, updates: { words: converted.words, begin: undefined, end: undefined } });

@@ -1,7 +1,7 @@
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { distributeWordsInLine, getLineTiming } from "@/utils/sync-helpers";
+import { distributeWordsInLine } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -58,20 +58,6 @@ function findWordAtTime(lines: LyricLine[], time: number): WordAtTimeResult | nu
   }
 
   return null;
-}
-
-function isLineSynced(line: LyricLine): boolean {
-  return !line.words?.length && line.begin !== undefined && line.end !== undefined;
-}
-
-function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
-  return lines.map((line) => {
-    if (!isLineSynced(line)) return line;
-    return {
-      ...line,
-      words: [{ text: stripSplitCharacter(line.text), begin: line.begin!, end: line.end! }],
-    };
-  });
 }
 
 interface GroupHeaderRow {
@@ -464,11 +450,8 @@ function nudgeSelectedWords(
 export {
   distributeWordsInLine,
   distributeLinesTiming,
-  getLineTiming,
   formatTime,
   findWordAtTime,
-  isLineSynced,
-  getEffectiveLines,
   getEffectiveRows,
   instanceTimingBounds,
   getWordsInInstance,

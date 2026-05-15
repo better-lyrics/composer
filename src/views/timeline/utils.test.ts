@@ -3,13 +3,13 @@
  */
 import type { LyricLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
+import { effectiveBounds } from "@/domain/line/bounds";
 import {
   distributeLinesTiming,
   distributeWordsInLine,
   formatTime,
   getEffectiveRows,
   nudgeSelectedWords,
-  getLineTiming,
   type GroupHeaderRow,
   getWordsInInstance,
   instanceTimingBounds,
@@ -103,9 +103,9 @@ describe("distributeLinesTiming", () => {
   });
 });
 
-// -- getLineTiming -------------------------------------------------------------
+// -- effectiveBounds (originally tested via getLineTiming) --------------------
 
-describe("getLineTiming", () => {
+describe("effectiveBounds (legacy call site coverage)", () => {
   it("returns timing from words when available", () => {
     const line = {
       id: "1",
@@ -117,7 +117,7 @@ describe("getLineTiming", () => {
       ],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 2, end: 8 });
   });
@@ -131,7 +131,7 @@ describe("getLineTiming", () => {
       end: 7,
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 3, end: 7 });
   });
@@ -145,7 +145,7 @@ describe("getLineTiming", () => {
       end: undefined,
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toBeNull();
   });
@@ -160,7 +160,7 @@ describe("getLineTiming", () => {
       words: [{ text: "Hello", begin: 2, end: 5 }],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 2, end: 5 });
   });
@@ -175,7 +175,7 @@ describe("getLineTiming", () => {
       words: [],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 3, end: 7 });
   });
@@ -196,7 +196,7 @@ describe("getLineTiming", () => {
       ],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 2, end: 12 });
   });
@@ -211,7 +211,7 @@ describe("getLineTiming", () => {
       backgroundWords: [{ text: "ooh", begin: 3, end: 6 }],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 3, end: 8 });
   });
@@ -227,7 +227,7 @@ describe("getLineTiming", () => {
       backgroundWords: [{ text: "ahh", begin: 6, end: 10 }],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 3, end: 10 });
   });
@@ -242,7 +242,7 @@ describe("getLineTiming", () => {
       backgroundWords: [{ text: "yeah", begin: 4, end: 7 }],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 2, end: 10 });
   });
@@ -256,7 +256,7 @@ describe("getLineTiming", () => {
       backgroundWords: [],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toEqual({ begin: 2, end: 5 });
   });
@@ -270,7 +270,7 @@ describe("getLineTiming", () => {
       backgroundWords: [{ text: "ooh", begin: 3, end: 6 }],
     };
 
-    const timing = getLineTiming(line);
+    const timing = effectiveBounds(line);
 
     expect(timing).toBeNull();
   });

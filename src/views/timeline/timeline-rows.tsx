@@ -5,7 +5,8 @@ import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { type EffectiveRow, getEffectiveRows, isLineSynced } from "@/views/timeline/utils";
+import { isLineSynced } from "@/domain/line/predicates";
+import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useMemo } from "react";
 import { Virtuoso } from "react-virtuoso";
 

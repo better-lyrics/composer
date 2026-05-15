@@ -15,7 +15,9 @@ import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
-import { getEffectiveLines, instanceTimingBounds, isLineSynced } from "@/views/timeline/utils";
+import { isLineSynced } from "@/domain/line/predicates";
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import { instanceTimingBounds } from "@/views/timeline/utils";
 import { IconCommand } from "@tabler/icons-react";
 import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";

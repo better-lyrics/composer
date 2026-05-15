@@ -5,7 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
-import { getLineTiming } from "@/utils/sync-helpers";
+import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
 import {
   IconCheck,
@@ -42,11 +42,11 @@ const ExportPanel: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const hasSyncedContent = useMemo(() => {
-    return lines.some((line) => getLineTiming(line) !== null);
+    return lines.some((line) => effectiveBounds(line) !== null);
   }, [lines]);
 
   const syncedLineCount = useMemo(() => {
-    return lines.filter((line) => getLineTiming(line) !== null).length;
+    return lines.filter((line) => effectiveBounds(line) !== null).length;
   }, [lines]);
 
   const generatedTtml = useMemo(() => {

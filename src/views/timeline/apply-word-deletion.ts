@@ -1,3 +1,4 @@
+import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/stores/project";
 
 interface DeletionSelection {
@@ -39,11 +40,11 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     if (!line) continue;
 
     const realMainCount = line.words?.length ?? 0;
-    const isLineSynced = realMainCount === 0 && line.begin !== undefined && line.end !== undefined;
+    const lineSynced = isLineSynced(line);
 
     let nextMain = line.words;
     let willHaveNoMainWords = realMainCount === 0;
-    if (isLineSynced && mainIdxs.has(0)) {
+    if (lineSynced && mainIdxs.has(0)) {
       nextMain = undefined;
       willHaveNoMainWords = true;
     } else if (realMainCount > 0 && mainIdxs.size > 0) {

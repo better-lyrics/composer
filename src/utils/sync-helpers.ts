@@ -1,4 +1,6 @@
-import type { WordTiming } from "@/stores/project";
+import { effectiveBounds } from "@/domain/line/bounds";
+import { isLineSynced } from "@/domain/line/predicates";
+import type { LyricLine, WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -13,18 +15,6 @@ interface SyncPosition {
 interface SyncState {
   position: SyncPosition;
   isActive: boolean;
-}
-
-interface LineTiming {
-  begin: number;
-  end: number;
-}
-
-interface LineTimingInput {
-  begin?: number;
-  end?: number;
-  words?: WordTiming[];
-  backgroundWords?: WordTiming[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -79,31 +69,8 @@ function getSyncedWordCount(lines: { words?: WordTiming[] }[]): number {
   return lines.reduce((acc, line) => acc + (line.words?.length ?? 0), 0);
 }
 
-function getLineTiming(line: LineTimingInput): LineTiming | null {
-  let begin: number | undefined;
-  let end: number | undefined;
-
-  if (line.words?.length) {
-    begin = line.words[0].begin;
-    end = line.words[line.words.length - 1].end;
-  } else if (line.begin !== undefined && line.end !== undefined) {
-    begin = line.begin;
-    end = line.end;
-  }
-
-  if (line.backgroundWords?.length) {
-    if (begin === undefined || end === undefined) return null;
-    const bgBegin = line.backgroundWords[0].begin;
-    const bgEnd = line.backgroundWords[line.backgroundWords.length - 1].end;
-    begin = Math.min(begin, bgBegin);
-    end = Math.max(end, bgEnd);
-  }
-
-  return begin !== undefined && end !== undefined ? { begin, end } : null;
-}
-
-function getSyncedLineCount(lines: LineTimingInput[]): number {
-  return lines.filter((line) => getLineTiming(line) !== null).length;
+function getSyncedLineCount(lines: LyricLine[]): number {
+  return lines.filter((line) => effectiveBounds(line) !== null).length;
 }
 
 // -- Conversion Functions -----------------------------------------------------
@@ -136,8 +103,8 @@ function convertLineToWord<T extends ConvertibleLine>(line: T): T {
   return { ...line, words, begin: undefined, end: undefined };
 }
 
-function hasLineTiming(lines: ConvertibleLine[]): boolean {
-  return lines.some((line) => line.begin !== undefined && line.end !== undefined && !line.words?.length);
+function hasLineTiming(lines: LyricLine[]): boolean {
+  return lines.some(isLineSynced);
 }
 
 // -- Word Distribution --------------------------------------------------------
@@ -173,11 +140,9 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
-function createBgWordsFromLine(line: { begin?: number; end?: number; words?: WordTiming[]; backgroundText?: string }):
-  | WordTiming[]
-  | null {
+function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
   if (!line.backgroundText) return null;
-  const timing = getLineTiming(line);
+  const timing = effectiveBounds(line);
   if (!timing) return null;
   return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
 }
@@ -221,7 +186,6 @@ export {
   getNudgeAmount,
   convertLineToWord,
   formatTimeMs,
-  getLineTiming,
   getSyncedLineCount,
   getSyncedWordCount,
   getTotalWords,

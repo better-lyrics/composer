@@ -1,3 +1,4 @@
+import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/stores/project";
 
 // -- Types ---------------------------------------------------------------------
@@ -101,7 +102,7 @@ function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadT
       }
     }
 
-    if (!wordTimed && line.begin !== undefined && line.end !== undefined) {
+    if (!wordTimed && isLineSynced(line)) {
       anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
       anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
     }
