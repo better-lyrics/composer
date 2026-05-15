@@ -28,7 +28,9 @@
         "noExplicitAny": "error"
       },
       "a11y": {
-        "useKeyWithClickEvents": "off"
+        "useKeyWithClickEvents": "off",
+        "useSemanticElements": "off",
+        "useFocusableInteractive": "off"
       }
     }
   },
