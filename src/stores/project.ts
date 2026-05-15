@@ -2,7 +2,11 @@ import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { applySiblingWords } from "@/utils/word-diff";
-import { normalizeTrailingSpaces, resolveOverlapsForward } from "@/utils/word-spaces";
+import {
+  addTrailingSpaceIfMissing,
+  resolveOverlapsForward,
+  trimTrailingSpaceFromLast,
+} from "@/utils/word-spaces";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -912,13 +916,12 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
 
   if (movedWords.length === 0) return null;
 
-  const remainingMain = normalizeTrailingSpaces(line.words.filter((_, i) => !indexSet.has(i)));
-  const mergedBg = normalizeTrailingSpaces(
-    resolveOverlapsForward(
-      [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin),
-      duration,
-    ),
-  );
+  const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
+
+  const prevBgLast = line.backgroundWords?.[line.backgroundWords.length - 1];
+  const sortedBg = [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
+  const reconciledBg = prevBgLast ? addTrailingSpaceIfMissing(sortedBg, prevBgLast) : sortedBg;
+  const mergedBg = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration));
 
   return {
     ...line,
@@ -947,13 +950,12 @@ function applyMoveFromBg(
 
   if (movedWords.length === 0) return null;
 
-  const remainingBg = normalizeTrailingSpaces(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
-  const mergedMain = normalizeTrailingSpaces(
-    resolveOverlapsForward(
-      [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin),
-      duration,
-    ),
-  );
+  const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
+
+  const prevMainLast = line.words?.[line.words.length - 1];
+  const sortedMain = [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
+  const reconciledMain = prevMainLast ? addTrailingSpaceIfMissing(sortedMain, prevMainLast) : sortedMain;
+  const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
 
   const hasBg = remainingBg.length > 0;
   return {
