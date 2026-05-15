@@ -144,6 +144,7 @@ interface ProjectActions {
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  detachSyllableFromGroup: (lineId: string, field: "words" | "backgroundWords", wordIndex: number) => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
@@ -827,6 +828,24 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         if (line.id !== lineId) return line;
         return { ...line, [field]: newWords };
       });
+      return commitHistory(state, { lines });
+    }),
+
+  detachSyllableFromGroup: (lineId, field, wordIndex) =>
+    set((state) => {
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const currentWords = target[field];
+      if (!currentWords || wordIndex < 0 || wordIndex >= currentWords.length) return state;
+      const word = currentWords[wordIndex];
+      if (word.syllableGroupId === undefined) return state;
+
+      const newWords: WordTiming[] = currentWords.map((w, i) => {
+        if (i !== wordIndex) return w;
+        const { syllableGroupId: _drop, ...rest } = w;
+        return rest;
+      });
+      const lines = state.lines.map((line) => (line.id === lineId ? { ...line, [field]: newWords } : line));
       return commitHistory(state, { lines });
     }),
 

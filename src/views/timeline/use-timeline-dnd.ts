@@ -1,9 +1,11 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { nanoid } from "nanoid";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
@@ -44,6 +46,27 @@ function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelectio
   ];
 }
 
+function expandSelectionsAcrossLines(lines: LyricLine[], selections: WordSelection[]): WordSelection[] {
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
+  const seen = new Set<string>();
+  const result: WordSelection[] = [];
+  for (const sel of selections) {
+    const line = linesById.get(sel.lineId);
+    if (!line) continue;
+    const words = sel.type === "word" ? line.words : line.backgroundWords;
+    if (!words) continue;
+    const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
+    for (const idx of expanded) {
+      const key = `${sel.lineId}:${sel.type}:${idx}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push({ lineId: sel.lineId, lineIndex: sel.lineIndex, wordIndex: idx, type: sel.type });
+    }
+  }
+  return result;
+}
+
 function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
   const grouped = new Map<string, WordSelection[]>();
   for (const sel of selections) {
@@ -61,7 +84,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
   const { selectedWords } = useTimelineStore.getState();
-  const wordsToDuplicate = resolveWordsToOperate(activeData, selectedWords);
+  const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
 
   const timeDelta = delta.x / zoom;
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
@@ -74,8 +97,19 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     const line = linesById.get(lineId);
     if (!line) continue;
 
-    const wordDups: Array<{ text: string; begin: number; end: number }> = [];
-    const bgDups: Array<{ text: string; begin: number; end: number }> = [];
+    const newGroupIdBySource = new Map<string, string>();
+    const getNewGroupId = (oldId: string | undefined): string | undefined => {
+      if (oldId === undefined) return undefined;
+      let nid = newGroupIdBySource.get(oldId);
+      if (!nid) {
+        nid = nanoid(8);
+        newGroupIdBySource.set(oldId, nid);
+      }
+      return nid;
+    };
+
+    const wordDups: Array<{ text: string; begin: number; end: number; syllableGroupId?: string }> = [];
+    const bgDups: Array<{ text: string; begin: number; end: number; syllableGroupId?: string }> = [];
 
     for (const sel of selections) {
       const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
@@ -86,7 +120,13 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const newEnd = Math.min(duration, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
-      const dup = { text: word.text, begin: newBegin, end: newEnd };
+      const dup: { text: string; begin: number; end: number; syllableGroupId?: string } = {
+        text: word.text,
+        begin: newBegin,
+        end: newEnd,
+      };
+      const newId = getNewGroupId(word.syllableGroupId);
+      if (newId !== undefined) dup.syllableGroupId = newId;
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }
@@ -161,6 +201,7 @@ function useTimelineDnd(lines: LyricLine[]) {
 
       const { active, over, delta, activatorEvent } = event;
       const isAltDrag = activatorEvent instanceof PointerEvent && activatorEvent.altKey;
+      const isShiftDrag = activatorEvent instanceof PointerEvent && activatorEvent.shiftKey;
 
       if (!over) {
         if (isAltDrag) handleAltDuplicate(event, lines, zoom, duration);
@@ -200,7 +241,16 @@ function useTimelineDnd(lines: LyricLine[]) {
       const movedUpToMain = delta.y < -DRAG_TRACK_SWITCH_THRESHOLD;
 
       const { selectedWords } = useTimelineStore.getState();
-      const wordsToMove = resolveWordsToOperate(activeData, selectedWords);
+      const wordsToMove = isShiftDrag
+        ? [
+            {
+              lineId: activeData.lineId,
+              lineIndex: activeData.lineIndex,
+              wordIndex: activeData.wordIndex,
+              type: activeData.trackType,
+            },
+          ]
+        : expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
       const timeDelta = delta.x / zoom;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
@@ -289,7 +339,12 @@ function useTimelineDnd(lines: LyricLine[]) {
         const newEnd = newBegin + wordDuration;
 
         const words = [...wordsArray];
-        words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
+        if (isShiftDrag) {
+          const { syllableGroupId: _drop, ...rest } = words[wordIndex];
+          words[wordIndex] = { ...rest, begin: newBegin, end: newEnd };
+        } else {
+          words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
+        }
         words.sort((a, b) => a.begin - b.begin);
 
         for (let i = 1; i < words.length; i++) {

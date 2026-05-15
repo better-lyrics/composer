@@ -205,3 +205,77 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
 });
+
+// -- detachSyllableFromGroup --------------------------------------------------
+
+describe("detachSyllableFromGroup", () => {
+  it("strips the syllableGroupId from a single targeted syllable", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].syllableGroupId).toBe("g1");
+    expect(words[1].syllableGroupId).toBeUndefined();
+    expect(words[2].syllableGroupId).toBe("g1");
+  });
+
+  it("is undoable", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+    useProjectStore.getState().undo();
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.every((w) => w.syllableGroupId === "g1")).toBe(true);
+  });
+
+  it("is a no-op when the target word has no syllableGroupId", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "hello",
+        agentId: "v1",
+        words: [{ text: "hello", begin: 0, end: 1 }],
+      },
+    ]);
+    const beforeIndex = useProjectStore.getState().historyIndex;
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 0);
+
+    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
+  });
+
+  it("ignores out-of-bounds indices and missing lines", () => {
+    useProjectStore.getState().setLines([seedMainLine()]);
+    const beforeIndex = useProjectStore.getState().historyIndex;
+
+    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 99);
+    useProjectStore.getState().detachSyllableFromGroup("missing", "words", 0);
+
+    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
+  });
+});
