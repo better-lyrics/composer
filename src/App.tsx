@@ -1,7 +1,10 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { useImportFromHash } from "@/hooks/useImportFromHash";
+import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePersistence } from "@/hooks/usePersistence";
+import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { GuideCard } from "@/tour/guide-card";
@@ -52,6 +55,9 @@ const AppContent: React.FC = () => {
   }, [shouldShowTour]);
 
   usePersistence();
+  useImportFromHash();
+  useResolveYouTubeTunnel();
+  useImportFromYouTube();
 
   const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
   const setSettingsOpenCb = useCallback((open: boolean) => setSettingsOpen(open), []);

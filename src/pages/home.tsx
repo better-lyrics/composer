@@ -1,7 +1,4 @@
 import { App } from "@/App";
-import { useImportFromHash } from "@/hooks/useImportFromHash";
-import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
-import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { PageHead } from "@/seo/page-head";
 import { organizationSchema, softwareApplicationSchema } from "@/seo/schemas";
 import { ClientOnly } from "@/ui/client-only";
@@ -26,17 +23,10 @@ const HomePage: React.FC = () => {
         jsonLd={[softwareApplicationSchema("Composer", DESCRIPTION, "/"), organizationSchema()]}
       />
       <ClientOnly fallback={<AppFallback />}>
-        <HomeApp />
+        <App />
       </ClientOnly>
     </>
   );
-};
-
-const HomeApp: React.FC = () => {
-  useImportFromHash();
-  useResolveYouTubeTunnel();
-  useImportFromYouTube();
-  return <App />;
 };
 
 export default HomePage;
