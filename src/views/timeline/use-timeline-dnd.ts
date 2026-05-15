@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
 import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applyShiftDragCrossTrack } from "@/views/timeline/apply-shift-drag-cross-track";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
@@ -110,8 +111,8 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       return nid;
     };
 
-    const wordDups: Array<{ text: string; begin: number; end: number; syllableGroupId?: string }> = [];
-    const bgDups: Array<{ text: string; begin: number; end: number; syllableGroupId?: string }> = [];
+    const wordDups: WordTiming[] = [];
+    const bgDups: WordTiming[] = [];
 
     for (const sel of selections) {
       const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
@@ -122,13 +123,13 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const newEnd = Math.min(duration, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
-      const dup: { text: string; begin: number; end: number; syllableGroupId?: string } = {
-        text: word.text,
-        begin: newBegin,
-        end: newEnd,
-      };
       const newId = getNewGroupId(word.syllableGroupId);
-      if (newId !== undefined) dup.syllableGroupId = newId;
+      const dup = cloneWord(word, { begin: newBegin, end: newEnd });
+      if (newId !== undefined) {
+        dup.syllableGroupId = newId;
+      } else {
+        delete dup.syllableGroupId;
+      }
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }

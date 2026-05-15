@@ -3,6 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/stores/project";
 import { Modal } from "@/ui/modal";
 import { distributeTiming } from "@/utils/syllable-utils";
+import { splitSourceWord } from "@/utils/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { SplitModeContent } from "@/views/sync/syllable-splitter";
@@ -59,23 +60,19 @@ const TimelineSyllableSplitter: React.FC = () => {
     const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
     const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
-    let newWords: WordTiming[];
-
-    if (playheadOnWord && splitPoints.length === 1) {
-      // Single split with playhead on word - use exact playhead time as boundary
-      const splitIdx = splitPoints[0];
-      newWords = [
-        { text: trimmedText.slice(0, splitIdx), begin: word.begin, end: currentTime },
-        { text: trimmedText.slice(splitIdx), begin: currentTime, end: word.end },
-      ];
-    } else {
-      newWords = distributeTiming(trimmedText, splitPoints, word.begin, word.end);
-    }
-
     const groupId = word.syllableGroupId ?? nanoid(8);
-    newWords = newWords.map((w) => ({ ...w, syllableGroupId: groupId }));
+    const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
 
-    // Preserve trailing space on the last part if original had one
+    const partitions =
+      playheadOnWord && splitPoints.length === 1
+        ? [
+            { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
+            { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
+          ]
+        : distributeTiming(trimmedText, splitPoints, word.begin, word.end);
+
+    let newWords = splitSourceWord(sourceForSplit, partitions);
+
     if (word.text.endsWith(" ") && newWords.length > 0) {
       const last = newWords[newWords.length - 1];
       newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
