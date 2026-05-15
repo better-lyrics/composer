@@ -15,7 +15,7 @@ describe("LyricsImportModal", () => {
     const screen = await render(<LyricsImportModal isOpen onClose={() => {}} />);
     const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
     expect(textarea).not.toBeNull();
-    expect(document.activeElement).toBe(textarea);
+    await expect.poll(() => document.activeElement).toBe(textarea);
     const importButton = screen.getByRole("button", { name: /Import$/ });
     expect((importButton.element() as HTMLButtonElement).disabled).toBe(true);
   });
