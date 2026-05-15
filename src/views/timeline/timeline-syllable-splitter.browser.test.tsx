@@ -104,4 +104,39 @@ describe("TimelineSyllableSplitter", () => {
     const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
     expect(wordsAfter.every((w) => w.syllableGroupId === "g_source")).toBe(true);
   });
+
+  it("reconciles line.text from the new words array after a split", async () => {
+    const line = createLine({
+      text: "every",
+      words: [createWord({ text: "every", begin: 0, end: 1 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-syllable"));
+    await expect.element(screen.getByRole("heading", { name: /Split "every"/ })).toBeInTheDocument();
+
+    await vi.waitFor(() => {
+      const btns = document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8");
+      expect(btns.length).toBeGreaterThan(0);
+    });
+    const splitButtons = document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8");
+    splitButtons[1].click();
+    splitButtons[3].click();
+
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await vi.waitFor(() => {
+      const words = useProjectStore.getState().lines[0].words ?? [];
+      expect(words.length).toBe(3);
+    });
+    const lineAfter = useProjectStore.getState().lines[0];
+    const joined = (lineAfter.words ?? [])
+      .map((w) => w.text)
+      .join("")
+      .trimEnd();
+    expect(lineAfter.text).toBe(joined);
+  });
 });

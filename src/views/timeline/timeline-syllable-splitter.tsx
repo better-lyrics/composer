@@ -88,7 +88,11 @@ const TimelineSyllableSplitter: React.FC = () => {
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
 
     if (type === "word") {
-      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words");
+      const newLineText = updatedWords
+        .map((w) => w.text)
+        .join("")
+        .trimEnd();
+      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words", { text: newLineText });
     } else {
       const newBgText = updatedWords
         .map((w) => w.text)
