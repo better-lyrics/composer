@@ -800,7 +800,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (targets.length === 0) return state;
       let lines = state.lines;
       let changed = false;
-      let linesById = new Map<string, LyricLine>();
+      const linesById = new Map<string, LyricLine>();
       for (const l of lines) linesById.set(l.id, l);
       for (const target of targets) {
         const line = linesById.get(target.lineId);
@@ -816,9 +816,11 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           return rest;
         });
 
+        const before = lines;
         lines = applyExplicitTargetToLines(lines, target.lineId, target.field, newWords);
-        linesById = new Map<string, LyricLine>();
-        for (const l of lines) linesById.set(l.id, l);
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i] !== before[i]) linesById.set(lines[i].id, lines[i]);
+        }
         changed = true;
       }
       if (!changed) return state;

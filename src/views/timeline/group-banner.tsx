@@ -150,7 +150,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     if (!isCollapsed) return [];
     const span = instanceEnd - instanceStart;
     if (span <= 0) return [];
-    const ticks: Array<{ leftPct: number; widthPct: number }> = [];
+    const ticks: Array<{ idx: number; leftPct: number; widthPct: number }> = [];
     for (const line of allLines) {
       if (line.groupId !== group.id || line.instanceIdx !== instanceIdx) continue;
       if (!line.words?.length) continue;
@@ -158,7 +158,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         const startPct = ((w.begin - instanceStart) / span) * 100;
         const endPct = ((w.end - instanceStart) / span) * 100;
         const widthPct = Math.max(0.4, endPct - startPct);
-        ticks.push({ leftPct: startPct, widthPct });
+        ticks.push({ idx: ticks.length, leftPct: startPct, widthPct });
       }
     }
     return ticks;
@@ -232,7 +232,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
           >
             {wordTicks.map((t) => (
               <span
-                key={`${t.leftPct}-${t.widthPct}`}
+                key={`${t.idx}-${t.leftPct}-${t.widthPct}`}
                 className="absolute top-0 bottom-0 rounded-[1px]"
                 style={{
                   left: `${t.leftPct}%`,

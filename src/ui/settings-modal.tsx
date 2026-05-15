@@ -44,6 +44,10 @@ interface SectionDef {
   icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
+
 // -- Sections -----------------------------------------------------------------
 
 const SECTIONS: SectionDef[] = [
@@ -624,7 +628,7 @@ const CobaltInstanceEditRow: React.FC<{
     <div className="flex flex-col gap-1.5 p-2 rounded-lg border border-composer-accent/50 bg-composer-accent/10">
       <div className="flex items-center gap-2">
         <input
-          ref={(el) => el?.focus()}
+          ref={focusOnMount}
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}

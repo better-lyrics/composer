@@ -25,6 +25,22 @@ interface TunnelResult {
   wasDefault: boolean;
 }
 
+class TunnelError extends Error {
+  readonly cause: unknown;
+  readonly instanceId: string;
+  readonly instanceLabel: string;
+  readonly wasDefault: boolean;
+
+  constructor(cause: unknown, instanceId: string, instanceLabel: string, wasDefault: boolean) {
+    super("tunnel_failed");
+    this.name = "TunnelError";
+    this.cause = cause;
+    this.instanceId = instanceId;
+    this.instanceLabel = instanceLabel;
+    this.wasDefault = wasDefault;
+  }
+}
+
 // -- Helpers ------------------------------------------------------------------
 
 function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, videoId: string): File {
@@ -40,30 +56,35 @@ async function fetchTunnel(
   const instanceAtStart = getActiveCobaltInstance();
   const wasDefault = isUsingDefaultCobaltInstance();
 
-  let tunnelUrl: string;
-  let filename: string | undefined;
-  if (wasDefault) {
-    const jwt = await ensureAuth();
+  try {
+    let tunnelUrl: string;
+    let filename: string | undefined;
+    if (wasDefault) {
+      const jwt = await ensureAuth();
+      if (signal.aborted) throw new DOMException("aborted", "AbortError");
+      ({ tunnelUrl, filename } = await getAudio(videoId, jwt));
+    } else {
+      ({ tunnelUrl, filename } = await getAudioFromStandardCobalt(videoId));
+    }
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
-    ({ tunnelUrl, filename } = await getAudio(videoId, jwt));
-  } else {
-    ({ tunnelUrl, filename } = await getAudioFromStandardCobalt(videoId));
+
+    const res = await fetch(tunnelUrl, { signal });
+    if (!res.ok) throw new CobaltApiError("cobalt_failed", res.status);
+    const buffer = await res.arrayBuffer();
+    if (signal.aborted) throw new DOMException("aborted", "AbortError");
+    if (buffer.byteLength === 0) throw new CobaltApiError("empty_audio", res.status);
+
+    return {
+      file: buildAudioFile(buffer, filename, videoId),
+      filename,
+      instanceLabel: instanceAtStart.label,
+      instanceId: instanceAtStart.id,
+      wasDefault,
+    };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") throw err;
+    throw new TunnelError(err, instanceAtStart.id, instanceAtStart.label, wasDefault);
   }
-  if (signal.aborted) throw new DOMException("aborted", "AbortError");
-
-  const res = await fetch(tunnelUrl, { signal });
-  if (!res.ok) throw new CobaltApiError("cobalt_failed", res.status);
-  const buffer = await res.arrayBuffer();
-  if (signal.aborted) throw new DOMException("aborted", "AbortError");
-  if (buffer.byteLength === 0) throw new CobaltApiError("empty_audio", res.status);
-
-  return {
-    file: buildAudioFile(buffer, filename, videoId),
-    filename,
-    instanceLabel: instanceAtStart.label,
-    instanceId: instanceAtStart.id,
-    wasDefault,
-  };
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -76,8 +97,10 @@ function useResolveYouTubeTunnel(): void {
   const source = useAudioStore((s) => s.source);
   const previousSourceRef = useRef<AudioSource>(null);
   useEffect(() => {
-    previousSourceRef.current = source;
-  });
+    return () => {
+      previousSourceRef.current = source;
+    };
+  }, [source]);
 
   const videoId = source?.type === "youtube" && !source.file ? source.videoId : null;
 
@@ -121,12 +144,15 @@ function useResolveYouTubeTunnel(): void {
     if (!err || !videoId) return;
     if (err instanceof DOMException && err.name === "AbortError") return;
     console.error(LOG_PREFIX, "tunnel fetch failed", err);
-    const instance = getActiveCobaltInstance();
-    const wasDefault = isUsingDefaultCobaltInstance();
-    const message = formatCobaltErrorForToast(err, { isDefault: wasDefault, instanceLabel: instance.label });
+    const tunnelErr = err instanceof TunnelError ? err : null;
+    const cause = tunnelErr?.cause ?? err;
+    const instanceId = tunnelErr?.instanceId ?? getActiveCobaltInstance().id;
+    const instanceLabel = tunnelErr?.instanceLabel ?? getActiveCobaltInstance().label;
+    const wasDefault = tunnelErr?.wasDefault ?? isUsingDefaultCobaltInstance();
+    const message = formatCobaltErrorForToast(cause, { isDefault: wasDefault, instanceLabel });
     toast.error(message);
-    if (!wasDefault && instance.id !== DEFAULT_COBALT_INSTANCE_ID) {
-      useSettingsStore.getState().recordCobaltInstanceResult(instance.id, "error", message);
+    if (!wasDefault && instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
+      useSettingsStore.getState().recordCobaltInstanceResult(instanceId, "error", message);
     }
     const current = useAudioStore.getState().source;
     if (current?.type === "youtube" && current.videoId === videoId) {

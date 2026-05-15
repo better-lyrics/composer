@@ -161,4 +161,3 @@ const ErrorFallback: React.FC = () => {
 // -- Exports -------------------------------------------------------------------
 
 export { ErrorFallback };
-ErrorFallback;
