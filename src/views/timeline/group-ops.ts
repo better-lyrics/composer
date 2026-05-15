@@ -1,3 +1,4 @@
+import { linesOfInstance } from "@/domain/instance/enumerate";
 import type { LineTemplate, LinkGroup, LyricLine, WordTemplate } from "@/stores/project";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 
@@ -138,9 +139,9 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const { startTime } = instanceLineRange(lines, groupId, instanceIdx);
   const templates: LineTemplate[] = [];
 
-  const matched = lines
-    .filter((line) => line.groupId === groupId && line.instanceIdx === instanceIdx)
-    .sort((a, b) => (a.templateLineIdx ?? 0) - (b.templateLineIdx ?? 0));
+  const matched = linesOfInstance(lines, groupId, instanceIdx).toSorted(
+    (a, b) => (a.templateLineIdx ?? 0) - (b.templateLineIdx ?? 0),
+  );
 
   for (const line of matched) {
     const tplWords: WordTemplate[] | undefined = line.words?.map((w) => ({

@@ -1,7 +1,9 @@
+import { instanceBounds } from "@/domain/instance/bounds";
+import { linesOfInstance } from "@/domain/instance/enumerate";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
-import { computeRowLayout, instanceTimingBounds } from "@/views/timeline/utils";
+import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -27,15 +29,13 @@ function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
   const target = layout.headerTops.get(`${groupId}:${instanceIdx}`);
   if (!target) return;
 
-  // Use the same bounds helper that drives the header so smooth-scroll lands
-  // on the actual instance start, not a stale line.begin from import.
-  const instanceLines = projectLines.filter((l) => l.groupId === groupId && l.instanceIdx === instanceIdx);
-  const { start: instanceStart } = instanceTimingBounds(instanceLines);
+  const instanceLines = linesOfInstance(projectLines, groupId, instanceIdx);
+  const bounds = instanceBounds(instanceLines);
 
   const viewportWidth = container.clientWidth;
   const viewportHeight = container.clientHeight;
-  const scrollLeft = Number.isFinite(instanceStart)
-    ? Math.max(0, instanceStart * zoom - viewportWidth / 2 + GUTTER_WIDTH)
+  const scrollLeft = bounds
+    ? Math.max(0, bounds.begin * zoom - viewportWidth / 2 + GUTTER_WIDTH)
     : container.scrollLeft;
 
   const rowCenter = target.top + target.height / 2;

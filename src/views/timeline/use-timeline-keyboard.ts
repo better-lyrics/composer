@@ -15,13 +15,14 @@ import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from 
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
+import { instanceBounds } from "@/domain/instance/bounds";
+import { linesOfInstance } from "@/domain/instance/enumerate";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import {
   computeRowLayout,
   findWordAtTime,
   getWordsInInstance,
-  instanceTimingBounds,
   partitionNudgeSelections,
   shiftSelectionsTogether,
 } from "@/views/timeline/utils";
@@ -698,14 +699,12 @@ function useTimelineKeyboard(
             toast.error("Select words inside one instance first");
             break;
           }
-          const instanceLines = projectLines.filter(
-            (l) => l.groupId === inst.groupId && l.instanceIdx === inst.instanceIdx,
-          );
-          const { start: earliest } = instanceTimingBounds(instanceLines);
-          if (!Number.isFinite(earliest)) break;
+          const instanceLines = linesOfInstance(projectLines, inst.groupId, inst.instanceIdx);
+          const bounds = instanceBounds(instanceLines);
+          if (!bounds) break;
           const audioEl = useAudioStore.getState().audioElement;
           const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const delta = playheadTime - earliest;
+          const delta = playheadTime - bounds.begin;
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
           useProjectStore.getState().shiftInstance(inst.groupId, inst.instanceIdx, delta);

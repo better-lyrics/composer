@@ -3,6 +3,7 @@
  */
 import type { LyricLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
+import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   distributeLinesTiming,
@@ -12,7 +13,6 @@ import {
   nudgeSelectedWords,
   type GroupHeaderRow,
   getWordsInInstance,
-  instanceTimingBounds,
   partitionNudgeSelections,
   shiftLineSyncedRows,
   shiftSelectionsTogether,
@@ -356,8 +356,6 @@ describe("getEffectiveRows", () => {
   });
 
   it("does NOT emit a header for an instance with no timed content (no words, bg words, begin, or end)", () => {
-    // Without this guard the banner renders at x=0 with min-width because
-    // instanceTimingBounds returns its { 0, 0 } no-finite-value fallback.
     const lines: LyricLine[] = [
       l("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
       l("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
@@ -417,7 +415,7 @@ describe("getEffectiveRows", () => {
   });
 });
 
-describe("instanceTimingBounds", () => {
+describe("instanceBounds (legacy call site coverage)", () => {
   it("uses min/max across word and bg word timings", () => {
     const lines: LyricLine[] = [
       {
@@ -431,22 +429,15 @@ describe("instanceTimingBounds", () => {
         backgroundWords: [{ text: "yeah", begin: 4, end: 4.5 }],
       },
     ];
-    const bounds = instanceTimingBounds(lines);
-    expect(bounds.start).toBe(4);
-    expect(bounds.end).toBe(7);
+    expect(instanceBounds(lines)).toEqual({ begin: 4, end: 7 });
   });
 
-  it("ignores stale line.begin/end when words are present (header bounds track word edits, not line-level cache)", () => {
-    // The user-reported regression: nudging all words in an instance left
-    // shifts every word, but the header's right edge stays affixed because
-    // line.begin/end were left stale. Header should follow the word array,
-    // not a leftover line-level value from import.
+  it("ignores stale line.begin/end when words are present", () => {
     const lines: LyricLine[] = [
       {
         id: "a",
         text: "x",
         agentId: "v1",
-        // Stale line-level timing (e.g. from TTML import that populated both)
         begin: 10,
         end: 20,
         words: [
@@ -455,9 +446,7 @@ describe("instanceTimingBounds", () => {
         ],
       },
     ];
-    const bounds = instanceTimingBounds(lines);
-    expect(bounds.start).toBe(5);
-    expect(bounds.end).toBe(7);
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("ignores stale line.begin/end when only bg words are present", () => {
@@ -471,16 +460,12 @@ describe("instanceTimingBounds", () => {
         backgroundWords: [{ text: "ah", begin: 5, end: 6 }],
       },
     ];
-    const bounds = instanceTimingBounds(lines);
-    expect(bounds.start).toBe(5);
-    expect(bounds.end).toBe(6);
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 6 });
   });
 
   it("falls back to line.begin/end ONLY when the line is truly line-synced (no words and no bg words)", () => {
     const lines: LyricLine[] = [{ id: "a", text: "x", agentId: "v1", begin: 5, end: 7 }];
-    const bounds = instanceTimingBounds(lines);
-    expect(bounds.start).toBe(5);
-    expect(bounds.end).toBe(7);
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 7 });
   });
 
   it("mixes correctly across multiple lines: word-synced lines use words, line-synced uses begin/end", () => {
@@ -489,17 +474,13 @@ describe("instanceTimingBounds", () => {
         id: "a",
         text: "x",
         agentId: "v1",
-        // Stale line-level should be IGNORED; words win
         begin: 100,
         end: 200,
         words: [{ text: "hello", begin: 5, end: 6 }],
       },
-      // Truly line-synced: no words, line.begin/end is the source of truth
       { id: "b", text: "y", agentId: "v1", begin: 10, end: 12 },
     ];
-    const bounds = instanceTimingBounds(lines);
-    expect(bounds.start).toBe(5);
-    expect(bounds.end).toBe(12);
+    expect(instanceBounds(lines)).toEqual({ begin: 5, end: 12 });
   });
 });
 

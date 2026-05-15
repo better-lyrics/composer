@@ -124,7 +124,7 @@ describe("createGroupFromSelection · group color", () => {
 // -- instanceLineRange · stale line.begin/end ignored when words present -------
 
 describe("instanceLineRange · prefers word-level timing over stale line.begin/end", () => {
-  it("ignores stale line.begin/end when words are present (matches instanceTimingBounds)", () => {
+  it("ignores stale line.begin/end when words are present (matches instanceBounds)", () => {
     const ls: LyricLine[] = [
       {
         id: "L1",

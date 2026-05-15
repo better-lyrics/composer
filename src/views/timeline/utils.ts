@@ -1,3 +1,4 @@
+import { instanceBounds } from "@/domain/instance/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
@@ -78,37 +79,6 @@ interface LineEffectiveRow {
 
 type EffectiveRow = GroupHeaderRow | LineEffectiveRow;
 
-function instanceTimingBounds(lines: LyricLine[]): { start: number; end: number } {
-  let start = Number.POSITIVE_INFINITY;
-  let end = Number.NEGATIVE_INFINITY;
-  for (const line of lines) {
-    const hasWords = !!line.words?.length;
-    const hasBgWords = !!line.backgroundWords?.length;
-    if (hasWords) {
-      for (const w of line.words!) {
-        if (w.begin < start) start = w.begin;
-        if (w.end > end) end = w.end;
-      }
-    }
-    if (hasBgWords) {
-      for (const w of line.backgroundWords!) {
-        if (w.begin < start) start = w.begin;
-        if (w.end > end) end = w.end;
-      }
-    }
-    // Only fall back to line-level begin/end for truly line-synced rows.
-    // For lines that have words or bg words, those arrays are the source of
-    // truth; line.begin/end may be stale (TTML import populates both, and
-    // word edits don't write back to the line-level cache).
-    if (!hasWords && !hasBgWords) {
-      if (line.begin !== undefined && line.begin < start) start = line.begin;
-      if (line.end !== undefined && line.end > end) end = line.end;
-    }
-  }
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return { start: 0, end: 0 };
-  return { start, end };
-}
-
 function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
   const effective = getEffectiveLines(lines);
   const rows: EffectiveRow[] = [];
@@ -121,26 +91,15 @@ function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
     const first = slice[0];
 
     if (first.groupId !== undefined && first.instanceIdx !== undefined) {
-      // Skip the header for instances with no timed content. Without this
-      // guard, instanceTimingBounds returns its { 0, 0 } no-finite-value
-      // fallback and the banner renders at x=0 with min-width, which is
-      // confusing because there's nothing actually placed at time 0.
-      const hasAnyTiming = slice.some(
-        (line) =>
-          (line.words?.length ?? 0) > 0 ||
-          (line.backgroundWords?.length ?? 0) > 0 ||
-          line.begin !== undefined ||
-          line.end !== undefined,
-      );
-      if (hasAnyTiming) {
-        const { start, end } = instanceTimingBounds(slice);
+      const bounds = instanceBounds(slice);
+      if (bounds) {
         rows.push({
           kind: "group-header",
           groupId: first.groupId,
           instanceIdx: first.instanceIdx,
           lineCount: slice.length,
-          instanceStart: start,
-          instanceEnd: end,
+          instanceStart: bounds.begin,
+          instanceEnd: bounds.end,
           firstLineId: first.id,
         });
       }
@@ -453,7 +412,6 @@ export {
   formatTime,
   findWordAtTime,
   getEffectiveRows,
-  instanceTimingBounds,
   getWordsInInstance,
   computeRowLayout,
   nudgeSelectedWords,

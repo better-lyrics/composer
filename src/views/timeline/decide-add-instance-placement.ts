@@ -1,6 +1,6 @@
+import { instanceBounds } from "@/domain/instance/bounds";
 import type { LineTemplate, LyricLine } from "@/stores/project";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
-import { instanceTimingBounds } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
 
@@ -49,13 +49,7 @@ function templateDuration(template: LineTemplate[]): number {
 }
 
 function lineTimeRange(line: LyricLine): { begin: number; end: number } | null {
-  const bounds = instanceTimingBounds([line]);
-  if (!Number.isFinite(bounds.start) || !Number.isFinite(bounds.end)) return null;
-  if (bounds.start === 0 && bounds.end === 0) {
-    // Truly untimed line (no words, no bg words, no begin/end)
-    return null;
-  }
-  return { begin: bounds.start, end: bounds.end };
+  return instanceBounds([line]);
 }
 
 interface DecideInput {
