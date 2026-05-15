@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
@@ -246,9 +247,9 @@ function partitionNudgeSelections(
       wordSynced.push(sel);
       continue;
     }
-    if (line.words?.length) {
+    if (isWordSynced(line)) {
       wordSynced.push(sel);
-    } else if (line.begin !== undefined && line.end !== undefined) {
+    } else if (isLineSynced(line)) {
       if (seenLineSyncedIds.has(sel.lineId)) continue;
       seenLineSyncedIds.add(sel.lineId);
       lineSynced.push(sel);
