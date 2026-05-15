@@ -434,6 +434,25 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [syllableGroupInfo, clearContextMenu]);
 
+  const detachSyllableInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    if (!line) return null;
+    const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
+    const word = line[field]?.[wordIndex];
+    if (!word || word.syllableGroupId === undefined) return null;
+    return { lineId, field, wordIndex };
+  }, [contextMenu, rawLines]);
+
+  const handleDetachSyllable = useCallback(() => {
+    if (!detachSyllableInfo) return;
+    useProjectStore
+      .getState()
+      .detachSyllableFromGroup(detachSyllableInfo.lineId, detachSyllableInfo.field, detachSyllableInfo.wordIndex);
+    clearContextMenu();
+  }, [detachSyllableInfo, clearContextMenu]);
+
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
     const { sorted, lineId, type } = mergeInfo;
@@ -669,6 +688,13 @@ const TimelineContextMenu: React.FC = () => {
                 label="Merge into syllable group"
                 shortcut={getEffectiveKeysArray("timeline.mergeIntoSyllables")}
                 onClick={handleMergeIntoSyllables}
+              />
+            )}
+            {detachSyllableInfo && (
+              <MenuItem
+                label="Detach syllable from group"
+                shortcut={getEffectiveKeysArray("timeline.detachSyllable")}
+                onClick={handleDetachSyllable}
               />
             )}
             {splitIntoWordsInfo && (

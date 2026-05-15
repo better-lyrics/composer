@@ -428,11 +428,22 @@ function useTimelineKeyboard(
           if (!consecutive) break;
           e.preventDefault();
           const field = first.type === "word" ? "words" : "backgroundWords";
-          useProjectStore.getState().mergeWordsIntoSyllableGroup(
-            first.lineId,
-            field,
-            sorted.map((s) => s.wordIndex),
-          );
+          useProjectStore
+            .getState()
+            .mergeWordsIntoSyllableGroup(
+              first.lineId,
+              field,
+              sorted.map((s) => s.wordIndex),
+            );
+          break;
+        }
+        case "timeline.detachSyllable": {
+          const { selectedWords: dSel } = useTimelineStore.getState();
+          if (dSel.length !== 1) break;
+          const sel = dSel[0];
+          const field: "words" | "backgroundWords" = sel.type === "word" ? "words" : "backgroundWords";
+          e.preventDefault();
+          useProjectStore.getState().detachSyllableFromGroup(sel.lineId, field, sel.wordIndex);
           break;
         }
         case "timeline.splitIntoWords": {

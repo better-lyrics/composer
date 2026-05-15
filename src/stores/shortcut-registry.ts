@@ -166,6 +166,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "y" },
   },
   {
+    id: "timeline.detachSyllable",
+    scope: "timeline",
+    description: "Detach selected syllable from its group",
+    defaultBinding: { key: "y", shift: true },
+  },
+  {
     id: "timeline.splitIntoWords",
     scope: "timeline",
     description: "Split line into words",

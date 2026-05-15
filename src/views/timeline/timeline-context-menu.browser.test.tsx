@@ -94,6 +94,56 @@ describe("TimelineContextMenu", () => {
     expect(words.every((w) => w.syllableGroupId === words[0].syllableGroupId)).toBe(true);
   });
 
+  it("shows 'Detach syllable from group' on a syllable-group word and strips its id when clicked", async () => {
+    const line = createLine({
+      words: [
+        createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
+        createWord({ text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" }),
+        createWord({ text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" }),
+      ],
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Detach syllable from group/i.test(b.textContent ?? ""),
+    );
+    expect(detachBtn).toBeDefined();
+    detachBtn?.click();
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].syllableGroupId).toBe("g_every");
+    expect(words[1].syllableGroupId).toBeUndefined();
+    expect(words[2].syllableGroupId).toBe("g_every");
+  });
+
+  it("hides 'Detach syllable from group' on a standalone word", async () => {
+    const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Detach syllable from group/i.test(b.textContent ?? ""),
+    );
+    expect(detachBtn).toBeUndefined();
+  });
+
   it("hides 'Merge into syllable group' for a non-contiguous selection", async () => {
     const line = createLine({
       words: [
