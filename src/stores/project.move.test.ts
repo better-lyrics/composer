@@ -327,6 +327,56 @@ describe("moveWordToBg · linked propagation", () => {
 
 // -- cross-track moves preserve syllable bonds --------------------------------
 
+describe("cross-track moves auto-expand to syllable groupmates", () => {
+  it("moveWordToBg expands a single-syllable selection to the whole syllable group", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "hello every world",
+        agentId: "v1",
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "ev", begin: 1, end: 1.2, syllableGroupId: "g_every" },
+          { text: "er", begin: 1.2, end: 1.5, syllableGroupId: "g_every" },
+          { text: "y", begin: 1.5, end: 1.8, syllableGroupId: "g_every" },
+          { text: "world", begin: 1.8, end: 2.5 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(line.backgroundWords?.every((w) => w.syllableGroupId === "g_every")).toBe(true);
+  });
+
+  it("moveWordFromBg expands a single-syllable bg selection to the whole syllable group", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every",
+        agentId: "v1",
+        words: [],
+        backgroundWords: [
+          { text: "ev", begin: 5, end: 5.2, syllableGroupId: "g_every" },
+          { text: "er", begin: 5.2, end: 5.5, syllableGroupId: "g_every" },
+          { text: "y", begin: 5.5, end: 5.8, syllableGroupId: "g_every" },
+        ],
+        backgroundText: "every",
+      },
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [1], -4, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
+    expect(line.words?.every((w) => w.syllableGroupId === "g_every")).toBe(true);
+    expect(line.backgroundWords).toBeUndefined();
+  });
+});
+
 describe("cross-track moves preserve syllable bonds", () => {
   it("moveWordToBg keeps remaining split-word syllables bonded", () => {
     useProjectStore.getState().setLines([

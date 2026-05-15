@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { nanoid } from "nanoid";
@@ -473,18 +474,19 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const sourceLine = state.lines.find((l) => l.id === lineId);
       if (!sourceLine?.words || wordIndices.length === 0) return state;
       const sourceWordCount = sourceLine.words.length;
+      const expandedIndices = expandSelectionToGroupmates(sourceLine.words, wordIndices);
       const linkScope = getLinkScope(sourceLine);
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
         if (line.id === lineId) {
-          const updated = applyMoveToBg(line, wordIndices, timeDelta, duration);
+          const updated = applyMoveToBg(line, expandedIndices, timeDelta, duration);
           if (!updated) return line;
           mutated = true;
           return updated;
         }
         if (isLinkedSibling(line, linkScope) && line.words?.length === sourceWordCount) {
-          const updated = applyMoveToBg(line, wordIndices, timeDelta, duration);
+          const updated = applyMoveToBg(line, expandedIndices, timeDelta, duration);
           if (updated) {
             mutated = true;
             return updated;
@@ -502,18 +504,19 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const sourceLine = state.lines.find((l) => l.id === lineId);
       if (!sourceLine?.backgroundWords || wordIndices.length === 0) return state;
       const sourceBgCount = sourceLine.backgroundWords.length;
+      const expandedIndices = expandSelectionToGroupmates(sourceLine.backgroundWords, wordIndices);
       const linkScope = getLinkScope(sourceLine);
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
         if (line.id === lineId) {
-          const updated = applyMoveFromBg(line, wordIndices, timeDelta, duration);
+          const updated = applyMoveFromBg(line, expandedIndices, timeDelta, duration);
           if (!updated) return line;
           mutated = true;
           return updated;
         }
         if (isLinkedSibling(line, linkScope) && line.backgroundWords?.length === sourceBgCount) {
-          const updated = applyMoveFromBg(line, wordIndices, timeDelta, duration);
+          const updated = applyMoveFromBg(line, expandedIndices, timeDelta, duration);
           if (updated) {
             mutated = true;
             return updated;

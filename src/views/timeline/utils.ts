@@ -1,6 +1,7 @@
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { distributeWordsInLine, getLineTiming } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
@@ -291,18 +292,32 @@ function partitionNudgeSelections(
 ): PartitionedSelections {
   const linesById = new Map<string, LyricLine>();
   for (const l of rawLines) linesById.set(l.id, l);
+  const wordSyncedSeen = new Set<string>();
   const wordSynced: NudgeSelection[] = [];
   const lineSynced: NudgeSelection[] = [];
   const seenLineSyncedIds = new Set<string>();
+
+  const pushWordSynced = (sel: NudgeSelection, line: LyricLine) => {
+    const wordsArray = sel.type === "bg" ? line.backgroundWords : line.words;
+    if (!wordsArray) return;
+    const expanded = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
+    for (const idx of expanded) {
+      const key = `${sel.lineId}:${sel.type}:${idx}`;
+      if (wordSyncedSeen.has(key)) continue;
+      wordSyncedSeen.add(key);
+      wordSynced.push({ lineId: sel.lineId, type: sel.type, wordIndex: idx });
+    }
+  };
+
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
     if (sel.type === "bg") {
-      wordSynced.push(sel);
+      pushWordSynced(sel, line);
       continue;
     }
     if (line.words?.length) {
-      wordSynced.push(sel);
+      pushWordSynced(sel, line);
     } else if (line.begin !== undefined && line.end !== undefined) {
       if (seenLineSyncedIds.has(sel.lineId)) continue;
       seenLineSyncedIds.add(sel.lineId);
