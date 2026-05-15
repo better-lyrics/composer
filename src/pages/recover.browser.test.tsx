@@ -1,18 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { RecoverPanel } from "@/pages/recover";
 import { render } from "@/test/render";
 
 const DB_NAME = "ttml-composer";
 const STORE_NAME = "projects";
-
-async function wipeDB(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase(DB_NAME);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-    req.onblocked = () => resolve();
-  });
-}
 
 async function seedProject(project: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -32,16 +23,17 @@ async function seedProject(project: unknown): Promise<void> {
 }
 
 describe("RecoverPanel", () => {
-  beforeEach(async () => {
-    await wipeDB();
-  });
-  afterEach(async () => {
-    await wipeDB();
-  });
-
   it("shows the empty-state message when IndexedDB has no project", async () => {
     const screen = await render(<RecoverPanel />);
-    await expect.element(screen.getByText(/No saved project found in this browser/)).toBeInTheDocument();
+    await expect.element(screen.getByText(/Nothing saved in this browser yet/)).toBeInTheDocument();
+  });
+
+  it("hides the Download button when there is nothing to recover", async () => {
+    const screen = await render(<RecoverPanel />);
+    await expect.element(screen.getByText(/Nothing saved in this browser yet/)).toBeInTheDocument();
+    const buttons = Array.from(screen.container.querySelectorAll("button")).map((b) => b.textContent?.trim() ?? "");
+    expect(buttons.some((t) => /Download/.test(t))).toBe(false);
+    expect(buttons.some((t) => /Back to Composer/.test(t))).toBe(true);
   });
 
   it("auto-downloads and shows project metadata when a project is present", async () => {

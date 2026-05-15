@@ -1,20 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { downloadRecoveryFile, readRecoveryMetadata } from "@/lib/recovery";
+import { describe, expect, it } from "vitest";
+import { clearRecoveryStorage, downloadRecoveryFile, readRecoveryMetadata } from "@/lib/recovery";
 
 // -- Helpers ------------------------------------------------------------------
 
 const DB_NAME = "ttml-composer";
 const STORE_NAME = "projects";
 const CURRENT_KEY = "current";
-
-async function wipeDB(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase(DB_NAME);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error ?? new Error("deleteDatabase failed"));
-    req.onblocked = () => resolve();
-  });
-}
 
 async function seedProject(project: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -85,13 +76,6 @@ function captureDownload(): { resolve: () => Promise<{ filename: string; size: n
 // -- Tests --------------------------------------------------------------------
 
 describe("recovery", () => {
-  beforeEach(async () => {
-    await wipeDB();
-  });
-  afterEach(async () => {
-    await wipeDB();
-  });
-
   describe("readRecoveryMetadata", () => {
     it("returns found=false when IndexedDB has no project", async () => {
       const result = await readRecoveryMetadata();
@@ -149,6 +133,23 @@ describe("recovery", () => {
     it("returns found=false without throwing when IndexedDB has no project", async () => {
       const result = await downloadRecoveryFile();
       expect(result.found).toBe(false);
+    });
+  });
+
+  describe("clearRecoveryStorage", () => {
+    it("wipes the projects store so a subsequent read returns found=false", async () => {
+      await seedProject({
+        version: 1,
+        metadata: { title: "Wipe" },
+        lines: [{ id: "a", text: "x", agentId: "v1" }],
+      });
+      expect((await readRecoveryMetadata()).found).toBe(true);
+      await clearRecoveryStorage();
+      expect((await readRecoveryMetadata()).found).toBe(false);
+    });
+
+    it("resolves without error when IndexedDB has no project", async () => {
+      await expect(clearRecoveryStorage()).resolves.toBeUndefined();
     });
   });
 });

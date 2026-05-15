@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ErrorFallback } from "@/pages/error-fallback";
 import { render } from "@/test/render";
@@ -10,15 +10,6 @@ const ThrowingRoute: React.FC = () => {
 
 const DB_NAME = "ttml-composer";
 const STORE_NAME = "projects";
-
-async function wipeDB(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase(DB_NAME);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-    req.onblocked = () => resolve();
-  });
-}
 
 async function seedProject(project: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -48,9 +39,6 @@ describe("ErrorFallback", () => {
   beforeEach(() => {
     allowConsole(/Boom for test|route error|RenderErrorBoundary|caught the following error|recovery failed/);
   });
-  afterEach(async () => {
-    await wipeDB();
-  });
 
   it("renders Reload and Go home buttons when a route throws", async () => {
     const screen = await renderFallback();
@@ -63,15 +51,13 @@ describe("ErrorFallback", () => {
     await expect.element(screen.getByRole("button", { name: /Download my work/ })).toBeInTheDocument();
   });
 
-  it("shows 'No saved project' message when IndexedDB has nothing to recover", async () => {
-    await wipeDB();
+  it("shows 'Nothing saved' message when IndexedDB has nothing to recover", async () => {
     const screen = await renderFallback();
     await screen.getByRole("button", { name: /Download my work/ }).click();
-    await expect.element(screen.getByText(/No saved project found/)).toBeInTheDocument();
+    await expect.element(screen.getByText(/Nothing saved in this browser yet/)).toBeInTheDocument();
   });
 
   it("shows a success message after a successful recovery download", async () => {
-    await wipeDB();
     await seedProject({
       version: 1,
       savedAt: Date.now(),
@@ -98,11 +84,10 @@ describe("ErrorFallback", () => {
     try {
       const screen = await renderFallback();
       await screen.getByRole("button", { name: /Download my work/ }).click();
-      await expect.element(screen.getByText(/Downloaded/)).toBeInTheDocument();
+      await expect.element(screen.getByText(/Saved\./)).toBeInTheDocument();
       expect(capturedFilename).toMatch(/^TestSong-/);
     } finally {
       document.createElement = originalCreate;
-      await wipeDB();
     }
   });
 });

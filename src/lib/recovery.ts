@@ -102,7 +102,32 @@ async function downloadRecoveryFile(): Promise<RecoveryResult> {
   };
 }
 
+async function clearRecoveryStorage(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const openReq = indexedDB.open(DB_NAME, DB_VERSION);
+    openReq.onerror = () => reject(openReq.error ?? new Error("IndexedDB open failed"));
+    openReq.onsuccess = () => {
+      const db = openReq.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.close();
+        resolve();
+        return;
+      }
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).clear();
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => {
+        db.close();
+        reject(tx.error ?? new Error("IndexedDB clear failed"));
+      };
+    };
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { readRecoveryMetadata, downloadRecoveryFile };
+export { readRecoveryMetadata, downloadRecoveryFile, clearRecoveryStorage };
 export type { RecoveryResult };

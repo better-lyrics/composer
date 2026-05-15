@@ -1,19 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { isMac } from "@/utils/platform";
 
 const DB_NAME = "ttml-composer";
 const STORE_NAME = "projects";
-
-async function wipeDB(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.deleteDatabase(DB_NAME);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-    req.onblocked = () => resolve();
-  });
-}
 
 async function seedProject(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -73,13 +64,6 @@ function dispatchPanicCombo(extra: Partial<KeyboardEventInit> = {}): void {
 }
 
 describe("usePanicRecovery", () => {
-  beforeEach(async () => {
-    await wipeDB();
-  });
-  afterEach(async () => {
-    await wipeDB();
-  });
-
   it("downloads the project on the panic combo", async () => {
     await seedProject();
     const capture = captureDownloads();

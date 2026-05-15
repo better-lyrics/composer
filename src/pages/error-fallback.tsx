@@ -1,5 +1,6 @@
 import { downloadRecoveryFile } from "@/lib/recovery";
 import { Button } from "@/ui/button";
+import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { Scroll } from "@/ui/scroll";
 import {
   IconBug,
@@ -108,11 +109,11 @@ const ErrorFallback: React.FC = () => {
 
   const recoveryMessage =
     recoveryStatus === "success"
-      ? "Downloaded. Import it on the home page to continue."
+      ? "Saved. Open Composer, head to the Export tab, and click Import Project to keep going."
       : recoveryStatus === "empty"
-        ? "No saved project found in this browser."
+        ? "Nothing saved in this browser yet."
         : recoveryStatus === "failed"
-          ? "Couldn't read IndexedDB. Try the /recover page in a fresh tab."
+          ? "Couldn't reach your save. Try opening /recover in a fresh tab."
           : null;
 
   const responseDataString =
@@ -149,6 +150,9 @@ const ErrorFallback: React.FC = () => {
           </Button>
         </div>
         {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
+        {recoveryStatus === "success" && (
+          <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
+        )}
 
         {hasDetails && (
           <div className="w-full mt-2 flex flex-col items-center gap-2">
