@@ -106,4 +106,29 @@ describe("usePanicRecovery", () => {
       capture.cleanup();
     }
   });
+
+  it("matches via event.code when macOS Alt rewrites event.key to a dead-key glyph", async () => {
+    await seedProject();
+    const capture = captureDownloads();
+    try {
+      await renderHook(() => usePanicRecovery());
+      window.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "´",
+          code: "KeyE",
+          shiftKey: true,
+          altKey: true,
+          metaKey: isMac,
+          ctrlKey: !isMac,
+          bubbles: true,
+        }),
+      );
+      for (let i = 0; i < 30 && capture.filenames.length === 0; i++) {
+        await new Promise((r) => setTimeout(r, 20));
+      }
+      expect(capture.filenames.length).toBe(1);
+    } finally {
+      capture.cleanup();
+    }
+  });
 });
