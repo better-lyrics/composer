@@ -6,6 +6,7 @@ import { distributeTiming } from "@/utils/syllable-utils";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { SplitModeContent } from "@/views/sync/syllable-splitter";
+import { nanoid } from "nanoid";
 import { useCallback, useEffect, useState } from "react";
 
 // -- Component ----------------------------------------------------------------
@@ -70,6 +71,9 @@ const TimelineSyllableSplitter: React.FC = () => {
     } else {
       newWords = distributeTiming(trimmedText, splitPoints, word.begin, word.end);
     }
+
+    const groupId = word.syllableGroupId ?? nanoid(8);
+    newWords = newWords.map((w) => ({ ...w, syllableGroupId: groupId }));
 
     // Preserve trailing space on the last part if original had one
     if (word.text.endsWith(" ") && newWords.length > 0) {
