@@ -55,6 +55,7 @@ function dispatchPanicCombo(extra: Partial<KeyboardEventInit> = {}): void {
     new KeyboardEvent("keydown", {
       key: "e",
       shiftKey: true,
+      altKey: true,
       metaKey: isMac,
       ctrlKey: !isMac,
       bubbles: true,
