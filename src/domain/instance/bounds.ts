@@ -1,4 +1,5 @@
-import { bgBounds, mainBounds, type Bounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
+import type { Bounds } from "@/domain/word/bounds";
 import type { LyricLine } from "@/stores/project";
 
 // -- Functions ----------------------------------------------------------------

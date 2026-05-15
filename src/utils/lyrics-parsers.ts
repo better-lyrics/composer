@@ -1,3 +1,4 @@
+import { firstBegin, lastEnd } from "@/domain/word/bounds";
 import type { Agent, AgentType, LinkGroup, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
 
@@ -194,7 +195,7 @@ function parseLrc(content: string): ParseResult {
     if (lastWord.end === PENDING_WORD_END) {
       lastWord.end = line.end ?? lastWord.begin;
     }
-    line.begin = line.words[0].begin;
+    line.begin = firstBegin(line.words);
     line.end = lastWord.end;
   }
 
@@ -499,8 +500,8 @@ function parseTtml(content: string): ParseResult {
         // Concatenate without adding spaces - trailing spaces are embedded
         text: words.map((w) => w.text).join(""),
         agentId,
-        begin: words[0].begin,
-        end: words[words.length - 1].end,
+        begin: firstBegin(words),
+        end: lastEnd(words),
         words,
         backgroundText,
         backgroundWords,

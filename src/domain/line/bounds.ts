@@ -1,19 +1,13 @@
-import type { LyricLine } from "@/stores/project";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-
-// -- Types --------------------------------------------------------------------
-
-interface Bounds {
-  begin: number;
-  end: number;
-}
+import { type Bounds, firstBegin, lastEnd } from "@/domain/word/bounds";
+import type { LyricLine } from "@/stores/project";
 
 // -- Functions ----------------------------------------------------------------
 
 function mainBounds(line: LyricLine): Bounds | null {
   if (isWordSynced(line)) {
     const words = line.words!;
-    return { begin: words[0].begin, end: words[words.length - 1].end };
+    return { begin: firstBegin(words), end: lastEnd(words) };
   }
   if (isLineSynced(line)) {
     return { begin: line.begin, end: line.end };
@@ -24,7 +18,7 @@ function mainBounds(line: LyricLine): Bounds | null {
 function bgBounds(line: LyricLine): Bounds | null {
   if (!line.backgroundWords?.length) return null;
   const bg = line.backgroundWords;
-  return { begin: bg[0].begin, end: bg[bg.length - 1].end };
+  return { begin: firstBegin(bg), end: lastEnd(bg) };
 }
 
 function effectiveBounds(line: LyricLine): Bounds | null {
@@ -38,4 +32,3 @@ function effectiveBounds(line: LyricLine): Bounds | null {
 // -- Exports ------------------------------------------------------------------
 
 export { bgBounds, effectiveBounds, mainBounds };
-export type { Bounds };
