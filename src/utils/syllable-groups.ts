@@ -12,7 +12,33 @@ type SyllablePosition = "none" | "first" | "middle" | "last";
 
 // -- Functions ----------------------------------------------------------------
 
-function computeSyllableGroups(words: WordTiming[]): SyllableGroup[] {
+function joinSyllableText(words: WordTiming[], start: number, end: number): string {
+  return words
+    .slice(start, end + 1)
+    .map((w) => w.text.trim())
+    .join("");
+}
+
+function computeByGroupId(words: WordTiming[]): SyllableGroup[] {
+  const groups: SyllableGroup[] = [];
+  let i = 0;
+  while (i < words.length) {
+    const id = words[i].syllableGroupId;
+    if (id === undefined) {
+      i++;
+      continue;
+    }
+    let end = i;
+    while (end + 1 < words.length && words[end + 1].syllableGroupId === id) end++;
+    if (end > i) {
+      groups.push({ startIndex: i, endIndex: end, originalWord: joinSyllableText(words, i, end) });
+    }
+    i = end + 1;
+  }
+  return groups;
+}
+
+function computeByTrailingSpace(words: WordTiming[]): SyllableGroup[] {
   const groups: SyllableGroup[] = [];
   let groupStart = 0;
 
@@ -22,18 +48,20 @@ function computeSyllableGroups(words: WordTiming[]): SyllableGroup[] {
 
     if (hasTrailingSpace || isLast) {
       if (i > groupStart) {
-        const joined = words
-          .slice(groupStart, i + 1)
-          .map((w) => w.text)
-          .join("")
-          .trim();
-        groups.push({ startIndex: groupStart, endIndex: i, originalWord: joined });
+        groups.push({ startIndex: groupStart, endIndex: i, originalWord: joinSyllableText(words, groupStart, i) });
       }
       groupStart = i + 1;
     }
   }
 
   return groups;
+}
+
+function computeSyllableGroups(words: WordTiming[]): SyllableGroup[] {
+  if (words.some((w) => w.syllableGroupId !== undefined)) {
+    return computeByGroupId(words);
+  }
+  return computeByTrailingSpace(words);
 }
 
 function getSyllablePositions(words: WordTiming[]): SyllablePosition[] {
