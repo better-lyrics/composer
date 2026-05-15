@@ -338,7 +338,7 @@ function useTimelineKeyboard(
           if (nSel.length === 0) break;
           const lineIndex = nSel[0].lineIndex;
           const agents = useProjectStore.getState().agents;
-          const defaultAgentId = agents[0]?.id ?? "v1";
+          const defaultAgentId = agents?.[0]?.id ?? "v1";
           const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
           const newLines = [...lines];
           const insertIndex = matched === "timeline.insertLineAbove" ? lineIndex : lineIndex + 1;

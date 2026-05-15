@@ -40,6 +40,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "," },
   },
   {
+    id: "global.panicRecovery",
+    scope: "global",
+    description: "Download saved work (panic shortcut)",
+    defaultBinding: { key: "e", mod: true, shift: true, alt: true },
+  },
+  {
     id: "global.goToImport",
     scope: "global",
     description: "Go to Import",

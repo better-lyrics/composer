@@ -54,6 +54,9 @@ export default defineConfig({
             }),
             headless: true,
             screenshotFailures: false,
+            // fileParallelism: false on the instance avoids the parallelism-
+            // degradation flake documented in vitest-dev/vitest#7616 and the
+            // userEvent timeout flake in #7871. Slower but deterministic.
             instances: [{ browser: "chromium", fileParallelism: false }],
           },
         },
