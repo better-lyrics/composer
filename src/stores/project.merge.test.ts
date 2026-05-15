@@ -348,3 +348,153 @@ describe("detachSyllableFromGroup", () => {
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
 });
+
+// -- linked-sibling propagation ----------------------------------------------
+
+describe("mergeWordsIntoSyllableGroup · linked propagation", () => {
+  function seedTwoLinkedInstances() {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "ev er y",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev ", begin: 0, end: 0.3 },
+          { text: "er ", begin: 0.3, end: 0.6 },
+          { text: "y", begin: 0.6, end: 0.9 },
+        ],
+      },
+      {
+        id: "a1",
+        text: "ev er y",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev ", begin: 10, end: 10.3 },
+          { text: "er ", begin: 10.3, end: 10.6 },
+          { text: "y", begin: 10.6, end: 10.9 },
+        ],
+      },
+    ]);
+  }
+
+  it("fans out to linked siblings, stamping a fresh groupId per line", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("a0", "words", [0, 1, 2]);
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+
+    const a0Ids = a0?.words?.map((w) => w.syllableGroupId);
+    const a1Ids = a1?.words?.map((w) => w.syllableGroupId);
+    expect(a0Ids?.every((id) => id !== undefined && id === a0Ids[0])).toBe(true);
+    expect(a1Ids?.every((id) => id !== undefined && id === a1Ids[0])).toBe(true);
+    expect(a0Ids?.[0]).not.toBe(a1Ids?.[0]);
+  });
+
+  it("skips siblings with mismatched word counts", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((l) =>
+        l.id === "a1"
+          ? {
+              ...l,
+              words: [
+                { text: "ev ", begin: 10, end: 10.3 },
+                { text: "ery", begin: 10.3, end: 10.9 },
+              ],
+            }
+          : l,
+      ),
+    }));
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("a0", "words", [0, 1, 2]);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
+  });
+
+  it("skips detached siblings", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((l) => (l.id === "a1" ? { ...l, detached: true } : l)),
+    }));
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("a0", "words", [0, 1, 2]);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
+  });
+});
+
+describe("detachSyllableFromGroup · linked propagation", () => {
+  function seedTwoLinkedInstances() {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "every",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+        ],
+      },
+      {
+        id: "a1",
+        text: "every",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
+          { text: "er", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
+          { text: "y", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
+        ],
+      },
+    ]);
+  }
+
+  it("dissolves the group on every linked sibling", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.getState().detachSyllableFromGroup("a0", "words", 1);
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+    expect(a0?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
+    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
+  });
+
+  it("is a no-op on siblings whose word at the same index has no group", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((l) =>
+        l.id === "a1"
+          ? {
+              ...l,
+              words: [
+                { text: "ev", begin: 10, end: 10.3 },
+                { text: "er", begin: 10.3, end: 10.6 },
+                { text: "y", begin: 10.6, end: 11 },
+              ],
+            }
+          : l,
+      ),
+    }));
+    useProjectStore.getState().detachSyllableFromGroup("a0", "words", 1);
+
+    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
+    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
+  });
+});

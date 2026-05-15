@@ -794,36 +794,45 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (wordIndices.length < 2) return state;
       const target = state.lines.find((l) => l.id === lineId);
       if (!target) return state;
-      const currentWords = target[field];
-      if (!currentWords || currentWords.length === 0) return state;
+      const sourceCount = target[field]?.length;
+      if (!sourceCount) return state;
 
       const sorted = [...wordIndices].sort((a, b) => a - b);
       const start = sorted[0];
       const end = sorted[sorted.length - 1];
-      if (start < 0 || end >= currentWords.length) return state;
+      if (start < 0 || end >= sourceCount) return state;
       for (let i = 1; i < sorted.length; i++) {
         if (sorted[i] !== sorted[i - 1] + 1) return state;
       }
 
-      const groupId = nanoid(8);
-      const stamped: WordTiming[] = currentWords.map((word, i) => {
-        if (i < start || i > end) return word;
-        const text = i < end ? word.text.trimEnd() : word.text;
-        const nextBegin = i < end ? currentWords[i + 1].begin : undefined;
-        const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
-        return { ...word, syllableGroupId: groupId, text, end: closedEnd };
-      });
-      const newWords = trimTrailingSpaceFromLast(stamped);
+      const linkScope = getLinkScope(target);
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
+        const isSource = line.id === lineId;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+        if (!isSource && !isSibling) return line;
+        const lineWords = line[field];
+        if (!lineWords) return line;
 
-      const lines = state.lines.map((line) => {
-        if (line.id !== lineId) return line;
+        const groupId = nanoid(8);
+        const stamped: WordTiming[] = lineWords.map((word, i) => {
+          if (i < start || i > end) return word;
+          const text = i < end ? word.text.trimEnd() : word.text;
+          const nextBegin = i < end ? lineWords[i + 1].begin : undefined;
+          const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
+          return { ...word, syllableGroupId: groupId, text, end: closedEnd };
+        });
+        const newWords = trimTrailingSpaceFromLast(stamped);
+
         const update: Partial<LyricLine> = { [field]: newWords };
         if (field === "backgroundWords") {
           update.backgroundText = newWords.map((w) => w.text).join("");
         }
+        mutated = true;
         return { ...line, ...update };
       });
-      return commitHistory(state, { lines });
+      if (!mutated) return state;
+      return commitHistory(state, { lines: newLines });
     }),
 
   detachSyllableFromGroup: (lineId, field, wordIndex) =>
@@ -832,16 +841,30 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (!target) return state;
       const currentWords = target[field];
       if (!currentWords || wordIndex < 0 || wordIndex >= currentWords.length) return state;
-      const groupId = currentWords[wordIndex].syllableGroupId;
-      if (groupId === undefined) return state;
+      if (currentWords[wordIndex].syllableGroupId === undefined) return state;
 
-      const newWords: WordTiming[] = currentWords.map((w) => {
-        if (w.syllableGroupId !== groupId) return w;
-        const { syllableGroupId: _drop, ...rest } = w;
-        return rest;
+      const sourceCount = currentWords.length;
+      const linkScope = getLinkScope(target);
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
+        const isSource = line.id === lineId;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+        if (!isSource && !isSibling) return line;
+        const lineWords = line[field];
+        if (!lineWords) return line;
+        const groupId = lineWords[wordIndex]?.syllableGroupId;
+        if (groupId === undefined) return line;
+
+        const newWords: WordTiming[] = lineWords.map((w) => {
+          if (w.syllableGroupId !== groupId) return w;
+          const { syllableGroupId: _drop, ...rest } = w;
+          return rest;
+        });
+        mutated = true;
+        return { ...line, [field]: newWords };
       });
-      const lines = state.lines.map((line) => (line.id === lineId ? { ...line, [field]: newWords } : line));
-      return commitHistory(state, { lines });
+      if (!mutated) return state;
+      return commitHistory(state, { lines: newLines });
     }),
 
   markWordsExplicit: (targets, value) =>
