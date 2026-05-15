@@ -20,6 +20,7 @@ interface WordTiming {
   begin: number;
   end: number;
   explicit?: true;
+  syllableGroupId?: string;
 }
 
 interface LyricLine {
