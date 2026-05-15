@@ -377,6 +377,33 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
   });
 });
 
+describe("moveWordToBg clears line.begin/end when main empties", () => {
+  it("clears begin/end on a TTML-imported line whose whole syllable-grouped word is moved to bg", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        begin: 9.51,
+        end: 15.335,
+        words: [
+          { text: "beau", begin: 9.51, end: 11.463, syllableGroupId: "g_beautiful" },
+          { text: "ti", begin: 11.463, end: 13.58, syllableGroupId: "g_beautiful" },
+          { text: "ful", begin: 13.58, end: 15.335, syllableGroupId: "g_beautiful" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [1], 5, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words).toEqual([]);
+    expect(line.begin).toBeUndefined();
+    expect(line.end).toBeUndefined();
+    expect(line.backgroundWords?.length).toBe(3);
+  });
+});
+
 describe("cross-track moves preserve syllable bonds", () => {
   it("moveWordToBg keeps remaining split-word syllables bonded", () => {
     useProjectStore.getState().setLines([

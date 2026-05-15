@@ -19,6 +19,7 @@ interface DragData {
   text: string;
   begin: number;
   end: number;
+  initialShiftKey?: boolean;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -189,7 +190,8 @@ function useTimelineDnd(lines: LyricLine[]) {
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
     if (data) {
-      setActiveDrag(data);
+      const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
+      setActiveDrag({ ...data, initialShiftKey });
       document.body.style.cursor = "grabbing";
     }
   }, []);

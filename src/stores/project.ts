@@ -986,11 +986,14 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
   const reconciledBg = prevBgLast ? addTrailingSpaceIfMissing(sortedBg, prevBgLast) : sortedBg;
   const mergedBg = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration));
 
+  const mainEmptied = remainingMain.length === 0;
   return {
     ...line,
     words: remainingMain,
     backgroundWords: mergedBg,
     backgroundText: mergedBg.map((w) => w.text).join(""),
+    begin: mainEmptied ? undefined : line.begin,
+    end: mainEmptied ? undefined : line.end,
   };
 }
 
