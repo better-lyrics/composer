@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
 import { absorbDeletedSyllablesIntoNeighbors, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { applyShiftDragCrossTrack } from "@/views/timeline/apply-shift-drag-cross-track";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -256,18 +257,28 @@ function useTimelineDnd(lines: LyricLine[]) {
       const timeDelta = delta.x / zoom;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
-        const indices = wordsToMove.flatMap((s) =>
-          s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
-        );
-        moveWordToBg(activeData.lineId, indices, timeDelta, duration);
+        if (isShiftDrag) {
+          const updates = applyShiftDragCrossTrack(line, "word", activeData.wordIndex, timeDelta, duration);
+          if (updates) updateLineWithHistory(activeData.lineId, updates);
+        } else {
+          const indices = wordsToMove.flatMap((s) =>
+            s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
+          );
+          moveWordToBg(activeData.lineId, indices, timeDelta, duration);
+        }
         return;
       }
 
       if (dropId.startsWith("main-drop-") && activeData.trackType === "bg" && movedUpToMain) {
-        const indices = wordsToMove.flatMap((s) =>
-          s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
-        );
-        moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
+        if (isShiftDrag) {
+          const updates = applyShiftDragCrossTrack(line, "bg", activeData.wordIndex, timeDelta, duration);
+          if (updates) updateLineWithHistory(activeData.lineId, updates);
+        } else {
+          const indices = wordsToMove.flatMap((s) =>
+            s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
+          );
+          moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
+        }
         return;
       }
 
