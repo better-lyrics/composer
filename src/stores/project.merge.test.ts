@@ -50,16 +50,16 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y ", "world"]);
   });
 
-  it("strips all trailing spaces when the merged group is line-last", () => {
+  it("strips a stray trailing space from the merged group's last syllable when it is line-last", () => {
     useProjectStore.getState().setLines([
       {
         id: "line-1",
-        text: "ev er y",
+        text: "ev er y ",
         agentId: "v1",
         words: [
           { text: "ev ", begin: 0, end: 0.3 },
           { text: "er ", begin: 0.3, end: 0.6 },
-          { text: "y", begin: 0.6, end: 0.9 },
+          { text: "y ", begin: 0.6, end: 0.9 },
         ],
       },
     ]);

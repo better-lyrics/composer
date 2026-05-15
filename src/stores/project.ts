@@ -819,13 +819,14 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       }
 
       const groupId = nanoid(8);
-      const newWords: WordTiming[] = currentWords.map((word, i) => {
+      const stamped: WordTiming[] = currentWords.map((word, i) => {
         if (i < start || i > end) return word;
         const text = i < end ? word.text.trimEnd() : word.text;
         const nextBegin = i < end ? currentWords[i + 1].begin : undefined;
         const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
         return { ...word, syllableGroupId: groupId, text, end: closedEnd };
       });
+      const newWords = trimTrailingSpaceFromLast(stamped);
 
       const lines = state.lines.map((line) => {
         if (line.id !== lineId) return line;
