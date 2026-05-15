@@ -349,6 +349,58 @@ describe("detachSyllableFromGroup", () => {
   });
 });
 
+// -- partial-merge auto-expand -----------------------------------------------
+
+describe("mergeWordsIntoSyllableGroup · partial-merge auto-expand", () => {
+  it("auto-expands a partial selection to include all groupmates", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "everything",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "gA" },
+          { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "gA" },
+          { text: "y", begin: 0.4, end: 0.6, syllableGroupId: "gA" },
+          { text: "thing", begin: 0.6, end: 1, syllableGroupId: "gA" },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "words", [0, 1, 2]);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    const newId = words[0].syllableGroupId;
+    expect(newId).toBeDefined();
+    expect(newId).not.toBe("gA");
+    expect(words.every((w) => w.syllableGroupId === newId)).toBe(true);
+  });
+
+  it("auto-expands a selection that spans a group boundary plus extra words", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "every world",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "gA" },
+          { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "gA" },
+          { text: "y ", begin: 0.4, end: 0.6, syllableGroupId: "gA" },
+          { text: "world", begin: 0.6, end: 1 },
+        ],
+      },
+    ]);
+
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "words", [2, 3]);
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    const newId = words[0].syllableGroupId;
+    expect(newId).toBeDefined();
+    expect(newId).not.toBe("gA");
+    expect(words.every((w) => w.syllableGroupId === newId)).toBe(true);
+  });
+});
+
 // -- linked-sibling propagation ----------------------------------------------
 
 describe("mergeWordsIntoSyllableGroup · linked propagation", () => {

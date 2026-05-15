@@ -794,10 +794,13 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (wordIndices.length < 2) return state;
       const target = state.lines.find((l) => l.id === lineId);
       if (!target) return state;
-      const sourceCount = target[field]?.length;
-      if (!sourceCount) return state;
+      const sourceWords = target[field];
+      if (!sourceWords || sourceWords.length === 0) return state;
+      const sourceCount = sourceWords.length;
 
-      const sorted = [...wordIndices].sort((a, b) => a - b);
+      const expandedIndices = expandSelectionToGroupmates(sourceWords, wordIndices);
+      const sorted = [...expandedIndices].sort((a, b) => a - b);
+      if (sorted.length < 2) return state;
       const start = sorted[0];
       const end = sorted[sorted.length - 1];
       if (start < 0 || end >= sourceCount) return state;
