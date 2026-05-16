@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
@@ -205,14 +206,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
           const newSelections = computeSelection(rect);
           if (shiftRef.current) {
             const existing = useTimelineStore.getState().selectedWords;
-            const merged = [...existing];
-            for (const sel of newSelections) {
-              const exists = merged.some(
-                (w) => w.lineId === sel.lineId && w.wordIndex === sel.wordIndex && w.type === sel.type,
-              );
-              if (!exists) merged.push(sel);
-            }
-            useTimelineStore.getState().setSelectedWords(merged);
+            useTimelineStore.getState().setSelectedWords(mergeWordSelections(existing, newSelections));
           } else {
             useTimelineStore.getState().setSelectedWords(newSelections);
           }

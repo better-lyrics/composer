@@ -19,6 +19,7 @@ import { isLineSynced } from "@/domain/line/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { IconCommand } from "@tabler/icons-react";
 import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo } from "react";
@@ -381,43 +382,36 @@ const TimelineContextMenu: React.FC = () => {
   }, [contextMenu, rawLines, selectedWords, lines, updateLineWithHistory, clearContextMenu]);
 
   const mergeInfo = useMemo(() => {
-    if (selectedWords.length < 2) return null;
-    const first = selectedWords[0];
-    const allSameLine = selectedWords.every((w) => w.lineId === first.lineId && w.type === first.type);
-    if (!allSameLine) return null;
+    const run = contiguousSelectionRun(selectedWords);
+    if (!run) return null;
 
-    const sorted = selectedWords.toSorted((a, b) => a.wordIndex - b.wordIndex);
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) return null;
-    }
-
-    const line = lines.find((l) => l.id === first.lineId);
+    const line = lines.find((l) => l.id === run.lineId);
     if (!line) return null;
-    const wordsArray = first.type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return null;
 
     // Check no trailing spaces between merged words (except the last one)
-    for (let i = 0; i < sorted.length - 1; i++) {
-      const w = wordsArray[sorted[i].wordIndex];
+    for (let i = 0; i < run.indices.length - 1; i++) {
+      const w = wordsArray[run.indices[i]];
       if (!w) return null;
       if (w.text.endsWith(" ")) return null;
     }
 
-    return { sorted, lineId: first.lineId, type: first.type };
+    return { indices: run.indices, lineId: run.lineId, type: run.type };
   }, [selectedWords, lines]);
 
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
-    const { sorted, lineId, type } = mergeInfo;
+    const { indices, lineId, type } = mergeInfo;
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
     const wordsArray = type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
-    const firstIdx = sorted[0].wordIndex;
-    const lastIdx = sorted[sorted.length - 1].wordIndex;
-    const mergedText = sorted.map((s) => wordsArray[s.wordIndex].text).join("");
+    const firstIdx = indices[0];
+    const lastIdx = indices[indices.length - 1];
+    const mergedText = indices.map((idx) => wordsArray[idx].text).join("");
     const merged: WordTiming = {
       text: mergedText,
       begin: wordsArray[firstIdx].begin,

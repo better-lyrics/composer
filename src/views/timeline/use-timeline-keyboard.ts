@@ -18,6 +18,7 @@ import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
+import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import {
@@ -367,44 +368,34 @@ function useTimelineKeyboard(
         }
         case "timeline.mergeWords": {
           const { selectedWords: mSel } = useTimelineStore.getState();
-          if (mSel.length < 2) break;
-          const first = mSel[0];
-          if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
-          const sorted = mSel.toSorted((a, b) => a.wordIndex - b.wordIndex);
-          let consecutive = true;
-          for (let i = 1; i < sorted.length; i++) {
-            if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) {
-              consecutive = false;
-              break;
-            }
-          }
-          if (!consecutive) break;
-          const mLine = lines.find((l) => l.id === first.lineId);
+          const run = contiguousSelectionRun(mSel);
+          if (!run) break;
+          const mLine = lines.find((l) => l.id === run.lineId);
           if (!mLine) break;
-          const mWords = first.type === "word" ? mLine.words : mLine.backgroundWords;
+          const mWords = run.type === "word" ? mLine.words : mLine.backgroundWords;
           if (!mWords) break;
           let spaceFree = true;
-          for (let i = 0; i < sorted.length - 1; i++) {
-            if (mWords[sorted[i].wordIndex].text.endsWith(" ")) {
+          for (let i = 0; i < run.indices.length - 1; i++) {
+            if (mWords[run.indices[i]].text.endsWith(" ")) {
               spaceFree = false;
               break;
             }
           }
           if (!spaceFree) break;
           e.preventDefault();
-          const firstIdx = sorted[0].wordIndex;
-          const lastIdx = sorted[sorted.length - 1].wordIndex;
-          const mergedText = sorted.map((s) => mWords[s.wordIndex].text).join("");
+          const firstIdx = run.indices[0];
+          const lastIdx = run.indices[run.indices.length - 1];
+          const mergedText = run.indices.map((idx) => mWords[idx].text).join("");
           const merged = { text: mergedText, begin: mWords[firstIdx].begin, end: mWords[lastIdx].end };
           const updatedWords = [...mWords.slice(0, firstIdx), merged, ...mWords.slice(lastIdx + 1)];
           const newText = updatedWords
             .map((w) => w.text)
             .join("")
             .trimEnd();
-          if (first.type === "word") {
-            void handleWordChangeWithDivergenceCheck(first.lineId, updatedWords, "words", { text: newText });
+          if (run.type === "word") {
+            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "words", { text: newText });
           } else {
-            void handleWordChangeWithDivergenceCheck(first.lineId, updatedWords, "backgroundWords", {
+            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "backgroundWords", {
               backgroundText: newText,
             });
           }

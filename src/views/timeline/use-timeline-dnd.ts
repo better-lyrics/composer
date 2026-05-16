@@ -1,8 +1,9 @@
+import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, useProjectStore } from "@/stores/project";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
-import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
+import { type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";

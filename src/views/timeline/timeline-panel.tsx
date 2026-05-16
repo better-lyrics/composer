@@ -1,3 +1,4 @@
+import { isWordSelected } from "@/domain/selection/identity";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
@@ -20,7 +21,7 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -377,9 +378,7 @@ const TimelinePanel: React.FC = () => {
         if (!data?.snap) return;
         const { selectedWords } = useTimelineStore.getState();
         const lines = useProjectStore.getState().lines;
-        const isLeaderInSelection = selectedWords.some(
-          (s) => s.lineId === data.lineId && s.wordIndex === data.wordIndex && s.type === data.trackType,
-        );
+        const isLeaderInSelection = isWordSelected(selectedWords, data.lineId, data.wordIndex, data.trackType);
         const draggedSet =
           isLeaderInSelection && selectedWords.length > 0
             ? selectedWords

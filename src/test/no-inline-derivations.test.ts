@@ -72,6 +72,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\.groupId !== undefined &&\s*[\w.]+\.instanceIdx !== undefined/,
     use: "isLinked from @/domain/instance/predicates",
   },
+  {
+    name: "inline word-selection identity check",
+    regex: /\.wordIndex === [\w.]+\.wordIndex\b/,
+    use: "sameWordSelection / isWordSelected from @/domain/selection/identity",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {
