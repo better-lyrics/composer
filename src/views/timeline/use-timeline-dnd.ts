@@ -123,13 +123,8 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const newEnd = Math.min(duration, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
-      const newId = getNewGroupId(word.syllableGroupId);
       const dup = cloneWord(word, { begin: newBegin, end: newEnd });
-      if (newId !== undefined) {
-        dup.syllableGroupId = newId;
-      } else {
-        delete dup.syllableGroupId;
-      }
+      dup.syllableGroupId = getNewGroupId(word.syllableGroupId);
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }

@@ -71,7 +71,7 @@ const TimelineSyllableSplitter: React.FC = () => {
           ]
         : distributeTiming(trimmedText, splitPoints, word.begin, word.end);
 
-    let newWords = splitSourceWord(sourceForSplit, partitions);
+    const newWords = splitSourceWord(sourceForSplit, partitions);
 
     if (word.text.endsWith(" ") && newWords.length > 0) {
       const last = newWords[newWords.length - 1];
