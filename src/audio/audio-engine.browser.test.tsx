@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { AudioEngine } from "@/audio/audio-engine";
 import { useAudioStore } from "@/stores/audio";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
+import { describe, expect, it } from "vitest";
 
 function waitFor(predicate: () => boolean, timeout = 1000): Promise<void> {
   const start = Date.now();

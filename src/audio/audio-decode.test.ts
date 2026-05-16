@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { audioBufferToWav, isMp3File } from "@/audio/audio-decode";
+import { describe, expect, it } from "vitest";
 
 function fakeAudio(channels: number[][], sampleRate = 44100) {
   return {
@@ -56,7 +56,12 @@ describe("audioBufferToWav", () => {
   });
 
   it("interleaves stereo channels L,R,L,R", async () => {
-    const blob = audioBufferToWav(fakeAudio([[1, 0], [0, -1]]));
+    const blob = audioBufferToWav(
+      fakeAudio([
+        [1, 0],
+        [0, -1],
+      ]),
+    );
     const view = new DataView(await blob.arrayBuffer());
     expect(view.getUint16(22, true)).toBe(2); // stereo
     expect(view.getInt16(44, true)).toBe(32767); // L0

@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { ImportPanel } from "@/views/import";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
+import { ImportPanel } from "@/views/import";
+import { describe, expect, it } from "vitest";
 
 describe("ImportPanel", () => {
   it("renders the audio drop zone when no source is loaded", async () => {

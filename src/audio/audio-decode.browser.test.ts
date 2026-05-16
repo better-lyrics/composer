@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { decodeMp3ToWav } from "@/audio/audio-decode";
 import { createMp3File } from "@/test/audio-fixtures";
+import { describe, expect, it } from "vitest";
 
 describe("decodeMp3ToWav", () => {
   it("decodes an mp3 file into a valid wav blob", async () => {
