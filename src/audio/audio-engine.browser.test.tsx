@@ -73,4 +73,51 @@ describe("AudioEngine", () => {
     await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
     expect(useAudioStore.getState().audioElement).toBeInstanceOf(HTMLAudioElement);
   });
+
+  it("serves a non-mp3 source as-is without re-encoding", async () => {
+    await render(<AudioEngine />);
+    const wav = createAudioFile();
+    useAudioStore.setState({ source: { type: "file", file: wav } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    const served = await (await fetch(audio.src)).arrayBuffer();
+    expect(served.byteLength).toBe(wav.size);
+  });
+
+  it("produces a seekable element for an mp3 source", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createMp3File() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    await waitFor(() => audio.readyState >= 1 && audio.duration > 0.1, 5000);
+    const target = audio.duration / 2;
+    audio.currentTime = target;
+    await waitFor(() => Math.abs(audio.currentTime - target) < 0.05, 2000);
+    expect(audio.currentTime).toBeCloseTo(target, 1);
+  });
+
+  it("removes the audio element from the DOM when the source is cleared", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createMp3File() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    useAudioStore.setState({ source: null });
+    await waitFor(() => useAudioStore.getState().audioElement === null);
+    expect(document.querySelectorAll("#composer-audio").length).toBe(0);
+  });
+
+  it("ends with a single element matching the final source after rapid source changes", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createMp3File() } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const wav = createAudioFile();
+    useAudioStore.setState({ source: { type: "file", file: wav } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    const elements = document.querySelectorAll("#composer-audio");
+    expect(elements.length).toBe(1);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    expect(elements[0]).toBe(audio);
+    const served = await (await fetch(audio.src)).arrayBuffer();
+    expect(served.byteLength).toBe(wav.size);
+  });
 });
