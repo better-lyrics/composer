@@ -12,6 +12,7 @@ const SECTION_IDS = [
   "groups",
   "preview",
   "exporting",
+  "recovery",
   "ttml-standards",
   "about",
 ] as const;
@@ -27,5 +28,15 @@ describe("HelpSectionContent", () => {
   it("falls back to the getting-started section for an unknown id", async () => {
     const screen = await render(<HelpSectionContent section="not-a-real-section" />);
     expect(screen.container.textContent ?? "").not.toBe("");
+  });
+
+  it("recovery section covers the three escape hatches", async () => {
+    const screen = await render(<HelpSectionContent section="recovery" />);
+    const text = screen.container.textContent ?? "";
+    expect(text).toMatch(/Download my work/);
+    expect(text).toMatch(/\/recover/);
+    const shortcutBadge = screen.container.querySelector("[data-inline-key-badge]");
+    expect(shortcutBadge).not.toBeNull();
+    expect(shortcutBadge?.textContent).toContain("E");
   });
 });

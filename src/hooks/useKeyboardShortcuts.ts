@@ -54,6 +54,7 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!enabledRef.current) return;
+      if (event.repeat) return;
       if (isAnyModalOpen()) return;
 
       const target = event.target as HTMLElement;

@@ -65,7 +65,7 @@ const AudioEngine: React.FC = () => {
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("ended", handleEnded);
     audio.addEventListener("error", handleError);
-    const unbindStateEvents = bindAudioStateEvents(audio, setIsPlaying);
+    const unbindStateEvents = bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, setIsPlaying);
 
     return () => {
       audio.removeEventListener("loadedmetadata", handleLoadedMetadata);

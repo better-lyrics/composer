@@ -10,9 +10,21 @@ import { isMac } from "@/utils/platform";
 
 // -- Matching -----------------------------------------------------------------
 
+// On macOS, holding Option/Alt rewrites `event.key` to the layout-specific
+// glyph (Alt+E → "´", Alt+Shift+E → "´") instead of the base letter. Fall back
+// to `event.code` (e.g., "KeyE", "Digit1") which reflects the physical key
+// regardless of modifiers, so alt-bearing bindings still match.
+function getEventKey(event: KeyboardEvent): string {
+  if (event.altKey) {
+    if (event.code.startsWith("Key") && event.code.length === 4) return event.code.slice(3).toLowerCase();
+    if (event.code.startsWith("Digit") && event.code.length === 6) return event.code.slice(5);
+  }
+  return event.key.length === 1 ? event.key.toLowerCase() : event.key;
+}
+
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
-  const eventKey = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  const eventKey = getEventKey(event);
   const bindingKey = binding.key.length === 1 ? binding.key.toLowerCase() : binding.key;
 
   if (eventKey !== bindingKey) return false;
