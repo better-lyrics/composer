@@ -26,6 +26,7 @@ import { useMarquee } from "@/views/timeline/use-marquee";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
+import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
@@ -158,7 +159,7 @@ const TimelinePanel: React.FC = () => {
     if (duration <= 0 || lines.length === 0) return;
     if (lastDistributedDurationRef.current === duration) return;
 
-    const hasAnyTiming = lines.some((l) => l.words?.length || (l.begin !== undefined && l.end !== undefined));
+    const hasAnyTiming = lines.some((l) => mainBounds(l) !== null);
 
     if (!hasAnyTiming) {
       const distributed = distributeLinesTiming(lines, duration);
