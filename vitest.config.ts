@@ -28,6 +28,11 @@ export default defineConfig({
     projects: [
       {
         extends: true,
+        // Separate Vite cache per project. The unit (jsdom) and browser
+        // (chromium) projects pre-bundle dependencies for different targets;
+        // sharing node_modules/.vite lets one run serve the other corrupted
+        // transform output, which surfaced as intermittent import failures.
+        cacheDir: "node_modules/.vite/vitest-unit",
         test: {
           name: "unit",
           environment: "jsdom",
@@ -39,6 +44,7 @@ export default defineConfig({
       },
       {
         extends: true,
+        cacheDir: "node_modules/.vite/vitest-browser",
         test: {
           name: "browser",
           include: ["src/**/*.browser.test.{ts,tsx}"],
