@@ -832,6 +832,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const update: Partial<LyricLine> = { [field]: newWords };
         if (field === "backgroundWords") {
           update.backgroundText = newWords.map((w) => w.text).join("");
+        } else {
+          update.text = newWords.map((w) => w.text).join("");
         }
         mutated = true;
         return { ...line, ...update };

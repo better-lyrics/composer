@@ -147,6 +147,16 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(line.backgroundText).toBe(bgJoined);
   });
 
+  it("keeps text in sync with words after a main-track merge", () => {
+    useProjectStore.getState().setLines([seedMainLine()]);
+
+    useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "words", [0, 1, 2]);
+
+    const line = useProjectStore.getState().lines[0];
+    const joined = (line.words ?? []).map((w) => w.text).join("");
+    expect(line.text).toBe(joined);
+  });
+
   it("is undoable", () => {
     useProjectStore.getState().setLines([seedMainLine()]);
     const before = useProjectStore.getState().lines[0].words?.map((w) => w.text);
