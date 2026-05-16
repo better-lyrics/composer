@@ -1,6 +1,8 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { LyricLine } from "@/stores/project";
+import { getSplitCharacter } from "@/utils/split-character";
 
 interface DeletionSelection {
   lineId: string;
@@ -19,6 +21,8 @@ function isLineFullyEmpty(line: LyricLine): boolean {
 
 function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
   if (selectedWords.length === 0) return lines;
+
+  const splitChar = getSplitCharacter();
 
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number> }>();
   for (const sel of selectedWords) {
@@ -54,18 +58,17 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     }
 
     let nextBg = line.backgroundWords;
-    let nextBgText = line.backgroundText;
     if ((line.backgroundWords?.length ?? 0) > 0 && bgIdxs.size > 0) {
       const remaining = line.backgroundWords?.filter((_, i) => !bgIdxs.has(i)) ?? [];
       nextBg = remaining.length > 0 ? remaining : undefined;
-      nextBgText = remaining.length > 0 ? remaining.map((w) => w.text).join("") : undefined;
     }
 
     const updatedLine: LyricLine = {
       ...line,
       words: nextMain,
       backgroundWords: nextBg,
-      backgroundText: nextBgText,
+      text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : line.text,
+      backgroundText: nextBg && nextBg.length > 0 ? reconstructLineText(nextBg, splitChar) : undefined,
     };
 
     if (willHaveNoMainWords && (line.begin !== undefined || line.end !== undefined)) {

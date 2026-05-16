@@ -388,16 +388,10 @@ function useTimelineKeyboard(
           const mergedText = run.indices.map((idx) => mWords[idx].text).join("");
           const merged = { text: mergedText, begin: mWords[firstIdx].begin, end: mWords[lastIdx].end };
           const updatedWords = [...mWords.slice(0, firstIdx), merged, ...mWords.slice(lastIdx + 1)];
-          const newText = updatedWords
-            .map((w) => w.text)
-            .join("")
-            .trimEnd();
           if (run.type === "word") {
-            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "words", { text: newText });
+            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "words");
           } else {
-            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "backgroundWords", {
-              backgroundText: newText,
-            });
+            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "backgroundWords");
           }
           useTimelineStore.getState().clearSelection();
           break;

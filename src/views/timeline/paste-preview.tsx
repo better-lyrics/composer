@@ -194,9 +194,9 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
           lineUpdates.words = [...(line.words ?? []), ...newWords].sort((a, b) => a.begin - b.begin);
         }
         if (newBgWords.length > 0) {
-          const merged = [...(line.backgroundWords ?? []), ...newBgWords].sort((a, b) => a.begin - b.begin);
-          lineUpdates.backgroundWords = merged;
-          lineUpdates.backgroundText = merged.map((w) => w.text).join("");
+          lineUpdates.backgroundWords = [...(line.backgroundWords ?? []), ...newBgWords].sort(
+            (a, b) => a.begin - b.begin,
+          );
         }
 
         updates.push({ id: line.id, updates: lineUpdates });

@@ -72,23 +72,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         const updatedWords = [...wordsArray];
         const hadTrailingSpace = word.text.endsWith(" ");
         updatedWords[wordIndex] = { ...word, text: hadTrailingSpace ? `${trimmed} ` : trimmed };
-        if (type === "word") {
-          updateLineWithHistory(lineId, {
-            words: updatedWords,
-            text: updatedWords
-              .map((w) => w.text)
-              .join("")
-              .trimEnd(),
-          });
-        } else {
-          updateLineWithHistory(lineId, {
-            backgroundWords: updatedWords,
-            backgroundText: updatedWords
-              .map((w) => w.text)
-              .join("")
-              .trimEnd(),
-          });
-        }
+        updateLineWithHistory(lineId, type === "word" ? { words: updatedWords } : { backgroundWords: updatedWords });
       }
       clearEditingWord();
     },

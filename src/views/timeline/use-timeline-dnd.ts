@@ -112,9 +112,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
         const prevLast = existing[existing.length - 1];
         const sorted = [...existing, ...bgDups].sort((a, b) => a.begin - b.begin);
         const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-        const merged = trimTrailingSpaceFromLast(reconciled);
-        lineUpdates.backgroundWords = merged;
-        lineUpdates.backgroundText = merged.map((w) => w.text).join("");
+        lineUpdates.backgroundWords = trimTrailingSpaceFromLast(reconciled);
       }
     }
 
@@ -264,11 +262,7 @@ function useTimelineDnd(lines: LyricLine[]) {
               words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
             }
 
-            const normalized = trimTrailingSpaceFromLast(words);
-            lineUpdates[trackKey] = normalized;
-            if (trackKey === "backgroundWords") {
-              lineUpdates.backgroundText = normalized.map((w) => w.text).join("");
-            }
+            lineUpdates[trackKey] = trimTrailingSpaceFromLast(words);
           }
 
           if (Object.keys(lineUpdates).length > 0) {
@@ -310,10 +304,7 @@ function useTimelineDnd(lines: LyricLine[]) {
         if (activeData.trackType === "word") {
           updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {
-          updateLineWithHistory(activeData.lineId, {
-            backgroundWords: normalized,
-            backgroundText: normalized.map((w) => w.text).join(""),
-          });
+          updateLineWithHistory(activeData.lineId, { backgroundWords: normalized });
         }
       }
     },

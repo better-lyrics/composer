@@ -894,7 +894,6 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
     ...line,
     words: remainingMain,
     backgroundWords: mergedBg,
-    backgroundText: mergedBg.map((w) => w.text).join(""),
   };
 }
 
@@ -927,7 +926,7 @@ function applyMoveFromBg(
     ...line,
     words: mergedMain,
     backgroundWords: hasBg ? remainingBg : undefined,
-    backgroundText: hasBg ? remainingBg.map((w) => w.text).join("") : undefined,
+    backgroundText: hasBg ? line.backgroundText : undefined,
   };
 }
 

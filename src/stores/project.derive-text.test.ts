@@ -139,16 +139,14 @@ describe("applyWordCountChange derives text from words", () => {
 
 describe("moveWordToBg derives text from both tracks", () => {
   it("re-derives main text and backgroundText after a move", () => {
-    useProjectStore
-      .getState()
-      .setLines([
-        {
-          id: "l1",
-          text: "hello world goodbye",
-          agentId: "v1",
-          words: [w("hello ", 0, 1), w("world ", 1, 2), w("goodbye", 2, 3)],
-        },
-      ]);
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "hello world goodbye",
+        agentId: "v1",
+        words: [w("hello ", 0, 1), w("world ", 1, 2), w("goodbye", 2, 3)],
+      },
+    ]);
 
     useProjectStore.getState().moveWordToBg("l1", [2], 5, 30);
 

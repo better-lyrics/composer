@@ -182,10 +182,12 @@ const TimelineContextMenu: React.FC = () => {
     if (type === "word") {
       updateLineWithHistory(lineId, { words: remaining });
     } else {
-      updateLineWithHistory(lineId, {
-        backgroundWords: remaining.length > 0 ? remaining : undefined,
-        backgroundText: remaining.length > 0 ? remaining.map((w) => w.text).join("") : undefined,
-      });
+      updateLineWithHistory(
+        lineId,
+        remaining.length > 0
+          ? { backgroundWords: remaining }
+          : { backgroundWords: undefined, backgroundText: undefined },
+      );
     }
     clearContextMenu();
   }, [contextMenu, lines, updateLineWithHistory, clearContextMenu]);
@@ -215,10 +217,7 @@ const TimelineContextMenu: React.FC = () => {
     if (type === "word") {
       updateLineWithHistory(lineId, { words });
     } else {
-      updateLineWithHistory(lineId, {
-        backgroundWords: words,
-        backgroundText: words.map((w) => w.text).join(""),
-      });
+      updateLineWithHistory(lineId, { backgroundWords: words });
     }
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
     clearContextMenu();
@@ -420,23 +419,7 @@ const TimelineContextMenu: React.FC = () => {
 
     const updatedWords = [...wordsArray.slice(0, firstIdx), merged, ...wordsArray.slice(lastIdx + 1)];
 
-    if (type === "word") {
-      updateLineWithHistory(lineId, {
-        words: updatedWords,
-        text: updatedWords
-          .map((w) => w.text)
-          .join("")
-          .trimEnd(),
-      });
-    } else {
-      updateLineWithHistory(lineId, {
-        backgroundWords: updatedWords,
-        backgroundText: updatedWords
-          .map((w) => w.text)
-          .join("")
-          .trimEnd(),
-      });
-    }
+    updateLineWithHistory(lineId, type === "word" ? { words: updatedWords } : { backgroundWords: updatedWords });
 
     useTimelineStore.getState().clearSelection();
     clearContextMenu();

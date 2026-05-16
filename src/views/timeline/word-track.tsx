@@ -351,10 +351,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (trackType === "word") {
       updateLineWithHistory(lineId, { words: newWords });
     } else {
-      updateLineWithHistory(lineId, {
-        backgroundWords: newWords,
-        backgroundText: newWords.map((w) => w.text).join(""),
-      });
+      updateLineWithHistory(lineId, { backgroundWords: newWords });
     }
 
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: trackType });
