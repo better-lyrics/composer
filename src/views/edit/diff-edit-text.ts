@@ -1,5 +1,6 @@
+import { extractLinkedFields } from "@/domain/group/linking";
+import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { isLinked } from "@/domain/instance/predicates";
-import { extractLinkedFields, propagateWordChanges } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
 
 // -- Types --------------------------------------------------------------------

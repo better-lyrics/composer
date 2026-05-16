@@ -1,3 +1,5 @@
+import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
@@ -270,14 +272,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       }
 
       const target = state.lines.find((l) => l.id === id);
-      const propagateLinked =
-        target !== undefined &&
-        target.groupId !== undefined &&
-        target.templateLineIdx !== undefined &&
-        !target.detached;
-      const linkedUpdates = propagateLinked ? extractLinkedFields(updates) : null;
-      const linkedGroupId = propagateLinked ? target.groupId : null;
-      const linkedTemplateLineIdx = propagateLinked ? target.templateLineIdx : null;
+      const linkScope = target ? getLinkScope(target) : null;
+      const linkedUpdates = linkScope ? extractLinkedFields(updates) : null;
       const sourceWordsBefore = target?.words;
       const sourceWordsAfter = updates.words;
       const sourceBgWordsBefore = target?.backgroundWords;
@@ -292,12 +288,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           }
           return merged;
         }
-        if (
-          propagateLinked &&
-          line.groupId === linkedGroupId &&
-          line.templateLineIdx === linkedTemplateLineIdx &&
-          !line.detached
-        ) {
+        if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LyricLine> = { ...(linkedUpdates ?? {}) };
           const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
           if (propagatedWords) siblingUpdates.words = propagatedWords;
@@ -717,7 +708,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       if (!target) return state;
 
       const sourceBefore = target[field];
-      const isLinked = target.groupId !== undefined && target.templateLineIdx !== undefined && !target.detached;
+      const linkScope = getLinkScope(target);
 
       if (resolution === "detach") {
         return commitHistory(state, {
@@ -741,10 +732,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
       }
 
-      const propagateScope = isLinked
-        ? { groupId: target.groupId as string, templateLineIdx: target.templateLineIdx as number }
-        : null;
-      const linkedExtras = propagateScope ? extractLinkedFields(extraUpdates) : null;
+      const linkedExtras = linkScope ? extractLinkedFields(extraUpdates) : null;
 
       const newLines = state.lines.map((line) => {
         if (line.id === lineId) {
@@ -755,12 +743,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           }
           return merged;
         }
-        if (
-          propagateScope &&
-          line.groupId === propagateScope.groupId &&
-          line.templateLineIdx === propagateScope.templateLineIdx &&
-          !line.detached
-        ) {
+        if (isLinkedSibling(line, linkScope)) {
           const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
           const siblingUpdates: Partial<LyricLine> = { ...(linkedExtras ?? {}) };
           if (propagated) siblingUpdates[field] = propagated;
@@ -861,53 +844,18 @@ function applyExplicitTargetToLines(
   const target = lines.find((l) => l.id === lineId);
   if (!target) return lines;
   const sourceBefore = target[field];
-  const isLinked = target.groupId !== undefined && target.templateLineIdx !== undefined && !target.detached;
-  const propagateScope = isLinked
-    ? { groupId: target.groupId as string, templateLineIdx: target.templateLineIdx as number }
-    : null;
+  const linkScope = getLinkScope(target);
 
   return lines.map((line) => {
     if (line.id === lineId) {
       return { ...line, [field]: newWords };
     }
-    if (
-      propagateScope &&
-      line.groupId === propagateScope.groupId &&
-      line.templateLineIdx === propagateScope.templateLineIdx &&
-      !line.detached
-    ) {
+    if (isLinkedSibling(line, linkScope)) {
       const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
       if (propagated) return { ...line, [field]: propagated };
     }
     return line;
   });
-}
-
-function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
-  const linked: Partial<LyricLine> = {};
-  if ("text" in updates) linked.text = updates.text;
-  if ("agentId" in updates) linked.agentId = updates.agentId;
-  if ("backgroundText" in updates) linked.backgroundText = updates.backgroundText;
-  if ("words" in updates && updates.words === undefined) linked.words = undefined;
-  if ("begin" in updates && updates.begin === undefined) linked.begin = undefined;
-  if ("end" in updates && updates.end === undefined) linked.end = undefined;
-  if ("backgroundWords" in updates && updates.backgroundWords === undefined) linked.backgroundWords = undefined;
-  return linked;
-}
-
-interface LinkScope {
-  groupId: string;
-  templateLineIdx: number;
-}
-
-function getLinkScope(line: LyricLine): LinkScope | null {
-  if (line.groupId === undefined || line.templateLineIdx === undefined || line.detached) return null;
-  return { groupId: line.groupId, templateLineIdx: line.templateLineIdx };
-}
-
-function isLinkedSibling(line: LyricLine, scope: LinkScope | null): boolean {
-  if (!scope) return false;
-  return line.groupId === scope.groupId && line.templateLineIdx === scope.templateLineIdx && !line.detached;
 }
 
 function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number, duration: number): LyricLine | null {
@@ -970,32 +918,6 @@ function applyMoveFromBg(
   };
 }
 
-function propagateWordChanges(
-  sourceAfter: WordTiming[] | undefined,
-  sourceBefore: WordTiming[] | undefined,
-  siblingWords: WordTiming[] | undefined,
-): WordTiming[] | undefined {
-  if (!sourceAfter || !siblingWords) return undefined;
-
-  // Fast path for the common text-rename case (count unchanged): only update
-  // word texts on the sibling, keep timing exactly. Avoids running the LCS diff.
-  if (sourceBefore && sourceAfter.length === sourceBefore.length) {
-    if (sourceAfter.length !== siblingWords.length) return undefined;
-    let changed = false;
-    const next = siblingWords.map((w, i) => {
-      if (w.text === sourceAfter[i].text) return w;
-      changed = true;
-      return { ...w, text: sourceAfter[i].text };
-    });
-    return changed ? next : undefined;
-  }
-
-  // Structural change: defer to the smart-sync diff that preserves sibling
-  // timing for words that didn't structurally change.
-  const result = applySiblingWords(sourceAfter, sourceBefore, siblingWords);
-  return result ?? undefined;
-}
-
 function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; groups?: LinkGroup[] }) {
   const nextLines = changes.lines ?? state.lines;
   const nextGroups = changes.groups ?? state.groups;
@@ -1029,7 +951,6 @@ function getAgentColor(agentId: string): string {
 }
 
 export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, getAgentColor, INITIAL_STATE };
-export { extractLinkedFields, propagateWordChanges };
 
 export type {
   Agent,
