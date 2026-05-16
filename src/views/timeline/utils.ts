@@ -8,10 +8,12 @@ import { distributeWordsInLine } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------
 
+// Distributed lines are word-synced: the per-line span lives in `words`, not in
+// line-level begin/end. Emitting both would produce an invalid both-state line.
 function distributeLinesTiming<T extends { id: string; text: string }>(
   lines: T[],
   duration: number,
-): (T & { begin: number; end: number; words: WordTiming[] })[] {
+): (T & { words: WordTiming[] })[] {
   if (lines.length === 0) return [];
 
   const lineDuration = duration / lines.length;
@@ -21,8 +23,6 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
     const end = (index + 1) * lineDuration;
     return {
       ...line,
-      begin,
-      end,
       words: distributeWordsInLine(line.text, begin, end),
     };
   });

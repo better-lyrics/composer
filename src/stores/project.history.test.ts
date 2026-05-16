@@ -1,11 +1,11 @@
 /**
  * @vitest-environment node
  */
-import { type LyricLine, useProjectStore } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 
-function seedLine(id: string, overrides: Partial<LyricLine> = {}): LyricLine {
-  return { id, text: "hello world", agentId: "v1", ...overrides };
+function seedLine(id: string, overrides: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({ id, text: "hello world", agentId: "v1", ...overrides });
 }
 
 beforeEach(() => {
@@ -77,12 +77,10 @@ describe("updateLinesWithHistory", () => {
     expect(useProjectStore.getState().lines[0].begin).toBeUndefined();
   });
 
-  it("clears words/begin/end via undefined updates and is undoable", () => {
+  it("clears words and background words via undefined updates and is undoable", () => {
     useProjectStore.getState().setLines([
       seedLine("a", {
         words: [{ text: "hi", begin: 0, end: 1 }],
-        begin: 0,
-        end: 1,
         backgroundWords: [{ text: "ah", begin: 0, end: 0.5 }],
         backgroundText: "ah",
       }),
@@ -91,19 +89,17 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().updateLinesWithHistory([
       {
         id: "a",
-        updates: { words: undefined, begin: undefined, end: undefined, backgroundWords: undefined },
+        updates: { words: undefined, backgroundWords: undefined },
       },
     ]);
 
     const cleared = useProjectStore.getState().lines[0];
     expect(cleared.words).toBeUndefined();
-    expect(cleared.begin).toBeUndefined();
     expect(cleared.backgroundWords).toBeUndefined();
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
     expect(restored.words).toEqual([{ text: "hi", begin: 0, end: 1 }]);
-    expect(restored.begin).toBe(0);
     expect(restored.backgroundWords).toEqual([{ text: "ah", begin: 0, end: 0.5 }]);
   });
 });

@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
@@ -461,7 +462,8 @@ const EditPanel: React.FC = () => {
   const handleFileImport = useCallback(
     async (file: File) => {
       const content = await file.text();
-      const result = parseLyricsFile(file.name, content);
+      const audioDuration = useAudioStore.getState().duration;
+      const result = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
 
       if (result.lines.length > 0) {
         const existingLineCount = useProjectStore.getState().lines.length;

@@ -13,7 +13,11 @@ function effectiveWords(line: LyricLine): WordTiming[] {
 }
 
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
-  return lines.map((line) => (isLineSynced(line) ? { ...line, words: effectiveWords(line) } : line));
+  return lines.map((line) => {
+    if (!isLineSynced(line)) return line;
+    const { begin, end, ...rest } = line;
+    return { ...rest, words: effectiveWords(line) };
+  });
 }
 
 // -- Exports ------------------------------------------------------------------

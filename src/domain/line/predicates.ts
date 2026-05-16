@@ -1,8 +1,6 @@
-import type { LyricLine } from "@/stores/project";
+import type { LineSyncedLine, LyricLine } from "@/stores/project";
 
 // -- Predicates ---------------------------------------------------------------
-
-type LineSyncedLine = LyricLine & { begin: number; end: number };
 
 function isLineSynced(line: LyricLine): line is LineSyncedLine {
   return !line.words?.length && line.begin !== undefined && line.end !== undefined;
@@ -19,4 +17,3 @@ function hasAnyTiming(line: LyricLine): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export { hasAnyTiming, isLineSynced, isWordSynced };
-export type { LineSyncedLine };

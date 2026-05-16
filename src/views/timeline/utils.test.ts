@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, type WordTiming, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -62,7 +62,7 @@ describe("distributeWordsInLine", () => {
 // -- distributeLinesTiming -----------------------------------------------------
 
 describe("distributeLinesTiming", () => {
-  it("distributes lines evenly across duration", () => {
+  it("distributes lines evenly across duration as word-synced lines", () => {
     const lines = [
       { id: "1", text: "Line one", agentId: "v1" },
       { id: "2", text: "Line two", agentId: "v1" },
@@ -71,10 +71,13 @@ describe("distributeLinesTiming", () => {
 
     const result = distributeLinesTiming(lines, duration);
 
-    expect(result[0].begin).toBe(0);
-    expect(result[0].end).toBe(5);
-    expect(result[1].begin).toBe(5);
-    expect(result[1].end).toBe(10);
+    expect(result[0].words[0].begin).toBe(0);
+    expect(result[0].words[result[0].words.length - 1].end).toBe(5);
+    expect(result[1].words[0].begin).toBe(5);
+    expect(result[1].words[result[1].words.length - 1].end).toBe(10);
+    // Distributed lines are word-synced: no line-level begin/end (both-state).
+    expect("begin" in result[0]).toBe(false);
+    expect("end" in result[0]).toBe(false);
   });
 
   it("includes distributed words for each line", () => {
@@ -155,8 +158,6 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      begin: 0,
-      end: 10,
       words: [{ text: "Hello", begin: 2, end: 5 }],
     };
 
@@ -165,19 +166,17 @@ describe("effectiveBounds (legacy call site coverage)", () => {
     expect(timing).toEqual({ begin: 2, end: 5 });
   });
 
-  it("handles empty words array", () => {
+  it("returns null for a word-synced line with an empty words array", () => {
     const line = {
       id: "1",
       text: "Hello",
       agentId: "v1",
-      begin: 3,
-      end: 7,
-      words: [],
+      words: [] as WordTiming[],
     };
 
     const timing = effectiveBounds(line);
 
-    expect(timing).toEqual({ begin: 3, end: 7 });
+    expect(timing).toBeNull();
   });
 
   it("extends end past main words when bg words end later", () => {
@@ -307,8 +306,8 @@ describe("formatTime", () => {
 // -- getEffectiveRows ---------------------------------------------------------
 
 describe("getEffectiveRows", () => {
-  function l(id: string, extras: Partial<LyricLine> = {}): LyricLine {
-    return { id, text: "x", agentId: "v1", ...extras };
+  function l(id: string, extras: Partial<LooseLine> = {}): LyricLine {
+    return reconcileLine({ id, text: "x", agentId: "v1", ...extras });
   }
 
   it("interleaves a header before each instance run", () => {
@@ -438,8 +437,6 @@ describe("instanceBounds (legacy call site coverage)", () => {
         id: "a",
         text: "x",
         agentId: "v1",
-        begin: 10,
-        end: 20,
         words: [
           { text: "hello", begin: 5, end: 6 },
           { text: "world", begin: 6, end: 7 },
@@ -474,8 +471,6 @@ describe("instanceBounds (legacy call site coverage)", () => {
         id: "a",
         text: "x",
         agentId: "v1",
-        begin: 100,
-        end: 200,
         words: [{ text: "hello", begin: 5, end: 6 }],
       },
       { id: "b", text: "y", agentId: "v1", begin: 10, end: 12 },

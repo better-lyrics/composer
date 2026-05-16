@@ -18,9 +18,30 @@ describe("parseLyricsFile - plain LRC", () => {
     expect(result.lines[0].words).toBeUndefined();
     expect(result.lines[0].end).toBeCloseTo(15.67, 2);
 
-    expect(result.lines[1].begin).toBeCloseTo(15.67, 2);
+    // The last line has no following line and no [length:] tag, so its end is
+    // unknown: it parses as an untimed line rather than a begin-only line.
+    expect(result.lines[1].begin).toBeUndefined();
     expect(result.lines[1].text).toBe("Next line");
     expect(result.lines[1].words).toBeUndefined();
+  });
+
+  it("extends the last line to the [length:] tag when present", () => {
+    const content = `[length:00:20.00]
+[00:12.34]Hello world
+[00:15.67]Next line`;
+    const result = parseLyricsFile("song.lrc", content);
+
+    expect(result.lines[1].begin).toBeCloseTo(15.67, 2);
+    expect(result.lines[1].end).toBeCloseTo(20.0, 2);
+  });
+
+  it("extends the last line to the caller-supplied audio duration when there is no [length:] tag", () => {
+    const content = `[00:12.34]Hello world
+[00:15.67]Next line`;
+    const result = parseLyricsFile("song.lrc", content, 25);
+
+    expect(result.lines[1].begin).toBeCloseTo(15.67, 2);
+    expect(result.lines[1].end).toBeCloseTo(25.0, 2);
   });
 
   it("extracts metadata tags", () => {
@@ -36,7 +57,8 @@ describe("parseLyricsFile - plain LRC", () => {
   });
 
   it("duplicates a line for each timestamp when multiple timestamps share text", () => {
-    const content = `[00:10.00][00:30.00]Chorus line
+    const content = `[length:00:40.00]
+[00:10.00][00:30.00]Chorus line
 [00:20.00]Verse line`;
     const result = parseLyricsFile("song.lrc", content);
 
@@ -64,8 +86,9 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     expect(line1.words?.[1].begin).toBeCloseTo(12.5, 2);
     expect(line1.words?.[1].end).toBeCloseTo(15.0, 2);
 
-    expect(line1.begin).toBeCloseTo(12.0, 2);
-    expect(line1.end).toBeCloseTo(15.0, 2);
+    // A word-synced line carries its timing in `words`, not at line level.
+    expect(line1.begin).toBeUndefined();
+    expect(line1.end).toBeUndefined();
     expect(line1.text).toBe("Hello world");
   });
 
@@ -76,9 +99,7 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
 
     expect(result.lines).toHaveLength(2);
     expect(result.lines[0].words?.[1].end).toBeCloseTo(13.0, 2);
-    expect(result.lines[0].end).toBeCloseTo(13.0, 2);
     expect(result.lines[1].words?.[1].end).toBeCloseTo(16.0, 2);
-    expect(result.lines[1].end).toBeCloseTo(16.0, 2);
   });
 
   it("preserves metadata tags alongside word timing", () => {

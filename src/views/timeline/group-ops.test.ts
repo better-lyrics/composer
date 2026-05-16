@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { LinkGroup, LyricLine } from "@/stores/project";
+import { type LinkGroup, type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import {
   createGroupFromSelection,
@@ -10,8 +10,8 @@ import {
   selectionTouchesAnyGroup,
 } from "./group-ops";
 
-const lines = (overrides: Partial<LyricLine>[]): LyricLine[] =>
-  overrides.map((o, i) => ({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }));
+const lines = (overrides: Partial<LooseLine>[]): LyricLine[] =>
+  overrides.map((o, i) => reconcileLine({ id: `l${i}`, text: `t${i}`, agentId: "v1", ...o }));
 
 describe("lineIdsAreContiguous", () => {
   it("true when selection is consecutive", () => {
@@ -63,8 +63,6 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        begin: 30,
-        end: 32,
         words: [
           { text: "I ", begin: 30, end: 30.4 },
           { text: "love ", begin: 30.4, end: 30.9 },
@@ -78,8 +76,6 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 1,
-        begin: 32,
-        end: 33,
         words: [{ text: "yeah", begin: 32, end: 33 }],
       },
     ];
@@ -120,8 +116,6 @@ describe("instanceToTemplate", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        begin: 1,
-        end: 8,
         words: [
           { text: "hello ", begin: 5, end: 6 },
           { text: "world", begin: 6, end: 7 },

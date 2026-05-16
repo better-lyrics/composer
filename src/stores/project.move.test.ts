@@ -1,14 +1,14 @@
 /**
  * @vitest-environment node
  */
-import { type LyricLine, useProjectStore } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine, useProjectStore } from "@/stores/project";
 import { getSyllablePositions } from "@/utils/syllable-groups";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const DURATION = 30;
 
-function seedLine(overrides: Partial<LyricLine> = {}): LyricLine {
-  return {
+function seedLine(overrides: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({
     id: "line-1",
     text: "hello world goodbye",
     agentId: "v1",
@@ -18,7 +18,7 @@ function seedLine(overrides: Partial<LyricLine> = {}): LyricLine {
       { text: "goodbye", begin: 2, end: 3 },
     ],
     ...overrides,
-  };
+  });
 }
 
 beforeEach(() => {
@@ -281,13 +281,13 @@ describe("moveWordToBg · linked propagation", () => {
     useProjectStore.setState((state) => ({
       lines: state.lines.map((l) =>
         l.id === "a1"
-          ? {
+          ? reconcileLine({
               ...l,
               words: [
                 { text: "hello ", begin: 10, end: 11 },
                 { text: "goodbye", begin: 12, end: 13 },
               ],
-            }
+            })
           : l,
       ),
     }));

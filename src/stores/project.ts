@@ -27,13 +27,10 @@ interface WordTiming {
   explicit?: true;
 }
 
-interface LyricLine {
+interface LineFields {
   id: string;
   text: string;
   agentId: string;
-  begin?: number;
-  end?: number;
-  words?: WordTiming[];
   backgroundText?: string;
   backgroundWords?: WordTiming[];
   groupId?: string;
@@ -41,6 +38,34 @@ interface LyricLine {
   templateLineIdx?: number;
   detached?: boolean;
 }
+
+// LyricLine is a discriminated union over its timing shape. The discriminant is
+// structural (presence of `words` vs `begin`/`end`), not a literal `kind` tag,
+// so saved projects need no migration. The `never` constraints make a both-state
+// line (`words` + `begin`) a compile error at every constructor and write.
+interface WordSyncedLine extends LineFields {
+  words: WordTiming[];
+  begin?: never;
+  end?: never;
+}
+
+interface LineSyncedLine extends LineFields {
+  begin: number;
+  end: number;
+  words?: never;
+}
+
+interface UntimedLine extends LineFields {
+  words?: never;
+  begin?: never;
+  end?: never;
+}
+
+type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
+
+// A line shape before reconcileLine narrows it to a concrete variant: any
+// combination of timing fields may be present. Used for merge scratch objects.
+type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
 interface LinkGroup {
   id: string;
@@ -261,7 +286,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
     set((state) => {
       const splitChar = getSplitCharacter();
       return {
-        lines: state.lines.map((line) => (line.id === id ? withDerivedText({ ...line, ...updates }, splitChar) : line)),
+        lines: state.lines.map((line) =>
+          line.id === id ? withDerivedText(reconcileLine({ ...line, ...updates }), splitChar) : line,
+        ),
         isDirty: true,
         isDirtySinceHistory: true,
       };
@@ -289,20 +316,17 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const splitChar = getSplitCharacter();
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
-          const merged = { ...line, ...updates };
-          if (updates.words?.length && line.begin !== undefined && !line.words?.length) {
-            merged.begin = undefined;
-            merged.end = undefined;
-          }
-          return withDerivedText(merged, splitChar);
+          return withDerivedText(reconcileLine({ ...line, ...updates }), splitChar);
         }
         if (isLinkedSibling(line, linkScope)) {
-          const siblingUpdates: Partial<LyricLine> = { ...(linkedUpdates ?? {}) };
+          const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
           const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
           if (propagatedWords) siblingUpdates.words = propagatedWords;
           const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, line.backgroundWords);
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-          if (Object.keys(siblingUpdates).length > 0) return withDerivedText({ ...line, ...siblingUpdates }, splitChar);
+          if (Object.keys(siblingUpdates).length > 0) {
+            return withDerivedText(reconcileLine({ ...line, ...siblingUpdates }), splitChar);
+          }
         }
         return line;
       });
@@ -352,12 +376,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
         if (targetIdx !== undefined && target) {
-          const merged = { ...target, ...lineUpdates };
-          if (lineUpdates.words?.length && target.begin !== undefined && !target.words?.length) {
-            merged.begin = undefined;
-            merged.end = undefined;
-          }
-          newLines[targetIdx] = merged;
+          newLines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
         }
 
         if (linkScope) {
@@ -365,12 +384,12 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
             const line = newLines[i];
             if (line.id === id) continue;
             if (!isLinkedSibling(line, linkScope)) continue;
-            const siblingUpdates: Partial<LyricLine> = { ...(linkedUpdates ?? {}) };
+            const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
             const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
             if (propagatedWords) siblingUpdates.words = propagatedWords;
             const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, line.backgroundWords);
             if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-            if (Object.keys(siblingUpdates).length > 0) newLines[i] = { ...line, ...siblingUpdates };
+            if (Object.keys(siblingUpdates).length > 0) newLines[i] = reconcileLine({ ...line, ...siblingUpdates });
           }
         }
       }
@@ -613,37 +632,39 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       let instanceIdx = 0;
       while (usedIndices.has(instanceIdx)) instanceIdx++;
 
-      const newLines: LyricLine[] = structure.map((tplLine, templateLineIdx) => ({
-        id: crypto.randomUUID(),
-        text: tplLine.text,
-        agentId: tplLine.agentId,
-        groupId,
-        instanceIdx,
-        templateLineIdx,
-        ...(tplLine.relativeBegin !== undefined ? { begin: tplLine.relativeBegin + instanceStart } : {}),
-        ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : {}),
-        ...(tplLine.words
-          ? {
-              words: tplLine.words.map((w) => ({
-                text: w.text,
-                begin: w.relativeBegin + instanceStart,
-                end: w.relativeEnd + instanceStart,
-                ...(w.explicit ? { explicit: true as const } : {}),
-              })),
-            }
-          : {}),
-        ...(tplLine.backgroundText !== undefined ? { backgroundText: tplLine.backgroundText } : {}),
-        ...(tplLine.backgroundWords
-          ? {
-              backgroundWords: tplLine.backgroundWords.map((w) => ({
-                text: w.text,
-                begin: w.relativeBegin + instanceStart,
-                end: w.relativeEnd + instanceStart,
-                ...(w.explicit ? { explicit: true as const } : {}),
-              })),
-            }
-          : {}),
-      }));
+      const newLines: LyricLine[] = structure.map((tplLine, templateLineIdx) =>
+        reconcileLine({
+          id: crypto.randomUUID(),
+          text: tplLine.text,
+          agentId: tplLine.agentId,
+          groupId,
+          instanceIdx,
+          templateLineIdx,
+          ...(tplLine.relativeBegin !== undefined ? { begin: tplLine.relativeBegin + instanceStart } : {}),
+          ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : {}),
+          ...(tplLine.words
+            ? {
+                words: tplLine.words.map((w) => ({
+                  text: w.text,
+                  begin: w.relativeBegin + instanceStart,
+                  end: w.relativeEnd + instanceStart,
+                  ...(w.explicit ? { explicit: true as const } : {}),
+                })),
+              }
+            : {}),
+          ...(tplLine.backgroundText !== undefined ? { backgroundText: tplLine.backgroundText } : {}),
+          ...(tplLine.backgroundWords
+            ? {
+                backgroundWords: tplLine.backgroundWords.map((w) => ({
+                  text: w.text,
+                  begin: w.relativeBegin + instanceStart,
+                  end: w.relativeEnd + instanceStart,
+                  ...(w.explicit ? { explicit: true as const } : {}),
+                })),
+              }
+            : {}),
+        }),
+      );
 
       const insertedLines =
         insertAtIndex === undefined || insertAtIndex >= state.lines.length || insertAtIndex < 0
@@ -695,7 +716,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       commitHistory(state, {
         lines: state.lines.map((line) => {
           if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
-          return {
+          return reconcileLine({
             ...line,
             begin: line.begin !== undefined ? line.begin + deltaSeconds : undefined,
             end: line.end !== undefined ? line.end + deltaSeconds : undefined,
@@ -709,7 +730,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
               begin: w.begin + deltaSeconds,
               end: w.end + deltaSeconds,
             })),
-          };
+          });
         }),
       }),
     ),
@@ -727,7 +748,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         return commitHistory(state, {
           lines: state.lines.map((line) => {
             if (line.id !== lineId) return line;
-            const detached: LyricLine = {
+            return reconcileLine({
               ...line,
               ...extraUpdates,
               [field]: newWords,
@@ -735,12 +756,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
               instanceIdx: undefined,
               templateLineIdx: undefined,
               detached: undefined,
-            };
-            if (field === "words" && newWords.length > 0 && line.begin !== undefined && !line.words?.length) {
-              detached.begin = undefined;
-              detached.end = undefined;
-            }
-            return detached;
+            });
           }),
         });
       }
@@ -749,18 +765,13 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       const newLines = state.lines.map((line) => {
         if (line.id === lineId) {
-          const merged: LyricLine = { ...line, ...extraUpdates, [field]: newWords };
-          if (field === "words" && newWords.length > 0 && line.begin !== undefined && !line.words?.length) {
-            merged.begin = undefined;
-            merged.end = undefined;
-          }
-          return merged;
+          return reconcileLine({ ...line, ...extraUpdates, [field]: newWords });
         }
         if (isLinkedSibling(line, linkScope)) {
           const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
-          const siblingUpdates: Partial<LyricLine> = { ...(linkedExtras ?? {}) };
+          const siblingUpdates: Partial<LooseLine> = { ...(linkedExtras ?? {}) };
           if (propagated) siblingUpdates[field] = propagated;
-          if (Object.keys(siblingUpdates).length > 0) return { ...line, ...siblingUpdates };
+          if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...line, ...siblingUpdates });
         }
         return line;
       });
@@ -922,12 +933,25 @@ function applyMoveFromBg(
   const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
 
   const hasBg = remainingBg.length > 0;
-  return {
+  return reconcileLine({
     ...line,
     words: mergedMain,
     backgroundWords: hasBg ? remainingBg : undefined,
     backgroundText: hasBg ? line.backgroundText : undefined,
-  };
+  });
+}
+
+// The store builds lines by spreading `...line` (a union member) together with
+// Partial<LyricLine> updates or fresh timing fields. A generic spread widens
+// past the LyricLine union, so reconcileLine re-narrows a freshly merged line
+// into exactly one variant by its runtime shape. It enforces the core
+// invariant: a line is never both word-synced and line-synced. A `words` array
+// (even empty) wins and drops begin/end.
+function reconcileLine(line: LooseLine): LyricLine {
+  const { words, begin, end, ...rest } = line;
+  if (words !== undefined) return { ...rest, words };
+  if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
+  return rest;
 }
 
 // text/backgroundText are derived from words/backgroundWords whenever those
@@ -977,17 +1001,21 @@ function getAgentColor(agentId: string): string {
   return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
 }
 
-export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, getAgentColor, INITIAL_STATE };
+export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, getAgentColor, INITIAL_STATE, reconcileLine };
 
 export type {
   Agent,
   AgentType,
   GranularityMode,
+  LineSyncedLine,
   LineTemplate,
   LinkGroup,
+  LooseLine,
   LyricLine,
   ProjectMetadata,
   SimpleTab,
+  UntimedLine,
+  WordSyncedLine,
   WordTemplate,
   WordTiming,
 };

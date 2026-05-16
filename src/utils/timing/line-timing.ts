@@ -12,7 +12,7 @@ function nudgeLineBegin(
   if (line?.begin === undefined) return;
 
   const newBegin = Math.max(0, line.begin + delta);
-  const duration = (line.end ?? line.begin) - line.begin;
+  const duration = line.end - line.begin;
   updateLineWithHistory(line.id, {
     begin: newBegin,
     end: newBegin + duration,
@@ -28,7 +28,7 @@ function setLineBegin(
   const line = lines[lineIdx];
   if (line?.begin === undefined) return;
 
-  const duration = (line.end ?? line.begin) - line.begin;
+  const duration = line.end - line.begin;
   updateLineWithHistory(line.id, {
     begin: newBegin,
     end: newBegin + duration,

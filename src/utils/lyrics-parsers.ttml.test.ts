@@ -36,8 +36,8 @@ describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
     expect(result.lines).toHaveLength(1);
     expect(result.lines[0].text).toBe("Hello world");
     expect(result.lines[0].words).toHaveLength(2);
-    expect(result.lines[0].begin).toBeCloseTo(1.0, 3);
-    expect(result.lines[0].end).toBeCloseTo(2.0, 3);
+    expect(result.lines[0].words?.[0].begin).toBeCloseTo(1.0, 3);
+    expect(result.lines[0].words?.[1].end).toBeCloseTo(2.0, 3);
   });
 
   it("tolerates an undeclared prefix used only in an attribute", () => {

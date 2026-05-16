@@ -1,7 +1,7 @@
 import { extractLinkedFields } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -201,7 +201,7 @@ function propagateContentUpdates(
     if (updatesById.has(line.id)) return line;
     if (line.groupId === undefined || line.templateLineIdx === undefined || line.detached) return line;
 
-    const merged: Partial<LyricLine> = {};
+    const merged: Partial<LooseLine> = {};
     for (const scope of linkedScopes) {
       if (line.groupId !== scope.groupId) continue;
       if (line.templateLineIdx !== scope.templateLineIdx) continue;
@@ -216,7 +216,7 @@ function propagateContentUpdates(
       if (propagatedBg) merged.backgroundWords = propagatedBg;
     }
     if (Object.keys(merged).length === 0) return line;
-    return { ...line, ...merged };
+    return reconcileLine({ ...line, ...merged });
   });
 }
 

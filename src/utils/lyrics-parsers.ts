@@ -1,6 +1,15 @@
+import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { firstBegin, lastEnd } from "@/domain/word/bounds";
-import type { Agent, AgentType, LinkGroup, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
+import {
+  type Agent,
+  type AgentType,
+  type LinkGroup,
+  type LooseLine,
+  type LyricLine,
+  type ProjectMetadata,
+  reconcileLine,
+  type WordTiming,
+} from "@/stores/project";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
@@ -128,9 +137,9 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
   return { cleanText: reconstructLineText(words, getSplitCharacter()), words };
 }
 
-function parseLrc(content: string): ParseResult {
+function parseLrc(content: string, fallbackDuration?: number): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
-  const lines: LyricLine[] = [];
+  const lines: LooseLine[] = [];
 
   const rawLines = content.split(/\r?\n/);
 
@@ -148,6 +157,11 @@ function parseLrc(content: string): ParseResult {
         metadata.artist = value.trim();
       } else if (tagLower === "al" || tagLower === "album") {
         metadata.album = value.trim();
+      } else if (tagLower === "length") {
+        const lengthMatch = value.trim().match(/^(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?$/);
+        if (lengthMatch) {
+          metadata.duration = lrcTimeToSeconds(lengthMatch[1], lengthMatch[2], lengthMatch[3]);
+        }
       }
       continue;
     }
@@ -190,20 +204,35 @@ function parseLrc(content: string): ParseResult {
     }
   }
 
+  // The last line has no following line to source its end from. Prefer an
+  // explicit [length:] tag, then the caller-supplied audio duration; if neither
+  // is available it stays begin-only and reconcileLine renders it untimed.
+  const lastLine = lines[lines.length - 1];
+  const songEnd = metadata.duration ?? fallbackDuration;
+  if (
+    lastLine &&
+    !lastLine.words &&
+    lastLine.begin !== undefined &&
+    lastLine.end === undefined &&
+    songEnd !== undefined &&
+    songEnd > lastLine.begin
+  ) {
+    lastLine.end = songEnd;
+  }
+
   for (const line of lines) {
     if (!line.words || line.words.length === 0) continue;
     const lastWord = line.words[line.words.length - 1];
     if (lastWord.end === PENDING_WORD_END) {
       lastWord.end = line.end ?? lastWord.begin;
     }
-    line.begin = firstBegin(line.words);
-    line.end = lastWord.end;
   }
 
+  const reconciledLines = lines.map(reconcileLine);
   return {
-    lines,
+    lines: reconciledLines,
     metadata,
-    hasTimingData: lines.some((l) => l.begin !== undefined),
+    hasTimingData: reconciledLines.some(hasAnyTiming),
   };
 }
 
@@ -496,17 +525,17 @@ function parseTtml(content: string): ParseResult {
     const words = extractTimedWords(p, bgContainer);
 
     if (words.length > 0) {
-      lines.push({
-        id: generateLineId(),
-        text: reconstructLineText(words, getSplitCharacter()),
-        agentId,
-        begin: firstBegin(words),
-        end: lastEnd(words),
-        words,
-        backgroundText,
-        backgroundWords,
-        ...groupFields,
-      });
+      lines.push(
+        reconcileLine({
+          id: generateLineId(),
+          text: reconstructLineText(words, getSplitCharacter()),
+          agentId,
+          words,
+          backgroundText,
+          backgroundWords,
+          ...groupFields,
+        }),
+      );
     } else {
       // Line-level timing only - extract text without bg content
       let text = "";
@@ -524,16 +553,18 @@ function parseTtml(content: string): ParseResult {
       text = text.trim();
 
       if (text) {
-        lines.push({
-          id: generateLineId(),
-          text,
-          agentId,
-          begin: begin || undefined,
-          end: end || undefined,
-          backgroundText,
-          backgroundWords,
-          ...groupFields,
-        });
+        lines.push(
+          reconcileLine({
+            id: generateLineId(),
+            text,
+            agentId,
+            begin: begin || undefined,
+            end: end || undefined,
+            backgroundText,
+            backgroundWords,
+            ...groupFields,
+          }),
+        );
       }
     }
   }
@@ -549,12 +580,12 @@ function parseTtml(content: string): ParseResult {
 
 // -- Main Parser --------------------------------------------------------------
 
-function parseLyricsFile(filename: string, content: string): ParseResult {
+function parseLyricsFile(filename: string, content: string, fallbackDuration?: number): ParseResult {
   const fileType = detectFileType(filename, content);
 
   switch (fileType) {
     case "lrc":
-      return parseLrc(content);
+      return parseLrc(content, fallbackDuration);
     case "srt":
       return parseSrt(content);
     case "ttml":

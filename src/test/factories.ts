@@ -1,4 +1,4 @@
-import { DEFAULT_AGENTS } from "@/stores/project";
+import { DEFAULT_AGENTS, type LyricLine, reconcileLine, type WordTiming } from "@/stores/project";
 
 interface FactoryLineOptions {
   id?: string;
@@ -30,15 +30,15 @@ interface FactoryGroupOptions {
 let lineCounter = 0;
 let groupCounter = 0;
 
-function createWord(opts: FactoryWordOptions): FactoryWordOptions {
+function createWord(opts: FactoryWordOptions): WordTiming {
   return { text: opts.text, begin: opts.begin, end: opts.end, explicit: opts.explicit };
 }
 
-function createLine(opts: FactoryLineOptions = {}) {
+function createLine(opts: FactoryLineOptions = {}): LyricLine {
   const id = opts.id ?? `line-${++lineCounter}`;
   const text = opts.text ?? "Test lyric line";
   const agentId = opts.agentId ?? DEFAULT_AGENTS[0]?.id ?? "v1";
-  return {
+  return reconcileLine({
     id,
     text,
     agentId,
@@ -49,7 +49,7 @@ function createLine(opts: FactoryLineOptions = {}) {
     ...(opts.backgroundWords ? { backgroundWords: opts.backgroundWords.map(createWord) } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
-  };
+  });
 }
 
 function createGroup(opts: FactoryGroupOptions = {}) {

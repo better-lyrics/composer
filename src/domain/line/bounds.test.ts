@@ -1,11 +1,11 @@
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LyricLine> = {}): LyricLine {
-  return { id: "l1", text: "Hello", agentId: "v1", ...extras };
+function line(extras: Partial<LooseLine> = {}) {
+  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- mainBounds ---------------------------------------------------------------
@@ -32,8 +32,8 @@ describe("mainBounds", () => {
     expect(mainBounds(line())).toBeNull();
   });
 
-  it("treats empty words array as no words and falls back to line-synced", () => {
-    expect(mainBounds(line({ begin: 3, end: 7, words: [] }))).toEqual({ begin: 3, end: 7 });
+  it("returns null for a word-synced line with an empty words array", () => {
+    expect(mainBounds(line({ words: [] }))).toBeNull();
   });
 
   it("ignores stale line.begin/end when words present (regression: TTML import populates both)", () => {

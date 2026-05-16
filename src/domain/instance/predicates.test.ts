@@ -1,11 +1,11 @@
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { belongsToInstance, isLinked } from "@/domain/instance/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LyricLine> = {}): LyricLine {
-  return { id: "l1", text: "Hello", agentId: "v1", ...extras };
+function line(extras: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- isLinked -----------------------------------------------------------------

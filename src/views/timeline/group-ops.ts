@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { mainBounds } from "@/domain/line/bounds";
 import type { LineTemplate, LinkGroup, LyricLine, WordTemplate } from "@/stores/project";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 
@@ -121,11 +122,12 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       relativeEnd: w.end - startTime,
     }));
 
+    const lineBounds = mainBounds(line);
     templates.push({
       text: line.text,
       agentId: line.agentId,
-      relativeBegin: line.begin !== undefined ? line.begin - startTime : undefined,
-      relativeEnd: line.end !== undefined ? line.end - startTime : undefined,
+      relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
+      relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
       words: tplWords,
       backgroundText: line.backgroundText,
       backgroundWords: tplBgWords,

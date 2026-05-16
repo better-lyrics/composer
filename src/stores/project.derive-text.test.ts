@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
+import { type LooseLine, type LyricLine, type WordTiming, reconcileLine, useProjectStore } from "@/stores/project";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // Phase 9: text/words single source of truth. Whenever a store mutation writes
@@ -12,14 +12,14 @@ function w(text: string, begin: number, end: number): WordTiming {
   return { text, begin, end };
 }
 
-function wordSyncedLine(overrides: Partial<LyricLine> = {}): LyricLine {
-  return {
+function wordSyncedLine(overrides: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({
     id: "l1",
     text: "hello world",
     agentId: "v1",
     words: [w("hello ", 0, 1), w("world", 1, 2)],
     ...overrides,
-  };
+  });
 }
 
 beforeEach(() => {

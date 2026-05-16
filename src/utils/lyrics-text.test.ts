@@ -77,8 +77,6 @@ describe("textToLyricLines · group attrs preservation", () => {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        begin: 0,
-        end: 1,
         words: [{ text: "I love", begin: 0, end: 1 }],
       },
     ];
@@ -124,8 +122,6 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        begin: 10,
-        end: 11,
         words: [{ text: "chorus", begin: 10, end: 11 }],
       },
       {
@@ -135,16 +131,14 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        begin: 30,
-        end: 31,
         words: [{ text: "chorus", begin: 30, end: 31 }],
       },
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
     expect(result[0].words).toEqual(existing[0].words);
-    expect(result[0].begin).toBe(10);
+    expect(result[0].words?.[0].begin).toBe(10);
     expect(result[1].words).toEqual(existing[1].words);
-    expect(result[1].begin).toBe(30);
+    expect(result[1].words?.[0].begin).toBe(30);
   });
 
   it("preserves word timings on the edited line when word count matches (single-word swap)", () => {
@@ -260,8 +254,6 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-        begin: 10,
-        end: 11,
         words: [{ text: "chorus", begin: 10, end: 11 }],
       },
       {
@@ -271,8 +263,6 @@ describe("textToLyricLines · group attrs preservation", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        begin: 30,
-        end: 31,
         words: [{ text: "chorus", begin: 30, end: 31 }],
       },
     ];

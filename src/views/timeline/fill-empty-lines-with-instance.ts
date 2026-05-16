@@ -1,4 +1,4 @@
-import type { LineTemplate, LinkGroup, LyricLine } from "@/stores/project";
+import { type LineTemplate, type LinkGroup, type LyricLine, reconcileLine } from "@/stores/project";
 
 interface FillResult {
   ok: boolean;
@@ -43,7 +43,7 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
   const updatedLines = lines.map((line, idx) => {
     if (idx < startIndex || idx >= startIndex + template.length) return line;
     const tplLine = template[idx - startIndex];
-    return {
+    return reconcileLine({
       ...line,
       text: tplLine.text,
       agentId: tplLine.agentId,
@@ -75,7 +75,7 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
             })),
           }
         : { backgroundWords: undefined }),
-    };
+    });
   });
 
   return { ok: true, updatedLines, instanceIdx };

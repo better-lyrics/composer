@@ -1,11 +1,11 @@
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { effectiveWords, getEffectiveLines } from "@/domain/line/effective-words";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LyricLine> = {}): LyricLine {
-  return { id: "l1", text: "Hello", agentId: "v1", ...extras };
+function line(extras: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- effectiveWords -----------------------------------------------------------
@@ -35,14 +35,8 @@ describe("effectiveWords", () => {
     expect(effectiveWords(line())).toEqual([]);
   });
 
-  it("returns empty array when words is empty AND no line-sync timing", () => {
+  it("returns empty array for a word-synced line with an empty words array", () => {
     expect(effectiveWords(line({ words: [] }))).toEqual([]);
-  });
-
-  it("treats empty words + begin/end as line-synced (synthetic word)", () => {
-    expect(effectiveWords(line({ text: "Hi", words: [], begin: 1, end: 2 }))).toEqual([
-      { text: "Hi", begin: 1, end: 2 },
-    ]);
   });
 });
 

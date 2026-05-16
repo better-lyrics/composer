@@ -1,17 +1,17 @@
 /**
  * @vitest-environment node
  */
-import type { LinkGroup, LyricLine } from "@/stores/project";
+import { type LinkGroup, type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
 
-function lineWithText(id: string, text: string, words?: LyricLine["words"]): LyricLine {
-  return {
+function lineWithText(id: string, text: string, words?: LooseLine["words"]): LyricLine {
+  return reconcileLine({
     id,
     text,
     agentId: "v1",
     ...(words ? { words } : {}),
-  };
+  });
 }
 
 describe("findExplicitWords", () => {

@@ -60,7 +60,7 @@ const LyricsImportModal: React.FC<LyricsImportModalProps> = ({ isOpen, onClose }
   const handleFileImport = useCallback(
     async (file: File) => {
       const content = await file.text();
-      const result = parseLyricsFile(file.name, content);
+      const result = parseLyricsFile(file.name, content, duration > 0 ? duration : undefined);
 
       if (result.lines.length > 0) {
         if (!(await confirmReplaceIfNeeded())) return;

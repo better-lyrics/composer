@@ -1,11 +1,11 @@
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { hasAnyTiming, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
-function line(extras: Partial<LyricLine> = {}): LyricLine {
-  return { id: "l1", text: "Hello", agentId: "v1", ...extras };
+function line(extras: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({ id: "l1", text: "Hello", agentId: "v1", ...extras });
 }
 
 // -- isLineSynced -------------------------------------------------------------
@@ -19,8 +19,8 @@ describe("isLineSynced", () => {
     expect(isLineSynced(line({ begin: 1, end: 2, words: [{ text: "Hi", begin: 1, end: 2 }] }))).toBe(false);
   });
 
-  it("returns true when words array is empty and begin/end set (empty array is no-words)", () => {
-    expect(isLineSynced(line({ begin: 1, end: 2, words: [] }))).toBe(true);
+  it("returns false for a word-synced line with an empty words array", () => {
+    expect(isLineSynced(line({ words: [] }))).toBe(false);
   });
 
   it("returns false when no timing at all", () => {

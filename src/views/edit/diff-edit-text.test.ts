@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import { type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import {
   detachInstancesFromLines,
@@ -29,14 +29,12 @@ describe("diffEditTextChange", () => {
     expect(result.contentUpdates).toEqual([{ id: "L1", updates: { text: "I luv you" } }]);
   });
 
-  it("forwards explicit undefined for words/begin/end when source clears them", () => {
+  it("forwards explicit undefined for words when a word-synced source loses them", () => {
     const old: LyricLine[] = [
       {
         id: "L1",
         text: "I love",
         agentId: "v1",
-        begin: 0,
-        end: 1,
         words: [{ text: "I love", begin: 0, end: 1 }],
       },
     ];
@@ -49,6 +47,14 @@ describe("diffEditTextChange", () => {
     expect(u.updates.text).toBe("I luv");
     expect("words" in u.updates).toBe(true);
     expect(u.updates.words).toBeUndefined();
+  });
+
+  it("forwards explicit undefined for begin/end when a line-synced source loses them", () => {
+    const old: LyricLine[] = [{ id: "L1", text: "I love", agentId: "v1", begin: 0, end: 1 }];
+    const next: LyricLine[] = [{ id: "L1", text: "I luv", agentId: "v1" }];
+    const result = diffEditTextChange(old, next);
+    expect(result.contentUpdates).toHaveLength(1);
+    const u = result.contentUpdates[0];
     expect("begin" in u.updates).toBe(true);
     expect(u.updates.begin).toBeUndefined();
     expect("end" in u.updates).toBe(true);
@@ -173,8 +179,6 @@ describe("propagateContentUpdates", () => {
         groupId: "g1",
         instanceIdx: 1,
         templateLineIdx: 0,
-        begin: 10,
-        end: 11,
         words: [{ text: "I love", begin: 10, end: 11 }],
       },
     ];
@@ -217,7 +221,7 @@ describe("propagateContentUpdates", () => {
       },
     ];
     const newLines: LyricLine[] = [
-      {
+      reconcileLine({
         ...oldLines[0],
         text: "I luv you",
         words: [
@@ -225,7 +229,7 @@ describe("propagateContentUpdates", () => {
           { text: "luv ", begin: 10.4, end: 10.8 },
           { text: "you", begin: 10.8, end: 11.2 },
         ],
-      },
+      }),
       oldLines[1],
     ];
 

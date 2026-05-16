@@ -233,8 +233,8 @@ describe("project store · instance mutators", () => {
     expect(created).toHaveLength(1);
     expect(created[0].instanceIdx).toBe(0);
     expect(created[0].templateLineIdx).toBe(0);
-    expect(created[0].begin).toBeCloseTo(30);
-    expect(created[0].end).toBeCloseTo(31.2);
+    expect(created[0].begin).toBeUndefined();
+    expect(created[0].words?.[0].begin).toBeCloseTo(30);
     expect(created[0].words?.[1].begin).toBeCloseTo(30.4);
     expect(created[0].words?.[2].end).toBeCloseTo(31.2);
   });
@@ -340,8 +340,6 @@ describe("project store · shiftInstance", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          begin: 30,
-          end: 32,
           words: [
             { text: "hi ", begin: 30, end: 31 },
             { text: "there", begin: 31, end: 32 },
@@ -354,8 +352,6 @@ describe("project store · shiftInstance", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          begin: 60,
-          end: 62,
           words: [
             { text: "hi ", begin: 60, end: 61 },
             { text: "there", begin: 61, end: 62 },
@@ -370,12 +366,9 @@ describe("project store · shiftInstance", () => {
     const i0 = lines.find((l) => l.id === "a0");
     const i1 = lines.find((l) => l.id === "a1");
 
-    expect(i0?.begin).toBeCloseTo(30);
-    expect(i0?.end).toBeCloseTo(32);
+    expect(i0?.words?.[0].begin).toBeCloseTo(30);
     expect(i0?.words?.[1].end).toBeCloseTo(32);
 
-    expect(i1?.begin).toBeCloseTo(65);
-    expect(i1?.end).toBeCloseTo(67);
     expect(i1?.words?.[0].begin).toBeCloseTo(65);
     expect(i1?.words?.[1].end).toBeCloseTo(67);
   });
@@ -803,8 +796,6 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-          begin: 30,
-          end: 32,
           words: [
             { text: "I ", begin: 30, end: 30.4 },
             { text: "love ", begin: 30.4, end: 30.8 },
@@ -818,8 +809,6 @@ describe("project store · updateLineWithHistory auto-propagation", () => {
           groupId: "g1",
           instanceIdx: 1,
           templateLineIdx: 0,
-          begin: 60,
-          end: 62,
           words: [
             { text: "I ", begin: 60, end: 60.5 },
             { text: "love ", begin: 60.5, end: 61.0 },

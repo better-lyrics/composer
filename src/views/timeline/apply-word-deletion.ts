@@ -1,7 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import type { LyricLine } from "@/stores/project";
+import { type LyricLine, reconcileLine } from "@/stores/project";
 import { getSplitCharacter } from "@/utils/split-character";
 
 interface DeletionSelection {
@@ -63,18 +63,14 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
       nextBg = remaining.length > 0 ? remaining : undefined;
     }
 
-    const updatedLine: LyricLine = {
+    const updatedLine = reconcileLine({
       ...line,
       words: nextMain,
       backgroundWords: nextBg,
       text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : line.text,
       backgroundText: nextBg && nextBg.length > 0 ? reconstructLineText(nextBg, splitChar) : undefined,
-    };
-
-    if (willHaveNoMainWords && (line.begin !== undefined || line.end !== undefined)) {
-      updatedLine.begin = undefined;
-      updatedLine.end = undefined;
-    }
+      ...(willHaveNoMainWords ? { begin: undefined, end: undefined } : {}),
+    });
 
     updatedById.set(lineId, updatedLine);
   }

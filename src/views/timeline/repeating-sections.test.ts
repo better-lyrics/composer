@@ -1,12 +1,12 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
 import { describe, expect, it } from "vitest";
 import { findRepeatingStandaloneSections } from "./repeating-sections";
 
-function line(id: string, text: string, opts: Partial<LyricLine> = {}): LyricLine {
-  return { id, text, agentId: "v1", ...opts };
+function line(id: string, text: string, opts: Partial<LooseLine> = {}): LyricLine {
+  return reconcileLine({ id, text, agentId: "v1", ...opts });
 }
 
 describe("findRepeatingStandaloneSections", () => {

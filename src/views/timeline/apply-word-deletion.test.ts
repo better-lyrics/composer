@@ -31,8 +31,6 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "I love",
         agentId: "v1",
-        begin: 0,
-        end: 0.6,
         words: [
           { text: "I ", begin: 0, end: 0.3 },
           { text: "love", begin: 0.3, end: 0.6 },
@@ -172,8 +170,6 @@ describe("applyWordDeletion", () => {
         id: "l1",
         text: "I",
         agentId: "v1",
-        begin: 0,
-        end: 1,
         words: [{ text: "I", begin: 0, end: 1 }],
         backgroundText: "ah",
         backgroundWords: [{ text: "ah", begin: 0, end: 1 }],
