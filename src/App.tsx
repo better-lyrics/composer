@@ -1,5 +1,6 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
+import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
@@ -64,6 +65,7 @@ const AppContent: React.FC = () => {
   useImportFromQuery();
   useImportFromYouTube();
   usePanicRecovery();
+  useAutoSeparate();
   useDocumentTitle();
 
   const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);

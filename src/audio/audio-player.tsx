@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Slider } from "@/ui/slider";
+import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
 import { formatTime } from "@/utils/format-time";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
 import { useCallback } from "react";
@@ -160,6 +161,7 @@ const AudioPlayer: React.FC = () => {
       <TimeDisplay current={currentTime} duration={duration} />
       <VolumeControl volume={volume} isMuted={isMuted} onChangeVolume={setVolume} onToggleMute={toggleMute} />
       <PlaybackRateControl rate={playbackRate} onChangeRate={setPlaybackRate} />
+      <VocalSeparationDropdown />
     </div>
   );
 };

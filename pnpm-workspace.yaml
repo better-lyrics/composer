@@ -1,0 +1,5 @@
+allowBuilds:
+  '@biomejs/biome': false
+  esbuild: false
+  protobufjs: false
+  sharp: false

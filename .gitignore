@@ -148,3 +148,7 @@ cspell.json
 # Playwright cache (test reports)
 playwright-report/
 test-results/
+
+# Built HTDemucs ONNX models (large; produced by scripts/build-htdemucs-onnx.sh)
+htdemucs-onnx-out/
+.wrangler

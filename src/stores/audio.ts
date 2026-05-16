@@ -79,7 +79,11 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setIsPlaying: (isPlaying) => set({ isPlaying }),
   setCurrentTime: (currentTime) => set({ currentTime }),
   setDuration: (duration) => set({ duration }),
-  setPlaybackRate: (playbackRate) => set({ playbackRate }),
+  setPlaybackRate: (playbackRate) => {
+    if (!Number.isFinite(playbackRate) || playbackRate <= 0) return;
+    useSettingsStore.getState().set("defaultPlaybackRate", playbackRate);
+    set({ playbackRate });
+  },
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),
   setIsLoading: (isLoading) => set({ isLoading }),

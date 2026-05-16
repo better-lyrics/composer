@@ -2,6 +2,7 @@ import { decodeMp3ToWav, isMp3File } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { useAudioStore } from "@/stores/audio";
+import { useSeparationStore } from "@/stores/separation";
 import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -24,6 +25,9 @@ const AudioEngine: React.FC = () => {
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const setIsLoading = useAudioStore((s) => s.setIsLoading);
   const registerAudioElement = useAudioStore((s) => s.registerAudioElement);
+
+  const currentStem = useSeparationStore((s) => s.currentStem);
+  const stemUrls = useSeparationStore((s) => s.stemUrls);
 
   useEffect(() => {
     if (!source) {
@@ -177,6 +181,27 @@ const AudioEngine: React.FC = () => {
     audio.volume = volume;
     audio.muted = isMuted;
   }, [playbackRate, volume, isMuted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const stemUrl = currentStem !== "original" ? stemUrls[currentStem] : null;
+    const targetUrl = stemUrl ?? objectUrlRef.current;
+    if (!targetUrl || audio.src === targetUrl) return;
+    const wasPlaying = !audio.paused;
+    const time = audio.currentTime;
+    const {
+      playbackRate: currentPlaybackRate,
+      volume: currentVolume,
+      isMuted: currentIsMuted,
+    } = useAudioStore.getState();
+    audio.src = targetUrl;
+    audio.currentTime = time;
+    audio.playbackRate = currentPlaybackRate;
+    audio.volume = currentVolume;
+    audio.muted = currentIsMuted;
+    if (wasPlaying) audio.play().catch(() => {});
+  }, [currentStem, stemUrls]);
 
   return null;
 };
