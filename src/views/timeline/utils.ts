@@ -1,4 +1,5 @@
 import { instanceBounds } from "@/domain/instance/bounds";
+import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine, WordTiming } from "@/stores/project";
@@ -91,7 +92,7 @@ function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
     const slice = effective.slice(bufferStart, endExclusive);
     const first = slice[0];
 
-    if (first.groupId !== undefined && first.instanceIdx !== undefined) {
+    if (isLinked(first)) {
       const bounds = instanceBounds(slice);
       if (bounds) {
         rows.push({
@@ -112,8 +113,7 @@ function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
 
   for (let i = 0; i < effective.length; i++) {
     const line = effective[i];
-    const key =
-      line.groupId !== undefined && line.instanceIdx !== undefined ? `${line.groupId}:${line.instanceIdx}` : null;
+    const key = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
     if (key !== currentKey) {
       flushBuffer(i);
       bufferStart = i;
@@ -186,8 +186,7 @@ function computeRowLayout({
   let lastInstanceKey: string | null = null;
 
   for (const line of lines) {
-    const inst =
-      line.groupId !== undefined && line.instanceIdx !== undefined ? `${line.groupId}:${line.instanceIdx}` : null;
+    const inst = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
 
     if (inst !== lastInstanceKey && inst !== null) {
       headerTops.set(inst, { top: rowTop, height: groupHeaderHeight });

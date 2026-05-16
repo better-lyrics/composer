@@ -49,10 +49,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         continue;
       }
       if (hideUntilNextNonGroup) {
-        const lineKey =
-          row.line.groupId !== undefined && row.line.instanceIdx !== undefined
-            ? `${row.line.groupId}:${row.line.instanceIdx}`
-            : null;
+        const lineKey = isLinked(row.line) ? `${row.line.groupId}:${row.line.instanceIdx}` : null;
         if (lineKey === activeKey) continue;
         hideUntilNextNonGroup = false;
         activeKey = null;

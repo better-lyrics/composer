@@ -3,10 +3,15 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// This scan is the CI-layer wall for the domain-module refactor. Derived
-// concepts (line-synced detection, word/instance bounds, instance membership)
-// must go through `src/domain/**`, never be re-derived inline at call sites.
-// Re-derivation is what made these concepts impossible to evolve safely.
+// CI-layer net for the domain-module refactor. Derived concepts (line-synced
+// detection, word/instance bounds, instance membership) must go through
+// `src/domain/**`, never be re-derived inline at call sites. Re-derivation is
+// what made these concepts impossible to evolve safely.
+//
+// This is a regex heuristic, not a completeness proof: it catches the common
+// inline forms. A derivation routed through an intermediate variable (e.g.
+// `const last = words.at(-1); last.end`) escapes it. The compile-time wall for
+// the remaining cases is the deferred `LyricLine` discriminated-union change.
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -62,9 +67,14 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\.groupId === undefined \|\|\s*[\w.]+\.instanceIdx === undefined/,
     use: "isLinked from @/domain/instance/predicates",
   },
+  {
+    name: "inline linked-line check",
+    regex: /\.groupId !== undefined &&\s*[\w.]+\.instanceIdx !== undefined/,
+    use: "isLinked from @/domain/instance/predicates",
+  },
 ];
 
-describe("no inline domain derivations outside src/domain", () => {
+describe("no common inline domain derivations outside src/domain", () => {
   for (const pattern of FORBIDDEN) {
     it(`has no ${pattern.name} (use ${pattern.use})`, () => {
       const offenders: Array<{ file: string; line: number; text: string }> = [];

@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import { useConfirm } from "@/stores/confirm-store";
 import { getAgentColor, useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/stores/project";
@@ -285,7 +286,7 @@ const EditPanel: React.FC = () => {
   const instanceCountByGroup = useMemo(() => {
     const indices = new Map<string, Set<number>>();
     for (const l of lines) {
-      if (l.groupId !== undefined && l.instanceIdx !== undefined) {
+      if (isLinked(l)) {
         let set = indices.get(l.groupId);
         if (!set) {
           set = new Set();

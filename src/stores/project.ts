@@ -1,3 +1,4 @@
+import { belongsToInstance } from "@/domain/instance/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -651,7 +652,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
   removeInstance: (groupId, instanceIdx) =>
     set((state) => {
       const detachedLines = state.lines.map((line) =>
-        line.groupId === groupId && line.instanceIdx === instanceIdx
+        belongsToInstance(line, groupId, instanceIdx)
           ? {
               ...line,
               groupId: undefined,

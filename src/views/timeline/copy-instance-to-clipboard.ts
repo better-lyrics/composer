@@ -1,3 +1,4 @@
+import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/stores/project";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -14,7 +15,7 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
   const instanceLineIndices: number[] = [];
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i];
-    if (l.groupId === groupId && l.instanceIdx === instanceIdx) instanceLineIndices.push(i);
+    if (belongsToInstance(l, groupId, instanceIdx)) instanceLineIndices.push(i);
   }
   if (instanceLineIndices.length === 0) return false;
 

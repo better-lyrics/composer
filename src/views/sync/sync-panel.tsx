@@ -12,6 +12,7 @@ import {
   syncCarouselTransition,
   syncPulseVariants,
 } from "@/utils/animationVariants";
+import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   getNudgeAmount,
@@ -49,7 +50,7 @@ const SyncPanel: React.FC = () => {
   const instanceCountByGroup = useMemo(() => {
     const indices = new Map<string, Set<number>>();
     for (const l of lines) {
-      if (l.groupId !== undefined && l.instanceIdx !== undefined) {
+      if (isLinked(l)) {
         let set = indices.get(l.groupId);
         if (!set) {
           set = new Set();

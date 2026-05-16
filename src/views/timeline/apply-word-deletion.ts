@@ -86,7 +86,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
   const affectedInstanceKeys = new Set<string>();
   for (const sel of selectedWords) {
     const updated = updatedById.get(sel.lineId);
-    if (updated?.groupId !== undefined && updated.instanceIdx !== undefined) {
+    if (updated && isLinked(updated)) {
       affectedInstanceKeys.add(`${updated.groupId}:${updated.instanceIdx}`);
     }
   }

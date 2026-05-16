@@ -4,6 +4,7 @@ import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { useCallback, useEffect, useRef } from "react";
@@ -87,10 +88,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
           });
 
           const activeLine = lines[activeLineIndex];
-          const activeInstanceKey =
-            activeLine.groupId !== undefined && activeLine.instanceIdx !== undefined
-              ? `${activeLine.groupId}:${activeLine.instanceIdx}`
-              : null;
+          const activeInstanceKey = isLinked(activeLine) ? `${activeLine.groupId}:${activeLine.instanceIdx}` : null;
           const isActiveCollapsed = activeInstanceKey !== null && collapsedInstances[activeInstanceKey];
 
           const target =

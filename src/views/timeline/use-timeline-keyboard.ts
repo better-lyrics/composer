@@ -294,10 +294,7 @@ function useTimelineKeyboard(
               bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
-            const instanceKey =
-              line.groupId !== undefined && line.instanceIdx !== undefined
-                ? `${line.groupId}:${line.instanceIdx}`
-                : null;
+            const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
             const pos =
               instanceKey && collapsedInstances[instanceKey]
                 ? layout.headerTops.get(instanceKey)
@@ -499,7 +496,7 @@ function useTimelineKeyboard(
           const groupKeys = new Set<string>();
           for (const w of selectedWords) {
             const line = linesById.get(w.lineId);
-            if (line?.groupId !== undefined && line.instanceIdx !== undefined) {
+            if (line && isLinked(line)) {
               groupKeys.add(`${line.groupId}:${line.instanceIdx}`);
             }
           }
@@ -555,7 +552,7 @@ function useTimelineKeyboard(
           const projectLines = useProjectStore.getState().lines;
           const keys = new Set<string>();
           for (const line of projectLines) {
-            if (line.groupId !== undefined && line.instanceIdx !== undefined) {
+            if (isLinked(line)) {
               keys.add(`${line.groupId}:${line.instanceIdx}`);
             }
           }

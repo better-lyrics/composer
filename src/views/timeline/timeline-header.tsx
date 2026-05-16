@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -56,7 +57,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const instanceKeys = useMemo(() => {
     const keys = new Set<string>();
     for (const line of lines) {
-      if (line.groupId !== undefined && line.instanceIdx !== undefined) {
+      if (isLinked(line)) {
         keys.add(`${line.groupId}:${line.instanceIdx}`);
       }
     }
