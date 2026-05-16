@@ -1,10 +1,10 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import { type LinkGroup, type LyricLine, useProjectStore } from "@/stores/project";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import type { WordSelection } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): WordSelection {
   return { lineId, lineIndex: 0, wordIndex, type };
@@ -131,5 +131,59 @@ describe("resolveExplicitSelectionToggle", () => {
   it("returns an empty target list for an empty selection", () => {
     const result = resolveExplicitSelectionToggle([], []);
     expect(result.targets).toEqual([]);
+  });
+});
+
+describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, issue #62 Bug 2)", () => {
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+    useProjectStore.getState().clearHistory();
+  });
+
+  function seedLinkedChorus(explicit = false) {
+    const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().setLines(
+      [0, 1, 2].map((idx) => ({
+        id: `inst-${idx}`,
+        text: "fuck this",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: idx,
+        templateLineIdx: 0,
+        words: [
+          { text: "fuck ", begin: idx * 30, end: idx * 30 + 0.5, ...(explicit ? { explicit: true as const } : {}) },
+          { text: "this", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
+        ],
+      })),
+    );
+  }
+
+  function runToggle(): void {
+    const selection: WordSelection[] = [sel("inst-0", 0), sel("inst-1", 0), sel("inst-2", 0)];
+    const { targets, value } = resolveExplicitSelectionToggle(useProjectStore.getState().lines, selection);
+    useProjectStore.getState().markWordsExplicit(targets, value);
+  }
+
+  it("marks the word across every linked instance instead of flip-flopping", () => {
+    seedLinkedChorus();
+    runToggle();
+    const lines = useProjectStore.getState().lines;
+    expect(lines.every((l) => l.words?.[0].explicit === true)).toBe(true);
+  });
+
+  it("reverts the whole batch with a single undo", () => {
+    seedLinkedChorus();
+    runToggle();
+    useProjectStore.getState().undo();
+    const lines = useProjectStore.getState().lines;
+    expect(lines.every((l) => l.words?.[0].explicit === undefined)).toBe(true);
+  });
+
+  it("unmarks the batch when every selected word is already explicit", () => {
+    seedLinkedChorus(true);
+    runToggle();
+    const lines = useProjectStore.getState().lines;
+    expect(lines.every((l) => l.words?.[0].explicit === undefined)).toBe(true);
   });
 });

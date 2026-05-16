@@ -50,4 +50,3 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
 // -- Exports -------------------------------------------------------------------
 
 export { resolveExplicitSelectionToggle };
-export type { ExplicitTarget };
