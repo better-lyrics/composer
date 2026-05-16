@@ -13,8 +13,9 @@ describe("Tooltip", () => {
   });
 
   it("does not show the tooltip content before interaction", async () => {
+    // No delay={0}: the real hover delay keeps a stray harness mouseenter from opening the tooltip pre-assertion.
     await render(
-      <Tooltip content="More info" delay={0}>
+      <Tooltip content="More info">
         <button type="button">Hover me</button>
       </Tooltip>,
     );

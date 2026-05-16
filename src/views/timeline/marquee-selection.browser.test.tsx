@@ -37,10 +37,8 @@ describe("MarqueeSelection", () => {
 
   it("renders an absolutely positioned dashed rectangle sized by the rect prop", async () => {
     const screen = await render(<Harness rect={{ x: 5, y: 6, width: 20, height: 30 }} />);
-    await new Promise((r) => setTimeout(r, 16));
+    await expect.poll(() => screen.container.querySelector<HTMLElement>(".border-dashed")?.style.width).toBe("20px");
     const marquee = screen.container.querySelector(".border-dashed") as HTMLElement;
-    expect(marquee).not.toBeNull();
-    expect(marquee.style.width).toBe("20px");
     expect(marquee.style.height).toBe("30px");
   });
 
@@ -48,10 +46,8 @@ describe("MarqueeSelection", () => {
     const screen = await render(
       <Harness rect={{ x: 80, y: 100, width: 20, height: 30 }} scrollLeft={50} scrollTop={40} />,
     );
-    await new Promise((r) => setTimeout(r, 16));
+    await expect.poll(() => screen.container.querySelector<HTMLElement>(".border-dashed")?.style.left).toBe("30px");
     const marquee = screen.container.querySelector(".border-dashed") as HTMLElement;
-    expect(marquee).not.toBeNull();
-    expect(marquee.style.left).toBe("30px");
     expect(marquee.style.top).toBe("60px");
   });
 });

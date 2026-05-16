@@ -15,8 +15,6 @@ describe("GutterAgentPicker", () => {
     const screen = await render(<GutterAgentPicker lineId="line-1" lineIndex={0} agentId="v1" />);
     const trigger = screen.container.querySelector("button") as HTMLButtonElement;
     await trigger.click();
-    await new Promise((r) => setTimeout(r, 16));
-    const buttons = document.querySelectorAll("button");
-    expect(buttons.length).toBeGreaterThan(1);
+    await expect.poll(() => document.querySelectorAll("button").length).toBeGreaterThan(1);
   });
 });
