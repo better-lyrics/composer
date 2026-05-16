@@ -17,6 +17,13 @@ export default defineConfig({
     alias: {
       "@": resolve(__dirname, "./src"),
     },
+    conditions: ["onnxruntime-web-use-extern-wasm", "import", "module", "browser", "default"],
+  },
+  worker: {
+    format: "es",
+  },
+  optimizeDeps: {
+    exclude: ["onnxruntime-web"],
   },
   ssgOptions: {
     formatting: "none",

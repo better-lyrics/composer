@@ -15,6 +15,7 @@ interface BraccatoRendererProps {
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const elementRef = useRef<BraccatoElement>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const audioElement = useAudioStore((s) => s.audioElement);
 
   useEffect(() => {
     const blob = new Blob([ttmlString], { type: "application/ttml+xml" });
@@ -44,7 +45,9 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
   return (
     <braccato-lyrics
+      key={`${audioElement?.src ?? "no-audio"}:${blobUrl ?? "no-lyrics"}`}
       ref={elementRef}
+      source={audioElement ? "#composer-audio" : undefined}
       src={blobUrl ?? undefined}
       className="flex-1 mx-auto w-full max-w-3xl px-6"
       style={

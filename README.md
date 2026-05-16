@@ -90,6 +90,44 @@ pnpm lint:fix          # Format and lint
 pnpm typecheck         # Type check
 ```
 
+## Vocal separation hosting
+
+Composer ships an optional HTDemucs (Hybrid Transformer Demucs v4) vocal-separation feature that runs entirely in the browser via ONNX Runtime Web (WebGPU primary, WASM fallback). The model file is too large for Cloudflare Pages' 25 MB asset limit, so it is **not** bundled — instead it's served from a public Cloudflare R2 bucket. Egress from R2 is free, and serving via a custom domain keeps the file cached at Cloudflare's edge without going through a Worker.
+
+If `VITE_VOCAL_MODEL_BASE_URL` is unset, the vocal-separation dropdown is hidden entirely.
+
+### Where the model comes from
+
+HTDemucs is the **official Facebook AI Research model** (`facebookresearch/demucs`, the "Hybrid Transformer" variant published Nov 2022). The PyTorch weights are auto-downloaded from `dl.fbaipublicfiles.com` by the `demucs` Python package — you don't grab them manually. The two community ONNX export tools are:
+
+- **`sevagh/demucs.onnx`** — the most complete PyTorch → ONNX export pipeline; ships a forked `demucs` package that pulls STFT/iSTFT outside the graph so it exports cleanly. This is what the build script below uses.
+- **`gianlourbano/demucs-onnx`** — onnxruntime-web reference implementation; useful for cross-referencing the JS-side STFT/inference shape.
+
+### Build the ONNX models
+
+Two scripts in `scripts/` do the work:
+
+```bash
+# 1. Build fp32 + fp16 ONNX models. Outputs ./htdemucs-onnx-out/.
+#    Takes ~10–30 min on CPU and needs ~10 GB of free disk while building.
+./scripts/build-htdemucs-onnx.sh
+
+# 2. Upload to your R2 bucket (requires `wrangler login` first).
+./scripts/upload-htdemucs.sh composer-vocal-models
+```
+
+`build-htdemucs-onnx.sh` will clone `sevagh/demucs.onnx` into `/tmp/composer-htdemucs-build/`, spin up a Python venv, run the official converter, then quantize the fp32 export to fp16 via `onnxconverter-common`. It prints the model's input/output names + SHA-256 at the end — verify those against `src/audio/separation/worker.ts` and `src/audio/separation/model-registry.ts`.
+
+### One-time R2 setup
+
+1. Create a public R2 bucket (e.g. `composer-vocal-models`).
+2. Bind a custom domain to the bucket (e.g. `models.composer.boidu.dev`). **Avoid `r2.dev`** — it's rate-limited and intended for development.
+3. Add a Cloudflare page rule `Cache Everything` for that hostname so binary files are edge-cached.
+4. Add a CORS rule allowing your site origin(s).
+5. Set `VITE_VOCAL_MODEL_BASE_URL=https://models.composer.boidu.dev` at build time.
+
+Cost: free egress; ~$0.0015/month storage for the fp16 model.
+
 ## Tech stack
 
 React, TypeScript, Vite, TailwindCSS v4, Zustand, Vitest

@@ -6,6 +6,7 @@ import { persist } from "zustand/middleware";
 type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
+type VocalModelVariant = "fp16" | "fp32";
 
 interface CobaltInstance {
   id: string;
@@ -58,6 +59,9 @@ interface SettingsState {
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
+
+  autoSeparateOnImport: boolean;
+  vocalModelVariant: VocalModelVariant;
 
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
@@ -114,6 +118,9 @@ const DEFAULTS: SettingsState = {
 
   previewRenderer: "braccato",
 
+  autoSeparateOnImport: false,
+  vocalModelVariant: "fp32",
+
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
   cobaltInstanceStatus: {},
@@ -124,6 +131,17 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   label: "Composer",
   url: "https://cobalt.boidu.dev",
 };
+
+const SETTINGS_PERSIST_VERSION = 2;
+
+function migrateSettings(persistedState: unknown): unknown {
+  if (!persistedState || typeof persistedState !== "object") return persistedState;
+  const state = persistedState as Partial<SettingsState>;
+  return {
+    ...state,
+    vocalModelVariant: state.vocalModelVariant === "fp16" ? "fp32" : state.vocalModelVariant,
+  };
+}
 
 // -- Store --------------------------------------------------------------------
 
@@ -178,7 +196,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           },
         })),
     }),
-    { name: "composer-settings" },
+    { name: "composer-settings", version: SETTINGS_PERSIST_VERSION, migrate: migrateSettings },
   ),
 );
 
@@ -205,4 +223,4 @@ export {
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
 };
-export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction };
+export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction, VocalModelVariant };

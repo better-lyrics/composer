@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import {
-  DEFAULT_COBALT_INSTANCE_ID,
   DEFAULTS,
+  DEFAULT_COBALT_INSTANCE_ID,
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
+import { beforeEach, describe, expect, it } from "vitest";
 
 describe("preview renderer settings", () => {
   beforeEach(() => {
@@ -29,6 +29,16 @@ describe("preview renderer settings", () => {
     useSettingsStore.getState().set("previewRenderer", "am-lyrics");
     useSettingsStore.getState().resetToDefaults();
     expect(useSettingsStore.getState().previewRenderer).toBe("braccato");
+  });
+});
+
+describe("vocal model settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to fp32 for stable browser inference", () => {
+    expect(useSettingsStore.getState().vocalModelVariant).toBe("fp32");
   });
 });
 

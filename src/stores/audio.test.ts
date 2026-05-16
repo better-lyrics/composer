@@ -1,5 +1,6 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
+import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
   useAudioStore.getState().reset();
@@ -105,5 +106,22 @@ describe("useAudioStore - seekTo", () => {
   it("accepts a valid time", () => {
     useAudioStore.getState().seekTo(5);
     expect(useAudioStore.getState().currentTime).toBe(5);
+  });
+});
+
+describe("useAudioStore - setPlaybackRate", () => {
+  it("persists the selected playback rate as the default", () => {
+    useAudioStore.getState().setPlaybackRate(1.5);
+    expect(useAudioStore.getState().playbackRate).toBe(1.5);
+    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(1.5);
+  });
+
+  it("ignores invalid playback rates", () => {
+    useAudioStore.setState({ playbackRate: 1 });
+    useSettingsStore.getState().set("defaultPlaybackRate", 1);
+    useAudioStore.getState().setPlaybackRate(0);
+    useAudioStore.getState().setPlaybackRate(Number.NaN);
+    expect(useAudioStore.getState().playbackRate).toBe(1);
+    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(1);
   });
 });

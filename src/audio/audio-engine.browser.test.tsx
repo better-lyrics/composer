@@ -1,5 +1,6 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { useAudioStore } from "@/stores/audio";
+import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
@@ -120,5 +121,38 @@ describe("AudioEngine", () => {
     expect(elements[0]).toBe(audio);
     const served = await (await fetch(audio.src)).arrayBuffer();
     expect(served.byteLength).toBe(wav.size);
+  });
+
+  it("preserves playbackRate when switching separated audio tracks", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile() },
+      playbackRate: 1.5,
+      volume: 0.4,
+      isMuted: true,
+    });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    await waitFor(() => audio.playbackRate === 1.5);
+
+    audio.playbackRate = 1;
+    audio.volume = 1;
+    audio.muted = false;
+    const vocalsUrl = URL.createObjectURL(createAudioFile("vocals.wav"));
+
+    try {
+      useSeparationStore.setState({
+        currentStem: "vocals",
+        availableStems: ["original", "vocals"],
+        stemUrls: { vocals: vocalsUrl },
+      });
+
+      await waitFor(() => audio.src === vocalsUrl);
+      expect(audio.playbackRate).toBe(1.5);
+      expect(audio.volume).toBe(0.4);
+      expect(audio.muted).toBe(true);
+    } finally {
+      URL.revokeObjectURL(vocalsUrl);
+    }
   });
 });
