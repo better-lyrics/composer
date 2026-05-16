@@ -1,3 +1,4 @@
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
@@ -56,6 +57,7 @@ function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolea
 
 describe("useTimelineDnd · live shift state", () => {
   beforeEach(() => {
+    useAudioStore.setState({ duration: 30 });
     useProjectStore.setState({
       lines: [
         {
@@ -91,7 +93,7 @@ describe("useTimelineDnd · live shift state", () => {
     expect(result.current.dragShiftPressed).toBe(false);
   });
 
-  it("detaches the syllable when shift is pressed mid-drag, even though pointerdown had no shift", async () => {
+  it("moves the whole group across tracks when shift is pressed mid-drag, even though pointerdown had no shift", async () => {
     const lines = useProjectStore.getState().lines;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
@@ -102,13 +104,32 @@ describe("useTimelineDnd · live shift state", () => {
     result.current.handleDragEnd(makeDragEndEvent("bg-drop-l1", 50, false));
 
     const after = useProjectStore.getState().lines[0];
-    expect(after.words?.length).toBe(2);
-    expect(after.words?.map((w) => w.text)).toEqual(["ev", "y"]);
-    expect(after.words?.[0].syllableGroupId).toBeUndefined();
-    expect(after.words?.[1].syllableGroupId).toBeUndefined();
-    expect(after.backgroundWords?.length).toBe(1);
-    expect(after.backgroundWords?.[0].text).toBe("er");
-    expect(after.backgroundWords?.[0].syllableGroupId).toBeUndefined();
+    expect(after.words?.length ?? 0).toBe(0);
+    expect(after.backgroundWords?.length).toBe(3);
+    const sharedId = after.backgroundWords?.[0].syllableGroupId;
+    expect(sharedId).toBeDefined();
+    expect(after.backgroundWords?.[1].syllableGroupId).toBe(sharedId);
+    expect(after.backgroundWords?.[2].syllableGroupId).toBe(sharedId);
+  });
+
+  it("keeps a grouped syllable contiguous with its groupmates after a same-track shift-drag", async () => {
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragStart(makeDragStartEvent(true));
+    await expect.poll(() => result.current.dragShiftPressed).toBe(true);
+    result.current.handleDragEnd(makeDragEndEvent("main-drop-l1", 0, true));
+
+    const after = useProjectStore.getState().lines[0];
+    const words = after.words ?? [];
+    expect(words.length).toBe(3);
+    for (let i = 1; i < words.length; i++) {
+      expect(words[i].begin).toBeCloseTo(words[i - 1].end, 5);
+    }
+    const sharedId = words[0].syllableGroupId;
+    expect(sharedId).toBeDefined();
+    expect(words[1].syllableGroupId).toBe(sharedId);
+    expect(words[2].syllableGroupId).toBe(sharedId);
   });
 
   it("moves the whole group when shift is released mid-drag, even though pointerdown had shift", async () => {

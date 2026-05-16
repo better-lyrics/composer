@@ -3,7 +3,6 @@ import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/proje
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
-import { applyShiftDragCrossTrack } from "@/views/timeline/apply-shift-drag-cross-track";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, isWordSelected, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -267,41 +266,33 @@ function useTimelineDnd(lines: LyricLine[]) {
       const movedUpToMain = delta.y < -DRAG_TRACK_SWITCH_THRESHOLD;
 
       const { selectedWords } = useTimelineStore.getState();
-      const wordsToMove = isShiftDrag
-        ? [
-            {
-              lineId: activeData.lineId,
-              lineIndex: activeData.lineIndex,
-              wordIndex: activeData.wordIndex,
-              type: activeData.trackType,
-            },
-          ]
-        : expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
+      const draggedOnly: WordSelection[] = [
+        {
+          lineId: activeData.lineId,
+          lineIndex: activeData.lineIndex,
+          wordIndex: activeData.wordIndex,
+          type: activeData.trackType,
+        },
+      ];
+      const wordsToMove = expandSelectionsAcrossLines(
+        lines,
+        isShiftDrag ? draggedOnly : resolveWordsToOperate(activeData, selectedWords),
+      );
       const timeDelta = delta.x / zoom;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
-        if (isShiftDrag) {
-          const updates = applyShiftDragCrossTrack(line, "word", activeData.wordIndex, timeDelta, duration);
-          if (updates) updateLineWithHistory(activeData.lineId, updates);
-        } else {
-          const indices = wordsToMove.flatMap((s) =>
-            s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
-          );
-          moveWordToBg(activeData.lineId, indices, timeDelta, duration);
-        }
+        const indices = wordsToMove.flatMap((s) =>
+          s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
+        );
+        moveWordToBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
 
       if (dropId.startsWith("main-drop-") && activeData.trackType === "bg" && movedUpToMain) {
-        if (isShiftDrag) {
-          const updates = applyShiftDragCrossTrack(line, "bg", activeData.wordIndex, timeDelta, duration);
-          if (updates) updateLineWithHistory(activeData.lineId, updates);
-        } else {
-          const indices = wordsToMove.flatMap((s) =>
-            s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
-          );
-          moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
-        }
+        const indices = wordsToMove.flatMap((s) =>
+          s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
+        );
+        moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
         return;
       }
 
@@ -374,19 +365,8 @@ function useTimelineDnd(lines: LyricLine[]) {
         const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
         const newEnd = newBegin + wordDuration;
 
-        const draggedGroupId = isShiftDrag ? wordsArray[wordIndex].syllableGroupId : undefined;
         const words: WordTiming[] = wordsArray.map((w, i) => {
-          if (i === wordIndex) {
-            if (isShiftDrag) {
-              const { syllableGroupId: _drop, ...rest } = w;
-              return { ...rest, begin: newBegin, end: newEnd };
-            }
-            return { ...w, begin: newBegin, end: newEnd };
-          }
-          if (draggedGroupId !== undefined && w.syllableGroupId === draggedGroupId) {
-            const { syllableGroupId: _drop, ...rest } = w;
-            return rest;
-          }
+          if (i === wordIndex) return { ...w, begin: newBegin, end: newEnd };
           return { ...w };
         });
         words.sort((a, b) => a.begin - b.begin);

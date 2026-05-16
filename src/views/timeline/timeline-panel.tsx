@@ -146,7 +146,7 @@ const TimelinePanel: React.FC = () => {
   }, [initOverlayScrollbars]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, dragShiftPressed, handleDragStart, handleDragEnd, handleDragCancel } =
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } =
     useTimelineDnd(effectiveLines);
   const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
@@ -312,7 +312,7 @@ const TimelinePanel: React.FC = () => {
       const line = effectiveLines.find((l) => l.id === sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       if (!line || !wordsArray) continue;
-      const indices = dragShiftPressed ? [sel.wordIndex] : expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
+      const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
       for (const idx of indices) {
         const key = `${sel.lineId}:${sel.type}:${idx}`;
         if (seen.has(key)) continue;
@@ -376,7 +376,7 @@ const TimelinePanel: React.FC = () => {
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
-  }, [activeDrag, zoom, effectiveLines, dragShiftPressed]);
+  }, [activeDrag, zoom, effectiveLines]);
 
   if (!source) {
     return (
