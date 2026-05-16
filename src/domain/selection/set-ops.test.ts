@@ -55,4 +55,11 @@ describe("mergeWordSelections", () => {
     mergeWordSelections(existing, [sel({ wordIndex: 1 })]);
     expect(existing).toEqual([sel({ wordIndex: 0 })]);
   });
+
+  it("dedupes duplicates within the incoming list", () => {
+    expect(mergeWordSelections([], [sel({ wordIndex: 0 }), sel({ wordIndex: 0 }), sel({ wordIndex: 1 })])).toEqual([
+      sel({ wordIndex: 0 }),
+      sel({ wordIndex: 1 }),
+    ]);
+  });
 });
