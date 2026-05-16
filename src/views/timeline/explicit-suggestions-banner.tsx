@@ -30,7 +30,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
   if (visible.length === 0) return null;
 
   const acceptOne = (s: ExplicitSuggestion) => {
-    toggleWordExplicit(s.lineId, s.field, [s.wordIndex]);
+    toggleWordExplicit(s.lineId, s.field, s.wordIndices);
   };
 
   const dismissOne = (s: ExplicitSuggestion) => dismissExplicitSuggestion(s.fingerprint);
@@ -41,7 +41,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
 
   const acceptAll = () => {
     markWordsExplicit(
-      visible.map((s) => ({ lineId: s.lineId, field: s.field, wordIndex: s.wordIndex })),
+      visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
       true,
     );
   };
@@ -161,7 +161,7 @@ const ExplicitSuggestionsModal: React.FC<ExplicitSuggestionsModalProps> = ({
                       {s.linked ? <LinkedPill linked={s.linked} /> : null}
                     </span>
                     <span className="text-xs text-composer-text-muted truncate">
-                      {formatLineLocation(s)} · <SnippetPreview source={source} wordIndex={s.wordIndex} />
+                      {formatLineLocation(s)} · <SnippetPreview source={source} wordIndices={s.wordIndices} />
                     </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -208,10 +208,10 @@ function truncate(s: string, max: number): string {
   return `${s.slice(0, max - 1).trim()}…`;
 }
 
-const SnippetPreview: React.FC<{ source: string; wordIndex: number }> = ({ source, wordIndex }) => {
+const SnippetPreview: React.FC<{ source: string; wordIndices: number[] }> = ({ source, wordIndices }) => {
   const trimmed = source.trim();
   if (trimmed.length === 0) return <span>(empty line)</span>;
-  const snippet = getExplicitSnippet(source, wordIndex, MODAL_LINE_MAX);
+  const snippet = getExplicitSnippet(source, wordIndices, MODAL_LINE_MAX);
   if (!snippet) return <span>{truncate(trimmed, MODAL_LINE_MAX)}</span>;
   return (
     <span>

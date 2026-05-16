@@ -10,6 +10,7 @@ import { convertLineToWord } from "@/utils/sync-helpers";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
+import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
@@ -709,18 +710,9 @@ function useTimelineKeyboard(
           const { selectedWords: explicitSel } = useTimelineStore.getState();
           if (explicitSel.length === 0) break;
           e.preventDefault();
-          const grouped = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
-          for (const w of explicitSel) {
-            const field: "words" | "backgroundWords" = w.type === "word" ? "words" : "backgroundWords";
-            const key = `${w.lineId}:${field}`;
-            const existing = grouped.get(key);
-            if (existing) existing.indices.push(w.wordIndex);
-            else grouped.set(key, { lineId: w.lineId, field, indices: [w.wordIndex] });
-          }
-          const toggle = useProjectStore.getState().toggleWordExplicit;
-          for (const group of grouped.values()) {
-            toggle(group.lineId, group.field, group.indices);
-          }
+          const { targets, value } = resolveExplicitSelectionToggle(useProjectStore.getState().lines, explicitSel);
+          if (targets.length === 0) break;
+          useProjectStore.getState().markWordsExplicit(targets, value);
           break;
         }
         case "timeline.shiftInstanceToPlayhead": {
