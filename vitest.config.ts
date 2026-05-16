@@ -49,6 +49,8 @@ export default defineConfig({
           name: "browser",
           include: ["src/**/*.browser.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-browser.ts"],
+          testTimeout: 20000,
+          hookTimeout: 20000,
           browser: {
             enabled: true,
             provider: playwright({
@@ -58,7 +60,10 @@ export default defineConfig({
             }),
             headless: true,
             screenshotFailures: false,
-            instances: [{ browser: "chromium" }],
+            // fileParallelism: false on the instance avoids the parallelism-
+            // degradation flake documented in vitest-dev/vitest#7616 and the
+            // userEvent timeout flake in #7871. Slower but deterministic.
+            instances: [{ browser: "chromium", fileParallelism: false }],
           },
         },
       },

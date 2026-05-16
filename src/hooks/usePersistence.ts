@@ -8,9 +8,13 @@ import {
   type SavedAudioSource,
 } from "@/lib/persistence";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
+import { DEFAULT_AGENTS, useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[Persistence]";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -34,12 +38,25 @@ function usePersistence(): void {
   useEffect(() => {
     Promise.all([loadCurrentProject(), loadAudioFile()]).then(([project, file]) => {
       if (project) {
+        const issues: string[] = [];
+        const safeLines = project.lines ?? [];
+        if (!project.lines) issues.push("missing lines");
+        const safeAgents = project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS;
+        if (!project.agents || project.agents.length === 0) issues.push("missing or empty agents");
+        const safeGranularity = project.granularity ?? useSettingsStore.getState().defaultGranularity;
+        if (project.granularity === undefined) issues.push("missing granularity");
+        if (issues.length > 0) {
+          console.warn(
+            `${LOG_PREFIX} loaded project has malformed fields (${issues.join(", ")}); using safe defaults. The raw record is still in IndexedDB; visit /recover to download it.`,
+          );
+        }
+
         const state = useProjectStore.getState();
         state.setMetadata(project.metadata);
-        state.setLines(project.lines);
+        state.setLines(safeLines);
         state.setGroups(project.groups ?? []);
-        state.setGranularity(project.granularity);
-        state.setAgents(project.agents);
+        state.setGranularity(safeGranularity);
+        state.setAgents(safeAgents);
         state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
         state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
         state.markClean();
@@ -86,11 +103,11 @@ function usePersistence(): void {
       const prevFile = playableFile(previous);
 
       if (nextFile && nextFile !== prevFile) {
-        saveAudioFile(nextFile).catch((err) => console.error("[Persistence] Audio save failed:", err));
+        saveAudioFile(nextFile).catch((err) => console.error(`${LOG_PREFIX} audio save failed:`, err));
         return;
       }
       if (!nextFile && prevFile) {
-        clearAudioFile().catch((err) => console.error("[Persistence] Audio clear failed:", err));
+        clearAudioFile().catch((err) => console.error(`${LOG_PREFIX} audio clear failed:`, err));
       }
     });
     return () => unsubscribe();

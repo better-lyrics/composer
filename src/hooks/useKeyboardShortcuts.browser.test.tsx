@@ -29,4 +29,15 @@ describe("useKeyboardShortcuts", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", bubbles: true }));
     expect(count).toBe(0);
   });
+
+  it("ignores keydown events flagged as repeat (OS auto-repeat / stuck key)", async () => {
+    let count = 0;
+    await renderHook(() => useKeyboardShortcuts([{ key: " ", action: () => count++, description: "Toggle" }]));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+    expect(count).toBe(1);
+    for (let i = 0; i < 20; i++) {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", repeat: true, bubbles: true }));
+    }
+    expect(count).toBe(1);
+  });
 });

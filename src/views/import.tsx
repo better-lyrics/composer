@@ -1,9 +1,9 @@
-import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
-import { useCallback } from "react";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
+import { useCallback } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -55,6 +55,32 @@ const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
   </div>
 );
 
+interface SourceDurationProps {
+  loading: boolean;
+  duration: number;
+}
+
+// Shown in the imported-source row. While the source is loading (a YouTube
+// download or an mp3 decode) it shows the spinner; once ready it shows the
+// clock and resolved duration.
+const SourceDuration: React.FC<SourceDurationProps> = ({ loading, duration }) => (
+  <div className="flex items-center gap-1.5">
+    {loading ? (
+      <>
+        <IconLoader2 size={14} className="animate-spin text-composer-accent" />
+        <span className="text-sm font-mono text-composer-text-muted tabular-nums">--:--</span>
+      </>
+    ) : (
+      <>
+        <IconClock size={14} className="text-composer-text opacity-50" />
+        <span className="text-sm font-mono text-composer-text tabular-nums select-text">
+          {formatDuration(duration)}
+        </span>
+      </>
+    )}
+  </div>
+);
+
 // -- Component ----------------------------------------------------------------
 
 const ImportPanel: React.FC = () => {
@@ -97,12 +123,7 @@ const ImportPanel: React.FC = () => {
               <p className="text-xs text-composer-text-muted">{extension}</p>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              <IconClock size={14} className="text-composer-text opacity-50" />
-              <span className="text-sm font-mono text-composer-text tabular-nums select-text">
-                {formatDuration(duration)}
-              </span>
-            </div>
+            <SourceDuration loading={isLoading} duration={duration} />
 
             <div className="text-sm text-composer-text-muted">{formatFileSize(file.size)}</div>
           </div>
@@ -139,21 +160,7 @@ const ImportPanel: React.FC = () => {
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5">
-              {downloading ? (
-                <>
-                  <IconLoader2 size={14} className="animate-spin text-composer-accent" />
-                  <span className="text-sm font-mono text-composer-text-muted tabular-nums">--:--</span>
-                </>
-              ) : (
-                <>
-                  <IconClock size={14} className="text-composer-text opacity-50" />
-                  <span className="text-sm font-mono text-composer-text tabular-nums select-text">
-                    {formatDuration(duration)}
-                  </span>
-                </>
-              )}
-            </div>
+            <SourceDuration loading={downloading} duration={duration} />
           </div>
         </div>
 

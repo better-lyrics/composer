@@ -1,3 +1,4 @@
+import { decodeMp3ToWav, isMp3File } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { useAudioStore } from "@/stores/audio";
 import { useEffect, useRef } from "react";
@@ -5,12 +6,12 @@ import { useEffect, useRef } from "react";
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[AudioEngine]";
+const SLOW_DECODE_MS = 800;
 
 // -- Component -----------------------------------------------------------------
 
 const AudioEngine: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const objectUrlRef = useRef<string | null>(null);
 
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -20,6 +21,7 @@ const AudioEngine: React.FC = () => {
   const setCurrentTime = useAudioStore((s) => s.setCurrentTime);
   const setDuration = useAudioStore((s) => s.setDuration);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
+  const setIsLoading = useAudioStore((s) => s.setIsLoading);
   const registerAudioElement = useAudioStore((s) => s.registerAudioElement);
 
   useEffect(() => {
@@ -34,62 +36,116 @@ const AudioEngine: React.FC = () => {
       return;
     }
 
-    if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    const createdObjectUrl = URL.createObjectURL(playableFile);
-    objectUrlRef.current = createdObjectUrl;
+    let aborted = false;
+    let teardown: (() => void) | null = null;
+    let slowTimer: number | null = null;
+    let didSetLoading = false;
 
-    const audio = new Audio();
-    audio.id = "composer-audio";
-    audio.src = createdObjectUrl;
-    const {
-      playbackRate: initialPlaybackRate,
-      volume: initialVolume,
-      isMuted: initialIsMuted,
-    } = useAudioStore.getState();
-    audio.playbackRate = initialPlaybackRate;
-    audio.volume = initialVolume;
-    audio.muted = initialIsMuted;
-    audio.style.display = "none";
-    document.body.appendChild(audio);
-    audioRef.current = audio;
-    registerAudioElement(audio);
-
-    const handleLoadedMetadata = () => setDuration(audio.duration);
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleEnded = () => setIsPlaying(false);
-    const handleError = (e: Event) => {
-      console.error(LOG_PREFIX, "Audio error:", e);
+    const clearSlowLoading = () => {
+      if (slowTimer !== null) {
+        window.clearTimeout(slowTimer);
+        slowTimer = null;
+      }
+      if (didSetLoading) {
+        didSetLoading = false;
+        setIsLoading(false);
+      }
     };
 
-    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-    const unbindStateEvents = bindAudioStateEvents(audio, setIsPlaying);
+    // mp3 seeks slowly because the streaming decoder has no reliable frame
+    // index. Decoding to uncompressed WAV up front gives the <audio> element
+    // an O(1)-seekable source. Non-mp3 inputs already seek fine.
+    const resolvePlaybackUrl = async (): Promise<string> => {
+      if (!isMp3File(playableFile)) {
+        return URL.createObjectURL(playableFile);
+      }
+      slowTimer = window.setTimeout(() => {
+        slowTimer = null;
+        didSetLoading = true;
+        setIsLoading(true);
+      }, SLOW_DECODE_MS);
+      try {
+        const wavBlob = await decodeMp3ToWav(playableFile);
+        return URL.createObjectURL(wavBlob);
+      } catch (err) {
+        console.warn(LOG_PREFIX, "mp3 decode failed, using original file", err);
+        return URL.createObjectURL(playableFile);
+      }
+    };
+
+    const setup = async () => {
+      let objectUrl: string;
+      try {
+        objectUrl = await resolvePlaybackUrl();
+      } finally {
+        clearSlowLoading();
+      }
+      if (aborted) {
+        URL.revokeObjectURL(objectUrl);
+        return;
+      }
+
+      const audio = new Audio();
+      audio.id = "composer-audio";
+      audio.src = objectUrl;
+      const {
+        playbackRate: initialPlaybackRate,
+        volume: initialVolume,
+        isMuted: initialIsMuted,
+        isPlaying: initialIsPlaying,
+      } = useAudioStore.getState();
+      audio.playbackRate = initialPlaybackRate;
+      audio.volume = initialVolume;
+      audio.muted = initialIsMuted;
+      audio.style.display = "none";
+      document.body.appendChild(audio);
+      audioRef.current = audio;
+      registerAudioElement(audio);
+      if (initialIsPlaying) audio.play().catch(() => undefined);
+
+      const handleLoadedMetadata = () => setDuration(audio.duration);
+      const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
+      const handleEnded = () => setIsPlaying(false);
+      const handleError = (e: Event) => {
+        console.error(LOG_PREFIX, "Audio error:", e);
+      };
+
+      audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.addEventListener("timeupdate", handleTimeUpdate);
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("error", handleError);
+      const unbindStateEvents = bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, setIsPlaying);
+
+      teardown = () => {
+        audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+        audio.removeEventListener("timeupdate", handleTimeUpdate);
+        audio.removeEventListener("ended", handleEnded);
+        audio.removeEventListener("error", handleError);
+        unbindStateEvents();
+        audio.pause();
+        audio.src = "";
+        audio.remove();
+        if (audioRef.current === audio) audioRef.current = null;
+        URL.revokeObjectURL(objectUrl);
+      };
+    };
+
+    void setup();
 
     return () => {
-      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-      unbindStateEvents();
-      audio.pause();
-      audio.src = "";
-      audio.remove();
-      if (objectUrlRef.current === createdObjectUrl) {
-        URL.revokeObjectURL(createdObjectUrl);
-        objectUrlRef.current = null;
-      }
+      aborted = true;
+      clearSlowLoading();
+      if (teardown) teardown();
       registerAudioElement(null);
     };
-  }, [source, setDuration, setCurrentTime, setIsPlaying, registerAudioElement]);
+  }, [source, setDuration, setCurrentTime, setIsPlaying, setIsLoading, registerAudioElement]);
 
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
 
     if (isPlaying) {
-      audio.play();
+      audio.play().catch(() => undefined);
     } else {
       audio.pause();
     }

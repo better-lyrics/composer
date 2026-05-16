@@ -45,7 +45,7 @@ const LyricsImportModal: React.FC<LyricsImportModalProps> = ({ isOpen, onClose }
     if (!text.trim()) return;
     if (!(await confirmReplaceIfNeeded())) return;
 
-    const defaultAgentId = agents[0]?.id ?? "v1";
+    const defaultAgentId = agents?.[0]?.id ?? "v1";
     let lyricLines = textToLyricLines(text, defaultAgentId);
 
     if (duration > 0) {

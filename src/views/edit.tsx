@@ -280,7 +280,7 @@ const EditPanel: React.FC = () => {
     setRawText(lines.length > 0 ? lines.map((l) => l.text).join("\n") : "");
   }, [lines]);
 
-  const defaultAgentId = agents[0]?.id ?? "v1";
+  const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
