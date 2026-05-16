@@ -3,26 +3,7 @@ import { renderHook } from "vitest-browser-react";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
-
-const DB_NAME = "ttml-composer";
-const STORE_NAME = "projects";
-
-async function seedProject(project: unknown): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB_NAME, 1);
-    open.onupgradeneeded = () => open.result.createObjectStore(STORE_NAME);
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const db = open.result;
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(project, "current");
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-    };
-  });
-}
+import { seedProject } from "@/test/idb";
 
 async function waitForLoad(): Promise<void> {
   for (let i = 0; i < 50; i++) {
