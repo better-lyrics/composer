@@ -15,12 +15,12 @@ function lineWithText(id: string, text: string, words?: LyricLine["words"]): Lyr
 }
 
 describe("findExplicitWords", () => {
-  it("detects a basic profanity in main lyric text and returns the wordIndex", () => {
+  it("detects a basic profanity in main lyric text and returns the word indices", () => {
     const result = findExplicitWords([lineWithText("L1", "I fuck you")]);
     expect(result).toHaveLength(1);
     expect(result[0].lineId).toBe("L1");
     expect(result[0].field).toBe("words");
-    expect(result[0].wordIndex).toBe(1);
+    expect(result[0].wordIndices).toEqual([1]);
   });
 
   it("returns no suggestions for clean lyrics", () => {
@@ -49,13 +49,13 @@ describe("findExplicitWords", () => {
     const result = findExplicitWords([line]);
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe("backgroundWords");
-    expect(result[0].wordIndex).toBe(1);
+    expect(result[0].wordIndices).toEqual([1]);
   });
 
   it("handles leetspeak via the recommended transformers", () => {
     const result = findExplicitWords([lineWithText("L1", "I sh1t on this")]);
     expect(result.length).toBeGreaterThanOrEqual(1);
-    expect(result.some((s) => s.wordIndex === 1)).toBe(true);
+    expect(result.some((s) => s.wordIndices[0] === 1)).toBe(true);
   });
 
   it("produces a stable fingerprint for the same word in the same line", () => {
@@ -66,7 +66,7 @@ describe("findExplicitWords", () => {
 
   it("deduplicates multiple matches that land on the same word", () => {
     const result = findExplicitWords([lineWithText("L1", "shithead and stuff")]);
-    const onWord0 = result.filter((r) => r.wordIndex === 0);
+    const onWord0 = result.filter((r) => r.wordIndices[0] === 0);
     expect(onWord0.length).toBeLessThanOrEqual(1);
   });
 
@@ -87,6 +87,68 @@ describe("findExplicitWords", () => {
       lineWithText("C", "fuck this"),
     ]);
     expect(result[0].lineIndex).toBe(2);
+  });
+
+  it("emits a wordIndices array (single element) for non-split words", () => {
+    const result = findExplicitWords([lineWithText("L1", "I fuck you")]);
+    expect(result).toHaveLength(1);
+    expect(result[0].wordIndices).toEqual([1]);
+  });
+});
+
+describe("findExplicitWords · syllable-split words", () => {
+  it("does NOT flag a syllable-split clean word that looks profane in fragments", () => {
+    const result = findExplicitWords([lineWithText("L1", "I fu|cking love it")]);
+    expect(result).toHaveLength(1);
+    expect(result[0].word).toBe("fucking");
+    expect(result[0].wordIndices).toEqual([1, 2]);
+    expect(result[0].lineId).toBe("L1");
+  });
+
+  it("flags the full word when profanity is detected in any syllable (fuc|king)", () => {
+    const result = findExplicitWords([lineWithText("L1", "I fuc|king love it")]);
+    expect(result).toHaveLength(1);
+    expect(result[0].word).toBe("fucking");
+    expect(result[0].wordIndices).toEqual([1, 2]);
+  });
+
+  it("flags every syllable of a syllable-split asshole", () => {
+    const result = findExplicitWords([lineWithText("L1", "ass|hole alert")]);
+    expect(result).toHaveLength(1);
+    expect(result[0].word).toBe("asshole");
+    expect(result[0].wordIndices).toEqual([0, 1]);
+  });
+
+  it("does NOT flag 'as|sass|in' because the whole word 'assassin' is whitelisted", () => {
+    const result = findExplicitWords([lineWithText("L1", "the as|sass|in attacks")]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("skips a syllable-split word when all of its syllables are already marked", () => {
+    const result = findExplicitWords([
+      lineWithText("L1", "I fu|cking love it", [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
+        { text: "cking ", begin: 0.4, end: 0.6, explicit: true },
+        { text: "love ", begin: 0.6, end: 0.8 },
+        { text: "it", begin: 0.8, end: 1 },
+      ]),
+    ]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("emits a suggestion when at least one syllable of a profane word is unmarked", () => {
+    const result = findExplicitWords([
+      lineWithText("L1", "I fu|cking love it", [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "fu", begin: 0.3, end: 0.4, explicit: true },
+        { text: "cking ", begin: 0.4, end: 0.6 },
+        { text: "love ", begin: 0.6, end: 0.8 },
+        { text: "it", begin: 0.8, end: 1 },
+      ]),
+    ]);
+    expect(result).toHaveLength(1);
+    expect(result[0].wordIndices).toEqual([1, 2]);
   });
 });
 
@@ -173,7 +235,7 @@ describe("findExplicitWords · linked instances", () => {
   it("toggling via the representative lineId is enough; propagation handles siblings", () => {
     const result = findExplicitWords(linkedChorusLines(), choruses);
     expect(result[0].lineId).toBe("C1");
-    expect(result[0].wordIndex).toBe(1);
+    expect(result[0].wordIndices).toEqual([1]);
     expect(result[0].field).toBe("words");
   });
 });

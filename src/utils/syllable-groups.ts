@@ -51,7 +51,20 @@ function getSyllablePositions(words: WordTiming[]): SyllablePosition[] {
   return positions;
 }
 
+function expandToSyllableGroup(words: WordTiming[], indices: number[]): number[] {
+  if (indices.length === 0) return [];
+  const groups = computeSyllableGroups(words);
+  if (groups.length === 0) return Array.from(new Set(indices)).sort((a, b) => a - b);
+  const expanded = new Set<number>(indices);
+  for (const i of indices) {
+    const group = groups.find((g) => i >= g.startIndex && i <= g.endIndex);
+    if (!group) continue;
+    for (let k = group.startIndex; k <= group.endIndex; k++) expanded.add(k);
+  }
+  return Array.from(expanded).sort((a, b) => a - b);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { computeSyllableGroups, getSyllablePositions };
+export { computeSyllableGroups, expandToSyllableGroup, getSyllablePositions };
 export type { SyllablePosition };

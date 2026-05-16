@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { expandToSyllableGroup } from "@/utils/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { create } from "zustand";
@@ -779,7 +780,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
     const currentWords = target[field];
     if (!currentWords || currentWords.length === 0) return;
 
-    const indexSet = new Set(wordIndices.filter((i) => i >= 0 && i < currentWords.length));
+    const filtered = wordIndices.filter((i) => i >= 0 && i < currentWords.length);
+    const expanded = expandToSyllableGroup(currentWords, filtered).filter((i) => i < currentWords.length);
+    const indexSet = new Set(expanded);
     if (indexSet.size === 0) return;
 
     const allMarked = Array.from(indexSet).every((i) => currentWords[i].explicit === true);
@@ -802,7 +805,10 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       let changed = false;
       const linesById = new Map<string, LyricLine>();
       for (const l of lines) linesById.set(l.id, l);
-      for (const target of targets) {
+
+      const expandedTargets = expandTargetsToSyllableGroups(targets, linesById);
+
+      for (const target of expandedTargets) {
         const line = linesById.get(target.lineId);
         if (!line) continue;
         const currentWords = line[target.field];
@@ -850,6 +856,27 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   clearDismissedExplicitSuggestions: () => set({ dismissedExplicitSuggestions: [], isDirty: true }),
 }));
+
+function expandTargetsToSyllableGroups(
+  targets: { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[],
+  linesById: Map<string, LyricLine>,
+): { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[] {
+  const byLineField = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
+  for (const t of targets) {
+    const key = `${t.lineId}:${t.field}`;
+    const existing = byLineField.get(key);
+    if (existing) existing.indices.push(t.wordIndex);
+    else byLineField.set(key, { lineId: t.lineId, field: t.field, indices: [t.wordIndex] });
+  }
+  const out: { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[] = [];
+  for (const group of byLineField.values()) {
+    const line = linesById.get(group.lineId);
+    const currentWords = line?.[group.field];
+    const expanded = currentWords ? expandToSyllableGroup(currentWords, group.indices) : group.indices;
+    for (const idx of expanded) out.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
+  }
+  return out;
+}
 
 function applyExplicitTargetToLines(
   lines: LyricLine[],

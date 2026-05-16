@@ -258,6 +258,149 @@ describe("toggleWordExplicit · history", () => {
   });
 });
 
+describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
+  it("marks every syllable of a multi-syllable word when one syllable is targeted", () => {
+    seedSingleLine({
+      id: "L1",
+      text: "I fu|cking love it",
+      agentId: "v1",
+      words: [
+        { text: "I ", begin: 0, end: 0.3 },
+        { text: "fu", begin: 0.3, end: 0.4 },
+        { text: "cking ", begin: 0.4, end: 0.6 },
+        { text: "love ", begin: 0.6, end: 0.8 },
+        { text: "it", begin: 0.8, end: 1 },
+      ],
+    });
+    useProjectStore.getState().toggleWordExplicit("L1", "words", [1]);
+    const words = useProjectStore.getState().lines[0].words!;
+    expect(words[1].explicit).toBe(true);
+    expect(words[2].explicit).toBe(true);
+    expect(words[0].explicit).toBeUndefined();
+    expect(words[3].explicit).toBeUndefined();
+  });
+
+  it("unmarks every syllable of a multi-syllable word when all are marked", () => {
+    seedSingleLine({
+      id: "L1",
+      text: "fu|cking",
+      agentId: "v1",
+      words: [
+        { text: "fu", begin: 0, end: 0.5, explicit: true },
+        { text: "cking", begin: 0.5, end: 1, explicit: true },
+      ],
+    });
+    useProjectStore.getState().toggleWordExplicit("L1", "words", [1]);
+    const words = useProjectStore.getState().lines[0].words!;
+    expect(words[0].explicit).toBeUndefined();
+    expect(words[1].explicit).toBeUndefined();
+  });
+
+  it("expansion propagates to every syllable on linked siblings", () => {
+    const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().setLines([
+      {
+        id: "A",
+        text: "fu|cking yeah",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "fu", begin: 0, end: 0.2 },
+          { text: "cking ", begin: 0.2, end: 0.5 },
+          { text: "yeah", begin: 0.5, end: 1 },
+        ],
+      },
+      {
+        id: "B",
+        text: "fu|cking yeah",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "fu", begin: 30, end: 30.2 },
+          { text: "cking ", begin: 30.2, end: 30.5 },
+          { text: "yeah", begin: 30.5, end: 31 },
+        ],
+      },
+    ]);
+    useProjectStore.getState().toggleWordExplicit("A", "words", [0]);
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].words![0].explicit).toBe(true);
+    expect(lines[0].words![1].explicit).toBe(true);
+    expect(lines[1].words![0].explicit).toBe(true);
+    expect(lines[1].words![1].explicit).toBe(true);
+  });
+});
+
+describe("markWordsExplicit · syllable + batch (issue #62)", () => {
+  it("expands a single syllable target to the whole word", () => {
+    seedSingleLine({
+      id: "L1",
+      text: "fu|cking yeah",
+      agentId: "v1",
+      words: [
+        { text: "fu", begin: 0, end: 0.2 },
+        { text: "cking ", begin: 0.2, end: 0.5 },
+        { text: "yeah", begin: 0.5, end: 1 },
+      ],
+    });
+    useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true);
+    const words = useProjectStore.getState().lines[0].words!;
+    expect(words[0].explicit).toBe(true);
+    expect(words[1].explicit).toBe(true);
+    expect(words[2].explicit).toBeUndefined();
+  });
+
+  it("preserves a previously-set explicit flag on another word when batch-marking across linked siblings", () => {
+    const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().setLines([
+      {
+        id: "A",
+        text: "fuck this shit",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "fuck ", begin: 0, end: 0.3 },
+          { text: "this ", begin: 0.3, end: 0.6 },
+          { text: "shit", begin: 0.6, end: 1, explicit: true },
+        ],
+      },
+      {
+        id: "B",
+        text: "fuck this shit",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "fuck ", begin: 30, end: 30.3 },
+          { text: "this ", begin: 30.3, end: 30.6 },
+          { text: "shit", begin: 30.6, end: 31, explicit: true },
+        ],
+      },
+    ]);
+    useProjectStore.getState().markWordsExplicit(
+      [
+        { lineId: "A", field: "words", wordIndex: 0 },
+        { lineId: "B", field: "words", wordIndex: 0 },
+      ],
+      true,
+    );
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].words![0].explicit).toBe(true);
+    expect(lines[0].words![2].explicit).toBe(true);
+    expect(lines[1].words![0].explicit).toBe(true);
+    expect(lines[1].words![2].explicit).toBe(true);
+  });
+});
+
 describe("markWordsExplicit · batch action", () => {
   it("applies multiple targets in a single history entry so one undo reverts them all", () => {
     useProjectStore.getState().setLines([

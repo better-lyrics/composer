@@ -12,22 +12,29 @@ interface ExplicitSnippet {
 
 // -- Helpers -------------------------------------------------------------------
 
-function findWordCharRange(source: string, wordIndex: number): { start: number; end: number } | null {
+function findWordCharRange(source: string, wordIndices: number[]): { start: number; end: number } | null {
+  if (wordIndices.length === 0) return null;
   const { parts } = splitIntoWordsWithMeta(source);
-  if (wordIndex < 0 || wordIndex >= parts.length) return null;
+  const minIndex = Math.min(...wordIndices);
+  const maxIndex = Math.max(...wordIndices);
+  if (minIndex < 0 || maxIndex >= parts.length) return null;
   let cursor = 0;
+  let start = -1;
+  let end = -1;
   for (let i = 0; i < parts.length; i++) {
-    const start = source.indexOf(parts[i], cursor);
-    if (start === -1) return null;
-    const end = start + parts[i].length;
-    if (i === wordIndex) return { start, end };
-    cursor = end;
+    const partStart = source.indexOf(parts[i], cursor);
+    if (partStart === -1) return null;
+    const partEnd = partStart + parts[i].length;
+    if (i === minIndex) start = partStart;
+    if (i === maxIndex) end = partEnd;
+    cursor = partEnd;
   }
-  return null;
+  if (start === -1 || end === -1) return null;
+  return { start, end };
 }
 
-function getExplicitSnippet(source: string, wordIndex: number, max: number): ExplicitSnippet | null {
-  const range = findWordCharRange(source, wordIndex);
+function getExplicitSnippet(source: string, wordIndices: number[], max: number): ExplicitSnippet | null {
+  const range = findWordCharRange(source, wordIndices);
   if (!range) return null;
   const { start, end } = range;
   const wordLen = end - start;

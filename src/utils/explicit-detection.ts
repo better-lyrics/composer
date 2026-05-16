@@ -21,7 +21,7 @@ interface ExplicitSuggestion {
   lineId: string;
   lineIndex: number;
   field: "words" | "backgroundWords";
-  wordIndex: number;
+  wordIndices: number[];
   word: string;
   fingerprint: string;
   linked?: LinkedInfo;
@@ -31,7 +31,7 @@ interface RawHit {
   line: LyricLine;
   lineIndex: number;
   field: "words" | "backgroundWords";
-  wordIndex: number;
+  wordIndices: number[];
   word: string;
 }
 
@@ -51,32 +51,49 @@ function getMatcher(): RegExpMatcher {
 // -- Word-range mapping --------------------------------------------------------
 
 interface WordRange {
-  index: number;
   start: number;
   end: number;
   text: string;
+  syllableIndices: number[];
 }
 
 function buildWordRanges(text: string): { canonical: string; ranges: WordRange[] } {
-  const { parts } = splitIntoWordsWithMeta(text);
+  const { parts, trailingSpace } = splitIntoWordsWithMeta(text);
+  if (parts.length === 0) return { canonical: "", ranges: [] };
+
   const ranges: WordRange[] = [];
   const pieces: string[] = [];
   let offset = 0;
+  let syllableBuffer: number[] = [];
+  let textBuffer = "";
+
   for (let i = 0; i < parts.length; i++) {
+    syllableBuffer.push(i);
+    textBuffer += parts[i];
+    const finishesWord = trailingSpace[i] || i === parts.length - 1;
+    if (!finishesWord) continue;
+
     const start = offset;
-    const part = parts[i];
-    pieces.push(part);
-    const end = start + part.length;
-    ranges.push({ index: i, start, end, text: part });
-    offset = end + 1;
-    if (i < parts.length - 1) pieces.push(" ");
+    const end = start + textBuffer.length;
+    pieces.push(textBuffer);
+    ranges.push({ start, end, text: textBuffer, syllableIndices: syllableBuffer });
+
+    if (i < parts.length - 1) {
+      pieces.push(" ");
+      offset = end + 1;
+    } else {
+      offset = end;
+    }
+    syllableBuffer = [];
+    textBuffer = "";
   }
+
   return { canonical: pieces.join(""), ranges };
 }
 
-function wordIndexForOffset(ranges: WordRange[], startIndex: number): number | null {
+function rangeForOffset(ranges: WordRange[], startIndex: number): WordRange | null {
   for (const r of ranges) {
-    if (startIndex >= r.start && startIndex < r.end) return r.index;
+    if (startIndex >= r.start && startIndex < r.end) return r;
   }
   return null;
 }
@@ -120,19 +137,20 @@ function scanField(
   const { canonical, ranges } = buildWordRanges(source);
   if (canonical.length === 0) return;
   const matches = matcher.getAllMatches(canonical, true);
-  const seenIndices = new Set<number>();
+  const seenStart = new Set<number>();
   for (const m of matches) {
-    const wordIndex = wordIndexForOffset(ranges, m.startIndex);
-    if (wordIndex === null) continue;
-    if (seenIndices.has(wordIndex)) continue;
-    if (alreadyMarked.has(wordIndex)) continue;
-    seenIndices.add(wordIndex);
+    const range = rangeForOffset(ranges, m.startIndex);
+    if (!range) continue;
+    if (seenStart.has(range.start)) continue;
+    const allMarked = range.syllableIndices.every((idx) => alreadyMarked.has(idx));
+    if (allMarked) continue;
+    seenStart.add(range.start);
     out.push({
       line,
       lineIndex,
       field,
-      wordIndex,
-      word: ranges[wordIndex].text,
+      wordIndices: range.syllableIndices,
+      word: range.text,
     });
   }
 }
@@ -177,7 +195,7 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
       hit.line.groupId as string,
       hit.line.templateLineIdx as number,
       hit.field,
-      hit.wordIndex,
+      hit.wordIndices[0],
       hit.word,
     );
     const bucket = linkedBuckets.get(key);
@@ -194,9 +212,9 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
         lineId: hit.line.id,
         lineIndex: hit.lineIndex,
         field: hit.field,
-        wordIndex: hit.wordIndex,
+        wordIndices: hit.wordIndices,
         word: hit.word,
-        fingerprint: standaloneFingerprint(hit.line.id, hit.field, hit.wordIndex, hit.word),
+        fingerprint: standaloneFingerprint(hit.line.id, hit.field, hit.wordIndices[0], hit.word),
       });
       continue;
     }
@@ -207,7 +225,7 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
       lineId: representative.line.id,
       lineIndex: representative.lineIndex,
       field: representative.field,
-      wordIndex: representative.wordIndex,
+      wordIndices: representative.wordIndices,
       word: representative.word,
       fingerprint,
       linked: {
@@ -228,9 +246,9 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
       lineId: hit.line.id,
       lineIndex: hit.lineIndex,
       field: hit.field,
-      wordIndex: hit.wordIndex,
+      wordIndices: hit.wordIndices,
       word: hit.word,
-      fingerprint: standaloneFingerprint(hit.line.id, hit.field, hit.wordIndex, hit.word),
+      fingerprint: standaloneFingerprint(hit.line.id, hit.field, hit.wordIndices[0], hit.word),
     });
   }
 
