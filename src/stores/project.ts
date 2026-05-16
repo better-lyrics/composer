@@ -145,6 +145,7 @@ interface ProjectActions {
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   detachSyllableFromGroup: (lineId: string, field: "words" | "backgroundWords", wordIndex: number) => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
@@ -836,6 +837,72 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           update.text = newWords.map((w) => w.text).join("");
         }
         mutated = true;
+        return { ...line, ...update };
+      });
+      if (!mutated) return state;
+      return commitHistory(state, { lines: newLines });
+    }),
+
+  mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
+    set((state) => {
+      if (wordIndices.length === 0) return state;
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const sourceWords = target[field];
+      if (!sourceWords || sourceWords.length === 0) return state;
+      const sourceCount = sourceWords.length;
+      const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
+      if (selected.size === 0) return state;
+
+      const linkScope = getLinkScope(target);
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
+        const isSource = line.id === lineId;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+        if (!isSource && !isSibling) return line;
+        const lineWords = line[field];
+        if (!lineWords) return line;
+
+        const collapsed: WordTiming[] = [];
+        let changed = false;
+        let i = 0;
+        while (i < lineWords.length) {
+          const groupId = lineWords[i].syllableGroupId;
+          if (groupId === undefined) {
+            collapsed.push(lineWords[i]);
+            i++;
+            continue;
+          }
+          let end = i;
+          while (end + 1 < lineWords.length && lineWords[end + 1].syllableGroupId === groupId) end++;
+          let touched = false;
+          for (let k = i; k <= end; k++) if (selected.has(k)) touched = true;
+          if (touched && end > i) {
+            const first = lineWords[i];
+            const { syllableGroupId: _drop, ...rest } = first;
+            collapsed.push({
+              ...rest,
+              text: lineWords
+                .slice(i, end + 1)
+                .map((w) => w.text)
+                .join(""),
+              begin: first.begin,
+              end: lineWords[end].end,
+            });
+            changed = true;
+          } else {
+            for (let k = i; k <= end; k++) collapsed.push(lineWords[k]);
+          }
+          i = end + 1;
+        }
+        if (!changed) return line;
+        mutated = true;
+        const update: Partial<LyricLine> = { [field]: collapsed };
+        if (field === "backgroundWords") {
+          update.backgroundText = collapsed.map((w) => w.text).join("");
+        } else {
+          update.text = collapsed.map((w) => w.text).join("");
+        }
         return { ...line, ...update };
       });
       if (!mutated) return state;

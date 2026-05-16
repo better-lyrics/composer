@@ -560,3 +560,142 @@ describe("detachSyllableFromGroup · linked propagation", () => {
     expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
   });
 });
+
+// -- mergeSyllableGroupIntoWord ------------------------------------------------
+
+describe("mergeSyllableGroupIntoWord", () => {
+  function seedGroupedLine(): LyricLine {
+    return {
+      id: "line-1",
+      text: "beautiful",
+      agentId: "v1",
+      words: [
+        { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+      ],
+    };
+  }
+
+  it("collapses a syllable group into one word", () => {
+    useProjectStore.getState().setLines([seedGroupedLine()]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words).toHaveLength(1);
+    expect(words[0].text).toBe("beautiful");
+    expect(words[0].begin).toBe(0);
+    expect(words[0].end).toBe(0.9);
+    expect(words[0].syllableGroupId).toBeUndefined();
+  });
+
+  it("collapses the whole group when only one syllable is selected", () => {
+    useProjectStore.getState().setLines([seedGroupedLine()]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.map((w) => w.text)).toEqual(["beautiful"]);
+  });
+
+  it("syncs line.text to the collapsed words", () => {
+    useProjectStore.getState().setLines([seedGroupedLine()]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+    expect(useProjectStore.getState().lines[0].text).toBe("beautiful");
+  });
+
+  it("leaves non-grouped words untouched and is a no-op on a non-grouped selection", () => {
+    useProjectStore.getState().setLines([seedMainLine()]);
+    const before = useProjectStore.getState().lines[0];
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1]);
+    expect(useProjectStore.getState().lines[0]).toBe(before);
+  });
+
+  it("collapses two groups touched by one multi-selection", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "abcd",
+        agentId: "v1",
+        words: [
+          { text: "a", begin: 0, end: 0.1, syllableGroupId: "g1" },
+          { text: "b", begin: 0.1, end: 0.2, syllableGroupId: "g1" },
+          { text: "c", begin: 0.2, end: 0.3, syllableGroupId: "g2" },
+          { text: "d", begin: 0.3, end: 0.4, syllableGroupId: "g2" },
+        ],
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 3]);
+    expect((useProjectStore.getState().lines[0].words ?? []).map((w) => w.text)).toEqual(["ab", "cd"]);
+  });
+
+  it("works on the background track and syncs backgroundText", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b1" },
+          { text: "oh", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+        ],
+        backgroundText: "ooh",
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    const line = useProjectStore.getState().lines[0];
+    expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
+    expect(line.backgroundText).toBe("oooh");
+  });
+
+  it("is undoable", () => {
+    useProjectStore.getState().setLines([seedGroupedLine()]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+    useProjectStore.getState().undo();
+    expect((useProjectStore.getState().lines[0].words ?? [])).toHaveLength(3);
+  });
+});
+
+describe("mergeSyllableGroupIntoWord · linked propagation", () => {
+  function seedTwoLinkedInstances() {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "every",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
+        ],
+      },
+      {
+        id: "a1",
+        text: "every",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "ev", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
+          { text: "er", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
+          { text: "y", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
+        ],
+      },
+    ]);
+  }
+
+  it("collapses the group on every linked sibling", () => {
+    seedTwoLinkedInstances();
+    useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "words", [0, 1, 2]);
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+    expect(a0?.words?.map((w) => w.text)).toEqual(["every"]);
+    expect(a1?.words?.map((w) => w.text)).toEqual(["every"]);
+  });
+});
