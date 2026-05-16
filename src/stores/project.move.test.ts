@@ -68,7 +68,7 @@ describe("moveWordToBg", () => {
           { text: "ah", begin: 0, end: 0.5 },
           { text: "ooh", begin: 0.5, end: 1 },
         ],
-        backgroundText: "ahooh",
+        backgroundText: "ah|ooh",
       }),
     ]);
 
@@ -76,7 +76,7 @@ describe("moveWordToBg", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah", "ooh ", "goodbye"]);
-    expect(line.backgroundText).toBe("ahooh goodbye");
+    expect(line.backgroundText).toBe("ah|ooh goodbye");
   });
 
   it("resolves overlap when moved word collides with an existing bg word", () => {

@@ -1,7 +1,9 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { belongsToInstance } from "@/domain/instance/predicates";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { useAudioStore } from "@/stores/audio";
+import { getSplitCharacter } from "@/utils/split-character";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { applySiblingWords } from "@/utils/word-diff";
@@ -228,6 +230,8 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
   setLinesWithHistory: (lines) =>
     set((state) => {
+      const splitChar = getSplitCharacter();
+      const derivedLines = lines.map((line) => withDerivedText(line, splitChar));
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       if (newHistory.length === 0 || state.isDirtySinceHistory) {
         newHistory.push({
@@ -237,7 +241,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         });
       }
       newHistory.push({
-        lines: structuredClone(lines),
+        lines: structuredClone(derivedLines),
         groups: structuredClone(state.groups),
         timestamp: Date.now(),
       });
@@ -245,7 +249,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         newHistory.shift();
       }
       return {
-        lines,
+        lines: derivedLines,
         isDirty: true,
         isDirtySinceHistory: false,
         history: newHistory,
@@ -254,11 +258,14 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
     }),
 
   updateLine: (id, updates) =>
-    set((state) => ({
-      lines: state.lines.map((line) => (line.id === id ? { ...line, ...updates } : line)),
-      isDirty: true,
-      isDirtySinceHistory: true,
-    })),
+    set((state) => {
+      const splitChar = getSplitCharacter();
+      return {
+        lines: state.lines.map((line) => (line.id === id ? withDerivedText({ ...line, ...updates }, splitChar) : line)),
+        isDirty: true,
+        isDirtySinceHistory: true,
+      };
+    }),
 
   updateLineWithHistory: (id, updates) =>
     set((state) => {
@@ -279,6 +286,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
       const sourceBgWordsBefore = target?.backgroundWords;
       const sourceBgWordsAfter = updates.backgroundWords;
 
+      const splitChar = getSplitCharacter();
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
           const merged = { ...line, ...updates };
@@ -286,7 +294,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
             merged.begin = undefined;
             merged.end = undefined;
           }
-          return merged;
+          return withDerivedText(merged, splitChar);
         }
         if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LyricLine> = { ...(linkedUpdates ?? {}) };
@@ -294,7 +302,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           if (propagatedWords) siblingUpdates.words = propagatedWords;
           const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, line.backgroundWords);
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-          if (Object.keys(siblingUpdates).length > 0) return { ...line, ...siblingUpdates };
+          if (Object.keys(siblingUpdates).length > 0) return withDerivedText({ ...line, ...siblingUpdates }, splitChar);
         }
         return line;
       });
@@ -365,6 +373,11 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
             if (Object.keys(siblingUpdates).length > 0) newLines[i] = { ...line, ...siblingUpdates };
           }
         }
+      }
+
+      const splitChar = getSplitCharacter();
+      for (let i = 0; i < newLines.length; i++) {
+        newLines[i] = withDerivedText(newLines[i], splitChar);
       }
 
       newHistory.push({
@@ -918,8 +931,23 @@ function applyMoveFromBg(
   };
 }
 
+// text/backgroundText are derived from words/backgroundWords whenever those
+// arrays are present: a line with words has no independent text. A line with no
+// words keeps text as its primary, editable field. Returns the same reference
+// when nothing changes, so untouched lines stay reference-stable.
+function withDerivedText(line: LyricLine, splitChar: string): LyricLine {
+  const text = line.words && line.words.length > 0 ? reconstructLineText(line.words, splitChar) : line.text;
+  const backgroundText =
+    line.backgroundWords && line.backgroundWords.length > 0
+      ? reconstructLineText(line.backgroundWords, splitChar)
+      : line.backgroundText;
+  if (text === line.text && backgroundText === line.backgroundText) return line;
+  return { ...line, text, backgroundText };
+}
+
 function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; groups?: LinkGroup[] }) {
-  const nextLines = changes.lines ?? state.lines;
+  const splitChar = getSplitCharacter();
+  const nextLines = changes.lines ? changes.lines.map((line) => withDerivedText(line, splitChar)) : state.lines;
   const nextGroups = changes.groups ?? state.groups;
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);

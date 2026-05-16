@@ -300,6 +300,7 @@ describe("project store · instance mutators", () => {
           words: [
             { text: "I ", begin: 30, end: 30.4 },
             { text: "love ", begin: 30.4, end: 30.8 },
+            { text: "you", begin: 30.8, end: 31.2 },
           ],
         },
       ],

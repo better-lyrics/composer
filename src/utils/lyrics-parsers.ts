@@ -1,3 +1,4 @@
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { firstBegin, lastEnd } from "@/domain/word/bounds";
 import type { Agent, AgentType, LinkGroup, LyricLine, ProjectMetadata, WordTiming } from "@/stores/project";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
@@ -124,7 +125,7 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
   if (words.length === 0) return null;
 
-  return { cleanText: words.map((w) => w.text).join(""), words };
+  return { cleanText: reconstructLineText(words, getSplitCharacter()), words };
 }
 
 function parseLrc(content: string): ParseResult {
@@ -485,7 +486,7 @@ function parseTtml(content: string): ParseResult {
     if (bgContainer) {
       backgroundWords = extractTimedWords(bgContainer, null);
       if (backgroundWords.length > 0) {
-        backgroundText = backgroundWords.map((w) => w.text).join("");
+        backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
       } else {
         backgroundText = bgContainer.textContent || undefined;
       }
@@ -497,8 +498,7 @@ function parseTtml(content: string): ParseResult {
     if (words.length > 0) {
       lines.push({
         id: generateLineId(),
-        // Concatenate without adding spaces - trailing spaces are embedded
-        text: words.map((w) => w.text).join(""),
+        text: reconstructLineText(words, getSplitCharacter()),
         agentId,
         begin: firstBegin(words),
         end: lastEnd(words),
