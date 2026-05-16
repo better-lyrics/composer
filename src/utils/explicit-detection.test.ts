@@ -150,6 +150,14 @@ describe("findExplicitWords · syllable-split words", () => {
     expect(result).toHaveLength(1);
     expect(result[0].wordIndices).toEqual([1, 2]);
   });
+
+  it("maps indices correctly for a profane word that follows a syllable-split word", () => {
+    const result = findExplicitWords([lineWithText("L1", "shit hel|lo fuck")]);
+    expect(result).toHaveLength(2);
+    const indices = result.map((r) => r.wordIndices);
+    expect(indices).toContainEqual([0]);
+    expect(indices).toContainEqual([3]);
+  });
 });
 
 describe("findExplicitWords · linked instances", () => {
