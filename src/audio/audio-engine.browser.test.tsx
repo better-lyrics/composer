@@ -155,4 +155,28 @@ describe("AudioEngine", () => {
       URL.revokeObjectURL(vocalsUrl);
     }
   });
+
+  it("switches from a separated track back to the original source", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    const originalUrl = audio.src;
+    const vocalsUrl = URL.createObjectURL(createAudioFile("vocals.wav"));
+
+    try {
+      useSeparationStore.setState({
+        currentStem: "vocals",
+        availableStems: ["original", "vocals"],
+        stemUrls: { vocals: vocalsUrl },
+      });
+      await waitFor(() => audio.src === vocalsUrl);
+
+      useSeparationStore.setState({ currentStem: "original" });
+      await waitFor(() => audio.src === originalUrl);
+      expect(audio.src).toBe(originalUrl);
+    } finally {
+      URL.revokeObjectURL(vocalsUrl);
+    }
+  });
 });

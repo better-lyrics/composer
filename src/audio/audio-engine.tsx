@@ -14,6 +14,7 @@ const SLOW_DECODE_MS = 800;
 
 const AudioEngine: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const originalUrlRef = useRef<string | null>(null);
 
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -122,6 +123,7 @@ const AudioEngine: React.FC = () => {
       audio.style.display = "none";
       document.body.appendChild(audio);
       audioRef.current = audio;
+      originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
@@ -148,6 +150,7 @@ const AudioEngine: React.FC = () => {
         audio.src = "";
         audio.remove();
         if (audioRef.current === audio) audioRef.current = null;
+        if (originalUrlRef.current === objectUrl) originalUrlRef.current = null;
         URL.revokeObjectURL(objectUrl);
       };
     };
@@ -186,7 +189,7 @@ const AudioEngine: React.FC = () => {
     const audio = audioRef.current;
     if (!audio) return;
     const stemUrl = currentStem !== "original" ? stemUrls[currentStem] : null;
-    const targetUrl = stemUrl ?? objectUrlRef.current;
+    const targetUrl = stemUrl ?? originalUrlRef.current;
     if (!targetUrl || audio.src === targetUrl) return;
     const wasPlaying = !audio.paused;
     const time = audio.currentTime;
