@@ -1,87 +1,36 @@
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
-import type { LinkGroup } from "@/domain/group/template";
-import { belongsToInstance } from "@/domain/instance/predicates";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { useAudioStore } from "@/stores/audio";
-import { commitHistory, MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
-import { createMetadataSlice } from "@/stores/project/metadata-slice";
-import type { ProjectState, ProjectStore } from "@/stores/project/types";
-import { useSettingsStore } from "@/stores/settings";
+import { commitHistory } from "@/stores/project/history-helpers";
+import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
-import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
-import { create } from "zustand";
+import { applySiblingWords } from "@/utils/word-diff";
+import type { StateCreator } from "zustand";
+
+// -- Types --------------------------------------------------------------------
+
+type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; wordIndex: number };
 
 // -- Initial State ------------------------------------------------------------
 
-function createInitialState(): ProjectState {
+function createLinesInitialState(): LinesState {
   return {
-    metadata: {
-      title: "",
-      artist: "",
-      album: "",
-      duration: 0,
-    },
-    agents: DEFAULT_AGENTS,
     lines: [],
-    groups: [],
-    granularity: useSettingsStore.getState().defaultGranularity,
-    editorMode: "simple",
-    activeTab: "import",
-    isDirty: false,
-    history: [],
-    historyIndex: -1,
-    dismissedSuggestions: [],
-    dismissedExplicitSuggestions: [],
-    isDirtySinceHistory: false,
   };
 }
 
-const INITIAL_STATE: ProjectState = createInitialState();
+// -- Slice --------------------------------------------------------------------
 
-// -- Store --------------------------------------------------------------------
-
-const useProjectStore = create<ProjectStore>((set, get, api) => ({
-  ...INITIAL_STATE,
-
-  ...createMetadataSlice(set, get, api),
+const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActions> = (set, get) => ({
+  ...createLinesInitialState(),
 
   setLines: (lines) => set({ lines, isDirty: true, isDirtySinceHistory: true }),
 
-  setLinesWithHistory: (lines) =>
-    set((state) => {
-      const splitChar = getSplitCharacter();
-      const derivedLines = lines.map((line) => withDerivedText(line, splitChar));
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      if (newHistory.length === 0 || state.isDirtySinceHistory) {
-        newHistory.push({
-          lines: structuredClone(state.lines),
-          groups: structuredClone(state.groups),
-          timestamp: Date.now(),
-        });
-      }
-      newHistory.push({
-        lines: structuredClone(derivedLines),
-        groups: structuredClone(state.groups),
-        timestamp: Date.now(),
-      });
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.shift();
-      }
-      return {
-        lines: derivedLines,
-        isDirty: true,
-        isDirtySinceHistory: false,
-        history: newHistory,
-        historyIndex: newHistory.length - 1,
-      };
-    }),
+  setLinesWithHistory: (lines) => set((state) => commitHistory(state, { lines })),
 
   updateLine: (id, updates) =>
     set((state) => {
@@ -97,15 +46,6 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
 
   updateLineWithHistory: (id, updates) =>
     set((state) => {
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      if (newHistory.length === 0 || state.isDirtySinceHistory) {
-        newHistory.push({
-          lines: structuredClone(state.lines),
-          groups: structuredClone(state.groups),
-          timestamp: Date.now(),
-        });
-      }
-
       const target = state.lines.find((l) => l.id === id);
       const linkScope = target ? getLinkScope(target) : null;
       const linkedUpdates = linkScope ? extractLinkedFields(updates) : null;
@@ -114,10 +54,9 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
       const sourceBgWordsBefore = target?.backgroundWords;
       const sourceBgWordsAfter = updates.backgroundWords;
 
-      const splitChar = getSplitCharacter();
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
-          return withDerivedText(reconcileLine({ ...line, ...updates }), splitChar);
+          return reconcileLine({ ...line, ...updates });
         }
         if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
@@ -126,42 +65,17 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
           const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, line.backgroundWords);
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
           if (Object.keys(siblingUpdates).length > 0) {
-            return withDerivedText(reconcileLine({ ...line, ...siblingUpdates }), splitChar);
+            return reconcileLine({ ...line, ...siblingUpdates });
           }
         }
         return line;
       });
 
-      newHistory.push({
-        lines: structuredClone(newLines),
-        groups: structuredClone(state.groups),
-        timestamp: Date.now(),
-      });
-
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.shift();
-      }
-
-      return {
-        lines: newLines,
-        isDirty: true,
-        isDirtySinceHistory: false,
-        history: newHistory,
-        historyIndex: newHistory.length - 1,
-      };
+      return commitHistory(state, { lines: newLines });
     }),
 
   updateLinesWithHistory: (updates) =>
     set((state) => {
-      const newHistory = state.history.slice(0, state.historyIndex + 1);
-      if (newHistory.length === 0 || state.isDirtySinceHistory) {
-        newHistory.push({
-          lines: structuredClone(state.lines),
-          groups: structuredClone(state.groups),
-          timestamp: Date.now(),
-        });
-      }
-
       const newLines = [...state.lines];
       const indexById = new Map<string, number>();
       for (let i = 0; i < newLines.length; i++) indexById.set(newLines[i].id, i);
@@ -195,97 +109,8 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
         }
       }
 
-      const splitChar = getSplitCharacter();
-      for (let i = 0; i < newLines.length; i++) {
-        newLines[i] = withDerivedText(newLines[i], splitChar);
-      }
-
-      newHistory.push({
-        lines: structuredClone(newLines),
-        groups: structuredClone(state.groups),
-        timestamp: Date.now(),
-      });
-
-      if (newHistory.length > MAX_HISTORY_SIZE) {
-        newHistory.shift();
-      }
-
-      return {
-        lines: newLines,
-        isDirty: true,
-        isDirtySinceHistory: false,
-        history: newHistory,
-        historyIndex: newHistory.length - 1,
-      };
+      return commitHistory(state, { lines: newLines });
     }),
-
-  addAgent: (agent) =>
-    set((state) => ({
-      agents: [...state.agents, agent],
-      isDirty: true,
-    })),
-
-  updateAgent: (id, updates) =>
-    set((state) => ({
-      agents: state.agents.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-      isDirty: true,
-    })),
-
-  removeAgent: (id) =>
-    set((state) => ({
-      agents: state.agents.filter((a) => a.id !== id),
-      isDirty: true,
-    })),
-
-  setAgents: (agents) => set({ agents, isDirty: true }),
-
-  setGranularity: (granularity) => set({ granularity, isDirty: true }),
-
-  setEditorMode: (editorMode) => set({ editorMode }),
-
-  setActiveTab: (activeTab) => {
-    if (activeTab === "export") {
-      useAudioStore.getState().setIsPlaying(false);
-    }
-    set({ activeTab });
-  },
-
-  markDirty: () => set({ isDirty: true }),
-
-  markClean: () => set({ isDirty: false }),
-
-  undo: () =>
-    set((state) => {
-      // historyIndex points to current state, so we need > 0 to have something to undo to
-      if (state.historyIndex <= 0) return state;
-      const entry = state.history[state.historyIndex - 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        historyIndex: state.historyIndex - 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
-
-  redo: () =>
-    set((state) => {
-      if (state.historyIndex >= state.history.length - 1) return state;
-      const entry = state.history[state.historyIndex + 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        historyIndex: state.historyIndex + 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
-
-  canUndo: () => get().historyIndex > 0,
-
-  canRedo: () => get().historyIndex < get().history.length - 1,
-
-  clearHistory: () => set({ history: [], historyIndex: -1 }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => {
@@ -333,195 +158,6 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
       if (!mutated) return state;
       return commitHistory(state, { lines: newLines });
     }),
-
-  setGroups: (groups) => set({ groups: Array.isArray(groups) ? groups : [], isDirty: true, isDirtySinceHistory: true }),
-
-  addGroup: (group) => set((state) => commitHistory(state, { groups: [...state.groups, group] })),
-
-  addGroupWithLines: (group, lines) =>
-    set((state) => commitHistory(state, { groups: [...state.groups, group], lines })),
-
-  groupRepeatingSections: (starts, length, options = {}) =>
-    set((state) => {
-      if (starts.length < 2 || length < 1) return state;
-
-      const covered = new Set<number>();
-      for (const start of starts) {
-        for (let p = start; p < start + length; p++) {
-          if (p < 0 || p >= state.lines.length) return state;
-          if (state.lines[p].groupId !== undefined) return state;
-          if (covered.has(p)) return state;
-          covered.add(p);
-        }
-      }
-
-      const usedGroupIds = new Set(state.groups.map((g) => g.id));
-      let n = 1;
-      while (usedGroupIds.has(`g${n}`)) n++;
-      const groupId = `g${n}`;
-
-      const usedColors = state.groups.map((g) => g.color);
-      const color = options.color ?? pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
-      const label = options.label ?? `Group ${state.groups.length + 1}`;
-
-      const startToInstanceIdx = new Map<number, number>();
-      const sortedStarts = starts.toSorted((a, b) => a - b);
-      sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
-
-      const updatedLines = state.lines.map((line, idx) => {
-        for (const start of sortedStarts) {
-          if (idx >= start && idx < start + length) {
-            return {
-              ...line,
-              groupId,
-              instanceIdx: startToInstanceIdx.get(start) ?? 0,
-              templateLineIdx: idx - start,
-            };
-          }
-        }
-        return line;
-      });
-
-      const group: LinkGroup = { id: groupId, label, color, templateVersion: 1 };
-
-      return commitHistory(state, { groups: [...state.groups, group], lines: updatedLines });
-    }),
-
-  updateGroup: (id, updates) =>
-    set((state) =>
-      commitHistory(state, {
-        groups: state.groups.map((g) => (g.id === id ? { ...g, ...updates } : g)),
-      }),
-    ),
-
-  removeGroup: (id) =>
-    set((state) =>
-      commitHistory(state, {
-        groups: state.groups.filter((g) => g.id !== id),
-        lines: state.lines.map((line) =>
-          line.groupId === id
-            ? {
-                ...line,
-                groupId: undefined,
-                instanceIdx: undefined,
-                templateLineIdx: undefined,
-                detached: undefined,
-              }
-            : line,
-        ),
-      }),
-    ),
-
-  addInstance: (groupId, structure, instanceStart, insertAtIndex) =>
-    set((state) => {
-      const usedIndices = new Set(
-        state.lines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-      );
-      let instanceIdx = 0;
-      while (usedIndices.has(instanceIdx)) instanceIdx++;
-
-      const newLines: LyricLine[] = structure.map((tplLine, templateLineIdx) =>
-        reconcileLine({
-          id: crypto.randomUUID(),
-          text: tplLine.text,
-          agentId: tplLine.agentId,
-          groupId,
-          instanceIdx,
-          templateLineIdx,
-          ...(tplLine.relativeBegin !== undefined ? { begin: tplLine.relativeBegin + instanceStart } : {}),
-          ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : {}),
-          ...(tplLine.words
-            ? {
-                words: tplLine.words.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                })),
-              }
-            : {}),
-          ...(tplLine.backgroundText !== undefined ? { backgroundText: tplLine.backgroundText } : {}),
-          ...(tplLine.backgroundWords
-            ? {
-                backgroundWords: tplLine.backgroundWords.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                })),
-              }
-            : {}),
-        }),
-      );
-
-      const insertedLines =
-        insertAtIndex === undefined || insertAtIndex >= state.lines.length || insertAtIndex < 0
-          ? [...state.lines, ...newLines]
-          : [...state.lines.slice(0, insertAtIndex), ...newLines, ...state.lines.slice(insertAtIndex)];
-
-      return commitHistory(state, { lines: insertedLines });
-    }),
-
-  removeInstance: (groupId, instanceIdx) =>
-    set((state) => {
-      const detachedLines = state.lines.map((line) =>
-        belongsToInstance(line, groupId, instanceIdx)
-          ? {
-              ...line,
-              groupId: undefined,
-              instanceIdx: undefined,
-              templateLineIdx: undefined,
-              detached: undefined,
-            }
-          : line,
-      );
-
-      const remainingInGroup = detachedLines.some((l) => l.groupId === groupId);
-      const nextGroups = remainingInGroup ? state.groups : state.groups.filter((g) => g.id !== groupId);
-
-      return commitHistory(state, { lines: detachedLines, groups: nextGroups });
-    }),
-
-  detachLine: (lineId) =>
-    set((state) =>
-      commitHistory(state, {
-        lines: state.lines.map((line) =>
-          line.id === lineId
-            ? {
-                ...line,
-                groupId: undefined,
-                instanceIdx: undefined,
-                templateLineIdx: undefined,
-                detached: undefined,
-              }
-            : line,
-        ),
-      }),
-    ),
-
-  shiftInstance: (groupId, instanceIdx, deltaSeconds) =>
-    set((state) =>
-      commitHistory(state, {
-        lines: state.lines.map((line) => {
-          if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
-          return reconcileLine({
-            ...line,
-            begin: line.begin !== undefined ? line.begin + deltaSeconds : undefined,
-            end: line.end !== undefined ? line.end + deltaSeconds : undefined,
-            words: line.words?.map((w) => ({
-              ...w,
-              begin: w.begin + deltaSeconds,
-              end: w.end + deltaSeconds,
-            })),
-            backgroundWords: line.backgroundWords?.map((w) => ({
-              ...w,
-              begin: w.begin + deltaSeconds,
-              end: w.end + deltaSeconds,
-            })),
-          });
-        }),
-      }),
-    ),
 
   applyWordCountChange: (lineId, newWords, field, resolution, extraUpdates = {}) =>
     set((state) => {
@@ -700,35 +336,11 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
       if (!changed) return state;
       return commitHistory(state, { lines });
     }),
+});
 
-  dismissSuggestion: (fingerprint) =>
-    set((state) => {
-      if (state.dismissedSuggestions.includes(fingerprint)) return state;
-      return { dismissedSuggestions: [...state.dismissedSuggestions, fingerprint], isDirty: true };
-    }),
+// -- Helpers ------------------------------------------------------------------
 
-  setDismissedSuggestions: (fingerprints) => set({ dismissedSuggestions: fingerprints }),
-
-  clearDismissedSuggestions: () => set({ dismissedSuggestions: [], isDirty: true }),
-
-  dismissExplicitSuggestion: (fingerprint) =>
-    set((state) => {
-      if (state.dismissedExplicitSuggestions.includes(fingerprint)) return state;
-      return {
-        dismissedExplicitSuggestions: [...state.dismissedExplicitSuggestions, fingerprint],
-        isDirty: true,
-      };
-    }),
-
-  setDismissedExplicitSuggestions: (fingerprints) => set({ dismissedExplicitSuggestions: fingerprints }),
-
-  clearDismissedExplicitSuggestions: () => set({ dismissedExplicitSuggestions: [], isDirty: true }),
-}));
-
-function expandTargetsToSyllableGroups(
-  targets: { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[],
-  linesById: Map<string, LyricLine>,
-): { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[] {
+function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
   const byLineField = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
   for (const t of targets) {
     const key = `${t.lineId}:${t.field}`;
@@ -736,7 +348,7 @@ function expandTargetsToSyllableGroups(
     if (existing) existing.indices.push(t.wordIndex);
     else byLineField.set(key, { lineId: t.lineId, field: t.field, indices: [t.wordIndex] });
   }
-  const out: { lineId: string; field: "words" | "backgroundWords"; wordIndex: number }[] = [];
+  const out: ExplicitTarget[] = [];
   for (const group of byLineField.values()) {
     const line = linesById.get(group.lineId);
     const currentWords = line?.[group.field];
@@ -828,6 +440,6 @@ function applyMoveFromBg(
   });
 }
 
-export { useProjectStore, INITIAL_STATE };
+// -- Exports ------------------------------------------------------------------
 
-export type { GranularityMode, SimpleTab } from "@/stores/project/types";
+export { createLinesSlice, createLinesInitialState };
