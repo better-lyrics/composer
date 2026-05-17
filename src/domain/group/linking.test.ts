@@ -1,4 +1,4 @@
-import { type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 

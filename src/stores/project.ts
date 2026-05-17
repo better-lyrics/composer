@@ -1,7 +1,14 @@
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import type { Agent } from "@/domain/agent/model";
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
+import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import { belongsToInstance } from "@/domain/instance/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { reconcileLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
+import { withDerivedText } from "@/domain/line/reconstruct-text";
+import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { getSplitCharacter } from "@/utils/split-character";
 import { useSettingsStore } from "@/stores/settings";
@@ -13,97 +20,9 @@ import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
 
-type AgentType = "person" | "character" | "group" | "organization" | "other";
-
-interface Agent {
-  id: string;
-  type: AgentType;
-  name?: string;
-}
-
-interface WordTiming {
-  text: string;
-  begin: number;
-  end: number;
-  explicit?: true;
-  syllableGroupId?: string;
-}
-
-interface LineFields {
-  id: string;
-  text: string;
-  agentId: string;
-  backgroundText?: string;
-  backgroundWords?: WordTiming[];
-  groupId?: string;
-  instanceIdx?: number;
-  templateLineIdx?: number;
-  detached?: boolean;
-}
-
-// LyricLine is a discriminated union over its timing shape. The discriminant is
-// structural (presence of `words` vs `begin`/`end`), not a literal `kind` tag,
-// so saved projects need no migration. The `never` constraints make a both-state
-// line (`words` + `begin`) a compile error at every constructor and write.
-interface WordSyncedLine extends LineFields {
-  words: WordTiming[];
-  begin?: never;
-  end?: never;
-}
-
-interface LineSyncedLine extends LineFields {
-  begin: number;
-  end: number;
-  words?: never;
-}
-
-interface UntimedLine extends LineFields {
-  words?: never;
-  begin?: never;
-  end?: never;
-}
-
-type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
-
-// A line shape before reconcileLine narrows it to a concrete variant: any
-// combination of timing fields may be present. Used for merge scratch objects.
-type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
-
-interface LinkGroup {
-  id: string;
-  label: string;
-  color: string;
-  templateVersion: number;
-}
-
-interface WordTemplate {
-  text: string;
-  relativeBegin: number;
-  relativeEnd: number;
-  explicit?: true;
-}
-
-interface LineTemplate {
-  text: string;
-  agentId: string;
-  relativeBegin?: number;
-  relativeEnd?: number;
-  words?: WordTemplate[];
-  backgroundText?: string;
-  backgroundWords?: WordTemplate[];
-}
-
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
-
-interface ProjectMetadata {
-  title: string;
-  artist: string;
-  album: string;
-  duration: number;
-  language?: string;
-}
 
 interface HistoryEntry {
   lines: LyricLine[];
@@ -188,34 +107,6 @@ interface ProjectActions {
 }
 
 // -- Constants ----------------------------------------------------------------
-
-const AGENT_PRESETS: Agent[] = [
-  { id: "v1", type: "person", name: "Lead" },
-  { id: "v1000", type: "group", name: "Harmony" },
-  { id: "v2000", type: "other", name: "Chorus" },
-];
-
-const AGENT_COLORS: Record<string, string> = {
-  v1: "#60a5fa", // blue
-  v2: "#4ade80", // green
-  v3: "#fb923c", // orange
-  v4: "#22d3d1", // cyan
-  v5: "#facc15", // yellow
-  v6: "#fb7185", // rose
-  v7: "#2dd4bf", // teal
-  v8: "#fbbf24", // amber
-  v9: "#818cf8", // indigo
-  v10: "#34d399", // emerald
-  v11: "#f87171", // red
-  v12: "#38bdf8", // sky
-  v13: "#a3e635", // lime
-  v14: "#e879f9", // fuchsia
-  v15: "#a78bfa", // violet
-  v1000: "#f472b6", // pink
-  v2000: "#c4b5fd", // purple light
-};
-
-const DEFAULT_AGENTS: Agent[] = [AGENT_PRESETS[0]];
 
 const MAX_HISTORY_SIZE = 100;
 
@@ -1033,33 +924,6 @@ function applyMoveFromBg(
   });
 }
 
-// The store builds lines by spreading `...line` (a union member) together with
-// Partial<LyricLine> updates or fresh timing fields. A generic spread widens
-// past the LyricLine union, so reconcileLine re-narrows a freshly merged line
-// into exactly one variant by its runtime shape. It enforces the core
-// invariant: a line is never both word-synced and line-synced. A `words` array
-// (even empty) wins and drops begin/end.
-function reconcileLine(line: LooseLine): LyricLine {
-  const { words, begin, end, ...rest } = line;
-  if (words !== undefined) return { ...rest, words };
-  if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
-  return rest;
-}
-
-// text/backgroundText are derived from words/backgroundWords whenever those
-// arrays are present: a line with words has no independent text. A line with no
-// words keeps text as its primary, editable field. Returns the same reference
-// when nothing changes, so untouched lines stay reference-stable.
-function withDerivedText(line: LyricLine, splitChar: string): LyricLine {
-  const text = line.words && line.words.length > 0 ? reconstructLineText(line.words, splitChar) : line.text;
-  const backgroundText =
-    line.backgroundWords && line.backgroundWords.length > 0
-      ? reconstructLineText(line.backgroundWords, splitChar)
-      : line.backgroundText;
-  if (text === line.text && backgroundText === line.backgroundText) return line;
-  return { ...line, text, backgroundText };
-}
-
 function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; groups?: LinkGroup[] }) {
   const splitChar = getSplitCharacter();
   const nextLines = changes.lines ? changes.lines.map((line) => withDerivedText(line, splitChar)) : state.lines;
@@ -1089,23 +953,6 @@ function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; grou
   };
 }
 
-function getAgentColor(agentId: string): string {
-  return AGENT_COLORS[agentId] ?? "#9ca3af"; // gray fallback
-}
+export { useProjectStore, INITIAL_STATE };
 
-export { useProjectStore, DEFAULT_AGENTS, AGENT_PRESETS, getAgentColor, INITIAL_STATE, reconcileLine };
-
-export type {
-  Agent,
-  AgentType,
-  GranularityMode,
-  LineSyncedLine,
-  LineTemplate,
-  LinkGroup,
-  LooseLine,
-  LyricLine,
-  ProjectMetadata,
-  SimpleTab,
-  WordTemplate,
-  WordTiming,
-};
+export type { GranularityMode, SimpleTab };

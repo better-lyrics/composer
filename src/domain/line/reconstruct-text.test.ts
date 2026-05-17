@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";

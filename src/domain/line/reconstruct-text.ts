@@ -1,4 +1,5 @@
-import type { WordTiming } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Text reconstruction ------------------------------------------------------
 
@@ -17,6 +18,20 @@ function reconstructLineText(words: WordTiming[], splitChar: string): string {
   return result;
 }
 
+// text/backgroundText are derived from words/backgroundWords whenever those
+// arrays are present: a line with words has no independent text. A line with no
+// words keeps text as its primary, editable field. Returns the same reference
+// when nothing changes, so untouched lines stay reference-stable.
+function withDerivedText(line: LyricLine, splitChar: string): LyricLine {
+  const text = line.words && line.words.length > 0 ? reconstructLineText(line.words, splitChar) : line.text;
+  const backgroundText =
+    line.backgroundWords && line.backgroundWords.length > 0
+      ? reconstructLineText(line.backgroundWords, splitChar)
+      : line.backgroundText;
+  if (text === line.text && backgroundText === line.backgroundText) return line;
+  return { ...line, text, backgroundText };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { reconstructLineText };
+export { reconstructLineText, withDerivedText };

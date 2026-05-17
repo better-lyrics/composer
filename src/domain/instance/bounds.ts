@@ -1,6 +1,6 @@
 import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { Bounds } from "@/domain/word/bounds";
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 // -- Functions ----------------------------------------------------------------
 

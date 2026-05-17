@@ -1,4 +1,4 @@
-import { type LooseLine, reconcileLine } from "@/stores/project";
+import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { bgBounds, effectiveBounds, mainBounds } from "@/domain/line/bounds";
 

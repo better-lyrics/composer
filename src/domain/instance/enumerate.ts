@@ -1,5 +1,5 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 // -- Functions ----------------------------------------------------------------
 

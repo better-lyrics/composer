@@ -1,4 +1,4 @@
-import type { LineSyncedLine, LyricLine } from "@/stores/project";
+import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
 
 // -- Predicates ---------------------------------------------------------------
 
