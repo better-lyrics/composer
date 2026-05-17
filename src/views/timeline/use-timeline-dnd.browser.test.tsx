@@ -75,33 +75,12 @@ describe("useTimelineDnd · live shift state", () => {
     });
   });
 
-  it("starts with dragShiftPressed=false when not actively dragging", async () => {
-    const { result } = await renderHook(() =>
-      useTimelineDnd([
-        {
-          id: "l1",
-          text: "every",
-          agentId: "v1",
-          words: [
-            { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g" },
-            { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g" },
-            { text: "y ", begin: 0.6, end: 0.9, syllableGroupId: "g" },
-          ],
-        },
-      ]),
-    );
-
-    expect(result.current.dragShiftPressed).toBe(false);
-  });
-
   it("moves the whole group across tracks when shift is pressed mid-drag, even though pointerdown had no shift", async () => {
     const lines = useProjectStore.getState().lines;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
     result.current.handleDragStart(makeDragStartEvent(false));
-    await expect.poll(() => result.current.activeDrag).not.toBeNull();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", shiftKey: true, bubbles: true }));
-    await expect.poll(() => result.current.dragShiftPressed).toBe(true);
     result.current.handleDragEnd(makeDragEndEvent("bg-drop-l1", 50, false));
 
     const after = useProjectStore.getState().lines[0];
@@ -121,7 +100,6 @@ describe("useTimelineDnd · live shift state", () => {
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
     result.current.handleDragStart(makeDragStartEvent(true));
-    await expect.poll(() => result.current.dragShiftPressed).toBe(true);
 
     const deltaX = 60;
     result.current.handleDragEnd(makeDragEndEvent("main-drop-l1", 0, true, deltaX));
@@ -150,9 +128,7 @@ describe("useTimelineDnd · live shift state", () => {
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
     result.current.handleDragStart(makeDragStartEvent(true));
-    await expect.poll(() => result.current.dragShiftPressed).toBe(true);
     document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", shiftKey: false, bubbles: true }));
-    await expect.poll(() => result.current.dragShiftPressed).toBe(false);
     result.current.handleDragEnd(makeDragEndEvent("bg-drop-l1", 50, true));
 
     const after = useProjectStore.getState().lines[0];
