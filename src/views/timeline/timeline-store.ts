@@ -1,16 +1,10 @@
+import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import { useSettingsStore } from "@/stores/settings";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
 
 // -- Types ---------------------------------------------------------------------
-
-interface WordSelection {
-  lineId: string;
-  lineIndex: number;
-  wordIndex: number;
-  type: "word" | "bg";
-}
 
 type ContextMenuTarget =
   | { kind: "word"; lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }
@@ -169,4 +163,3 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
-export type { WordSelection };

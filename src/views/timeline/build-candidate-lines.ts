@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
 
 function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<WordSelection>): LyricLine[] | undefined {
   if (selectedWords.length === 0) return undefined;

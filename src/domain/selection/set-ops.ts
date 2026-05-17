@@ -1,5 +1,5 @@
 import { sameWordSelection } from "@/domain/selection/identity";
-import type { WordSelection } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
 
 // -- Set operations -----------------------------------------------------------
 

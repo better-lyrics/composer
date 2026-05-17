@@ -17,7 +17,8 @@ import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instanc
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
-import { type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLineSynced } from "@/domain/line/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { instanceBounds } from "@/domain/instance/bounds";

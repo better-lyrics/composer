@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { computeRowLayout } from "@/views/timeline/utils";

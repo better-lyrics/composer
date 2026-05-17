@@ -1,4 +1,4 @@
-import type { WordSelection } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
 import { isWordSelected, sameWordSelection } from "@/domain/selection/identity";
 

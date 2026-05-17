@@ -1,6 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
-import type { WordSelection } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
 
 // -- Types ---------------------------------------------------------------------
 

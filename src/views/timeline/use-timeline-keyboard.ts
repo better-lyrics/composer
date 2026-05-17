@@ -15,7 +15,8 @@ import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-select
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
-import { GUTTER_WIDTH, type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
+import type { WordSelection } from "@/domain/selection/model";
+import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
