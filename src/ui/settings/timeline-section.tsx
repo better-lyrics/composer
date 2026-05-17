@@ -40,6 +40,11 @@ const TimelineSection: React.FC = () => {
         description="Word edges snap to nearby anchors when dragging or resizing."
         settingKey="timelineSnap"
       />
+      <ToggleSetting
+        label="Vocal onset snap"
+        description="Include detected vocal onset anchors as snap targets in the timeline."
+        settingKey="vocalOnsetSnap"
+      />
       <SliderSetting
         label="Snap threshold"
         description="Distance (in pixels) at which the moving block locks onto an anchor."

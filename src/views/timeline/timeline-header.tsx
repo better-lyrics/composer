@@ -1,8 +1,10 @@
+import { detectVocalOnsetsFromUrl } from "@/audio/vocal-onset-snap-points";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
+import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import type { WordTiming } from "@/domain/word/timing";
+import { useSeparationStore } from "@/stores/separation";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
@@ -18,12 +20,15 @@ import {
   IconEye,
   IconFocusCentered,
   IconLayoutDistributeHorizontal,
+  IconLoader2,
   IconMagnet,
   IconMinus,
   IconPlus,
   IconTextPlus,
+  IconWaveSine,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -45,12 +50,18 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const toggleRollingEditMode = useTimelineStore((s) => s.toggleRollingEditMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const snapEnabled = useSettingsStore((s) => s.timelineSnap);
+  const vocalOnsetSnap = useSettingsStore((s) => s.vocalOnsetSnap);
   const setSetting = useSettingsStore((s) => s.set);
   const isBypassing = useTimelineStore((s) => s.isBypassing);
+  const vocalOnsetSnapPoints = useTimelineStore((s) => s.vocalOnsetSnapPoints);
+  const vocalOnsetDetectionStatus = useTimelineStore((s) => s.vocalOnsetDetectionStatus);
+  const separationStatus = useSeparationStore((s) => s.status);
+  const vocalsUrl = useSeparationStore((s) => s.stemUrls.vocals);
   const toggleSnapKeys = getEffectiveKeysArray("timeline.toggleSnap");
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
+  const [isStartingVocalSnaps, setIsStartingVocalSnaps] = useState(false);
 
   const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
 
@@ -121,6 +132,45 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
     }
   }, [lines]);
 
+  const isVocalSnapLoading =
+    isStartingVocalSnaps ||
+    vocalOnsetDetectionStatus === "processing" ||
+    separationStatus === "downloading" ||
+    separationStatus === "processing";
+
+  const handleVocalSnapsClick = useCallback(async () => {
+    if (isVocalSnapLoading) return;
+    if (vocalOnsetSnapPoints.length > 0) {
+      setSetting("vocalOnsetSnap", !vocalOnsetSnap);
+      return;
+    }
+
+    setSetting("vocalOnsetSnap", true);
+    setIsStartingVocalSnaps(true);
+    try {
+      const separation = useSeparationStore.getState();
+      const existingVocalsUrl = separation.stemUrls.vocals;
+      if (!existingVocalsUrl) {
+        await separation.separate();
+        const nextSeparation = useSeparationStore.getState();
+        if (!nextSeparation.stemUrls.vocals) {
+          throw new Error(nextSeparation.error?.message ?? "Vocal separation did not produce a vocal stem.");
+        }
+        return;
+      }
+
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+      const points = await detectVocalOnsetsFromUrl(existingVocalsUrl);
+      useTimelineStore.getState().setVocalOnsetSnapPoints(points);
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("idle");
+    } catch (err) {
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("error", (err as Error).message);
+      toast.error((err as Error).message || "Could not generate vocal snap points.");
+    } finally {
+      setIsStartingVocalSnaps(false);
+    }
+  }, [isVocalSnapLoading, setSetting, vocalOnsetSnap, vocalOnsetSnapPoints.length]);
+
   useEffect(() => {
     const handler = () => handleExpandAll();
     window.addEventListener("timeline:expand-all", handler);
@@ -185,6 +235,25 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           <IconMagnet size={16} />
           <span>Snap</span>
           {showHints && <InlineKeyBadge keys={toggleSnapKeys} />}
+        </Button>
+
+        <Button
+          variant={vocalOnsetSnap && vocalOnsetSnapPoints.length > 0 ? "primary" : "ghost"}
+          size="sm"
+          hasIcon
+          className={cn((!vocalOnsetSnap || vocalOnsetSnapPoints.length === 0) && "opacity-60")}
+          onClick={handleVocalSnapsClick}
+          disabled={isVocalSnapLoading}
+          title={
+            vocalOnsetSnapPoints.length > 0
+              ? `Use ${vocalOnsetSnapPoints.length} vocal onset snap points`
+              : vocalsUrl
+                ? "Generate vocal onset snap points from the vocal stem"
+                : "Separate vocals and generate vocal onset snap points"
+          }
+        >
+          {isVocalSnapLoading ? <IconLoader2 size={16} className="animate-spin" /> : <IconWaveSine size={16} />}
+          <span>{isVocalSnapLoading ? "Generating" : "Vocal snaps"}</span>
         </Button>
 
         {/* Import lyrics */}

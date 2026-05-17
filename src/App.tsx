@@ -8,6 +8,7 @@ import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
+import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { GuideCard } from "@/tour/guide-card";
@@ -25,8 +26,8 @@ import { ImportPanel } from "@/views/import";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
-import { LazyMotion, domAnimation } from "motion/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LazyMotion, domAnimation } from "motion/react";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
@@ -64,6 +65,7 @@ const AppContent: React.FC = () => {
   usePanicRecovery();
   useAutoSeparate();
   useDocumentTitle();
+  useVocalOnsetSnapPoints();
 
   const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
   const setSettingsOpenCb = useCallback((open: boolean) => setSettingsOpen(open), []);

@@ -3,7 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 
 // -- Types ---------------------------------------------------------------------
 
-type AnchorKind = "word-begin" | "word-end" | "line-begin" | "line-end" | "playhead";
+type AnchorKind = "word-begin" | "word-end" | "line-begin" | "line-end" | "playhead" | "vocal-onset";
 
 interface SnapAnchor {
   t: number;
@@ -44,72 +44,84 @@ function selfKey(lineId: string, wordIndex: number, track: "word" | "bg"): SelfK
 
 // -- Anchor collection ---------------------------------------------------------
 
-function collectSnapAnchors(lines: LyricLine[], selfIds: Set<SelfKey>, playheadTime: number | null): SnapAnchor[] {
+function collectSnapAnchors(
+  lines: LyricLine[],
+  selfIds: Set<SelfKey>,
+  playheadTime: number | null,
+  vocalOnsetTimes: number[] = [],
+  includeTimelineAnchors = true,
+): SnapAnchor[] {
   const anchors: SnapAnchor[] = [];
 
-  for (const line of lines) {
-    const words = line.words;
-    const wordCount = words?.length ?? 0;
-    const wordTimed = wordCount > 0;
+  if (includeTimelineAnchors) {
+    for (const line of lines) {
+      const words = line.words;
+      const wordCount = words?.length ?? 0;
+      const wordTimed = wordCount > 0;
 
-    if (words && wordCount > 0) {
-      for (let i = 0; i < wordCount; i++) {
-        const word = words[i];
-        if (!selfIds.has(selfKey(line.id, i, "word"))) {
-          anchors.push({
-            t: word.begin,
-            kind: "word-begin",
-            label: word.text,
-            lineId: line.id,
-            wordIndex: i,
-            track: "word",
-          });
-          anchors.push({
-            t: word.end,
-            kind: "word-end",
-            label: word.text,
-            lineId: line.id,
-            wordIndex: i,
-            track: "word",
-          });
+      if (words && wordCount > 0) {
+        for (let i = 0; i < wordCount; i++) {
+          const word = words[i];
+          if (!selfIds.has(selfKey(line.id, i, "word"))) {
+            anchors.push({
+              t: word.begin,
+              kind: "word-begin",
+              label: word.text,
+              lineId: line.id,
+              wordIndex: i,
+              track: "word",
+            });
+            anchors.push({
+              t: word.end,
+              kind: "word-end",
+              label: word.text,
+              lineId: line.id,
+              wordIndex: i,
+              track: "word",
+            });
+          }
         }
+      }
+
+      const bgWords = line.backgroundWords;
+      const bgCount = bgWords?.length ?? 0;
+      if (bgWords && bgCount > 0) {
+        for (let i = 0; i < bgCount; i++) {
+          const word = bgWords[i];
+          if (!selfIds.has(selfKey(line.id, i, "bg"))) {
+            anchors.push({
+              t: word.begin,
+              kind: "word-begin",
+              label: word.text,
+              lineId: line.id,
+              wordIndex: i,
+              track: "bg",
+            });
+            anchors.push({
+              t: word.end,
+              kind: "word-end",
+              label: word.text,
+              lineId: line.id,
+              wordIndex: i,
+              track: "bg",
+            });
+          }
+        }
+      }
+
+      if (!wordTimed && isLineSynced(line)) {
+        anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
+        anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
       }
     }
 
-    const bgWords = line.backgroundWords;
-    const bgCount = bgWords?.length ?? 0;
-    if (bgWords && bgCount > 0) {
-      for (let i = 0; i < bgCount; i++) {
-        const word = bgWords[i];
-        if (!selfIds.has(selfKey(line.id, i, "bg"))) {
-          anchors.push({
-            t: word.begin,
-            kind: "word-begin",
-            label: word.text,
-            lineId: line.id,
-            wordIndex: i,
-            track: "bg",
-          });
-          anchors.push({
-            t: word.end,
-            kind: "word-end",
-            label: word.text,
-            lineId: line.id,
-            wordIndex: i,
-            track: "bg",
-          });
-        }
-      }
-    }
-
-    if (!wordTimed && isLineSynced(line)) {
-      anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
-      anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
+    if (playheadTime !== null) {
+      anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
     }
   }
 
-  if (playheadTime !== null) {
-    anchors.push({ t: playheadTime, kind: "playhead", label: "playhead" });
+  for (const t of vocalOnsetTimes) {
+    if (Number.isFinite(t) && t >= 0) anchors.push({ t, kind: "vocal-onset", label: "vocal onset" });
   }
 
   anchors.sort((a, b) => a.t - b.t);

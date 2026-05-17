@@ -34,6 +34,7 @@ interface SettingsState {
   timelineSnap: boolean;
   timelineSnapThreshold: number;
   timelineHorizontalScroll: boolean;
+  vocalOnsetSnap: boolean;
 
   nudgeAmount: number;
   defaultWordDuration: number;
@@ -92,6 +93,7 @@ const DEFAULTS: SettingsState = {
   timelineSnap: true,
   timelineSnapThreshold: 12,
   timelineHorizontalScroll: false,
+  vocalOnsetSnap: true,
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
