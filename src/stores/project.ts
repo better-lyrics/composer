@@ -1041,8 +1041,6 @@ export type {
   LyricLine,
   ProjectMetadata,
   SimpleTab,
-  UntimedLine,
-  WordSyncedLine,
   WordTemplate,
   WordTiming,
 };
