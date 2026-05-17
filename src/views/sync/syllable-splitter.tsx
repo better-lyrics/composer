@@ -1,11 +1,12 @@
 import type { WordTiming } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { splitSourceWord } from "@/utils/word-timing";
 import { IconScissors } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -17,6 +18,21 @@ interface SyllableSplitterProps {
 
 // -- Components ---------------------------------------------------------------
 
+const getHyphenationSplitPoints = (hyphenated: string): number[] => {
+  const points: number[] = [];
+  let originalIndex = 0;
+
+  for (const char of hyphenated) {
+    if (char === "\u00AD") {
+      points.push(originalIndex);
+    } else {
+      originalIndex += 1;
+    }
+  }
+
+  return points;
+};
+
 const SplitModeContent: React.FC<{
   text: string;
   splitPoints: number[];
@@ -25,6 +41,35 @@ const SplitModeContent: React.FC<{
   onCancel: () => void;
 }> = ({ text, splitPoints, onToggleSplit, onConfirm, onCancel }) => {
   const chars = text.split("");
+  const autoAppliedRef = useRef(false);
+
+  useEffect(() => {
+    if (autoAppliedRef.current || splitPoints.length > 0) return;
+
+    let cancelled = false;
+
+    const applyAutoSplitPoints = async () => {
+      try {
+        const { hyphenateSync } = await import(`hyphen/${useSettingsStore.getState().languageAutoSplit}`);
+        
+        const hyphenated = hyphenateSync(text);
+        const autoSplitPoints = getHyphenationSplitPoints(hyphenated);
+
+        if (!cancelled && autoSplitPoints.length > 0) {
+          autoSplitPoints.forEach((point) => onToggleSplit(point));
+          autoAppliedRef.current = true;
+        }
+      } catch (_) {
+        // ignore hyphenation failures
+      }
+    };
+
+    applyAutoSplitPoints();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [text, splitPoints.length, onToggleSplit]);
 
   const previewParts = useMemo(() => {
     if (splitPoints.length === 0) return [text];

@@ -32,6 +32,7 @@ interface SettingsState {
   timelineSnap: boolean;
   timelineSnapThreshold: number;
 
+  languageAutoSplit: string;
   nudgeAmount: number;
   defaultWordDuration: number;
   minWordDuration: number;
@@ -82,6 +83,7 @@ const DEFAULTS: SettingsState = {
   timelineSnap: true,
   timelineSnapThreshold: 12,
 
+  languageAutoSplit: "en-us",
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
   minWordDuration: 0.05,

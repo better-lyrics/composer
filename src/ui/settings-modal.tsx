@@ -454,6 +454,24 @@ const SyncSection: React.FC = () => (
         { value: "line", label: "Line" },
       ]}
     />
+    <SelectSetting
+      label="Language automatic split assist"
+      description="Automatically place the split points based on the choosen language when splitting a syllable"
+      settingKey="languageAutoSplit"
+      options={[ // add more languages here with patterns that are supported by @hyphen
+        { label: "English (United States)", value: "en-us" },
+        { label: "English (United Kingdom)", value: "en-gb" },
+        { label: "Bulgarian", value: "bg" },
+        { label: "Dutch", value: "nl" },
+        { label: "Deutsch (German)", value: "de" },
+        { label: "Français (French)", value: "fr" },
+        { label: "Español (Spanish)", value: "es" },
+        { label: "Bahasa Indonesia (Indonesian)", value: "id" },
+        { label: "Italiano (Italian)", value: "it" },
+        { label: "Português (Portuguese)", value: "pt" },
+        { label: "Pусский (Russian)", value: "ru" },
+      ]}
+    />
   </div>
 );
 
