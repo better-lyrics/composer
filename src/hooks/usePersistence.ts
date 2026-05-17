@@ -8,7 +8,8 @@ import {
   type SavedAudioSource,
 } from "@/lib/persistence";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
-import { DEFAULT_AGENTS, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 

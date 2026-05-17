@@ -1,4 +1,8 @@
-import type { Agent, GranularityMode, LinkGroup, LyricLine, ProjectMetadata } from "@/stores/project";
+import type { GranularityMode } from "@/stores/project";
+import type { Agent } from "@/domain/agent/model";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------

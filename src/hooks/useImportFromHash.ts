@@ -1,6 +1,9 @@
 import { loadCurrentProject } from "@/lib/persistence";
 import { useConfirm } from "@/stores/confirm-store";
-import { type Agent, type LyricLine, type ProjectMetadata, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { Agent } from "@/domain/agent/model";
+import type { LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
