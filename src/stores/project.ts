@@ -10,6 +10,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { createAgentsSlice } from "@/stores/project/agents-slice";
 import { createDismissalsSlice } from "@/stores/project/dismissals-slice";
 import { commitHistory, MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
+import { createHistorySlice } from "@/stores/project/history-slice";
 import { createMetadataSlice } from "@/stores/project/metadata-slice";
 import type { ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiSlice } from "@/stores/project/ui-slice";
@@ -225,42 +226,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
 
   ...createUiSlice(set, get, api),
 
-  markDirty: () => set({ isDirty: true }),
-
-  markClean: () => set({ isDirty: false }),
-
-  undo: () =>
-    set((state) => {
-      // historyIndex points to current state, so we need > 0 to have something to undo to
-      if (state.historyIndex <= 0) return state;
-      const entry = state.history[state.historyIndex - 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        historyIndex: state.historyIndex - 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
-
-  redo: () =>
-    set((state) => {
-      if (state.historyIndex >= state.history.length - 1) return state;
-      const entry = state.history[state.historyIndex + 1];
-      return {
-        lines: structuredClone(entry.lines),
-        groups: structuredClone(entry.groups),
-        historyIndex: state.historyIndex + 1,
-        isDirty: true,
-        isDirtySinceHistory: false,
-      };
-    }),
-
-  canUndo: () => get().historyIndex > 0,
-
-  canRedo: () => get().historyIndex < get().history.length - 1,
-
-  clearHistory: () => set({ history: [], historyIndex: -1 }),
+  ...createHistorySlice(set, get, api),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => {
