@@ -9,7 +9,7 @@ import { GROUP_COLORS } from "@/utils/group-colors";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { isMac, MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
+import { absorbDeletedSyllablesIntoNeighbors, hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -417,13 +417,7 @@ const TimelineContextMenu: React.FC = () => {
     const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
     const words = line?.[groupedWordInfo.field];
     if (!words) return null;
-    for (let i = 0; i < words.length - 1; i++) {
-      const gid = words[i].syllableGroupId;
-      if (gid !== undefined && words[i + 1].syllableGroupId === gid && words[i].end < words[i + 1].begin) {
-        return groupedWordInfo;
-      }
-    }
-    return null;
+    return hasIntraGroupGap(words) ? groupedWordInfo : null;
   }, [groupedWordInfo, rawLines]);
 
   const handleMergeSyllables = useCallback(() => {

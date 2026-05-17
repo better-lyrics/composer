@@ -77,6 +77,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\.wordIndex === [\w.]+\.wordIndex\b/,
     use: "sameWordSelection / isWordSelected from @/domain/selection/identity",
   },
+  {
+    name: "inline syllable-group run scan",
+    regex: /\.syllableGroupId (?:===|!==) (?!undefined)/,
+    use: "computeByGroupId / hasIntraGroupGap from @/domain/word/syllable-groups",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

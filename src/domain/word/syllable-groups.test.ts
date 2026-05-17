@@ -7,6 +7,7 @@ import {
   computeSyllableGroups,
   expandSelectionToGroupmates,
   getSyllablePositions,
+  hasIntraGroupGap,
   inferSyllableGroupIds,
 } from "@/domain/word/syllable-groups";
 import { describe, expect, it } from "vitest";
@@ -369,5 +370,64 @@ describe("closeIntraGroupGaps", () => {
   it("returns input by reference for empty array", () => {
     const input: never[] = [];
     expect(closeIntraGroupGaps(input)).toBe(input);
+  });
+});
+
+// -- hasIntraGroupGap ----------------------------------------------------------
+
+describe("hasIntraGroupGap", () => {
+  it("returns true when a same-group pair has a gap", () => {
+    expect(
+      hasIntraGroupGap([
+        { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g1" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("returns false when same-group neighbors are flush", () => {
+    expect(
+      hasIntraGroupGap([
+        { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+      ]),
+    ).toBe(false);
+  });
+
+  it("ignores gaps between words in different groups", () => {
+    expect(
+      hasIntraGroupGap([
+        { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+        { text: "er", begin: 0.3, end: 0.5, syllableGroupId: "g2" },
+      ]),
+    ).toBe(false);
+  });
+
+  it("ignores gaps between standalone (non-group) words", () => {
+    expect(
+      hasIntraGroupGap([
+        { text: "hello", begin: 0, end: 0.2 },
+        { text: "world", begin: 0.5, end: 1 },
+      ]),
+    ).toBe(false);
+  });
+
+  it("detects a gap in a later group when an earlier group is flush", () => {
+    expect(
+      hasIntraGroupGap([
+        { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
+        { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
+        { text: "wi", begin: 0.4, end: 0.6, syllableGroupId: "g2" },
+        { text: "de", begin: 0.8, end: 1, syllableGroupId: "g2" },
+      ]),
+    ).toBe(true);
+  });
+
+  it("returns false for a single word", () => {
+    expect(hasIntraGroupGap([{ text: "solo", begin: 0, end: 1, syllableGroupId: "g1" }])).toBe(false);
+  });
+
+  it("returns false for an empty array", () => {
+    expect(hasIntraGroupGap([])).toBe(false);
   });
 });
