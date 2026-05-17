@@ -156,6 +156,46 @@ describe("AudioEngine", () => {
     }
   });
 
+  it("switches to the instrumental separated track", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    const instrumentalUrl = URL.createObjectURL(createAudioFile("instrumental.wav"));
+
+    try {
+      useSeparationStore.setState({
+        currentStem: "instrumental",
+        availableStems: ["original", "vocals", "instrumental"],
+        stemUrls: { instrumental: instrumentalUrl },
+      });
+
+      await waitFor(() => audio.src === instrumentalUrl);
+      expect(audio.src).toBe(instrumentalUrl);
+    } finally {
+      URL.revokeObjectURL(instrumentalUrl);
+    }
+  });
+
+  it("applies a preselected instrumental track after the audio element is created", async () => {
+    const instrumentalUrl = URL.createObjectURL(createAudioFile("instrumental.wav"));
+
+    try {
+      useSeparationStore.setState({
+        currentStem: "instrumental",
+        availableStems: ["original", "vocals", "instrumental"],
+        stemUrls: { instrumental: instrumentalUrl },
+      });
+      await render(<AudioEngine />);
+      useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+
+      await waitFor(() => useAudioStore.getState().audioElement?.src === instrumentalUrl);
+      expect(useAudioStore.getState().audioElement?.src).toBe(instrumentalUrl);
+    } finally {
+      URL.revokeObjectURL(instrumentalUrl);
+    }
+  });
+
   it("switches from a separated track back to the original source", async () => {
     await render(<AudioEngine />);
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
