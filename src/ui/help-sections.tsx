@@ -473,8 +473,8 @@ const TimelineSection: React.FC = () => (
       <p className={PROSE}>
         Syllables of a word can be timed flush against each other or with gaps between them. Gaps are useful for
         staccato or rap delivery, and for per-character timing in Japanese, Chinese, or Korean lyrics. To close those
-        gaps, right-click any word and pick <strong>Snap syllables flush</strong>, which pulls every syllable group on
-        that line tight so each syllable starts where the previous one ends. There is no keyboard shortcut for snapping.
+        gaps, right-click any word and pick <strong>Snap syllables flush</strong>. It pulls every syllable group on
+        the line tight, so each syllable starts where the previous one ends. There is no keyboard shortcut for snapping.
       </p>
     </div>
 
