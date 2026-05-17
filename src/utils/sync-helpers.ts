@@ -1,6 +1,7 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
-import type { LyricLine, WordTiming } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter } from "@/utils/split-character";

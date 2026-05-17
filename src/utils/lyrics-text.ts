@@ -1,4 +1,5 @@
-import type { LyricLine, WordTiming } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { cleanSplitCharacters, getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 

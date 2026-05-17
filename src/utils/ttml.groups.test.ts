@@ -1,4 +1,6 @@
-import type { Agent, LinkGroup, ProjectMetadata } from "@/stores/project";
+import type { Agent } from "@/domain/agent/model";
+import type { LinkGroup } from "@/domain/group/template";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";

@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { type LinkGroup, type LooseLine, type LyricLine, reconcileLine } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { findExplicitWords } from "@/utils/explicit-detection";
 import { describe, expect, it } from "vitest";
 

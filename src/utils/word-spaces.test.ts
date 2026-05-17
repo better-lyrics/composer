@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import {
   addTrailingSpaceIfMissing,
   findInsertionSlot,

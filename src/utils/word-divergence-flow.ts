@@ -1,5 +1,7 @@
 import { useDivergenceStore } from "@/stores/divergence-store";
-import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { wouldDivergenceCauseRetiming } from "@/utils/word-diff";
 

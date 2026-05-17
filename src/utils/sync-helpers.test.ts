@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { commitHeldWord, commitTappedWord } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 

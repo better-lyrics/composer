@@ -1,15 +1,10 @@
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import {
-  type Agent,
-  type AgentType,
-  type LinkGroup,
-  type LooseLine,
-  type LyricLine,
-  type ProjectMetadata,
-  reconcileLine,
-  type WordTiming,
-} from "@/stores/project";
+import type { Agent, AgentType } from "@/domain/agent/model";
+import type { LinkGroup } from "@/domain/group/template";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { WordTiming } from "@/domain/word/timing";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 

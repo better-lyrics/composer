@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { synthesizeBracketedWord } from "@/utils/word-timing";
 

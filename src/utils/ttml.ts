@@ -1,4 +1,7 @@
-import type { Agent, LinkGroup, LyricLine, ProjectMetadata } from "@/stores/project";
+import type { Agent } from "@/domain/agent/model";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { effectiveBounds } from "@/domain/line/bounds";

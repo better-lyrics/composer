@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { describe, expect, it } from "vitest";
 
