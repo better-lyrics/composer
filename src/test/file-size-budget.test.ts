@@ -3,8 +3,8 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// CLAUDE.md sets a 300-line guideline for non-test source files: a file past
-// that mark is doing too much and should be split into focused modules.
+// Non-test source files are held to a 300-line guideline: a file past that
+// mark is doing too much and should be split into focused modules.
 //
 // BASELINE_OVER_BUDGET is a ratchet. It records the files that are CURRENTLY
 // over 300 lines. The rules:

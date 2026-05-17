@@ -6,7 +6,7 @@ import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/mod
 import type { WordTiming } from "@/domain/word/timing";
 import { beforeEach, describe, expect, it } from "vitest";
 
-// Phase 9: text/words single source of truth. Whenever a store mutation writes
+// text/words single source of truth. Whenever a store mutation writes
 // a words/backgroundWords array, the paired text/backgroundText is re-derived
 // via reconstructLineText. A line with no words keeps text as its primary field.
 

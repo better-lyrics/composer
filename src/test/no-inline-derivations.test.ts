@@ -3,23 +3,21 @@ import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-// CI-layer net for the domain-module refactor. Derived concepts (line-synced
-// detection, word/instance bounds, instance membership) must go through
-// `src/domain/**`, never be re-derived inline at call sites. Re-derivation is
-// what made these concepts impossible to evolve safely.
+// CI guard for derived data-model concepts. Line-synced detection, word and
+// instance bounds, and instance membership must go through `src/domain/**`,
+// never be re-derived inline at call sites. Inline re-derivation is what makes
+// these concepts impossible to evolve safely.
 //
 // This is a regex heuristic, not a completeness proof: it catches the common
 // inline forms. A derivation routed through an intermediate variable (e.g.
-// `const last = words.at(-1); last.end`) escapes it. The compile-time wall for
-// the remaining cases is the deferred `LyricLine` discriminated-union change.
+// `const last = words.at(-1); last.end`) escapes it; the `LyricLine`
+// discriminated union is the compile-time wall for those cases.
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// Files allowed to contain the raw patterns.
+// Files allowed to contain the raw patterns:
 //   - domain/** : the modules that legitimately own these derivations.
-//   - stores/project.ts : constructs and mutates LyricLine objects; the
-//     mutator-local "clear stale begin/end when words are written" checks were
-//     intentionally deferred (see docs/plans domain-refactor design, phase 5).
+//   - stores/project.ts : constructs and mutates LyricLine objects directly.
 const WHITELIST_EXACT = new Set(["stores/project.ts"]);
 
 function isWhitelisted(relPath: string): boolean {
