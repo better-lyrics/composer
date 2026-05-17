@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
@@ -26,7 +27,12 @@ function makeDragStartEvent(shiftKey: boolean): DragStartEvent {
   } as unknown as DragStartEvent;
 }
 
-function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolean): DragEndEvent {
+function makeDragEndEvent(
+  overId: string,
+  deltaY: number,
+  activatorShift: boolean,
+  deltaX = 5,
+): DragEndEvent {
   return {
     active: {
       id: "w",
@@ -49,7 +55,7 @@ function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolea
       rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
       disabled: false,
     },
-    delta: { x: 5, y: deltaY },
+    delta: { x: deltaX, y: deltaY },
     activatorEvent: new PointerEvent("pointerdown", { shiftKey: activatorShift }),
     collisions: null,
   } as unknown as DragEndEvent;
@@ -112,17 +118,29 @@ describe("useTimelineDnd · live shift state", () => {
     expect(after.backgroundWords?.[2].syllableGroupId).toBe(sharedId);
   });
 
-  it("keeps a grouped syllable contiguous with its groupmates after a same-track shift-drag", async () => {
+  it("shifts every groupmate by the same delta when a non-leading syllable is shift-dragged", async () => {
+    useTimelineStore.setState({ zoom: 100 });
+    const zoom = useTimelineStore.getState().zoom;
     const lines = useProjectStore.getState().lines;
+    const before = lines[0].words ?? [];
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
     result.current.handleDragStart(makeDragStartEvent(true));
     await expect.poll(() => result.current.dragShiftPressed).toBe(true);
-    result.current.handleDragEnd(makeDragEndEvent("main-drop-l1", 0, true));
+
+    const deltaX = 60;
+    result.current.handleDragEnd(makeDragEndEvent("main-drop-l1", 0, true, deltaX));
 
     const after = useProjectStore.getState().lines[0];
     const words = after.words ?? [];
     expect(words.length).toBe(3);
+
+    const expectedShift = deltaX / zoom;
+    expect(expectedShift).toBeGreaterThan(0.1);
+    expect(words[0].begin).toBeCloseTo(before[0].begin + expectedShift, 4);
+    expect(words[1].begin).toBeCloseTo(before[1].begin + expectedShift, 4);
+    expect(words[2].begin).toBeCloseTo(before[2].begin + expectedShift, 4);
+
     for (let i = 1; i < words.length; i++) {
       expect(words[i].begin).toBeCloseTo(words[i - 1].end, 5);
     }
