@@ -1,28 +1,28 @@
-import { detectFileType } from "@/utils/lyrics-parsers/detect";
+import { detectFileType, type LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { parseLrc } from "@/utils/lyrics-parsers/lrc";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import type { ParseResult, ParserFn } from "@/utils/lyrics-parsers/shared";
 import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
 import { parseTxt } from "@/utils/lyrics-parsers/txt";
+
+// -- Registry -----------------------------------------------------------------
+
+const PARSERS: Record<Exclude<LyricsFileType, "unknown">, ParserFn> = {
+  txt: parseTxt,
+  lrc: parseLrc,
+  srt: parseSrt,
+  ttml: parseTtml,
+};
 
 // -- Main Parser --------------------------------------------------------------
 
 function parseLyricsFile(filename: string, content: string, fallbackDuration?: number): ParseResult {
   const fileType = detectFileType(filename, content);
-
-  switch (fileType) {
-    case "lrc":
-      return parseLrc(content, fallbackDuration);
-    case "srt":
-      return parseSrt(content);
-    case "ttml":
-      return parseTtml(content);
-    default:
-      return parseTxt(content);
-  }
+  const parser = fileType === "unknown" ? parseTxt : PARSERS[fileType];
+  return parser(content, fallbackDuration);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { parseLyricsFile };
-export type { ParseResult };
+export { parseLyricsFile, PARSERS };
+export type { ParseResult, ParserFn };
