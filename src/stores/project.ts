@@ -8,6 +8,7 @@ import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { createAgentsSlice } from "@/stores/project/agents-slice";
+import { createDismissalsSlice } from "@/stores/project/dismissals-slice";
 import { commitHistory, MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { createMetadataSlice } from "@/stores/project/metadata-slice";
 import type { ProjectState, ProjectStore } from "@/stores/project/types";
@@ -675,28 +676,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
       return commitHistory(state, { lines });
     }),
 
-  dismissSuggestion: (fingerprint) =>
-    set((state) => {
-      if (state.dismissedSuggestions.includes(fingerprint)) return state;
-      return { dismissedSuggestions: [...state.dismissedSuggestions, fingerprint], isDirty: true };
-    }),
-
-  setDismissedSuggestions: (fingerprints) => set({ dismissedSuggestions: fingerprints }),
-
-  clearDismissedSuggestions: () => set({ dismissedSuggestions: [], isDirty: true }),
-
-  dismissExplicitSuggestion: (fingerprint) =>
-    set((state) => {
-      if (state.dismissedExplicitSuggestions.includes(fingerprint)) return state;
-      return {
-        dismissedExplicitSuggestions: [...state.dismissedExplicitSuggestions, fingerprint],
-        isDirty: true,
-      };
-    }),
-
-  setDismissedExplicitSuggestions: (fingerprints) => set({ dismissedExplicitSuggestions: fingerprints }),
-
-  clearDismissedExplicitSuggestions: () => set({ dismissedExplicitSuggestions: [], isDirty: true }),
+  ...createDismissalsSlice(set, get, api),
 }));
 
 function expandTargetsToSyllableGroups(
