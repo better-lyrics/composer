@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { type LooseLine, type LyricLine, type WordTiming, reconcileLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // Phase 9: text/words single source of truth. Whenever a store mutation writes

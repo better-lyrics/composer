@@ -1,4 +1,6 @@
-import { DEFAULT_AGENTS, type LyricLine, reconcileLine, type WordTiming } from "@/stores/project";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 
 interface FactoryLineOptions {
   id?: string;

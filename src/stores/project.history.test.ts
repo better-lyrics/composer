@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { type LooseLine, type LyricLine, reconcileLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { beforeEach, describe, expect, it } from "vitest";
 
 function seedLine(id: string, overrides: Partial<LooseLine> = {}): LyricLine {

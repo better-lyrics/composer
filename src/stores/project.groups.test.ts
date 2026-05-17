@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { type LineTemplate, type LinkGroup, type LyricLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
