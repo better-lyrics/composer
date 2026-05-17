@@ -18,6 +18,7 @@ interface FactoryWordOptions {
   begin: number;
   end: number;
   explicit?: true;
+  syllableGroupId?: string;
 }
 
 interface FactoryGroupOptions {
@@ -31,7 +32,13 @@ let lineCounter = 0;
 let groupCounter = 0;
 
 function createWord(opts: FactoryWordOptions): WordTiming {
-  return { text: opts.text, begin: opts.begin, end: opts.end, explicit: opts.explicit };
+  return {
+    text: opts.text,
+    begin: opts.begin,
+    end: opts.end,
+    ...(opts.explicit ? { explicit: opts.explicit } : {}),
+    ...(opts.syllableGroupId ? { syllableGroupId: opts.syllableGroupId } : {}),
+  };
 }
 
 function createLine(opts: FactoryLineOptions = {}): LyricLine {

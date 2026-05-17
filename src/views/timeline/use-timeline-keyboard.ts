@@ -397,6 +397,20 @@ function useTimelineKeyboard(
           useTimelineStore.getState().clearSelection();
           break;
         }
+        case "timeline.mergeSyllablesIntoWord": {
+          const { selectedWords: mSel } = useTimelineStore.getState();
+          if (mSel.length === 0) break;
+          const first = mSel[0];
+          if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
+          const field: "words" | "backgroundWords" = first.type === "word" ? "words" : "backgroundWords";
+          e.preventDefault();
+          useProjectStore.getState().mergeSyllableGroupIntoWord(
+            first.lineId,
+            field,
+            mSel.map((s) => s.wordIndex),
+          );
+          break;
+        }
         case "timeline.splitIntoWords": {
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;

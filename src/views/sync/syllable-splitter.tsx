@@ -2,7 +2,9 @@ import type { WordTiming } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { distributeTiming } from "@/utils/syllable-utils";
+import { splitSourceWord } from "@/utils/word-timing";
 import { IconScissors } from "@tabler/icons-react";
+import { nanoid } from "nanoid";
 import { useState, useCallback, useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -99,12 +101,15 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, on
 
   const handleConfirmSplit = useCallback(
     (close: () => void) => {
-      const newWords = distributeTiming(word.text, splitPoints, word.begin, word.end);
+      const groupId = word.syllableGroupId ?? nanoid(8);
+      const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
+      const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
+      const newWords = splitSourceWord(sourceForSplit, partitions);
       onSplit(wordIndex, newWords);
       setSplitPoints([]);
       close();
     },
-    [word.text, word.begin, word.end, splitPoints, wordIndex, onSplit],
+    [word, splitPoints, wordIndex, onSplit],
   );
 
   const handleCancelSplit = useCallback((close: () => void) => {

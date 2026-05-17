@@ -129,13 +129,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
         return pos === "middle" || pos === "last";
       };
 
+      const boundaryHasGap = (idx: number, side: "left" | "right"): boolean => {
+        if (side === "right") return idx < words.length - 1 && words[idx].end < words[idx + 1].begin;
+        return idx > 0 && words[idx - 1].end < words[idx].begin;
+      };
+
       const handleMouseMove = (e: PointerEvent) => {
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
-        const isSyllable = isSyllableBoundary(wordIndex, edge);
-        const conjoined = altHeld ? !isSyllable : isSyllable;
+        const conjoinedByDefault = isSyllableBoundary(wordIndex, edge) && !boundaryHasGap(wordIndex, edge);
+        const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
 
         const adjacentWordIndex =
           conjoined && edge === "left" && wordIndex > 0
@@ -249,7 +254,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (boundaryIndex < 0 || boundaryIndex >= words.length - 1) return false;
     const pos = syllablePositions[boundaryIndex];
     const isSyllable = pos === "first" || pos === "middle";
-    return altPressed ? !isSyllable : isSyllable;
+    const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
+    const conjoinedByDefault = isSyllable && !hasGap;
+    return altPressed ? !conjoinedByDefault : conjoinedByDefault;
   };
 
   const hasSelection = selectedWords.length > 0;
@@ -385,6 +392,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
       {words.map((word, wordIndex) => {
         const display = getDisplay(wordIndex);
         const wordKey = `${lineId}-${trackType}-${wordIndex}`;
+        const syllablePosition = showSyllableIndicators ? syllablePositions[wordIndex] : "none";
+        const gapBefore =
+          (syllablePosition === "middle" || syllablePosition === "last") &&
+          getDisplay(wordIndex - 1).end < display.begin;
         return (
           <WordBlock
             key={wordKey}
@@ -401,7 +412,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
             isDimmed={hasSelection && !isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
-            syllablePosition={showSyllableIndicators ? syllablePositions[wordIndex] : "none"}
+            syllablePosition={syllablePosition}
+            gapBefore={gapBefore}
             leftHighlighted={hoveredBoundary === wordIndex - 1 && isBoundaryConjoined(wordIndex - 1)}
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}
             onClick={(e) => handleSelect(wordIndex, e)}

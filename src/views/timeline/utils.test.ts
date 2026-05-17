@@ -857,6 +857,24 @@ describe("partitionNudgeSelections", () => {
     expect(result.wordSynced).toEqual([]);
     expect(result.lineSynced).toEqual([]);
   });
+
+  it("expands a syllable-group selection to all groupmates in the wordSynced bucket", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "every",
+        agentId: "v1",
+        words: [
+          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" },
+          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" },
+          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" },
+        ],
+      },
+    ];
+    const sels = [{ lineId: "L1", type: "word" as const, wordIndex: 1 }];
+    const result = partitionNudgeSelections(lines, sels);
+    expect(result.wordSynced.map((s) => s.wordIndex)).toEqual([0, 1, 2]);
+  });
 });
 
 // -- shiftLineSyncedRows ------------------------------------------------------

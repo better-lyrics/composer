@@ -1,26 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { RecoverPanel } from "@/pages/recover";
 import { render } from "@/test/render";
-
-const DB_NAME = "ttml-composer";
-const STORE_NAME = "projects";
-
-async function seedProject(project: unknown): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB_NAME, 1);
-    open.onupgradeneeded = () => open.result.createObjectStore(STORE_NAME);
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const db = open.result;
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(project, "current");
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-    };
-  });
-}
+import { seedProject } from "@/test/idb";
 
 describe("RecoverPanel", () => {
   it("shows the empty-state message when IndexedDB has no project", async () => {

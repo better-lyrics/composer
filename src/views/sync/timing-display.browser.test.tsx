@@ -24,7 +24,6 @@ describe("TimingDisplay", () => {
   it("updates the current time display from the audio store via RAF", async () => {
     useAudioStore.setState({ currentTime: 12.5 });
     const screen = await render(<TimingDisplay />);
-    await new Promise((r) => setTimeout(r, 50));
-    expect(screen.container.textContent).toContain(formatTimeMs(12.5));
+    await expect.poll(() => screen.container.textContent).toContain(formatTimeMs(12.5));
   });
 });

@@ -24,6 +24,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
+import { expandSelectionToGroupmates, getSyllablePositions, type SyllablePosition } from "@/utils/syllable-groups";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
@@ -46,7 +47,15 @@ interface DragGhostCell {
   top: number;
   width: number;
   height: number;
+  syllablePosition: SyllablePosition;
 }
+
+const GHOST_SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
+  none: "rounded-xl",
+  first: "rounded-l-xl rounded-r-none",
+  middle: "rounded-none",
+  last: "rounded-r-xl rounded-l-none",
+};
 
 const DragGhost: React.FC<{
   cells: DragGhostCell[];
@@ -60,9 +69,10 @@ const DragGhost: React.FC<{
       <div
         key={`${cell.left}-${cell.top}`}
         data-word-block
-        data-syllable-position="none"
+        data-syllable-position={cell.syllablePosition}
         className={cn(
-          "absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none",
+          "absolute flex items-center justify-center text-xs text-white truncate border pointer-events-none",
+          GHOST_SYLLABLE_RADIUS[cell.syllablePosition],
           isSnapped && "is-snapped",
         )}
         style={{
@@ -72,6 +82,10 @@ const DragGhost: React.FC<{
           height: cell.height,
           backgroundColor: `${color}50`,
           borderColor: `${color}90`,
+          ...(cell.syllablePosition === "first" || cell.syllablePosition === "middle"
+            ? { borderRightStyle: "dashed" }
+            : {}),
+          ...(cell.syllablePosition === "middle" || cell.syllablePosition === "last" ? { borderLeftWidth: 0 } : {}),
         }}
       >
         <span className="px-1 truncate">{cell.text}</span>
@@ -282,9 +296,34 @@ const TimelinePanel: React.FC = () => {
     const anchorHeight =
       activeDrag.trackType === "bg" ? rowBgHeights[activeDrag.lineId] : rowMainHeights[activeDrag.lineId];
 
-    const wordsToShow = inSelection && selectedWords.length > 1 ? selectedWords : null;
+    const baseSelections =
+      inSelection && selectedWords.length > 1
+        ? selectedWords
+        : [
+            {
+              lineId: activeDrag.lineId,
+              lineIndex: activeDrag.lineIndex,
+              wordIndex: activeDrag.wordIndex,
+              type: activeDrag.trackType,
+            },
+          ];
 
-    if (!wordsToShow) {
+    const wordsToShow: typeof baseSelections = [];
+    const seen = new Set<string>();
+    for (const sel of baseSelections) {
+      const line = effectiveLines.find((l) => l.id === sel.lineId);
+      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
+      if (!line || !wordsArray) continue;
+      const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
+      for (const idx of indices) {
+        const key = `${sel.lineId}:${sel.type}:${idx}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        wordsToShow.push({ lineId: sel.lineId, lineIndex: sel.lineIndex, wordIndex: idx, type: sel.type });
+      }
+    }
+
+    if (wordsToShow.length <= 1) {
       const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
       return {
         cells: [
@@ -294,6 +333,7 @@ const TimelinePanel: React.FC = () => {
             top: 0,
             width: w,
             height: anchorHeight - 8,
+            syllablePosition: "none" as SyllablePosition,
           },
         ],
         anchorWidth: w,
@@ -301,11 +341,25 @@ const TimelinePanel: React.FC = () => {
       };
     }
 
+    const positionsByLineTrack = new Map<string, SyllablePosition[]>();
+    const positionFor = (lineId: string, type: "word" | "bg", idx: number): SyllablePosition => {
+      const key = `${lineId}:${type}`;
+      let positions = positionsByLineTrack.get(key);
+      if (!positions) {
+        const line = effectiveLines.find((l) => l.id === lineId);
+        const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
+        positions = wordsArray ? getSyllablePositions(wordsArray) : [];
+        positionsByLineTrack.set(key, positions);
+      }
+      return positions[idx] ?? "none";
+    };
+
     const cells = wordsToShow.map((sel) => {
       const line = effectiveLines.find((l) => l.id === sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
-      if (!word || !line) return { text: "", left: 0, top: 0, width: 0, height: 0 };
+      if (!word || !line)
+        return { text: "", left: 0, top: 0, width: 0, height: 0, syllablePosition: "none" as SyllablePosition };
 
       const cellLeft = word.begin * zoom - anchorLeft;
       const cellTop = (sel.type === "bg" ? rowBgTops[line.id] : rowTops[line.id]) - anchorTop;
@@ -316,6 +370,7 @@ const TimelinePanel: React.FC = () => {
         text: word.text.trimEnd(),
         left: cellLeft,
         top: cellTop,
+        syllablePosition: positionFor(sel.lineId, sel.type, sel.wordIndex),
         width: cellWidth,
         height: cellHeight,
       };

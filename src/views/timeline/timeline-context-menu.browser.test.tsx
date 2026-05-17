@@ -59,4 +59,88 @@ describe("TimelineContextMenu", () => {
     const updated = useProjectStore.getState().lines[0].words?.[0];
     expect(updated?.explicit).toBe(true);
   });
+
+  it("shows 'Merge syllables' on a syllable-group word and collapses the group to one word when clicked", async () => {
+    const line = createLine({
+      words: [
+        createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
+        createWord({ text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_every" }),
+        createWord({ text: "y", begin: 0.6, end: 1, syllableGroupId: "g_every" }),
+      ],
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const mergeBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Merge syllables/i.test(b.textContent ?? ""),
+    );
+    expect(mergeBtn).toBeDefined();
+    mergeBtn?.click();
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words).toHaveLength(1);
+    expect(words[0].text).toBe("every");
+    expect(words[0].begin).toBe(0);
+    expect(words[0].end).toBe(1);
+    expect(words[0].syllableGroupId).toBeUndefined();
+  });
+
+  it("hides 'Merge syllables' on a standalone word", async () => {
+    const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const mergeBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Merge syllables/i.test(b.textContent ?? ""),
+    );
+    expect(mergeBtn).toBeUndefined();
+  });
+
+  it("snaps a gapped syllable group flush when 'Snap syllables flush' is clicked", async () => {
+    const line = createLine({
+      words: [
+        createWord({ text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" }),
+        createWord({ text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" }),
+        createWord({ text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" }),
+      ],
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const snapBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Snap syllables flush/i.test(b.textContent ?? ""),
+    );
+    expect(snapBtn).toBeDefined();
+    snapBtn?.click();
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].end).toBe(words[1].begin);
+    expect(words[1].end).toBe(words[2].begin);
+    expect(words[0].begin).toBe(0);
+    expect(words[2].end).toBe(1.3);
+  });
 });

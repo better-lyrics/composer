@@ -3,30 +3,11 @@ import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { ErrorFallback } from "@/pages/error-fallback";
 import { render } from "@/test/render";
 import { allowConsole } from "@/test/console-guard";
+import { seedProject } from "@/test/idb";
 
 const ThrowingRoute: React.FC = () => {
   throw new Error("Boom for test");
 };
-
-const DB_NAME = "ttml-composer";
-const STORE_NAME = "projects";
-
-async function seedProject(project: unknown): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB_NAME, 1);
-    open.onupgradeneeded = () => open.result.createObjectStore(STORE_NAME);
-    open.onerror = () => reject(open.error);
-    open.onsuccess = () => {
-      const db = open.result;
-      const tx = db.transaction(STORE_NAME, "readwrite");
-      tx.objectStore(STORE_NAME).put(project, "current");
-      tx.oncomplete = () => {
-        db.close();
-        resolve();
-      };
-    };
-  });
-}
 
 function renderFallback() {
   const router = createMemoryRouter([{ path: "/", element: <ThrowingRoute />, errorElement: <ErrorFallback /> }], {

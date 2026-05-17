@@ -45,4 +45,51 @@ describe("SyllableSplitter", () => {
     expect(splits).not.toBeNull();
     expect((splits as unknown as WordTiming[]).length).toBeGreaterThan(1);
   });
+
+  it("stamps a fresh syllableGroupId shared across every produced syllable", async () => {
+    let splits: WordTiming[] | null = null;
+    const screen = await render(
+      <SyllableSplitter
+        word={{ text: "every", begin: 0, end: 1 }}
+        wordIndex={0}
+        onSplit={(_, words) => {
+          splits = words;
+        }}
+      />,
+    );
+    await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
+      (b) => b.querySelector("span")?.textContent === "⋮",
+    );
+    splitPointButtons[0]?.click();
+    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+    const out = splits as unknown as WordTiming[];
+    expect(out).not.toBeNull();
+    expect(out.length).toBeGreaterThanOrEqual(2);
+    expect(out[0].syllableGroupId).toBeDefined();
+    expect(out.every((w) => w.syllableGroupId === out[0].syllableGroupId)).toBe(true);
+  });
+
+  it("reuses the source word's syllableGroupId when re-splitting", async () => {
+    let splits: WordTiming[] | null = null;
+    const screen = await render(
+      <SyllableSplitter
+        word={{ text: "ev", begin: 0, end: 1, syllableGroupId: "g_source" }}
+        wordIndex={0}
+        onSplit={(_, words) => {
+          splits = words;
+        }}
+      />,
+    );
+    await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
+      (b) => b.querySelector("span")?.textContent === "⋮",
+    );
+    splitPointButtons[0]?.click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+    const out = splits as unknown as WordTiming[];
+    expect(out).not.toBeNull();
+    expect(out.every((w) => w.syllableGroupId === "g_source")).toBe(true);
+  });
 });

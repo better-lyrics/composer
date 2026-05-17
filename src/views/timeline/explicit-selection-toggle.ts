@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/stores/project";
-import { expandToSyllableGroup } from "@/utils/syllable-groups";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import type { WordSelection } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -37,7 +37,7 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
   for (const group of groups.values()) {
     const wordsArr = linesById.get(group.lineId)?.[group.field];
     if (!wordsArr) continue;
-    const expanded = expandToSyllableGroup(wordsArr, group.indices).filter((i) => i >= 0 && i < wordsArr.length);
+    const expanded = expandSelectionToGroupmates(wordsArr, group.indices).filter((i) => i >= 0 && i < wordsArr.length);
     for (const idx of expanded) {
       targets.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
       if (wordsArr[idx].explicit !== true) allMarked = false;

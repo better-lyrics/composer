@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "1.13.0",
+  "version": "1.14.0",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
@@ -33,6 +33,7 @@
     "driver.js": "^1.4.0",
     "lit": "^3.3.2",
     "motion": "^12.24.12",
+    "nanoid": "^5.1.11",
     "obscenity": "^0.4.6",
     "overlayscrollbars": "^2.14.0",
     "overlayscrollbars-react": "^0.5.6",

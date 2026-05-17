@@ -393,7 +393,11 @@ function useSyncHandlers({
 
       const updatedWords = [...line.words];
       updatedWords.splice(wordIdx, 1, ...newWords);
-      updateLineWithHistory(line.id, { words: updatedWords });
+      const newLineText = updatedWords
+        .map((w) => w.text)
+        .join("")
+        .trimEnd();
+      updateLineWithHistory(line.id, { words: updatedWords, text: newLineText });
     },
     [lines, updateLineWithHistory],
   );

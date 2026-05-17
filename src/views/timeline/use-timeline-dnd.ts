@@ -1,11 +1,14 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
-import { type LyricLine, useProjectStore } from "@/stores/project";
+import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import { type WordSelection, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { useCallback, useState } from "react";
+import { nanoid } from "nanoid";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -18,6 +21,7 @@ interface DragData {
   text: string;
   begin: number;
   end: number;
+  initialShiftKey?: boolean;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -45,6 +49,27 @@ function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelectio
   ];
 }
 
+function expandSelectionsAcrossLines(lines: LyricLine[], selections: WordSelection[]): WordSelection[] {
+  const linesById = new Map<string, LyricLine>();
+  for (const l of lines) linesById.set(l.id, l);
+  const seen = new Set<string>();
+  const result: WordSelection[] = [];
+  for (const sel of selections) {
+    const line = linesById.get(sel.lineId);
+    if (!line) continue;
+    const words = sel.type === "word" ? line.words : line.backgroundWords;
+    if (!words) continue;
+    const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
+    for (const idx of expanded) {
+      const key = `${sel.lineId}:${sel.type}:${idx}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      result.push({ lineId: sel.lineId, lineIndex: sel.lineIndex, wordIndex: idx, type: sel.type });
+    }
+  }
+  return result;
+}
+
 function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSelection[]> {
   const grouped = new Map<string, WordSelection[]>();
   for (const sel of selections) {
@@ -62,7 +87,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
 
   const { selectedWords } = useTimelineStore.getState();
-  const wordsToDuplicate = resolveWordsToOperate(activeData, selectedWords);
+  const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
 
   const timeDelta = delta.x / zoom;
   const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
@@ -75,8 +100,19 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     const line = linesById.get(lineId);
     if (!line) continue;
 
-    const wordDups: Array<{ text: string; begin: number; end: number }> = [];
-    const bgDups: Array<{ text: string; begin: number; end: number }> = [];
+    const newGroupIdBySource = new Map<string, string>();
+    const getNewGroupId = (oldId: string | undefined): string | undefined => {
+      if (oldId === undefined) return undefined;
+      let nid = newGroupIdBySource.get(oldId);
+      if (!nid) {
+        nid = nanoid(8);
+        newGroupIdBySource.set(oldId, nid);
+      }
+      return nid;
+    };
+
+    const wordDups: WordTiming[] = [];
+    const bgDups: WordTiming[] = [];
 
     for (const sel of selections) {
       const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
@@ -87,7 +123,8 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       const newEnd = Math.min(duration, word.end + timeDelta);
       if (newEnd <= newBegin) continue;
 
-      const dup = { text: word.text, begin: newBegin, end: newEnd };
+      const dup = cloneWord(word, { begin: newBegin, end: newEnd });
+      dup.syllableGroupId = getNewGroupId(word.syllableGroupId);
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }
@@ -136,6 +173,12 @@ function useTimelineDnd(lines: LyricLine[]) {
   const zoom = useTimelineStore((s) => s.zoom);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
+  const dragShiftRef = useRef(false);
+  const shiftListenersCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => shiftListenersCleanupRef.current?.();
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -147,16 +190,39 @@ function useTimelineDnd(lines: LyricLine[]) {
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const data = event.active.data.current as DragData | undefined;
-    if (data) {
-      setActiveDrag(data);
-      document.body.style.cursor = "grabbing";
-    }
+    if (!data) return;
+
+    const initialShiftKey = event.activatorEvent instanceof PointerEvent ? event.activatorEvent.shiftKey : false;
+    setActiveDrag({ ...data, initialShiftKey });
+    document.body.style.cursor = "grabbing";
+
+    shiftListenersCleanupRef.current?.();
+    dragShiftRef.current = initialShiftKey;
+    const onPointer = (e: PointerEvent) => {
+      dragShiftRef.current = e.shiftKey;
+    };
+    const onKey = (e: KeyboardEvent) => {
+      dragShiftRef.current = e.shiftKey;
+    };
+    window.addEventListener("pointermove", onPointer);
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("keyup", onKey);
+    shiftListenersCleanupRef.current = () => {
+      window.removeEventListener("pointermove", onPointer);
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keyup", onKey);
+    };
   }, []);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveDrag(null);
       document.body.style.cursor = "";
+
+      const isShiftDrag = dragShiftRef.current;
+      shiftListenersCleanupRef.current?.();
+      shiftListenersCleanupRef.current = null;
+      dragShiftRef.current = false;
 
       const { active, over, delta, activatorEvent } = event;
       const isAltDrag = activatorEvent instanceof PointerEvent && activatorEvent.altKey;
@@ -199,7 +265,18 @@ function useTimelineDnd(lines: LyricLine[]) {
       const movedUpToMain = delta.y < -DRAG_TRACK_SWITCH_THRESHOLD;
 
       const { selectedWords } = useTimelineStore.getState();
-      const wordsToMove = resolveWordsToOperate(activeData, selectedWords);
+      const draggedOnly: WordSelection[] = [
+        {
+          lineId: activeData.lineId,
+          lineIndex: activeData.lineIndex,
+          wordIndex: activeData.wordIndex,
+          type: activeData.trackType,
+        },
+      ];
+      const wordsToMove = expandSelectionsAcrossLines(
+        lines,
+        isShiftDrag ? draggedOnly : resolveWordsToOperate(activeData, selectedWords),
+      );
       const timeDelta = delta.x / zoom;
 
       if (dropId.startsWith("bg-drop-") && activeData.trackType === "word" && movedDownToBg) {
@@ -283,8 +360,10 @@ function useTimelineDnd(lines: LyricLine[]) {
         const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
         const newEnd = newBegin + wordDuration;
 
-        const words = [...wordsArray];
-        words[wordIndex] = { ...words[wordIndex], begin: newBegin, end: newEnd };
+        const words: WordTiming[] = wordsArray.map((w, i) => {
+          if (i === wordIndex) return { ...w, begin: newBegin, end: newEnd };
+          return { ...w };
+        });
         words.sort((a, b) => a.begin - b.begin);
 
         for (let i = 1; i < words.length; i++) {
@@ -314,6 +393,9 @@ function useTimelineDnd(lines: LyricLine[]) {
   const handleDragCancel = useCallback(() => {
     setActiveDrag(null);
     document.body.style.cursor = "";
+    shiftListenersCleanupRef.current?.();
+    shiftListenersCleanupRef.current = null;
+    dragShiftRef.current = false;
   }, []);
 
   return { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel };

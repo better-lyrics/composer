@@ -202,4 +202,18 @@ describe("WordBlock", () => {
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
     expect(block.className).not.toContain("is-snapped");
   });
+
+  it("draws a dashed left border on a syllable that has a timing gap before it", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="last" gapBefore />, {
+      dndContext: true,
+    });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.style.borderLeftStyle).toBe("dashed");
+  });
+
+  it("hides the left border on a flush syllable with no gap before it", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="last" />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.style.borderLeftWidth).toBe("0px");
+  });
 });

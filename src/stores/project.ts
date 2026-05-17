@@ -6,7 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { getSplitCharacter } from "@/utils/split-character";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { expandToSyllableGroup } from "@/utils/syllable-groups";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { create } from "zustand";
@@ -26,6 +26,7 @@ interface WordTiming {
   begin: number;
   end: number;
   explicit?: true;
+  syllableGroupId?: string;
 }
 
 interface LineFields {
@@ -172,6 +173,8 @@ interface ProjectActions {
     extraUpdates?: Partial<LyricLine>,
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
@@ -498,20 +501,14 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
-        if (line.id === lineId) {
-          const updated = applyMoveToBg(line, wordIndices, timeDelta, duration);
-          if (!updated) return line;
-          mutated = true;
-          return updated;
-        }
-        if (isLinkedSibling(line, linkScope) && line.words?.length === sourceWordCount) {
-          const updated = applyMoveToBg(line, wordIndices, timeDelta, duration);
-          if (updated) {
-            mutated = true;
-            return updated;
-          }
-        }
-        return line;
+        const isSource = line.id === lineId;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line.words?.length === sourceWordCount;
+        if (!isSource && !isSibling) return line;
+        const expanded = expandSelectionToGroupmates(line.words ?? [], wordIndices);
+        const updated = applyMoveToBg(line, expanded, timeDelta, duration);
+        if (!updated) return line;
+        mutated = true;
+        return updated;
       });
 
       if (!mutated) return state;
@@ -527,20 +524,15 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
-        if (line.id === lineId) {
-          const updated = applyMoveFromBg(line, wordIndices, timeDelta, duration);
-          if (!updated) return line;
-          mutated = true;
-          return updated;
-        }
-        if (isLinkedSibling(line, linkScope) && line.backgroundWords?.length === sourceBgCount) {
-          const updated = applyMoveFromBg(line, wordIndices, timeDelta, duration);
-          if (updated) {
-            mutated = true;
-            return updated;
-          }
-        }
-        return line;
+        const isSource = line.id === lineId;
+        const isSibling =
+          !isSource && isLinkedSibling(line, linkScope) && line.backgroundWords?.length === sourceBgCount;
+        if (!isSource && !isSibling) return line;
+        const expanded = expandSelectionToGroupmates(line.backgroundWords ?? [], wordIndices);
+        const updated = applyMoveFromBg(line, expanded, timeDelta, duration);
+        if (!updated) return line;
+        mutated = true;
+        return updated;
       });
 
       if (!mutated) return state;
@@ -789,7 +781,7 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
     if (!currentWords || currentWords.length === 0) return;
 
     const filtered = wordIndices.filter((i) => i >= 0 && i < currentWords.length);
-    const expanded = expandToSyllableGroup(currentWords, filtered).filter((i) => i < currentWords.length);
+    const expanded = expandSelectionToGroupmates(currentWords, filtered).filter((i) => i < currentWords.length);
     const indexSet = new Set(expanded);
     if (indexSet.size === 0) return;
 
@@ -805,6 +797,78 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
     get().applyWordCountChange(lineId, newWords, field, "apply");
   },
+
+  mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
+    set((state) => {
+      if (wordIndices.length === 0) return state;
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const sourceWords = target[field];
+      if (!sourceWords || sourceWords.length === 0) return state;
+      const sourceCount = sourceWords.length;
+      const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
+      if (selected.size === 0) return state;
+
+      const linkScope = getLinkScope(target);
+      let mutated = false;
+      const newLines = state.lines.map((line) => {
+        const isSource = line.id === lineId;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+        if (!isSource && !isSibling) return line;
+        const lineWords = line[field];
+        if (!lineWords) return line;
+
+        const collapsed: WordTiming[] = [];
+        let changed = false;
+        let i = 0;
+        while (i < lineWords.length) {
+          const groupId = lineWords[i].syllableGroupId;
+          if (groupId === undefined) {
+            collapsed.push(lineWords[i]);
+            i++;
+            continue;
+          }
+          let end = i;
+          while (end + 1 < lineWords.length && lineWords[end + 1].syllableGroupId === groupId) end++;
+          let touched = false;
+          for (let k = i; k <= end; k++) if (selected.has(k)) touched = true;
+          if (touched && end > i) {
+            const first = lineWords[i];
+            const { syllableGroupId: _drop, ...rest } = first;
+            collapsed.push({
+              ...rest,
+              text: lineWords
+                .slice(i, end + 1)
+                .map((w) => w.text)
+                .join(""),
+              begin: first.begin,
+              end: lineWords[end].end,
+            });
+            changed = true;
+          } else {
+            for (let k = i; k <= end; k++) collapsed.push(lineWords[k]);
+          }
+          i = end + 1;
+        }
+        if (!changed) return line;
+        mutated = true;
+        return reconcileLine({ ...line, [field]: collapsed });
+      });
+      if (!mutated) return state;
+      return commitHistory(state, { lines: newLines });
+    }),
+
+  snapSyllablesFlush: (lineId, field) =>
+    set((state) => {
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const lineWords = target[field];
+      if (!lineWords) return state;
+      const snapped = closeIntraGroupGaps(lineWords);
+      if (snapped === lineWords) return state;
+      const newLines = state.lines.map((l) => (l.id === lineId ? { ...l, [field]: snapped } : l));
+      return commitHistory(state, { lines: newLines });
+    }),
 
   markWordsExplicit: (targets, value) =>
     set((state) => {
@@ -880,7 +944,7 @@ function expandTargetsToSyllableGroups(
   for (const group of byLineField.values()) {
     const line = linesById.get(group.lineId);
     const currentWords = line?.[group.field];
-    const expanded = currentWords ? expandToSyllableGroup(currentWords, group.indices) : group.indices;
+    const expanded = currentWords ? expandSelectionToGroupmates(currentWords, group.indices) : group.indices;
     for (const idx of expanded) out.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
   }
   return out;

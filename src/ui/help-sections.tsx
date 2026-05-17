@@ -413,12 +413,12 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Boundary dragging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Syllables of the same word have <strong>conjoined boundaries</strong> by default. Dragging the boundary
-          between them moves both sides together, preventing gaps.
+          Two syllables that sit flush share one boundary: drag either edge and both move together, staying flush. Once
+          a gap opens between them, each edge drags on its own so you can resize a syllable without closing the gap.
         </li>
         <li>
-          Hold <strong>{ALT_KEY}</strong> while dragging to flip the mode: syllable boundaries become independent (gaps
-          allowed), and separate word boundaries become conjoined.
+          Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped
+          syllables snap back together, and separate words move as one.
         </li>
         <li>You can toggle {ALT_KEY} mid-drag to switch modes on the fly.</li>
       </ul>
@@ -457,6 +457,11 @@ const TimelineSection: React.FC = () => (
           word when you confirm a single split, the timing boundary snaps to the playhead position exactly.
         </li>
         <li>
+          To undo a split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
+          collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
+        </li>
+        <li>
           Select two or more adjacent words on the same line and press{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block.
         </li>
@@ -464,9 +469,23 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
+      <h4 className={HEADING}>Syllable timing</h4>
+      <p className={PROSE}>
+        Syllables of a word can be timed flush against each other or with gaps between them. Gaps are useful for
+        staccato or rap delivery, and for per-character timing in Japanese, Chinese, or Korean lyrics. To close those
+        gaps, right-click a syllable and pick <strong>Snap syllables flush</strong>. It pulls every syllable group on
+        the line tight, so each syllable starts where the previous one ends. The item only shows up when a group has a
+        gap, and there is no keyboard shortcut for it.
+      </p>
+    </div>
+
+    <div>
       <h4 className={HEADING}>Right-click menus</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>Right-click a word: Edit text, Split syllables, Merge (if multiple selected), Delete.</li>
+        <li>
+          Right-click a word: Edit text, Split syllables, Merge words (if multiple selected). On a word that is already
+          split into syllables you also get Merge syllables and Snap syllables flush. Delete is always there.
+        </li>
         <li>Right-click empty track space: Add word here.</li>
         <li>Right-click the gutter: Add line above/below, Assign agent, Delete line.</li>
         <li>

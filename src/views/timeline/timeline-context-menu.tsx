@@ -9,6 +9,7 @@ import { GROUP_COLORS } from "@/utils/group-colors";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { isMac, MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { absorbDeletedSyllablesIntoNeighbors } from "@/utils/syllable-groups";
 import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
@@ -178,7 +179,8 @@ const TimelineContextMenu: React.FC = () => {
     const wordsArray = type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
-    const remaining = wordsArray.filter((_, i) => i !== wordIndex);
+    const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
+    const remaining = absorbed.filter((_, i) => i !== wordIndex);
     if (type === "word") {
       updateLineWithHistory(lineId, { words: remaining });
     } else {
@@ -399,6 +401,45 @@ const TimelineContextMenu: React.FC = () => {
     return { indices: run.indices, lineId: run.lineId, type: run.type };
   }, [selectedWords, lines]);
 
+  const groupedWordInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return null;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    if (!line) return null;
+    const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
+    const word = line[field]?.[wordIndex];
+    if (!word || word.syllableGroupId === undefined) return null;
+    return { lineId, field, wordIndex };
+  }, [contextMenu, rawLines]);
+
+  const snapNeededInfo = useMemo(() => {
+    if (!groupedWordInfo) return null;
+    const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
+    const words = line?.[groupedWordInfo.field];
+    if (!words) return null;
+    for (let i = 0; i < words.length - 1; i++) {
+      const gid = words[i].syllableGroupId;
+      if (gid !== undefined && words[i + 1].syllableGroupId === gid && words[i].end < words[i + 1].begin) {
+        return groupedWordInfo;
+      }
+    }
+    return null;
+  }, [groupedWordInfo, rawLines]);
+
+  const handleMergeSyllables = useCallback(() => {
+    if (!groupedWordInfo) return;
+    useProjectStore
+      .getState()
+      .mergeSyllableGroupIntoWord(groupedWordInfo.lineId, groupedWordInfo.field, [groupedWordInfo.wordIndex]);
+    clearContextMenu();
+  }, [groupedWordInfo, clearContextMenu]);
+
+  const handleSnapSyllables = useCallback(() => {
+    if (!groupedWordInfo) return;
+    useProjectStore.getState().snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field);
+    clearContextMenu();
+  }, [groupedWordInfo, clearContextMenu]);
+
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
     const { indices, lineId, type } = mergeInfo;
@@ -613,6 +654,14 @@ const TimelineContextMenu: React.FC = () => {
             <MenuItem label="Edit text" shortcut={["E"]} onClick={handleEditWord} />
             <MenuItem label="Split syllables" shortcut={["S"]} onClick={handleSplitSyllables} />
             {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
+            {groupedWordInfo && (
+              <MenuItem
+                label="Merge syllables"
+                shortcut={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")}
+                onClick={handleMergeSyllables}
+              />
+            )}
+            {snapNeededInfo && <MenuItem label="Snap syllables flush" onClick={handleSnapSyllables} />}
             {splitIntoWordsInfo && (
               <>
                 <MenuDivider />
@@ -660,7 +709,12 @@ const TimelineContextMenu: React.FC = () => {
               </>
             )}
             <MenuDivider />
-            <MenuItem label="Delete word" shortcut={["Del"]} onClick={handleDeleteWord} danger />
+            <MenuItem
+              label={groupedWordInfo ? "Delete syllable" : "Delete word"}
+              shortcut={["Del"]}
+              onClick={handleDeleteWord}
+              danger
+            />
           </>
         )}
 
