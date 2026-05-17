@@ -1,4 +1,5 @@
-import { type LineTemplate, type LinkGroup, type LyricLine, reconcileLine } from "@/stores/project";
+import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 
 interface FillResult {
   ok: boolean;

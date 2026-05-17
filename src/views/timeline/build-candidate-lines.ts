@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/views/timeline/timeline-store";
 
 function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<WordSelection>): LyricLine[] | undefined {

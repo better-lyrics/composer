@@ -1,5 +1,5 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 

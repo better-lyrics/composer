@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
-import { useProjectStore, DEFAULT_AGENTS } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { render } from "@/test/render";
 
 describe("GutterAgentPicker", () => {

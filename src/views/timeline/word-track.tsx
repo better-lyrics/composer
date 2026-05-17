@@ -1,6 +1,6 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";

@@ -1,6 +1,8 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
-import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";

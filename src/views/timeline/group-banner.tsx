@@ -1,4 +1,5 @@
-import { type LinkGroup, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
 import { Button } from "@/ui/button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";

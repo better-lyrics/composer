@@ -1,5 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
-import { type LyricLine, type WordTiming, getAgentColor, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { getAgentColor } from "@/domain/agent/colors";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";

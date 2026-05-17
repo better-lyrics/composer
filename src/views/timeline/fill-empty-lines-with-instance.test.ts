@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import type { LineTemplate, LyricLine } from "@/stores/project";
+import type { LineTemplate } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { fillEmptyLinesWithInstance, isEmptyFillable } from "./fill-empty-lines-with-instance";
 

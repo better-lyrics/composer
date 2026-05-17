@@ -1,5 +1,5 @@
 import { isLineSynced } from "@/domain/line/predicates";
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 // -- Types ---------------------------------------------------------------------
 

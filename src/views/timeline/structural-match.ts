@@ -1,6 +1,6 @@
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 // -- Helpers -------------------------------------------------------------------
 

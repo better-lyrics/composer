@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { structurallyEqualLineSequences } from "@/views/timeline/structural-match";
 
 interface RepeatingSection {

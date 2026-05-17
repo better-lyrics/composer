@@ -1,4 +1,5 @@
-import { getAgentColor, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { getAgentColor } from "@/domain/agent/colors";
 import { Popover } from "@/ui/popover";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconPlus } from "@tabler/icons-react";

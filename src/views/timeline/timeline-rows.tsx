@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
-import type { LyricLine } from "@/stores/project";
-import { type WordTiming, useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
+import { useProjectStore } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";

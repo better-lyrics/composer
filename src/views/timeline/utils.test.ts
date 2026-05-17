@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import { type LooseLine, type LyricLine, type WordTiming, reconcileLine } from "@/stores/project";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { effectiveBounds } from "@/domain/line/bounds";

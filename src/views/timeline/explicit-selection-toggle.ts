@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordSelection } from "@/views/timeline/timeline-store";
 

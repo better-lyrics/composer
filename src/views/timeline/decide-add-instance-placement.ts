@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import type { LineTemplate, LyricLine } from "@/stores/project";
+import type { LineTemplate } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { fillEmptyLinesWithInstance } from "@/views/timeline/fill-empty-lines-with-instance";
 
 // -- Types --------------------------------------------------------------------

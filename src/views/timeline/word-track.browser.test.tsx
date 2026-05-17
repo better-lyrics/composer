@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WordTrack } from "@/views/timeline/word-track";
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";

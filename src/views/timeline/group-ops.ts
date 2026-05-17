@@ -1,7 +1,8 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
-import type { LineTemplate, LinkGroup, LyricLine, WordTemplate } from "@/stores/project";
+import type { LineTemplate, LinkGroup, WordTemplate } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 
 // -- Types ---------------------------------------------------------------------

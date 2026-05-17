@@ -1,4 +1,5 @@
-import { type LyricLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";

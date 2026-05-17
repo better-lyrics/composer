@@ -1,7 +1,9 @@
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useModalStackStore } from "@/stores/modal-stack";
-import { type LineTemplate, type LyricLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LineTemplate } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { cn } from "@/utils/cn";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";

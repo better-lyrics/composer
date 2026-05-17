@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
-import { getAgentColor, useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { getAgentColor } from "@/domain/agent/colors";
+import type { LyricLine } from "@/domain/line/model";
 import { Scroll } from "@/ui/scroll";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";

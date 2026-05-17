@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { wouldDropCrossInstance } from "./dnd-group-guard";
 

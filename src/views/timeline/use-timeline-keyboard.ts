@@ -1,7 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
-import { type LyricLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";

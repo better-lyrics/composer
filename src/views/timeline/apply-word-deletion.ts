@@ -1,7 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { type LyricLine, reconcileLine } from "@/stores/project";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { getSplitCharacter } from "@/utils/split-character";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 

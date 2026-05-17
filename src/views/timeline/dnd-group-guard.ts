@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 // Pure helper: does moving a word from `source` to a target within `target`
 // cross an instance boundary? Used by useTimelineDnd to refuse cross-instance

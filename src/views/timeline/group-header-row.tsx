@@ -1,4 +1,5 @@
-import { useProjectStore, type LinkGroup } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
 import { GroupBanner } from "@/views/timeline/group-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { memo, useCallback, useState } from "react";

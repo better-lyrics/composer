@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { type LinkGroup, type LyricLine, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import type { WordSelection } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
