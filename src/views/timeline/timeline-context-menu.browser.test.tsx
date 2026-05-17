@@ -146,6 +146,38 @@ describe("TimelineContextMenu", () => {
     expect(mergeBtn).toBeUndefined();
   });
 
+  it("snaps a gapped syllable group flush when 'Snap syllables flush' is clicked", async () => {
+    const line = createLine({
+      words: [
+        createWord({ text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_beau" }),
+        createWord({ text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_beau" }),
+        createWord({ text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_beau" }),
+      ],
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
+      },
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    const snapBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Snap syllables flush/i.test(b.textContent ?? ""),
+    );
+    expect(snapBtn).toBeDefined();
+    snapBtn?.click();
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].end).toBe(words[1].begin);
+    expect(words[1].end).toBe(words[2].begin);
+    expect(words[0].begin).toBe(0);
+    expect(words[2].end).toBe(1.3);
+  });
+
   it("hides 'Merge into one word' for a non-contiguous selection", async () => {
     const line = createLine({
       words: [

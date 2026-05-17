@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/stores/project";
-import { absorbDeletedSyllablesIntoNeighbors, closeIntraGroupGaps } from "@/utils/syllable-groups";
+import { absorbDeletedSyllablesIntoNeighbors } from "@/utils/syllable-groups";
 
 interface DeletionSelection {
   lineId: string;
@@ -49,7 +49,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
       willHaveNoMainWords = true;
     } else if (realMainCount > 0 && mainIdxs.size > 0 && line.words) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(line.words, mainIdxs);
-      nextMain = closeIntraGroupGaps(absorbed.filter((_, i) => !mainIdxs.has(i)));
+      nextMain = absorbed.filter((_, i) => !mainIdxs.has(i));
       willHaveNoMainWords = nextMain.length === 0;
     }
 
@@ -57,7 +57,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     let nextBgText = line.backgroundText;
     if ((line.backgroundWords?.length ?? 0) > 0 && bgIdxs.size > 0 && line.backgroundWords) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(line.backgroundWords, bgIdxs);
-      const remaining = closeIntraGroupGaps(absorbed.filter((_, i) => !bgIdxs.has(i)));
+      const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
       nextBg = remaining.length > 0 ? remaining : undefined;
       nextBgText = remaining.length > 0 ? remaining.map((w) => w.text).join("") : undefined;
     }

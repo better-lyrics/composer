@@ -211,7 +211,7 @@ describe("cross-track moves and history", () => {
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
 
-  it("closes pre-existing intra-group gaps when applyMoveToBg leaves group syllables behind", () => {
+  it("preserves pre-existing intra-group gaps when applyMoveToBg leaves group syllables behind", () => {
     useProjectStore.getState().setLines([
       {
         id: "line-1",
@@ -229,10 +229,11 @@ describe("cross-track moves and history", () => {
     useProjectStore.getState().moveWordToBg("line-1", [3], 10, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[0].end).toBe(0.3);
+    expect(line.words?.[0].end).toBe(0.2);
+    expect(line.words?.[1].begin).toBe(0.3);
   });
 
-  it("closes pre-existing intra-group gaps when a move passes through applyMoveFromBg", () => {
+  it("preserves pre-existing intra-group gaps when a move passes through applyMoveFromBg", () => {
     useProjectStore.getState().setLines([
       {
         id: "line-1",
@@ -251,7 +252,8 @@ describe("cross-track moves and history", () => {
     useProjectStore.getState().moveWordFromBg("line-1", [0], 10, DURATION);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.words?.[0].end).toBe(0.3);
+    expect(line.words?.[0].end).toBe(0.2);
+    expect(line.words?.[1].begin).toBe(0.3);
   });
 
   it("clears line.begin/end when bg→main populates main from empty", () => {

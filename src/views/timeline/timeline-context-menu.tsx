@@ -455,6 +455,12 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [groupedWordInfo, clearContextMenu]);
 
+  const handleSnapSyllables = useCallback(() => {
+    if (!groupedWordInfo) return;
+    useProjectStore.getState().snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field);
+    clearContextMenu();
+  }, [groupedWordInfo, clearContextMenu]);
+
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
     const { sorted, lineId, type } = mergeInfo;
@@ -699,6 +705,7 @@ const TimelineContextMenu: React.FC = () => {
                 onClick={handleMergeSyllables}
               />
             )}
+            {groupedWordInfo && <MenuItem label="Snap syllables flush" onClick={handleSnapSyllables} />}
             {splitIntoWordsInfo && (
               <>
                 <MenuDivider />

@@ -203,7 +203,7 @@ describe("applyWordDeletion", () => {
     expect(result).toEqual(lines);
   });
 
-  it("closes pre-existing intra-group gaps after deleting a non-group word", () => {
+  it("preserves pre-existing intra-group gaps after deleting a non-group word", () => {
     const lines: LyricLine[] = [
       {
         id: "l1",
@@ -218,7 +218,8 @@ describe("applyWordDeletion", () => {
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }]);
-    expect(result[0].words?.[0].end).toBe(0.3);
+    expect(result[0].words?.[0].end).toBe(0.2);
+    expect(result[0].words?.[1].begin).toBe(0.3);
   });
 });
 

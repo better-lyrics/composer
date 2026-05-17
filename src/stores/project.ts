@@ -146,6 +146,7 @@ interface ProjectActions {
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
+  snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
@@ -823,11 +824,9 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const stamped: WordTiming[] = lineWords.map((word, i) => {
           if (i < start || i > end) return word;
           const text = i < end ? word.text.trimEnd() : word.text;
-          const nextBegin = i < end ? lineWords[i + 1].begin : undefined;
-          const closedEnd = nextBegin !== undefined && word.end < nextBegin ? nextBegin : word.end;
-          return { ...word, syllableGroupId: groupId, text, end: closedEnd };
+          return { ...word, syllableGroupId: groupId, text };
         });
-        const newWords = closeIntraGroupGaps(trimTrailingSpaceFromLast(stamped));
+        const newWords = trimTrailingSpaceFromLast(stamped);
 
         const update: Partial<LyricLine> = { [field]: newWords };
         if (field === "backgroundWords") {
@@ -905,6 +904,18 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         return { ...line, ...update };
       });
       if (!mutated) return state;
+      return commitHistory(state, { lines: newLines });
+    }),
+
+  snapSyllablesFlush: (lineId, field) =>
+    set((state) => {
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target) return state;
+      const lineWords = target[field];
+      if (!lineWords) return state;
+      const snapped = closeIntraGroupGaps(lineWords);
+      if (snapped === lineWords) return state;
+      const newLines = state.lines.map((l) => (l.id === lineId ? { ...l, [field]: snapped } : l));
       return commitHistory(state, { lines: newLines });
     }),
 
@@ -1058,12 +1069,12 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
 
   if (movedWords.length === 0) return null;
 
-  const remainingMain = closeIntraGroupGaps(trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i))));
+  const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
 
   const prevBgLast = line.backgroundWords?.[line.backgroundWords.length - 1];
   const sortedBg = [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
   const reconciledBg = prevBgLast ? addTrailingSpaceIfMissing(sortedBg, prevBgLast) : sortedBg;
-  const mergedBg = closeIntraGroupGaps(trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration)));
+  const mergedBg = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration));
 
   const mainEmptied = remainingMain.length === 0;
   return {
@@ -1093,14 +1104,12 @@ function applyMoveFromBg(
 
   if (movedWords.length === 0) return null;
 
-  const remainingBg = closeIntraGroupGaps(
-    trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i))),
-  );
+  const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
 
   const prevMainLast = line.words?.[line.words.length - 1];
   const sortedMain = [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
   const reconciledMain = prevMainLast ? addTrailingSpaceIfMissing(sortedMain, prevMainLast) : sortedMain;
-  const mergedMain = closeIntraGroupGaps(trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration)));
+  const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
 
   const hasBg = remainingBg.length > 0;
   const hadNoMainBefore = !line.words || line.words.length === 0;

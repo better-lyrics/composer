@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
@@ -137,7 +137,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
         const prevLast = existing[existing.length - 1];
         const sorted = [...existing, ...wordDups].sort((a, b) => a.begin - b.begin);
         const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-        lineUpdates.words = closeIntraGroupGaps(trimTrailingSpaceFromLast(reconciled));
+        lineUpdates.words = trimTrailingSpaceFromLast(reconciled);
       }
     }
 
@@ -148,7 +148,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
         const prevLast = existing[existing.length - 1];
         const sorted = [...existing, ...bgDups].sort((a, b) => a.begin - b.begin);
         const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-        const merged = closeIntraGroupGaps(trimTrailingSpaceFromLast(reconciled));
+        const merged = trimTrailingSpaceFromLast(reconciled);
         lineUpdates.backgroundWords = merged;
         lineUpdates.backgroundText = merged.map((w) => w.text).join("");
       }
@@ -340,7 +340,7 @@ function useTimelineDnd(lines: LyricLine[]) {
               words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
             }
 
-            const normalized = closeIntraGroupGaps(trimTrailingSpaceFromLast(words));
+            const normalized = trimTrailingSpaceFromLast(words);
             lineUpdates[trackKey] = normalized;
             if (trackKey === "backgroundWords") {
               lineUpdates.backgroundText = normalized.map((w) => w.text).join("");
@@ -384,7 +384,7 @@ function useTimelineDnd(lines: LyricLine[]) {
           words[words.length - 1] = { ...lastWord, begin: lastWord.begin - overflow, end: duration };
         }
 
-        const normalized = closeIntraGroupGaps(trimTrailingSpaceFromLast(words));
+        const normalized = trimTrailingSpaceFromLast(words);
         if (activeData.trackType === "word") {
           updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {

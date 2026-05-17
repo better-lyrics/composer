@@ -204,7 +204,7 @@ describe("mergeWordsIntoSyllableGroup", () => {
     expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
   });
 
-  it("closes internal gaps by extending each non-last syllable's end to the next syllable's begin", () => {
+  it("preserves internal timing gaps between merged syllables", () => {
     useProjectStore.getState().setLines([
       {
         id: "line-1",
@@ -221,12 +221,12 @@ describe("mergeWordsIntoSyllableGroup", () => {
     useProjectStore.getState().mergeWordsIntoSyllableGroup("line-1", "words", [0, 1, 2]);
 
     const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].end).toBe(0.5);
-    expect(words[1].end).toBe(1.0);
-    expect(words[2].end).toBe(1.3);
     expect(words[0].begin).toBe(0);
+    expect(words[0].end).toBe(0.2);
     expect(words[1].begin).toBe(0.5);
+    expect(words[1].end).toBe(0.7);
     expect(words[2].begin).toBe(1.0);
+    expect(words[2].end).toBe(1.3);
   });
 
   it("ignores a missing line", () => {
@@ -510,5 +510,143 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
     const a1 = lines.find((l) => l.id === "a1");
     expect(a0?.words?.map((w) => w.text)).toEqual(["every"]);
     expect(a1?.words?.map((w) => w.text)).toEqual(["every"]);
+  });
+});
+
+// -- snapSyllablesFlush -------------------------------------------------------
+
+describe("snapSyllablesFlush", () => {
+  function seedGappedGroupLine(): LyricLine {
+    return {
+      id: "line-1",
+      text: "beautiful",
+      agentId: "v1",
+      words: [
+        { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+        { text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
+        { text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
+      ],
+    };
+  }
+
+  it("closes internal gaps by extending each earlier syllable's end to the next begin", () => {
+    useProjectStore.getState().setLines([seedGappedGroupLine()]);
+
+    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[0].end).toBe(words[1].begin);
+    expect(words[1].end).toBe(words[2].begin);
+    expect(words[0].begin).toBe(0);
+    expect(words[1].begin).toBe(0.5);
+    expect(words[2].begin).toBe(1.0);
+    expect(words[2].end).toBe(1.3);
+  });
+
+  it("is a no-op when the line has no syllable group", () => {
+    useProjectStore.getState().setLines([seedMainLine()]);
+    const before = useProjectStore.getState().lines[0];
+
+    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+
+    expect(useProjectStore.getState().lines[0]).toBe(before);
+  });
+
+  it("is a no-op when the syllable group is already flush", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        ],
+      },
+    ]);
+    const before = useProjectStore.getState().lines[0];
+
+    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+
+    expect(useProjectStore.getState().lines[0]).toBe(before);
+  });
+
+  it("works on the background track", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b1" },
+          { text: "oh", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+        ],
+        backgroundText: "oooh",
+      },
+    ]);
+
+    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+
+    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    expect(bg[0].end).toBe(bg[1].begin);
+    expect(bg[0].begin).toBe(1);
+    expect(bg[1].begin).toBe(1.5);
+  });
+
+  it("does not touch a linked sibling", () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "beautiful",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
+          { text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g_a0" },
+          { text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g_a0" },
+        ],
+      },
+      {
+        id: "a1",
+        text: "beautiful",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [
+          { text: "beau", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
+          { text: "ti", begin: 10.5, end: 10.8, syllableGroupId: "g_a1" },
+          { text: "ful", begin: 11.0, end: 11.3, syllableGroupId: "g_a1" },
+        ],
+      },
+    ]);
+    const a1Before = useProjectStore.getState().lines.find((l) => l.id === "a1");
+
+    useProjectStore.getState().snapSyllablesFlush("a0", "words");
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+    const a0Words = a0?.words ?? [];
+    expect(a0Words[0].end).toBe(a0Words[1].begin);
+    expect(a0Words[1].end).toBe(a0Words[2].begin);
+    expect(a1).toBe(a1Before);
+  });
+
+  it("is undoable", () => {
+    useProjectStore.getState().setLines([seedGappedGroupLine()]);
+    const before = useProjectStore.getState().lines[0].words?.map((w) => ({ begin: w.begin, end: w.end }));
+
+    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+
+    useProjectStore.getState().undo();
+    const restored = useProjectStore.getState().lines[0].words?.map((w) => ({ begin: w.begin, end: w.end }));
+    expect(restored).toEqual(before);
   });
 });
