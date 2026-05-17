@@ -1,109 +1,20 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import type { Agent } from "@/domain/agent/model";
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import type { LinkGroup } from "@/domain/group/template";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
-import type { ProjectMetadata } from "@/domain/project/metadata";
+import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
-import { getSplitCharacter } from "@/utils/split-character";
+import type { ProjectState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
+import { getSplitCharacter } from "@/utils/split-character";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { create } from "zustand";
-
-// -- Types --------------------------------------------------------------------
-
-type GranularityMode = "line" | "word";
-type EditorMode = "simple" | "advanced";
-type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
-
-interface HistoryEntry {
-  lines: LyricLine[];
-  groups: LinkGroup[];
-  timestamp: number;
-}
-
-interface ProjectState {
-  metadata: ProjectMetadata;
-  agents: Agent[];
-  lines: LyricLine[];
-  groups: LinkGroup[];
-  granularity: GranularityMode;
-  editorMode: EditorMode;
-  activeTab: SimpleTab;
-  isDirty: boolean;
-  history: HistoryEntry[];
-  historyIndex: number;
-  dismissedSuggestions: string[];
-  dismissedExplicitSuggestions: string[];
-  // True when state.lines or state.groups has changed since the last history
-  // entry was written (e.g., per-keystroke setLines from the Edit textarea).
-  // The next history-aware mutator snapshots this state into history first
-  // so undo lands on the pending edit instead of skipping past it.
-  isDirtySinceHistory: boolean;
-}
-
-interface ProjectActions {
-  setMetadata: (metadata: Partial<ProjectMetadata>) => void;
-  setLines: (lines: LyricLine[]) => void;
-  setLinesWithHistory: (lines: LyricLine[]) => void;
-  updateLine: (id: string, updates: Partial<LyricLine>) => void;
-  updateLineWithHistory: (id: string, updates: Partial<LyricLine>) => void;
-  addAgent: (agent: Agent) => void;
-  updateAgent: (id: string, updates: Partial<Agent>) => void;
-  removeAgent: (id: string) => void;
-  setAgents: (agents: Agent[]) => void;
-  setGranularity: (mode: GranularityMode) => void;
-  setEditorMode: (mode: EditorMode) => void;
-  setActiveTab: (tab: SimpleTab) => void;
-  markDirty: () => void;
-  markClean: () => void;
-  reset: () => void;
-  undo: () => void;
-  redo: () => void;
-  canUndo: () => boolean;
-  canRedo: () => boolean;
-  clearHistory: () => void;
-  updateLinesWithHistory: (updates: Array<{ id: string; updates: Partial<LyricLine> }>) => void;
-  moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
-  setGroups: (groups: LinkGroup[]) => void;
-  addGroup: (group: LinkGroup) => void;
-  addGroupWithLines: (group: LinkGroup, lines: LyricLine[]) => void;
-  groupRepeatingSections: (starts: number[], length: number, options?: { label?: string; color?: string }) => void;
-  updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
-  removeGroup: (id: string) => void;
-  addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
-  removeInstance: (groupId: string, instanceIdx: number) => void;
-  detachLine: (lineId: string) => void;
-  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number) => void;
-  applyWordCountChange: (
-    lineId: string,
-    newWords: WordTiming[],
-    field: "words" | "backgroundWords",
-    resolution: "apply" | "detach" | "cancel",
-    extraUpdates?: Partial<LyricLine>,
-  ) => void;
-  toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
-  markWordsExplicit: (
-    targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
-    value: boolean,
-  ) => void;
-  dismissSuggestion: (fingerprint: string) => void;
-  setDismissedSuggestions: (fingerprints: string[]) => void;
-  clearDismissedSuggestions: () => void;
-  dismissExplicitSuggestion: (fingerprint: string) => void;
-  setDismissedExplicitSuggestions: (fingerprints: string[]) => void;
-  clearDismissedExplicitSuggestions: () => void;
-}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -136,7 +47,7 @@ const INITIAL_STATE: ProjectState = createInitialState();
 
 // -- Store --------------------------------------------------------------------
 
-const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
+const useProjectStore = create<ProjectStore>((set, get) => ({
   ...INITIAL_STATE,
 
   setMetadata: (metadata) =>
@@ -954,4 +865,4 @@ function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; grou
 
 export { useProjectStore, INITIAL_STATE };
 
-export type { GranularityMode, SimpleTab };
+export type { GranularityMode, SimpleTab } from "@/stores/project/types";
