@@ -172,9 +172,9 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "y" },
   },
   {
-    id: "timeline.detachSyllable",
+    id: "timeline.mergeSyllablesIntoWord",
     scope: "timeline",
-    description: "Detach selected syllable from its word",
+    description: "Merge syllables back into one word",
     defaultBinding: { key: "y", shift: true },
   },
   {

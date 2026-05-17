@@ -94,7 +94,7 @@ describe("TimelineContextMenu", () => {
     expect(words.every((w) => w.syllableGroupId === words[0].syllableGroupId)).toBe(true);
   });
 
-  it("shows 'Detach syllable from word' on a syllable-group word and dissolves the whole group when clicked", async () => {
+  it("shows 'Merge syllables' on a syllable-group word and collapses the group to one word when clicked", async () => {
     const line = createLine({
       words: [
         createWord({ text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_every" }),
@@ -113,19 +113,21 @@ describe("TimelineContextMenu", () => {
     });
     await render(<TimelineContextMenu />);
 
-    const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Detach syllable from word/i.test(b.textContent ?? ""),
+    const mergeBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Merge syllables/i.test(b.textContent ?? ""),
     );
-    expect(detachBtn).toBeDefined();
-    detachBtn?.click();
+    expect(mergeBtn).toBeDefined();
+    mergeBtn?.click();
 
     const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words).toHaveLength(1);
+    expect(words[0].text).toBe("every");
+    expect(words[0].begin).toBe(0);
+    expect(words[0].end).toBe(1);
     expect(words[0].syllableGroupId).toBeUndefined();
-    expect(words[1].syllableGroupId).toBeUndefined();
-    expect(words[2].syllableGroupId).toBeUndefined();
   });
 
-  it("hides 'Detach syllable from word' on a standalone word", async () => {
+  it("hides 'Merge syllables' on a standalone word", async () => {
     const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({
@@ -138,10 +140,10 @@ describe("TimelineContextMenu", () => {
     });
     await render(<TimelineContextMenu />);
 
-    const detachBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Detach syllable from word/i.test(b.textContent ?? ""),
+    const mergeBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      /Merge syllables/i.test(b.textContent ?? ""),
     );
-    expect(detachBtn).toBeUndefined();
+    expect(mergeBtn).toBeUndefined();
   });
 
   it("hides 'Merge into one word' for a non-contiguous selection", async () => {

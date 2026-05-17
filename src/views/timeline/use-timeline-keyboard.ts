@@ -436,13 +436,18 @@ function useTimelineKeyboard(
           );
           break;
         }
-        case "timeline.detachSyllable": {
-          const { selectedWords: dSel } = useTimelineStore.getState();
-          if (dSel.length !== 1) break;
-          const sel = dSel[0];
-          const field: "words" | "backgroundWords" = sel.type === "word" ? "words" : "backgroundWords";
+        case "timeline.mergeSyllablesIntoWord": {
+          const { selectedWords: mSel } = useTimelineStore.getState();
+          if (mSel.length === 0) break;
+          const first = mSel[0];
+          if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
+          const field: "words" | "backgroundWords" = first.type === "word" ? "words" : "backgroundWords";
           e.preventDefault();
-          useProjectStore.getState().detachSyllableFromGroup(sel.lineId, field, sel.wordIndex);
+          useProjectStore.getState().mergeSyllableGroupIntoWord(
+            first.lineId,
+            field,
+            mSel.map((s) => s.wordIndex),
+          );
           break;
         }
         case "timeline.splitIntoWords": {

@@ -239,126 +239,6 @@ describe("mergeWordsIntoSyllableGroup", () => {
   });
 });
 
-// -- detachSyllableFromGroup --------------------------------------------------
-
-describe("detachSyllableFromGroup", () => {
-  it("dissolves the entire group, stripping syllableGroupId from every member", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every",
-        agentId: "v1",
-        words: [
-          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
-        ],
-      },
-    ]);
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].syllableGroupId).toBeUndefined();
-    expect(words[1].syllableGroupId).toBeUndefined();
-    expect(words[2].syllableGroupId).toBeUndefined();
-  });
-
-  it("only dissolves the target group, leaving other groups in the same line intact", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every wide",
-        agentId: "v1",
-        words: [
-          { text: "ev", begin: 0, end: 0.2, syllableGroupId: "g1" },
-          { text: "er", begin: 0.2, end: 0.4, syllableGroupId: "g1" },
-          { text: "y ", begin: 0.4, end: 0.6, syllableGroupId: "g1" },
-          { text: "wi", begin: 0.6, end: 0.8, syllableGroupId: "g2" },
-          { text: "de", begin: 0.8, end: 1, syllableGroupId: "g2" },
-        ],
-      },
-    ]);
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].syllableGroupId).toBeUndefined();
-    expect(words[1].syllableGroupId).toBeUndefined();
-    expect(words[2].syllableGroupId).toBeUndefined();
-    expect(words[3].syllableGroupId).toBe("g2");
-    expect(words[4].syllableGroupId).toBe("g2");
-  });
-
-  it("is undoable", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every",
-        agentId: "v1",
-        words: [
-          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
-        ],
-      },
-    ]);
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 1);
-    expect(useProjectStore.getState().canUndo()).toBe(true);
-    useProjectStore.getState().undo();
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words.every((w) => w.syllableGroupId === "g1")).toBe(true);
-  });
-
-  it("dissolves the group when called on any member (not just the middle one)", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "every",
-        agentId: "v1",
-        words: [
-          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g1" },
-          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
-          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g1" },
-        ],
-      },
-    ]);
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 0);
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words.every((w) => w.syllableGroupId === undefined)).toBe(true);
-  });
-
-  it("is a no-op when the target word has no syllableGroupId", () => {
-    useProjectStore.getState().setLines([
-      {
-        id: "line-1",
-        text: "hello",
-        agentId: "v1",
-        words: [{ text: "hello", begin: 0, end: 1 }],
-      },
-    ]);
-    const beforeIndex = useProjectStore.getState().historyIndex;
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 0);
-
-    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
-  });
-
-  it("ignores out-of-bounds indices and missing lines", () => {
-    useProjectStore.getState().setLines([seedMainLine()]);
-    const beforeIndex = useProjectStore.getState().historyIndex;
-
-    useProjectStore.getState().detachSyllableFromGroup("line-1", "words", 99);
-    useProjectStore.getState().detachSyllableFromGroup("missing", "words", 0);
-
-    expect(useProjectStore.getState().historyIndex).toBe(beforeIndex);
-  });
-});
-
 // -- partial-merge auto-expand -----------------------------------------------
 
 describe("mergeWordsIntoSyllableGroup · partial-merge auto-expand", () => {
@@ -494,73 +374,6 @@ describe("mergeWordsIntoSyllableGroup · linked propagation", () => {
   });
 });
 
-describe("detachSyllableFromGroup · linked propagation", () => {
-  function seedTwoLinkedInstances() {
-    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
-    useProjectStore.getState().setLines([
-      {
-        id: "a0",
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-        words: [
-          { text: "ev", begin: 0, end: 0.3, syllableGroupId: "g_a0" },
-          { text: "er", begin: 0.3, end: 0.6, syllableGroupId: "g_a0" },
-          { text: "y", begin: 0.6, end: 1, syllableGroupId: "g_a0" },
-        ],
-      },
-      {
-        id: "a1",
-        text: "every",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx: 1,
-        templateLineIdx: 0,
-        words: [
-          { text: "ev", begin: 10, end: 10.3, syllableGroupId: "g_a1" },
-          { text: "er", begin: 10.3, end: 10.6, syllableGroupId: "g_a1" },
-          { text: "y", begin: 10.6, end: 11, syllableGroupId: "g_a1" },
-        ],
-      },
-    ]);
-  }
-
-  it("dissolves the group on every linked sibling", () => {
-    seedTwoLinkedInstances();
-    useProjectStore.getState().detachSyllableFromGroup("a0", "words", 1);
-
-    const lines = useProjectStore.getState().lines;
-    const a0 = lines.find((l) => l.id === "a0");
-    const a1 = lines.find((l) => l.id === "a1");
-    expect(a0?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
-    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
-  });
-
-  it("is a no-op on siblings whose word at the same index has no group", () => {
-    seedTwoLinkedInstances();
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((l) =>
-        l.id === "a1"
-          ? {
-              ...l,
-              words: [
-                { text: "ev", begin: 10, end: 10.3 },
-                { text: "er", begin: 10.3, end: 10.6 },
-                { text: "y", begin: 10.6, end: 11 },
-              ],
-            }
-          : l,
-      ),
-    }));
-    useProjectStore.getState().detachSyllableFromGroup("a0", "words", 1);
-
-    const a1 = useProjectStore.getState().lines.find((l) => l.id === "a1");
-    expect(a1?.words?.every((w) => w.syllableGroupId === undefined)).toBe(true);
-  });
-});
-
 // -- mergeSyllableGroupIntoWord ------------------------------------------------
 
 describe("mergeSyllableGroupIntoWord", () => {
@@ -651,7 +464,7 @@ describe("mergeSyllableGroupIntoWord", () => {
     useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
     expect(useProjectStore.getState().canUndo()).toBe(true);
     useProjectStore.getState().undo();
-    expect((useProjectStore.getState().lines[0].words ?? [])).toHaveLength(3);
+    expect(useProjectStore.getState().lines[0].words ?? []).toHaveLength(3);
   });
 });
 

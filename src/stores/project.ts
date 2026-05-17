@@ -146,7 +146,6 @@ interface ProjectActions {
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  detachSyllableFromGroup: (lineId: string, field: "words" | "backgroundWords", wordIndex: number) => void;
   markWordsExplicit: (
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
@@ -904,38 +903,6 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
           update.text = collapsed.map((w) => w.text).join("");
         }
         return { ...line, ...update };
-      });
-      if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
-    }),
-
-  detachSyllableFromGroup: (lineId, field, wordIndex) =>
-    set((state) => {
-      const target = state.lines.find((l) => l.id === lineId);
-      if (!target) return state;
-      const currentWords = target[field];
-      if (!currentWords || wordIndex < 0 || wordIndex >= currentWords.length) return state;
-      if (currentWords[wordIndex].syllableGroupId === undefined) return state;
-
-      const sourceCount = currentWords.length;
-      const linkScope = getLinkScope(target);
-      let mutated = false;
-      const newLines = state.lines.map((line) => {
-        const isSource = line.id === lineId;
-        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
-        if (!isSource && !isSibling) return line;
-        const lineWords = line[field];
-        if (!lineWords) return line;
-        const groupId = lineWords[wordIndex]?.syllableGroupId;
-        if (groupId === undefined) return line;
-
-        const newWords: WordTiming[] = lineWords.map((w) => {
-          if (w.syllableGroupId !== groupId) return w;
-          const { syllableGroupId: _drop, ...rest } = w;
-          return rest;
-        });
-        mutated = true;
-        return { ...line, [field]: newWords };
       });
       if (!mutated) return state;
       return commitHistory(state, { lines: newLines });

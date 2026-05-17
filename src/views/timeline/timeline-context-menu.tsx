@@ -436,7 +436,7 @@ const TimelineContextMenu: React.FC = () => {
     clearContextMenu();
   }, [syllableGroupInfo, clearContextMenu]);
 
-  const detachSyllableInfo = useMemo(() => {
+  const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const { lineId, wordIndex, type } = contextMenu.target;
     const line = rawLines.find((l) => l.id === lineId);
@@ -447,13 +447,13 @@ const TimelineContextMenu: React.FC = () => {
     return { lineId, field, wordIndex };
   }, [contextMenu, rawLines]);
 
-  const handleDetachSyllable = useCallback(() => {
-    if (!detachSyllableInfo) return;
+  const handleMergeSyllables = useCallback(() => {
+    if (!groupedWordInfo) return;
     useProjectStore
       .getState()
-      .detachSyllableFromGroup(detachSyllableInfo.lineId, detachSyllableInfo.field, detachSyllableInfo.wordIndex);
+      .mergeSyllableGroupIntoWord(groupedWordInfo.lineId, groupedWordInfo.field, [groupedWordInfo.wordIndex]);
     clearContextMenu();
-  }, [detachSyllableInfo, clearContextMenu]);
+  }, [groupedWordInfo, clearContextMenu]);
 
   const handleMergeWords = useCallback(() => {
     if (!mergeInfo) return;
@@ -692,11 +692,11 @@ const TimelineContextMenu: React.FC = () => {
                 onClick={handleMergeIntoSyllables}
               />
             )}
-            {detachSyllableInfo && (
+            {groupedWordInfo && (
               <MenuItem
-                label="Detach syllable from word"
-                shortcut={getEffectiveKeysArray("timeline.detachSyllable")}
-                onClick={handleDetachSyllable}
+                label="Merge syllables"
+                shortcut={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")}
+                onClick={handleMergeSyllables}
               />
             )}
             {splitIntoWordsInfo && (
@@ -747,7 +747,7 @@ const TimelineContextMenu: React.FC = () => {
             )}
             <MenuDivider />
             <MenuItem
-              label={detachSyllableInfo ? "Delete syllable" : "Delete word"}
+              label={groupedWordInfo ? "Delete syllable" : "Delete word"}
               shortcut={["Del"]}
               onClick={handleDeleteWord}
               danger
