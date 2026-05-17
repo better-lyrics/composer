@@ -447,6 +447,20 @@ const TimelineContextMenu: React.FC = () => {
     return { lineId, field, wordIndex };
   }, [contextMenu, rawLines]);
 
+  const snapNeededInfo = useMemo(() => {
+    if (!groupedWordInfo) return null;
+    const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
+    const words = line?.[groupedWordInfo.field];
+    if (!words) return null;
+    for (let i = 0; i < words.length - 1; i++) {
+      const gid = words[i].syllableGroupId;
+      if (gid !== undefined && words[i + 1].syllableGroupId === gid && words[i].end < words[i + 1].begin) {
+        return groupedWordInfo;
+      }
+    }
+    return null;
+  }, [groupedWordInfo, rawLines]);
+
   const handleMergeSyllables = useCallback(() => {
     if (!groupedWordInfo) return;
     useProjectStore
@@ -705,7 +719,7 @@ const TimelineContextMenu: React.FC = () => {
                 onClick={handleMergeSyllables}
               />
             )}
-            {groupedWordInfo && <MenuItem label="Snap syllables flush" onClick={handleSnapSyllables} />}
+            {snapNeededInfo && <MenuItem label="Snap syllables flush" onClick={handleSnapSyllables} />}
             {splitIntoWordsInfo && (
               <>
                 <MenuDivider />

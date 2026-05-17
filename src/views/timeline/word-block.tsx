@@ -21,6 +21,7 @@ interface WordBlockProps {
   isSelected: boolean;
   isExplicit?: boolean;
   syllablePosition?: SyllablePosition;
+  gapBefore?: boolean;
   leftHighlighted?: boolean;
   rightHighlighted?: boolean;
   onClick: (e: React.MouseEvent) => void;
@@ -54,6 +55,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   isSelected,
   isExplicit,
   syllablePosition = "none",
+  gapBefore,
   leftHighlighted,
   rightHighlighted,
   onClick,
@@ -92,6 +94,18 @@ const WordBlock: React.FC<WordBlockProps> = ({
     onResizeStart(edge, e.clientX);
   };
 
+  const syllableBorder: React.CSSProperties = {};
+  if (!isSelected && (syllablePosition === "first" || syllablePosition === "middle")) {
+    syllableBorder.borderRightStyle = "dashed";
+  }
+  if (!isSelected && (syllablePosition === "middle" || syllablePosition === "last")) {
+    if (gapBefore) {
+      syllableBorder.borderLeftStyle = "dashed";
+    } else {
+      syllableBorder.borderLeftWidth = 0;
+    }
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -113,12 +127,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
         width,
         backgroundColor: isSelected ? `${color}60` : `${color}40`,
         borderColor: isSelected ? `${color}B0` : `${color}70`,
-        ...(!isSelected && (syllablePosition === "first" || syllablePosition === "middle")
-          ? { borderRightStyle: "dashed" }
-          : {}),
-        ...(!isSelected && (syllablePosition === "middle" || syllablePosition === "last")
-          ? { borderLeftWidth: 0 }
-          : {}),
+        ...syllableBorder,
       }}
       onClick={(e) => {
         e.stopPropagation();
