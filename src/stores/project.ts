@@ -7,11 +7,11 @@ import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/mod
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { useAudioStore } from "@/stores/audio";
 import { createAgentsSlice } from "@/stores/project/agents-slice";
 import { commitHistory, MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { createMetadataSlice } from "@/stores/project/metadata-slice";
 import type { ProjectState, ProjectStore } from "@/stores/project/types";
+import { createUiSlice } from "@/stores/project/ui-slice";
 import { useSettingsStore } from "@/stores/settings";
 import { getSplitCharacter } from "@/utils/split-character";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -222,16 +222,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
 
   ...createAgentsSlice(set, get, api),
 
-  setGranularity: (granularity) => set({ granularity, isDirty: true }),
-
-  setEditorMode: (editorMode) => set({ editorMode }),
-
-  setActiveTab: (activeTab) => {
-    if (activeTab === "export") {
-      useAudioStore.getState().setIsPlaying(false);
-    }
-    set({ activeTab });
-  },
+  ...createUiSlice(set, get, api),
 
   markDirty: () => set({ isDirty: true }),
 
