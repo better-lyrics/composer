@@ -1,32 +1,19 @@
-import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { useSettingsStore } from "@/stores/settings";
 import { formatKey } from "@/ui/help-modal";
 import { GROUP_COLORS } from "@/utils/group-colors";
-import { showGroupActionToast } from "@/utils/group-toast";
-import { isMac, MOD_KEY } from "@/utils/platform";
-import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
-import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
-import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
-import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
-import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
-import type { WordSelection } from "@/domain/selection/model";
+import { isMac } from "@/utils/platform";
 import { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
+import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
+import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { isLineSynced } from "@/domain/line/predicates";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
+import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
 import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
-import { useCallback, useEffect, useLayoutEffect } from "react";
-import { toast } from "sonner";
+import { useEffect, useLayoutEffect } from "react";
 
 function MenuItem({
   label,
@@ -74,13 +61,7 @@ const TimelineContextMenu: React.FC = () => {
     middleware: [flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }), shift({ padding: 8 })],
   });
 
-  const rawLines = useProjectStore((s) => s.lines);
   const agents = useProjectStore((s) => s.agents);
-  const groups = useProjectStore((s) => s.groups);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
-  const toggleWordExplicit = useProjectStore((s) => s.toggleWordExplicit);
-  const duration = useAudioStore((s) => s.duration);
   const confirm = useConfirm();
 
   const targets = useContextMenuTargets();
@@ -96,7 +77,43 @@ const TimelineContextMenu: React.FC = () => {
     splitIntoWordsInfo,
   } = targets;
 
-  const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
+  const {
+    handleEditWord,
+    handleSplitSyllables,
+    handleToggleExplicit,
+    handleDeleteWord,
+    handleAddWordHere,
+    handleMergeSyllables,
+    handleSnapSyllables,
+    handleMergeWords,
+  } = useWordMenuActions(targets, clearContextMenu);
+
+  const {
+    handlePlaceLineHere,
+    handleAddLine,
+    handleDeleteLine,
+    handleDetachLine,
+    handleAssignAgent,
+    handleSplitIntoWords,
+  } = useLineMenuActions(targets, clearContextMenu);
+
+  const {
+    handleJumpToGroupFromBanner,
+    handleCreateGroupFromSelection,
+    handleDeleteGroup,
+    handleRenameStart,
+    handleRecolorGroup,
+  } = useGroupMenuActions(targets, clearContextMenu, confirm);
+
+  const {
+    handleDetachInstance,
+    handleToggleCollapse,
+    handleAddInstanceAtPlayhead,
+    handleShiftToPlayhead,
+    handlePingSiblings,
+    handleJumpPrevInstance,
+    handleJumpNextInstance,
+  } = useInstanceMenuActions(clearContextMenu);
 
   useLayoutEffect(() => {
     if (!contextMenu) return;
@@ -133,393 +150,6 @@ const TimelineContextMenu: React.FC = () => {
       window.removeEventListener("keydown", handleKey);
     };
   }, [contextMenu, clearContextMenu, refs.floating]);
-
-  const handleEditWord = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex, type });
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleSplitSyllables = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    useTimelineStore.getState().setEditingWord(null);
-    // Store target info and open syllable splitter via editingWord with a flag
-    // For now, use the keyboard shortcut approach - set selection and close menu
-    const lineIndex = contextMenu.target.lineIndex;
-    useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
-    clearContextMenu();
-    // Dispatch a custom event so the syllable splitter can pick it up
-    window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
-  }, [contextMenu, clearContextMenu]);
-
-  const handleToggleExplicit = useCallback(() => {
-    if (!explicitToggleContext) return;
-    const { lineId, field, indices } = explicitToggleContext;
-    toggleWordExplicit(lineId, field, indices);
-    clearContextMenu();
-  }, [explicitToggleContext, toggleWordExplicit, clearContextMenu]);
-
-  const handleDeleteWord = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId, wordIndex, type } = contextMenu.target;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return;
-
-    const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
-    const remaining = absorbed.filter((_, i) => i !== wordIndex);
-    if (type === "word") {
-      updateLineWithHistory(lineId, { words: remaining });
-    } else {
-      updateLineWithHistory(
-        lineId,
-        remaining.length > 0
-          ? { backgroundWords: remaining }
-          : { backgroundWords: undefined, backgroundText: undefined },
-      );
-    }
-    clearContextMenu();
-  }, [contextMenu, lines, updateLineWithHistory, clearContextMenu]);
-
-  const handleAddWordHere = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "track") return;
-    const { lineId, time, type } = contextMenu.target;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const existingWords = type === "word" ? line.words : line.backgroundWords;
-    const slot = findInsertionSlot(existingWords ?? [], time, wordDuration, duration);
-    if (!slot) {
-      clearContextMenu();
-      return;
-    }
-
-    const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
-    const existing = existingWords ?? [];
-    const prevLast = existing[existing.length - 1];
-    const sorted = [...existing, newWord].sort((a, b) => a.begin - b.begin);
-    const newIndex = sorted.indexOf(newWord);
-    const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-    const words = trimTrailingSpaceFromLast(reconciled);
-
-    if (type === "word") {
-      updateLineWithHistory(lineId, { words });
-    } else {
-      updateLineWithHistory(lineId, { backgroundWords: words });
-    }
-    useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type });
-    clearContextMenu();
-  }, [contextMenu, lines, duration, updateLineWithHistory, clearContextMenu]);
-
-  const handlePlaceLineHere = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "track") return;
-    const { lineId, time } = contextMenu.target;
-    const line = rawLines.find((l) => l.id === lineId);
-    if (!line) return;
-    const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
-    const lineDuration = Math.max(wordCount, 1) * wordDuration;
-    updateLineWithHistory(lineId, {
-      begin: time,
-      end: time + lineDuration,
-    });
-    clearContextMenu();
-  }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
-
-  const handleAddLine = useCallback(
-    (position: "above" | "below") => {
-      if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-      // Operate on raw lines, not effective lines. getEffectiveLines synthesises
-      // single-word arrays for line-synced rows; if we wrote those back via
-      // setLinesWithHistory, every line-synced row would silently flip to
-      // word-synced (and TTML granularity would change on save).
-      const lineId = contextMenu.target.lineId;
-      const targetIndex = rawLines.findIndex((l) => l.id === lineId);
-      if (targetIndex === -1) return;
-      const defaultAgentId = agents?.[0]?.id ?? "v1";
-      const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
-      const newLines = [...rawLines];
-      const insertIndex = position === "above" ? targetIndex : targetIndex + 1;
-      newLines.splice(insertIndex, 0, newLine);
-      setLinesWithHistory(newLines);
-      clearContextMenu();
-    },
-    [contextMenu, rawLines, agents, setLinesWithHistory, clearContextMenu],
-  );
-
-  const handleDeleteLine = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-    const lineId = contextMenu.target.lineId;
-    const newLines = rawLines.filter((l) => l.id !== lineId);
-    setLinesWithHistory(newLines);
-    clearContextMenu();
-  }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
-
-  const handleDetachLine = useCallback(() => {
-    if (!gutterLineGroupInfo) return;
-    useProjectStore.getState().detachLine(gutterLineGroupInfo.lineId);
-    showGroupActionToast("Line detached");
-    clearContextMenu();
-  }, [gutterLineGroupInfo, clearContextMenu]);
-
-  const handleJumpToGroupFromBanner = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    scrollToInstanceHeader(groupId, instanceIdx);
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleCreateGroupFromSelection = useCallback(() => {
-    if (!groupableSelection) return;
-    const projectState = useProjectStore.getState();
-    projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
-    toast.success(`Grouped ${groupableSelection.count} line${groupableSelection.count === 1 ? "" : "s"}`);
-    clearContextMenu();
-  }, [groupableSelection, clearContextMenu]);
-
-  const handleAssignAgent = useCallback(
-    (agentId: string) => {
-      if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-      const { lineId } = contextMenu.target;
-      updateLineWithHistory(lineId, { agentId });
-      clearContextMenu();
-    },
-    [contextMenu, updateLineWithHistory, clearContextMenu],
-  );
-
-  const selectedWords = useTimelineStore((s) => s.selectedWords);
-
-  const handleSplitIntoWords = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId } = contextMenu.target;
-
-    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
-
-    const rawLinesByIdSplit = new Map<string, LyricLine>();
-    for (const l of rawLines) rawLinesByIdSplit.set(l.id, l);
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-    for (const id of targetIds) {
-      const realLine = rawLinesByIdSplit.get(id);
-      if (!realLine || !isLineSynced(realLine)) continue;
-      const converted = convertLineToWord(realLine);
-      if (converted.words) {
-        updates.push({ id, updates: { words: converted.words, begin: undefined, end: undefined } });
-      }
-    }
-
-    if (updates.length === 1) {
-      updateLineWithHistory(updates[0].id, updates[0].updates);
-    } else if (updates.length > 1) {
-      useProjectStore.getState().updateLinesWithHistory(updates);
-    }
-
-    const lineIndexById = new Map<string, number>();
-    for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
-    const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
-    for (const u of updates) {
-      const lineIndex = lineIndexById.get(u.id);
-      if (lineIndex === undefined || !u.updates.words) continue;
-      for (let wi = 0; wi < u.updates.words.length; wi++) {
-        newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
-      }
-    }
-    if (newSelections.length > 0) {
-      useTimelineStore.getState().setSelectedWords(newSelections);
-    }
-
-    clearContextMenu();
-  }, [contextMenu, rawLines, selectedWords, lines, updateLineWithHistory, clearContextMenu]);
-
-  const handleMergeSyllables = useCallback(() => {
-    if (!groupedWordInfo) return;
-    useProjectStore
-      .getState()
-      .mergeSyllableGroupIntoWord(groupedWordInfo.lineId, groupedWordInfo.field, [groupedWordInfo.wordIndex]);
-    clearContextMenu();
-  }, [groupedWordInfo, clearContextMenu]);
-
-  const handleSnapSyllables = useCallback(() => {
-    if (!groupedWordInfo) return;
-    useProjectStore.getState().snapSyllablesFlush(groupedWordInfo.lineId, groupedWordInfo.field);
-    clearContextMenu();
-  }, [groupedWordInfo, clearContextMenu]);
-
-  const handleMergeWords = useCallback(() => {
-    if (!mergeInfo) return;
-    const { indices, lineId, type } = mergeInfo;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return;
-
-    const firstIdx = indices[0];
-    const lastIdx = indices[indices.length - 1];
-    const mergedText = indices.map((idx) => wordsArray[idx].text).join("");
-    const merged: WordTiming = {
-      text: mergedText,
-      begin: wordsArray[firstIdx].begin,
-      end: wordsArray[lastIdx].end,
-    };
-
-    const updatedWords = [...wordsArray.slice(0, firstIdx), merged, ...wordsArray.slice(lastIdx + 1)];
-
-    updateLineWithHistory(lineId, type === "word" ? { words: updatedWords } : { backgroundWords: updatedWords });
-
-    useTimelineStore.getState().clearSelection();
-    clearContextMenu();
-  }, [mergeInfo, lines, updateLineWithHistory, clearContextMenu]);
-
-  const handleDetachInstance = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    useProjectStore.getState().removeInstance(groupId, instanceIdx);
-    showGroupActionToast("Instance detached");
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleToggleCollapse = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    useTimelineStore.getState().toggleInstanceCollapsed(`${groupId}:${instanceIdx}`);
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleAddInstanceAtPlayhead = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    const audioEl = useAudioStore.getState().audioElement;
-    const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-    const projectLines = useProjectStore.getState().lines;
-    const template = instanceToTemplate(projectLines, groupId, instanceIdx);
-    if (template.length === 0) {
-      toast.error("Could not derive instance template");
-      return;
-    }
-    const placement = decideAddInstancePlacement({
-      lines: projectLines,
-      groupId,
-      template,
-      playheadTime,
-    });
-    if (placement.kind === "fill") {
-      useProjectStore.getState().setLinesWithHistory(placement.updatedLines);
-      toast.success("Linked instance placed in empty rows");
-    } else if (placement.kind === "insert") {
-      useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
-      toast.success("Linked instance added at playhead");
-    } else {
-      copyInstanceToClipboardAndPreview(projectLines, groupId, instanceIdx);
-      toast(`No room at the playhead. ${MOD_KEY}+V to paste somewhere clear.`);
-    }
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleShiftToPlayhead = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    const audioEl = useAudioStore.getState().audioElement;
-    const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-    const projectLines = useProjectStore.getState().lines;
-    const instanceLines = linesOfInstance(projectLines, groupId, instanceIdx);
-    const bounds = instanceBounds(instanceLines);
-    if (!bounds) return;
-    const delta = playheadTime - bounds.begin;
-    useProjectStore.getState().shiftInstance(groupId, instanceIdx, delta);
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleDeleteGroup = useCallback(async () => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId } = contextMenu.target;
-    const group = groups.find((g) => g.id === groupId);
-    if (!group) return;
-    const projectLines = useProjectStore.getState().lines;
-    const instanceCount = new Set(
-      projectLines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-    ).size;
-
-    clearContextMenu();
-    const ok = await confirm({
-      title: `Delete the "${group.label}" group?`,
-      description: `All ${instanceCount} instance${instanceCount === 1 ? "" : "s"} will become standalone lines. They keep their text and timing, but stop updating together.`,
-      confirmLabel: "Delete group",
-      variant: "destructive",
-      settingsKey: "confirmGroupDissolution",
-      recoverable: true,
-    });
-    if (!ok) return;
-    useProjectStore.getState().removeGroup(groupId);
-    showGroupActionToast("Group deleted");
-  }, [contextMenu, groups, confirm, clearContextMenu]);
-
-  const handlePingSiblings = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId } = contextMenu.target;
-    useTimelineStore.getState().setPingingGroupId(groupId);
-    window.setTimeout(() => {
-      if (useTimelineStore.getState().pingingGroupId === groupId) {
-        useTimelineStore.getState().setPingingGroupId(null);
-      }
-    }, 700);
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu]);
-
-  const handleJumpToInstanceOffset = useCallback(
-    (direction: 1 | -1) => {
-      if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-      const { groupId, instanceIdx } = contextMenu.target;
-      const projectLines = useProjectStore.getState().lines;
-      const indices = new Set<number>();
-      for (const l of projectLines) {
-        if (l.groupId === groupId && l.instanceIdx !== undefined) indices.add(l.instanceIdx);
-      }
-      const sorted = Array.from(indices).sort((a, b) => a - b);
-      if (sorted.length < 2) return;
-      const here = sorted.indexOf(instanceIdx);
-      const next = sorted[(here + direction + sorted.length) % sorted.length];
-      const wordsInNext: WordSelection[] = [];
-      for (let li = 0; li < projectLines.length; li++) {
-        const line = projectLines[li];
-        if (line.groupId !== groupId || line.instanceIdx !== next) continue;
-        for (let wi = 0; wi < (line.words?.length ?? 0); wi++) {
-          wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-        }
-        for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++) {
-          wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
-        }
-      }
-      useTimelineStore.getState().setSelectedWords(wordsInNext);
-      scrollToInstanceHeader(groupId, next);
-      clearContextMenu();
-    },
-    [contextMenu, clearContextMenu],
-  );
-
-  const handleJumpPrevInstance = useCallback(() => handleJumpToInstanceOffset(-1), [handleJumpToInstanceOffset]);
-  const handleJumpNextInstance = useCallback(() => handleJumpToInstanceOffset(1), [handleJumpToInstanceOffset]);
-
-  const handleRenameStart = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId, instanceIdx } = contextMenu.target;
-    setRenamingGroupId(groupId, instanceIdx);
-    clearContextMenu();
-  }, [contextMenu, clearContextMenu, setRenamingGroupId]);
-
-  const handleRecolorGroup = useCallback(
-    (color: string) => {
-      if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-      useProjectStore.getState().updateGroup(contextMenu.target.groupId, { color });
-      clearContextMenu();
-    },
-    [contextMenu, clearContextMenu],
-  );
 
   if (!contextMenu) return null;
 
