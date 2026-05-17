@@ -25,4 +25,4 @@ function parseLyricsFile(filename: string, content: string, fallbackDuration?: n
 // -- Exports ------------------------------------------------------------------
 
 export { parseLyricsFile, PARSERS };
-export type { ParseResult, ParserFn };
+export type { ParseResult };
