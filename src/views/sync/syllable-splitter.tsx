@@ -25,9 +25,8 @@ const getHyphenationSplitPoints = (hyphenated: string): number[] => {
   for (const char of hyphenated) {
     if (char === "\u00AD") {
       points.push(originalIndex);
-    } else {
-      originalIndex += 1;
     }
+    originalIndex += 1;
   }
 
   return points;
@@ -50,7 +49,8 @@ const SplitModeContent: React.FC<{
 
     const applyAutoSplitPoints = async () => {
       try {
-        const { hyphenateSync } = await import(`hyphen/${useSettingsStore.getState().languageAutoSplit}`);
+        const languageCode = useSettingsStore.getState().languageAutoSplit;
+        const { hyphenateSync } = await import(`hyphen/${languageCode}`);
         
         const hyphenated = hyphenateSync(text);
         const autoSplitPoints = getHyphenationSplitPoints(hyphenated);
@@ -59,8 +59,8 @@ const SplitModeContent: React.FC<{
           autoSplitPoints.forEach((point) => onToggleSplit(point));
           autoAppliedRef.current = true;
         }
-      } catch (_) {
-        // ignore hyphenation failures
+      } catch (e) {
+        console.warn("[Splitter] splitting text error", e)
       }
     };
 
