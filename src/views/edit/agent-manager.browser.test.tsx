@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { AgentManager } from "@/views/edit/agent-manager";
-import { DEFAULT_AGENTS, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { render } from "@/test/render";
 
 describe("AgentManager", () => {

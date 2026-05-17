@@ -1,4 +1,5 @@
-import { getAgentColor, type WordTiming } from "@/stores/project";
+import { getAgentColor } from "@/domain/agent/colors";
+import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { stripSplitCharacter } from "@/utils/split-character";

@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import type { LinkGroup, LyricLine } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { decideEditTextAction } from "./decide-edit-text-action";
 

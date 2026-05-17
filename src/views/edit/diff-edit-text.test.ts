@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import { type LyricLine, reconcileLine } from "@/stores/project";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import {
   detachInstancesFromLines,

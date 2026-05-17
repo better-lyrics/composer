@@ -1,4 +1,5 @@
-import type { LinkGroup, LyricLine } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { textToLyricLines } from "@/utils/lyrics-text";
 import {
   diffEditTextChange,

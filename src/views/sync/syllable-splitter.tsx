@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { distributeTiming } from "@/utils/syllable-utils";

@@ -1,4 +1,4 @@
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { Tooltip } from "@/ui/tooltip";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";

@@ -1,7 +1,7 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { describe, expect, it } from "vitest";
 

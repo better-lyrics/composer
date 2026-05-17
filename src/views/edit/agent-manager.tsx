@@ -1,5 +1,6 @@
-import { AGENT_PRESETS, getAgentColor, useProjectStore } from "@/stores/project";
-import type { Agent, AgentType } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
+import type { Agent, AgentType } from "@/domain/agent/model";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { IconPlus, IconTrash } from "@tabler/icons-react";

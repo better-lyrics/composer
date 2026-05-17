@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/stores/project";
+import type { LyricLine } from "@/domain/line/model";
 
 interface ParsedLine {
   lineNumber: number;

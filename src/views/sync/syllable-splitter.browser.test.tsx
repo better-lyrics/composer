@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { SyllableSplitter } from "@/views/sync/syllable-splitter";
-import type { WordTiming } from "@/stores/project";
+import type { WordTiming } from "@/domain/word/timing";
 import { render } from "@/test/render";
 
 const SINGLE_CHAR: WordTiming = { text: "a", begin: 0, end: 1 };

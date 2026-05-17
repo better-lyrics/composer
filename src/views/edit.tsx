@@ -1,8 +1,9 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
-import { getAgentColor, useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { getAgentColor } from "@/domain/agent/colors";
+import type { LyricLine } from "@/domain/line/model";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
