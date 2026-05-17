@@ -4,8 +4,7 @@ import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/gro
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import { belongsToInstance } from "@/domain/instance/predicates";
-import { reconcileLine } from "@/domain/line/model";
-import type { LooseLine, LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
