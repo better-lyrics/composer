@@ -166,16 +166,10 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "m" },
   },
   {
-    id: "timeline.mergeIntoSyllables",
-    scope: "timeline",
-    description: "Merge selected words into one word",
-    defaultBinding: { key: "y" },
-  },
-  {
     id: "timeline.mergeSyllablesIntoWord",
     scope: "timeline",
     description: "Merge syllables back into one word",
-    defaultBinding: { key: "y", shift: true },
+    defaultBinding: { key: "y" },
   },
   {
     id: "timeline.splitIntoWords",

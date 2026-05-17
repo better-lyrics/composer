@@ -4,7 +4,6 @@ import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
-import { nanoid } from "nanoid";
 import { create } from "zustand";
 
 // -- Types --------------------------------------------------------------------
@@ -144,7 +143,6 @@ interface ProjectActions {
     extraUpdates?: Partial<LyricLine>,
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
-  mergeWordsIntoSyllableGroup: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   snapSyllablesFlush: (lineId: string, field: "words" | "backgroundWords") => void;
   markWordsExplicit: (
@@ -791,55 +789,6 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
 
     get().applyWordCountChange(lineId, newWords, field, "apply");
   },
-
-  mergeWordsIntoSyllableGroup: (lineId, field, wordIndices) =>
-    set((state) => {
-      if (wordIndices.length < 2) return state;
-      const target = state.lines.find((l) => l.id === lineId);
-      if (!target) return state;
-      const sourceWords = target[field];
-      if (!sourceWords || sourceWords.length === 0) return state;
-      const sourceCount = sourceWords.length;
-
-      const expandedIndices = expandSelectionToGroupmates(sourceWords, wordIndices);
-      const sorted = [...expandedIndices].sort((a, b) => a - b);
-      if (sorted.length < 2) return state;
-      const start = sorted[0];
-      const end = sorted[sorted.length - 1];
-      if (start < 0 || end >= sourceCount) return state;
-      for (let i = 1; i < sorted.length; i++) {
-        if (sorted[i] !== sorted[i - 1] + 1) return state;
-      }
-
-      const linkScope = getLinkScope(target);
-      let mutated = false;
-      const newLines = state.lines.map((line) => {
-        const isSource = line.id === lineId;
-        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
-        if (!isSource && !isSibling) return line;
-        const lineWords = line[field];
-        if (!lineWords) return line;
-
-        const groupId = nanoid(8);
-        const stamped: WordTiming[] = lineWords.map((word, i) => {
-          if (i < start || i > end) return word;
-          const text = i < end ? word.text.trimEnd() : word.text;
-          return { ...word, syllableGroupId: groupId, text };
-        });
-        const newWords = trimTrailingSpaceFromLast(stamped);
-
-        const update: Partial<LyricLine> = { [field]: newWords };
-        if (field === "backgroundWords") {
-          update.backgroundText = newWords.map((w) => w.text).join("");
-        } else {
-          update.text = newWords.map((w) => w.text).join("");
-        }
-        mutated = true;
-        return { ...line, ...update };
-      });
-      if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
-    }),
 
   mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
     set((state) => {

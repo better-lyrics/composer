@@ -405,37 +405,6 @@ const TimelineContextMenu: React.FC = () => {
     return { sorted, lineId: first.lineId, type: first.type };
   }, [selectedWords, lines]);
 
-  const syllableGroupInfo = useMemo(() => {
-    if (selectedWords.length < 2) return null;
-    const first = selectedWords[0];
-    const allSameLine = selectedWords.every((w) => w.lineId === first.lineId && w.type === first.type);
-    if (!allSameLine) return null;
-
-    const sorted = selectedWords.toSorted((a, b) => a.wordIndex - b.wordIndex);
-    for (let i = 1; i < sorted.length; i++) {
-      if (sorted[i].wordIndex !== sorted[i - 1].wordIndex + 1) return null;
-    }
-
-    const line = lines.find((l) => l.id === first.lineId);
-    if (!line) return null;
-    const wordsArray = first.type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return null;
-
-    return { sorted, lineId: first.lineId, type: first.type };
-  }, [selectedWords, lines]);
-
-  const handleMergeIntoSyllables = useCallback(() => {
-    if (!syllableGroupInfo) return;
-    const { sorted, lineId, type } = syllableGroupInfo;
-    const field = type === "word" ? "words" : "backgroundWords";
-    useProjectStore.getState().mergeWordsIntoSyllableGroup(
-      lineId,
-      field,
-      sorted.map((s) => s.wordIndex),
-    );
-    clearContextMenu();
-  }, [syllableGroupInfo, clearContextMenu]);
-
   const groupedWordInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const { lineId, wordIndex, type } = contextMenu.target;
@@ -705,13 +674,6 @@ const TimelineContextMenu: React.FC = () => {
             <MenuItem label="Edit text" shortcut={["E"]} onClick={handleEditWord} />
             <MenuItem label="Split syllables" shortcut={["S"]} onClick={handleSplitSyllables} />
             {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
-            {syllableGroupInfo && (
-              <MenuItem
-                label="Merge into one word"
-                shortcut={getEffectiveKeysArray("timeline.mergeIntoSyllables")}
-                onClick={handleMergeIntoSyllables}
-              />
-            )}
             {groupedWordInfo && (
               <MenuItem
                 label="Merge syllables"

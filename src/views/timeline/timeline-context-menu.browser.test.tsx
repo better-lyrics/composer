@@ -60,40 +60,6 @@ describe("TimelineContextMenu", () => {
     expect(updated?.explicit).toBe(true);
   });
 
-  it("shows 'Merge into one word' for a contiguous multi-word selection and stamps a shared id when clicked", async () => {
-    const line = createLine({
-      words: [
-        createWord({ text: "ev", begin: 0, end: 0.3 }),
-        createWord({ text: "er", begin: 0.3, end: 0.6 }),
-        createWord({ text: "y", begin: 0.6, end: 1 }),
-      ],
-    });
-    useProjectStore.setState({ lines: [line] });
-    useTimelineStore.setState({
-      contextMenu: {
-        x: 100,
-        y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-      },
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 2, type: "word" },
-      ],
-    });
-    await render(<TimelineContextMenu />);
-
-    const mergeIntoSyllablesBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Merge into one word/i.test(b.textContent ?? ""),
-    );
-    expect(mergeIntoSyllablesBtn).toBeDefined();
-    mergeIntoSyllablesBtn?.click();
-
-    const words = useProjectStore.getState().lines[0].words ?? [];
-    expect(words[0].syllableGroupId).toBeDefined();
-    expect(words.every((w) => w.syllableGroupId === words[0].syllableGroupId)).toBe(true);
-  });
-
   it("shows 'Merge syllables' on a syllable-group word and collapses the group to one word when clicked", async () => {
     const line = createLine({
       words: [
@@ -176,33 +142,5 @@ describe("TimelineContextMenu", () => {
     expect(words[1].end).toBe(words[2].begin);
     expect(words[0].begin).toBe(0);
     expect(words[2].end).toBe(1.3);
-  });
-
-  it("hides 'Merge into one word' for a non-contiguous selection", async () => {
-    const line = createLine({
-      words: [
-        createWord({ text: "a", begin: 0, end: 0.3 }),
-        createWord({ text: "b", begin: 0.3, end: 0.6 }),
-        createWord({ text: "c", begin: 0.6, end: 1 }),
-      ],
-    });
-    useProjectStore.setState({ lines: [line] });
-    useTimelineStore.setState({
-      contextMenu: {
-        x: 100,
-        y: 100,
-        target: { kind: "word", lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-      },
-      selectedWords: [
-        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" },
-        { lineId: line.id, lineIndex: 0, wordIndex: 2, type: "word" },
-      ],
-    });
-    await render(<TimelineContextMenu />);
-
-    const mergeIntoSyllablesBtn = Array.from(document.querySelectorAll("button")).find((b) =>
-      /Merge into one word/i.test(b.textContent ?? ""),
-    );
-    expect(mergeIntoSyllablesBtn).toBeUndefined();
   });
 });
