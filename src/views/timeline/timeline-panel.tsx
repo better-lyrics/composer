@@ -146,8 +146,7 @@ const TimelinePanel: React.FC = () => {
   }, [initOverlayScrollbars]);
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
-  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } =
-    useTimelineDnd(effectiveLines);
+  const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
   const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);

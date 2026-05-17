@@ -27,12 +27,7 @@ function makeDragStartEvent(shiftKey: boolean): DragStartEvent {
   } as unknown as DragStartEvent;
 }
 
-function makeDragEndEvent(
-  overId: string,
-  deltaY: number,
-  activatorShift: boolean,
-  deltaX = 5,
-): DragEndEvent {
+function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolean, deltaX = 5): DragEndEvent {
   return {
     active: {
       id: "w",
