@@ -6,7 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { getSplitCharacter } from "@/utils/split-character";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
-import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { applySiblingWords } from "@/utils/word-diff";
 import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { create } from "zustand";
@@ -818,37 +818,38 @@ const useProjectStore = create<ProjectState & ProjectActions>((set, get) => ({
         const lineWords = line[field];
         if (!lineWords) return line;
 
+        const runs = computeByGroupId(lineWords);
         const collapsed: WordTiming[] = [];
         let changed = false;
+        let runIdx = 0;
         let i = 0;
         while (i < lineWords.length) {
-          const groupId = lineWords[i].syllableGroupId;
-          if (groupId === undefined) {
+          const run = runs[runIdx];
+          if (!run || run.startIndex !== i) {
             collapsed.push(lineWords[i]);
             i++;
             continue;
           }
-          let end = i;
-          while (end + 1 < lineWords.length && lineWords[end + 1].syllableGroupId === groupId) end++;
+          runIdx++;
           let touched = false;
-          for (let k = i; k <= end; k++) if (selected.has(k)) touched = true;
-          if (touched && end > i) {
-            const first = lineWords[i];
+          for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
+          if (touched) {
+            const first = lineWords[run.startIndex];
             const { syllableGroupId: _drop, ...rest } = first;
             collapsed.push({
               ...rest,
               text: lineWords
-                .slice(i, end + 1)
+                .slice(run.startIndex, run.endIndex + 1)
                 .map((w) => w.text)
                 .join(""),
               begin: first.begin,
-              end: lineWords[end].end,
+              end: lineWords[run.endIndex].end,
             });
             changed = true;
           } else {
-            for (let k = i; k <= end; k++) collapsed.push(lineWords[k]);
+            for (let k = run.startIndex; k <= run.endIndex; k++) collapsed.push(lineWords[k]);
           }
-          i = end + 1;
+          i = run.endIndex + 1;
         }
         if (!changed) return line;
         mutated = true;

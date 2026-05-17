@@ -183,9 +183,10 @@ function closeIntraGroupGaps(words: WordTiming[]): WordTiming[] {
 export {
   absorbDeletedSyllablesIntoNeighbors,
   closeIntraGroupGaps,
+  computeByGroupId,
   computeSyllableGroups,
   expandSelectionToGroupmates,
   getSyllablePositions,
   inferSyllableGroupIds,
 };
-export type { SyllablePosition };
+export type { SyllableGroup, SyllablePosition };

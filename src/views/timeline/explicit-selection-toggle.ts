@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/stores/project";
-import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordSelection } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------

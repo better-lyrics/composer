@@ -8,7 +8,7 @@ import {
   expandSelectionToGroupmates,
   getSyllablePositions,
   inferSyllableGroupIds,
-} from "@/utils/syllable-groups";
+} from "@/domain/word/syllable-groups";
 import { describe, expect, it } from "vitest";
 
 // -- id-mode -------------------------------------------------------------------

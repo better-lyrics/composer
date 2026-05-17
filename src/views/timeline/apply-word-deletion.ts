@@ -3,7 +3,7 @@ import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { type LyricLine, reconcileLine } from "@/stores/project";
 import { getSplitCharacter } from "@/utils/split-character";
-import { absorbDeletedSyllablesIntoNeighbors } from "@/utils/syllable-groups";
+import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 
 interface DeletionSelection {
   lineId: string;

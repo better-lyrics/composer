@@ -1,7 +1,7 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
 import { type LyricLine, type WordTiming, useProjectStore } from "@/stores/project";
-import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { cloneWord } from "@/utils/word-timing";
 import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";

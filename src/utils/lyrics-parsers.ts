@@ -11,7 +11,7 @@ import {
   type WordTiming,
 } from "@/stores/project";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
-import { inferSyllableGroupIds } from "@/utils/syllable-groups";
+import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 
 // -- Types --------------------------------------------------------------------
 

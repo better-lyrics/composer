@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { type LooseLine, type LyricLine, reconcileLine, useProjectStore } from "@/stores/project";
-import { getSyllablePositions } from "@/utils/syllable-groups";
+import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const DURATION = 30;

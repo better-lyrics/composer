@@ -1,6 +1,6 @@
 import { getAgentColor, type WordTiming } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { computeSyllableGroups } from "@/utils/syllable-groups";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";

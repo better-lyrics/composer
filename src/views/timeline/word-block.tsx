@@ -1,5 +1,5 @@
 import { cn } from "@/utils/cn";
-import type { SyllablePosition } from "@/utils/syllable-groups";
+import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useDraggable } from "@dnd-kit/core";

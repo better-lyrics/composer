@@ -3,7 +3,7 @@ import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/stores/project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { computeSyllableGroups, getSyllablePositions } from "@/utils/syllable-groups";
+import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";

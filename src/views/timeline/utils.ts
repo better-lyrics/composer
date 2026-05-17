@@ -4,7 +4,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine, WordTiming } from "@/stores/project";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
-import { expandSelectionToGroupmates } from "@/utils/syllable-groups";
+import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
 
 // -- Functions -----------------------------------------------------------------

@@ -24,7 +24,11 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
-import { expandSelectionToGroupmates, getSyllablePositions, type SyllablePosition } from "@/utils/syllable-groups";
+import {
+  expandSelectionToGroupmates,
+  getSyllablePositions,
+  type SyllablePosition,
+} from "@/domain/word/syllable-groups";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
