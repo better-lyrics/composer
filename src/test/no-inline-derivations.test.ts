@@ -15,10 +15,13 @@ import { describe, expect, it } from "vitest";
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-// Files allowed to contain the raw patterns:
-//   - domain/** : the modules that legitimately own these derivations.
-//   - stores/project.ts : constructs and mutates LyricLine objects directly.
-const WHITELIST_EXACT = new Set(["stores/project.ts"]);
+// Files allowed to contain the raw patterns: only `domain/**`, the modules that
+// legitimately own these derivations. Nothing outside `domain/**` currently
+// needs an exemption, so `WHITELIST_EXACT` is empty. If a file outside
+// `domain/**` ever has a genuine, intentional reason to construct or derive one
+// of these concepts inline, add its `src`-relative path here with a note saying
+// why.
+const WHITELIST_EXACT = new Set<string>([]);
 
 function isWhitelisted(relPath: string): boolean {
   if (relPath.startsWith("domain/")) return true;

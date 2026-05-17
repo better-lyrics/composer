@@ -150,9 +150,7 @@ type ProjectStore = ProjectState & ProjectActions;
 
 export type {
   GranularityMode,
-  EditorMode,
   SimpleTab,
-  HistoryEntry,
   MetadataState,
   AgentsState,
   LinesState,
@@ -168,6 +166,5 @@ export type {
   LineActions,
   GroupActions,
   ProjectState,
-  ProjectActions,
   ProjectStore,
 };
