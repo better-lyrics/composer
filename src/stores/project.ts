@@ -8,6 +8,7 @@ import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
+import { createAgentsSlice } from "@/stores/project/agents-slice";
 import { commitHistory, MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { createMetadataSlice } from "@/stores/project/metadata-slice";
 import type { ProjectState, ProjectStore } from "@/stores/project/types";
@@ -219,25 +220,7 @@ const useProjectStore = create<ProjectStore>((set, get, api) => ({
       };
     }),
 
-  addAgent: (agent) =>
-    set((state) => ({
-      agents: [...state.agents, agent],
-      isDirty: true,
-    })),
-
-  updateAgent: (id, updates) =>
-    set((state) => ({
-      agents: state.agents.map((a) => (a.id === id ? { ...a, ...updates } : a)),
-      isDirty: true,
-    })),
-
-  removeAgent: (id) =>
-    set((state) => ({
-      agents: state.agents.filter((a) => a.id !== id),
-      isDirty: true,
-    })),
-
-  setAgents: (agents) => set({ agents, isDirty: true }),
+  ...createAgentsSlice(set, get, api),
 
   setGranularity: (granularity) => set({ granularity, isDirty: true }),
 
