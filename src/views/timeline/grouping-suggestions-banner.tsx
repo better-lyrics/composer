@@ -16,15 +16,9 @@ const GroupingSuggestionsBanner: React.FC = () => {
 
   const suggestions = useMemo(() => findRepeatingStandaloneSections(lines), [lines]);
 
-  const dismissedSet = useMemo(() => new Set(dismissed), [dismissed]);
-  const visible = useMemo(
-    () => suggestions.filter((s) => !dismissedSet.has(s.fingerprint)),
-    [suggestions, dismissedSet],
-  );
-
   const dismissOne = (s: RepeatingSection) => dismissSuggestion(s.fingerprint);
 
-  const dismissAll = () => {
+  const dismissAll = (visible: RepeatingSection[]) => {
     for (const s of visible) dismissSuggestion(s.fingerprint);
   };
 
@@ -32,7 +26,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
     groupRepeatingSections(s.starts, s.length);
   };
 
-  const acceptAll = () => {
+  const acceptAll = (visible: RepeatingSection[]) => {
     for (const s of visible) groupRepeatingSections(s.starts, s.length);
   };
 

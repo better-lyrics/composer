@@ -30,8 +30,8 @@ interface SuggestionsBannerProps<T extends { fingerprint: string }> {
   renderRowFooter?: (suggestion: T) => React.ReactNode;
   onAccept: (suggestion: T) => void;
   onDismiss: (suggestion: T) => void;
-  onAcceptAll: () => void;
-  onDismissAll: () => void;
+  onAcceptAll: (visible: T[]) => void;
+  onDismissAll: (visible: T[]) => void;
 }
 
 interface SuggestionsModalProps<T extends { fingerprint: string }> {
@@ -48,7 +48,7 @@ interface SuggestionsModalProps<T extends { fingerprint: string }> {
   renderRowFooter?: (suggestion: T) => React.ReactNode;
   onAccept: (suggestion: T) => void;
   onDismiss: (suggestion: T) => void;
-  onAcceptAll: () => void;
+  onAcceptAll: (visible: T[]) => void;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -130,7 +130,7 @@ function SuggestionsBanner<T extends { fingerprint: string }>(props: Suggestions
             <Button size="sm" variant="primary" onClick={() => setModalOpen(true)}>
               Review {visible.length}
             </Button>
-            <DismissButton label="Dismiss all suggestions" onClick={onDismissAll} />
+            <DismissButton label="Dismiss all suggestions" onClick={() => onDismissAll(visible)} />
           </div>
         </div>
       )}
@@ -181,7 +181,13 @@ function SuggestionsModal<T extends { fingerprint: string }>(props: SuggestionsM
           <span className="truncate">{countText(suggestions.length)}</span>
         </div>
         {suggestions.length > 1 && (
-          <Button size="sm" variant="primary" hasIcon onClick={onAcceptAll} className="h-6 pl-1.5 pr-2 text-[11px]">
+          <Button
+            size="sm"
+            variant="primary"
+            hasIcon
+            onClick={() => onAcceptAll(suggestions)}
+            className="h-6 pl-1.5 pr-2 text-[11px]"
+          >
             <AcceptAllIcon className="size-3" />
             {acceptAll.label}
           </Button>

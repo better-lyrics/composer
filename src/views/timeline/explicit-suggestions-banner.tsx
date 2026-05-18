@@ -20,23 +20,17 @@ const ExplicitSuggestionsBanner: React.FC = () => {
   const suggestions = useMemo(() => findExplicitWords(lines, groups), [lines, groups]);
   const lineMap = useMemo(() => new Map(lines.map((l) => [l.id, l])), [lines]);
 
-  const dismissedSet = useMemo(() => new Set(dismissed), [dismissed]);
-  const visible = useMemo(
-    () => suggestions.filter((s) => !dismissedSet.has(s.fingerprint)),
-    [suggestions, dismissedSet],
-  );
-
   const acceptOne = (s: ExplicitSuggestion) => {
     toggleWordExplicit(s.lineId, s.field, s.wordIndices);
   };
 
   const dismissOne = (s: ExplicitSuggestion) => dismissExplicitSuggestion(s.fingerprint);
 
-  const dismissAll = () => {
+  const dismissAll = (visible: ExplicitSuggestion[]) => {
     for (const s of visible) dismissExplicitSuggestion(s.fingerprint);
   };
 
-  const acceptAll = () => {
+  const acceptAll = (visible: ExplicitSuggestion[]) => {
     markWordsExplicit(
       visible.flatMap((s) => s.wordIndices.map((wordIndex) => ({ lineId: s.lineId, field: s.field, wordIndex }))),
       true,

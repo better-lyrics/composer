@@ -13,8 +13,8 @@ function makeBanner(overrides: {
   dismissed?: string[];
   onAccept?: (s: FakeSuggestion) => void;
   onDismiss?: (s: FakeSuggestion) => void;
-  onAcceptAll?: () => void;
-  onDismissAll?: () => void;
+  onAcceptAll?: (visible: FakeSuggestion[]) => void;
+  onDismissAll?: (visible: FakeSuggestion[]) => void;
 }) {
   return (
     <SuggestionsBanner<FakeSuggestion>
@@ -102,6 +102,31 @@ describe("SuggestionsBanner", () => {
 
     await screen.getByRole("button", { name: "Dismiss all suggestions" }).click();
     expect(onDismissAll).toHaveBeenCalledTimes(1);
+    expect(onDismissAll).toHaveBeenCalledWith([
+      { fingerprint: "f1", label: "first" },
+      { fingerprint: "f2", label: "second" },
+    ]);
+  });
+
+  it("passes only the non-dismissed suggestions to onDismissAll", async () => {
+    const onDismissAll = vi.fn();
+    const screen = await render(
+      makeBanner({
+        suggestions: [
+          { fingerprint: "f1", label: "first" },
+          { fingerprint: "f2", label: "second" },
+          { fingerprint: "f3", label: "third" },
+        ],
+        dismissed: ["f2"],
+        onDismissAll,
+      }),
+    );
+
+    await screen.getByRole("button", { name: "Dismiss all suggestions" }).click();
+    expect(onDismissAll).toHaveBeenCalledWith([
+      { fingerprint: "f1", label: "first" },
+      { fingerprint: "f3", label: "third" },
+    ]);
   });
 
   it("accepts every suggestion from the modal 'apply all' button", async () => {
@@ -119,6 +144,32 @@ describe("SuggestionsBanner", () => {
     await screen.getByRole("button", { name: /review 2/i }).click();
     await screen.getByRole("button", { name: /apply all/i }).click();
     expect(onAcceptAll).toHaveBeenCalledTimes(1);
+    expect(onAcceptAll).toHaveBeenCalledWith([
+      { fingerprint: "f1", label: "first" },
+      { fingerprint: "f2", label: "second" },
+    ]);
+  });
+
+  it("passes only the non-dismissed suggestions to onAcceptAll", async () => {
+    const onAcceptAll = vi.fn();
+    const screen = await render(
+      makeBanner({
+        suggestions: [
+          { fingerprint: "f1", label: "first" },
+          { fingerprint: "f2", label: "second" },
+          { fingerprint: "f3", label: "third" },
+        ],
+        dismissed: ["f1"],
+        onAcceptAll,
+      }),
+    );
+
+    await screen.getByRole("button", { name: /review 2/i }).click();
+    await screen.getByRole("button", { name: /apply all/i }).click();
+    expect(onAcceptAll).toHaveBeenCalledWith([
+      { fingerprint: "f2", label: "second" },
+      { fingerprint: "f3", label: "third" },
+    ]);
   });
 
   it("accepts a single row from inside the modal", async () => {
