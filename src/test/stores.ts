@@ -4,6 +4,7 @@ import { useConfirmStore } from "@/stores/confirm-store";
 import { useDivergenceStore } from "@/stores/divergence-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { INITIAL_STATE as PROJECT_INITIAL_STATE, useProjectStore } from "@/stores/project";
+import { useSeparationStore } from "@/stores/separation";
 import { DEFAULTS as SETTINGS_DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -28,6 +29,7 @@ async function resetAllStores(): Promise<void> {
 
   useAuthStore.getState().clear();
   useAudioStore.getState().reset();
+  useSeparationStore.getState().reset();
   useProjectStore.setState(PROJECT_INITIAL_STATE);
 
   useConfirmStore.setState({ isOpen: false, options: null, resolve: null, queue: [] });
