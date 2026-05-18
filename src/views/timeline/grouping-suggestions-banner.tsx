@@ -1,10 +1,8 @@
 import { useProjectStore } from "@/stores/project";
-import { Button } from "@/ui/button";
-import { Modal } from "@/ui/modal";
-import { Scroll } from "@/ui/scroll";
 import { findRepeatingStandaloneSections, type RepeatingSection } from "@/views/timeline/repeating-sections";
-import { IconBulb, IconLink, IconX } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { IconBulb, IconLink } from "@tabler/icons-react";
+import { useMemo } from "react";
 
 const INLINE_LINE_MAX = 32;
 const MODAL_LINE_MAX = 80;
@@ -15,15 +13,14 @@ const GroupingSuggestionsBanner: React.FC = () => {
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
   const groupRepeatingSections = useProjectStore((s) => s.groupRepeatingSections);
   const dismissSuggestion = useProjectStore((s) => s.dismissSuggestion);
-  const [modalOpen, setModalOpen] = useState(false);
 
   const suggestions = useMemo(() => findRepeatingStandaloneSections(lines), [lines]);
-  const visible = useMemo(() => {
-    const dismissedSet = new Set(dismissed);
-    return suggestions.filter((s) => !dismissedSet.has(s.fingerprint));
-  }, [suggestions, dismissed]);
 
-  if (visible.length === 0) return null;
+  const dismissedSet = useMemo(() => new Set(dismissed), [dismissed]);
+  const visible = useMemo(
+    () => suggestions.filter((s) => !dismissedSet.has(s.fingerprint)),
+    [suggestions, dismissedSet],
+  );
 
   const dismissOne = (s: RepeatingSection) => dismissSuggestion(s.fingerprint);
 
@@ -40,133 +37,35 @@ const GroupingSuggestionsBanner: React.FC = () => {
   };
 
   return (
-    <>
-      {visible.length === 1 ? (
-        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-accent/8 text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <IconBulb className="size-4 shrink-0 text-composer-accent" />
-            <span className="text-composer-text truncate">{summarizeInline(visible[0])}</span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button size="sm" variant="primary" hasIcon onClick={() => acceptOne(visible[0])}>
-              <IconLink className="size-3.5" />
-              Group them
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={() => dismissOne(visible[0])}
-              className="size-7"
-              aria-label="Dismiss suggestion"
-            >
-              <IconX className="size-4" />
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border bg-composer-accent/8 text-sm">
-          <div className="flex items-center gap-2 min-w-0">
-            <IconBulb className="size-4 shrink-0 text-composer-accent" />
-            <span className="text-composer-text truncate">
-              Found {visible.length} grouping suggestions across your lyrics
-            </span>
-          </div>
-          <div className="flex items-center gap-1 shrink-0">
-            <Button size="sm" variant="primary" onClick={() => setModalOpen(true)}>
-              Review {visible.length}
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              onClick={dismissAll}
-              className="size-7"
-              aria-label="Dismiss all suggestions"
-            >
-              <IconX className="size-4" />
-            </Button>
-          </div>
-        </div>
-      )}
-      <SuggestionsModal
-        isOpen={modalOpen && visible.length > 0}
-        onClose={() => setModalOpen(false)}
-        suggestions={visible}
-        onAccept={acceptOne}
-        onDismiss={dismissOne}
-        onAcceptAll={acceptAll}
-      />
-    </>
-  );
-};
-
-interface SuggestionsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  suggestions: RepeatingSection[];
-  onAccept: (s: RepeatingSection) => void;
-  onDismiss: (s: RepeatingSection) => void;
-  onAcceptAll: () => void;
-}
-
-const SuggestionsModal: React.FC<SuggestionsModalProps> = ({
-  isOpen,
-  onClose,
-  suggestions,
-  onAccept,
-  onDismiss,
-  onAcceptAll,
-}) => {
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Grouping suggestions" className="max-w-xl" bodyClassName="p-0">
-      <div className="px-5 py-3 border-b border-composer-border flex items-center justify-between gap-3 text-sm">
-        <div className="flex items-center gap-2 text-composer-text-muted min-w-0">
-          <IconBulb className="size-4 text-composer-text shrink-0 opacity-50" />
-          <span className="truncate">
-            {suggestions.length} repeating section{suggestions.length === 1 ? "" : "s"} detected
+    <SuggestionsBanner<RepeatingSection>
+      suggestions={suggestions}
+      dismissed={dismissed}
+      icon={IconBulb}
+      iconClass="text-composer-accent"
+      accentClass="bg-composer-accent/8"
+      modalTitle="Grouping suggestions"
+      multiText={(count) => `Found ${count} grouping suggestions across your lyrics`}
+      modalCountText={(count) => `${count} repeating section${count === 1 ? "" : "s"} detected`}
+      accept={{ label: "Group them", icon: IconLink }}
+      acceptAll={{ label: "Group all", icon: IconLink }}
+      rowKey={suggestionKey}
+      renderInline={(s) => summarizeInline(s)}
+      renderRow={(s) => (
+        <>
+          <span className="text-sm text-composer-text">
+            {s.starts.length} runs · {s.length} line{s.length === 1 ? "" : "s"} each
           </span>
-        </div>
-        {suggestions.length > 1 && (
-          <Button size="sm" variant="primary" hasIcon onClick={onAcceptAll} className="h-6 pl-1.5 pr-2 text-[11px]">
-            <IconLink className="size-3" />
-            Group all
-          </Button>
-        )}
-      </div>
-      <Scroll className="max-h-[60vh]">
-        <ul className="divide-y divide-composer-border">
-          {suggestions.map((s) => (
-            <li key={suggestionKey(s)} className="flex flex-col gap-2 px-5 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 flex flex-col gap-0.5">
-                  <span className="text-sm text-composer-text">
-                    {s.starts.length} runs · {s.length} line{s.length === 1 ? "" : "s"} each
-                  </span>
-                  <span className="text-xs text-composer-text-muted">
-                    At lines {s.starts.map((start) => `${start + 1} to ${start + s.length}`).join(", ")}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <Button size="sm" variant="primary" hasIcon onClick={() => onAccept(s)}>
-                    <IconLink className="size-3.5" />
-                    Group
-                  </Button>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    onClick={() => onDismiss(s)}
-                    className="size-7"
-                    aria-label="Dismiss suggestion"
-                  >
-                    <IconX className="size-4" />
-                  </Button>
-                </div>
-              </div>
-              <BlockPreview lines={s.previewLines} />
-            </li>
-          ))}
-        </ul>
-      </Scroll>
-    </Modal>
+          <span className="text-xs text-composer-text-muted">
+            At lines {s.starts.map((start) => `${start + 1} to ${start + s.length}`).join(", ")}
+          </span>
+        </>
+      )}
+      renderRowFooter={(s) => <BlockPreview lines={s.previewLines} />}
+      onAccept={acceptOne}
+      onDismiss={dismissOne}
+      onAcceptAll={acceptAll}
+      onDismissAll={dismissAll}
+    />
   );
 };
 
