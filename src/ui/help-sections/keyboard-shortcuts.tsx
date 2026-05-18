@@ -1,4 +1,4 @@
-import { ShortcutSection, SHORTCUT_SECTIONS } from "@/ui/help-modal";
+import { ShortcutSection, SHORTCUT_SECTIONS } from "@/ui/shortcut-reference";
 
 // -- Keyboard Shortcuts -------------------------------------------------------
 

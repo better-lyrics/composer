@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { formatKey } from "@/ui/help-modal";
+import { formatKey } from "@/ui/shortcut-reference";
 import { GROUP_COLORS } from "@/utils/group-colors";
 import { isMac } from "@/utils/platform";
 import { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
