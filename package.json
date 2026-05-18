@@ -16,7 +16,8 @@
     "lint:fix": "biome lint --write . && biome format --write .",
     "typecheck": "tsc --noEmit",
     "knip": "knip",
-    "knip:production": "knip --production"
+    "knip:production": "knip --production",
+    "jscpd": "jscpd"
   },
   "dependencies": {
     "@braccato/core": "^0.1.4",
@@ -47,7 +48,10 @@
     "zustand": "^5.0.0"
   },
   "pnpm": {
-    "ignoredBuiltDependencies": ["@biomejs/biome", "esbuild"],
+    "ignoredBuiltDependencies": [
+      "@biomejs/biome",
+      "esbuild"
+    ],
     "overrides": {
       "@braccato/parsers": "^0.1.1"
     }
@@ -63,6 +67,7 @@
     "@vitest/browser": "^4.1.6",
     "@vitest/browser-playwright": "^4.1.6",
     "@vitest/coverage-v8": "^4.1.6",
+    "jscpd": "^4.2.3",
     "jsdom": "^29.0.1",
     "knip": "^6.13.1",
     "playwright": "^1.60.0",
