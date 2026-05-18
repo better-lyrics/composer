@@ -73,4 +73,3 @@ async function decodeMp3ToWav(file: File): Promise<Blob> {
 // -- Exports ------------------------------------------------------------------
 
 export { audioBufferToWav, decodeMp3ToWav, isMp3File };
-export type { DecodedAudio };

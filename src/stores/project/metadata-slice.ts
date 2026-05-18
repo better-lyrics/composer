@@ -48,4 +48,4 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
 // -- Exports ------------------------------------------------------------------
 
-export { createMetadataSlice, createMetadataInitialState, createProjectInitialState };
+export { createMetadataSlice, createProjectInitialState };

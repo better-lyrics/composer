@@ -61,4 +61,4 @@ function reconcileLine(line: LooseLine): LyricLine {
 
 export { reconcileLine };
 
-export type { LineFields, WordSyncedLine, LineSyncedLine, UntimedLine, LyricLine, LooseLine };
+export type { LineSyncedLine, LyricLine, LooseLine };

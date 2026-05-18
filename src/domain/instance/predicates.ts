@@ -17,4 +17,3 @@ function belongsToInstance(line: LyricLine, groupId: string, instanceIdx: number
 // -- Exports ------------------------------------------------------------------
 
 export { belongsToInstance, isLinked };
-export type { LinkedLine };

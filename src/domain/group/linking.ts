@@ -41,4 +41,3 @@ function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
 // -- Exports ------------------------------------------------------------------
 
 export { extractLinkedFields, getLinkScope, isLinkedSibling };
-export type { LinkScope };

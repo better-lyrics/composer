@@ -41,4 +41,4 @@ function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; grou
 
 // -- Exports ------------------------------------------------------------------
 
-export { MAX_HISTORY_SIZE, commitHistory };
+export { commitHistory };
