@@ -35,6 +35,6 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", ".git"]
+    "ignore": ["node_modules", "dist", ".git", "package.json"]
   }
 }
