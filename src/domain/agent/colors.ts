@@ -38,4 +38,4 @@ function getAgentColor(agentId: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { AGENT_COLORS, AGENT_PRESETS, DEFAULT_AGENTS, getAgentColor };
+export { AGENT_PRESETS, DEFAULT_AGENTS, getAgentColor };

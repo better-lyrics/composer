@@ -200,4 +200,4 @@ export {
   hasIntraGroupGap,
   inferSyllableGroupIds,
 };
-export type { SyllableGroup, SyllablePosition };
+export type { SyllablePosition };

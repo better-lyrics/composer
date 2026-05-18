@@ -66,4 +66,3 @@ function splitLinesIntoWords(targetLineIds: Iterable<string>, effectiveLines: Ly
 // -- Exports -------------------------------------------------------------------
 
 export { computeSplitIntoWordsUpdates, computeSplitSelections, splitLinesIntoWords };
-export type { LineWordsUpdate };
