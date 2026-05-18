@@ -53,7 +53,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
       modalTitle="Explicit-word suggestions"
       multiText={(count) => `Found ${count} possibly explicit words across your lyrics`}
       modalCountText={(count) => `${count} possibly explicit word${count === 1 ? "" : "s"} detected`}
-      accept={{ label: "Mark explicit", icon: IconAlertTriangle }}
+      accept={{ label: "Mark explicit", rowLabel: "Mark", icon: IconAlertTriangle }}
       acceptAll={{ label: "Mark all", icon: IconAlertTriangle }}
       rowKey={(s) => s.fingerprint}
       renderInline={(s) => (

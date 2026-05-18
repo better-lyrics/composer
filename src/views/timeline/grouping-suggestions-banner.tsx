@@ -46,7 +46,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
       modalTitle="Grouping suggestions"
       multiText={(count) => `Found ${count} grouping suggestions across your lyrics`}
       modalCountText={(count) => `${count} repeating section${count === 1 ? "" : "s"} detected`}
-      accept={{ label: "Group them", icon: IconLink }}
+      accept={{ label: "Group them", rowLabel: "Group", icon: IconLink }}
       acceptAll={{ label: "Group all", icon: IconLink }}
       rowKey={suggestionKey}
       renderInline={(s) => summarizeInline(s)}

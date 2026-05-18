@@ -26,7 +26,7 @@ function makeBanner(overrides: {
       modalTitle="Fake suggestions"
       multiText={(count) => `Found ${count} fake suggestions`}
       modalCountText={(count) => `${count} fake thing${count === 1 ? "" : "s"} detected`}
-      accept={{ label: "Apply", icon: IconBulb }}
+      accept={{ label: "Apply", rowLabel: "Row apply", icon: IconBulb }}
       acceptAll={{ label: "Apply all", icon: IconBulb }}
       rowKey={(s) => s.fingerprint}
       renderInline={(s) => <span>{s.label}</span>}
@@ -135,8 +135,32 @@ describe("SuggestionsBanner", () => {
 
     await screen.getByRole("button", { name: /review 2/i }).click();
     await expect.element(screen.getByRole("heading", { name: "Fake suggestions" })).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Apply", exact: true }).nth(0).click();
+    await screen.getByRole("button", { name: "Row apply", exact: true }).nth(0).click();
     expect(onAccept).toHaveBeenCalledWith({ fingerprint: "f1", label: "first" });
+  });
+
+  it("renders the modal per-row accept button with its own row label, distinct from the inline label", async () => {
+    const screen = await render(makeBanner({ suggestions: [{ fingerprint: "f1", label: "lonely line" }] }));
+
+    await expect.element(screen.getByRole("button", { name: "Apply", exact: true })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Row apply", exact: true }).elements().length).toBe(0);
+
+    const screenMulti = await render(
+      makeBanner({
+        suggestions: [
+          { fingerprint: "f1", label: "first" },
+          { fingerprint: "f2", label: "second" },
+        ],
+      }),
+    );
+
+    await screenMulti.getByRole("button", { name: /review 2/i }).click();
+    await expect.element(screenMulti.getByRole("heading", { name: "Fake suggestions" })).toBeInTheDocument();
+
+    await expect
+      .element(screenMulti.getByRole("button", { name: "Row apply", exact: true }).first())
+      .toBeInTheDocument();
+    expect(screenMulti.getByRole("button", { name: "Apply", exact: true }).elements().length).toBe(0);
   });
 
   it("closes the modal with the Escape key", async () => {

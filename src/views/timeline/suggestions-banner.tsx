@@ -9,6 +9,7 @@ import { useMemo, useState } from "react";
 
 interface SuggestionAction {
   label: string;
+  rowLabel?: string;
   icon: Icon;
 }
 
@@ -52,12 +53,16 @@ interface SuggestionsModalProps<T extends { fingerprint: string }> {
 
 // -- Components ----------------------------------------------------------------
 
-const AcceptButton: React.FC<{ action: SuggestionAction; onClick: () => void }> = ({ action, onClick }) => {
+const AcceptButton: React.FC<{ action: SuggestionAction; label: string; onClick: () => void }> = ({
+  action,
+  label,
+  onClick,
+}) => {
   const Icon = action.icon;
   return (
     <Button size="sm" variant="primary" hasIcon onClick={onClick}>
       <Icon className="size-3.5" />
-      {action.label}
+      {label}
     </Button>
   );
 };
@@ -111,7 +116,7 @@ function SuggestionsBanner<T extends { fingerprint: string }>(props: Suggestions
             <span className="text-composer-text truncate">{renderInline(visible[0])}</span>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <AcceptButton action={accept} onClick={() => onAccept(visible[0])} />
+            <AcceptButton action={accept} label={accept.label} onClick={() => onAccept(visible[0])} />
             <DismissButton label="Dismiss suggestion" onClick={() => onDismiss(visible[0])} />
           </div>
         </div>
@@ -189,7 +194,11 @@ function SuggestionsModal<T extends { fingerprint: string }>(props: SuggestionsM
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex flex-col gap-0.5">{renderRow(suggestion)}</div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <AcceptButton action={accept} onClick={() => onAccept(suggestion)} />
+                  <AcceptButton
+                    action={accept}
+                    label={accept.rowLabel ?? accept.label}
+                    onClick={() => onAccept(suggestion)}
+                  />
                   <DismissButton label="Dismiss suggestion" onClick={() => onDismiss(suggestion)} />
                 </div>
               </div>
