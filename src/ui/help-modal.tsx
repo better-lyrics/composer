@@ -1,8 +1,7 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
-import { Scroll } from "@/ui/scroll";
-import { cn } from "@/utils/cn";
+import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
 import { isMac } from "@/utils/platform";
 import {
   IconAward,
@@ -37,12 +36,6 @@ interface ShortcutSectionProps {
 interface HelpModalProps {
   isOpen: boolean;
   onClose: () => void;
-}
-
-interface HelpSectionDef {
-  id: string;
-  label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -172,7 +165,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
   },
 ];
 
-const HELP_SECTIONS: HelpSectionDef[] = [
+const HELP_SECTIONS: ModalNavSection[] = [
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
   { id: "importing", label: "Importing Audio", icon: IconMusic },
@@ -242,38 +235,17 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
       className="max-w-4xl h-[80%] flex flex-col"
       bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
     >
-      <div className="flex flex-1 min-h-0">
-        <Scroll className="w-48 shrink-0 border-r border-composer-border select-none">
-          <div className="flex flex-col gap-px p-2">
-            {HELP_SECTIONS.map((section) => {
-              const Icon = section.icon;
-              const isActive = activeSection === section.id;
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => setActiveSection(section.id)}
-                  className={cn(
-                    "flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-sm text-left cursor-pointer transition-colors",
-                    isActive
-                      ? "bg-composer-button text-composer-text font-medium"
-                      : "text-composer-text-secondary hover:bg-composer-button/50 hover:text-composer-text",
-                  )}
-                >
-                  <Icon size={16} className="shrink-0" />
-                  {section.label}
-                </button>
-              );
-            })}
-          </div>
-        </Scroll>
-
-        <Scroll className="flex-1 p-6">
-          <div data-help-content>
-            <HelpSectionContent section={activeSection} />
-          </div>
-        </Scroll>
-      </div>
+      <ModalNavLayout
+        sections={HELP_SECTIONS}
+        activeSection={activeSection}
+        onSectionChange={setActiveSection}
+        sidebarClassName="w-48"
+        contentClassName="p-6"
+      >
+        <div data-help-content>
+          <HelpSectionContent section={activeSection} />
+        </div>
+      </ModalNavLayout>
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">
         Press{" "}
