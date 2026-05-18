@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ConfirmationsSettingsSection } from "@/ui/confirmations-settings-section";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
+import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 
-describe("ConfirmationsSettingsSection", () => {
+describe("ConfirmationsSection", () => {
   it("renders one switch per confirmation prompt", async () => {
-    const screen = await render(<ConfirmationsSettingsSection />);
+    const screen = await render(<ConfirmationsSection />);
     const switches = screen.container.querySelectorAll('[role="switch"]');
     expect(switches.length).toBeGreaterThanOrEqual(6);
   });
@@ -21,13 +21,13 @@ describe("ConfirmationsSettingsSection", () => {
 
   it("reflects the current settings state via aria-checked", async () => {
     useSettingsStore.setState({ confirmReplaceLyrics: false });
-    await render(<ConfirmationsSettingsSection />);
+    await render(<ConfirmationsSection />);
     const toggle = toggleForLabel("Confirm replacing lyrics on import");
     expect(toggle.getAttribute("aria-checked")).toBe("false");
   });
 
   it("flips the settings value when a toggle is clicked", async () => {
-    await render(<ConfirmationsSettingsSection />);
+    await render(<ConfirmationsSection />);
     expect(useSettingsStore.getState().confirmClearProject).toBe(true);
     const toggle = toggleForLabel("Confirm clearing project");
     toggle.click();

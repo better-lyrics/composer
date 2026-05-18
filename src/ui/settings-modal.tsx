@@ -1,7 +1,7 @@
-import { ConfirmationsSettingsSection } from "@/ui/confirmations-settings-section";
 import { Modal } from "@/ui/modal";
 import { Scroll } from "@/ui/scroll";
 import { AdvancedSection } from "@/ui/settings/advanced-section";
+import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 import { GeneralSection } from "@/ui/settings/general-section";
 import { PlaybackSection } from "@/ui/settings/playback-section";
 import { StorageSection } from "@/ui/settings/storage-section";
@@ -55,7 +55,7 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
   timeline: TimelineSection,
   sync: SyncSection,
   shortcuts: ShortcutsSettingsSection,
-  confirmations: ConfirmationsSettingsSection,
+  confirmations: ConfirmationsSection,
   storage: StorageSection,
   advanced: AdvancedSection,
   general: GeneralSection,
