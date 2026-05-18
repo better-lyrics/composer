@@ -18,7 +18,6 @@ const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const LINE_BUDGET = 300;
 
 const BASELINE_OVER_BUDGET = new Set<string>([
-  "ui/settings-modal.tsx",
   "views/timeline/use-timeline-keyboard.ts",
   "views/edit.tsx",
   "views/timeline/timeline-panel.tsx",
