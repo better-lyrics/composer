@@ -23,11 +23,6 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   "views/timeline/timeline-panel.tsx",
   "views/sync/sync-panel.tsx",
   "hooks/useSyncHandlers.ts",
-  // lines-slice.ts is the line-mutation action set for the project store.
-  // Its pure helpers already live in lines-slice-helpers.ts; what remains is
-  // the Zustand slice creator itself, and trimming further would mean
-  // splitting individual actions.
-  "stores/project/lines-slice.ts",
   "views/timeline/utils.ts",
   "views/timeline/word-track.tsx",
   "views/timeline/paste-preview.tsx",

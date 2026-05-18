@@ -1,15 +1,15 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
-import { closeIntraGroupGaps, computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { commitHistory } from "@/stores/project/history-helpers";
 import {
-  applyExplicitTargetToLines,
+  applyMarkWordsExplicit,
+  applyMergeSyllableGroup,
   applyMoveFromBg,
   applyMoveToBg,
-  expandTargetsToSyllableGroups,
 } from "@/stores/project/lines-slice-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -232,62 +232,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
     set((state) => {
-      if (wordIndices.length === 0) return state;
-      const target = state.lines.find((l) => l.id === lineId);
-      if (!target) return state;
-      const sourceWords = target[field];
-      if (!sourceWords || sourceWords.length === 0) return state;
-      const sourceCount = sourceWords.length;
-      const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
-      if (selected.size === 0) return state;
-
-      const linkScope = getLinkScope(target);
-      let mutated = false;
-      const newLines = state.lines.map((line) => {
-        const isSource = line.id === lineId;
-        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
-        if (!isSource && !isSibling) return line;
-        const lineWords = line[field];
-        if (!lineWords) return line;
-
-        const runs = computeByGroupId(lineWords);
-        const collapsed: WordTiming[] = [];
-        let changed = false;
-        let runIdx = 0;
-        let i = 0;
-        while (i < lineWords.length) {
-          const run = runs[runIdx];
-          if (!run || run.startIndex !== i) {
-            collapsed.push(lineWords[i]);
-            i++;
-            continue;
-          }
-          runIdx++;
-          let touched = false;
-          for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
-          if (touched) {
-            const first = lineWords[run.startIndex];
-            const { syllableGroupId: _drop, ...rest } = first;
-            collapsed.push({
-              ...rest,
-              text: lineWords
-                .slice(run.startIndex, run.endIndex + 1)
-                .map((w) => w.text)
-                .join(""),
-              begin: first.begin,
-              end: lineWords[run.endIndex].end,
-            });
-            changed = true;
-          } else {
-            for (let k = run.startIndex; k <= run.endIndex; k++) collapsed.push(lineWords[k]);
-          }
-          i = run.endIndex + 1;
-        }
-        if (!changed) return line;
-        mutated = true;
-        return reconcileLine({ ...line, [field]: collapsed });
-      });
-      if (!mutated) return state;
+      const newLines = applyMergeSyllableGroup(state.lines, lineId, field, wordIndices);
+      if (!newLines) return state;
       return commitHistory(state, { lines: newLines });
     }),
 
@@ -305,37 +251,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   markWordsExplicit: (targets, value) =>
     set((state) => {
-      if (targets.length === 0) return state;
-      let lines = state.lines;
-      let changed = false;
-      const linesById = new Map<string, LyricLine>();
-      for (const l of lines) linesById.set(l.id, l);
-
-      const expandedTargets = expandTargetsToSyllableGroups(targets, linesById);
-
-      for (const target of expandedTargets) {
-        const line = linesById.get(target.lineId);
-        if (!line) continue;
-        const currentWords = line[target.field];
-        if (!currentWords || target.wordIndex < 0 || target.wordIndex >= currentWords.length) continue;
-        if ((currentWords[target.wordIndex].explicit === true) === value) continue;
-
-        const newWords: WordTiming[] = currentWords.map((word, i) => {
-          if (i !== target.wordIndex) return word;
-          if (value) return { ...word, explicit: true as const };
-          const { explicit: _explicit, ...rest } = word;
-          return rest;
-        });
-
-        const before = lines;
-        lines = applyExplicitTargetToLines(lines, target.lineId, target.field, newWords);
-        for (let i = 0; i < lines.length; i++) {
-          if (lines[i] !== before[i]) linesById.set(lines[i].id, lines[i]);
-        }
-        changed = true;
-      }
-      if (!changed) return state;
-      return commitHistory(state, { lines });
+      const newLines = applyMarkWordsExplicit(state.lines, targets, value);
+      if (!newLines) return state;
+      return commitHistory(state, { lines: newLines });
     }),
 });
 
