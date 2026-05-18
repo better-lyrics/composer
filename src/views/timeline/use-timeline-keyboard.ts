@@ -1,5 +1,4 @@
 import { useAudioStore } from "@/stores/audio";
-import { useConfirmStore } from "@/stores/confirm-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
@@ -7,14 +6,15 @@ import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { MOD_KEY } from "@/utils/platform";
-import { convertLineToWord } from "@/utils/sync-helpers";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
+import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
+import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
@@ -23,7 +23,6 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { isLineSynced } from "@/domain/line/predicates";
 import {
   computeRowLayout,
   findWordAtTime,
@@ -417,41 +416,8 @@ function useTimelineKeyboard(
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
           e.preventDefault();
-
-          const realLines = useProjectStore.getState().lines;
-          const realLinesById = new Map<string, LyricLine>();
-          for (const l of realLines) realLinesById.set(l.id, l);
           const lineIds = new Set(wSel.map((w) => w.lineId));
-          const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-
-          for (const lineId of lineIds) {
-            const realLine = realLinesById.get(lineId);
-            if (!realLine || !isLineSynced(realLine)) continue;
-            const converted = convertLineToWord(realLine);
-            if (converted.words) {
-              updates.push({ id: lineId, updates: { words: converted.words, begin: undefined, end: undefined } });
-            }
-          }
-
-          if (updates.length === 1) {
-            useProjectStore.getState().updateLineWithHistory(updates[0].id, updates[0].updates);
-          } else if (updates.length > 1) {
-            useProjectStore.getState().updateLinesWithHistory(updates);
-          }
-
-          const lineIndexById = new Map<string, number>();
-          for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
-          const newSelections: WordSelection[] = [];
-          for (const u of updates) {
-            const lineIndex = lineIndexById.get(u.id);
-            if (lineIndex === undefined || !u.updates.words) continue;
-            for (let wi = 0; wi < u.updates.words.length; wi++) {
-              newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
-            }
-          }
-          if (newSelections.length > 0) {
-            useTimelineStore.getState().setSelectedWords(newSelections);
-          }
+          splitLinesIntoWords(lineIds, lines);
           break;
         }
         case "timeline.expandAll": {
@@ -612,19 +578,7 @@ function useTimelineKeyboard(
           if (!group) break;
           e.preventDefault();
           const instanceCount = listInstancesOfGroup(projectLines, inst.groupId).length;
-          (async () => {
-            const ok = await useConfirmStore.getState().open({
-              title: `Delete the "${group.label}" group?`,
-              description: `All ${instanceCount} instance${instanceCount === 1 ? "" : "s"} will become standalone lines. They keep their text and timing, but stop updating together.`,
-              confirmLabel: "Delete group",
-              variant: "destructive",
-              settingsKey: "confirmGroupDissolution",
-              recoverable: true,
-            });
-            if (!ok) return;
-            useProjectStore.getState().removeGroup(inst.groupId);
-            showGroupActionToast("Group deleted");
-          })();
+          void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount });
           break;
         }
         case "timeline.pingSiblings": {

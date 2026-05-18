@@ -1,4 +1,3 @@
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
@@ -62,7 +61,6 @@ const TimelineContextMenu: React.FC = () => {
   });
 
   const agents = useProjectStore((s) => s.agents);
-  const confirm = useConfirm();
 
   const targets = useContextMenuTargets();
   const {
@@ -103,7 +101,7 @@ const TimelineContextMenu: React.FC = () => {
     handleDeleteGroup,
     handleRenameStart,
     handleRecolorGroup,
-  } = useGroupMenuActions(targets, clearContextMenu, confirm);
+  } = useGroupMenuActions(targets, clearContextMenu);
 
   const {
     handleDetachInstance,

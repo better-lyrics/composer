@@ -1,6 +1,5 @@
-import type { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -10,11 +9,10 @@ import { toast } from "sonner";
 // -- Interfaces ---------------------------------------------------------------
 
 type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
-type Confirm = ReturnType<typeof useConfirm>;
 
 // -- Hook ---------------------------------------------------------------------
 
-function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void, confirm: Confirm) {
+function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
   const { groupableSelection } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const setRenamingGroupId = useTimelineStore((s) => s.setRenamingGroupId);
@@ -46,18 +44,8 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
     ).size;
 
     clearContextMenu();
-    const ok = await confirm({
-      title: `Delete the "${group.label}" group?`,
-      description: `All ${instanceCount} instance${instanceCount === 1 ? "" : "s"} will become standalone lines. They keep their text and timing, but stop updating together.`,
-      confirmLabel: "Delete group",
-      variant: "destructive",
-      settingsKey: "confirmGroupDissolution",
-      recoverable: true,
-    });
-    if (!ok) return;
-    useProjectStore.getState().removeGroup(groupId);
-    showGroupActionToast("Group deleted");
-  }, [contextMenu, groups, confirm, clearContextMenu]);
+    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount });
+  }, [contextMenu, groups, clearContextMenu]);
 
   const handleRenameStart = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;

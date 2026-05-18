@@ -1,9 +1,8 @@
-import type { LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
-import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -91,40 +90,9 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
     const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
 
-    const rawLinesByIdSplit = new Map<string, LyricLine>();
-    for (const l of rawLines) rawLinesByIdSplit.set(l.id, l);
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-    for (const id of targetIds) {
-      const realLine = rawLinesByIdSplit.get(id);
-      if (!realLine || !isLineSynced(realLine)) continue;
-      const converted = convertLineToWord(realLine);
-      if (converted.words) {
-        updates.push({ id, updates: { words: converted.words, begin: undefined, end: undefined } });
-      }
-    }
-
-    if (updates.length === 1) {
-      updateLineWithHistory(updates[0].id, updates[0].updates);
-    } else if (updates.length > 1) {
-      useProjectStore.getState().updateLinesWithHistory(updates);
-    }
-
-    const lineIndexById = new Map<string, number>();
-    for (let i = 0; i < lines.length; i++) lineIndexById.set(lines[i].id, i);
-    const newSelections: Array<{ lineId: string; lineIndex: number; wordIndex: number; type: "word" | "bg" }> = [];
-    for (const u of updates) {
-      const lineIndex = lineIndexById.get(u.id);
-      if (lineIndex === undefined || !u.updates.words) continue;
-      for (let wi = 0; wi < u.updates.words.length; wi++) {
-        newSelections.push({ lineId: u.id, lineIndex, wordIndex: wi, type: "word" });
-      }
-    }
-    if (newSelections.length > 0) {
-      useTimelineStore.getState().setSelectedWords(newSelections);
-    }
-
+    splitLinesIntoWords(targetIds, lines);
     clearContextMenu();
-  }, [contextMenu, rawLines, selectedWords, lines, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, selectedWords, lines, clearContextMenu]);
 
   return {
     handlePlaceLineHere,
