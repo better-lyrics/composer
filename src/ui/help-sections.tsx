@@ -13,8 +13,7 @@ import { TtmlStandardsSection } from "@/ui/help-sections/ttml-standards";
 
 // -- Registry -----------------------------------------------------------------
 
-const HELP_SECTIONS: Record<string, React.FC> = {
-  about: AboutSection,
+const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
   "getting-started": GettingStartedSection,
   "keyboard-shortcuts": KeyboardShortcutsSection,
   importing: ImportSection,
@@ -26,12 +25,13 @@ const HELP_SECTIONS: Record<string, React.FC> = {
   exporting: ExportSection,
   recovery: RecoverySection,
   "ttml-standards": TtmlStandardsSection,
+  about: AboutSection,
 };
 
 // -- Section Router -----------------------------------------------------------
 
 const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
-  const Section = HELP_SECTIONS[section] ?? GettingStartedSection;
+  const Section = HELP_SECTION_COMPONENTS[section] ?? GettingStartedSection;
   return <Section />;
 };
 
