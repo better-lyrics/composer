@@ -41,8 +41,8 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const toggleFollow = useTimelineStore((s) => s.toggleFollow);
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
   const togglePreviewSidebar = useTimelineStore((s) => s.togglePreviewSidebar);
-  const selectOnlyMode = useTimelineStore((s) => s.selectOnlyMode);
-  const toggleSelectOnlyMode = useTimelineStore((s) => s.toggleSelectOnlyMode);
+  const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
+  const toggleRollingEditMode = useTimelineStore((s) => s.toggleRollingEditMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const snapEnabled = useSettingsStore((s) => s.timelineSnap);
   const setSetting = useSettingsStore((s) => s.set);
@@ -149,11 +149,11 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
 
         {/* Select-only mode toggle */}
         <Button
-          variant={selectOnlyMode ? "primary" : "ghost"}
+          variant={rollingEditMode ? "primary" : "ghost"}
           size="sm"
-          onClick={toggleSelectOnlyMode}
+          onClick={toggleRollingEditMode}
           hasIcon
-          className={cn(!selectOnlyMode && "opacity-60")}
+          className={cn(!rollingEditMode && "opacity-60")}
           title="Select-only mode (disables double-click word creation)"
         >
           <IconPointer size={16} />

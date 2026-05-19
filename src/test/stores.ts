@@ -49,7 +49,7 @@ async function resetAllStores(): Promise<void> {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    selectOnlyMode: false,
+    rollingEditMode: false,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,

@@ -39,7 +39,7 @@ interface TimelineState {
   dragTime: number;
   contextMenu: ContextMenuState | null;
   editingWord: EditingWord | null;
-  selectOnlyMode: boolean;
+  rollingEditMode: boolean;
   collapsedInstances: Record<string, boolean>;
   pingingGroupId: string | null;
   renamingGroupId: string | null;
@@ -70,7 +70,7 @@ interface TimelineActions {
   clearContextMenu: () => void;
   setEditingWord: (editing: EditingWord | null) => void;
   clearEditingWord: () => void;
-  toggleSelectOnlyMode: () => void;
+  toggleRollingEditMode: () => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
   setPingingGroupId: (groupId: string | null) => void;
@@ -110,7 +110,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    selectOnlyMode: false,
+    rollingEditMode: false,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,
@@ -145,7 +145,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clearContextMenu: () => set({ contextMenu: null }),
     setEditingWord: (editingWord) => set({ editingWord }),
     clearEditingWord: () => set({ editingWord: null }),
-    toggleSelectOnlyMode: () => set((s) => ({ selectOnlyMode: !s.selectOnlyMode })),
+    toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
     setInstanceCollapsed: (key, isCollapsed) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
     toggleInstanceCollapsed: (key) =>
