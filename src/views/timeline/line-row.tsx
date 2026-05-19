@@ -190,7 +190,6 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               className="relative cursor-pointer"
               style={{ width: duration * zoom, height: rowHeight }}
               onDoubleClick={(e) => {
-                if (useTimelineStore.getState().selectOnlyMode) return;
                 const zoomPx = useTimelineStore.getState().zoom;
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 const time = (e.clientX - rect.left) / zoomPx;
@@ -268,7 +267,6 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             )}
             style={{ height: BG_DROP_ZONE_HEIGHT }}
             onDoubleClick={(e) => {
-              if (useTimelineStore.getState().selectOnlyMode) return;
               const zoom = useTimelineStore.getState().zoom;
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               const time = (e.clientX - rect.left) / zoom;

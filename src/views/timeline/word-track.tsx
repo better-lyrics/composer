@@ -336,7 +336,6 @@ const WordTrack: React.FC<WordTrackProps> = ({
   };
 
   const handleTrackDoubleClick = (e: React.MouseEvent) => {
-    if (useTimelineStore.getState().selectOnlyMode) return;
     if ((e.target as HTMLElement).closest("[data-word-block]")) return;
 
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
