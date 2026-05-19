@@ -221,7 +221,7 @@ const TimelinePanel: React.FC = () => {
   );
 
   const handleWheel = useCallback(
-    (e: React.WheelEvent<HTMLDivElement>) => {
+    (e: WheelEvent) => {
       const container = scrollContainerRef.current;
       if (!container || duration <= 0) return;
 
@@ -278,6 +278,13 @@ const TimelinePanel: React.FC = () => {
     },
     [zoom, duration],
   );
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    container.addEventListener("wheel", handleWheel, { passive: false });
+    return () => container.removeEventListener("wheel", handleWheel);
+  }, [handleWheel]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -514,7 +521,6 @@ const TimelinePanel: React.FC = () => {
                 data-scroll-container
                 className="flex-1 overflow-auto overscroll-none static! z-[unset]"
                 onScroll={handleScroll}
-                onWheel={handleWheel}
                 onMouseDown={handleMouseDown}
                 onAuxClick={(e) => e.preventDefault()}
                 onKeyDown={(e) => {
