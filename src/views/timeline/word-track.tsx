@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -108,7 +109,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       conjoinedRef.current = { active: false, adjacentWordIndex: null };
       snap.beginGesture({
-        selfIds: new Set([selfKey(lineId, wordIndex, trackType)]),
+        selfIds: resizeGestureSelfIds(lineId, wordIndex, edge, words.length, trackType),
         leaderKey: selfKey(lineId, wordIndex, trackType),
         overlapCheck: (shift) => {
           const w = words[wordIndex];

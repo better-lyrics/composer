@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { WordTrack } from "@/views/timeline/word-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 
@@ -29,6 +30,14 @@ function dragRightEdge(block: HTMLElement, opts: { altKey?: boolean } = {}) {
   const edge = block.querySelector('[data-edge="right"]') as HTMLElement;
   edge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: 40 }));
   document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: 48, altKey: opts.altKey }));
+  document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+}
+
+function dragRightEdgeBy(block: HTMLElement, offsetPx: number) {
+  const edge = block.querySelector('[data-edge="right"]') as HTMLElement;
+  const startX = 200;
+  edge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: startX }));
+  document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: startX + offsetPx }));
   document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 }
 
@@ -219,6 +228,28 @@ describe("WordTrack", () => {
     dragRightEdge(blocks[0], { altKey: true });
     expect(calls).toHaveLength(1);
     expect(calls[0].adjacentIndex).toBe(1);
+  });
+
+  it("does not snap a syllable divider back to its start position (regression for issue #76)", async () => {
+    useSettingsStore.setState({ timelineSnap: true });
+    const calls: Array<{ index: number; updates: { begin?: number; end?: number }; adjacentIndex?: number }> = [];
+    const words = [
+      createWord({ text: "ev", begin: 1, end: 1.2, syllableGroupId: "g" }),
+      createWord({ text: "er", begin: 1.2, end: 1.6, syllableGroupId: "g" }),
+      createWord({ text: "y", begin: 1.6, end: 2, syllableGroupId: "g" }),
+    ];
+    const screen = await renderTrack(words, (index, updates, adjacentIndex) =>
+      calls.push({ index, updates, adjacentIndex }),
+    );
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    dragRightEdgeBy(blocks[0], 10);
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].index).toBe(0);
+    expect(calls[0].adjacentIndex).toBe(1);
+    expect(calls[0].updates.end).not.toBe(1.2);
+    expect(calls[0].updates.end).toBeGreaterThan(1.2);
   });
 
   it("sizes the track container to duration × zoom", async () => {
