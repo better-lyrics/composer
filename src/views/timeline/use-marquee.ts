@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { computeRowLayout } from "@/views/timeline/utils";
@@ -21,7 +21,6 @@ type MarqueeState = "idle" | "pending" | "active";
 // -- Constants -----------------------------------------------------------------
 
 const ACTIVATION_THRESHOLD = 5;
-const WAVEFORM_HEIGHT = 80;
 const BG_DROP_ZONE_HEIGHT = 24;
 const AUTO_SCROLL_ZONE = 40;
 const AUTO_SCROLL_SPEED = 8;

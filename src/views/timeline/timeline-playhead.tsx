@@ -4,7 +4,7 @@ import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
@@ -74,7 +74,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
         if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
           lastFollowedLineRef.current = activeLineIndex;
-          const WAVEFORM_HEIGHT = 80;
           const BG_DROP_ZONE_HEIGHT = 24;
           const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
 

@@ -23,8 +23,8 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
-import { TimelineWaveform, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-waveform";
+import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { computeScrubTime, decideWheelAction } from "@/views/timeline/timeline-wheel";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
@@ -309,7 +309,6 @@ const TimelinePanel: React.FC = () => {
     const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
     const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
 
-    const WAVEFORM_HEIGHT = 80;
     const BG_DROP_ZONE_HEIGHT = 24;
 
     const layout = computeRowLayout({

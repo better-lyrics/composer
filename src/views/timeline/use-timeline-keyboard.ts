@@ -16,7 +16,7 @@ import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from 
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
 import { findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -69,7 +69,6 @@ function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
 
 // -- Constants -----------------------------------------------------------------
 
-const WAVEFORM_HEIGHT = 80;
 const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Hook ----------------------------------------------------------------------
