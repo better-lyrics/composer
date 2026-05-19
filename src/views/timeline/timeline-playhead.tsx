@@ -3,12 +3,12 @@ import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
-import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
+import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -20,8 +20,6 @@ interface TimelinePlayheadProps {
 // -- Constants -----------------------------------------------------------------
 
 const HIT_BUFFER_PX = 18;
-const EDGE_SCROLL_ZONE = 60;
-const EDGE_SCROLL_MAX_SPEED = 22;
 
 // -- Component -----------------------------------------------------------------
 
@@ -41,7 +39,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
   const containerLeftRef = useRef<number>(0);
-  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   // RAF loop - always runs, reads directly from audio element and stores
   useEffect(() => {
@@ -214,86 +211,27 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     return () => document.removeEventListener("mousemove", onMove);
   }, []);
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
-
-      e.preventDefault();
-      setIsPlaying(false);
-      dragCleanupRef.current?.();
-
-      const audioEl = useAudioStore.getState().audioElement;
-      const actualTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      setDraggingPlayhead(true, actualTime);
-
-      let pointerX = e.clientX;
-      let edgeScrollRaf: number | null = null;
-      const controller = new AbortController();
-
-      const computeTimeFromPointer = (clientX: number): number | null => {
-        const parentRect = containerRef.current?.getBoundingClientRect();
-        if (!parentRect) return null;
-        const container = scrollContainerRef.current;
-        const scrollLeft = container?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
-        const { zoom } = useTimelineStore.getState();
-        const x = clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-        return Math.max(0, Math.min(duration, x / zoom));
-      };
-
-      const tickEdgeScroll = () => {
-        edgeScrollRaf = requestAnimationFrame(tickEdgeScroll);
-        const container = scrollContainerRef.current;
-        if (!container) return;
-        const rect = container.getBoundingClientRect();
-        const velocity = computeEdgeScrollVelocity({
-          pointerX,
-          contentLeft: rect.left + GUTTER_WIDTH,
-          contentRight: rect.right,
-          edgeSize: EDGE_SCROLL_ZONE,
-          maxSpeed: EDGE_SCROLL_MAX_SPEED,
-        });
-        if (velocity === 0) return;
-        const maxScroll = container.scrollWidth - container.clientWidth;
-        container.scrollLeft = Math.max(0, Math.min(maxScroll, container.scrollLeft + velocity));
-        const time = computeTimeFromPointer(pointerX);
-        if (time !== null) setDragTime(time);
-      };
-
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        pointerX = moveEvent.clientX;
-        const time = computeTimeFromPointer(pointerX);
-        if (time !== null) setDragTime(time);
-      };
-
-      const cleanup = () => {
-        if (edgeScrollRaf !== null) {
-          cancelAnimationFrame(edgeScrollRaf);
-          edgeScrollRaf = null;
-        }
-        controller.abort();
-        dragCleanupRef.current = null;
-      };
-
-      const handleMouseUp = (upEvent: MouseEvent) => {
-        const time = computeTimeFromPointer(upEvent.clientX);
-        if (time !== null) seekTo(time);
-        setDraggingPlayhead(false);
-        cleanup();
-      };
-
-      dragCleanupRef.current = cleanup;
-      document.addEventListener("mousemove", handleMouseMove, { signal: controller.signal });
-      document.addEventListener("mouseup", handleMouseUp, { signal: controller.signal });
-      tickEdgeScroll();
-    },
+  const drag = useMemo(
+    () =>
+      createPlayheadDrag({
+        getContainerRect: () => containerRef.current?.getBoundingClientRect(),
+        getScrollContainer: () => scrollContainerRef.current,
+        getDuration: () => duration,
+        getZoom: () => useTimelineStore.getState().zoom,
+        getStoreScrollLeft: () => useTimelineStore.getState().scrollLeft,
+        getCurrentTime: () => {
+          const audioEl = useAudioStore.getState().audioElement;
+          return audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+        },
+        setIsPlaying,
+        setDraggingPlayhead,
+        setDragTime,
+        seekTo,
+      }),
     [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime, scrollContainerRef],
   );
 
-  useEffect(() => {
-    return () => {
-      dragCleanupRef.current?.();
-    };
-  }, []);
+  useEffect(() => drag.dispose, [drag]);
 
   if (duration === 0) return null;
 
@@ -310,7 +248,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         aria-orientation="vertical"
         className="timeline-playhead-bar absolute top-0 left-0 w-0.5 bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{ height: containerHeight }}
-        onMouseDown={handleMouseDown}
+        onMouseDown={drag.onMouseDown}
       >
         <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-composer-accent rounded-t expanded-hit-lg" />
       </div>
