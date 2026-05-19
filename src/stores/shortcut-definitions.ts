@@ -1,4 +1,22 @@
-import type { ShortcutDefinition } from "@/stores/shortcut-registry";
+// -- Types --------------------------------------------------------------------
+
+interface ShortcutBinding {
+  key: string;
+  shift?: boolean;
+  alt?: boolean;
+  ctrl?: boolean;
+  meta?: boolean;
+  mod?: boolean;
+}
+
+type ShortcutScope = "global" | "sync" | "timeline";
+
+interface ShortcutDefinition {
+  id: string;
+  scope: ShortcutScope;
+  description: string;
+  defaultBinding: ShortcutBinding;
+}
 
 // -- Registry -----------------------------------------------------------------
 
@@ -272,3 +290,4 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
 // -- Exports ------------------------------------------------------------------
 
 export { SHORTCUT_DEFINITIONS };
+export type { ShortcutBinding, ShortcutScope, ShortcutDefinition };
