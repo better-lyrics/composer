@@ -262,10 +262,7 @@ describe("WordTrack", () => {
       adjacentIndex?: number;
       adjacentUpdates?: { begin?: number; end?: number };
     }> = [];
-    const words = [
-      createWord({ text: "a ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
     const screen = await renderTrack(words, (index, updates, adjacentIndex, adjacentUpdates) =>
       calls.push({ index, updates, adjacentIndex, adjacentUpdates }),
     );
@@ -289,10 +286,7 @@ describe("WordTrack", () => {
   it("resizes one word independently when Alt is held in rolling edit mode", async () => {
     useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "a ", begin: 1, end: 1.5 }),
-      createWord({ text: "b", begin: 1.5, end: 2 }),
-    ];
+    const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
     const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
 
