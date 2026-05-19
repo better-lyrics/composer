@@ -3,6 +3,7 @@ import type { WordSelection } from "@/domain/selection/model";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
@@ -18,6 +19,34 @@ function seedPlayheadTime(time: number): void {
 
 function pressSelectWordAtPlayhead(): void {
   window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+}
+
+function getScrollContainer(): HTMLDivElement {
+  return document.querySelector("[data-scroll-container]") as HTMLDivElement;
+}
+
+function makeScrollable(container: HTMLDivElement): void {
+  container.style.width = "400px";
+  container.style.height = "300px";
+  container.style.overflow = "auto";
+}
+
+function dispatchWheel(
+  container: HTMLElement,
+  init: { deltaX?: number; deltaY: number; clientX: number; clientY: number; ctrlKey?: boolean; shiftKey?: boolean },
+): WheelEvent {
+  const event = new WheelEvent("wheel", {
+    deltaX: init.deltaX ?? 0,
+    deltaY: init.deltaY,
+    clientX: init.clientX,
+    clientY: init.clientY,
+    ctrlKey: init.ctrlKey ?? false,
+    shiftKey: init.shiftKey ?? false,
+    bubbles: true,
+    cancelable: true,
+  });
+  container.dispatchEvent(event);
+  return event;
 }
 
 describe("TimelinePanel", () => {
@@ -82,5 +111,91 @@ describe("select word under playhead", () => {
 
     pressSelectWordAtPlayhead();
     await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([]);
+  });
+});
+
+describe("timeline wheel behavior", () => {
+  function seedTimeline(lineCount: number): void {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60 });
+    useTimelineStore.setState({ zoom: 100 });
+    useProjectStore.setState({
+      activeTab: "timeline",
+      lines: Array.from({ length: lineCount }, (_, i) =>
+        createLine({
+          id: `line-${i}`,
+          text: `lyric ${i}`,
+          words: [createWord({ text: `lyric${i}`, begin: i, end: i + 0.5 })],
+        }),
+      ),
+    });
+  }
+
+  it("scrolls horizontally on a plain vertical wheel when the setting is on", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: true });
+    seedTimeline(30);
+    await render(<TimelinePanel />);
+    const container = getScrollContainer();
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    const beforeLeft = container.scrollLeft;
+    const beforeTop = container.scrollTop;
+    dispatchWheel(container, { deltaY: 120, clientX: rect.left + 200, clientY: rect.top + 200 });
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(beforeLeft);
+    expect(container.scrollTop).toBe(beforeTop);
+  });
+
+  it("scrolls vertically on a Shift wheel when the setting is on", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: true });
+    seedTimeline(40);
+    await render(<TimelinePanel />);
+    const container = getScrollContainer();
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    const beforeLeft = container.scrollLeft;
+    const beforeTop = container.scrollTop;
+    dispatchWheel(container, {
+      deltaY: 120,
+      shiftKey: true,
+      clientX: rect.left + 200,
+      clientY: rect.top + 200,
+    });
+
+    await expect.poll(() => container.scrollTop).toBeGreaterThan(beforeTop);
+    expect(container.scrollLeft).toBe(beforeLeft);
+  });
+
+  it("leaves native scrolling untouched when the setting is off", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: false });
+    seedTimeline(30);
+    await render(<TimelinePanel />);
+    const container = getScrollContainer();
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    const event = dispatchWheel(container, { deltaY: 120, clientX: rect.left + 200, clientY: rect.top + 200 });
+
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("scrubs the playhead forward and back when wheeling over the waveform strip", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: false });
+    seedTimeline(10);
+    seedPlayheadTime(20);
+    await render(<TimelinePanel />);
+    const container = getScrollContainer();
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    dispatchWheel(container, { deltaY: 200, clientX: rect.left + 100, clientY: rect.top + 40 });
+    await expect.poll(() => useAudioStore.getState().currentTime).toBeGreaterThan(20);
+
+    const afterForward = useAudioStore.getState().currentTime;
+    seedPlayheadTime(1);
+    dispatchWheel(container, { deltaY: -200, clientX: rect.left + 100, clientY: rect.top + 40 });
+    await expect.poll(() => useAudioStore.getState().currentTime).toBe(0);
+    expect(afterForward).toBeGreaterThan(20);
   });
 });
