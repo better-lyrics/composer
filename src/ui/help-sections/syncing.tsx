@@ -90,6 +90,15 @@ const SyncSection: React.FC = () => (
       </p>
     </div>
 
+    <div>
+      <h4 className={HEADING}>Splitting syllables</h4>
+      <p className={PROSE}>
+        Each word on the active line has a small scissors button. Click it to split that word into syllables right
+        here, without switching to the Timeline. A popover opens where you click between letters to mark the split
+        points, then confirm. The Timeline splitter offers the same syllable split plus a word-mode split.
+      </p>
+    </div>
+
     <p className={PROSE}>
       After syncing, your words have timing data. The Sync tab works at the line or word level, but for precise per-word
       timing adjustments, Timeline is where you drag, resize, and snap individual word blocks. Head there for

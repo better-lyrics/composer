@@ -12,4 +12,9 @@ describe("SyncSection", () => {
     const screen = await render(<SyncSection />);
     await expect.poll(() => screen.container.querySelectorAll("[data-inline-key-badge]").length).toBeGreaterThan(0);
   });
+
+  it("documents the per-word syllable splitter", async () => {
+    const screen = await render(<SyncSection />);
+    await expect.element(screen.getByRole("heading", { name: "Splitting syllables" })).toBeInTheDocument();
+  });
 });
