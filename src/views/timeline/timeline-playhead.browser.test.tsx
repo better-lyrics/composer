@@ -89,4 +89,53 @@ describe("TimelinePlayhead", () => {
     const playhead = screen.container.querySelector("[style*='translate3d']") as HTMLElement;
     expect(playhead.style.height).toBe("800px");
   });
+
+  it("auto-scrolls right when the drag pointer enters the right edge zone", async () => {
+    useAudioStore.setState({ duration: 60, currentTime: 0 });
+    useTimelineStore.setState({ zoom: 50, scrollLeft: 0, isDraggingPlayhead: false });
+    const screen = await render(<Harness />);
+    await waitForFrames(3);
+
+    const container = screen.container.querySelector<HTMLDivElement>("[data-test='scroll-container']");
+    const playhead = screen.container.querySelector("[role='separator']") as HTMLElement;
+    if (!container || !playhead) throw new Error("missing harness elements");
+    expect(container.scrollLeft).toBe(0);
+
+    const rect = container.getBoundingClientRect();
+    const rightEdgeX = rect.right - 5;
+
+    playhead.dispatchEvent(new MouseEvent("mousedown", { button: 0, clientX: rect.left + 100, bubbles: true }));
+    document.dispatchEvent(new MouseEvent("mousemove", { clientX: rightEdgeX, clientY: rect.top + 20, bubbles: true }));
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(0);
+
+    const scrolledTo = container.scrollLeft;
+    document.dispatchEvent(new MouseEvent("mouseup", { clientX: rightEdgeX, clientY: rect.top + 20, bubbles: true }));
+
+    await waitForFrames(6);
+    expect(container.scrollLeft).toBeLessThanOrEqual(scrolledTo + 1);
+  });
+
+  it("auto-scrolls left when the drag pointer enters the left edge zone", async () => {
+    useAudioStore.setState({ duration: 60, currentTime: 0 });
+    useTimelineStore.setState({ zoom: 50, scrollLeft: 400, isDraggingPlayhead: false });
+    const screen = await render(<Harness />);
+    await waitForFrames(3);
+
+    const container = screen.container.querySelector<HTMLDivElement>("[data-test='scroll-container']");
+    const playhead = screen.container.querySelector("[role='separator']") as HTMLElement;
+    if (!container || !playhead) throw new Error("missing harness elements");
+    container.scrollLeft = 400;
+    expect(container.scrollLeft).toBe(400);
+
+    const rect = container.getBoundingClientRect();
+    const leftEdgeX = rect.left + GUTTER_WIDTH + 5;
+
+    playhead.dispatchEvent(new MouseEvent("mousedown", { button: 0, clientX: rect.left + 200, bubbles: true }));
+    document.dispatchEvent(new MouseEvent("mousemove", { clientX: leftEdgeX, clientY: rect.top + 20, bubbles: true }));
+
+    await expect.poll(() => container.scrollLeft).toBeLessThan(400);
+
+    document.dispatchEvent(new MouseEvent("mouseup", { clientX: leftEdgeX, clientY: rect.top + 20, bubbles: true }));
+  });
 });
