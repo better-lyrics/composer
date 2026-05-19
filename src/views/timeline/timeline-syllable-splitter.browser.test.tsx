@@ -105,6 +105,46 @@ describe("TimelineSyllableSplitter", () => {
     expect(wordsAfter.every((w) => w.syllableGroupId === "g_source")).toBe(true);
   });
 
+  it("opens with a word-split title and splits into independent words", async () => {
+    const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-word"));
+    await expect.element(screen.getByRole("heading", { name: /Split "hello" into words/ })).toBeInTheDocument();
+
+    await vi.waitFor(() => {
+      const btns = document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8");
+      expect(btns.length).toBeGreaterThan(0);
+    });
+    const splitButtons = document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8");
+    expect(splitButtons.length).toBe(4);
+    splitButtons[2].click();
+
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await vi.waitFor(() => {
+      const words = useProjectStore.getState().lines[0].words ?? [];
+      expect(words.length).toBe(2);
+    });
+    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    expect(wordsAfter.map((w) => w.text)).toEqual(["hel ", "lo"]);
+    expect(wordsAfter.every((w) => w.syllableGroupId === undefined)).toBe(true);
+  });
+
+  it("ignores the split-word event for single-character words", async () => {
+    const line = createLine({ words: [createWord({ text: "a", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-word"));
+    expect(document.querySelector("dialog")).toBeNull();
+  });
+
   it("reconciles line.text from the new words array after a split", async () => {
     const line = createLine({
       text: "every",

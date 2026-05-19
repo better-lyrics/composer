@@ -5,10 +5,15 @@ import { Modal } from "@/ui/modal";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { splitSourceWord } from "@/utils/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
+import { splitWordIntoWords } from "@/utils/word-split";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { SplitModeContent } from "@/views/sync/syllable-splitter";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useState } from "react";
+
+// -- Types --------------------------------------------------------------------
+
+type SplitMode = "syllable" | "word";
 
 // -- Component ----------------------------------------------------------------
 
@@ -20,10 +25,11 @@ const TimelineSyllableSplitter: React.FC = () => {
     wordIndex: number;
     type: "word" | "bg";
     word: WordTiming;
+    mode: SplitMode;
   } | null>(null);
 
   useEffect(() => {
-    const handleSplitEvent = () => {
+    const openSplitModal = (mode: SplitMode) => {
       const { selectedWords } = useTimelineStore.getState();
       if (selectedWords.length !== 1) return;
 
@@ -36,13 +42,20 @@ const TimelineSyllableSplitter: React.FC = () => {
       const word = wordsArray?.[sel.wordIndex];
       if (!word || word.text.trimEnd().length < 2) return;
 
-      setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word });
+      setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
       setSplitPoints([]);
       setIsOpen(true);
     };
 
-    window.addEventListener("timeline:split-syllable", handleSplitEvent);
-    return () => window.removeEventListener("timeline:split-syllable", handleSplitEvent);
+    const handleSplitSyllable = () => openSplitModal("syllable");
+    const handleSplitWord = () => openSplitModal("word");
+
+    window.addEventListener("timeline:split-syllable", handleSplitSyllable);
+    window.addEventListener("timeline:split-word", handleSplitWord);
+    return () => {
+      window.removeEventListener("timeline:split-syllable", handleSplitSyllable);
+      window.removeEventListener("timeline:split-word", handleSplitWord);
+    };
   }, []);
 
   const handleToggleSplit = useCallback((index: number) => {
@@ -52,30 +65,36 @@ const TimelineSyllableSplitter: React.FC = () => {
   const handleConfirm = useCallback(() => {
     if (!target || splitPoints.length === 0) return;
 
-    const { lineId, wordIndex, type, word } = target;
+    const { lineId, wordIndex, type, word, mode } = target;
     const trimmedText = word.text.trimEnd();
 
-    // Check if playhead is over this word right now
-    const audioEl = useAudioStore.getState().audioElement;
-    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-    const playheadOnWord = currentTime > word.begin && currentTime < word.end;
+    let newWords: WordTiming[];
 
-    const groupId = word.syllableGroupId ?? nanoid(8);
-    const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
+    if (mode === "word") {
+      newWords = splitWordIntoWords(word, splitPoints);
+    } else {
+      // Check if playhead is over this word right now
+      const audioEl = useAudioStore.getState().audioElement;
+      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
-    const partitions =
-      playheadOnWord && splitPoints.length === 1
-        ? [
-            { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
-            { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
-          ]
-        : distributeTiming(trimmedText, splitPoints, word.begin, word.end);
+      const groupId = word.syllableGroupId ?? nanoid(8);
+      const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
 
-    const newWords = splitSourceWord(sourceForSplit, partitions);
+      const partitions =
+        playheadOnWord && splitPoints.length === 1
+          ? [
+              { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
+              { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
+            ]
+          : distributeTiming(trimmedText, splitPoints, word.begin, word.end);
 
-    if (word.text.endsWith(" ") && newWords.length > 0) {
-      const last = newWords[newWords.length - 1];
-      newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+      newWords = splitSourceWord(sourceForSplit, partitions);
+
+      if (word.text.endsWith(" ") && newWords.length > 0) {
+        const last = newWords[newWords.length - 1];
+        newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+      }
     }
 
     const lines = useProjectStore.getState().lines;
@@ -103,9 +122,10 @@ const TimelineSyllableSplitter: React.FC = () => {
   if (!target) return null;
 
   const trimmedText = target.word.text.trimEnd();
+  const title = target.mode === "word" ? `Split "${trimmedText}" into words` : `Split "${trimmedText}"`;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={`Split "${trimmedText}"`}>
+    <Modal isOpen={isOpen} onClose={handleClose} title={title}>
       <SplitModeContent
         text={trimmedText}
         splitPoints={splitPoints}
