@@ -33,6 +33,34 @@ describe("TimelineHeader", () => {
     expect(clicks).toBe(1);
   });
 
+  it("renders the Rolling button", async () => {
+    const screen = await render(<TimelineHeader />);
+    await expect.element(screen.getByRole("button", { name: /Rolling/ })).toBeInTheDocument();
+  });
+
+  it("renders the Rolling button with the ghost variant when rollingEditMode is off", async () => {
+    useTimelineStore.setState({ rollingEditMode: false });
+    const screen = await render(<TimelineHeader />);
+    const rollingButton = screen.container.querySelector("button[title*='Rolling edit']") as HTMLElement;
+    expect(rollingButton.className).toContain("opacity-60");
+    expect(rollingButton.className).toContain("text-composer-text-muted");
+  });
+
+  it("renders the Rolling button with the primary variant when rollingEditMode is on", async () => {
+    useTimelineStore.setState({ rollingEditMode: true });
+    const screen = await render(<TimelineHeader />);
+    const rollingButton = screen.container.querySelector("button[title*='Rolling edit']") as HTMLElement;
+    expect(rollingButton.className).not.toContain("opacity-60");
+    expect(rollingButton.className).toContain("bg-composer-accent-dark");
+  });
+
+  it("toggles rollingEditMode in the timeline store when the Rolling button is clicked", async () => {
+    const initial = useTimelineStore.getState().rollingEditMode;
+    const screen = await render(<TimelineHeader />);
+    await screen.getByRole("button", { name: /Rolling/ }).click();
+    expect(useTimelineStore.getState().rollingEditMode).toBe(!initial);
+  });
+
   it("renders the Snap button", async () => {
     const screen = await render(<TimelineHeader />);
     await expect.element(screen.getByRole("button", { name: /Snap/ })).toBeInTheDocument();

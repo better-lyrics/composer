@@ -12,6 +12,7 @@ import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import {
+  IconArrowBarBoth,
   IconChevronsDown,
   IconChevronsUp,
   IconEye,
@@ -20,7 +21,6 @@ import {
   IconMagnet,
   IconMinus,
   IconPlus,
-  IconPointer,
   IconTextPlus,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo } from "react";
@@ -147,17 +147,18 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />}
         </Button>
 
-        {/* Select-only mode toggle */}
+        {/* Rolling edit toggle */}
         <Button
           variant={rollingEditMode ? "primary" : "ghost"}
           size="sm"
           onClick={toggleRollingEditMode}
           hasIcon
           className={cn(!rollingEditMode && "opacity-60")}
-          title="Select-only mode (disables double-click word creation)"
+          title="Rolling edit: drag a shared word boundary and both words move together"
         >
-          <IconPointer size={16} />
-          <span>Select</span>
+          <IconArrowBarBoth size={16} />
+          <span>Rolling</span>
+          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />}
         </Button>
 
         {/* Preview sidebar toggle */}
