@@ -26,9 +26,21 @@ const TimelineSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Navigation</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>Scroll horizontally to move through time. Scroll vertically to see more lines.</li>
+        <li>
+          By default a plain scroll wheel scrolls vertically to see more lines. To move through time, scroll
+          horizontally with a trackpad gesture, or turn on "Scroll wheel scrolls timeline" in Settings, under Timeline.
+          With that setting on, a plain wheel scrolls the timeline horizontally and Shift + wheel scrolls vertically.
+        </li>
+        <li>
+          Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time. The view
+          follows it. This works no matter how the "Scroll wheel scrolls timeline" setting is set.
+        </li>
         <li>{MOD_KEY} + scroll wheel to zoom in and out.</li>
         <li>Middle-click and drag to pan freely. Hold Shift while middle-dragging to lock panning to one axis.</li>
+        <li>
+          Drag the playhead near the left or right edge of the viewport and the view auto-scrolls in that direction, so
+          you can scrub the playhead past what is currently visible.
+        </li>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} /> to toggle "follow playhead" so
           the view scrolls automatically during playback.
@@ -43,6 +55,11 @@ const TimelineSection: React.FC = () => (
         <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
         <li>Click and drag on empty space to marquee-select multiple words.</li>
         <li>Hold Shift while dragging to add to existing selection.</li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.selectWordAtPlayhead")} /> to select the word at
+          the current playhead time. Press it again to cycle through any overlapping words, such as a background-track
+          word or stacked instances.
+        </li>
         <li>
           Press <strong>Escape</strong> to deselect everything.
         </li>

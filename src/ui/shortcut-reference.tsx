@@ -93,6 +93,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["Click"], description: "Select word" },
       { keys: ["Shift", "Click"], description: "Select all syllables in word" },
       { keys: ["Mod", "A"], description: "Select all words" },
+      { keys: ["A"], description: "Select word under playhead", shortcutId: "timeline.selectWordAtPlayhead" },
       { keys: ["Mod", "Click"], description: "Toggle word in selection" },
       { keys: ["Drag"], description: "Marquee select words" },
       { keys: ["Shift", "Drag"], description: "Add to selection with marquee" },

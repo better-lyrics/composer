@@ -19,4 +19,9 @@ describe("KeyboardShortcutsSection", () => {
     await expect.element(screen.getByText("Split word into words")).toBeInTheDocument();
     await expect.element(screen.getByText("Mark / unmark explicit")).toBeInTheDocument();
   });
+
+  it("lists the select word under playhead shortcut", async () => {
+    const screen = await render(<KeyboardShortcutsSection />);
+    await expect.element(screen.getByText("Select word under playhead")).toBeInTheDocument();
+  });
 });

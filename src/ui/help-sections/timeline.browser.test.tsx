@@ -38,4 +38,29 @@ describe("TimelineSection", () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("disables double-click word creation");
   });
+
+  it("documents wheel-over-waveform scrubbing", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByText(/over the waveform/i)).toBeInTheDocument();
+  });
+
+  it("documents the scroll wheel timeline setting", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByText(/turn on "Scroll wheel scrolls timeline" in Settings/)).toBeInTheDocument();
+  });
+
+  it("documents playhead-drag edge auto-scroll", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByText(/auto-scrolls the view/i)).toBeInTheDocument();
+  });
+
+  it("documents selecting the word under the playhead", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByText(/cycle through any overlapping words/i)).toBeInTheDocument();
+  });
+
+  it("does not describe a plain wheel as horizontal-only", async () => {
+    const screen = await render(<TimelineSection />);
+    expect(screen.container.textContent).not.toContain("Scroll horizontally to move through time");
+  });
 });
