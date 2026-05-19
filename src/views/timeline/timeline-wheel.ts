@@ -18,8 +18,9 @@ function decideWheelAction(input: WheelDecisionInput): WheelAction {
   if (input.ctrlKey || input.metaKey) return { kind: "zoom" };
   if (input.overWaveform) return { kind: "scrub" };
   if (input.horizontalScrollSetting) {
+    if (input.shiftKey) return { kind: "scroll", axis: "y" };
     if (Math.abs(input.deltaX) > Math.abs(input.deltaY)) return { kind: "native" };
-    return { kind: "scroll", axis: input.shiftKey ? "y" : "x" };
+    return { kind: "scroll", axis: "x" };
   }
   return { kind: "native" };
 }

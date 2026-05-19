@@ -59,10 +59,11 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         return;
       }
 
+      const scrollAmount = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
       if (action.axis === "x") {
-        container.scrollLeft += e.deltaY;
+        container.scrollLeft += scrollAmount;
       } else {
-        container.scrollTop += e.deltaY;
+        container.scrollTop += scrollAmount;
       }
     },
     [scrollContainerRef],

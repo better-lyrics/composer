@@ -77,6 +77,18 @@ describe("decideWheelAction", () => {
       }),
     ).toEqual({ kind: "native" });
   });
+
+  it("returns scroll y when setting on and Shift is held even when the browser puts the delta in deltaX", () => {
+    expect(
+      decideWheelAction({
+        ...baseInput(),
+        deltaX: 200,
+        deltaY: 0,
+        shiftKey: true,
+        horizontalScrollSetting: true,
+      }),
+    ).toEqual({ kind: "scroll", axis: "y" });
+  });
 });
 
 // -- computeScrubTime ----------------------------------------------------------

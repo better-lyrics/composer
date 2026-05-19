@@ -157,7 +157,8 @@ describe("timeline wheel behavior", () => {
     const beforeLeft = container.scrollLeft;
     const beforeTop = container.scrollTop;
     dispatchWheel(container, {
-      deltaY: 120,
+      deltaX: 120,
+      deltaY: 0,
       shiftKey: true,
       clientX: rect.left + 200,
       clientY: rect.top + 200,
