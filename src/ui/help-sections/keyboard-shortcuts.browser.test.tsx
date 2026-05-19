@@ -12,4 +12,11 @@ describe("KeyboardShortcutsSection", () => {
     const screen = await render(<KeyboardShortcutsSection />);
     await expect.element(screen.getByText("Go to Import tab")).toBeInTheDocument();
   });
+
+  it("lists the rolling edit and split word shortcuts", async () => {
+    const screen = await render(<KeyboardShortcutsSection />);
+    await expect.element(screen.getByText("Toggle rolling edit")).toBeInTheDocument();
+    await expect.element(screen.getByText("Split word into words")).toBeInTheDocument();
+    await expect.element(screen.getByText("Mark / unmark explicit")).toBeInTheDocument();
+  });
 });
