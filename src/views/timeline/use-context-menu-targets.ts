@@ -85,13 +85,6 @@ function useContextMenuTargets() {
     const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return null;
 
-    // Check no trailing spaces between merged words (except the last one)
-    for (let i = 0; i < run.indices.length - 1; i++) {
-      const w = wordsArray[run.indices[i]];
-      if (!w) return null;
-      if (w.text.endsWith(" ")) return null;
-    }
-
     return { indices: run.indices, lineId: run.lineId, type: run.type };
   }, [selectedWords, lines]);
 
