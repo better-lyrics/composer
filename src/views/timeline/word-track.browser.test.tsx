@@ -284,10 +284,6 @@ describe("WordTrack", () => {
 
     expect(calls[0].updates.begin).toBeUndefined();
     expect(calls[0].adjacentUpdates?.end).toBeUndefined();
-
-    const leftBegin = words[0].begin;
-    const rightEnd = words[1].end;
-    expect(rightEnd - leftBegin).toBe(words[1].end - words[0].begin);
   });
 
   it("resizes one word independently when Alt is held in rolling edit mode", async () => {
