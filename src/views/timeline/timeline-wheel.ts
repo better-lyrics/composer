@@ -1,10 +1,6 @@
 // -- Types ---------------------------------------------------------------------
 
-type WheelAction =
-  | { kind: "zoom" }
-  | { kind: "scrub" }
-  | { kind: "scroll"; axis: "x" | "y" }
-  | { kind: "native" };
+type WheelAction = { kind: "zoom" } | { kind: "scrub" } | { kind: "scroll"; axis: "x" | "y" } | { kind: "native" };
 
 interface WheelDecisionInput {
   deltaX: number;
@@ -28,12 +24,7 @@ function decideWheelAction(input: WheelDecisionInput): WheelAction {
   return { kind: "native" };
 }
 
-function computeScrubTime(
-  currentTime: number,
-  deltaY: number,
-  zoom: number,
-  duration: number,
-): number {
+function computeScrubTime(currentTime: number, deltaY: number, zoom: number, duration: number): number {
   if (zoom <= 0) return currentTime;
   const next = currentTime + deltaY / zoom;
   return Math.max(0, Math.min(duration, next));

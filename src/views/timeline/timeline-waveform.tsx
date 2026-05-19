@@ -93,4 +93,4 @@ const TimelineWaveform: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { TimelineWaveform };
+export { TimelineWaveform, WAVEFORM_HEIGHT };

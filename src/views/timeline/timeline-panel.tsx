@@ -3,6 +3,7 @@ import { FileDropZone } from "@/audio/file-drop-zone";
 import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { selfKey } from "@/views/timeline/snap";
@@ -23,7 +24,8 @@ import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
-import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { TimelineWaveform, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-waveform";
+import { computeScrubTime, decideWheelAction } from "@/views/timeline/timeline-wheel";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
   expandSelectionToGroupmates,
@@ -220,26 +222,59 @@ const TimelinePanel: React.FC = () => {
 
   const handleWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
-      if (!(e.ctrlKey || e.metaKey)) return;
-      e.preventDefault();
-
       const container = scrollContainerRef.current;
       if (!container || duration <= 0) return;
 
       const rect = container.getBoundingClientRect();
-      const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
-      const cursorTime = cursorX / zoom;
+      const overWaveform =
+        e.clientY >= rect.top && e.clientY <= rect.top + WAVEFORM_HEIGHT && e.clientX >= rect.left + GUTTER_WIDTH;
 
-      const delta = e.deltaY > 0 ? -20 : 20;
-      const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
+      const action = decideWheelAction({
+        deltaX: e.deltaX,
+        deltaY: e.deltaY,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        shiftKey: e.shiftKey,
+        overWaveform,
+        horizontalScrollSetting: useSettingsStore.getState().timelineHorizontalScroll,
+      });
 
-      if (newZoom === zoom) return;
+      if (action.kind === "native") return;
+      e.preventDefault();
 
-      const newCursorX = cursorTime * newZoom;
-      const newScrollLeft = Math.max(0, newCursorX - (e.clientX - rect.left - GUTTER_WIDTH));
+      if (action.kind === "zoom") {
+        const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
+        const cursorTime = cursorX / zoom;
+        const delta = e.deltaY > 0 ? -20 : 20;
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
+        if (newZoom === zoom) return;
+        const newScrollLeft = Math.max(0, cursorTime * newZoom - (e.clientX - rect.left - GUTTER_WIDTH));
+        useTimelineStore.getState().setZoom(newZoom);
+        container.scrollLeft = newScrollLeft;
+        return;
+      }
 
-      useTimelineStore.getState().setZoom(newZoom);
-      container.scrollLeft = newScrollLeft;
+      if (action.kind === "scrub") {
+        const audioEl = useAudioStore.getState().audioElement;
+        const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+        const newTime = computeScrubTime(currentTime, e.deltaY, zoom, duration);
+        useAudioStore.getState().seekTo(newTime);
+
+        const playheadX = newTime * zoom;
+        const viewportInner = container.clientWidth - GUTTER_WIDTH;
+        if (playheadX < container.scrollLeft) {
+          container.scrollLeft = Math.max(0, playheadX);
+        } else if (playheadX > container.scrollLeft + viewportInner) {
+          container.scrollLeft = playheadX - viewportInner;
+        }
+        return;
+      }
+
+      if (action.axis === "x") {
+        container.scrollLeft += e.deltaY;
+      } else {
+        container.scrollTop += e.deltaY;
+      }
     },
     [zoom, duration],
   );

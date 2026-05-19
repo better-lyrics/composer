@@ -38,9 +38,10 @@ describe("decideWheelAction", () => {
   });
 
   it("returns scroll x when setting on and wheel is vertical-dominant", () => {
-    expect(
-      decideWheelAction({ ...baseInput(), deltaY: 120, horizontalScrollSetting: true }),
-    ).toEqual({ kind: "scroll", axis: "x" });
+    expect(decideWheelAction({ ...baseInput(), deltaY: 120, horizontalScrollSetting: true })).toEqual({
+      kind: "scroll",
+      axis: "x",
+    });
   });
 
   it("returns scroll y when setting on and Shift is held", () => {
