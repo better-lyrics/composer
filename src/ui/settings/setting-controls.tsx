@@ -74,6 +74,7 @@ const ToggleSetting: React.FC<{
         type="button"
         role="switch"
         aria-checked={value}
+        aria-label={label}
         onClick={() => set(settingKey, !value)}
         className={cn(
           "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors",
