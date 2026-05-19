@@ -10,8 +10,8 @@ const TimelineSection: React.FC = () => (
     <p className={PROSE}>
       The Timeline is where you do the detailed work. While the Sync tab is great for tapping out rough timing, Timeline
       gives you full control over every word. You can drag words to reposition them, resize their boundaries, split
-      syllables, merge blocks, copy and paste across lines, and more. If you've used a DAW or video editor before, this
-      will feel familiar.
+      words and syllables, merge blocks, mark explicit words, copy and paste across lines, and more. If you've used a
+      DAW or video editor before, this will feel familiar.
     </p>
 
     <div>
@@ -40,6 +40,7 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Selecting words</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
+        <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
         <li>Click and drag on empty space to marquee-select multiple words.</li>
         <li>Hold Shift while dragging to add to existing selection.</li>
         <li>
@@ -66,6 +67,10 @@ const TimelineSection: React.FC = () => (
           With one or more words selected, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} /> to nudge them as a group. Each word
           keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
+        </li>
+        <li>
+          Very short words render at a minimum on-screen width so they stay easy to click and drag. At low zoom their
+          displayed width is approximate, so zoom in to edit their true duration precisely.
         </li>
       </ul>
     </div>
@@ -94,6 +99,13 @@ const TimelineSection: React.FC = () => (
           syllables snap back together, and separate words move as one.
         </li>
         <li>You can toggle {ALT_KEY} mid-drag to switch modes on the fly.</li>
+        <li>
+          Turn on <strong>Rolling</strong> in the toolbar (or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />) for rolling edits. When it's
+          on, dragging a flush boundary between two words moves both words together: the shared boundary shifts, the
+          outer edges stay put, and the combined duration is preserved. {ALT_KEY} still inverts conjoin for that one
+          drag.
+        </li>
       </ul>
     </div>
 
@@ -126,17 +138,24 @@ const TimelineSection: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
-          the syllable splitter. Click between letters to mark where the word should break. If the playhead is on the
-          word when you confirm a single split, the timing boundary snaps to the playhead position exactly.
+          the splitter in syllable mode. Click between letters to mark where the word should break. The result is a
+          linked syllable group: the pieces stay tied together as one word. If the playhead is on the word when you
+          confirm a single split, the timing boundary snaps to the playhead position exactly.
         </li>
         <li>
-          To undo a split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or press{" "}
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitWord")} /> (or right-click and pick{" "}
+          <strong>Split word</strong>) to open the splitter in word mode. This breaks one word into separate
+          independent words, joined by a space, rather than a linked syllable group.
+        </li>
+        <li>
+          To undo a syllable split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or
+          press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
           collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
         </li>
         <li>
           Select two or more adjacent words on the same line and press{" "}
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block.
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block. This
+          works even when the selected words have a space between them; the joining space is dropped.
         </li>
       </ul>
     </div>
@@ -153,11 +172,28 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
+      <h4 className={HEADING}>Explicit words</h4>
+      <p className={PROSE}>
+        Mark a word as explicit so it carries the right flag through to export. Select one or more words and press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleExplicit")} />, or right-click and pick{" "}
+        <strong>Mark as explicit</strong> (the same item reads <strong>Unmark explicit</strong> when the words are
+        already flagged).
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        Composer also scans your lyrics for likely explicit words and shows a suggestions banner above the timeline.
+        From there you can mark a suggested word, mark them all, or dismiss ones that are false positives. Explicit
+        words export as the <code>composer:explicit="true"</code> attribute on the word's TTML span.
+      </p>
+    </div>
+
+    <div>
       <h4 className={HEADING}>Right-click menus</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Right-click a word: Edit text, Split syllables, Merge words (if multiple selected). On a word that is already
-          split into syllables you also get Merge syllables and Snap syllables flush. Delete is always there.
+          Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
+          selected. On a word already split into syllables you also get Merge syllables and Snap syllables flush. Mark
+          as explicit (or Unmark explicit) toggles the explicit flag. Group this line and Split into words show up when
+          they apply, and Delete word is always there.
         </li>
         <li>Right-click empty track space: Add word here.</li>
         <li>Right-click the gutter: Add line above/below, Assign agent, Delete line.</li>
@@ -183,8 +219,9 @@ const TimelineSection: React.FC = () => (
           Auto-scrolls the view to keep the playhead visible during playback.
         </li>
         <li>
-          <strong>Select</strong> - Disables double-click word creation so you can click freely without accidentally
-          adding words.
+          <strong>Rolling</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />) -
+          Rolling edit tool. When on, dragging a flush boundary moves both adjacent words together while keeping their
+          combined duration.
         </li>
         <li>
           <strong>Preview</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />) - Opens a
