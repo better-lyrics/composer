@@ -54,6 +54,11 @@ const TimelineSection: React.FC = () => {
         description="Auto-scroll the timeline to keep the playhead visible."
         settingKey="followPlayhead"
       />
+      <ToggleSetting
+        label="Scroll wheel scrolls timeline"
+        description="Plain scroll moves the timeline horizontally. Hold Shift to scroll vertically."
+        settingKey="timelineHorizontalScroll"
+      />
     </div>
   );
 };
