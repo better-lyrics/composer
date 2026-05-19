@@ -33,6 +33,18 @@ describe("decideWheelAction", () => {
     expect(decideWheelAction({ ...baseInput(), overWaveform: true })).toEqual({ kind: "scrub" });
   });
 
+  it("scrub wins over the horizontal-scroll setting when over the waveform", () => {
+    expect(decideWheelAction({ ...baseInput(), overWaveform: true, horizontalScrollSetting: true })).toEqual({
+      kind: "scrub",
+    });
+  });
+
+  it("scrub wins over Shift when over the waveform", () => {
+    expect(decideWheelAction({ ...baseInput(), overWaveform: true, shiftKey: true })).toEqual({
+      kind: "scrub",
+    });
+  });
+
   it("returns native when the horizontal-scroll setting is off", () => {
     expect(decideWheelAction({ ...baseInput(), deltaY: 120 })).toEqual({ kind: "native" });
   });
