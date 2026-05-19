@@ -112,6 +112,28 @@ describe("TimelineContextMenu", () => {
     expect(mergeBtn).toBeUndefined();
   });
 
+  it("shows 'Split word' on a word target and dispatches timeline:split-word when clicked", async () => {
+    const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    openWordContextMenu(line.id);
+    await render(<TimelineContextMenu />);
+
+    const splitWordBtn = Array.from(document.querySelectorAll("button")).find(
+      (b) => b.textContent?.trim().startsWith("Split word"),
+    );
+    expect(splitWordBtn).toBeDefined();
+
+    let dispatched = false;
+    const onSplitWord = () => {
+      dispatched = true;
+    };
+    window.addEventListener("timeline:split-word", onSplitWord);
+    splitWordBtn?.click();
+    window.removeEventListener("timeline:split-word", onSplitWord);
+
+    expect(dispatched).toBe(true);
+  });
+
   it("snaps a gapped syllable group flush when 'Snap syllables flush' is clicked", async () => {
     const line = createLine({
       words: [

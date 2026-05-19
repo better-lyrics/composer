@@ -160,6 +160,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     defaultBinding: { key: "s" },
   },
   {
+    id: "timeline.splitWord",
+    scope: "timeline",
+    description: "Split word into words",
+    defaultBinding: { key: "s", shift: true },
+  },
+  {
     id: "timeline.mergeWords",
     scope: "timeline",
     description: "Merge words",

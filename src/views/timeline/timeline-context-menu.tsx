@@ -78,6 +78,7 @@ const TimelineContextMenu: React.FC = () => {
   const {
     handleEditWord,
     handleSplitSyllables,
+    handleSplitWord,
     handleToggleExplicit,
     handleDeleteWord,
     handleAddWordHere,
@@ -162,9 +163,28 @@ const TimelineContextMenu: React.FC = () => {
       >
         {target.kind === "word" && (
           <>
-            <MenuItem label="Edit text" shortcut={["E"]} onClick={handleEditWord} />
-            <MenuItem label="Split syllables" shortcut={["S"]} onClick={handleSplitSyllables} />
-            {mergeInfo && <MenuItem label="Merge words" shortcut={["M"]} onClick={handleMergeWords} />}
+            <MenuItem
+              label="Edit text"
+              shortcut={getEffectiveKeysArray("timeline.editWord")}
+              onClick={handleEditWord}
+            />
+            <MenuItem
+              label="Split syllables"
+              shortcut={getEffectiveKeysArray("timeline.splitSyllable")}
+              onClick={handleSplitSyllables}
+            />
+            <MenuItem
+              label="Split word"
+              shortcut={getEffectiveKeysArray("timeline.splitWord")}
+              onClick={handleSplitWord}
+            />
+            {mergeInfo && (
+              <MenuItem
+                label="Merge words"
+                shortcut={getEffectiveKeysArray("timeline.mergeWords")}
+                onClick={handleMergeWords}
+              />
+            )}
             {groupedWordInfo && (
               <MenuItem
                 label="Merge syllables"

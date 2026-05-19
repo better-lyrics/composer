@@ -42,6 +42,16 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     window.dispatchEvent(new CustomEvent("timeline:split-syllable"));
   }, [contextMenu, clearContextMenu]);
 
+  const handleSplitWord = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word") return;
+    const { lineId, wordIndex, type } = contextMenu.target;
+    useTimelineStore.getState().setEditingWord(null);
+    const lineIndex = contextMenu.target.lineIndex;
+    useTimelineStore.getState().setSelectedWords([{ lineId, lineIndex, wordIndex, type }]);
+    clearContextMenu();
+    window.dispatchEvent(new CustomEvent("timeline:split-word"));
+  }, [contextMenu, clearContextMenu]);
+
   const handleToggleExplicit = useCallback(() => {
     if (!explicitToggleContext) return;
     const { lineId, field, indices } = explicitToggleContext;
@@ -147,6 +157,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   return {
     handleEditWord,
     handleSplitSyllables,
+    handleSplitWord,
     handleToggleExplicit,
     handleDeleteWord,
     handleAddWordHere,

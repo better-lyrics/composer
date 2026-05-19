@@ -372,6 +372,14 @@ function useTimelineKeyboard(
           }
           break;
         }
+        case "timeline.splitWord": {
+          const { selectedWords: swSel } = useTimelineStore.getState();
+          if (swSel.length === 1) {
+            e.preventDefault();
+            window.dispatchEvent(new CustomEvent("timeline:split-word"));
+          }
+          break;
+        }
         case "timeline.mergeWords": {
           const { selectedWords: mSel } = useTimelineStore.getState();
           const run = contiguousSelectionRun(mSel);
