@@ -254,6 +254,63 @@ describe("WordTrack", () => {
     expect(calls[0].updates.end).toBeGreaterThan(1.2);
   });
 
+  it("conjoins a touching word boundary when rolling edit mode is on", async () => {
+    useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
+    const calls: Array<{
+      index: number;
+      updates: { begin?: number; end?: number };
+      adjacentIndex?: number;
+      adjacentUpdates?: { begin?: number; end?: number };
+    }> = [];
+    const words = [
+      createWord({ text: "a ", begin: 1, end: 1.5 }),
+      createWord({ text: "b", begin: 1.5, end: 2 }),
+    ];
+    const screen = await renderTrack(words, (index, updates, adjacentIndex, adjacentUpdates) =>
+      calls.push({ index, updates, adjacentIndex, adjacentUpdates }),
+    );
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    dragRightEdgeBy(blocks[0], 30);
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].index).toBe(0);
+    expect(calls[0].adjacentIndex).toBe(1);
+
+    const newBoundary = calls[0].updates.end;
+    expect(newBoundary).toBeDefined();
+    expect(newBoundary).not.toBe(1.5);
+    expect(calls[0].adjacentUpdates?.begin).toBe(newBoundary);
+
+    expect(calls[0].updates.begin).toBeUndefined();
+    expect(calls[0].adjacentUpdates?.end).toBeUndefined();
+
+    const leftBegin = words[0].begin;
+    const rightEnd = words[1].end;
+    expect(rightEnd - leftBegin).toBe(words[1].end - words[0].begin);
+  });
+
+  it("resizes one word independently when Alt is held in rolling edit mode", async () => {
+    useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
+    const calls: Array<{ index: number; adjacentIndex?: number }> = [];
+    const words = [
+      createWord({ text: "a ", begin: 1, end: 1.5 }),
+      createWord({ text: "b", begin: 1.5, end: 2 }),
+    ];
+    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    const edge = blocks[0].querySelector('[data-edge="right"]') as HTMLElement;
+    const startX = 200;
+    edge.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: startX }));
+    document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: startX - 10, altKey: true }));
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+
+    await expect.poll(() => calls.length).toBe(1);
+    expect(calls[0].index).toBe(0);
+    expect(calls[0].adjacentIndex).toBeUndefined();
+  });
+
   it("selecting a sub-24px word leaves its timing untouched (regression for issue #68)", async () => {
     useTimelineStore.setState({ zoom: 100 });
     const calls: Array<{ index: number; updates: object }> = [];

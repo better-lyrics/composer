@@ -61,6 +61,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
+  const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
 
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
@@ -105,6 +106,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
       dragStateRef.current = initialState;
       setDragState(initialState);
 
+      const rollingEdit = useTimelineStore.getState().rollingEditMode;
+
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       conjoinedRef.current = { active: false, adjacentWordIndex: null };
@@ -140,7 +143,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
-        const conjoinedByDefault = isSyllableBoundary(wordIndex, edge) && !boundaryHasGap(wordIndex, edge);
+        const conjoinedByDefault =
+          (rollingEdit || isSyllableBoundary(wordIndex, edge)) && !boundaryHasGap(wordIndex, edge);
         const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
 
         const adjacentWordIndex =
@@ -256,7 +260,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const pos = syllablePositions[boundaryIndex];
     const isSyllable = pos === "first" || pos === "middle";
     const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
-    const conjoinedByDefault = isSyllable && !hasGap;
+    const conjoinedByDefault = (rollingEditMode || isSyllable) && !hasGap;
     return altPressed ? !conjoinedByDefault : conjoinedByDefault;
   };
 
