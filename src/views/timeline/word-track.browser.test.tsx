@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { isWordSelected } from "@/domain/selection/identity";
 import { WordTrack } from "@/views/timeline/word-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 
@@ -250,6 +252,30 @@ describe("WordTrack", () => {
     expect(calls[0].adjacentIndex).toBe(1);
     expect(calls[0].updates.end).not.toBe(1.2);
     expect(calls[0].updates.end).toBeGreaterThan(1.2);
+  });
+
+  it("selecting a sub-24px word leaves its timing untouched (regression for issue #68)", async () => {
+    useTimelineStore.setState({ zoom: 100 });
+    const calls: Array<{ index: number; updates: object }> = [];
+    const tinyWords = [createWord({ text: "a", begin: 0.5, end: 0.62 })];
+    const screen = await renderTrack(tinyWords, (index, updates) => calls.push({ index, updates }));
+
+    const block = screen.container.querySelector<HTMLElement>("[data-word-block]");
+    if (!block) throw new Error("expected a word block");
+
+    const naturalWidth = (tinyWords[0].end - tinyWords[0].begin) * 100;
+    expect(naturalWidth).toBeLessThan(24);
+    expect(block.dataset.minWidth).toBe("true");
+
+    const lineId = useProjectStore.getState().lines[0].id;
+    block.click();
+
+    await expect.poll(() => isWordSelected(useTimelineStore.getState().selectedWords, lineId, 0, "word")).toBe(true);
+
+    expect(calls).toEqual([]);
+    const storedWord = useProjectStore.getState().lines[0].words?.[0];
+    expect(storedWord?.begin).toBe(0.5);
+    expect(storedWord?.end).toBe(0.62);
   });
 
   it("sizes the track container to duration × zoom", async () => {
