@@ -118,8 +118,8 @@ describe("TimelineContextMenu", () => {
     openWordContextMenu(line.id);
     await render(<TimelineContextMenu />);
 
-    const splitWordBtn = Array.from(document.querySelectorAll("button")).find(
-      (b) => b.textContent?.trim().startsWith("Split word"),
+    const splitWordBtn = Array.from(document.querySelectorAll("button")).find((b) =>
+      b.textContent?.trim().startsWith("Split word"),
     );
     expect(splitWordBtn).toBeDefined();
 

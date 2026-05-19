@@ -93,9 +93,9 @@ const SyncSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Splitting syllables</h4>
       <p className={PROSE}>
-        Each word on the active line has a small scissors button. Click it to split that word into syllables right
-        here, without switching to the Timeline. A popover opens where you click between letters to mark the split
-        points, then confirm. The Timeline splitter offers the same syllable split plus a word-mode split.
+        Each word on the active line has a small scissors button. Click it to split that word into syllables right here,
+        without switching to the Timeline. A popover opens where you click between letters to mark the split points,
+        then confirm. The Timeline splitter offers the same syllable split plus a word-mode split.
       </p>
     </div>
 
