@@ -2,6 +2,7 @@ import { cn } from "@/utils/cn";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { blockWidth, isAtMinWidth } from "@/views/timeline/word-block-width";
 import { useDraggable } from "@dnd-kit/core";
 
 // -- Types ---------------------------------------------------------------------
@@ -66,7 +67,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
 }) => {
   const left = begin * zoom;
   const naturalWidth = (end - begin) * zoom;
-  const width = Math.max(naturalWidth, 4);
+  const width = blockWidth(naturalWidth);
+  const minWidth = isAtMinWidth(naturalWidth);
   const showText = naturalWidth >= 20;
 
   const myKey = selfKey(lineId, wordIndex, trackType);
@@ -112,6 +114,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       id={id}
       data-word-block
       data-syllable-position={syllablePosition}
+      data-min-width={minWidth || undefined}
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
         "text-xs text-white truncate select-none cursor-grab",

@@ -28,10 +28,18 @@ describe("WordBlock", () => {
     expect(block.style.width).toBe("100px");
   });
 
-  it("widens minimum render width to 4px when natural width is sub-pixel", async () => {
-    const screen = await render(<WordBlock {...DEFAULT_PROPS} begin={0} end={0.02} />, { dndContext: true });
+  it("widens to the minimum block width and flags data-min-width when natural width is below the minimum", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} begin={0} end={0.3} />, { dndContext: true });
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
-    expect(block.style.width).toBe("4px");
+    expect(block.style.width).toBe("24px");
+    expect(block.getAttribute("data-min-width")).toBe("true");
+  });
+
+  it("renders at natural width and omits data-min-width when natural width exceeds the minimum", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} begin={0} end={1} />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.style.width).toBe("50px");
+    expect(block.hasAttribute("data-min-width")).toBe(false);
   });
 
   it("hides the text label when natural width is below the threshold (20px)", async () => {
