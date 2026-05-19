@@ -5,7 +5,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
-import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
@@ -21,7 +21,6 @@ interface TimelineRowsProps {
 // -- Constants -----------------------------------------------------------------
 
 const BG_DROP_ZONE_HEIGHT = 24;
-const WAVEFORM_HEIGHT = 80;
 
 // -- Component -----------------------------------------------------------------
 

@@ -2,12 +2,11 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { useProjectStore } from "@/stores/project";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Constants -----------------------------------------------------------------
 
-const WAVEFORM_HEIGHT = 80;
 const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Functions -----------------------------------------------------------------

@@ -84,6 +84,7 @@ interface TimelineActions {
 // -- Constants -----------------------------------------------------------------
 
 const GUTTER_WIDTH = 48;
+const WAVEFORM_HEIGHT = 80;
 const MIN_ZOOM = 20;
 const MAX_ZOOM = 500;
 const ZOOM_STEP = 20;
@@ -162,4 +163,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
+export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };

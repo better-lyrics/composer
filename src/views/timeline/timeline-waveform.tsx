@@ -1,12 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
-
-// -- Constants -----------------------------------------------------------------
-
-const WAVEFORM_HEIGHT = 80;
 
 // -- Component -----------------------------------------------------------------
 

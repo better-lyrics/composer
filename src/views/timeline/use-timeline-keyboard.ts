@@ -17,8 +17,9 @@ import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
+import { findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -69,7 +70,6 @@ function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
 
 // -- Constants -----------------------------------------------------------------
 
-const WAVEFORM_HEIGHT = 80;
 const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Hook ----------------------------------------------------------------------
@@ -314,6 +314,19 @@ function useTimelineKeyboard(
               scrollContainer.scrollTo({ top: targetTop, behavior: "instant" });
             }
           }
+          break;
+        }
+        case "timeline.selectWordAtPlayhead": {
+          e.preventDefault();
+          const audioEl = useAudioStore.getState().audioElement;
+          const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const matches = findWordsAtTime(lines, currentTime);
+          const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
+          if (!next) {
+            toast("No word under the playhead");
+            break;
+          }
+          useTimelineStore.getState().setSelectedWords([next]);
           break;
         }
         case "timeline.toggleFollow":

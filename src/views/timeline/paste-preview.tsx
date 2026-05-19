@@ -10,7 +10,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout, type RowLayout } from "@/views/timeline/utils";
 import { blockWidth } from "@/views/timeline/word-block-width";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
@@ -36,7 +36,6 @@ interface GhostWord {
 
 // -- Constants -----------------------------------------------------------------
 
-const WAVEFORM_HEIGHT = 80;
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
 const BG_DROP_ZONE_HEIGHT = 24;

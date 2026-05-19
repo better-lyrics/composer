@@ -3,11 +3,12 @@ import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -73,7 +74,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
         if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
           lastFollowedLineRef.current = activeLineIndex;
-          const WAVEFORM_HEIGHT = 80;
           const BG_DROP_ZONE_HEIGHT = 24;
           const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
 
@@ -210,44 +210,27 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
     return () => document.removeEventListener("mousemove", onMove);
   }, []);
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
-
-      e.preventDefault();
-      setIsPlaying(false);
-
-      const audioEl = useAudioStore.getState().audioElement;
-      const actualTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      setDraggingPlayhead(true, actualTime);
-
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        const parentRect = containerRef.current?.getBoundingClientRect();
-        if (!parentRect) return;
-        const { scrollLeft, zoom } = useTimelineStore.getState();
-        const x = moveEvent.clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-        const newTime = Math.max(0, Math.min(duration, x / zoom));
-        setDragTime(newTime);
-      };
-
-      const handleMouseUp = (moveEvent: MouseEvent) => {
-        const parentRect = containerRef.current?.getBoundingClientRect();
-        if (parentRect) {
-          const { scrollLeft, zoom } = useTimelineStore.getState();
-          const x = moveEvent.clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-          const finalTime = Math.max(0, Math.min(duration, x / zoom));
-          seekTo(finalTime);
-        }
-        setDraggingPlayhead(false);
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime],
+  const drag = useMemo(
+    () =>
+      createPlayheadDrag({
+        getContainerRect: () => containerRef.current?.getBoundingClientRect(),
+        getScrollContainer: () => scrollContainerRef.current,
+        getDuration: () => duration,
+        getZoom: () => useTimelineStore.getState().zoom,
+        getStoreScrollLeft: () => useTimelineStore.getState().scrollLeft,
+        getCurrentTime: () => {
+          const audioEl = useAudioStore.getState().audioElement;
+          return audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+        },
+        setIsPlaying,
+        setDraggingPlayhead,
+        setDragTime,
+        seekTo,
+      }),
+    [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime, scrollContainerRef],
   );
+
+  useEffect(() => drag.dispose, [drag]);
 
   if (duration === 0) return null;
 
@@ -264,7 +247,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         aria-orientation="vertical"
         className="timeline-playhead-bar absolute top-0 left-0 w-0.5 bg-composer-accent cursor-ew-resize pointer-events-auto expanded-hit-x-sm"
         style={{ height: containerHeight }}
-        onMouseDown={handleMouseDown}
+        onMouseDown={drag.onMouseDown}
       >
         <div className="absolute top-0 -left-1.5 w-3.5 h-3 bg-composer-accent rounded-t expanded-hit-lg" />
       </div>

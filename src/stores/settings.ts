@@ -31,6 +31,7 @@ interface SettingsState {
   followPlayhead: boolean;
   timelineSnap: boolean;
   timelineSnapThreshold: number;
+  timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
   defaultWordDuration: number;
@@ -81,6 +82,7 @@ const DEFAULTS: SettingsState = {
   followPlayhead: true,
   timelineSnap: true,
   timelineSnapThreshold: 12,
+  timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
