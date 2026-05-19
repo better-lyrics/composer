@@ -279,6 +279,12 @@ const SHORTCUT_REGISTRY: ShortcutDefinition[] = [
     description: "Toggle snap (magnet)",
     defaultBinding: { key: "t" },
   },
+  {
+    id: "timeline.toggleRollingEdit",
+    scope: "timeline",
+    description: "Toggle rolling edit tool",
+    defaultBinding: { key: "r" },
+  },
 ];
 
 // -- Helpers ------------------------------------------------------------------
