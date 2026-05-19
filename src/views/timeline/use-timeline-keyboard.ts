@@ -326,6 +326,9 @@ function useTimelineKeyboard(
           s.set("timelineSnap", !s.timelineSnap);
           break;
         }
+        case "timeline.toggleRollingEdit":
+          useTimelineStore.getState().toggleRollingEditMode();
+          break;
         case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");
