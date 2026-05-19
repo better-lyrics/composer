@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { WordSelection } from "@/domain/selection/model";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useAudioStore } from "@/stores/audio";
@@ -178,6 +178,38 @@ describe("timeline wheel behavior", () => {
     const event = dispatchWheel(container, { deltaY: 120, clientX: rect.left + 200, clientY: rect.top + 200 });
 
     expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("binds the wheel listener when lyrics load after the audio source", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: true });
+    useTimelineStore.setState({ zoom: 100 });
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60 });
+    useProjectStore.setState({ activeTab: "timeline", lines: [] });
+    await render(<TimelinePanel />);
+    expect(document.querySelector("[data-scroll-container]")).toBeNull();
+
+    useProjectStore.setState({
+      lines: Array.from({ length: 30 }, (_, i) =>
+        createLine({
+          id: `late-line-${i}`,
+          text: `lyric ${i}`,
+          words: [createWord({ text: `lyric${i}`, begin: i, end: i + 0.5 })],
+        }),
+      ),
+    });
+
+    const container = await vi.waitFor(() => {
+      const found = getScrollContainer();
+      if (!found) throw new Error("scroll container not mounted");
+      return found;
+    });
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    const beforeLeft = container.scrollLeft;
+    dispatchWheel(container, { deltaY: 120, clientX: rect.left + 200, clientY: rect.top + 200 });
+
+    await expect.poll(() => container.scrollLeft).toBeGreaterThan(beforeLeft);
   });
 
   it("scrubs the playhead forward and back when wheeling over the waveform strip", async () => {
