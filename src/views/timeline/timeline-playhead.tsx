@@ -3,6 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
+import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -19,6 +20,8 @@ interface TimelinePlayheadProps {
 // -- Constants -----------------------------------------------------------------
 
 const HIT_BUFFER_PX = 18;
+const EDGE_SCROLL_ZONE = 60;
+const EDGE_SCROLL_MAX_SPEED = 22;
 
 // -- Component -----------------------------------------------------------------
 
@@ -38,6 +41,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
   const containerLeftRef = useRef<number>(0);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   // RAF loop - always runs, reads directly from audio element and stores
   useEffect(() => {
@@ -216,38 +220,80 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       e.preventDefault();
       setIsPlaying(false);
+      dragCleanupRef.current?.();
 
       const audioEl = useAudioStore.getState().audioElement;
       const actualTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
       setDraggingPlayhead(true, actualTime);
 
+      let pointerX = e.clientX;
+      let edgeScrollRaf: number | null = null;
+      const controller = new AbortController();
+
+      const computeTimeFromPointer = (clientX: number): number | null => {
+        const parentRect = containerRef.current?.getBoundingClientRect();
+        if (!parentRect) return null;
+        const container = scrollContainerRef.current;
+        const scrollLeft = container?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
+        const { zoom } = useTimelineStore.getState();
+        const x = clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
+        return Math.max(0, Math.min(duration, x / zoom));
+      };
+
+      const tickEdgeScroll = () => {
+        edgeScrollRaf = requestAnimationFrame(tickEdgeScroll);
+        const container = scrollContainerRef.current;
+        if (!container) return;
+        const rect = container.getBoundingClientRect();
+        const velocity = computeEdgeScrollVelocity({
+          pointerX,
+          contentLeft: rect.left + GUTTER_WIDTH,
+          contentRight: rect.right,
+          edgeSize: EDGE_SCROLL_ZONE,
+          maxSpeed: EDGE_SCROLL_MAX_SPEED,
+        });
+        if (velocity === 0) return;
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        container.scrollLeft = Math.max(0, Math.min(maxScroll, container.scrollLeft + velocity));
+        const time = computeTimeFromPointer(pointerX);
+        if (time !== null) setDragTime(time);
+      };
+
       const handleMouseMove = (moveEvent: MouseEvent) => {
-        const parentRect = containerRef.current?.getBoundingClientRect();
-        if (!parentRect) return;
-        const { scrollLeft, zoom } = useTimelineStore.getState();
-        const x = moveEvent.clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-        const newTime = Math.max(0, Math.min(duration, x / zoom));
-        setDragTime(newTime);
+        pointerX = moveEvent.clientX;
+        const time = computeTimeFromPointer(pointerX);
+        if (time !== null) setDragTime(time);
       };
 
-      const handleMouseUp = (moveEvent: MouseEvent) => {
-        const parentRect = containerRef.current?.getBoundingClientRect();
-        if (parentRect) {
-          const { scrollLeft, zoom } = useTimelineStore.getState();
-          const x = moveEvent.clientX - parentRect.left - GUTTER_WIDTH + scrollLeft;
-          const finalTime = Math.max(0, Math.min(duration, x / zoom));
-          seekTo(finalTime);
+      const cleanup = () => {
+        if (edgeScrollRaf !== null) {
+          cancelAnimationFrame(edgeScrollRaf);
+          edgeScrollRaf = null;
         }
-        setDraggingPlayhead(false);
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        controller.abort();
+        dragCleanupRef.current = null;
       };
 
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      const handleMouseUp = (upEvent: MouseEvent) => {
+        const time = computeTimeFromPointer(upEvent.clientX);
+        if (time !== null) seekTo(time);
+        setDraggingPlayhead(false);
+        cleanup();
+      };
+
+      dragCleanupRef.current = cleanup;
+      document.addEventListener("mousemove", handleMouseMove, { signal: controller.signal });
+      document.addEventListener("mouseup", handleMouseUp, { signal: controller.signal });
+      tickEdgeScroll();
     },
-    [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime],
+    [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime, scrollContainerRef],
   );
+
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
 
   if (duration === 0) return null;
 
