@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { computeScrubTime, decideWheelAction } from "@/views/timeline/timeline-wheel";
+import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type RefObject, useCallback, useEffect } from "react";
 
 // -- Hook ----------------------------------------------------------------------
@@ -47,7 +47,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
       if (action.kind === "scrub") {
         const audioEl = useAudioStore.getState().audioElement;
         const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-        const newTime = computeScrubTime(currentTime, e.deltaY, zoom, duration);
+        const newTime = computeScrubTime(currentTime, normalizeWheelDelta(e.deltaY, e.deltaMode), zoom, duration);
         useAudioStore.getState().seekTo(newTime);
         const playheadX = newTime * zoom;
         const viewportInner = container.clientWidth - GUTTER_WIDTH;
@@ -59,7 +59,8 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         return;
       }
 
-      const scrollAmount = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      const dominantDelta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      const scrollAmount = normalizeWheelDelta(dominantDelta, e.deltaMode);
       if (action.axis === "x") {
         container.scrollLeft += scrollAmount;
       } else {

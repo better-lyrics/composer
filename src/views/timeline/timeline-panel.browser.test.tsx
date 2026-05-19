@@ -33,11 +33,20 @@ function makeScrollable(container: HTMLDivElement): void {
 
 function dispatchWheel(
   container: HTMLElement,
-  init: { deltaX?: number; deltaY: number; clientX: number; clientY: number; ctrlKey?: boolean; shiftKey?: boolean },
+  init: {
+    deltaX?: number;
+    deltaY: number;
+    deltaMode?: number;
+    clientX: number;
+    clientY: number;
+    ctrlKey?: boolean;
+    shiftKey?: boolean;
+  },
 ): WheelEvent {
   const event = new WheelEvent("wheel", {
     deltaX: init.deltaX ?? 0,
     deltaY: init.deltaY,
+    deltaMode: init.deltaMode ?? 0,
     clientX: init.clientX,
     clientY: init.clientY,
     ctrlKey: init.ctrlKey ?? false,
@@ -144,6 +153,20 @@ describe("timeline wheel behavior", () => {
 
     await expect.poll(() => container.scrollLeft).toBeGreaterThan(beforeLeft);
     expect(container.scrollTop).toBe(beforeTop);
+  });
+
+  it("scales a line-mode wheel so one notch scrolls a usable distance", async () => {
+    useSettingsStore.setState({ timelineHorizontalScroll: true });
+    seedTimeline(30);
+    await render(<TimelinePanel />);
+    const container = getScrollContainer();
+    makeScrollable(container);
+    const rect = container.getBoundingClientRect();
+
+    const beforeLeft = container.scrollLeft;
+    dispatchWheel(container, { deltaY: 3, deltaMode: 1, clientX: rect.left + 200, clientY: rect.top + 200 });
+
+    await expect.poll(() => container.scrollLeft).toBe(beforeLeft + 120);
   });
 
   it("scrolls vertically on a Shift wheel when the setting is on", async () => {

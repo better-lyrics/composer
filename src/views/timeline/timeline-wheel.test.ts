@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { computeScrubTime, decideWheelAction } from "./timeline-wheel";
+import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "./timeline-wheel";
 
 // -- Fixtures ------------------------------------------------------------------
 
@@ -113,5 +113,25 @@ describe("computeScrubTime", () => {
   it("returns currentTime unchanged when zoom is zero or negative", () => {
     expect(computeScrubTime(10, 100, 0, 60)).toBe(10);
     expect(computeScrubTime(10, 100, -5, 60)).toBe(10);
+  });
+});
+
+// -- normalizeWheelDelta -------------------------------------------------------
+
+describe("normalizeWheelDelta", () => {
+  it("returns the delta unchanged in pixel mode", () => {
+    expect(normalizeWheelDelta(120, 0)).toBe(120);
+  });
+
+  it("scales line-mode deltas up to pixels", () => {
+    expect(normalizeWheelDelta(3, 1)).toBe(120);
+  });
+
+  it("scales page-mode deltas up to pixels", () => {
+    expect(normalizeWheelDelta(1, 2)).toBe(800);
+  });
+
+  it("preserves sign when scaling", () => {
+    expect(normalizeWheelDelta(-3, 1)).toBe(-120);
   });
 });

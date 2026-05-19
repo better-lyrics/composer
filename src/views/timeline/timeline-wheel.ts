@@ -12,6 +12,13 @@ interface WheelDecisionInput {
   horizontalScrollSetting: boolean;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+const DOM_DELTA_LINE = 1;
+const DOM_DELTA_PAGE = 2;
+const WHEEL_LINE_HEIGHT = 40;
+const WHEEL_PAGE_HEIGHT = 800;
+
 // -- Functions -----------------------------------------------------------------
 
 function decideWheelAction(input: WheelDecisionInput): WheelAction {
@@ -31,7 +38,13 @@ function computeScrubTime(currentTime: number, deltaY: number, zoom: number, dur
   return Math.max(0, Math.min(duration, next));
 }
 
+function normalizeWheelDelta(delta: number, deltaMode: number): number {
+  if (deltaMode === DOM_DELTA_LINE) return delta * WHEEL_LINE_HEIGHT;
+  if (deltaMode === DOM_DELTA_PAGE) return delta * WHEEL_PAGE_HEIGHT;
+  return delta;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { decideWheelAction, computeScrubTime };
+export { decideWheelAction, computeScrubTime, normalizeWheelDelta };
 export type { WheelAction };
