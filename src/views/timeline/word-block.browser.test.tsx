@@ -224,4 +224,24 @@ describe("WordBlock", () => {
     const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
     expect(block.style.borderLeftWidth).toBe("0px");
   });
+
+  it("shows cursor-col-resize on the left handle when leftConjoined is true", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} leftConjoined />, { dndContext: true });
+    const leftEdge = screen.container.querySelector('[data-edge="left"]') as HTMLElement;
+    expect(leftEdge.className).toContain("cursor-col-resize");
+    expect(leftEdge.className).not.toContain("cursor-ew-resize");
+  });
+
+  it("shows cursor-col-resize on the right handle when rightConjoined is true", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} rightConjoined />, { dndContext: true });
+    const rightEdge = screen.container.querySelector('[data-edge="right"]') as HTMLElement;
+    expect(rightEdge.className).toContain("cursor-col-resize");
+    expect(rightEdge.className).not.toContain("cursor-ew-resize");
+  });
+
+  it("keeps cursor-ew-resize on a plain boundary handle when not conjoined", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
+    const leftEdge = screen.container.querySelector('[data-edge="left"]') as HTMLElement;
+    expect(leftEdge.className).toContain("cursor-ew-resize");
+  });
 });

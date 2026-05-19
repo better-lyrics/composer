@@ -420,6 +420,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
             gapBefore={gapBefore}
             leftHighlighted={hoveredBoundary === wordIndex - 1 && isBoundaryConjoined(wordIndex - 1)}
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}
+            leftConjoined={isBoundaryConjoined(wordIndex - 1)}
+            rightConjoined={isBoundaryConjoined(wordIndex)}
             onClick={(e) => handleSelect(wordIndex, e)}
             onResizeStart={(edge, startX) => handleResizeStart(wordIndex, edge, startX)}
             onEdgeHover={(edge, hovering) => handleEdgeHover(wordIndex, edge, hovering)}
