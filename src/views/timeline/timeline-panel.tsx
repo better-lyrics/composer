@@ -3,7 +3,6 @@ import { FileDropZone } from "@/audio/file-drop-zone";
 import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { selfKey } from "@/views/timeline/snap";
@@ -23,9 +22,8 @@ import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { computeScrubTime, decideWheelAction } from "@/views/timeline/timeline-wheel";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
   expandSelectionToGroupmates,
@@ -35,6 +33,7 @@ import {
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
+import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
@@ -174,6 +173,7 @@ const TimelinePanel: React.FC = () => {
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
+  useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
 
   const lastDistributedDurationRef = useRef<number | null>(null);
 
@@ -219,72 +219,6 @@ const TimelinePanel: React.FC = () => {
     },
     [setScrollLeft],
   );
-
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      const container = scrollContainerRef.current;
-      if (!container || duration <= 0) return;
-
-      const rect = container.getBoundingClientRect();
-      const overWaveform =
-        e.clientY >= rect.top && e.clientY <= rect.top + WAVEFORM_HEIGHT && e.clientX >= rect.left + GUTTER_WIDTH;
-
-      const action = decideWheelAction({
-        deltaX: e.deltaX,
-        deltaY: e.deltaY,
-        ctrlKey: e.ctrlKey,
-        metaKey: e.metaKey,
-        shiftKey: e.shiftKey,
-        overWaveform,
-        horizontalScrollSetting: useSettingsStore.getState().timelineHorizontalScroll,
-      });
-
-      if (action.kind === "native") return;
-      e.preventDefault();
-
-      if (action.kind === "zoom") {
-        const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
-        const cursorTime = cursorX / zoom;
-        const delta = e.deltaY > 0 ? -20 : 20;
-        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
-        if (newZoom === zoom) return;
-        const newScrollLeft = Math.max(0, cursorTime * newZoom - (e.clientX - rect.left - GUTTER_WIDTH));
-        useTimelineStore.getState().setZoom(newZoom);
-        container.scrollLeft = newScrollLeft;
-        return;
-      }
-
-      if (action.kind === "scrub") {
-        const audioEl = useAudioStore.getState().audioElement;
-        const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-        const newTime = computeScrubTime(currentTime, e.deltaY, zoom, duration);
-        useAudioStore.getState().seekTo(newTime);
-
-        const playheadX = newTime * zoom;
-        const viewportInner = container.clientWidth - GUTTER_WIDTH;
-        if (playheadX < container.scrollLeft) {
-          container.scrollLeft = Math.max(0, playheadX);
-        } else if (playheadX > container.scrollLeft + viewportInner) {
-          container.scrollLeft = playheadX - viewportInner;
-        }
-        return;
-      }
-
-      if (action.axis === "x") {
-        container.scrollLeft += e.deltaY;
-      } else {
-        container.scrollTop += e.deltaY;
-      }
-    },
-    [zoom, duration],
-  );
-
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
-  }, [handleWheel]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
