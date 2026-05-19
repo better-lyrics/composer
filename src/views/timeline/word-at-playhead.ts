@@ -28,10 +28,7 @@ function findWordsAtTime(lines: LyricLine[], time: number): WordSelection[] {
   return matches;
 }
 
-function pickNextWordAtPlayhead(
-  matches: WordSelection[],
-  selectedWords: WordSelection[],
-): WordSelection | null {
+function pickNextWordAtPlayhead(matches: WordSelection[], selectedWords: WordSelection[]): WordSelection | null {
   if (matches.length === 0) return null;
   if (selectedWords.length === 1) {
     const current = selectedWords[0];
