@@ -27,13 +27,16 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Navigation</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          By default a plain scroll wheel scrolls vertically to see more lines. To move through time, scroll
-          horizontally with a trackpad gesture, or turn on "Scroll wheel scrolls timeline" in Settings, under Timeline.
-          With that setting on, a plain wheel scrolls the timeline horizontally and Shift + wheel scrolls vertically.
+          A plain scroll wheel scrolls vertically through the lines. To move through time, scroll horizontally with a
+          trackpad gesture.
         </li>
         <li>
-          Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time. The view
-          follows it. This works no matter how the "Scroll wheel scrolls timeline" setting is set.
+          Turn on "Scroll wheel scrolls timeline" in Settings, under Timeline, to swap the axes: a plain wheel then
+          scrolls the timeline horizontally and Shift + wheel scrolls vertically.
+        </li>
+        <li>
+          Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
+          follows it. This works whichever way the "Scroll wheel scrolls timeline" setting is set.
         </li>
         <li>{MOD_KEY} + scroll wheel to zoom in and out.</li>
         <li>Middle-click and drag to pan freely. Hold Shift while middle-dragging to lock panning to one axis.</li>

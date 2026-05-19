@@ -41,12 +41,14 @@ describe("TimelineSection", () => {
 
   it("documents wheel-over-waveform scrubbing", async () => {
     const screen = await render(<TimelineSection />);
-    await expect.element(screen.getByText(/over the waveform/i)).toBeInTheDocument();
+    await expect
+      .element(screen.getByText(/Scroll the wheel while the cursor is over the waveform strip/))
+      .toBeInTheDocument();
   });
 
   it("documents the scroll wheel timeline setting", async () => {
     const screen = await render(<TimelineSection />);
-    await expect.element(screen.getByText(/turn on "Scroll wheel scrolls timeline" in Settings/)).toBeInTheDocument();
+    await expect.element(screen.getByText(/Turn on "Scroll wheel scrolls timeline" in Settings/)).toBeInTheDocument();
   });
 
   it("documents playhead-drag edge auto-scroll", async () => {
