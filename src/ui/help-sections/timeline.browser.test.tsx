@@ -15,7 +15,7 @@ describe("TimelineSection", () => {
 
   it("documents the rolling edit tool", async () => {
     const screen = await render(<TimelineSection />);
-    expect(screen.container.textContent).toContain("Rolling edit tool");
+    expect(screen.container.textContent).toContain("the rolling edit tool");
   });
 
   it("documents splitting a word into independent words", async () => {
