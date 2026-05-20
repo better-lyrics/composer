@@ -56,6 +56,12 @@ describe("TimelineSection", () => {
     await expect.element(screen.getByText(/cycle through any overlapping words/i)).toBeInTheDocument();
   });
 
+  it("documents audio scrub preview at native pitch", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByRole("heading", { name: "Audio scrub preview" })).toBeInTheDocument();
+    await expect.element(screen.getByText(/at normal pitch/)).toBeInTheDocument();
+  });
+
   it("does not describe a plain wheel as horizontal-only", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("Scroll horizontally to move through time");

@@ -1,12 +1,21 @@
+import { scrubPreview } from "@/audio/scrub-preview";
+import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
-import { type RefObject, useCallback, useEffect } from "react";
+import { type RefObject, useCallback, useEffect, useRef } from "react";
+
+// -- Constants -----------------------------------------------------------------
+
+const WHEEL_IDLE_MS = 120;
 
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, enabled: boolean) {
+  const prevScrubSampleRef = useRef<ScrubSample | null>(null);
+  const wheelIdleTimerRef = useRef<number | null>(null);
+
   const handleWheel = useCallback(
     (e: WheelEvent) => {
       const container = scrollContainerRef.current;
@@ -56,6 +65,18 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         } else if (playheadX > container.scrollLeft + viewportInner) {
           container.scrollLeft = playheadX - viewportInner;
         }
+
+        const curr: ScrubSample = { time: newTime, wallClockMs: performance.now() };
+        const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, DEFAULT_SCRUB_OPTS);
+        prevScrubSampleRef.current = curr;
+        if (velocity > 0) scrubPreview.play(newTime, velocity);
+
+        if (wheelIdleTimerRef.current !== null) window.clearTimeout(wheelIdleTimerRef.current);
+        wheelIdleTimerRef.current = window.setTimeout(() => {
+          scrubPreview.stop();
+          prevScrubSampleRef.current = null;
+          wheelIdleTimerRef.current = null;
+        }, WHEEL_IDLE_MS);
         return;
       }
 
@@ -74,7 +95,15 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
     const container = scrollContainerRef.current;
     if (!enabled || !container) return;
     container.addEventListener("wheel", handleWheel, { passive: false });
-    return () => container.removeEventListener("wheel", handleWheel);
+    return () => {
+      container.removeEventListener("wheel", handleWheel);
+      if (wheelIdleTimerRef.current !== null) {
+        window.clearTimeout(wheelIdleTimerRef.current);
+        wheelIdleTimerRef.current = null;
+      }
+      scrubPreview.stop();
+      prevScrubSampleRef.current = null;
+    };
   }, [enabled, handleWheel, scrollContainerRef]);
 }
 

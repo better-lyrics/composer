@@ -32,6 +32,11 @@ const PlaybackSection: React.FC = () => {
         description="Keep your volume level between sessions."
         settingKey="rememberVolume"
       />
+      <ToggleSetting
+        label="Audio scrub preview"
+        description="Play a short audio snippet while dragging or wheel-scrubbing the playhead."
+        settingKey="audioScrubPreview"
+      />
     </div>
   );
 };

@@ -1,3 +1,5 @@
+import { scrubPreview } from "@/audio/scrub-preview";
+import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 
@@ -50,7 +52,15 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 
     let pointerX = e.clientX;
     let edgeScrollRaf: number | null = null;
+    let prevSample: ScrubSample | null = null;
     const controller = new AbortController();
+
+    const tickScrubPreview = (time: number): void => {
+      const curr: ScrubSample = { time, wallClockMs: performance.now() };
+      const velocity = computeScrubVelocity(prevSample, curr, DEFAULT_SCRUB_OPTS);
+      prevSample = curr;
+      if (velocity > 0) scrubPreview.play(time, velocity);
+    };
 
     const tickEdgeScroll = (): void => {
       edgeScrollRaf = requestAnimationFrame(tickEdgeScroll);
@@ -68,13 +78,19 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       const maxScroll = container.scrollWidth - container.clientWidth;
       container.scrollLeft = Math.max(0, Math.min(maxScroll, container.scrollLeft + velocity));
       const time = computeTimeFromPointer(pointerX);
-      if (time !== null) config.setDragTime(time);
+      if (time !== null) {
+        config.setDragTime(time);
+        tickScrubPreview(time);
+      }
     };
 
     const handleMouseMove = (moveEvent: MouseEvent): void => {
       pointerX = moveEvent.clientX;
       const time = computeTimeFromPointer(pointerX);
-      if (time !== null) config.setDragTime(time);
+      if (time !== null) {
+        config.setDragTime(time);
+        tickScrubPreview(time);
+      }
     };
 
     const cleanup = (): void => {
@@ -83,6 +99,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
         edgeScrollRaf = null;
       }
       controller.abort();
+      scrubPreview.stop();
       activeCleanup = null;
     };
 

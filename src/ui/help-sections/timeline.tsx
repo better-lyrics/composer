@@ -52,6 +52,16 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
+      <h4 className={HEADING}>Audio scrub preview</h4>
+      <p className={PROSE}>
+        When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
+        audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
+        press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
+        stays silent when the audio is muted. If it gets in the way, turn it off in Settings, under Playback.
+      </p>
+    </div>
+
+    <div>
       <h4 className={HEADING}>Selecting words</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
