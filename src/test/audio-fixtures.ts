@@ -56,4 +56,15 @@ function createMp3File(name = "silence.mp3"): File {
   return new File([SILENT_MP3_BYTES], name, { type: "audio/mpeg" });
 }
 
-export { createAudioFile, createMp3File };
+function makeSineBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
+  const ctx = new AudioContext();
+  const length = Math.max(1, Math.round(sampleRate * durationS));
+  const audioBuffer = ctx.createBuffer(1, length, sampleRate);
+  const data = audioBuffer.getChannelData(0);
+  for (let i = 0; i < length; i++) {
+    data[i] = Math.sin((2 * Math.PI * 440 * i) / sampleRate) * 0.2;
+  }
+  return audioBuffer;
+}
+
+export { createAudioFile, createMp3File, makeSineBuffer };
