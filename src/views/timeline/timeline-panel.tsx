@@ -24,7 +24,6 @@ import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sideba
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { blockWidth } from "@/views/timeline/word-block-width";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
   expandSelectionToGroupmates,
@@ -305,7 +304,7 @@ const TimelinePanel: React.FC = () => {
     }
 
     if (wordsToShow.length <= 1) {
-      const w = blockWidth((activeDrag.end - activeDrag.begin) * zoom);
+      const w = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
       return {
         cells: [
           {
@@ -344,7 +343,7 @@ const TimelinePanel: React.FC = () => {
 
       const cellLeft = word.begin * zoom - anchorLeft;
       const cellTop = (sel.type === "bg" ? rowBgTops[line.id] : rowTops[line.id]) - anchorTop;
-      const cellWidth = blockWidth((word.end - word.begin) * zoom);
+      const cellWidth = Math.max((word.end - word.begin) * zoom, 4);
       const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - 8;
 
       return {
@@ -357,7 +356,7 @@ const TimelinePanel: React.FC = () => {
       };
     });
 
-    const anchorW = blockWidth((activeDrag.end - activeDrag.begin) * zoom);
+    const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
     return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
   }, [activeDrag, zoom, effectiveLines]);
 

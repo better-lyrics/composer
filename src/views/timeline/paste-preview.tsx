@@ -12,7 +12,6 @@ import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout, type RowLayout } from "@/views/timeline/utils";
-import { blockWidth } from "@/views/timeline/word-block-width";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -368,7 +367,7 @@ function computeGhosts(
     const newEnd = Math.min(duration, entry.word.end + timeDelta);
 
     const left = GUTTER_WIDTH + newBegin * zoom;
-    const width = blockWidth((newEnd - newBegin) * zoom);
+    const width = Math.max((newEnd - newBegin) * zoom, 4);
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {

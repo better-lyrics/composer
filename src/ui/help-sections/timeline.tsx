@@ -88,10 +88,6 @@ const TimelineSection: React.FC = () => (
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} /> to nudge them as a group. Each word
           keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
         </li>
-        <li>
-          Very short words render at a minimum on-screen width so they stay easy to click and drag. At low zoom their
-          displayed width is approximate, so zoom in to edit their true duration precisely.
-        </li>
       </ul>
     </div>
 

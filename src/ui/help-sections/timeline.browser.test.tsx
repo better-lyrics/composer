@@ -23,11 +23,6 @@ describe("TimelineSection", () => {
     expect(screen.container.textContent).toContain("separate independent words");
   });
 
-  it("documents the tiny-word minimum width", async () => {
-    const screen = await render(<TimelineSection />);
-    await expect.element(screen.getByText(/minimum on-screen width/i)).toBeInTheDocument();
-  });
-
   it("documents explicit-word marking and detection", async () => {
     const screen = await render(<TimelineSection />);
     await expect.element(screen.getByRole("heading", { name: "Explicit words" })).toBeInTheDocument();
