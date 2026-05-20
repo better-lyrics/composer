@@ -100,19 +100,19 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
 
       {showApplyControls && (
         <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
             <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
             <span>Apply to all identical words</span>
           </label>
           <label
             className={cn(
-              "flex items-center gap-2 select-none",
+              "flex items-center gap-2 select-none text-sm",
               applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
             )}
           >
             <input
               type="checkbox"
-              checked={caseInsensitive}
+              checked={applyToAll && caseInsensitive}
               onChange={(e) => onCaseInsensitiveChange(e.target.checked)}
               disabled={!applyToAll}
             />
