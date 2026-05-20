@@ -10,9 +10,18 @@ const MAX_HISTORY_SIZE = 100;
 
 // -- History Helper -----------------------------------------------------------
 
-function commitHistory(state: ProjectState, changes: { lines?: LyricLine[]; groups?: LinkGroup[] }) {
+function commitHistory(
+  state: ProjectState,
+  changes: { lines?: LyricLine[]; groups?: LinkGroup[] },
+  options: { deriveText?: boolean } = {},
+) {
   const splitChar = getSplitCharacter();
-  const nextLines = changes.lines ? changes.lines.map((line) => withDerivedText(line, splitChar)) : state.lines;
+  const deriveText = options.deriveText ?? true;
+  const nextLines = changes.lines
+    ? deriveText
+      ? changes.lines.map((line) => withDerivedText(line, splitChar))
+      : changes.lines
+    : state.lines;
   const nextGroups = changes.groups ?? state.groups;
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);

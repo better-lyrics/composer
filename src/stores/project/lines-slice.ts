@@ -33,19 +33,22 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   setLinesWithHistory: (lines) => set((state) => commitHistory(state, { lines })),
 
-  updateLine: (id, updates) =>
+  updateLine: (id, updates, options = {}) =>
     set((state) => {
       const splitChar = getSplitCharacter();
+      const deriveText = options.deriveText ?? true;
       return {
-        lines: state.lines.map((line) =>
-          line.id === id ? withDerivedText(reconcileLine({ ...line, ...updates }), splitChar) : line,
-        ),
+        lines: state.lines.map((line) => {
+          if (line.id !== id) return line;
+          const reconciled = reconcileLine({ ...line, ...updates });
+          return deriveText ? withDerivedText(reconciled, splitChar) : reconciled;
+        }),
         isDirty: true,
         isDirtySinceHistory: true,
       };
     }),
 
-  updateLineWithHistory: (id, updates) =>
+  updateLineWithHistory: (id, updates, options = {}) =>
     set((state) => {
       const target = state.lines.find((l) => l.id === id);
       const linkScope = target ? getLinkScope(target) : null;
@@ -72,10 +75,10 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines });
+      return commitHistory(state, { lines: newLines }, options);
     }),
 
-  updateLinesWithHistory: (updates) =>
+  updateLinesWithHistory: (updates, options = {}) =>
     set((state) => {
       const newLines = [...state.lines];
       const indexById = new Map<string, number>();
@@ -110,7 +113,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
       }
 
-      return commitHistory(state, { lines: newLines });
+      return commitHistory(state, { lines: newLines }, options);
     }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
