@@ -145,6 +145,19 @@ describe("TimelineSyllableSplitter", () => {
     expect(document.querySelector("dialog")).toBeNull();
   });
 
+  it("hides apply-to-all controls in word-split mode", async () => {
+    const line = createLine({ words: [createWord({ text: "hello", begin: 0, end: 1 })] });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-word"));
+    await expect.element(screen.getByRole("heading", { name: /Split "hello" into words/ })).toBeInTheDocument();
+
+    expect(document.querySelector('input[type="checkbox"]')).toBeNull();
+  });
+
   it("reconciles line.text from the new words array after a split", async () => {
     const line = createLine({
       text: "every",

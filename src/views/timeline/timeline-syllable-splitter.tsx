@@ -132,6 +132,13 @@ const TimelineSyllableSplitter: React.FC = () => {
         onToggleSplit={handleToggleSplit}
         onConfirm={handleConfirm}
         onCancel={handleClose}
+        applyToAll={false}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={0}
+        sourceText={trimmedText}
+        showApplyControls={target.mode === "syllable"}
       />
     </Modal>
   );

@@ -17,13 +17,35 @@ interface SyllableSplitterProps {
 
 // -- Components ---------------------------------------------------------------
 
-const SplitModeContent: React.FC<{
+interface SplitModeContentProps {
   text: string;
   splitPoints: number[];
   onToggleSplit: (index: number) => void;
   onConfirm: () => void;
   onCancel: () => void;
-}> = ({ text, splitPoints, onToggleSplit, onConfirm, onCancel }) => {
+  applyToAll: boolean;
+  onApplyToAllChange: (next: boolean) => void;
+  caseInsensitive: boolean;
+  onCaseInsensitiveChange: (next: boolean) => void;
+  identicalCount: number;
+  sourceText: string;
+  showApplyControls: boolean;
+}
+
+const SplitModeContent: React.FC<SplitModeContentProps> = ({
+  text,
+  splitPoints,
+  onToggleSplit,
+  onConfirm,
+  onCancel,
+  applyToAll,
+  onApplyToAllChange,
+  caseInsensitive,
+  onCaseInsensitiveChange,
+  identicalCount,
+  sourceText,
+  showApplyControls,
+}) => {
   const chars = text.split("");
 
   const previewParts = useMemo(() => {
@@ -79,6 +101,39 @@ const SplitModeContent: React.FC<{
         <div className="flex items-center justify-center gap-2 text-sm text-composer-text-muted">
           <span>Preview:</span>
           <span className="font-medium text-composer-text">{previewParts.join(" · ")}</span>
+        </div>
+      )}
+
+      {showApplyControls && (
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={applyToAll}
+              onChange={(e) => onApplyToAllChange(e.target.checked)}
+            />
+            <span>Apply to all identical words</span>
+          </label>
+          <label
+            className={`flex items-center gap-2 select-none ${applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+          >
+            <input
+              type="checkbox"
+              checked={caseInsensitive}
+              onChange={(e) => onCaseInsensitiveChange(e.target.checked)}
+              disabled={!applyToAll}
+            />
+            <span>Case-insensitive matching</span>
+          </label>
+          {applyToAll && identicalCount > 0 && (
+            <p className="text-sm text-composer-text-secondary">
+              This will also split {identicalCount} other "{sourceText}"
+              {identicalCount === 1 ? "" : "s"}
+            </p>
+          )}
+          {applyToAll && identicalCount === 0 && (
+            <p className="text-sm text-composer-text-muted">No other matching words</p>
+          )}
         </div>
       )}
 
@@ -145,6 +200,13 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, on
             onToggleSplit={handleToggleSplit}
             onConfirm={() => handleConfirmSplit(close)}
             onCancel={() => handleCancelSplit(close)}
+            applyToAll={false}
+            onApplyToAllChange={() => {}}
+            caseInsensitive={false}
+            onCaseInsensitiveChange={() => {}}
+            identicalCount={0}
+            sourceText={word.text.trimEnd()}
+            showApplyControls={true}
           />
         </div>
       )}

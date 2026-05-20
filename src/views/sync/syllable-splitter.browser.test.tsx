@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SyllableSplitter } from "@/views/sync/syllable-splitter";
+import { SplitModeContent, SyllableSplitter } from "@/views/sync/syllable-splitter";
 import type { WordTiming } from "@/domain/word/timing";
 import { render } from "@/test/render";
 
@@ -91,5 +91,131 @@ describe("SyllableSplitter", () => {
     const out = splits as unknown as WordTiming[];
     expect(out).not.toBeNull();
     expect(out.every((w) => w.syllableGroupId === "g_source")).toBe(true);
+  });
+});
+
+describe("SplitModeContent apply-to-all controls", () => {
+  it("hides the apply-to-all block when showApplyControls is false", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={false}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={0}
+        sourceText="hello"
+        showApplyControls={false}
+      />,
+    );
+    expect(screen.container.querySelector('input[type="checkbox"]')).toBeNull();
+  });
+
+  it("shows both checkboxes with case-insensitive disabled when apply-to-all is off", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={false}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={0}
+        sourceText="hello"
+        showApplyControls={true}
+      />,
+    );
+    const checkboxes = screen.container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    expect(checkboxes).toHaveLength(2);
+    expect(checkboxes[0].disabled).toBe(false);
+    expect(checkboxes[1].disabled).toBe(true);
+  });
+
+  it("enables case-insensitive when apply-to-all is on", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={true}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={0}
+        sourceText="hello"
+        showApplyControls={true}
+      />,
+    );
+    const checkboxes = screen.container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]');
+    expect(checkboxes[1].disabled).toBe(false);
+  });
+
+  it("shows the count line with pluralization when applyToAll is on and matches exist", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={true}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={3}
+        sourceText="running"
+        showApplyControls={true}
+      />,
+    );
+    await expect.element(screen.getByText(/This will also split 3 other "running"s/)).toBeInTheDocument();
+  });
+
+  it("uses singular form when identicalCount is exactly 1", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={true}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={1}
+        sourceText="running"
+        showApplyControls={true}
+      />,
+    );
+    await expect.element(screen.getByText('This will also split 1 other "running"')).toBeInTheDocument();
+  });
+
+  it("shows muted text when applyToAll is on with zero matches", async () => {
+    const screen = await render(
+      <SplitModeContent
+        text="hello"
+        splitPoints={[]}
+        onToggleSplit={() => {}}
+        onConfirm={() => {}}
+        onCancel={() => {}}
+        applyToAll={true}
+        onApplyToAllChange={() => {}}
+        caseInsensitive={false}
+        onCaseInsensitiveChange={() => {}}
+        identicalCount={0}
+        sourceText="running"
+        showApplyControls={true}
+      />,
+    );
+    await expect.element(screen.getByText("No other matching words")).toBeInTheDocument();
   });
 });
