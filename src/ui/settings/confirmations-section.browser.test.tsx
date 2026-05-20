@@ -33,4 +33,12 @@ describe("ConfirmationsSection", () => {
     toggle.click();
     expect(useSettingsStore.getState().confirmClearProject).toBe(false);
   });
+
+  it("flips confirmApplyToAllSyllableSplit when its toggle is clicked", async () => {
+    await render(<ConfirmationsSection />);
+    expect(useSettingsStore.getState().confirmApplyToAllSyllableSplit).toBe(true);
+    const toggle = toggleForLabel("Confirm before splitting multiple identical words");
+    toggle.click();
+    expect(useSettingsStore.getState().confirmApplyToAllSyllableSplit).toBe(false);
+  });
 });

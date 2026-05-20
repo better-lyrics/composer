@@ -51,6 +51,7 @@ interface SettingsState {
   confirmResetSettings: boolean;
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
+  confirmApplyToAllSyllableSplit: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
@@ -102,6 +103,7 @@ const DEFAULTS: SettingsState = {
   confirmResetSettings: true,
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
+  confirmApplyToAllSyllableSplit: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
@@ -135,6 +137,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmResetSettings: state.confirmResetSettings,
           confirmResetShortcuts: state.confirmResetShortcuts,
           confirmGroupDissolution: state.confirmGroupDissolution,
+          confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,

@@ -43,6 +43,11 @@ const ConfirmationsSection: React.FC = () => {
           description="Show a warning before clearing all custom keyboard bindings."
           settingKey="confirmResetShortcuts"
         />
+        <ToggleSetting
+          label="Confirm before splitting multiple identical words"
+          description="Show a warning when a syllable split would also apply to other identical words across the project."
+          settingKey="confirmApplyToAllSyllableSplit"
+        />
       </div>
     </div>
   );
