@@ -1,14 +1,14 @@
 import { computeScrubVelocity } from "@/audio/scrub-velocity";
 import { describe, expect, test } from "vitest";
 
-const OPTS = { minDtMs: 16, minRate: 0.25, maxRate: 4, minAudible: 0.1 };
+const OPTS = { minDtMs: 16, minRate: 0.25, maxRate: 4, minAudibleRate: 0.1 };
 
 describe("computeScrubVelocity", () => {
   test("returns 0 when prev is null", () => {
     expect(computeScrubVelocity(null, { time: 1, wallClockMs: 0 }, OPTS)).toBe(0);
   });
 
-  test("returns 0 when magnitude below minAudible", () => {
+  test("returns 0 when magnitude below minAudibleRate", () => {
     const prev = { time: 1, wallClockMs: 0 };
     const curr = { time: 1.001, wallClockMs: 100 };
     expect(computeScrubVelocity(prev, curr, OPTS)).toBe(0);
@@ -36,5 +36,23 @@ describe("computeScrubVelocity", () => {
     const prev = { time: 0, wallClockMs: 0 };
     const curr = { time: 0.05, wallClockMs: 1 };
     expect(computeScrubVelocity(prev, curr, OPTS)).toBe(4);
+  });
+
+  test("does not floor small positive dt; maxRate is the only rate cap", () => {
+    const prev = { time: 0, wallClockMs: 0 };
+    const curr = { time: 0.001, wallClockMs: 1 };
+    expect(computeScrubVelocity(prev, curr, OPTS)).toBe(1);
+  });
+
+  test("treats backwards wallClock as zero-dt fallback", () => {
+    const prev = { time: 5, wallClockMs: 1000 };
+    const curr = { time: 5.5, wallClockMs: 500 };
+    expect(computeScrubVelocity(prev, curr, OPTS)).toBe(4);
+  });
+
+  test("NaN inputs do not produce a non-zero rate", () => {
+    const prev = { time: 0, wallClockMs: 0 };
+    const curr = { time: Number.NaN, wallClockMs: 100 };
+    expect(computeScrubVelocity(prev, curr, OPTS)).toBe(0);
   });
 });
