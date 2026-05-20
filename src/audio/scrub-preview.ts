@@ -1,3 +1,5 @@
+import { useSettingsStore } from "@/stores/settings";
+
 const SNIPPET_S = 0.12;
 const CROSSFADE_S = 0.008;
 const MIN_AUDIBLE_RATE = 0.1;
@@ -41,7 +43,7 @@ function fadeOutAndStop(source: AudioBufferSourceNode, gain: GainNode): void {
 }
 
 function isEnabled(): boolean {
-  return true;
+  return useSettingsStore.getState().audioScrubPreview !== false;
 }
 
 function play(time: number, velocity: number): void {

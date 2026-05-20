@@ -25,6 +25,7 @@ interface SettingsState {
   defaultPlaybackRate: number;
   rememberVolume: boolean;
   lastVolume: number;
+  audioScrubPreview: boolean;
 
   defaultZoom: number;
   defaultRowHeight: number;
@@ -77,6 +78,7 @@ const DEFAULTS: SettingsState = {
   defaultPlaybackRate: 0.75,
   rememberVolume: true,
   lastVolume: 1,
+  audioScrubPreview: true,
 
   defaultZoom: 100,
   defaultRowHeight: 44,

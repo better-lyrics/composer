@@ -14,8 +14,21 @@ describe("PlaybackSection", () => {
   it("flips Remember volume when its toggle is clicked", async () => {
     useSettingsStore.setState({ rememberVolume: true });
     const screen = await render(<PlaybackSection />);
-    await screen.getByRole("switch").click();
+    await screen.getByRole("switch", { name: "Remember volume" }).click();
     await expect.poll(() => useSettingsStore.getState().rememberVolume).toBe(false);
+  });
+
+  it("renders the Audio scrub preview toggle on by default", async () => {
+    const screen = await render(<PlaybackSection />);
+    const toggle = screen.getByRole("switch", { name: "Audio scrub preview" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("flips Audio scrub preview when its toggle is clicked", async () => {
+    useSettingsStore.setState({ audioScrubPreview: true });
+    const screen = await render(<PlaybackSection />);
+    await screen.getByRole("switch", { name: "Audio scrub preview" }).click();
+    await expect.poll(() => useSettingsStore.getState().audioScrubPreview).toBe(false);
   });
 
   it("hides the Use current action when no audio is loaded", async () => {

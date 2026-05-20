@@ -16,6 +16,10 @@ describe("preview renderer settings", () => {
     expect(useSettingsStore.getState().previewRenderer).toBe("braccato");
   });
 
+  it("defaults audioScrubPreview to true", () => {
+    expect(useSettingsStore.getState().audioScrubPreview).toBe(true);
+  });
+
   it("allows switching renderer via set()", () => {
     useSettingsStore.getState().set("previewRenderer", "am-lyrics");
     expect(useSettingsStore.getState().previewRenderer).toBe("am-lyrics");

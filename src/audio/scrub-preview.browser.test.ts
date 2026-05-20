@@ -1,4 +1,5 @@
 import { scrubPreview } from "@/audio/scrub-preview";
+import { useSettingsStore } from "@/stores/settings";
 import { makeSineBuffer } from "@/test/audio-fixtures";
 import { afterEach, describe, expect, test } from "vitest";
 
@@ -49,6 +50,18 @@ describe("scrub-preview", () => {
     scrubPreview.play(99, 1);
     const snippet = scrubPreview.getActiveSnippet();
     expect(snippet?.time).toBeCloseTo(1 - 0.12, 2);
+  });
+
+  test("play is a no-op when audioScrubPreview setting is off", () => {
+    scrubPreview.useBuffer(makeSineBuffer(1));
+    const previous = useSettingsStore.getState().audioScrubPreview;
+    useSettingsStore.setState({ audioScrubPreview: false });
+    try {
+      scrubPreview.play(0.5, 1);
+      expect(scrubPreview.getActiveSnippet()).toBeNull();
+    } finally {
+      useSettingsStore.setState({ audioScrubPreview: previous });
+    }
   });
 
   test("decode round-trips an ArrayBuffer into an AudioBuffer", async () => {
