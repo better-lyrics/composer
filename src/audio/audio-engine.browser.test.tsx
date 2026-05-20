@@ -66,6 +66,7 @@ describe("AudioEngine", () => {
 
   it("falls back to the original file when mp3 decode fails", async () => {
     allowConsole(/mp3 decode failed/);
+    allowConsole(/scrub-preview decode failed/);
     allowConsole(/Audio error/);
     await render(<AudioEngine />);
     const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.mp3", { type: "audio/mpeg" });

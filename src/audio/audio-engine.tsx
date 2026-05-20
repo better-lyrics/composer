@@ -1,5 +1,6 @@
 import { decodeMp3ToWav, isMp3File } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
+import { scrubPreview } from "@/audio/scrub-preview";
 import { useAudioStore } from "@/stores/audio";
 import { useEffect, useRef } from "react";
 
@@ -27,12 +28,14 @@ const AudioEngine: React.FC = () => {
   useEffect(() => {
     if (!source) {
       registerAudioElement(null);
+      scrubPreview.useBuffer(null);
       return;
     }
 
     const playableFile = source.type === "file" ? source.file : source.type === "youtube" ? source.file : null;
     if (!playableFile) {
       registerAudioElement(null);
+      scrubPreview.useBuffer(null);
       return;
     }
 
@@ -72,6 +75,21 @@ const AudioEngine: React.FC = () => {
         return URL.createObjectURL(playableFile);
       }
     };
+
+    const loadScrubBuffer = async () => {
+      try {
+        const bytes = await playableFile.arrayBuffer();
+        if (aborted) return;
+        const audioBuffer = await scrubPreview.decode(bytes);
+        if (aborted) return;
+        scrubPreview.useBuffer(audioBuffer);
+      } catch (err) {
+        if (aborted) return;
+        console.warn(LOG_PREFIX, "scrub-preview decode failed", err);
+        scrubPreview.useBuffer(null);
+      }
+    };
+    void loadScrubBuffer();
 
     const setup = async () => {
       let objectUrl: string;
@@ -137,6 +155,7 @@ const AudioEngine: React.FC = () => {
       clearSlowLoading();
       if (teardown) teardown();
       registerAudioElement(null);
+      scrubPreview.useBuffer(null);
     };
   }, [source, setDuration, setCurrentTime, setIsPlaying, setIsLoading, registerAudioElement]);
 
