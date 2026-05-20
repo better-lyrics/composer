@@ -42,4 +42,32 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
 
     expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
   });
+
+  it("case-insensitive flag splits Capitalized siblings via the action", () => {
+    const lines = [
+      createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] }),
+      createLine({ id: "l2", words: [{ text: "Running", begin: 2, end: 3 }] }),
+    ];
+    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "l1", wordIndex: 0, type: "word" },
+      splitPoints: [3],
+      caseInsensitive: true,
+    });
+    const after = useProjectStore.getState().lines;
+    expect(after[1].words).toHaveLength(2);
+    expect(after[1].words?.[0].text).toBe("Run");
+  });
+
+  it("is a no-op when splitPoints is empty", () => {
+    const lines = [createLine({ id: "l1", words: [{ text: "running", begin: 0, end: 1 }] })];
+    useProjectStore.getState().setLinesWithHistory(lines);
+    const before = useProjectStore.getState().lines;
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "l1", wordIndex: 0, type: "word" },
+      splitPoints: [],
+      caseInsensitive: false,
+    });
+    expect(useProjectStore.getState().lines).toBe(before);
+  });
 });

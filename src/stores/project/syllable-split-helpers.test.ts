@@ -57,6 +57,26 @@ describe("applySyllableSplitToLines", () => {
     expect(result).toBe(lines);
   });
 
+  it("handles two matches on the same line+track without index drift", () => {
+    const lines = [
+      createLine({
+        id: "l1",
+        words: [
+          { text: "go", begin: 0, end: 1 },
+          { text: "stop", begin: 1, end: 2 },
+          { text: "go", begin: 2, end: 3 },
+        ],
+      }),
+    ];
+    const result = applySyllableSplitToLines(
+      lines,
+      { lineId: "l1", wordIndex: 0, type: "word" },
+      [1],
+      false,
+    );
+    expect(result[0].words?.map((w) => w.text)).toEqual(["g", "o", "stop", "g", "o"]);
+  });
+
   it("includes background-word matches", () => {
     const lines = [
       createLine({

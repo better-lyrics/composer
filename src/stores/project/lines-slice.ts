@@ -262,6 +262,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   splitSyllablesAcrossIdenticalWordsWithHistory: ({ source, splitPoints, caseInsensitive }) =>
     set((state) => {
+      if (splitPoints.length === 0) return state;
       const newLines = applySyllableSplitToLines(state.lines, source, splitPoints, caseInsensitive);
       if (newLines === state.lines) return state;
       return commitHistory(state, { lines: newLines });

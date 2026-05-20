@@ -38,6 +38,8 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
   let mainTrack = line.words;
   let bgTrack = line.backgroundWords;
 
+  // Single descending sort across all targets is safe: projecting onto each
+  // track preserves descending order, so per-track splice indices don't drift.
   const sortedDescending = targets.toSorted((a, b) => b.wordIndex - a.wordIndex);
   for (const target of sortedDescending) {
     const replacement = splitOneWord(target.word, splitPoints, target.reuseGroupId);
