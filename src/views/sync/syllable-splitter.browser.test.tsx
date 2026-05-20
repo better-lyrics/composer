@@ -45,10 +45,7 @@ describe("SyllableSplitter", () => {
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[0]?.click();
+    await screen.getByRole("button", { name: "Split point 1" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     expect(splits).not.toBeNull();
     expect((splits as unknown as WordTiming[]).length).toBeGreaterThan(1);
@@ -68,11 +65,8 @@ describe("SyllableSplitter", () => {
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[0]?.click();
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 1" }).click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     const out = splits as unknown as WordTiming[];
     expect(out).not.toBeNull();
@@ -95,10 +89,7 @@ describe("SyllableSplitter", () => {
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[0]?.click();
+    await screen.getByRole("button", { name: "Split point 1" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     const out = splits as unknown as WordTiming[];
     expect(out).not.toBeNull();

@@ -4,7 +4,8 @@ import { useSettingsStore } from "@/stores/settings";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { SplitModeContent, SyllableSplitter } from "@/views/sync/syllable-splitter";
+import { SplitModeContent } from "@/views/sync/split-mode-content";
+import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 
 // -- SplitModeContent UI tests ------------------------------------------------
 
@@ -207,10 +208,7 @@ describe("SyllableSplitter wiring", () => {
       syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
     });
     const screen = await openSplitterFor("l1", "running");
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();
@@ -224,10 +222,7 @@ describe("SyllableSplitter wiring", () => {
     });
     const before = useProjectStore.getState().lines;
     const screen = await openSplitterFor("l1", "running");
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Cancel" }).click();
@@ -241,10 +236,7 @@ describe("SyllableSplitter wiring", () => {
     });
     useSettingsStore.setState({ confirmApplyToAllSyllableSplit: false });
     const screen = await openSplitterFor("l1", "running");
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
@@ -269,10 +261,7 @@ describe("SyllableSplitter wiring", () => {
       </>,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
     expect(onSplit).toHaveBeenCalledTimes(1);
     expect(useProjectStore.getState().lines[1].words?.length).toBe(1);
@@ -284,10 +273,7 @@ describe("SyllableSplitter wiring", () => {
       syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
     });
     const screen = await openSplitterFor("l1", "running");
-    const splitPointButtons = Array.from(document.querySelectorAll("button")).filter(
-      (b) => b.querySelector("span")?.textContent === "⋮",
-    );
-    splitPointButtons[2]?.click();
+    await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();

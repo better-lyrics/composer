@@ -1,9 +1,7 @@
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
-import { distributeTiming } from "@/utils/syllable-utils";
-import { splitSourceWord } from "@/utils/word-timing";
-import { nanoid } from "nanoid";
+import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 
 // -- Types --------------------------------------------------------------------
 
@@ -17,19 +15,6 @@ interface SplitTarget {
 
 // -- Helpers ------------------------------------------------------------------
 
-function splitOneWord(word: WordTiming, splitPoints: number[], reuseGroupId: boolean): WordTiming[] {
-  const trimmed = word.text.trimEnd();
-  const groupId = reuseGroupId && word.syllableGroupId !== undefined ? word.syllableGroupId : nanoid(8);
-  const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
-  const partitions = distributeTiming(trimmed, splitPoints, word.begin, word.end);
-  const newWords = splitSourceWord(sourceForSplit, partitions);
-  if (word.text.endsWith(" ") && newWords.length > 0) {
-    const last = newWords[newWords.length - 1];
-    newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
-  }
-  return newWords;
-}
-
 function replaceWordsAt(track: WordTiming[], wordIndex: number, replacement: WordTiming[]): WordTiming[] {
   return [...track.slice(0, wordIndex), ...replacement, ...track.slice(wordIndex + 1)];
 }
@@ -42,7 +27,11 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
   // track preserves descending order, so per-track splice indices don't drift.
   const sortedDescending = targets.toSorted((a, b) => b.wordIndex - a.wordIndex);
   for (const target of sortedDescending) {
-    const replacement = splitOneWord(target.word, splitPoints, target.reuseGroupId);
+    const replacement = splitWordIntoSyllables({
+      word: target.word,
+      splitPoints,
+      reuseGroupId: target.reuseGroupId,
+    });
     if (target.type === "word" && mainTrack) {
       mainTrack = replaceWordsAt(mainTrack, target.wordIndex, replacement);
     } else if (target.type === "bg" && bgTrack) {

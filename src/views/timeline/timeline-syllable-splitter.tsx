@@ -2,12 +2,12 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
 import { Modal } from "@/ui/modal";
-import { distributeTiming } from "@/utils/syllable-utils";
-import { splitSourceWord } from "@/utils/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
+import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { splitSourceWord } from "@/utils/word-timing";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { SplitModeContent } from "@/views/sync/syllable-splitter";
+import { SplitModeContent } from "@/views/sync/split-mode-content";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useState } from "react";
 
@@ -73,27 +73,24 @@ const TimelineSyllableSplitter: React.FC = () => {
     if (mode === "word") {
       newWords = splitWordIntoWords(word, splitPoints);
     } else {
-      // Check if playhead is over this word right now
       const audioEl = useAudioStore.getState().audioElement;
       const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
       const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
-      const groupId = word.syllableGroupId ?? nanoid(8);
-      const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
-
-      const partitions =
-        playheadOnWord && splitPoints.length === 1
-          ? [
-              { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
-              { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
-            ]
-          : distributeTiming(trimmedText, splitPoints, word.begin, word.end);
-
-      newWords = splitSourceWord(sourceForSplit, partitions);
-
-      if (word.text.endsWith(" ") && newWords.length > 0) {
-        const last = newWords[newWords.length - 1];
-        newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+      if (playheadOnWord && splitPoints.length === 1) {
+        const groupId = word.syllableGroupId ?? nanoid(8);
+        const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
+        const partitions = [
+          { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
+          { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
+        ];
+        newWords = splitSourceWord(sourceForSplit, partitions);
+        if (word.text.endsWith(" ") && newWords.length > 0) {
+          const last = newWords[newWords.length - 1];
+          newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
+        }
+      } else {
+        newWords = splitWordIntoSyllables({ word, splitPoints, reuseGroupId: true });
       }
     }
 

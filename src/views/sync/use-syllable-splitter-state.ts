@@ -2,9 +2,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
-import { distributeTiming } from "@/utils/syllable-utils";
-import { splitSourceWord } from "@/utils/word-timing";
-import { nanoid } from "nanoid";
+import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { useCallback, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -58,10 +56,7 @@ function useSyllableSplitterState({
   }, []);
 
   const splitSingleWord = useCallback(() => {
-    const groupId = word.syllableGroupId ?? nanoid(8);
-    const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
-    const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
-    const newWords = splitSourceWord(sourceForSplit, partitions);
+    const newWords = splitWordIntoSyllables({ word, splitPoints, reuseGroupId: true });
     onSplit(wordIndex, newWords);
   }, [word, splitPoints, wordIndex, onSplit]);
 
