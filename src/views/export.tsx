@@ -99,9 +99,18 @@ const ExportPanel: React.FC = () => {
   const handleExportProject = useCallback(() => {
     const audioSource = useAudioStore.getState().source;
     const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-    const dismissed = useProjectStore.getState().dismissedSuggestions;
-    const dismissedExplicit = useProjectStore.getState().dismissedExplicitSuggestions;
-    exportProjectToFile(metadata, agents, lines, groups, granularity, dismissed, dismissedExplicit, audioFileName);
+    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults } = useProjectStore.getState();
+    exportProjectToFile(
+      metadata,
+      agents,
+      lines,
+      groups,
+      granularity,
+      syllableSplitDefaults,
+      dismissedSuggestions,
+      dismissedExplicitSuggestions,
+      audioFileName,
+    );
   }, [metadata, agents, lines, groups, granularity]);
 
   const handleImportProject = useCallback(
@@ -131,6 +140,9 @@ const ExportPanel: React.FC = () => {
       useProjectStore.getState().setDismissedSuggestions(project.dismissedSuggestions ?? []);
       useProjectStore.getState().setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
       setGranularity(project.granularity);
+      useProjectStore
+        .getState()
+        .setSyllableSplitDefaults(project.syllableSplitDefaults ?? { applyToAll: false, caseInsensitive: false });
       setAgents(project.agents);
       markClean();
 

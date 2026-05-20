@@ -10,6 +10,11 @@ type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
 
+interface SyllableSplitDefaults {
+  applyToAll: boolean;
+  caseInsensitive: boolean;
+}
+
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
@@ -38,6 +43,7 @@ interface UiState {
   granularity: GranularityMode;
   editorMode: EditorMode;
   activeTab: SimpleTab;
+  syllableSplitDefaults: SyllableSplitDefaults;
 }
 
 interface DismissalsState {
@@ -74,6 +80,7 @@ interface UiActions {
   setGranularity: (mode: GranularityMode) => void;
   setEditorMode: (mode: EditorMode) => void;
   setActiveTab: (tab: SimpleTab) => void;
+  setSyllableSplitDefaults: (defaults: SyllableSplitDefaults) => void;
 }
 
 interface DismissalActions {
@@ -154,6 +161,7 @@ type ProjectStore = ProjectState & ProjectActions;
 export type {
   GranularityMode,
   SimpleTab,
+  SyllableSplitDefaults,
   MetadataState,
   AgentsState,
   LinesState,

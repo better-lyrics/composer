@@ -1,4 +1,5 @@
 import type { GranularityMode } from "@/stores/project";
+import type { SyllableSplitDefaults } from "@/stores/project/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -17,6 +18,7 @@ interface SavedProject {
   lines: LyricLine[];
   groups?: LinkGroup[];
   granularity: GranularityMode;
+  syllableSplitDefaults: SyllableSplitDefaults;
   audioFileName?: string;
   audioSource?: SavedAudioSource;
   dismissedSuggestions?: string[];
@@ -100,6 +102,7 @@ async function saveCurrentProject(
   lines: LyricLine[],
   groups: LinkGroup[],
   granularity: GranularityMode,
+  syllableSplitDefaults: SyllableSplitDefaults,
   audioSource: SavedAudioSource | undefined,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
@@ -113,6 +116,7 @@ async function saveCurrentProject(
     lines,
     groups,
     granularity,
+    syllableSplitDefaults,
     audioFileName,
     audioSource,
     dismissedSuggestions,
@@ -163,6 +167,7 @@ function exportProjectToFile(
   lines: LyricLine[],
   groups: LinkGroup[],
   granularity: GranularityMode,
+  syllableSplitDefaults: SyllableSplitDefaults,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
   audioFileName?: string,
@@ -175,6 +180,7 @@ function exportProjectToFile(
     lines,
     groups,
     granularity,
+    syllableSplitDefaults,
     audioFileName,
     dismissedSuggestions,
     dismissedExplicitSuggestions,
@@ -199,6 +205,10 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
 
+  if (!project.syllableSplitDefaults) {
+    project.syllableSplitDefaults = { applyToAll: false, caseInsensitive: false };
+  }
+
   return project;
 }
 
@@ -212,6 +222,7 @@ let pendingSaveArgs:
       LyricLine[],
       LinkGroup[],
       GranularityMode,
+      SyllableSplitDefaults,
       SavedAudioSource | undefined,
       string[],
       string[],
@@ -224,6 +235,7 @@ function debouncedSave(
   lines: LyricLine[],
   groups: LinkGroup[],
   granularity: GranularityMode,
+  syllableSplitDefaults: SyllableSplitDefaults,
   audioSource: SavedAudioSource | undefined,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
@@ -234,6 +246,7 @@ function debouncedSave(
     lines,
     groups,
     granularity,
+    syllableSplitDefaults,
     audioSource,
     dismissedSuggestions,
     dismissedExplicitSuggestions,

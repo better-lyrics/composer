@@ -10,6 +10,7 @@ function createUiInitialState(): UiState {
     granularity: useSettingsStore.getState().defaultGranularity,
     editorMode: "simple",
     activeTab: "import",
+    syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
   };
 }
 
@@ -28,6 +29,8 @@ const createUiSlice: StateCreator<ProjectStore, [], [], UiState & UiActions> = (
     }
     set({ activeTab });
   },
+
+  setSyllableSplitDefaults: (syllableSplitDefaults) => set({ syllableSplitDefaults, isDirty: true }),
 });
 
 // -- Exports ------------------------------------------------------------------

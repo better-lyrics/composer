@@ -57,6 +57,7 @@ function usePersistence(): void {
         state.setLines(safeLines);
         state.setGroups(project.groups ?? []);
         state.setGranularity(safeGranularity);
+        state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? { applyToAll: false, caseInsensitive: false });
         state.setAgents(safeAgents);
         state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
         state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
@@ -83,6 +84,7 @@ function usePersistence(): void {
           state.lines,
           state.groups,
           state.granularity,
+          state.syllableSplitDefaults,
           audioSource,
           state.dismissedSuggestions,
           state.dismissedExplicitSuggestions,
