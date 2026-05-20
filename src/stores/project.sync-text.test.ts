@@ -1,11 +1,7 @@
-import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
 import { commitTappedWord } from "@/utils/sync-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
-
-function untimedLine(id: string, text: string): LyricLine {
-  return { id, agentId: "v1", text } as LyricLine;
-}
 
 describe("sync incremental tap preserves line.text", () => {
   beforeEach(() => {
@@ -20,7 +16,7 @@ describe("sync incremental tap preserves line.text", () => {
   });
 
   it("preserves text after the first-word tap on a fresh line", () => {
-    useProjectStore.getState().setLines([untimedLine("l0", "Hello world how are you")]);
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world how are you" })]);
 
     const words = commitTappedWord([], 0, "Hello ", 0, 1);
     useProjectStore.getState().updateLineWithHistory("l0", { words }, { deriveText: false });
@@ -29,7 +25,7 @@ describe("sync incremental tap preserves line.text", () => {
   });
 
   it("preserves text across a full word-by-word tap sequence", () => {
-    useProjectStore.getState().setLines([untimedLine("l0", "Hello world how are you")]);
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world how are you" })]);
 
     const taps = ["Hello ", "world ", "how ", "are ", "you"];
     let words: ReturnType<typeof commitTappedWord> = [];
@@ -41,7 +37,9 @@ describe("sync incremental tap preserves line.text", () => {
   });
 
   it("preserves text when the previous line's last word end is patched mid-sync", () => {
-    useProjectStore.getState().setLines([untimedLine("l0", "Hello world"), untimedLine("l1", "Foo bar")]);
+    useProjectStore
+      .getState()
+      .setLines([createLine({ id: "l0", text: "Hello world" }), createLine({ id: "l1", text: "Foo bar" })]);
 
     let words: ReturnType<typeof commitTappedWord> = [];
     words = commitTappedWord(words, 0, "Hello ", 0, 1);

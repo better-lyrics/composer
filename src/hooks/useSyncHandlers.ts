@@ -125,14 +125,14 @@ function useSyncHandlers({
     if (!line) return;
 
     if (prevLine?.begin !== undefined) {
-      updateLine(prevLine.id, { end: currentTime });
+      updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
     const updates: Partial<LyricLine> = { begin: currentTime, end: currentTime };
     if (line.backgroundText && !line.backgroundWords?.length) {
       updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
     }
-    updateLineWithHistory(line.id, updates);
+    updateLineWithHistory(line.id, updates, { deriveText: false });
 
     setShowPulse(true);
     setTimeout(() => setShowPulse(false), 100);

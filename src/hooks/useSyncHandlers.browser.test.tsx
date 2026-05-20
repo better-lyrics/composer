@@ -1,15 +1,11 @@
-import type { LyricLine } from "@/domain/line/model";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
-import { INITIAL_STATE, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
 import type { SyncState } from "@/utils/sync-helpers";
-import { beforeEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
 const ORIGINAL_TEXT = "Hello world how are you";
-
-function untimedLine(id: string, text: string): LyricLine {
-  return { id, agentId: "v1", text } as LyricLine;
-}
 
 interface HookProps {
   syncState: SyncState;
@@ -19,12 +15,8 @@ interface HookProps {
 function noopBool(_value: boolean): void {}
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {
-  beforeEach(() => {
-    useProjectStore.setState(INITIAL_STATE);
-  });
-
   it("preserves line.text across a full word-by-word tap sequence", async () => {
-    useProjectStore.getState().setLines([untimedLine("l0", ORIGINAL_TEXT)]);
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: ORIGINAL_TEXT })]);
 
     let syncState: SyncState = { position: { lineIndex: 0, wordIndex: 0 }, isActive: true };
     const setSyncState = (next: SyncState | ((prev: SyncState) => SyncState)) => {
