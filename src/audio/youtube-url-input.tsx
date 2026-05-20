@@ -1,5 +1,5 @@
 import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
@@ -18,18 +18,33 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
 }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [pendingVideoId, setPendingVideoId] = useState<string | null>(null);
   const isLoading = useAudioStore((s) => s.isLoading);
+  const source = useAudioStore((s) => s.source);
+  const youtubeLoadError = useAudioStore((s) => s.youtubeLoadError);
   const loadYouTubeSource = useLoadYouTubeSource();
 
-  const handleSubmit = useCallback(async () => {
+  useEffect(() => {
+    if (!pendingVideoId || isLoading) return;
+    if (youtubeLoadError) {
+      setPendingVideoId(null);
+      return;
+    }
+    if (source?.type === "youtube" && source.videoId === pendingVideoId && source.file) {
+      setValue("");
+      setPendingVideoId(null);
+    }
+  }, [pendingVideoId, isLoading, source, youtubeLoadError]);
+
+  const handleSubmit = useCallback(() => {
     const videoId = extractVideoId(value);
     if (!videoId) {
       setError("That doesn't look like a valid YouTube URL or ID");
       return;
     }
     setError(null);
-    await loadYouTubeSource(videoId);
-    setValue("");
+    setPendingVideoId(videoId);
+    loadYouTubeSource(videoId);
   }, [value, loadYouTubeSource]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -51,6 +66,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
           onChange={(e) => {
             setValue(e.target.value);
             if (error) setError(null);
+            if (youtubeLoadError) useAudioStore.getState().setYouTubeLoadError(null);
           }}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}

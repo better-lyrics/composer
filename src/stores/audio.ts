@@ -15,6 +15,7 @@ interface AudioState {
   isMuted: boolean;
   isLoading: boolean;
   audioElement: HTMLAudioElement | null;
+  youtubeLoadError: string | null;
 }
 
 interface AudioActions {
@@ -28,6 +29,7 @@ interface AudioActions {
   setVolume: (volume: number) => void;
   toggleMute: () => void;
   setIsLoading: (isLoading: boolean) => void;
+  setYouTubeLoadError: (error: string | null) => void;
   registerAudioElement: (element: HTMLAudioElement | null) => void;
   seekTo: (time: number) => void;
   reset: () => void;
@@ -47,6 +49,7 @@ function createInitialState(): AudioState {
     isMuted: false,
     isLoading: false,
     audioElement: null,
+    youtubeLoadError: null,
   };
 }
 
@@ -57,13 +60,14 @@ const INITIAL_STATE: AudioState = createInitialState();
 const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   ...INITIAL_STATE,
 
-  setSource: (source) => set({ source, currentTime: 0, duration: 0, isPlaying: false }),
+  setSource: (source) => set({ source, currentTime: 0, duration: 0, isPlaying: false, youtubeLoadError: null }),
   setYouTubeSource: (videoId, file) =>
     set({
       source: { type: "youtube", videoId, file },
       currentTime: 0,
       duration: 0,
       isPlaying: false,
+      youtubeLoadError: null,
     }),
   setYouTubeFile: (file) =>
     set((s) => {
@@ -79,6 +83,7 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setVolume: (volume) => set({ volume: Math.max(0, Math.min(1, volume)) }),
   toggleMute: () => set((s) => ({ isMuted: !s.isMuted })),
   setIsLoading: (isLoading) => set({ isLoading }),
+  setYouTubeLoadError: (youtubeLoadError) => set({ youtubeLoadError }),
   registerAudioElement: (audioElement) => set({ audioElement }),
   seekTo: (time: number) => {
     if (!Number.isFinite(time) || time < 0) return;
