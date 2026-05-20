@@ -69,7 +69,6 @@ function play(time: number, velocity: number): void {
 
   const source = ctx.createBufferSource();
   source.buffer = buffer;
-  source.playbackRate.value = velocity;
 
   const gain = ctx.createGain();
   const now = ctx.currentTime;
