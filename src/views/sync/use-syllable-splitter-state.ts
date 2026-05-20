@@ -1,6 +1,7 @@
 import type { WordTiming } from "@/domain/word/timing";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { useCallback, useMemo, useState } from "react";
@@ -67,17 +68,7 @@ function useSyllableSplitterState({
 
       if (applyToAll && identicalCount > 0) {
         const sourceText = word.text.trimEnd();
-        const ok = await confirm({
-          title: `Split ${identicalCount + 1} matching "${sourceText}"?`,
-          description: `Apply this split to the source and ${identicalCount} other ${
-            identicalCount === 1 ? "match" : "matches"
-          }.`,
-          confirmLabel: "Split",
-          cancelLabel: "Cancel",
-          variant: "primary",
-          settingsKey: "confirmApplyToAllSyllableSplit",
-          recoverable: true,
-        });
+        const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
         if (!ok) return;
         useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
           source: { lineId, wordIndex, type },
