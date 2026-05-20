@@ -2,6 +2,7 @@ import { exportProjectToFile, importProjectFromFile, clearCurrentProject, cancel
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
@@ -134,15 +135,14 @@ const ExportPanel: React.FC = () => {
       }
 
       const project = await importProjectFromFile(file);
+      const store = useProjectStore.getState();
       setMetadata(project.metadata);
       setLines(project.lines);
-      useProjectStore.getState().setGroups(project.groups ?? []);
-      useProjectStore.getState().setDismissedSuggestions(project.dismissedSuggestions ?? []);
-      useProjectStore.getState().setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
+      store.setGroups(project.groups ?? []);
+      store.setDismissedSuggestions(project.dismissedSuggestions ?? []);
+      store.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
       setGranularity(project.granularity);
-      useProjectStore
-        .getState()
-        .setSyllableSplitDefaults(project.syllableSplitDefaults ?? { applyToAll: false, caseInsensitive: false });
+      store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
       setAgents(project.agents);
       markClean();
 

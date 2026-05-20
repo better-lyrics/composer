@@ -15,6 +15,11 @@ interface SyllableSplitDefaults {
   caseInsensitive: boolean;
 }
 
+const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
+  applyToAll: false,
+  caseInsensitive: false,
+};
+
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
@@ -179,3 +184,4 @@ export type {
   ProjectState,
   ProjectStore,
 };
+export { DEFAULT_SYLLABLE_SPLIT_DEFAULTS };

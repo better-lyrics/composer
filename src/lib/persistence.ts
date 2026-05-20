@@ -1,5 +1,5 @@
 import type { GranularityMode } from "@/stores/project";
-import type { SyllableSplitDefaults } from "@/stores/project/types";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -18,7 +18,7 @@ interface SavedProject {
   lines: LyricLine[];
   groups?: LinkGroup[];
   granularity: GranularityMode;
-  syllableSplitDefaults: SyllableSplitDefaults;
+  syllableSplitDefaults?: SyllableSplitDefaults;
   audioFileName?: string;
   audioSource?: SavedAudioSource;
   dismissedSuggestions?: string[];
@@ -206,7 +206,7 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
   }
 
   if (!project.syllableSplitDefaults) {
-    project.syllableSplitDefaults = { applyToAll: false, caseInsensitive: false };
+    project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
   }
 
   return project;

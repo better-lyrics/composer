@@ -9,6 +9,7 @@ import {
 } from "@/lib/persistence";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
@@ -57,7 +58,7 @@ function usePersistence(): void {
         state.setLines(safeLines);
         state.setGroups(project.groups ?? []);
         state.setGranularity(safeGranularity);
-        state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? { applyToAll: false, caseInsensitive: false });
+        state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
         state.setAgents(safeAgents);
         state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
         state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
