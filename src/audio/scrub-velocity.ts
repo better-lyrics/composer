@@ -19,5 +19,12 @@ function computeScrubVelocity(prev: ScrubSample | null, curr: ScrubSample, opts:
   return Math.max(opts.minRate, Math.min(opts.maxRate, magnitude));
 }
 
-export { computeScrubVelocity };
+const DEFAULT_SCRUB_OPTS: ComputeScrubVelocityOpts = {
+  minDtMs: 16,
+  minRate: 0.25,
+  maxRate: 4,
+  minAudibleRate: 0.1,
+};
+
+export { computeScrubVelocity, DEFAULT_SCRUB_OPTS };
 export type { ScrubSample, ComputeScrubVelocityOpts };

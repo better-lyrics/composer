@@ -1,5 +1,5 @@
 import { scrubPreview } from "@/audio/scrub-preview";
-import { computeScrubVelocity, type ScrubSample } from "@/audio/scrub-velocity";
+import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 
@@ -27,7 +27,6 @@ interface PlayheadDrag {
 
 const EDGE_SCROLL_ZONE = 60;
 const EDGE_SCROLL_MAX_SPEED = 22;
-const SCRUB_OPTS = { minDtMs: 16, minRate: 0.25, maxRate: 4, minAudibleRate: 0.1 } as const;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -58,7 +57,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 
     const tickScrubPreview = (time: number): void => {
       const curr: ScrubSample = { time, wallClockMs: performance.now() };
-      const velocity = computeScrubVelocity(prevSample, curr, SCRUB_OPTS);
+      const velocity = computeScrubVelocity(prevSample, curr, DEFAULT_SCRUB_OPTS);
       prevSample = curr;
       if (velocity > 0) scrubPreview.play(time, velocity);
     };

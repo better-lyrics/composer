@@ -1,5 +1,5 @@
 import { scrubPreview } from "@/audio/scrub-preview";
-import { computeScrubVelocity, type ScrubSample } from "@/audio/scrub-velocity";
+import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
@@ -8,7 +8,6 @@ import { type RefObject, useCallback, useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
-const SCRUB_OPTS = { minDtMs: 16, minRate: 0.25, maxRate: 4, minAudibleRate: 0.1 } as const;
 const WHEEL_IDLE_MS = 120;
 
 // -- Hook ----------------------------------------------------------------------
@@ -68,7 +67,7 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
         }
 
         const curr: ScrubSample = { time: newTime, wallClockMs: performance.now() };
-        const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, SCRUB_OPTS);
+        const velocity = computeScrubVelocity(prevScrubSampleRef.current, curr, DEFAULT_SCRUB_OPTS);
         prevScrubSampleRef.current = curr;
         if (velocity > 0) scrubPreview.play(newTime, velocity);
 
