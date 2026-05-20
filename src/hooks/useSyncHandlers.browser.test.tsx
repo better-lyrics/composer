@@ -16,6 +16,7 @@ function noopBool(_value: boolean): void {}
 
 interface MountOptions {
   initialSyncState?: SyncState;
+  initialCurrentTime?: number;
   granularity?: "word" | "line";
 }
 
@@ -25,6 +26,7 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
     syncState = typeof next === "function" ? next(syncState) : next;
   };
   const getSyncState = () => syncState;
+  const startTime = opts.initialCurrentTime ?? 0;
 
   const { result, rerender, act } = await renderHook(
     (props?: HookProps) =>
@@ -32,13 +34,13 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
         lines: useProjectStore.getState().lines,
         syncState: props?.syncState ?? syncState,
         setSyncState,
-        currentTime: props?.currentTime ?? 0,
+        currentTime: props?.currentTime ?? startTime,
         editMode: false,
         granularity: opts.granularity ?? "word",
         setShowPulse: noopBool,
         setIsPlaying: noopBool,
       }),
-    { initialProps: { syncState, currentTime: 0 } },
+    { initialProps: { syncState, currentTime: startTime } },
   );
 
   return { result, rerender, act, getSyncState };
@@ -112,6 +114,34 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
     expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
   });
+
+  it("preserves prev-line text when patching a partially synced previous line on cross-line tap", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: ORIGINAL_TEXT,
+        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 })],
+      }),
+      createLine({ id: "l1", text: "Next line" }),
+    ]);
+
+    const TAP_TIME = 1.25;
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: TAP_TIME,
+    });
+
+    await act(() => {
+      result.current.handleTap();
+    });
+
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(lines[0].words).toHaveLength(1);
+    expect(lines[0].words?.[0].end).toBe(TAP_TIME);
+    expect(lines[1].text).toBe("Next line");
+    expect(lines[1].words).toHaveLength(1);
+  });
 });
 
 describe("useSyncHandlers.handleTap (line granularity)", () => {
@@ -181,6 +211,55 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
       result.current.handleHoldTap();
     });
     expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
+  });
+
+  it("preserves text when handleHoldStart re-enters a line that already has words", async () => {
+    const TEXT = "Hold this line";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "Hold ", begin: 0, end: 0.5 })],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 1.0,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.text).toBe(TEXT);
+    expect(line.words).toHaveLength(2);
+  });
+
+  it("preserves text when handleHoldEnd closes an open trailing word", async () => {
+    const TEXT = "End me now";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "End ", begin: 0, end: 0 }), createWord({ text: "me ", begin: 1, end: 1 })],
+      }),
+    ]);
+
+    const END_TIME = 2.0;
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: END_TIME,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.text).toBe(TEXT);
+    expect(line.words?.[1].end).toBe(END_TIME);
   });
 });
 
