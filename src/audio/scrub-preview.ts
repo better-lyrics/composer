@@ -43,7 +43,7 @@ function fadeOutAndStop(source: AudioBufferSourceNode, gain: GainNode): void {
 }
 
 function isEnabled(): boolean {
-  return useSettingsStore.getState().audioScrubPreview !== false;
+  return useSettingsStore.getState().audioScrubPreview;
 }
 
 function play(time: number, velocity: number): void {
