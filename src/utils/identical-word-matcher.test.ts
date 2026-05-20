@@ -124,10 +124,6 @@ describe("findIdenticalWords", () => {
       { lineId: "l1", wordIndex: 0, type: "word" },
       { caseInsensitive: false, excludeSource: true, splitPoints: [1] },
     );
-    expect(matches.map((m) => `${m.lineId}:${m.type}:${m.wordIndex}`)).toEqual([
-      "l1:word:1",
-      "l1:bg:0",
-      "l2:word:0",
-    ]);
+    expect(matches.map((m) => `${m.lineId}:${m.type}:${m.wordIndex}`)).toEqual(["l1:word:1", "l1:bg:0", "l2:word:0"]);
   });
 });

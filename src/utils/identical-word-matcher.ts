@@ -50,8 +50,7 @@ function collectTrackMatches(
     const word = track[wordIndex];
     if (!word) continue;
     if (word.syllableGroupId !== undefined) continue;
-    const isSource =
-      line.id === source.lineId && type === source.type && wordIndex === source.wordIndex;
+    const isSource = line.id === source.lineId && type === source.type && wordIndex === source.wordIndex;
     if (options.excludeSource && isSource) continue;
     const trimmed = word.text.trimEnd();
     if (trimmed.length < minLength) continue;
@@ -61,11 +60,7 @@ function collectTrackMatches(
   }
 }
 
-function findIdenticalWords(
-  lines: LyricLine[],
-  source: IdenticalMatchSource,
-  options: MatchOptions,
-): IdenticalMatch[] {
+function findIdenticalWords(lines: LyricLine[], source: IdenticalMatchSource, options: MatchOptions): IdenticalMatch[] {
   const sourceWord = findSourceWord(lines, source);
   if (!sourceWord) return [];
 
@@ -77,28 +72,8 @@ function findIdenticalWords(
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!line) continue;
-    collectTrackMatches(
-      line,
-      lineIndex,
-      line.words,
-      "word",
-      source,
-      options,
-      targetText,
-      minLength,
-      matches,
-    );
-    collectTrackMatches(
-      line,
-      lineIndex,
-      line.backgroundWords,
-      "bg",
-      source,
-      options,
-      targetText,
-      minLength,
-      matches,
-    );
+    collectTrackMatches(line, lineIndex, line.words, "word", source, options, targetText, minLength, matches);
+    collectTrackMatches(line, lineIndex, line.backgroundWords, "bg", source, options, targetText, minLength, matches);
   }
   return matches;
 }
