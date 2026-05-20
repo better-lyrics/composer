@@ -45,7 +45,7 @@ describe("AudioEngine scrub-preview integration", () => {
           scrubPreview.play(0.01, 1);
           return scrubPreview.getActiveSnippet() === null;
         },
-        { timeout: 1000 },
+        { timeout: 200 },
       )
       .toBe(true);
   });
