@@ -1,14 +1,12 @@
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
+import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
-import { splitWordIntoWords } from "@/utils/word-split";
-import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
-import { splitSourceWord } from "@/utils/word-timing";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
-import { nanoid } from "nanoid";
+import {
+  type SplitterTarget,
+  useTimelineSyllableSplitterState,
+} from "@/views/timeline/use-timeline-syllable-splitter-state";
 import { useCallback, useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -20,13 +18,7 @@ type SplitMode = "syllable" | "word";
 const TimelineSyllableSplitter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [splitPoints, setSplitPoints] = useState<number[]>([]);
-  const [target, setTarget] = useState<{
-    lineId: string;
-    wordIndex: number;
-    type: "word" | "bg";
-    word: WordTiming;
-    mode: SplitMode;
-  } | null>(null);
+  const [target, setTarget] = useState<SplitterTarget | null>(null);
 
   useEffect(() => {
     const openSplitModal = (mode: SplitMode) => {
@@ -39,7 +31,7 @@ const TimelineSyllableSplitter: React.FC = () => {
       if (!line) return;
 
       const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
-      const word = wordsArray?.[sel.wordIndex];
+      const word: WordTiming | undefined = wordsArray?.[sel.wordIndex];
       if (!word || word.text.trimEnd().length < 2) return;
 
       setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
@@ -62,59 +54,18 @@ const TimelineSyllableSplitter: React.FC = () => {
     setSplitPoints((prev) => (prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index]));
   }, []);
 
-  const handleConfirm = useCallback(() => {
-    if (!target || splitPoints.length === 0) return;
-
-    const { lineId, wordIndex, type, word, mode } = target;
-    const trimmedText = word.text.trimEnd();
-
-    let newWords: WordTiming[];
-
-    if (mode === "word") {
-      newWords = splitWordIntoWords(word, splitPoints);
-    } else {
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      const playheadOnWord = currentTime > word.begin && currentTime < word.end;
-
-      if (playheadOnWord && splitPoints.length === 1) {
-        const groupId = word.syllableGroupId ?? nanoid(8);
-        const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
-        const partitions = [
-          { text: trimmedText.slice(0, splitPoints[0]), begin: word.begin, end: currentTime },
-          { text: trimmedText.slice(splitPoints[0]), begin: currentTime, end: word.end },
-        ];
-        newWords = splitSourceWord(sourceForSplit, partitions);
-        if (word.text.endsWith(" ") && newWords.length > 0) {
-          const last = newWords[newWords.length - 1];
-          newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
-        }
-      } else {
-        newWords = splitWordIntoSyllables({ word, splitPoints, reuseGroupId: true });
-      }
-    }
-
-    const lines = useProjectStore.getState().lines;
-    const line = lines.find((l) => l.id === lineId);
-    if (!line) return;
-
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return;
-
-    const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
-
-    void handleWordChangeWithDivergenceCheck(lineId, updatedWords, type === "word" ? "words" : "backgroundWords");
-
-    setIsOpen(false);
-    setTarget(null);
+  const resetSplitPoints = useCallback(() => {
     setSplitPoints([]);
-  }, [target, splitPoints]);
+  }, []);
 
-  const handleClose = useCallback(() => {
+  const closeModal = useCallback(() => {
     setIsOpen(false);
     setTarget(null);
     setSplitPoints([]);
   }, []);
+
+  const { applyToAll, setApplyToAll, caseInsensitive, setCaseInsensitive, identicalCount, sourceText, confirmSplit } =
+    useTimelineSyllableSplitterState({ target, splitPoints, resetSplitPoints, closeModal });
 
   if (!target) return null;
 
@@ -122,19 +73,19 @@ const TimelineSyllableSplitter: React.FC = () => {
   const title = target.mode === "word" ? `Split "${trimmedText}" into words` : `Split "${trimmedText}"`;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title={title}>
+    <Modal isOpen={isOpen} onClose={closeModal} title={title}>
       <SplitModeContent
         text={trimmedText}
         splitPoints={splitPoints}
         onToggleSplit={handleToggleSplit}
-        onConfirm={handleConfirm}
-        onCancel={handleClose}
-        applyToAll={false}
-        onApplyToAllChange={() => {}}
-        caseInsensitive={false}
-        onCaseInsensitiveChange={() => {}}
-        identicalCount={0}
-        sourceText={trimmedText}
+        onConfirm={confirmSplit}
+        onCancel={closeModal}
+        applyToAll={applyToAll}
+        onApplyToAllChange={setApplyToAll}
+        caseInsensitive={caseInsensitive}
+        onCaseInsensitiveChange={setCaseInsensitive}
+        identicalCount={identicalCount}
+        sourceText={sourceText}
         showApplyControls={target.mode === "syllable"}
       />
     </Modal>
