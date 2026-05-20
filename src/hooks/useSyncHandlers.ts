@@ -70,7 +70,7 @@ function useSyncHandlers({
 
     if (existingWords.length > 0) {
       const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, currentTime, fallbackEnd);
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false });
     } else {
       const updates: Partial<LyricLine> = {
         words: [{ text: textWithSpace, begin: currentTime, end: fallbackEnd }],
@@ -78,7 +78,7 @@ function useSyncHandlers({
       if (line.backgroundText && !line.backgroundWords?.length) {
         updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
       }
-      updateLineWithHistory(line.id, updates);
+      updateLineWithHistory(line.id, updates, { deriveText: false });
     }
 
     if (wordIndex === 0 && prevLine?.words?.length) {
@@ -87,7 +87,7 @@ function useSyncHandlers({
         ...prevWords[prevWords.length - 1],
         end: currentTime,
       };
-      updateLine(prevLine.id, { words: prevWords });
+      updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
     }
 
     setShowPulse(true);
@@ -169,7 +169,7 @@ function useSyncHandlers({
 
     if (existingWords.length > 0) {
       const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, currentTime);
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false });
     } else {
       const updates: Partial<LyricLine> = {
         words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
@@ -177,7 +177,7 @@ function useSyncHandlers({
       if (line.backgroundText && !line.backgroundWords?.length) {
         updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
       }
-      updateLineWithHistory(line.id, updates);
+      updateLineWithHistory(line.id, updates, { deriveText: false });
     }
 
     if (wordIndex === 0 && prevLine?.words?.length) {
@@ -185,7 +185,7 @@ function useSyncHandlers({
       const lastPrevWord = prevWords[prevWords.length - 1];
       if (lastPrevWord.end === lastPrevWord.begin) {
         prevWords[prevWords.length - 1] = { ...lastPrevWord, end: currentTime };
-        updateLine(prevLine.id, { words: prevWords });
+        updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
       }
     }
   }, [lines, lineIndex, wordIndex, currentTime, updateLine, updateLineWithHistory, isComplete, prevLine]);
@@ -201,7 +201,7 @@ function useSyncHandlers({
     const updatedWords = [...line.words];
     const currentWordEntry = updatedWords[updatedWords.length - 1];
     updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
-    updateLineWithHistory(line.id, { words: updatedWords });
+    updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false });
 
     setShowPulse(true);
     setTimeout(() => setShowPulse(false), 100);
@@ -236,7 +236,7 @@ function useSyncHandlers({
     const advancesToNextLine = nextWordIndex >= lineWords.length;
 
     if (advancesToNextLine) {
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false });
 
       const nextLine = lines[lineIndex + 1];
       if (nextLine) {
@@ -250,7 +250,7 @@ function useSyncHandlers({
           if (nextLine.backgroundText && !nextLine.backgroundWords?.length) {
             nextUpdates.backgroundWords = createInitialBgWords(nextLine.backgroundText, currentTime);
           }
-          updateLineWithHistory(nextLine.id, nextUpdates);
+          updateLineWithHistory(nextLine.id, nextUpdates, { deriveText: false });
         }
       }
 
@@ -264,7 +264,7 @@ function useSyncHandlers({
         const textWithSpace = trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText;
         updatedWords.push({ text: textWithSpace, begin: currentTime, end: currentTime });
       }
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false });
 
       setSyncState((prev) => ({
         ...prev,

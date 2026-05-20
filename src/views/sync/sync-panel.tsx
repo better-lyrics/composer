@@ -115,7 +115,7 @@ const SyncPanel: React.FC = () => {
       if (line.backgroundText && !line.backgroundWords?.length) {
         const bgWords = createBgWordsFromLine(line);
         if (bgWords) {
-          updateLine(line.id, { backgroundWords: bgWords });
+          updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
         }
       }
     }
