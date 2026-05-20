@@ -1,8 +1,11 @@
+import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 
 const SNIPPET_S = 0.12;
 const CROSSFADE_S = 0.008;
 const MIN_AUDIBLE_RATE = 0.1;
+const MAX_BUFFER_DURATION_S = 60 * 60;
+const LOG_PREFIX = "[ScrubPreview]";
 
 type ActiveSnippet = { time: number; rate: number };
 
@@ -26,6 +29,11 @@ async function decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
 
 function useBuffer(next: AudioBuffer | null): void {
   stop();
+  if (next && next.duration > MAX_BUFFER_DURATION_S) {
+    console.warn(LOG_PREFIX, `buffer exceeds ${MAX_BUFFER_DURATION_S}s cap; scrub preview disabled for this source`);
+    buffer = null;
+    return;
+  }
   buffer = next;
 }
 
@@ -65,8 +73,10 @@ function play(time: number, velocity: number): void {
 
   const gain = ctx.createGain();
   const now = ctx.currentTime;
+  const audioState = useAudioStore.getState();
+  const targetVolume = audioState.isMuted ? 0 : audioState.volume;
   gain.gain.setValueAtTime(0, now);
-  gain.gain.linearRampToValueAtTime(1, now + CROSSFADE_S);
+  gain.gain.linearRampToValueAtTime(targetVolume, now + CROSSFADE_S);
 
   source.connect(gain);
   gain.connect(ctx.destination);
@@ -95,17 +105,11 @@ function stop(): void {
   activeSnippet = null;
 }
 
-function dispose(): void {
-  stop();
-  buffer = null;
-  context = null;
-}
-
 function getActiveSnippet(): ActiveSnippet | null {
   return activeSnippet;
 }
 
-const scrubPreview = { decode, useBuffer, play, stop, dispose, getActiveSnippet };
+const scrubPreview = { decode, useBuffer, play, stop, getActiveSnippet };
 
 export { scrubPreview };
 export type { ActiveSnippet };
