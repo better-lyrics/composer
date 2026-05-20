@@ -1,9 +1,8 @@
 const SNIPPET_S = 0.12;
 const CROSSFADE_S = 0.008;
 const MIN_AUDIBLE_RATE = 0.1;
-const LOG_PREFIX = "[ScrubPreview]";
 
-type ActiveSnippet = { time: number; rate: number; startedAt: number };
+type ActiveSnippet = { time: number; rate: number };
 
 let context: AudioContext | null = null;
 let buffer: AudioBuffer | null = null;
@@ -19,6 +18,7 @@ function getContext(): AudioContext {
 
 async function decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
   const ctx = getContext();
+  // decodeAudioData detaches its input ArrayBuffer in some browsers; copy first
   return await ctx.decodeAudioData(bytes.slice(0));
 }
 
@@ -30,25 +30,18 @@ function useBuffer(next: AudioBuffer | null): void {
 function fadeOutAndStop(source: AudioBufferSourceNode, gain: GainNode): void {
   const ctx = getContext();
   const now = ctx.currentTime;
+  gain.gain.cancelScheduledValues(now);
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.linearRampToValueAtTime(0, now + CROSSFADE_S);
   try {
-    gain.gain.cancelScheduledValues(now);
-    gain.gain.setValueAtTime(gain.gain.value, now);
-    gain.gain.linearRampToValueAtTime(0, now + CROSSFADE_S);
     source.stop(now + CROSSFADE_S + 0.002);
-  } catch (err) {
-    console.warn(LOG_PREFIX, "fadeOutAndStop failed", err);
+  } catch {
+    /* source already ended; safe to ignore */
   }
 }
 
 function isEnabled(): boolean {
-  try {
-    const settings = (globalThis as { __scrubPreviewSettings?: () => { audioScrubPreview?: boolean } })
-      .__scrubPreviewSettings;
-    if (settings) return settings().audioScrubPreview !== false;
-    return true;
-  } catch {
-    return true;
-  }
+  return true;
 }
 
 function play(time: number, velocity: number): void {
@@ -80,7 +73,7 @@ function play(time: number, velocity: number): void {
 
   currentSource = source;
   currentGain = gain;
-  activeSnippet = { time: clampedTime, rate: velocity, startedAt: now };
+  activeSnippet = { time: clampedTime, rate: velocity };
 
   source.onended = () => {
     if (currentSource === source) {
@@ -103,6 +96,7 @@ function stop(): void {
 function dispose(): void {
   stop();
   buffer = null;
+  context = null;
 }
 
 function getActiveSnippet(): ActiveSnippet | null {
