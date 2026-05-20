@@ -15,6 +15,7 @@ interface WordHandlers {
 }
 
 interface WordRendererProps {
+  lineId: string;
   word: string;
   idx: number;
   timing: WordTiming | undefined;
@@ -55,6 +56,7 @@ function renderWordContent(word: string, timing: WordTiming | undefined, isBackg
 // -- Component ----------------------------------------------------------------
 
 const WordRenderer: React.FC<WordRendererProps> = ({
+  lineId,
   word,
   idx,
   timing,
@@ -86,7 +88,13 @@ const WordRenderer: React.FC<WordRendererProps> = ({
         )}
         {isSynced && timing && !isBackground && (
           <span className="transition-opacity opacity-0 group-hover/word:opacity-100">
-            <SyllableSplitter word={timing} wordIndex={idx} onSplit={handlers.onSplit ?? (() => {})} />
+            <SyllableSplitter
+              lineId={lineId}
+              type={isBackground ? "bg" : "word"}
+              word={timing}
+              wordIndex={idx}
+              onSplit={handlers.onSplit ?? (() => {})}
+            />
           </span>
         )}
       </span>

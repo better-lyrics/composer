@@ -1,21 +1,20 @@
 import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { distributeTiming } from "@/utils/syllable-utils";
-import { splitSourceWord } from "@/utils/word-timing";
+import { cn } from "@/utils/cn";
+import { useSyllableSplitterState } from "@/views/sync/use-syllable-splitter-state";
 import { IconScissors } from "@tabler/icons-react";
-import { nanoid } from "nanoid";
-import { useState, useCallback, useMemo } from "react";
+import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface SyllableSplitterProps {
+  lineId: string;
+  type: "word" | "bg";
   word: WordTiming;
   wordIndex: number;
   onSplit: (wordIndex: number, newWords: WordTiming[]) => void;
 }
-
-// -- Components ---------------------------------------------------------------
 
 interface SplitModeContentProps {
   text: string;
@@ -31,6 +30,8 @@ interface SplitModeContentProps {
   sourceText: string;
   showApplyControls: boolean;
 }
+
+// -- Components ---------------------------------------------------------------
 
 const SplitModeContent: React.FC<SplitModeContentProps> = ({
   text,
@@ -63,6 +64,8 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
     return result;
   }, [text, splitPoints]);
 
+  const confirmLabel = applyToAll && identicalCount > 0 ? "Split all" : "Split Word";
+
   return (
     <div className="flex flex-col gap-5">
       <p className="text-sm text-composer-text-secondary">Click between letters to mark split points</p>
@@ -76,18 +79,20 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
               <button
                 type="button"
                 onClick={() => onToggleSplit(idx + 1)}
-                className={`w-4 h-8 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer ${
+                className={cn(
+                  "w-4 h-8 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer",
                   splitPoints.includes(idx + 1)
                     ? "bg-composer-accent"
-                    : "bg-composer-button hover:bg-composer-button-hover"
-                }`}
+                    : "bg-composer-button hover:bg-composer-button-hover",
+                )}
               >
                 <span
-                  className={`text-sm font-bold ${
+                  className={cn(
+                    "text-sm font-bold",
                     splitPoints.includes(idx + 1)
                       ? "text-white"
-                      : "text-composer-text-tertiary group-hover:text-composer-text"
-                  }`}
+                      : "text-composer-text-tertiary group-hover:text-composer-text",
+                  )}
                 >
                   ⋮
                 </span>
@@ -107,15 +112,14 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
       {showApplyControls && (
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={applyToAll}
-              onChange={(e) => onApplyToAllChange(e.target.checked)}
-            />
+            <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
             <span>Apply to all identical words</span>
           </label>
           <label
-            className={`flex items-center gap-2 select-none ${applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed"}`}
+            className={cn(
+              "flex items-center gap-2 select-none",
+              applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
+            )}
           >
             <input
               type="checkbox"
@@ -127,8 +131,7 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
           </label>
           {applyToAll && identicalCount > 0 && (
             <p className="text-sm text-composer-text-secondary">
-              This will also split {identicalCount} other "{sourceText}"
-              {identicalCount === 1 ? "" : "s"}
+              This will also split {identicalCount} other "{sourceText}"{identicalCount === 1 ? "" : "s"}
             </p>
           )}
           {applyToAll && identicalCount === 0 && (
@@ -140,39 +143,26 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
       <div className="flex items-center justify-end gap-2 pt-2">
         <Button onClick={onCancel}>Cancel</Button>
         <Button variant="primary" onClick={onConfirm} disabled={splitPoints.length === 0}>
-          Split Word
+          {confirmLabel}
         </Button>
       </div>
     </div>
   );
 };
 
-const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, onSplit }) => {
-  const [splitPoints, setSplitPoints] = useState<number[]>([]);
+const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word, wordIndex, onSplit }) => {
+  const {
+    splitPoints,
+    applyToAll,
+    caseInsensitive,
+    identicalCount,
+    toggleSplit,
+    setApplyToAll,
+    setCaseInsensitive,
+    confirmSplit,
+    cancelSplit,
+  } = useSyllableSplitterState({ lineId, type, word, wordIndex, onSplit });
 
-  const handleToggleSplit = useCallback((index: number) => {
-    setSplitPoints((prev) => (prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index]));
-  }, []);
-
-  const handleConfirmSplit = useCallback(
-    (close: () => void) => {
-      const groupId = word.syllableGroupId ?? nanoid(8);
-      const sourceForSplit: WordTiming = { ...word, syllableGroupId: groupId };
-      const partitions = distributeTiming(word.text, splitPoints, word.begin, word.end);
-      const newWords = splitSourceWord(sourceForSplit, partitions);
-      onSplit(wordIndex, newWords);
-      setSplitPoints([]);
-      close();
-    },
-    [word, splitPoints, wordIndex, onSplit],
-  );
-
-  const handleCancelSplit = useCallback((close: () => void) => {
-    setSplitPoints([]);
-    close();
-  }, []);
-
-  // Can't split single-character words (after trimming trailing space)
   const trimmedLength = word.text.trimEnd().length;
   if (trimmedLength < 2) {
     return null;
@@ -197,14 +187,14 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ word, wordIndex, on
           <SplitModeContent
             text={word.text.trimEnd()}
             splitPoints={splitPoints}
-            onToggleSplit={handleToggleSplit}
-            onConfirm={() => handleConfirmSplit(close)}
-            onCancel={() => handleCancelSplit(close)}
-            applyToAll={false}
-            onApplyToAllChange={() => {}}
-            caseInsensitive={false}
-            onCaseInsensitiveChange={() => {}}
-            identicalCount={0}
+            onToggleSplit={toggleSplit}
+            onConfirm={() => confirmSplit(close)}
+            onCancel={() => cancelSplit(close)}
+            applyToAll={applyToAll}
+            onApplyToAllChange={setApplyToAll}
+            caseInsensitive={caseInsensitive}
+            onCaseInsensitiveChange={setCaseInsensitive}
+            identicalCount={identicalCount}
             sourceText={word.text.trimEnd()}
             showApplyControls={true}
           />

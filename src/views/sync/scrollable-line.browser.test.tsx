@@ -3,6 +3,7 @@ import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { render } from "@/test/render";
 
 const BASE_PROPS = {
+  lineId: "test-line",
   text: "Hello world",
   lineNumber: 0,
   isCurrent: false,

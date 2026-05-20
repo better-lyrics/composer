@@ -5,7 +5,15 @@ import { render } from "@/test/render";
 describe("WordRenderer", () => {
   it("renders an unsynced word with text only", async () => {
     const screen = await render(
-      <WordRenderer word="hello" idx={0} timing={undefined} allWords={undefined} handlers={{}} editMode={false} />,
+      <WordRenderer
+        lineId="test-line"
+        word="hello"
+        idx={0}
+        timing={undefined}
+        allWords={undefined}
+        handlers={{}}
+        editMode={false}
+      />,
     );
     expect(screen.container.textContent ?? "").toContain("hello");
   });
@@ -13,6 +21,7 @@ describe("WordRenderer", () => {
   it("renders a synced word with two time controls (begin and end)", async () => {
     const screen = await render(
       <WordRenderer
+        lineId="test-line"
         word="hello"
         idx={0}
         timing={{ text: "hello", begin: 1, end: 2 }}
@@ -28,6 +37,7 @@ describe("WordRenderer", () => {
   it("shows a warning icon when begin === end (zero duration)", async () => {
     const screen = await render(
       <WordRenderer
+        lineId="test-line"
         word="hello"
         idx={0}
         timing={{ text: "hello", begin: 1.5, end: 1.5 }}
@@ -42,6 +52,7 @@ describe("WordRenderer", () => {
   it("renders background style (italic) when isBackground is true", async () => {
     const screen = await render(
       <WordRenderer
+        lineId="test-line"
         word="(echo)"
         idx={0}
         timing={{ text: "(echo)", begin: 1, end: 2 }}

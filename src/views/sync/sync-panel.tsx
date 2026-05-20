@@ -423,6 +423,7 @@ const SyncPanel: React.FC = () => {
               return (
                 <ScrollableLine
                   key={line.id}
+                  lineId={line.id}
                   lineNumber={index + 1}
                   text={line.text}
                   isCurrent={editMode ? index === playingLineIndex : index === lineIndex}

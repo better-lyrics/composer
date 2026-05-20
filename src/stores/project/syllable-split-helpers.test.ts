@@ -68,12 +68,7 @@ describe("applySyllableSplitToLines", () => {
         ],
       }),
     ];
-    const result = applySyllableSplitToLines(
-      lines,
-      { lineId: "l1", wordIndex: 0, type: "word" },
-      [1],
-      false,
-    );
+    const result = applySyllableSplitToLines(lines, { lineId: "l1", wordIndex: 0, type: "word" }, [1], false);
     expect(result[0].words?.map((w) => w.text)).toEqual(["g", "o", "stop", "g", "o"]);
   });
 

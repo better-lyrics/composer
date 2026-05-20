@@ -19,6 +19,7 @@ interface ScrollableLineLinkInfo {
 }
 
 interface ScrollableLineProps {
+  lineId: string;
   text: string;
   lineNumber: number;
   isCurrent: boolean;
@@ -49,6 +50,7 @@ interface ScrollableLineProps {
 // -- Component ----------------------------------------------------------------
 
 const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
+  lineId,
   text,
   lineNumber,
   isCurrent,
@@ -155,6 +157,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         <WordRenderer
           // biome-ignore lint/suspicious/noArrayIndexKey: index is stable for word position
           key={`${lineNumber}-${prefix}-${idx}`}
+          lineId={lineId}
           word={word}
           idx={idx}
           timing={timings?.[idx]}
@@ -191,6 +194,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
                 return (
                   <WordRenderer
                     key={`${lineNumber}-${prefix}-${idx}`}
+                    lineId={lineId}
                     word={word}
                     idx={idx}
                     timing={timings?.[idx]}
@@ -210,6 +214,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         elements.push(
           <WordRenderer
             key={`${lineNumber}-${prefix}-${i}`}
+            lineId={lineId}
             word={texts[i]}
             idx={i}
             timing={timings?.[i]}
