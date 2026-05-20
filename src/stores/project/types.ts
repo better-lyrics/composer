@@ -132,6 +132,11 @@ interface LineActions {
     targets: Array<{ lineId: string; field: "words" | "backgroundWords"; wordIndex: number }>,
     value: boolean,
   ) => void;
+  splitSyllablesAcrossIdenticalWordsWithHistory: (params: {
+    source: { lineId: string; wordIndex: number; type: "word" | "bg" };
+    splitPoints: number[];
+    caseInsensitive: boolean;
+  }) => void;
 }
 
 interface GroupActions {

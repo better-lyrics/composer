@@ -11,6 +11,7 @@ import {
   applyMoveFromBg,
   applyMoveToBg,
 } from "@/stores/project/lines-slice-helpers";
+import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { applySiblingWords } from "@/utils/word-diff";
@@ -256,6 +257,13 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     set((state) => {
       const newLines = applyMarkWordsExplicit(state.lines, targets, value);
       if (!newLines) return state;
+      return commitHistory(state, { lines: newLines });
+    }),
+
+  splitSyllablesAcrossIdenticalWordsWithHistory: ({ source, splitPoints, caseInsensitive }) =>
+    set((state) => {
+      const newLines = applySyllableSplitToLines(state.lines, source, splitPoints, caseInsensitive);
+      if (newLines === state.lines) return state;
       return commitHistory(state, { lines: newLines });
     }),
 });
