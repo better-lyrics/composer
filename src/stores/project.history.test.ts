@@ -104,3 +104,138 @@ describe("updateLinesWithHistory", () => {
     expect(restored.backgroundWords).toEqual([{ text: "ah", begin: 0, end: 0.5 }]);
   });
 });
+
+// -- commitPendingLineEdit -----------------------------------------------------
+
+describe("commitPendingLineEdit", () => {
+  it("records a typing run as a single undo entry", () => {
+    const store = useProjectStore.getState();
+    store.setLines([seedLine("a", { text: "hello" })]);
+    const baseline = useProjectStore.getState().lines;
+
+    store.setLines([seedLine("a", { text: "hello wor" })]);
+    store.setLines([seedLine("a", { text: "hello world" })]);
+
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("hello");
+
+    useProjectStore.getState().redo();
+    expect(useProjectStore.getState().lines[0].text).toBe("hello world");
+  });
+
+  it("is a no-op when nothing changed since the last history entry", () => {
+    const store = useProjectStore.getState();
+    store.setLinesWithHistory([seedLine("a", { text: "hello" })]);
+    const indexBefore = useProjectStore.getState().historyIndex;
+    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines);
+    expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
+  });
+
+  it("truncates the redo branch when committed mid-history", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "one" })]);
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "two" })]);
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "three" })]);
+
+    useProjectStore.getState().undo();
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("one");
+
+    const baseline = useProjectStore.getState().lines;
+    useProjectStore.getState().setLines([seedLine("a", { text: "one edited" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    expect(useProjectStore.getState().lines[0].text).toBe("one edited");
+    expect(useProjectStore.getState().canRedo()).toBe(false);
+    expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("one");
+  });
+
+  it("seeds the baseline entry when history is empty so undo can return to it", () => {
+    expect(useProjectStore.getState().history).toEqual([]);
+
+    const baseline = [seedLine("a", { text: "start" })];
+    useProjectStore.getState().setLines(baseline);
+    useProjectStore.getState().setLines([seedLine("a", { text: "start typed" })]);
+
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+    expect(useProjectStore.getState().lines[0].text).toBe("start typed");
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("start");
+  });
+
+  it("does not mutate the baseline array passed in", () => {
+    useProjectStore.getState().setLines([seedLine("a", { text: "frozen" })]);
+    const baseline = useProjectStore.getState().lines;
+    const baselineSnapshot = structuredClone(baseline);
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "frozen edited" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    expect(baseline).toEqual(baselineSnapshot);
+  });
+
+  it("stores history entries as independent clones", () => {
+    useProjectStore.getState().setLines([seedLine("a", { text: "clone me" })]);
+    const baseline = useProjectStore.getState().lines;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "clone me edited" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    const committedIndex = useProjectStore.getState().historyIndex;
+    useProjectStore.getState().lines[0].text = "live mutation";
+
+    expect(useProjectStore.getState().history[committedIndex].lines[0].text).toBe("clone me edited");
+  });
+
+  it("never lets history exceed MAX_HISTORY_SIZE", () => {
+    for (let i = 0; i < 150; i++) {
+      const baseline = useProjectStore.getState().lines;
+      useProjectStore.getState().setLines([seedLine("a", { text: `edit ${i}` })]);
+      useProjectStore.getState().commitPendingLineEdit(baseline);
+    }
+    expect(useProjectStore.getState().history.length).toBeLessThanOrEqual(100);
+    expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
+  });
+
+  it("leaves canUndo true and canRedo false after a commit", () => {
+    useProjectStore.getState().setLines([seedLine("a", { text: "base" })]);
+    const baseline = useProjectStore.getState().lines;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "base typed" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+    expect(useProjectStore.getState().canRedo()).toBe(false);
+  });
+
+  it("clears isDirtySinceHistory after a commit", () => {
+    useProjectStore.getState().setLines([seedLine("a", { text: "dirty" })]);
+    const baseline = useProjectStore.getState().lines;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "dirty typed" })]);
+    expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
+
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+    expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
+  });
+
+  it("no-op path leaves history, historyIndex, and isDirtySinceHistory untouched", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "stable" })]);
+    const historyBefore = useProjectStore.getState().history;
+    const indexBefore = useProjectStore.getState().historyIndex;
+    const dirtyBefore = useProjectStore.getState().isDirtySinceHistory;
+
+    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines);
+
+    expect(useProjectStore.getState().history).toBe(historyBefore);
+    expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
+    expect(useProjectStore.getState().isDirtySinceHistory).toBe(dirtyBefore);
+  });
+});
