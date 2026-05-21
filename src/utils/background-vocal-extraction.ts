@@ -2,7 +2,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
-import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -85,25 +85,6 @@ function classifyLine(text: string): LineClassification {
 }
 
 // -- Extraction ---------------------------------------------------------------
-
-interface WordContentSpan {
-  start: number;
-  end: number;
-}
-
-function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSpan[] {
-  const spans: WordContentSpan[] = [];
-  let cursor = 0;
-  for (let i = 0; i < words.length; i++) {
-    const text = words[i].text;
-    const leading = text.length - text.trimStart().length;
-    const trailing = text.length - text.trimEnd().length;
-    spans.push({ start: cursor + leading, end: cursor + text.length - trailing });
-    cursor += text.length;
-    if (i < words.length - 1 && !text.endsWith(" ")) cursor += splitChar.length;
-  }
-  return spans;
-}
 
 function extractInlineWordSynced(line: LyricLine, classified: LineClassification): LyricLine {
   const words = line.words;
