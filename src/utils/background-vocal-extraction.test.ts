@@ -1043,6 +1043,117 @@ describe("extractBackgroundVocals: idempotence", () => {
   });
 });
 
+// -- linked lines -------------------------------------------------------------
+//
+// Inline extraction is an in-place content edit, so it is intentionally applied
+// to linked lines (lines belonging to a timeline group/instance). These tests
+// pin that an inline-extracted linked line keeps its link metadata intact and
+// that linked siblings carrying identical text extract identically, so the
+// whole-list transform never desyncs an instance set.
+
+describe("extractInlineFromLine: linked lines", () => {
+  it("extracts an untimed inline group and keeps link metadata intact", () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 0,
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hello");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.groupId).toBe("g1");
+    expect(result.instanceIdx).toBe(0);
+    expect(result.templateLineIdx).toBe(0);
+  });
+
+  it("extracts a word-synced inline group and keeps link metadata intact", () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 2,
+      words: [
+        { text: "Hello ", begin: 30, end: 31 },
+        { text: "(ooh)", begin: 31, end: 32 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hello");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.words).toEqual([{ text: "Hello", begin: 30, end: 31 }]);
+    expect(result.groupId).toBe("g1");
+    expect(result.instanceIdx).toBe(1);
+    expect(result.templateLineIdx).toBe(2);
+  });
+});
+
+describe("extractBackgroundVocals: linked sibling lines", () => {
+  it("extracts both untimed linked siblings identically", () => {
+    const lines = [
+      createLine({ id: "s0", text: "Hello (ooh)", groupId: "g1", instanceIdx: 0 }),
+      createLine({ id: "s1", text: "Hello (ooh)", groupId: "g1", instanceIdx: 1 }),
+    ].map((line, idx) => ({ ...line, templateLineIdx: 0, instanceIdx: idx }));
+
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+
+    expect(result).toHaveLength(2);
+    for (const line of result) {
+      expect(line.text).toBe("Hello");
+      expect(line.backgroundText).toBe("ooh");
+      expect(line.groupId).toBe("g1");
+      expect(line.templateLineIdx).toBe(0);
+    }
+    expect(result[0].instanceIdx).toBe(0);
+    expect(result[1].instanceIdx).toBe(1);
+  });
+
+  it("extracts both word-synced linked siblings identically while keeping instance timing", () => {
+    const s0: LyricLine = {
+      id: "s0",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 0,
+      words: [
+        { text: "Hello ", begin: 0, end: 1 },
+        { text: "(ooh)", begin: 1, end: 2 },
+      ],
+    };
+    const s1: LyricLine = {
+      id: "s1",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 0,
+      words: [
+        { text: "Hello ", begin: 30, end: 31.5 },
+        { text: "(ooh)", begin: 31.5, end: 33 },
+      ],
+    };
+
+    const result = extractBackgroundVocals([s0, s1], { mergeStandaloneLines: true });
+
+    expect(result).toHaveLength(2);
+    expect(result[0].text).toBe("Hello");
+    expect(result[1].text).toBe("Hello");
+    expect(result[0].backgroundText).toBe("ooh");
+    expect(result[1].backgroundText).toBe("ooh");
+    expect(result[0].words).toEqual([{ text: "Hello", begin: 0, end: 1 }]);
+    expect(result[1].words).toEqual([{ text: "Hello", begin: 30, end: 31.5 }]);
+    expect(result[0].groupId).toBe("g1");
+    expect(result[1].groupId).toBe("g1");
+    expect(result[0].templateLineIdx).toBe(0);
+    expect(result[1].templateLineIdx).toBe(0);
+  });
+});
+
 // -- lineHasInlineParens ------------------------------------------------------
 
 describe("lineHasInlineParens", () => {
