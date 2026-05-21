@@ -8,6 +8,7 @@ interface LineFields {
   agentId: string;
   backgroundText?: string;
   backgroundWords?: WordTiming[];
+  backgroundTextSource?: "extraction" | "manual";
   groupId?: string;
   instanceIdx?: number;
   templateLineIdx?: number;
@@ -61,4 +62,4 @@ function reconcileLine(line: LooseLine): LyricLine {
 
 export { reconcileLine };
 
-export type { LineSyncedLine, LyricLine, LooseLine };
+export type { LineFields, LineSyncedLine, LyricLine, LooseLine };
