@@ -369,9 +369,11 @@ const EditPanel: React.FC = () => {
     useProjectStore.getState().updateLineWithHistory(lineId, {
       text: extracted.text,
       words: extracted.words,
-      backgroundText: extracted.backgroundText,
-      backgroundWords: extracted.backgroundWords,
-      backgroundTextSource: extracted.backgroundTextSource,
+      ...backgroundFields({
+        text: extracted.backgroundText,
+        words: extracted.backgroundWords,
+        source: extracted.backgroundTextSource ?? "manual",
+      }),
     });
   }, []);
 

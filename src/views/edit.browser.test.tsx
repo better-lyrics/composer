@@ -146,8 +146,6 @@ describe("background vocal extraction", () => {
   });
 });
 
-// -- Tests --------------------------------------------------------------------
-
 describe("manual background vocal editing", () => {
   it("stamps a manual provenance when typing background text in the popover", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
