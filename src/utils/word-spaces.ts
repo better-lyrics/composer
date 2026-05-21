@@ -15,15 +15,6 @@ function trimTrailingSpaceFromLast(words: WordTiming[]): WordTiming[] {
   return next;
 }
 
-function addTrailingSpaceIfMissing(words: WordTiming[], target: WordTiming): WordTiming[] {
-  if (target.text.endsWith(" ")) return words;
-  const idx = words.indexOf(target);
-  if (idx < 0 || idx === words.length - 1) return words;
-  const next = words.slice();
-  next[idx] = { ...target, text: `${target.text} ` };
-  return next;
-}
-
 function resolveOverlapsForward(words: WordTiming[], duration: number): WordTiming[] {
   if (words.length === 0) return words;
   const result = words.map((w) => ({ ...w }));
@@ -90,4 +81,4 @@ function findInsertionSlot(
 
 // -- Exports -------------------------------------------------------------------
 
-export { trimTrailingSpaceFromLast, addTrailingSpaceIfMissing, resolveOverlapsForward, findInsertionSlot };
+export { trimTrailingSpaceFromLast, resolveOverlapsForward, findInsertionSlot };
