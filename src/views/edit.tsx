@@ -8,7 +8,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
-import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
+import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -73,6 +73,7 @@ const LinePreview: React.FC<{
   onAgentChange: (lineId: string, agentId: string) => void;
   onBulkAgentChange: (agentId: string) => void;
   onBackgroundChange: (lineId: string, text: string) => void;
+  onExtractLine: (lineId: string) => void;
   onGutterMouseDown: (lineNumber: number, e: React.MouseEvent) => void;
   onGutterMouseEnter: (lineNumber: number, e: React.MouseEvent) => void;
   didDragRef: React.MutableRefObject<boolean>;
@@ -87,6 +88,7 @@ const LinePreview: React.FC<{
   onAgentChange,
   onBulkAgentChange,
   onBackgroundChange,
+  onExtractLine,
   onGutterMouseDown,
   onGutterMouseEnter,
   didDragRef,
@@ -222,6 +224,18 @@ const LinePreview: React.FC<{
             {(close) => (
               <div className="p-2 w-48">
                 <p className="mb-1 text-xs text-composer-text-secondary">Background vocals</p>
+                {classifyLine(line.text).kind === "inline" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (line.lineId) onExtractLine(line.lineId);
+                      close();
+                    }}
+                    className="mb-1 flex w-full items-center gap-1 text-xs cursor-pointer text-composer-accent-text hover:text-composer-accent"
+                  >
+                    Pull from ( )
+                  </button>
+                )}
                 <input
                   type="text"
                   value={bgInput}
@@ -340,6 +354,18 @@ const EditPanel: React.FC = () => {
     }
 
     useProjectStore.getState().updateLineWithHistory(lineId, updates);
+  }, []);
+
+  const handleExtractLine = useCallback((lineId: string) => {
+    const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
+    if (!target) return;
+    const extracted = extractInlineFromLine(target);
+    if (extracted === target) return;
+    useProjectStore.getState().updateLineWithHistory(lineId, {
+      text: extracted.text,
+      words: extracted.words,
+      backgroundText: extracted.backgroundText,
+    });
   }, []);
 
   const handleLineSelect = useCallback(
@@ -724,6 +750,7 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                         onAgentChange={handleAgentChange}
                         onBulkAgentChange={handleBulkAgentChange}
                         onBackgroundChange={handleBackgroundChange}
+                        onExtractLine={handleExtractLine}
                         onGutterMouseDown={handleGutterMouseDown}
                         onGutterMouseEnter={handleGutterMouseEnter}
                         didDragRef={didDragRef}
