@@ -98,4 +98,59 @@ describe("extractLinkedFields", () => {
   it("does not propagate a begin/end update carrying a defined value", () => {
     expect(extractLinkedFields({ begin: 5, end: 9 })).toEqual({});
   });
+
+  it("carries the background provenance flag", () => {
+    const fields = extractLinkedFields({ backgroundText: "ooh", backgroundTextSource: "extraction" });
+    expect(fields.backgroundText).toBe("ooh");
+    expect(fields.backgroundTextSource).toBe("extraction");
+  });
+
+  it("carries a manual background provenance flag", () => {
+    const fields = extractLinkedFields({ backgroundText: "yeah", backgroundTextSource: "manual" });
+    expect(fields.backgroundText).toBe("yeah");
+    expect(fields.backgroundTextSource).toBe("manual");
+  });
+
+  it("does not invent a provenance flag when only backgroundText is updated", () => {
+    const fields = extractLinkedFields({ backgroundText: "hey" });
+    expect(fields.backgroundText).toBe("hey");
+    expect("backgroundTextSource" in fields).toBe(false);
+  });
+
+  it("propagates an explicit clear of backgroundText and its provenance flag", () => {
+    expect(extractLinkedFields({ backgroundText: undefined, backgroundTextSource: undefined })).toEqual({
+      backgroundText: undefined,
+      backgroundTextSource: undefined,
+    });
+  });
+
+  it("carries the provenance flag alongside other linked fields without regression", () => {
+    expect(
+      extractLinkedFields({
+        text: "Hi",
+        agentId: "v2",
+        backgroundText: "ah",
+        backgroundTextSource: "extraction",
+      }),
+    ).toEqual({
+      text: "Hi",
+      agentId: "v2",
+      backgroundText: "ah",
+      backgroundTextSource: "extraction",
+    });
+  });
+
+  it("excludes non-linked fields even when a provenance flag is present", () => {
+    expect(
+      extractLinkedFields({
+        id: "l9",
+        instanceIdx: 3,
+        backgroundText: "ah",
+        backgroundTextSource: "manual",
+      }),
+    ).toEqual({
+      backgroundText: "ah",
+      backgroundTextSource: "manual",
+    });
+  });
 });

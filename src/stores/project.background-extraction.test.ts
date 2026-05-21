@@ -144,6 +144,67 @@ describe("project store · background extraction on linked lines", () => {
     expect(lines.find((l) => l.id === "a1")?.text).toBe("Hello (ooh)");
   });
 
+  it("propagates the background provenance flag to the linked sibling", () => {
+    seedLinkedChorus([
+      { id: "a0", text: "Hello (ooh)", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      { id: "a1", text: "Hello (ooh)", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+    ]);
+
+    useProjectStore.getState().updateLineWithHistory("a0", {
+      text: "Hello",
+      backgroundText: "ooh",
+      backgroundTextSource: "extraction",
+    });
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+
+    expect(a0?.backgroundText).toBe("ooh");
+    expect(a0?.backgroundTextSource).toBe("extraction");
+    expect(a1?.backgroundText).toBe("ooh");
+    expect(a1?.backgroundTextSource).toBe("extraction");
+  });
+
+  it("propagates a cleared background provenance flag to the linked sibling", () => {
+    seedLinkedChorus([
+      {
+        id: "a0",
+        text: "Hello",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+      {
+        id: "a1",
+        text: "Hello",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+
+    useProjectStore.getState().updateLineWithHistory("a0", {
+      backgroundText: undefined,
+      backgroundTextSource: undefined,
+    });
+
+    const lines = useProjectStore.getState().lines;
+    const a0 = lines.find((l) => l.id === "a0");
+    const a1 = lines.find((l) => l.id === "a1");
+
+    expect(a0?.backgroundText).toBeUndefined();
+    expect(a0?.backgroundTextSource).toBeUndefined();
+    expect(a1?.backgroundText).toBeUndefined();
+    expect(a1?.backgroundTextSource).toBeUndefined();
+  });
+
   it("produces a single undoable history entry covering source + sibling", () => {
     seedLinkedChorus([
       { id: "a0", text: "Hello (ooh)", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
