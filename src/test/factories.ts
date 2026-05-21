@@ -11,6 +11,7 @@ interface FactoryLineOptions {
   words?: FactoryWordOptions[];
   backgroundText?: string;
   backgroundWords?: FactoryWordOptions[];
+  backgroundTextSource?: "extraction" | "manual";
   groupId?: string;
   instanceIdx?: number;
 }
@@ -56,6 +57,7 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
     ...(opts.words ? { words: opts.words.map(createWord) } : {}),
     ...(opts.backgroundText ? { backgroundText: opts.backgroundText } : {}),
     ...(opts.backgroundWords ? { backgroundWords: opts.backgroundWords.map(createWord) } : {}),
+    ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
   });
