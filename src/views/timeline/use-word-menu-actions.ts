@@ -1,10 +1,11 @@
-import type { WordTiming } from "@/domain/word/timing";
+import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
+import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { mergeWordText } from "@/utils/word-merge";
-import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { findInsertionSlot } from "@/utils/word-spaces";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -98,12 +99,8 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     }
 
     const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
-    const existing = existingWords ?? [];
-    const prevLast = existing[existing.length - 1];
-    const sorted = [...existing, newWord].sort((a, b) => a.begin - b.begin);
-    const newIndex = sorted.indexOf(newWord);
-    const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-    const words = trimTrailingSpaceFromLast(reconciled);
+    const words = mergeWordsIntoTrack(existingWords ?? [], [newWord]);
+    const newIndex = words.findIndex((w) => w.begin === newWord.begin);
 
     if (type === "word") {
       updateLineWithHistory(lineId, { words });

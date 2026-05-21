@@ -1,8 +1,9 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { addTrailingSpaceIfMissing, resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applySiblingWords } from "@/utils/word-diff";
 
 // -- Types --------------------------------------------------------------------
@@ -65,11 +66,7 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
   if (movedWords.length === 0) return null;
 
   const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
-
-  const prevBgLast = line.backgroundWords?.[line.backgroundWords.length - 1];
-  const sortedBg = [...(line.backgroundWords ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
-  const reconciledBg = prevBgLast ? addTrailingSpaceIfMissing(sortedBg, prevBgLast) : sortedBg;
-  const mergedBg = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledBg, duration));
+  const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(line.backgroundWords ?? [], movedWords), duration);
 
   return {
     ...line,
@@ -96,11 +93,7 @@ function applyMoveFromBg(
   if (movedWords.length === 0) return null;
 
   const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
-
-  const prevMainLast = line.words?.[line.words.length - 1];
-  const sortedMain = [...(line.words ?? []), ...movedWords].sort((a, b) => a.begin - b.begin);
-  const reconciledMain = prevMainLast ? addTrailingSpaceIfMissing(sortedMain, prevMainLast) : sortedMain;
-  const mergedMain = trimTrailingSpaceFromLast(resolveOverlapsForward(reconciledMain, duration));
+  const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(line.words ?? [], movedWords), duration);
 
   const hasBg = remainingBg.length > 0;
   return reconcileLine({

@@ -3,7 +3,7 @@
  */
 import { useProjectStore } from "@/stores/project";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { getSyllablePositions } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { beforeEach, describe, expect, it } from "vitest";
 
 const DURATION = 30;
@@ -460,7 +460,7 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
     const line = useProjectStore.getState().lines[0];
     expect(line.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(line.backgroundWords?.every((w) => w.syllableGroupId === "g_every")).toBe(true);
+    expect(getSyllablePositions(line.backgroundWords ?? [])).toEqual(["first", "middle", "last"]);
   });
 
   it("moveWordFromBg expands a single-syllable bg selection to the whole syllable group", () => {
@@ -483,7 +483,7 @@ describe("cross-track moves auto-expand to syllable groupmates", () => {
 
     const line = useProjectStore.getState().lines[0];
     expect(line.words?.map((w) => w.text)).toEqual(["ev", "er", "y"]);
-    expect(line.words?.every((w) => w.syllableGroupId === "g_every")).toBe(true);
+    expect(getSyllablePositions(line.words ?? [])).toEqual(["first", "middle", "last"]);
     expect(line.backgroundWords).toBeUndefined();
   });
 });
@@ -654,5 +654,48 @@ describe("moveWordFromBg · linked propagation", () => {
 
     expect(a1?.backgroundWords).toBeUndefined();
     expect(a1?.words?.find((w) => w.text === "ooh")?.begin).toBe(12);
+  });
+});
+
+// -- merge seam ----------------------------------------------------------------
+
+describe("cross-track moves space the merge seam", () => {
+  it("keeps a word boundary when a moved word lands before the last bg word", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        backgroundWords: [
+          { text: "ah ", begin: 0, end: 0.5 },
+          { text: "ooh", begin: 5, end: 5.5 },
+        ],
+        backgroundText: "ah ooh",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah ", "goodbye ", "ooh"]);
+    const groups = computeSyllableGroups(line.backgroundWords ?? []);
+    expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
+  });
+
+  it("keeps a word boundary when a bg word moves into main before the last main word", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        words: [
+          { text: "hello ", begin: 0, end: 1 },
+          { text: "world", begin: 2, end: 3 },
+        ],
+        backgroundWords: [{ text: "ooh", begin: 1.2, end: 1.6 }],
+        backgroundText: "ooh",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0], 0, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.words?.map((w) => w.text)).toEqual(["hello ", "ooh ", "world"]);
+    const groups = computeSyllableGroups(line.words ?? []);
+    expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
 });
