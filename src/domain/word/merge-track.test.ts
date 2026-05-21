@@ -302,4 +302,38 @@ describe("mergeWordsIntoTrack edge cases and invariants", () => {
       { startIndex: 2, endIndex: 3, originalWord: "poem" },
     ]);
   });
+
+  it("spaces the seam when an incoming word is exactly time-adjacent to an existing word", () => {
+    const existing: WordTiming[] = [{ text: "before", begin: 0, end: 1 }];
+    const incoming: WordTiming[] = [{ text: "after", begin: 1, end: 2 }];
+
+    const result = mergeWordsIntoTrack(existing, incoming);
+
+    expect(result.map((w) => w.text)).toEqual(["before ", "after"]);
+  });
+
+  it("trims the final incoming word and still spaces the seam before it", () => {
+    const existing: WordTiming[] = [{ text: "head", begin: 0, end: 0.5 }];
+    const incoming: WordTiming[] = [{ text: "tail ", begin: 1, end: 1.5 }];
+
+    const result = mergeWordsIntoTrack(existing, incoming);
+
+    expect(result.map((w) => w.text)).toEqual(["head ", "tail"]);
+  });
+
+  it("never spaces an existing internal syllable joint when incoming words bracket it", () => {
+    const existing: WordTiming[] = [
+      { text: "ti", begin: 1, end: 1.4 },
+      { text: "tle", begin: 1.4, end: 1.8 },
+    ];
+    const incoming: WordTiming[] = [
+      { text: "before ", begin: 0, end: 0.5 },
+      { text: "after", begin: 3, end: 3.5 },
+    ];
+
+    const result = mergeWordsIntoTrack(existing, incoming);
+
+    expect(result.map((w) => w.text)).toEqual(["before ", "ti", "tle ", "after"]);
+    expect(computeSyllableGroups(result)).toEqual([{ startIndex: 1, endIndex: 2, originalWord: "title" }]);
+  });
 });

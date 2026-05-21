@@ -2,7 +2,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { nanoid } from "nanoid";
 
-// -- Helpers ------------------------------------------------------------------
+// -- Functions ----------------------------------------------------------------
 
 function regenerateSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   const remapped = new Map<string, string>();
@@ -19,8 +19,6 @@ function regenerateSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   });
   return changed ? result : words;
 }
-
-// -- Functions ----------------------------------------------------------------
 
 // Merges incoming words into an existing word track. Incoming words keep their
 // own internal structure; every seam between existing and incoming content
