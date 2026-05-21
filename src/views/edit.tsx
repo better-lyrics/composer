@@ -315,9 +315,10 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     const next = extractBackgroundVocals(current, extractOptions);
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
-    linesSetByUs.current = next;
     useProjectStore.getState().setLinesWithHistory(next);
-    setRawText(next.map((line) => line.text).join("\n"));
+    const committed = useProjectStore.getState().lines;
+    linesSetByUs.current = committed;
+    setRawText(committed.map((line) => line.text).join("\n"));
   }, [extractOptions]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
