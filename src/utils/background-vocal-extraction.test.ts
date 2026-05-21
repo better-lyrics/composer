@@ -741,13 +741,181 @@ describe("extractBackgroundVocals: none and skip lines", () => {
     expect(result[0]).toBe(lines[0]);
   });
 
-  it("merges a standalone line into a skip predecessor with non-empty text", () => {
+  it("does not merge a standalone line into a skip predecessor", () => {
     const lines = [createLine({ id: "1", text: "Hello (ooh" }), createLine({ id: "2", text: "(yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+});
+
+// -- extractBackgroundVocals: timing-aware standalone merge -------------------
+
+describe("extractBackgroundVocals: timing-aware standalone merge", () => {
+  it("merges an untimed standalone line into an untimed predecessor as text only", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("1");
-    expect(result[0].text).toBe("Hello (ooh");
-    expect(result[0].backgroundText).toBe("yeah");
+    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("carries word-synced standalone timing into an untimed predecessor with no background", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].backgroundWords).toEqual([
+      { text: "ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah", begin: 5.6, end: 6.2 },
+    ]);
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+
+  it("appends carried words after the predecessor's existing background words", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "ah ",
+        backgroundWords: [{ text: "ah ", begin: 1.0, end: 1.5 }],
+      }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundWords).toEqual([
+      { text: "ah ", begin: 1.0, end: 1.5 },
+      { text: "ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah", begin: 5.6, end: 6.2 },
+    ]);
+    expect(result[0].backgroundText).toBe("ah ooh yeah");
+  });
+
+  it("falls back to text-only when predecessor has background text but no words", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line", backgroundText: "ah" }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ah ooh yeah");
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("seeds background words from a line-synced standalone via createInitialBgWords", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({ id: "2", text: "(ooh)", begin: 4.0, end: 6.0 }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ooh");
+    const bgWords = result[0].backgroundWords;
+    expect(bgWords).toHaveLength(1);
+    expect(bgWords?.[0].text).toBe("ooh");
+    expect(bgWords?.[0].begin).toBe(4.0);
+    expect(bgWords?.[0].end).toBe(6.0);
+  });
+
+  it("spans the standalone time range across multiple words from a line-synced standalone", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({ id: "2", text: "(ooh yeah)", begin: 4.0, end: 6.0 }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    const bgWords = result[0].backgroundWords;
+    expect(bgWords).toHaveLength(2);
+    expect(bgWords?.[0].begin).toBe(4.0);
+    expect(bgWords?.[bgWords.length - 1].end).toBe(6.0);
+  });
+
+  it("does not merge an untimed standalone into a predecessor with timed background words", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "ah",
+        backgroundWords: [{ text: "ah", begin: 1.0, end: 1.5 }],
+      }),
+      createLine({ id: "2", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+    expect(result[0].backgroundWords).toEqual([{ text: "ah", begin: 1.0, end: 1.5 }]);
+  });
+
+  it("falls back to text-only when standalone word count does not match bg text", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "( ooh yeah )",
+        words: [
+          { text: "( ", begin: 5.0, end: 5.2 },
+          { text: "ooh ", begin: 5.2, end: 5.6 },
+          { text: "yeah ", begin: 5.6, end: 6.0 },
+          { text: ")", begin: 6.0, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ooh yeah");
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+});
+
+// -- extractBackgroundVocals: merge gate -------------------------------------
+
+describe("extractBackgroundVocals: merge gate", () => {
+  it("does not merge a standalone line into a standalone predecessor", () => {
+    const lines = [createLine({ id: "1", text: "(ooh)" }), createLine({ id: "2", text: "(yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("still merges a standalone line into a real lyric predecessor", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real" }),
+      createLine({ id: "2", text: "(ooh)" }),
+      createLine({ id: "3", text: "(yeah)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].text).toBe("Real");
+    expect(result[0].backgroundText).toBe("ooh yeah");
   });
 });
 
@@ -801,6 +969,27 @@ describe("extractBackgroundVocals: input not mutated", () => {
     expect(lines[1].text).toBe("(yeah)");
     expect(lines[2].text).toBe("Plain");
   });
+
+  it("does not mutate a timed standalone line or its words array", () => {
+    const standaloneWords = [
+      { text: "(ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah)", begin: 5.6, end: 6.2 },
+    ];
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({ id: "2", text: "(ooh yeah)", words: standaloneWords }),
+    ];
+    const standaloneWordsRef = lines[1].words;
+    extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(lines).toHaveLength(2);
+    expect(lines[1].text).toBe("(ooh yeah)");
+    expect(lines[1].words).toBe(standaloneWordsRef);
+    expect(lines[1].words).toEqual([
+      { text: "(ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah)", begin: 5.6, end: 6.2 },
+    ]);
+    expect(lines[0].backgroundWords).toBeUndefined();
+  });
 });
 
 // -- extractBackgroundVocals: idempotence -------------------------------------
@@ -820,6 +1009,36 @@ describe("extractBackgroundVocals: idempotence", () => {
       expect(second[i]).toBe(first[i]);
       expect(second[i].text).toBe(first[i].text);
       expect(second[i].backgroundText).toBe(first[i].backgroundText);
+    }
+  });
+
+  it("yields no further changes for a mix including timed standalone lines", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        words: [
+          { text: "Real ", begin: 0, end: 1 },
+          { text: "line", begin: 1, end: 2 },
+        ],
+      }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+      createLine({ id: "3", text: "Plain line" }),
+    ];
+    const first = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    const second = extractBackgroundVocals(first, { mergeStandaloneLines: true });
+    expect(second).toHaveLength(first.length);
+    for (let i = 0; i < first.length; i++) {
+      expect(second[i]).toBe(first[i]);
+      expect(second[i].backgroundText).toBe(first[i].backgroundText);
+      expect(second[i].backgroundWords).toEqual(first[i].backgroundWords);
     }
   });
 });

@@ -1,10 +1,12 @@
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
-import { isWordSynced } from "@/domain/line/predicates";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
 import { getSplitCharacter } from "@/utils/split-character";
+import { createInitialBgWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -137,7 +139,29 @@ interface ExtractOptions {
   mergeStandaloneLines: boolean;
 }
 
-function mergeStandaloneInto(prev: LyricLine, _standalone: LyricLine, bgText: string): LyricLine {
+function carriedBackgroundWords(standalone: LyricLine, bgText: string): WordTiming[] | null {
+  const words = standalone.words;
+  if (words && words.length > 0) return remapWordTextsPreservingTiming(words, bgText);
+  if (isLineSynced(standalone)) return createInitialBgWords(bgText, standalone.begin, standalone.end);
+  return null;
+}
+
+function mergeStandaloneInto(prev: LyricLine, standalone: LyricLine, bgText: string): LyricLine | null {
+  const carried = carriedBackgroundWords(standalone, bgText);
+  const prevBgWords = prev.backgroundWords;
+
+  if (carried && carried.length > 0) {
+    if (prevBgWords && prevBgWords.length > 0) {
+      const combined = [...prevBgWords, ...carried];
+      return { ...prev, backgroundWords: combined, backgroundText: reconstructLineText(combined, getSplitCharacter()) };
+    }
+    if (!prev.backgroundText) {
+      return { ...prev, backgroundWords: carried, backgroundText: reconstructLineText(carried, getSplitCharacter()) };
+    }
+    return { ...prev, backgroundText: joinBackgroundText(prev.backgroundText, bgText) };
+  }
+
+  if (prevBgWords && prevBgWords.length > 0) return null;
   return { ...prev, backgroundText: joinBackgroundText(prev.backgroundText, bgText) };
 }
 
@@ -151,9 +175,18 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
     }
     if (classified.kind === "standalone" && options.mergeStandaloneLines) {
       const prev = result[result.length - 1];
-      if (prev && prev.text.trim().length > 0 && !isLinked(prev) && !isLinked(line)) {
-        result[result.length - 1] = mergeStandaloneInto(prev, line, classified.bgText);
-        continue;
+      if (
+        prev &&
+        prev.text.trim().length > 0 &&
+        classifyLine(prev.text).kind === "none" &&
+        !isLinked(prev) &&
+        !isLinked(line)
+      ) {
+        const merged = mergeStandaloneInto(prev, line, classified.bgText);
+        if (merged) {
+          result[result.length - 1] = merged;
+          continue;
+        }
       }
     }
     result.push(line);
