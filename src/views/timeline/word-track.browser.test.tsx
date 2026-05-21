@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { WordTrack } from "@/views/timeline/word-track";
 import type { WordTiming } from "@/domain/word/timing";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -318,5 +319,20 @@ describe("WordTrack", () => {
     );
     const track = screen.container.querySelector(".relative") as HTMLElement;
     expect(track.style.height).toBe("32px");
+  });
+
+  it("adds a word on double-click and spaces the seam before it", async () => {
+    useAudioStore.setState({ duration: 3 });
+    useTimelineStore.setState({ zoom: 100 });
+    const screen = await renderTrack(WORDS);
+    const track = screen.container.querySelector(".relative") as HTMLElement;
+    const rect = track.getBoundingClientRect();
+
+    track.dispatchEvent(
+      new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
+    );
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
+    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["hello ", "world ", "..."]);
   });
 });

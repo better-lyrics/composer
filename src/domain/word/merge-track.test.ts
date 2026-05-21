@@ -336,4 +336,24 @@ describe("mergeWordsIntoTrack edge cases and invariants", () => {
     expect(result.map((w) => w.text)).toEqual(["before ", "ti", "tle ", "after"]);
     expect(computeSyllableGroups(result)).toEqual([{ startIndex: 1, endIndex: 2, originalWord: "title" }]);
   });
+
+  it("never injects syllableGroupId into a trailing-space track so the spaces fallback stays active", () => {
+    const existing: WordTiming[] = [
+      { text: "Hello ", begin: 0, end: 0.5 },
+      { text: "wor", begin: 0.5, end: 0.75 },
+      { text: "ld", begin: 0.75, end: 1 },
+    ];
+    const incoming: WordTiming[] = [
+      { text: "sun", begin: 1.2, end: 1.5 },
+      { text: "shine", begin: 1.5, end: 1.9 },
+    ];
+
+    const result = mergeWordsIntoTrack(existing, incoming);
+
+    expect(result.every((w) => w.syllableGroupId === undefined)).toBe(true);
+    expect(computeSyllableGroups(result)).toEqual([
+      { startIndex: 1, endIndex: 2, originalWord: "world" },
+      { startIndex: 3, endIndex: 4, originalWord: "sunshine" },
+    ]);
+  });
 });

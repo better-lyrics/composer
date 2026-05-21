@@ -3,8 +3,9 @@ import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
-import { addTrailingSpaceIfMissing, findInsertionSlot, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { findInsertionSlot } from "@/utils/word-spaces";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -352,11 +353,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (!slot) return;
 
     const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };
-    const prevLast = words[words.length - 1];
-    const sorted = [...words, newWord].sort((a, b) => a.begin - b.begin);
-    const newIndex = sorted.indexOf(newWord);
-    const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-    const newWords = trimTrailingSpaceFromLast(reconciled);
+    const newWords = mergeWordsIntoTrack(words, [newWord]);
+    const newIndex = newWords.findIndex((w) => w.begin === newWord.begin);
 
     const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
     if (trackType === "word") {
