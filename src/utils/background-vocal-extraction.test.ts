@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scanParenGroups } from "@/utils/background-vocal-extraction";
+import { classifyLine, scanParenGroups } from "@/utils/background-vocal-extraction";
 
 // -- Specification table -------------------------------------------------------
 
@@ -166,5 +166,177 @@ describe("scanParenGroups: unbalanced edge cases", () => {
     const scan = scanParenGroups("(a) (b) (");
     expect(scan.status).toBe("unbalanced");
     expect(scan.groups).toEqual([]);
+  });
+});
+
+// -- classifyLine: specification table -----------------------------------------
+
+describe("classifyLine: specification table", () => {
+  it("classifies plain text as none", () => {
+    const result = classifyLine("Hello world");
+    expect(result.kind).toBe("none");
+    expect(result.mainText).toBe("Hello world");
+    expect(result.bgText).toBe("");
+  });
+
+  it("classifies a mid-line group as inline", () => {
+    const result = classifyLine("Hello (ooh) world");
+    expect(result.kind).toBe("inline");
+    expect(result.mainText).toBe("Hello world");
+    expect(result.bgText).toBe("ooh");
+  });
+
+  it("classifies a trailing group as inline", () => {
+    const result = classifyLine("Hello (ooh)");
+    expect(result.kind).toBe("inline");
+    expect(result.mainText).toBe("Hello");
+    expect(result.bgText).toBe("ooh");
+  });
+
+  it("classifies a leading group as inline", () => {
+    const result = classifyLine("(ooh) world");
+    expect(result.kind).toBe("inline");
+    expect(result.mainText).toBe("world");
+    expect(result.bgText).toBe("ooh");
+  });
+
+  it("classifies multiple inline groups, joining bg text with a space", () => {
+    const result = classifyLine("Hi (a) and (b) bye");
+    expect(result.kind).toBe("inline");
+    expect(result.mainText).toBe("Hi and bye");
+    expect(result.bgText).toBe("a b");
+  });
+
+  it("classifies a single full-line group as standalone", () => {
+    const result = classifyLine("(ooh yeah)");
+    expect(result.kind).toBe("standalone");
+    expect(result.mainText).toBe("");
+    expect(result.bgText).toBe("ooh yeah");
+  });
+
+  it("classifies multiple groups covering the whole line as standalone", () => {
+    const result = classifyLine("(ooh) (yeah)");
+    expect(result.kind).toBe("standalone");
+    expect(result.mainText).toBe("");
+    expect(result.bgText).toBe("ooh yeah");
+  });
+
+  it("classifies an unclosed group as skip", () => {
+    const result = classifyLine("Hello (ooh");
+    expect(result.kind).toBe("skip");
+  });
+
+  it("classifies nested groups as skip", () => {
+    const result = classifyLine("((ooh))");
+    expect(result.kind).toBe("skip");
+  });
+
+  it("classifies a trailing unclosed group as skip", () => {
+    const result = classifyLine("Hello (ooh) world (ah");
+    expect(result.kind).toBe("skip");
+  });
+
+  it("leaves a line with an empty group untouched as none", () => {
+    const result = classifyLine("Hello ()");
+    expect(result.kind).toBe("none");
+    expect(result.mainText).toBe("Hello ()");
+    expect(result.bgText).toBe("");
+  });
+
+  it("classifies a whitespace-only group as none with empty bg text", () => {
+    const result = classifyLine("(  )");
+    expect(result.kind).toBe("none");
+    expect(result.bgText).toBe("");
+  });
+});
+
+// -- classifyLine: whitespace handling -----------------------------------------
+
+describe("classifyLine: whitespace handling", () => {
+  it("trims leading and trailing spaces inside a group for bg text", () => {
+    const result = classifyLine("la (  ooh  ) la");
+    expect(result.kind).toBe("inline");
+    expect(result.bgText).toBe("ooh");
+    expect(result.mainText).toBe("la la");
+  });
+
+  it("collapses runs of two or more spaces in mainText to one space", () => {
+    const result = classifyLine("a  (x)  b");
+    expect(result.kind).toBe("inline");
+    expect(result.mainText).toBe("a b");
+    expect(result.bgText).toBe("x");
+  });
+
+  it("classifies a whitespace-only line as none", () => {
+    const result = classifyLine("   ");
+    expect(result.kind).toBe("none");
+    expect(result.bgText).toBe("");
+    expect(result.mainText).toBe("   ");
+  });
+
+  it("classifies an empty string as none", () => {
+    const result = classifyLine("");
+    expect(result.kind).toBe("none");
+    expect(result.bgText).toBe("");
+    expect(result.mainText).toBe("");
+  });
+});
+
+// -- classifyLine: mixed empty and non-empty groups ----------------------------
+
+describe("classifyLine: mixed empty and non-empty groups", () => {
+  it("filters out an empty group when joining bg text", () => {
+    const result = classifyLine("Hi (a) and () bye");
+    expect(result.kind).toBe("inline");
+    expect(result.bgText).toBe("a");
+    expect(result.mainText).toBe("Hi and bye");
+  });
+
+  it("filters out a whitespace-only group when joining bg text", () => {
+    const result = classifyLine("Hi (a) and (   ) bye");
+    expect(result.kind).toBe("inline");
+    expect(result.bgText).toBe("a");
+    expect(result.mainText).toBe("Hi and bye");
+  });
+
+  it("classifies a standalone line when the only non-empty group covers everything", () => {
+    const result = classifyLine("() (ooh)");
+    expect(result.kind).toBe("standalone");
+    expect(result.bgText).toBe("ooh");
+    expect(result.mainText).toBe("");
+  });
+});
+
+// -- classifyLine: returned shape ----------------------------------------------
+
+describe("classifyLine: returned shape", () => {
+  it("returns a well-formed shape for skip outcomes", () => {
+    const result = classifyLine("Hello (ooh");
+    expect(result.kind).toBe("skip");
+    expect(result.groups).toEqual([]);
+    expect(result.bgText).toBe("");
+    expect(result.mainText).toBe("Hello (ooh");
+  });
+
+  it("returns a well-formed shape for none outcomes with no groups", () => {
+    const result = classifyLine("Hello world");
+    expect(result.kind).toBe("none");
+    expect(result.groups).toEqual([]);
+    expect(result.bgText).toBe("");
+    expect(result.mainText).toBe("Hello world");
+  });
+
+  it("retains scanned groups for none outcomes with empty groups", () => {
+    const result = classifyLine("Hello ()");
+    expect(result.kind).toBe("none");
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups[0].inner).toBe("");
+  });
+
+  it("exposes scanned groups for inline outcomes", () => {
+    const result = classifyLine("Hi (a) and (b) bye");
+    expect(result.groups).toHaveLength(2);
+    expect(result.groups[0].inner).toBe("a");
+    expect(result.groups[1].inner).toBe("b");
   });
 });

@@ -13,6 +13,15 @@ interface ParenScan {
   groups: ParenGroup[];
 }
 
+type LineClassKind = "none" | "inline" | "standalone" | "skip";
+
+interface LineClassification {
+  kind: LineClassKind;
+  groups: ParenGroup[];
+  bgText: string;
+  mainText: string;
+}
+
 // -- Scanner ------------------------------------------------------------------
 
 function scanParenGroups(text: string): ParenScan {
@@ -35,7 +44,34 @@ function scanParenGroups(text: string): ParenScan {
   return { status: "balanced", groups };
 }
 
+// -- Classification -----------------------------------------------------------
+
+function stripGroups(text: string, groups: ParenGroup[]): string {
+  let result = text;
+  for (let i = groups.length - 1; i >= 0; i--) {
+    result = result.slice(0, groups[i].start) + result.slice(groups[i].end + 1);
+  }
+  return result;
+}
+
+function collapseSpaces(text: string): string {
+  return text.replace(/ {2,}/g, " ").trim();
+}
+
+function classifyLine(text: string): LineClassification {
+  const scan = scanParenGroups(text);
+  if (scan.status !== "balanced") return { kind: "skip", groups: [], bgText: "", mainText: text };
+  if (scan.groups.length === 0) return { kind: "none", groups: [], bgText: "", mainText: text };
+  const bgText = scan.groups
+    .map((g) => g.inner.trim())
+    .filter((s) => s.length > 0)
+    .join(" ");
+  if (bgText.length === 0) return { kind: "none", groups: scan.groups, bgText: "", mainText: text };
+  const mainText = collapseSpaces(stripGroups(text, scan.groups));
+  return { kind: mainText.length === 0 ? "standalone" : "inline", groups: scan.groups, bgText, mainText };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { scanParenGroups };
-export type { ParenGroup, ParenScan, ParenScanStatus };
+export { classifyLine, scanParenGroups };
+export type { LineClassification, LineClassKind, ParenGroup, ParenScan, ParenScanStatus };
