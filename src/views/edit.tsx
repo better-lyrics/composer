@@ -265,6 +265,7 @@ const EditPanel: React.FC = () => {
   rawTextRef.current = rawText;
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
+  const pastedRef = useRef(false);
   const [importResult, setImportResult] = useState<{
     result: ParseResult;
     filename: string;
@@ -410,6 +411,9 @@ const EditPanel: React.FC = () => {
 
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const wasPaste = pastedRef.current;
+      pastedRef.current = false;
+
       const text = e.target.value;
       const action = decideEditTextAction({
         text,
@@ -473,8 +477,15 @@ const EditPanel: React.FC = () => {
 
       if (action.kind === "noop") return;
 
-      linesSetByUs.current = action.finalLines;
-      setLines(action.finalLines);
+      let finalLines = action.finalLines;
+      if (wasPaste && useSettingsStore.getState().autoExtractBackgroundVocals) {
+        finalLines = extractBackgroundVocals(finalLines, {
+          mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+        });
+        setRawText(finalLines.map((line) => line.text).join("\n"));
+      }
+      linesSetByUs.current = finalLines;
+      setLines(finalLines);
     },
     [confirm, defaultAgentId, groups, lines, setLines],
   );
@@ -618,6 +629,9 @@ const EditPanel: React.FC = () => {
             id={textareaId}
             value={rawText}
             onChange={handleTextChange}
+            onPaste={() => {
+              pastedRef.current = true;
+            }}
             placeholder="Paste your lyrics here, one line at a time...
 
 Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
