@@ -99,7 +99,7 @@ const DEFAULTS: SettingsState = {
   showShortcutHints: true,
   showSyllableIndicators: true,
   splitCharacter: "|",
-  autoExtractBackgroundVocals: true,
+  autoExtractBackgroundVocals: false,
   mergeStandaloneBackgroundLines: true,
 
   confirmReplaceProjectFromHash: true,

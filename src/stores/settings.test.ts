@@ -37,9 +37,9 @@ describe("background vocal extraction settings", () => {
     useSettingsStore.setState({ ...DEFAULTS });
   });
 
-  it("defaults autoExtractBackgroundVocals to true", () => {
-    expect(DEFAULTS.autoExtractBackgroundVocals).toBe(true);
-    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
+  it("defaults autoExtractBackgroundVocals to false", () => {
+    expect(DEFAULTS.autoExtractBackgroundVocals).toBe(false);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
   });
 
   it("defaults mergeStandaloneBackgroundLines to true", () => {
@@ -47,9 +47,9 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
-  it("allows disabling autoExtractBackgroundVocals via set()", () => {
-    useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
-    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
+  it("allows enabling autoExtractBackgroundVocals via set()", () => {
+    useSettingsStore.getState().set("autoExtractBackgroundVocals", true);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
   });
 
   it("allows disabling mergeStandaloneBackgroundLines via set()", () => {
@@ -57,11 +57,11 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(false);
   });
 
-  it("resetToDefaults restores both background vocal toggles to true", () => {
-    useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
+  it("resetToDefaults restores the background vocal toggles", () => {
+    useSettingsStore.getState().set("autoExtractBackgroundVocals", true);
     useSettingsStore.getState().set("mergeStandaloneBackgroundLines", false);
     useSettingsStore.getState().resetToDefaults();
-    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 });
