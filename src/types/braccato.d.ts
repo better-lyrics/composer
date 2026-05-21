@@ -1,4 +1,5 @@
 import "react";
+import type { BraccatoElement } from "@braccato/core";
 
 declare module "react" {
   namespace JSX {
@@ -12,7 +13,7 @@ declare module "react" {
           "scroll-mode"?: "internal" | "external";
           dir?: "auto" | "ltr" | "rtl";
         },
-        HTMLElement
+        BraccatoElement
       >;
     }
   }

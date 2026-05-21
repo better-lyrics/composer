@@ -1,4 +1,6 @@
 import "@braccato/core";
+import type { BraccatoElement } from "@braccato/core";
+import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { useAudioStore } from "@/stores/audio";
 import { useEffect, useRef, useState } from "react";
 
@@ -11,7 +13,7 @@ interface BraccatoRendererProps {
 // -- Component ----------------------------------------------------------------
 
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
-  const elementRef = useRef<HTMLElement>(null);
+  const elementRef = useRef<BraccatoElement>(null);
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,19 +27,24 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     const el = elementRef.current;
     if (!el) return;
     const handleLineClick = (e: Event) => {
-      const detail = (e as CustomEvent).detail;
-      if (detail?.time != null) {
-        useAudioStore.getState().seekTo(detail.time / 1000);
-      }
+      const detail = (e as CustomEvent<{ time: number }>).detail;
+      if (detail?.time == null) return;
+      const audio = useAudioStore.getState();
+      audio.seekTo(detail.time / 1000);
+      audio.setIsPlaying(true);
     };
     el.addEventListener("braccato:line-click", handleLineClick);
     return () => el.removeEventListener("braccato:line-click", handleLineClick);
   }, []);
 
+  useRendererAudioSync(elementRef, (el, audio) => {
+    el.currentTime = audio.currentTime * 1000;
+    el.playing = !audio.paused;
+  });
+
   return (
     <braccato-lyrics
       ref={elementRef}
-      source="#composer-audio"
       src={blobUrl ?? undefined}
       className="flex-1 mx-auto w-full max-w-3xl px-6"
       style={
