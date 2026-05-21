@@ -4,12 +4,12 @@ import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { cn } from "@/utils/cn";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
-import { mergePastedWords } from "@/views/timeline/merge-pasted-words";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
@@ -194,10 +194,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         const lineUpdates: Partial<LyricLine> = {};
 
         if (newWords.length > 0) {
-          lineUpdates.words = mergePastedWords(line.words ?? [], newWords);
+          lineUpdates.words = mergeWordsIntoTrack(line.words ?? [], newWords);
         }
         if (newBgWords.length > 0) {
-          lineUpdates.backgroundWords = mergePastedWords(line.backgroundWords ?? [], newBgWords);
+          lineUpdates.backgroundWords = mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords);
         }
 
         updates.push({ id: line.id, updates: lineUpdates });
