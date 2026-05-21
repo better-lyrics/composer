@@ -30,9 +30,8 @@ function mergePastedWords(existing: WordTiming[], pasted: WordTiming[]): WordTim
     ...freshPasted.map((word) => ({ word, isPasted: true })),
   ].sort((a, b) => a.word.begin - b.word.begin);
 
-  const usesSyllableGroupId = tagged.some((tag) => tag.word.syllableGroupId !== undefined);
-  if (usesSyllableGroupId) return tagged.map((tag) => tag.word);
-
+  // A spaceless joint makes reconstructLineText reinsert the split character, so
+  // the seam needs a real space even when syllableGroupId already separates the runs.
   return tagged.map((tag, index) => {
     const next = tagged[index + 1];
     if (!next || next.isPasted === tag.isPasted) return tag.word;

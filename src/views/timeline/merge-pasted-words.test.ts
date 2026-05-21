@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
@@ -84,6 +85,66 @@ describe("mergePastedWords", () => {
     expect(groups).toHaveLength(2);
     expect(groups[0]).toMatchObject({ startIndex: 0, endIndex: 1 });
     expect(groups[1]).toMatchObject({ startIndex: 2, endIndex: 3 });
+  });
+
+  it("adds the seam space in syllableGroupId mode so reconstructed text keeps the word boundary", () => {
+    const existing: WordTiming[] = [
+      { text: "ti", begin: 0, end: 0.4, syllableGroupId: "a" },
+      { text: "tle", begin: 0.4, end: 0.8, syllableGroupId: "a" },
+    ];
+    const pasted: WordTiming[] = [
+      { text: "po", begin: 1, end: 1.4, syllableGroupId: "b" },
+      { text: "em", begin: 1.4, end: 1.8, syllableGroupId: "b" },
+    ];
+
+    const result = mergePastedWords(existing, pasted);
+
+    expect(result.map((w) => w.text)).toEqual(["ti", "tle ", "po", "em"]);
+    expect(reconstructLineText(result, "|")).toBe("ti|tle po|em");
+  });
+
+  it("inserts boundaries on both sides when pasted words land in a gap between existing words", () => {
+    const existing: WordTiming[] = [
+      { text: "Hello ", begin: 0, end: 0.5 },
+      { text: "world", begin: 3, end: 3.5 },
+    ];
+    const pasted: WordTiming[] = [
+      { text: "very ", begin: 1, end: 1.4 },
+      { text: "big", begin: 1.5, end: 1.9 },
+    ];
+
+    const result = mergePastedWords(existing, pasted);
+
+    expect(result.map((w) => w.text)).toEqual(["Hello ", "very ", "big ", "world"]);
+    expect(reconstructLineText(result, "|")).toBe("Hello very big world");
+  });
+
+  it("keeps the pasted batch's own syllable structure intact, spacing only the seam", () => {
+    const existing: WordTiming[] = [
+      { text: "Hello ", begin: 0, end: 0.5 },
+      { text: "world", begin: 0.5, end: 1 },
+    ];
+    const pasted: WordTiming[] = [
+      { text: "sun", begin: 1.2, end: 1.5 },
+      { text: "shine", begin: 1.5, end: 1.9 },
+    ];
+
+    const result = mergePastedWords(existing, pasted);
+
+    expect(result.map((w) => w.text)).toEqual(["Hello ", "world ", "sun", "shine"]);
+    expect(reconstructLineText(result, "|")).toBe("Hello world sun|shine");
+    expect(computeSyllableGroups(result)).toEqual([{ startIndex: 2, endIndex: 3, originalWord: "sunshine" }]);
+  });
+
+  it("preserves word fields such as explicit through the merge and seam-spacing", () => {
+    const existing: WordTiming[] = [{ text: "last", begin: 0, end: 0.5, explicit: true }];
+    const pasted: WordTiming[] = [{ text: "next", begin: 1, end: 1.4, explicit: true }];
+
+    const result = mergePastedWords(existing, pasted);
+
+    expect(result.map((w) => w.text)).toEqual(["last ", "next"]);
+    expect(result[0].explicit).toBe(true);
+    expect(result[1].explicit).toBe(true);
   });
 
   it("returns the existing array unchanged when there is nothing to paste", () => {
