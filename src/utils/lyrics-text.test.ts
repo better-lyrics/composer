@@ -3,6 +3,7 @@
  */
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
+import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
 
 describe("textToLyricLines · group attrs preservation", () => {
@@ -243,6 +244,62 @@ describe("textToLyricLines · group attrs preservation", () => {
   it("explicit blank line in textarea round-trips as text: ''", () => {
     const result = textToLyricLines("a\n\nb", "v1", []);
     expect(result.map((l) => l.text)).toEqual(["a", "", "b"]);
+  });
+
+  it("drops carried backgroundText when re-pasted text reintroduces parentheses (position match)", () => {
+    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("Hello (ooh) world");
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("keeps carried backgroundText when re-pasted text has no parentheses", () => {
+    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const result = textToLyricLines("Hello there", "v1", existing);
+    expect(result[0].backgroundText).toBe("ooh");
+  });
+
+  it("drops carried backgroundText on an exact-text match whose text contains parentheses", () => {
+    const existing: LyricLine[] = [{ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result[0].id).toBe("L1");
+    expect(result[0].text).toBe("Hello (ooh) world");
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("drops carried backgroundWords when re-pasted text reintroduces parentheses", () => {
+    const existing: LyricLine[] = [
+      {
+        id: "L1",
+        text: "Hello world",
+        agentId: "v1",
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
+      },
+    ];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("produces a fresh unmatched line with parentheses without crashing or inventing backgroundText", () => {
+    const result = textToLyricLines("Hello (ooh) world\nSecond line", "v1", []);
+    expect(result).toHaveLength(2);
+    expect(result[0].text).toBe("Hello (ooh) world");
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+  });
+
+  it("re-pasting parenthesised lyrics over an already-extracted line does not double the background text", () => {
+    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const reparsed = textToLyricLines("Hello (ooh) world", "v1", existing);
+    const extracted = extractBackgroundVocals(reparsed, { mergeStandaloneLines: false });
+    expect(extracted).toHaveLength(1);
+    expect(extracted[0].text).toBe("Hello world");
+    expect(extracted[0].backgroundText).toBe("ooh");
   });
 
   it("typo on first instance preserves the second instance's words", () => {

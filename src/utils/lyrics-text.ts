@@ -31,7 +31,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // wrong existing line, so we generate a fresh id for any unmatched typed line.
   const allowPositionMatch = newLines.length === existingLines.length;
 
-  return newLines.map((lineText, index) => {
+  const mapped = newLines.map((lineText, index) => {
     const trimmed = lineText.trim();
     const cleanedText = cleanSplitCharacters(trimmed);
     const matchText = stripSplitCharacter(cleanedText);
@@ -80,6 +80,12 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
       agentId: defaultAgentId,
     };
   });
+
+  // Raw parentheses in `text` are the source of truth for background vocals;
+  // a carried-over extracted backgroundText would double on re-extraction.
+  return mapped.map((line) =>
+    /\([^)]*\)/.test(line.text) ? { ...line, backgroundText: undefined, backgroundWords: undefined } : line,
+  );
 }
 
 // -- Exports ------------------------------------------------------------------
