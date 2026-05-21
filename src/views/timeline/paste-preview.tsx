@@ -4,10 +4,12 @@ import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { cn } from "@/utils/cn";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
+import { mergePastedWords } from "@/views/timeline/merge-pasted-words";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
@@ -177,8 +179,8 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
 
       for (const [lineIdx, entries] of grouped) {
         const line = lines[lineIdx];
-        const newWords: Array<{ text: string; begin: number; end: number }> = [];
-        const newBgWords: Array<{ text: string; begin: number; end: number }> = [];
+        const newWords: WordTiming[] = [];
+        const newBgWords: WordTiming[] = [];
 
         for (const entry of entries) {
           const newBegin = Math.max(0, entry.word.begin + timeDelta);
@@ -192,12 +194,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         const lineUpdates: Partial<LyricLine> = {};
 
         if (newWords.length > 0) {
-          lineUpdates.words = [...(line.words ?? []), ...newWords].sort((a, b) => a.begin - b.begin);
+          lineUpdates.words = mergePastedWords(line.words ?? [], newWords);
         }
         if (newBgWords.length > 0) {
-          lineUpdates.backgroundWords = [...(line.backgroundWords ?? []), ...newBgWords].sort(
-            (a, b) => a.begin - b.begin,
-          );
+          lineUpdates.backgroundWords = mergePastedWords(line.backgroundWords ?? [], newBgWords);
         }
 
         updates.push({ id: line.id, updates: lineUpdates });
