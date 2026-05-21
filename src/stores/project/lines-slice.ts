@@ -32,7 +32,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   setLines: (lines) => set({ lines, isDirty: true, isDirtySinceHistory: true }),
 
-  setLinesWithHistory: (lines) => set((state) => commitHistory(state, { lines })),
+  setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
 
   updateLine: (id, updates, options = {}) =>
     set((state) => {

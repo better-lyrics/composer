@@ -110,7 +110,7 @@ interface HistoryActions {
 
 interface LineActions {
   setLines: (lines: LyricLine[]) => void;
-  setLinesWithHistory: (lines: LyricLine[]) => void;
+  setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
   updateLineWithHistory: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
   updateLinesWithHistory: (

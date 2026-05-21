@@ -2,12 +2,17 @@
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
+import type { LinkGroup } from "@/domain/group/template";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
 
 function seedLine(id: string, overrides: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({ id, text: "hello world", agentId: "v1", ...overrides });
+}
+
+function seedGroup(id: string, overrides: Partial<LinkGroup> = {}): LinkGroup {
+  return { id, label: "Chorus", color: "#f472b6", templateVersion: 1, ...overrides };
 }
 
 beforeEach(() => {
@@ -28,6 +33,85 @@ describe("setLinesWithHistory", () => {
 
     useProjectStore.getState().undo();
     expect(useProjectStore.getState().lines).toEqual(before);
+  });
+});
+
+describe("setLinesWithHistory groups", () => {
+  it("commits lines and groups as one entry", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a")], [seedGroup("g1")]);
+    expect(useProjectStore.getState().groups).toHaveLength(1);
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().groups).toHaveLength(0);
+  });
+
+  it("without a groups argument commits a lines-only entry and leaves existing groups untouched", () => {
+    useProjectStore.getState().setGroups([seedGroup("g1")]);
+    useProjectStore.getState().clearHistory();
+
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { agentId: "v2" })]);
+
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
+    expect(useProjectStore.getState().canUndo()).toBe(true);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
+  });
+
+  it("forwards an explicit empty groups array, replacing existing groups", () => {
+    useProjectStore.getState().setGroups([seedGroup("g1")]);
+    useProjectStore.getState().clearHistory();
+
+    useProjectStore.getState().setLinesWithHistory([seedLine("a")], []);
+    expect(useProjectStore.getState().groups).toEqual([]);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
+  });
+
+  it("reverts both lines and groups with a single undo, restores both with a single redo", () => {
+    useProjectStore.getState().setLines([seedLine("a")]);
+    useProjectStore.getState().setGroups([seedGroup("g1")]);
+    useProjectStore.getState().clearHistory();
+
+    useProjectStore
+      .getState()
+      .setLinesWithHistory([seedLine("a", { agentId: "v2", groupId: "g2" }), seedLine("b")], [seedGroup("g2")]);
+    expect(useProjectStore.getState().lines).toHaveLength(2);
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g2")]);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines).toHaveLength(1);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g1")]);
+
+    useProjectStore.getState().redo();
+    expect(useProjectStore.getState().lines).toHaveLength(2);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g2")]);
+  });
+
+  it("restores the previous groups exactly when undoing a groups replacement", () => {
+    const initialGroups = [seedGroup("g1", { label: "Verse", color: "#aaa" }), seedGroup("g2")];
+    useProjectStore.getState().setGroups(initialGroups);
+    useProjectStore.getState().clearHistory();
+
+    useProjectStore.getState().setLinesWithHistory([seedLine("a")], [seedGroup("g3", { label: "Bridge" })]);
+    expect(useProjectStore.getState().groups).toEqual([seedGroup("g3", { label: "Bridge" })]);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().groups).toEqual(initialGroups);
+  });
+
+  it("still commits the lines argument correctly when groups is passed", () => {
+    useProjectStore.getState().setLines([seedLine("a", { agentId: "v1" })]);
+    useProjectStore.getState().clearHistory();
+
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { agentId: "v2" })], [seedGroup("g1")]);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
   });
 });
 
