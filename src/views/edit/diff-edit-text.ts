@@ -18,7 +18,7 @@ interface DiffResult {
 // -- Constants ----------------------------------------------------------------
 
 const TIMING_CLEAR_FIELDS = ["words", "begin", "end", "backgroundWords"] as const;
-const CONTENT_FIELDS = ["text", "agentId", "backgroundText"] as const;
+const CONTENT_FIELDS = ["text", "agentId", "backgroundText", "backgroundTextSource"] as const;
 
 // -- Helpers ------------------------------------------------------------------
 

@@ -115,6 +115,20 @@ describe("diffEditTextChange", () => {
     expect(result.contentUpdates).toEqual([{ id: "L1", updates: { backgroundText: "ah" } }]);
   });
 
+  it("emits a backgroundTextSource update when provenance is cleared", () => {
+    const old: LyricLine[] = [
+      { id: "L1", text: "main", agentId: "v1", backgroundText: "ooh", backgroundTextSource: "extraction" },
+    ];
+    const next: LyricLine[] = [{ id: "L1", text: "main", agentId: "v1" }];
+    const result = diffEditTextChange(old, next);
+    expect(result.contentUpdates).toHaveLength(1);
+    const u = result.contentUpdates[0];
+    expect("backgroundText" in u.updates).toBe(true);
+    expect(u.updates.backgroundText).toBeUndefined();
+    expect("backgroundTextSource" in u.updates).toBe(true);
+    expect(u.updates.backgroundTextSource).toBeUndefined();
+  });
+
   it("does not emit updates for fields untouched by the new line", () => {
     const old: LyricLine[] = [
       { id: "L1", text: "a", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
@@ -189,6 +203,39 @@ describe("propagateContentUpdates", () => {
     expect(out[1].words).toBeUndefined();
     expect(out[1].begin).toBeUndefined();
     expect(out[1].end).toBeUndefined();
+  });
+
+  it("propagates a cleared background provenance flag to linked siblings", () => {
+    const old: LyricLine[] = [
+      {
+        id: "L1",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+      {
+        id: "L2",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const next: LyricLine[] = [
+      { id: "L1", text: "main", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      old[1],
+    ];
+    const { contentUpdates } = diffEditTextChange(old, next);
+    const out = propagateContentUpdates(old, next, contentUpdates);
+    expect(out[1].backgroundText).toBeUndefined();
+    expect(out[1].backgroundTextSource).toBeUndefined();
   });
 
   it("propagates per-word text changes to siblings while preserving sibling word timings", () => {
