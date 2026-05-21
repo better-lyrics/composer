@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import { classifyLine, extractInlineFromLine, scanParenGroups } from "@/utils/background-vocal-extraction";
+import { createLine } from "@/test/factories";
+import {
+  classifyLine,
+  extractBackgroundVocals,
+  extractInlineFromLine,
+  lineHasInlineParens,
+  scanParenGroups,
+} from "@/utils/background-vocal-extraction";
 
 // -- Specification table -------------------------------------------------------
 
@@ -430,5 +437,221 @@ describe("extractInlineFromLine", () => {
     extractInlineFromLine(line);
     expect(line.text).toBe("Hello (ooh) world");
     expect(line.backgroundText).toBe("ah");
+  });
+});
+
+// -- extractBackgroundVocals: specification table ------------------------------
+
+describe("extractBackgroundVocals: specification table", () => {
+  it("extracts an inline line regardless of mergeStandaloneLines", () => {
+    for (const mergeStandaloneLines of [true, false]) {
+      const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+      const result = extractBackgroundVocals(lines, { mergeStandaloneLines });
+      expect(result).toHaveLength(1);
+      expect(result[0].text).toBe("A B");
+      expect(result[0].backgroundText).toBe("ooh");
+    }
+  });
+
+  it("merges a standalone line into the previous line when merge is enabled", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].text).toBe("Real line");
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+
+  it("leaves a standalone line in place when merge is disabled", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: false });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("merges consecutive standalone lines into the same previous line", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({ id: "2", text: "(ooh)" }),
+      createLine({ id: "3", text: "(yeah)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].text).toBe("Real line");
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+
+  it("does not merge a leading standalone line with no valid predecessor", () => {
+    const lines = [createLine({ id: "1", text: "(ooh)" }), createLine({ id: "2", text: "Real line" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("does not merge into an empty-text predecessor", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real" }),
+      createLine({ id: "2", text: "" }),
+      createLine({ id: "3", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+    expect(result[2]).toBe(lines[2]);
+  });
+
+  it("does not merge when the predecessor is a linked line", () => {
+    const lines = [
+      createLine({ id: "1", text: "Chorus", groupId: "g1", instanceIdx: 0 }),
+      createLine({ id: "2", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("does not merge when the standalone line is itself linked", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real" }),
+      createLine({ id: "2", text: "(ooh)", groupId: "g1", instanceIdx: 0 }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(lines[0]);
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("merges a standalone line into a predecessor that was itself inline-extracted", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" }), createLine({ id: "2", text: "(yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].text).toBe("A B");
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+});
+
+// -- extractBackgroundVocals: none and skip lines -----------------------------
+
+describe("extractBackgroundVocals: none and skip lines", () => {
+  it("pushes a none line by reference", () => {
+    const lines = [createLine({ id: "1", text: "Plain line" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(lines[0]);
+  });
+
+  it("pushes a skip line by reference", () => {
+    const lines = [createLine({ id: "1", text: "Hello (ooh" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0]).toBe(lines[0]);
+  });
+
+  it("merges a standalone line into a skip predecessor with non-empty text", () => {
+    const lines = [createLine({ id: "1", text: "Hello (ooh" }), createLine({ id: "2", text: "(yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("1");
+    expect(result[0].text).toBe("Hello (ooh");
+    expect(result[0].backgroundText).toBe("yeah");
+  });
+});
+
+// -- extractBackgroundVocals: reference stability -----------------------------
+
+describe("extractBackgroundVocals: reference stability", () => {
+  it("returns every line by reference when no parentheses are present", () => {
+    for (const mergeStandaloneLines of [true, false]) {
+      const lines = [
+        createLine({ id: "1", text: "First line" }),
+        createLine({ id: "2", text: "Second line" }),
+        createLine({ id: "3", text: "Third line" }),
+      ];
+      const result = extractBackgroundVocals(lines, { mergeStandaloneLines });
+      expect(result).toHaveLength(lines.length);
+      for (let i = 0; i < lines.length; i++) {
+        expect(result[i]).toBe(lines[i]);
+      }
+    }
+  });
+});
+
+// -- extractBackgroundVocals: existing backgroundText -------------------------
+
+describe("extractBackgroundVocals: existing backgroundText", () => {
+  it("appends a merged standalone bg text after the predecessor's existing bg text", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line", backgroundText: "ah" }),
+      createLine({ id: "2", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ah ooh");
+  });
+});
+
+// -- extractBackgroundVocals: input not mutated -------------------------------
+
+describe("extractBackgroundVocals: input not mutated", () => {
+  it("does not mutate the input array or its line objects", () => {
+    const lines = [
+      createLine({ id: "1", text: "A (ooh) B", backgroundText: "ah" }),
+      createLine({ id: "2", text: "(yeah)" }),
+      createLine({ id: "3", text: "Plain" }),
+    ];
+    const originalLength = lines.length;
+    extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    expect(lines).toHaveLength(originalLength);
+    expect(lines[0].text).toBe("A (ooh) B");
+    expect(lines[0].backgroundText).toBe("ah");
+    expect(lines[1].text).toBe("(yeah)");
+    expect(lines[2].text).toBe("Plain");
+  });
+});
+
+// -- extractBackgroundVocals: idempotence -------------------------------------
+
+describe("extractBackgroundVocals: idempotence", () => {
+  it("yields no further changes when run on its own output", () => {
+    const lines = [
+      createLine({ id: "1", text: "A (ooh) B" }),
+      createLine({ id: "2", text: "(yeah)" }),
+      createLine({ id: "3", text: "Plain line" }),
+      createLine({ id: "4", text: "C (ah) D" }),
+    ];
+    const first = extractBackgroundVocals(lines, { mergeStandaloneLines: true });
+    const second = extractBackgroundVocals(first, { mergeStandaloneLines: true });
+    expect(second).toHaveLength(first.length);
+    for (let i = 0; i < first.length; i++) {
+      expect(second[i]).toBe(first[i]);
+      expect(second[i].text).toBe(first[i].text);
+      expect(second[i].backgroundText).toBe(first[i].backgroundText);
+    }
+  });
+});
+
+// -- lineHasInlineParens ------------------------------------------------------
+
+describe("lineHasInlineParens", () => {
+  it("returns true for an inline line", () => {
+    expect(lineHasInlineParens(createLine({ id: "1", text: "A (ooh) B" }))).toBe(true);
+  });
+
+  it("returns false for a plain line", () => {
+    expect(lineHasInlineParens(createLine({ id: "1", text: "Plain line" }))).toBe(false);
+  });
+
+  it("returns false for a standalone line", () => {
+    expect(lineHasInlineParens(createLine({ id: "1", text: "(ooh yeah)" }))).toBe(false);
+  });
+
+  it("returns false for a skip line", () => {
+    expect(lineHasInlineParens(createLine({ id: "1", text: "Hello (ooh" }))).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 
@@ -92,7 +93,41 @@ function extractInlineFromLine(line: LyricLine): LyricLine {
   };
 }
 
+// -- Whole-list transform -----------------------------------------------------
+
+interface ExtractOptions {
+  mergeStandaloneLines: boolean;
+}
+
+function mergeStandaloneInto(prev: LyricLine, _standalone: LyricLine, bgText: string): LyricLine {
+  return { ...prev, backgroundText: joinBackgroundText(prev.backgroundText, bgText) };
+}
+
+function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): LyricLine[] {
+  const result: LyricLine[] = [];
+  for (const line of lines) {
+    const classified = classifyLine(line.text);
+    if (classified.kind === "inline") {
+      result.push(extractInlineFromLine(line));
+      continue;
+    }
+    if (classified.kind === "standalone" && options.mergeStandaloneLines) {
+      const prev = result[result.length - 1];
+      if (prev && prev.text.trim().length > 0 && !isLinked(prev) && !isLinked(line)) {
+        result[result.length - 1] = mergeStandaloneInto(prev, line, classified.bgText);
+        continue;
+      }
+    }
+    result.push(line);
+  }
+  return result;
+}
+
+function lineHasInlineParens(line: LyricLine): boolean {
+  return classifyLine(line.text).kind === "inline";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { classifyLine, extractInlineFromLine, scanParenGroups };
-export type { LineClassification, LineClassKind, ParenGroup, ParenScan, ParenScanStatus };
+export { classifyLine, extractBackgroundVocals, extractInlineFromLine, lineHasInlineParens, scanParenGroups };
+export type { ExtractOptions, LineClassification, LineClassKind, ParenGroup, ParenScan, ParenScanStatus };
