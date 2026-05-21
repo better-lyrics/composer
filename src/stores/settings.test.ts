@@ -37,9 +37,9 @@ describe("background vocal extraction settings", () => {
     useSettingsStore.setState({ ...DEFAULTS });
   });
 
-  it("defaults autoExtractBackgroundVocals to false", () => {
-    expect(DEFAULTS.autoExtractBackgroundVocals).toBe(false);
-    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
+  it("defaults autoExtractBackgroundVocals to true", () => {
+    expect(DEFAULTS.autoExtractBackgroundVocals).toBe(true);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
   });
 
   it("defaults mergeStandaloneBackgroundLines to true", () => {
@@ -47,7 +47,9 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
-  it("allows enabling autoExtractBackgroundVocals via set()", () => {
+  it("allows toggling autoExtractBackgroundVocals via set()", () => {
+    useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
     useSettingsStore.getState().set("autoExtractBackgroundVocals", true);
     expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
   });
@@ -58,10 +60,10 @@ describe("background vocal extraction settings", () => {
   });
 
   it("resetToDefaults restores the background vocal toggles", () => {
-    useSettingsStore.getState().set("autoExtractBackgroundVocals", true);
+    useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
     useSettingsStore.getState().set("mergeStandaloneBackgroundLines", false);
     useSettingsStore.getState().resetToDefaults();
-    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
+    expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 });
