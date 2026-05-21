@@ -170,7 +170,7 @@ describe("reorderWordTrack", () => {
     expect(result[0].begin).toBeGreaterThanOrEqual(0);
   });
 
-  it("preserves explicit through the reorder", () => {
+  it("preserves the explicit flag through the reorder", () => {
     const track: WordTiming[] = [
       { text: "one ", begin: 0, end: 1, explicit: true },
       { text: "two", begin: 2, end: 3, explicit: true },
@@ -247,5 +247,36 @@ describe("reorderWordTrack edge cases and invariants", () => {
     const tleIdx = result.findIndex((w) => w.text.trimEnd() === "tle");
     expect(result[tiIdx].syllableGroupId).toBe(result[tleIdx].syllableGroupId);
     expect(result[tiIdx].syllableGroupId).not.toBe("shared");
+  });
+
+  it("ignores dragged indices that fall outside the track", () => {
+    const track: WordTiming[] = [
+      { text: "one ", begin: 0, end: 1 },
+      { text: "two", begin: 2, end: 3 },
+    ];
+
+    const result = reorderWordTrack(track, new Set([5, 9]), 4, 10);
+
+    expect(result.map((w) => w.text)).toEqual(["one ", "two"]);
+    expect(result.map((w) => w.begin)).toEqual([0, 2]);
+  });
+
+  it("spaces every seam when a dragged block interleaves with the rest on a timing collision", () => {
+    const track: WordTiming[] = [
+      { text: "hel ", begin: 0, end: 0.5 },
+      { text: "lo ", begin: 0.5, end: 1 },
+      { text: "sun ", begin: 2, end: 2.5 },
+      { text: "shine", begin: 2.5, end: 3 },
+    ];
+
+    const result = reorderWordTrack(track, new Set([2, 3]), -2, 12);
+
+    expect(result).toHaveLength(4);
+    for (let i = 0; i < result.length - 1; i++) {
+      expect(result[i].text.endsWith(" ")).toBe(true);
+    }
+    expect(result[result.length - 1].text.endsWith(" ")).toBe(false);
+    expect(computeSyllableGroups(result)).toEqual([]);
+    expect(reconstructLineText(result, "|")).not.toContain("|");
   });
 });
