@@ -2,11 +2,13 @@ import { isLinked } from "@/domain/instance/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
+import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -302,6 +304,22 @@ const EditPanel: React.FC = () => {
     return counts;
   }, [lines]);
 
+  const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const extractOptions = useMemo(() => ({ mergeStandaloneLines: mergeStandalone }), [mergeStandalone]);
+  const canExtractBackgroundVocals = useMemo(() => {
+    const extracted = extractBackgroundVocals(lines, extractOptions);
+    return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
+  }, [lines, extractOptions]);
+
+  const handleExtractBackgroundVocals = useCallback(() => {
+    const current = useProjectStore.getState().lines;
+    const next = extractBackgroundVocals(current, extractOptions);
+    if (next.length === current.length && next.every((line, i) => line === current[i])) return;
+    linesSetByUs.current = next;
+    useProjectStore.getState().setLinesWithHistory(next);
+    setRawText(next.map((line) => line.text).join("\n"));
+  }, [extractOptions]);
+
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
     useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
   }, []);
@@ -549,6 +567,15 @@ const EditPanel: React.FC = () => {
           <span className="text-sm text-composer-text-muted">
             {nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
           </span>
+          <Button
+            hasIcon
+            variant="secondary"
+            onClick={handleExtractBackgroundVocals}
+            disabled={!canExtractBackgroundVocals}
+          >
+            <IconMicrophone className="size-4" />
+            Extract background vocals
+          </Button>
           <Button hasIcon onClick={handleImportClick}>
             <IconFileImport className="size-4" />
             Import File
