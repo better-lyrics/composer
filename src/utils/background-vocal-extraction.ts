@@ -1,3 +1,6 @@
+import type { LyricLine } from "@/domain/line/model";
+import { isWordSynced } from "@/domain/line/predicates";
+
 // -- Types --------------------------------------------------------------------
 
 interface ParenGroup {
@@ -58,6 +61,11 @@ function collapseSpaces(text: string): string {
   return text.replace(/ {2,}/g, " ").trim();
 }
 
+function joinBackgroundText(existing: string | undefined, addition: string): string {
+  const base = existing?.trim() ?? "";
+  return base.length > 0 ? `${base} ${addition}` : addition;
+}
+
 function classifyLine(text: string): LineClassification {
   const scan = scanParenGroups(text);
   if (scan.status !== "balanced") return { kind: "skip", groups: [], bgText: "", mainText: text };
@@ -71,7 +79,20 @@ function classifyLine(text: string): LineClassification {
   return { kind: mainText.length === 0 ? "standalone" : "inline", groups: scan.groups, bgText, mainText };
 }
 
+// -- Extraction ---------------------------------------------------------------
+
+function extractInlineFromLine(line: LyricLine): LyricLine {
+  const classified = classifyLine(line.text);
+  if (classified.kind !== "inline") return line;
+  if (isWordSynced(line)) return line;
+  return {
+    ...line,
+    text: classified.mainText,
+    backgroundText: joinBackgroundText(line.backgroundText, classified.bgText),
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { classifyLine, scanParenGroups };
+export { classifyLine, extractInlineFromLine, scanParenGroups };
 export type { LineClassification, LineClassKind, ParenGroup, ParenScan, ParenScanStatus };

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { classifyLine, scanParenGroups } from "@/utils/background-vocal-extraction";
+import type { LyricLine } from "@/domain/line/model";
+import { classifyLine, extractInlineFromLine, scanParenGroups } from "@/utils/background-vocal-extraction";
 
 // -- Specification table -------------------------------------------------------
 
@@ -338,5 +339,96 @@ describe("classifyLine: returned shape", () => {
     expect(result.groups).toHaveLength(2);
     expect(result.groups[0].inner).toBe("a");
     expect(result.groups[1].inner).toBe("b");
+  });
+});
+
+// -- extractInlineFromLine -----------------------------------------------------
+
+describe("extractInlineFromLine", () => {
+  it("extracts an inline group from an untimed line", () => {
+    const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1" };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hello world");
+    expect(result.backgroundText).toBe("ooh");
+  });
+
+  it("appends to existing backgroundText on an untimed line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      backgroundText: "ah",
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hello");
+    expect(result.backgroundText).toBe("ah ooh");
+  });
+
+  it("sets backgroundText to just the extracted text when none exists", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      backgroundText: undefined,
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.backgroundText).toBe("ooh");
+  });
+
+  it("returns the same reference for a line with no parentheses", () => {
+    const line: LyricLine = { id: "1", text: "Hello world", agentId: "v1" };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("returns the same reference for a standalone line", () => {
+    const line: LyricLine = { id: "1", text: "(ooh yeah)", agentId: "v1" };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("returns the same reference for a skip line", () => {
+    const line: LyricLine = { id: "1", text: "Hello (ooh", agentId: "v1" };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("preserves begin and end on a line-synced line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hi (ooh) there",
+      agentId: "v1",
+      begin: 1,
+      end: 3,
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hi there");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.begin).toBe(1);
+    expect(result.end).toBe(3);
+    expect(result.words).toBeUndefined();
+  });
+
+  it("returns the same reference for a word-synced inline line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hi (ooh) there",
+      agentId: "v1",
+      words: [
+        { text: "Hi ", begin: 0, end: 1 },
+        { text: "(ooh) ", begin: 1, end: 2 },
+        { text: "there", begin: 2, end: 3 },
+      ],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("does not mutate the input line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      backgroundText: "ah",
+    };
+    extractInlineFromLine(line);
+    expect(line.text).toBe("Hello (ooh) world");
+    expect(line.backgroundText).toBe("ah");
   });
 });
