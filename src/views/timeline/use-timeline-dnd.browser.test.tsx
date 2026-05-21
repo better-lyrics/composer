@@ -190,3 +190,95 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
 });
+
+// -- Within-track reorder seam ------------------------------------------------
+
+function makeReorderDragStartEvent(): DragStartEvent {
+  return {
+    active: {
+      id: "w",
+      data: {
+        current: {
+          lineId: "l1",
+          lineIndex: 0,
+          wordIndex: 2,
+          trackType: "word",
+          text: "word3",
+          begin: 2,
+          end: 2.5,
+        },
+      },
+      rect: { current: { initial: null, translated: null } },
+    },
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false }),
+  } as unknown as DragStartEvent;
+}
+
+function makeReorderDragEndEvent(): DragEndEvent {
+  return {
+    active: {
+      id: "w",
+      data: {
+        current: {
+          lineId: "l1",
+          lineIndex: 0,
+          wordIndex: 2,
+          trackType: "word",
+          text: "word3",
+          begin: 2,
+          end: 2.5,
+        },
+      },
+      rect: { current: { initial: null, translated: null } },
+    },
+    over: {
+      id: "main-drop-l1",
+      data: { current: { lineId: "l1" } },
+      rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
+      disabled: false,
+    },
+    delta: { x: -150, y: 0 },
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false }),
+    collisions: null,
+  } as unknown as DragEndEvent;
+}
+
+describe("useTimelineDnd · within-track reorder seam", () => {
+  beforeEach(() => {
+    useAudioStore.setState({ duration: 30 });
+    useTimelineStore.setState({ zoom: 100 });
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "word1 word2 word3",
+          agentId: "v1",
+          words: [
+            { text: "word1 ", begin: 0, end: 0.5 },
+            { text: "word2 ", begin: 1, end: 1.5 },
+            { text: "word3", begin: 2, end: 2.5 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("keeps the dragged last word separate when it crosses a neighbor", async () => {
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragStart(makeReorderDragStartEvent());
+    result.current.handleDragEnd(makeReorderDragEndEvent());
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.length).toBe(3);
+
+    expect(computeSyllableGroups(words)).toEqual([]);
+
+    const word3 = words.find((w) => w.text.trim() === "word3");
+    expect(word3?.text).toBe("word3 ");
+    expect(words[words.length - 1].text.endsWith(" ")).toBe(false);
+
+    expect(words.map((w) => w.text.trim())).toEqual(["word1", "word3", "word2"]);
+  });
+});

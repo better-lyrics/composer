@@ -3,10 +3,10 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
+import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { cloneWord } from "@/utils/word-timing";
-import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import type { WordSelection } from "@/domain/selection/model";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -300,27 +300,7 @@ function useTimelineDnd(lines: LyricLine[]) {
             const source = moveLine[trackKey];
             if (!source) continue;
 
-            const words = source.map((w, i) => {
-              if (!indices.has(i)) return { ...w };
-              const wordDur = w.end - w.begin;
-              const newBegin = Math.max(0, Math.min(duration - wordDur, w.begin + timeDelta));
-              return { ...w, begin: newBegin, end: newBegin + wordDur };
-            });
-            words.sort((a, b) => a.begin - b.begin);
-
-            for (let i = 1; i < words.length; i++) {
-              if (words[i].begin < words[i - 1].end) {
-                const overlap = words[i - 1].end - words[i].begin;
-                words[i] = { ...words[i], begin: words[i].begin + overlap, end: words[i].end + overlap };
-              }
-            }
-            const last = words[words.length - 1];
-            if (last.end > duration) {
-              const overflow = last.end - duration;
-              words[words.length - 1] = { ...last, begin: last.begin - overflow, end: duration };
-            }
-
-            lineUpdates[trackKey] = trimTrailingSpaceFromLast(words);
+            lineUpdates[trackKey] = reorderWordTrack(source, indices, timeDelta, duration);
           }
 
           if (Object.keys(lineUpdates).length > 0) {
@@ -337,30 +317,8 @@ function useTimelineDnd(lines: LyricLine[]) {
 
         const wordIndex = activeData.wordIndex;
         if (wordIndex < 0 || wordIndex >= wordsArray.length) return;
-        const wordDuration = activeData.end - activeData.begin;
-        const newBegin = Math.max(0, Math.min(duration - wordDuration, activeData.begin + timeDelta));
-        const newEnd = newBegin + wordDuration;
 
-        const words: WordTiming[] = wordsArray.map((w, i) => {
-          if (i === wordIndex) return { ...w, begin: newBegin, end: newEnd };
-          return { ...w };
-        });
-        words.sort((a, b) => a.begin - b.begin);
-
-        for (let i = 1; i < words.length; i++) {
-          if (words[i].begin < words[i - 1].end) {
-            const overlap = words[i - 1].end - words[i].begin;
-            words[i] = { ...words[i], begin: words[i].begin + overlap, end: words[i].end + overlap };
-          }
-        }
-
-        const lastWord = words[words.length - 1];
-        if (lastWord.end > duration) {
-          const overflow = lastWord.end - duration;
-          words[words.length - 1] = { ...lastWord, begin: lastWord.begin - overflow, end: duration };
-        }
-
-        const normalized = trimTrailingSpaceFromLast(words);
+        const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, duration);
         if (activeData.trackType === "word") {
           updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {
