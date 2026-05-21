@@ -44,6 +44,8 @@ interface SettingsState {
   showShortcutHints: boolean;
   showSyllableIndicators: boolean;
   splitCharacter: string;
+  autoExtractBackgroundVocals: boolean;
+  mergeStandaloneBackgroundLines: boolean;
 
   confirmReplaceProjectFromHash: boolean;
   confirmReplaceLyrics: boolean;
@@ -97,6 +99,8 @@ const DEFAULTS: SettingsState = {
   showShortcutHints: true,
   showSyllableIndicators: true,
   splitCharacter: "|",
+  autoExtractBackgroundVocals: true,
+  mergeStandaloneBackgroundLines: true,
 
   confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,
