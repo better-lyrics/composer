@@ -6,7 +6,27 @@ import { GeneralSection } from "@/ui/settings/general-section";
 describe("GeneralSection", () => {
   it("renders a switch for each toggle setting", async () => {
     const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(2);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(4);
+  });
+
+  it("renders the background vocal toggles", async () => {
+    const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
+    await expect.element(screen.getByRole("switch", { name: "Auto-extract background vocals" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("switch", { name: "Merge standalone background lines" })).toBeInTheDocument();
+  });
+
+  it("flips autoExtractBackgroundVocals when its switch is clicked", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true });
+    const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
+    await screen.getByRole("switch", { name: "Auto-extract background vocals" }).click();
+    await expect.poll(() => useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
+  });
+
+  it("flips mergeStandaloneBackgroundLines when its switch is clicked", async () => {
+    useSettingsStore.setState({ mergeStandaloneBackgroundLines: true });
+    const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
+    await screen.getByRole("switch", { name: "Merge standalone background lines" }).click();
+    await expect.poll(() => useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(false);
   });
 
   it("calls onResetTour and onClose when Reset tour is clicked", async () => {
