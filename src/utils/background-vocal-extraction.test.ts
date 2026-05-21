@@ -413,7 +413,7 @@ describe("extractInlineFromLine", () => {
     expect(result.words).toBeUndefined();
   });
 
-  it("returns the same reference for a word-synced inline line", () => {
+  it("extracts an inline group from a word-synced line", () => {
     const line: LyricLine = {
       id: "1",
       text: "Hi (ooh) there",
@@ -424,7 +424,15 @@ describe("extractInlineFromLine", () => {
         { text: "there", begin: 2, end: 3 },
       ],
     };
-    expect(extractInlineFromLine(line)).toBe(line);
+    const result = extractInlineFromLine(line);
+    expect(result).not.toBe(line);
+    expect(result.text).toBe("Hi there");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.backgroundWords).toBeUndefined();
+    expect(result.words).toEqual([
+      { text: "Hi ", begin: 0, end: 1 },
+      { text: "there", begin: 2, end: 3 },
+    ]);
   });
 
   it("does not mutate the input line", () => {
@@ -437,6 +445,186 @@ describe("extractInlineFromLine", () => {
     extractInlineFromLine(line);
     expect(line.text).toBe("Hello (ooh) world");
     expect(line.backgroundText).toBe("ah");
+  });
+});
+
+// -- extractInlineFromLine: word-synced extraction -----------------------------
+
+describe("extractInlineFromLine: word-synced extraction", () => {
+  it("extracts a mid-line paren word and preserves survivor timing", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 0.5, end: 1.2 },
+        { text: "(ooh) ", begin: 1.2, end: 1.9 },
+        { text: "world", begin: 1.9, end: 2.7 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result).not.toBe(line);
+    expect(result.text).toBe("Hello world");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.backgroundWords).toBeUndefined();
+    expect(result.words).toEqual([
+      { text: "Hello ", begin: 0.5, end: 1.2 },
+      { text: "world", begin: 1.9, end: 2.7 },
+    ]);
+  });
+
+  it("extracts a trailing paren word and trims the last survivor's trailing space", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh)",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 0, end: 1 },
+        { text: "(ooh)", begin: 1, end: 2 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result).not.toBe(line);
+    expect(result.text).toBe("Hello");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.words).toEqual([{ text: "Hello", begin: 0, end: 1 }]);
+  });
+
+  it("extracts a multi-token group spanning several words", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh yeah) world",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 0, end: 1 },
+        { text: "(ooh ", begin: 1, end: 1.5 },
+        { text: "yeah) ", begin: 1.5, end: 2 },
+        { text: "world", begin: 2, end: 3 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result).not.toBe(line);
+    expect(result.text).toBe("Hello world");
+    expect(result.backgroundText).toBe("ooh yeah");
+    expect(result.words).toEqual([
+      { text: "Hello ", begin: 0, end: 1 },
+      { text: "world", begin: 2, end: 3 },
+    ]);
+  });
+
+  it("returns the same reference when a paren is glued onto a word token", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello(ooh) world",
+      agentId: "v1",
+      words: [
+        { text: "Hello(ooh) ", begin: 0, end: 1 },
+        { text: "world", begin: 1, end: 2 },
+      ],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("preserves explicit and syllableGroupId fields on survivors", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
+        { text: "(ooh) ", begin: 1, end: 2 },
+        { text: "world", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.words).toEqual([
+      { text: "Hello ", begin: 0, end: 1, explicit: true, syllableGroupId: "g1" },
+      { text: "world", begin: 2, end: 3, explicit: true, syllableGroupId: "g2" },
+    ]);
+  });
+
+  it("extracts cleanly when the line has syllable-split words", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hel|lo (ooh) world",
+      agentId: "v1",
+      words: [
+        { text: "Hel", begin: 0, end: 0.5 },
+        { text: "lo ", begin: 0.5, end: 1 },
+        { text: "(ooh) ", begin: 1, end: 2 },
+        { text: "world", begin: 2, end: 3 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result).not.toBe(line);
+    expect(result.text).toBe("Hel|lo world");
+    expect(result.backgroundText).toBe("ooh");
+    expect(result.words).toEqual([
+      { text: "Hel", begin: 0, end: 0.5 },
+      { text: "lo ", begin: 0.5, end: 1 },
+      { text: "world", begin: 2, end: 3 },
+    ]);
+  });
+
+  it("returns the same reference when the line already has background words", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 0, end: 1 },
+        { text: "(ooh) ", begin: 1, end: 2 },
+        { text: "world", begin: 2, end: 3 },
+      ],
+      backgroundWords: [{ text: "ah", begin: 0, end: 1 }],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("appends to existing backgroundText on a word-synced line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hello (ooh) world",
+      agentId: "v1",
+      backgroundText: "ah",
+      words: [
+        { text: "Hello ", begin: 0, end: 1 },
+        { text: "(ooh) ", begin: 1, end: 2 },
+        { text: "world", begin: 2, end: 3 },
+      ],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.backgroundText).toBe("ah ooh");
+  });
+
+  it("does not mutate the input line or its words array", () => {
+    const words = [
+      { text: "Hello ", begin: 0, end: 1 },
+      { text: "(ooh) ", begin: 1, end: 2 },
+      { text: "world", begin: 2, end: 3 },
+    ];
+    const line: LyricLine = { id: "1", text: "Hello (ooh) world", agentId: "v1", words };
+    extractInlineFromLine(line);
+    expect(line.text).toBe("Hello (ooh) world");
+    expect(line.words).toBe(words);
+    expect(line.words).toEqual([
+      { text: "Hello ", begin: 0, end: 1 },
+      { text: "(ooh) ", begin: 1, end: 2 },
+      { text: "world", begin: 2, end: 3 },
+    ]);
+  });
+
+  it("returns the same reference for a word-synced standalone line", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "(ooh yeah)",
+      agentId: "v1",
+      words: [
+        { text: "(ooh ", begin: 0, end: 1 },
+        { text: "yeah)", begin: 1, end: 2 },
+      ],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
   });
 });
 

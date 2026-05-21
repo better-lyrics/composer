@@ -1,6 +1,10 @@
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import type { WordTiming } from "@/domain/word/timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -82,10 +86,63 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
+interface WordContentSpan {
+  start: number;
+  end: number;
+}
+
+function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSpan[] {
+  const spans: WordContentSpan[] = [];
+  let cursor = 0;
+  for (let i = 0; i < words.length; i++) {
+    const text = words[i].text;
+    const leading = text.length - text.trimStart().length;
+    const trailing = text.length - text.trimEnd().length;
+    spans.push({ start: cursor + leading, end: cursor + text.length - trailing });
+    cursor += text.length;
+    if (i < words.length - 1 && !text.endsWith(" ")) cursor += splitChar.length;
+  }
+  return spans;
+}
+
+function extractInlineWordSynced(line: LyricLine, classified: LineClassification): LyricLine {
+  const words = line.words;
+  if (!words || words.length === 0) return line;
+  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
+  const splitChar = getSplitCharacter();
+  if (reconstructLineText(words, splitChar) !== line.text) return line;
+  const spans = wordContentSpans(words, splitChar);
+  const survivors: WordTiming[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const span = spans[i];
+    let insideCount = 0;
+    for (const g of classified.groups) {
+      const groupStart = g.start;
+      const groupEnd = g.end + 1;
+      const overlaps = span.start < groupEnd && span.end > groupStart;
+      if (!overlaps) continue;
+      const fullyInside = span.start >= groupStart && span.end <= groupEnd;
+      if (!fullyInside) return line;
+      insideCount++;
+    }
+    if (insideCount === 0) survivors.push(words[i]);
+  }
+  if (survivors.length === 0) return line;
+  const trimmedSurvivors = survivors.map((word, i) =>
+    i === survivors.length - 1 ? { ...word, text: word.text.replace(/ +$/, "") } : word,
+  );
+  return reconcileLine({
+    ...line,
+    words: trimmedSurvivors,
+    text: reconstructLineText(trimmedSurvivors, splitChar),
+    backgroundText: joinBackgroundText(line.backgroundText, classified.bgText),
+  });
+}
+
 function extractInlineFromLine(line: LyricLine): LyricLine {
   const classified = classifyLine(line.text);
   if (classified.kind !== "inline") return line;
-  if (isWordSynced(line)) return line;
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified);
   return {
     ...line,
     text: classified.mainText,
