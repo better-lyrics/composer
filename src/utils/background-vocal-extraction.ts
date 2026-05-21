@@ -161,15 +161,16 @@ function mergeStandaloneInto(
   // prior pass, so the standalone line replaces it. Manual background is kept.
   // Extraction-sourced background produced earlier in this same pass (an
   // already-merged standalone) is fresh, so further standalones append to it.
-  const prevIsStaleExtraction = prev.backgroundTextSource === "extraction" && !prevMergedThisPass;
+  const prevIsExtraction = prev.backgroundTextSource === "extraction";
+  const prevIsStaleExtraction = prevIsExtraction && !prevMergedThisPass;
   const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
   const baseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
   const carried = carriedBackgroundWords(standalone, bgText);
 
-  // A merged result carries the surviving base's provenance: manual (or legacy
-  // undefined, treated as manual) base stays manual, fresh same-pass extraction
-  // base stays extraction. With no surviving base the result is pure extraction.
-  const survivingBaseSource: BackgroundSource = prev.backgroundTextSource === "extraction" ? "extraction" : "manual";
+  // Source for a result that keeps the prev base: a surviving extraction base
+  // is necessarily fresh same-pass output (stale extraction was dropped above),
+  // so it stays extraction; manual or legacy-undefined stays manual.
+  const keptBaseSource: BackgroundSource = prevIsExtraction ? "extraction" : "manual";
 
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0) {
@@ -177,7 +178,7 @@ function mergeStandaloneInto(
       return applyBackground(prev, {
         words: combined,
         text: reconstructLineText(combined, getSplitCharacter()),
-        source: survivingBaseSource,
+        source: keptBaseSource,
       });
     }
     if (!baseText) {
@@ -187,13 +188,13 @@ function mergeStandaloneInto(
         source: "extraction",
       });
     }
-    return applyBackground(prev, { text: joinBackgroundText(baseText, bgText), source: survivingBaseSource });
+    return applyBackground(prev, { text: joinBackgroundText(baseText, bgText), source: keptBaseSource });
   }
 
   if (baseWords && baseWords.length > 0) return null;
   return applyBackground(prev, {
     text: joinBackgroundText(baseText, bgText),
-    source: baseText ? survivingBaseSource : "extraction",
+    source: baseText ? keptBaseSource : "extraction",
   });
 }
 
@@ -209,6 +210,8 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
     if (classified.kind === "inline") {
       const extracted = extractInlineFromLine(line);
       result.push(extracted);
+      // extracted === line means nothing was extracted; such a pass-through
+      // line may carry stale prior-pass provenance and must not count as fresh.
       if (extracted !== line && extracted.backgroundTextSource === "extraction") {
         freshExtractionIndices.add(result.length - 1);
       }
