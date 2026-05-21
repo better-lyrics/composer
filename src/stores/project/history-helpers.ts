@@ -51,6 +51,8 @@ function commitHistory(
 function commitPendingEdit(state: ProjectState, baseline: LyricLine[]) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
+  // Already dirty (early return above), so unlike commitHistory the pre-edit
+  // baseline only needs seeding when there is no prior history entry at all.
   if (newHistory.length === 0) {
     newHistory.push({
       lines: structuredClone(baseline),
@@ -74,4 +76,4 @@ function commitPendingEdit(state: ProjectState, baseline: LyricLine[]) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { commitHistory, commitPendingEdit };
+export { commitHistory, commitPendingEdit, MAX_HISTORY_SIZE };

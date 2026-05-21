@@ -3,6 +3,7 @@
  */
 import { useProjectStore } from "@/stores/project";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
 
 function seedLine(id: string, overrides: Partial<LooseLine> = {}): LyricLine {
@@ -109,12 +110,11 @@ describe("updateLinesWithHistory", () => {
 
 describe("commitPendingLineEdit", () => {
   it("records a typing run as a single undo entry", () => {
-    const store = useProjectStore.getState();
-    store.setLines([seedLine("a", { text: "hello" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "hello" })]);
     const baseline = useProjectStore.getState().lines;
 
-    store.setLines([seedLine("a", { text: "hello wor" })]);
-    store.setLines([seedLine("a", { text: "hello world" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "hello wor" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "hello world" })]);
 
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
@@ -126,8 +126,7 @@ describe("commitPendingLineEdit", () => {
   });
 
   it("is a no-op when nothing changed since the last history entry", () => {
-    const store = useProjectStore.getState();
-    store.setLinesWithHistory([seedLine("a", { text: "hello" })]);
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "hello" })]);
     const indexBefore = useProjectStore.getState().historyIndex;
     useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines);
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
@@ -195,12 +194,12 @@ describe("commitPendingLineEdit", () => {
   });
 
   it("never lets history exceed MAX_HISTORY_SIZE", () => {
-    for (let i = 0; i < 150; i++) {
+    for (let i = 0; i < MAX_HISTORY_SIZE + 50; i++) {
       const baseline = useProjectStore.getState().lines;
       useProjectStore.getState().setLines([seedLine("a", { text: `edit ${i}` })]);
       useProjectStore.getState().commitPendingLineEdit(baseline);
     }
-    expect(useProjectStore.getState().history.length).toBeLessThanOrEqual(100);
+    expect(useProjectStore.getState().history.length).toBeLessThanOrEqual(MAX_HISTORY_SIZE);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
   });
 
