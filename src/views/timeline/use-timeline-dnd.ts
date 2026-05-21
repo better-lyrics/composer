@@ -2,15 +2,15 @@ import { isWordSelected } from "@/domain/selection/identity";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import type { WordTiming } from "@/domain/word/timing";
 import { cloneWord } from "@/utils/word-timing";
-import { addTrailingSpaceIfMissing, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
+import { trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
 import type { WordSelection } from "@/domain/selection/model";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { nanoid } from "nanoid";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -103,17 +103,6 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     const line = linesById.get(lineId);
     if (!line) continue;
 
-    const newGroupIdBySource = new Map<string, string>();
-    const getNewGroupId = (oldId: string | undefined): string | undefined => {
-      if (oldId === undefined) return undefined;
-      let nid = newGroupIdBySource.get(oldId);
-      if (!nid) {
-        nid = nanoid(8);
-        newGroupIdBySource.set(oldId, nid);
-      }
-      return nid;
-    };
-
     const wordDups: WordTiming[] = [];
     const bgDups: WordTiming[] = [];
 
@@ -127,7 +116,6 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       if (newEnd <= newBegin) continue;
 
       const dup = cloneWord(word, { begin: newBegin, end: newEnd });
-      dup.syllableGroupId = getNewGroupId(word.syllableGroupId);
       if (sel.type === "word") wordDups.push(dup);
       else bgDups.push(dup);
     }
@@ -137,23 +125,13 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     if (wordDups.length > 0) {
       const existing = line.words ?? [];
       const hasOverlap = wordDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
-      if (!hasOverlap) {
-        const prevLast = existing[existing.length - 1];
-        const sorted = [...existing, ...wordDups].sort((a, b) => a.begin - b.begin);
-        const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-        lineUpdates.words = trimTrailingSpaceFromLast(reconciled);
-      }
+      if (!hasOverlap) lineUpdates.words = mergeWordsIntoTrack(existing, wordDups);
     }
 
     if (bgDups.length > 0) {
       const existing = line.backgroundWords ?? [];
       const hasOverlap = bgDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
-      if (!hasOverlap) {
-        const prevLast = existing[existing.length - 1];
-        const sorted = [...existing, ...bgDups].sort((a, b) => a.begin - b.begin);
-        const reconciled = prevLast ? addTrailingSpaceIfMissing(sorted, prevLast) : sorted;
-        lineUpdates.backgroundWords = trimTrailingSpaceFromLast(reconciled);
-      }
+      if (!hasOverlap) lineUpdates.backgroundWords = mergeWordsIntoTrack(existing, bgDups);
     }
 
     if (Object.keys(lineUpdates).length > 0) {

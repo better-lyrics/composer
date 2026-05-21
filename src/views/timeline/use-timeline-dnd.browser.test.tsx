@@ -1,3 +1,4 @@
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -138,5 +139,54 @@ describe("useTimelineDnd · live shift state", () => {
     expect(sharedId).toBeDefined();
     expect(after.backgroundWords?.[1].syllableGroupId).toBe(sharedId);
     expect(after.backgroundWords?.[2].syllableGroupId).toBe(sharedId);
+  });
+});
+
+// -- Alt-drag duplicate -------------------------------------------------------
+
+function makeAltDuplicateEvent(wordIndex: number, deltaX: number): DragEndEvent {
+  return {
+    active: {
+      id: "w",
+      data: {
+        current: { lineId: "l1", lineIndex: 0, wordIndex, trackType: "word", text: "", begin: 0, end: 0 },
+      },
+      rect: { current: { initial: null, translated: null } },
+    },
+    delta: { x: deltaX, y: 0 },
+    activatorEvent: new PointerEvent("pointerdown", { altKey: true }),
+    collisions: null,
+  } as unknown as DragEndEvent;
+}
+
+describe("useTimelineDnd · alt-drag duplicate", () => {
+  beforeEach(() => {
+    useAudioStore.setState({ duration: 30 });
+    useTimelineStore.setState({ zoom: 100 });
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "Hello world",
+          agentId: "v1",
+          words: [
+            { text: "Hello ", begin: 0, end: 0.5 },
+            { text: "world", begin: 2, end: 2.5 },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("keeps a word boundary when a duplicated last word lands before the original", async () => {
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(makeAltDuplicateEvent(1, -100));
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.map((w) => w.text)).toEqual(["Hello ", "world ", "world"]);
+    const groups = computeSyllableGroups(words);
+    expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);
   });
 });
