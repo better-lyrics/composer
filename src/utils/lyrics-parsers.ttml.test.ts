@@ -92,3 +92,36 @@ describe("parseLyricsFile - TTML word explicit attribute", () => {
     expect(line.backgroundWords![1].explicit).toBe(true);
   });
 });
+
+describe("parseLyricsFile - TTML background provenance", () => {
+  it("stamps backgroundTextSource as manual on a word-synced line with x-bg words", () => {
+    const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.500" ttm:agent="v1"><span begin="00:01.000" end="00:02.000">main</span><span ttm:role="x-bg"><span begin="00:02.000" end="00:02.250">oh</span> <span begin="00:02.250" end="00:02.500">yeah</span></span></p></div></body></tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+    const line = result.lines[0];
+    expect(line.backgroundWords).toBeDefined();
+    expect(line.backgroundTextSource).toBe("manual");
+  });
+
+  it("stamps backgroundTextSource as manual on a line-synced line with x-bg text", () => {
+    const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">main line<span ttm:role="x-bg">backing vocal</span></p></div></body></tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+    const line = result.lines[0];
+    expect(line.text).toBe("main line");
+    expect(line.backgroundText).toBe("backing vocal");
+    expect(line.backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves backgroundTextSource undefined on a line with no x-bg content", () => {
+    const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Hello</span> <span begin="00:01.500" end="00:02.000">world</span></p></div></body></tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+    expect(result.lines[0].backgroundText).toBeUndefined();
+    expect(result.lines[0].backgroundTextSource).toBeUndefined();
+  });
+
+  it("leaves backgroundTextSource undefined on a line-synced line with no x-bg content", () => {
+    const content = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:03.000" ttm:agent="v1">just a plain line</p></div></body></tt>`;
+    const result = parseLyricsFile("song.ttml", content);
+    expect(result.lines[0].backgroundText).toBeUndefined();
+    expect(result.lines[0].backgroundTextSource).toBeUndefined();
+  });
+});

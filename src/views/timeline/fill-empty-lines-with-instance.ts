@@ -76,6 +76,7 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
             })),
           }
         : { backgroundWords: undefined }),
+      backgroundTextSource: tplLine.backgroundTextSource,
     });
   });
 

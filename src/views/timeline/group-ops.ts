@@ -132,6 +132,7 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       words: tplWords,
       backgroundText: line.backgroundText,
       backgroundWords: tplBgWords,
+      backgroundTextSource: line.backgroundTextSource,
     });
   }
   return templates;

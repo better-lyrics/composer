@@ -285,6 +285,37 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].backgroundWords).toBeUndefined();
   });
 
+  it("clears the backgroundTextSource flag when a re-paste reintroduces parentheses", () => {
+    const existing: LyricLine[] = [
+      {
+        id: "L1",
+        text: "Hello world",
+        agentId: "v1",
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result[0].backgroundText).toBeUndefined();
+    expect(result[0].backgroundWords).toBeUndefined();
+    expect(result[0].backgroundTextSource).toBeUndefined();
+  });
+
+  it("clears a manual-sourced background flag too on re-paste with parentheses", () => {
+    const existing: LyricLine[] = [
+      {
+        id: "L1",
+        text: "Hello world",
+        agentId: "v1",
+        backgroundText: "ooh",
+        backgroundTextSource: "manual",
+      },
+    ];
+    const result = textToLyricLines("Hello (ooh) world", "v1", existing);
+    expect(result[0].backgroundTextSource).toBeUndefined();
+  });
+
   it("produces a fresh unmatched line with parentheses without crashing or inventing backgroundText", () => {
     const result = textToLyricLines("Hello (ooh) world\nSecond line", "v1", []);
     expect(result).toHaveLength(2);

@@ -136,6 +136,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
                 })),
               }
             : {}),
+          ...(tplLine.backgroundTextSource !== undefined ? { backgroundTextSource: tplLine.backgroundTextSource } : {}),
         }),
       );
 

@@ -108,6 +108,59 @@ describe("instanceToTemplate", () => {
     expect(tpl[0].backgroundWords?.[0].relativeBegin).toBeCloseTo(0);
   });
 
+  it("carries backgroundTextSource from a real line into the template", () => {
+    const ls: LyricLine[] = [
+      {
+        id: "a",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 30, end: 31 }],
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 30, end: 30.5 }],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const tpl = instanceToTemplate(ls, "g1", 0);
+    expect(tpl[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("carries a manual-sourced background flag into the template", () => {
+    const ls: LyricLine[] = [
+      {
+        id: "a",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 30, end: 31 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "manual",
+      },
+    ];
+    const tpl = instanceToTemplate(ls, "g1", 0);
+    expect(tpl[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves backgroundTextSource undefined for a line with no background", () => {
+    const ls: LyricLine[] = [
+      {
+        id: "a",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 30, end: 31 }],
+      },
+    ];
+    const tpl = instanceToTemplate(ls, "g1", 0);
+    expect(tpl[0].backgroundTextSource).toBeUndefined();
+  });
+
   it("uses word-derived start anchor even when line.begin/end is stale (regression)", () => {
     const ls: LyricLine[] = [
       {

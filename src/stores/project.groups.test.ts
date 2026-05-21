@@ -241,6 +241,56 @@ describe("project store · instance mutators", () => {
     expect(created[0].words?.[2].end).toBeCloseTo(31.2);
   });
 
+  it("addInstance carries backgroundText/backgroundWords/backgroundTextSource from the template", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    const structure: LineTemplate[] = [
+      {
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", relativeBegin: 0, relativeEnd: 1 }],
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", relativeBegin: 0, relativeEnd: 0.5 }],
+        backgroundTextSource: "extraction",
+      },
+    ];
+
+    useProjectStore.getState().addInstance("g1", structure, 30);
+
+    const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
+    expect(created).toHaveLength(1);
+    expect(created[0].backgroundText).toBe("ooh");
+    expect(created[0].backgroundWords?.[0].begin).toBeCloseTo(30);
+    expect(created[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("addInstance carries a manual-sourced background flag", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    const structure: LineTemplate[] = [
+      {
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", relativeBegin: 0, relativeEnd: 1 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "manual",
+      },
+    ];
+
+    useProjectStore.getState().addInstance("g1", structure, 0);
+
+    const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
+    expect(created[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("addInstance leaves backgroundTextSource undefined for a template with no background", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];
+
+    useProjectStore.getState().addInstance("g1", structure, 0);
+
+    const created = useProjectStore.getState().lines.filter((l) => l.groupId === "g1");
+    expect(created[0].backgroundTextSource).toBeUndefined();
+  });
+
   it("addInstance picks the next unused instanceIdx", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     const structure: LineTemplate[] = [templateOf("a", [["a", 0, 0.5]])];

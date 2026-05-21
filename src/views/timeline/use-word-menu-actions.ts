@@ -1,3 +1,4 @@
+import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -74,12 +75,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (type === "word") {
       updateLineWithHistory(lineId, { words: remaining });
     } else {
-      updateLineWithHistory(
-        lineId,
-        remaining.length > 0
-          ? { backgroundWords: remaining }
-          : { backgroundWords: undefined, backgroundText: undefined },
-      );
+      updateLineWithHistory(lineId, remaining.length > 0 ? { backgroundWords: remaining } : CLEARED_BACKGROUND);
     }
     clearContextMenu();
   }, [contextMenu, lines, updateLineWithHistory, clearContextMenu]);

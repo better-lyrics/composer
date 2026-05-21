@@ -1,3 +1,4 @@
+import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { cleanSplitCharacters, getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
@@ -83,9 +84,7 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
 
   // Raw parentheses in `text` are the source of truth for background vocals;
   // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) =>
-    /\([^)]*\)/.test(line.text) ? { ...line, backgroundText: undefined, backgroundWords: undefined } : line,
-  );
+  return mapped.map((line) => (/\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line));
 }
 
 // -- Exports ------------------------------------------------------------------

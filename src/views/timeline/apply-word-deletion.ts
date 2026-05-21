@@ -66,12 +66,14 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
       nextBg = remaining.length > 0 ? remaining : undefined;
     }
 
+    const bgRemains = nextBg !== undefined && nextBg.length > 0;
     const updatedLine = reconcileLine({
       ...line,
       words: nextMain,
       backgroundWords: nextBg,
       text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : line.text,
       backgroundText: nextBg && nextBg.length > 0 ? reconstructLineText(nextBg, splitChar) : undefined,
+      backgroundTextSource: bgRemains ? line.backgroundTextSource : undefined,
       ...(willHaveNoMainWords ? { begin: undefined, end: undefined } : {}),
     });
 

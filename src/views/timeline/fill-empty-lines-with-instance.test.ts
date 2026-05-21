@@ -133,6 +133,71 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
   });
 });
 
+describe("fillEmptyLinesWithInstance · background provenance", () => {
+  const bgTemplate: LineTemplate[] = [
+    {
+      text: "Chorus line 1",
+      agentId: "v1",
+      relativeBegin: 0,
+      relativeEnd: 1,
+      words: [{ text: "Chorus line 1", relativeBegin: 0, relativeEnd: 1 }],
+      backgroundText: "ooh",
+      backgroundWords: [{ text: "ooh", relativeBegin: 0, relativeEnd: 0.5 }],
+      backgroundTextSource: "extraction",
+    },
+  ];
+
+  it("carries backgroundTextSource from the template onto the filled line", () => {
+    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
+    const result = fillEmptyLinesWithInstance({
+      lines,
+      groupId: "g1",
+      template: bgTemplate,
+      startIndex: 0,
+      instanceStart: 10,
+    });
+    expect(result.ok).toBe(true);
+    expect(result.updatedLines?.[0].backgroundText).toBe("ooh");
+    expect(result.updatedLines?.[0].backgroundWords?.[0].begin).toBe(10);
+    expect(result.updatedLines?.[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("carries a manual-sourced flag from the template", () => {
+    const manualTemplate: LineTemplate[] = [
+      {
+        text: "Chorus line 1",
+        agentId: "v1",
+        backgroundText: "ooh",
+        backgroundTextSource: "manual",
+      },
+    ];
+    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
+    const result = fillEmptyLinesWithInstance({
+      lines,
+      groupId: "g1",
+      template: manualTemplate,
+      startIndex: 0,
+      instanceStart: 0,
+    });
+    expect(result.updatedLines?.[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves backgroundTextSource undefined when the template has no background", () => {
+    const lines: LyricLine[] = [
+      { id: "empty1", text: "a", agentId: "v1" },
+      { id: "empty2", text: "b", agentId: "v1" },
+    ];
+    const result = fillEmptyLinesWithInstance({
+      lines,
+      groupId: "g1",
+      template,
+      startIndex: 0,
+      instanceStart: 0,
+    });
+    expect(result.updatedLines?.[0].backgroundTextSource).toBeUndefined();
+  });
+});
+
 describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", () => {
   it("refuses when one of the target rows already has words", () => {
     const lines: LyricLine[] = [

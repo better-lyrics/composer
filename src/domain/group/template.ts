@@ -22,6 +22,7 @@ interface LineTemplate {
   words?: WordTemplate[];
   backgroundText?: string;
   backgroundWords?: WordTemplate[];
+  backgroundTextSource?: "extraction" | "manual";
 }
 
 // -- Exports ------------------------------------------------------------------

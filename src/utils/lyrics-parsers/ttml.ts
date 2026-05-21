@@ -127,6 +127,12 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       }
     }
 
+    // Imported background is authored content (not auto-extracted by this app);
+    // stamp it manual so a later re-paste of parenthesised lyrics does not
+    // double it, and so the provenance triple stays coherent.
+    const backgroundTextSource: "manual" | undefined =
+      backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
+
     // Check for word-level timing (span elements NOT inside x-bg)
     const words = inferSyllableGroupIds(extractTimedWords(p, bgContainer));
 
@@ -139,6 +145,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
           words,
           backgroundText,
           backgroundWords,
+          backgroundTextSource,
           ...groupFields,
         }),
       );
@@ -168,6 +175,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
             end: end || undefined,
             backgroundText,
             backgroundWords,
+            backgroundTextSource,
             ...groupFields,
           }),
         );
