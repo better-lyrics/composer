@@ -109,4 +109,25 @@ describe("LineRow", () => {
     const wordBlocks = screen.container.querySelectorAll("[data-word-block]");
     expect(wordBlocks.length).toBe(2);
   });
+
+  it("stamps a manual provenance when a background word is created via the drop-zone", async () => {
+    useAudioStore.setState({ duration: 30 });
+    const line = createLine({
+      id: "l1",
+      text: "hello world",
+      words: [createWord({ text: "hello", begin: 0, end: 1 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    const screen = await render(
+      <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+      { dndContext: true },
+    );
+
+    const dropZone = Array.from(screen.container.querySelectorAll("div")).find((d) => d.textContent?.trim() === "BG");
+    expect(dropZone).toBeDefined();
+    dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
 });

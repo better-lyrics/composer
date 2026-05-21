@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -93,6 +94,7 @@ describe("background vocal extraction", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
     expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
   it("hides the per-line pull action when the line has no parentheses", async () => {
@@ -141,5 +143,59 @@ describe("background vocal extraction", () => {
       .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Hello (ooh) world", "Second (ah) line"]);
     expect(useProjectStore.getState().lines.every((l) => l.backgroundText === undefined)).toBe(true);
+  });
+});
+
+// -- Tests --------------------------------------------------------------------
+
+describe("manual background vocal editing", () => {
+  it("stamps a manual provenance when typing background text in the popover", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
+    const screen = await render(<EditPanel />);
+
+    const bgTrigger = screen.getByRole("button", { name: "BG", exact: true });
+    await bgTrigger.click();
+
+    const input = screen.getByPlaceholder("ooh, ah, etc.");
+    await input.fill("ooh");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("flips an extraction-sourced background to manual when edited in the popover", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "ooh", backgroundTextSource: "extraction" })],
+    });
+    const screen = await render(<EditPanel />);
+
+    const bgTrigger = screen.getByRole("button", { name: "BG", exact: true });
+    await bgTrigger.click();
+
+    const input = screen.getByPlaceholder("ooh, ah, etc.");
+    await input.fill("aah");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("aah");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("clears all three background fields when the popover text is emptied", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "Hello world", backgroundText: "ooh", backgroundTextSource: "extraction" })],
+    });
+    const screen = await render(<EditPanel />);
+
+    const bgTrigger = screen.getByRole("button", { name: "BG", exact: true });
+    await bgTrigger.click();
+
+    const input = screen.getByPlaceholder("ooh, ah, etc.");
+    await input.fill("");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
   });
 });

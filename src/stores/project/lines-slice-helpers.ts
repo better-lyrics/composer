@@ -1,8 +1,11 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { applyBackground, CLEARED_BACKGROUND } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
+import { getSplitCharacter } from "@/utils/split-character";
 import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applySiblingWords } from "@/utils/word-diff";
 
@@ -68,11 +71,11 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
   const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
   const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(line.backgroundWords ?? [], movedWords), duration);
 
-  return {
-    ...line,
-    words: remainingMain,
-    backgroundWords: mergedBg,
-  };
+  return applyBackground(reconcileLine({ ...line, words: remainingMain }), {
+    words: mergedBg,
+    text: reconstructLineText(mergedBg, getSplitCharacter()),
+    source: "manual",
+  });
 }
 
 function applyMoveFromBg(
@@ -95,12 +98,14 @@ function applyMoveFromBg(
   const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
   const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(line.words ?? [], movedWords), duration);
 
-  const hasBg = remainingBg.length > 0;
-  return reconcileLine({
-    ...line,
-    words: mergedMain,
-    backgroundWords: hasBg ? remainingBg : undefined,
-    backgroundText: hasBg ? line.backgroundText : undefined,
+  const withMain = reconcileLine({ ...line, words: mergedMain });
+  if (remainingBg.length === 0) {
+    return reconcileLine({ ...withMain, ...CLEARED_BACKGROUND });
+  }
+  return applyBackground(withMain, {
+    words: remainingBg,
+    text: reconstructLineText(remainingBg, getSplitCharacter()),
+    source: "manual",
   });
 }
 

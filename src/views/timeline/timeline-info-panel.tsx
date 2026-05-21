@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
 import { Button } from "@/ui/button";
 import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -25,9 +26,9 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
     if (trimmed) {
       const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
       const bgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
-      updateLineWithHistory(lineId, { backgroundText: trimmed, backgroundWords: bgWords ?? undefined });
+      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords ?? undefined, source: "manual" }));
     } else {
-      updateLineWithHistory(lineId, { backgroundText: undefined, backgroundWords: undefined });
+      updateLineWithHistory(lineId, CLEARED_BACKGROUND);
     }
     setIsEditing(false);
   }, [lineId, value, updateLineWithHistory]);

@@ -100,6 +100,32 @@ describe("moveWordToBg", () => {
   });
 });
 
+describe("moveWordToBg · background provenance", () => {
+  it("stamps backgroundTextSource manual when creating a fresh background", () => {
+    useProjectStore.getState().setLines([seedLine()]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [2], 5, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+  });
+
+  it("flips an extraction-sourced background to manual when more words are moved in", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        backgroundWords: [{ text: "yeah", begin: 5, end: 6 }],
+        backgroundText: "yeah",
+        backgroundTextSource: "extraction",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordToBg("line-1", [2], 0, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+  });
+});
+
 // -- moveWordFromBg ------------------------------------------------------------
 
 describe("moveWordFromBg", () => {
@@ -158,6 +184,44 @@ describe("moveWordFromBg", () => {
     const line = useProjectStore.getState().lines[0];
     expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ooh"]);
     expect(line.words?.map((w) => w.text)).toEqual(["ah ", "yeah"]);
+  });
+});
+
+describe("moveWordFromBg · background provenance", () => {
+  it("clears backgroundTextSource when no background words remain", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        backgroundWords: [{ text: "ooh", begin: 10, end: 11 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [0], -7, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundWords).toBeUndefined();
+    expect(line.backgroundText).toBeUndefined();
+    expect(line.backgroundTextSource).toBeUndefined();
+  });
+
+  it("stamps backgroundTextSource manual on the remaining background", () => {
+    useProjectStore.getState().setLines([
+      seedLine({
+        backgroundWords: [
+          { text: "ah ", begin: 5, end: 6 },
+          { text: "ooh", begin: 6, end: 7 },
+        ],
+        backgroundText: "ahooh",
+        backgroundTextSource: "extraction",
+      }),
+    ]);
+
+    useProjectStore.getState().moveWordFromBg("line-1", [1], 3, DURATION);
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundWords?.map((w) => w.text)).toEqual(["ah"]);
+    expect(line.backgroundTextSource).toBe("manual");
   });
 });
 

@@ -4,7 +4,9 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
+import { backgroundFields } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
@@ -349,16 +351,14 @@ const EditPanel: React.FC = () => {
     const newBgText = text || undefined;
     const target = useProjectStore.getState().lines.find((l) => l.id === lineId);
 
-    const updates: Partial<LyricLine> = { backgroundText: newBgText };
+    let words: WordTiming[] | undefined;
     if (newBgText && target?.backgroundWords?.length) {
-      const remapped = remapWordTextsPreservingTiming(target.backgroundWords, newBgText);
-      if (remapped) updates.backgroundWords = remapped;
-      else updates.backgroundWords = undefined;
-    } else if (!newBgText) {
-      updates.backgroundWords = undefined;
+      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText) ?? undefined;
     }
 
-    useProjectStore.getState().updateLineWithHistory(lineId, updates);
+    useProjectStore
+      .getState()
+      .updateLineWithHistory(lineId, backgroundFields({ text: newBgText, words, source: "manual" }));
   }, []);
 
   const handleExtractLine = useCallback((lineId: string) => {
@@ -370,6 +370,8 @@ const EditPanel: React.FC = () => {
       text: extracted.text,
       words: extracted.words,
       backgroundText: extracted.backgroundText,
+      backgroundWords: extracted.backgroundWords,
+      backgroundTextSource: extracted.backgroundTextSource,
     });
   }, []);
 

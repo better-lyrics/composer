@@ -34,7 +34,15 @@ function applyBackground(line: LyricLine, params: BackgroundParams): LyricLine {
   return reconcileLine({ ...line, ...backgroundFields(params) });
 }
 
+// The coherent all-undefined triple, for clear sites where there is no
+// meaningful source to stamp.
+const CLEARED_BACKGROUND: BackgroundFields = {
+  backgroundText: undefined,
+  backgroundWords: undefined,
+  backgroundTextSource: undefined,
+};
+
 // -- Exports ------------------------------------------------------------------
 
-export { applyBackground, backgroundFields };
+export { applyBackground, backgroundFields, CLEARED_BACKGROUND };
 export type { BackgroundFields, BackgroundParams, BackgroundSource };

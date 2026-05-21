@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { backgroundFields } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
@@ -275,10 +276,12 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               const slot = findInsertionSlot([], time, wordDuration, audioDuration);
               if (!slot) return;
               const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
-              useProjectStore.getState().updateLineWithHistory(line.id, {
-                backgroundWords: [newWord],
-                backgroundText: newWord.text,
-              });
+              useProjectStore
+                .getState()
+                .updateLineWithHistory(
+                  line.id,
+                  backgroundFields({ text: newWord.text, words: [newWord], source: "manual" }),
+                );
               useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
             }}
             onContextMenu={(e) => {

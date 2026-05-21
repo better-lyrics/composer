@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyBackground, backgroundFields } from "@/domain/line/background";
+import { applyBackground, backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -64,6 +64,20 @@ describe("backgroundFields edge cases", () => {
 
   it("ignores source when no text and no words are supplied", () => {
     expect(backgroundFields({ source: "manual" }).backgroundTextSource).toBeUndefined();
+  });
+});
+
+describe("CLEARED_BACKGROUND", () => {
+  it("equals backgroundFields of an empty write", () => {
+    expect(CLEARED_BACKGROUND).toEqual(backgroundFields({ text: "", source: "manual" }));
+  });
+
+  it("is a coherent all-undefined triple", () => {
+    expect(CLEARED_BACKGROUND).toEqual({
+      backgroundText: undefined,
+      backgroundWords: undefined,
+      backgroundTextSource: undefined,
+    });
   });
 });
 
