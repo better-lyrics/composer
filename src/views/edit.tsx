@@ -177,13 +177,18 @@ const LinePreview: React.FC<{
       </span>
 
       <span
+        data-testid="line-preview-text"
         className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
         style={{ borderLeft: `2px solid ${agentColor}`, paddingLeft: "6px" }}
       >
         {stripSplitCharacter(line.text)}
       </span>
 
-      {line.backgroundText && <span className="text-xs italic text-composer-text-muted">{line.backgroundText}</span>}
+      {line.backgroundText && (
+        <span data-testid="line-preview-background" className="text-xs italic text-composer-text-muted">
+          {line.backgroundText}
+        </span>
+      )}
 
       <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
         {agents.length > 1 && line.lineId && (

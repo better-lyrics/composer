@@ -19,11 +19,11 @@ function pasteIntoTextarea(textarea: HTMLTextAreaElement, value: string): void {
 }
 
 function previewMainTexts(container: HTMLElement): string[] {
-  return [...container.querySelectorAll('span[style*="padding-left"]')].map((el) => el.textContent ?? "");
+  return [...container.querySelectorAll('[data-testid="line-preview-text"]')].map((el) => el.textContent ?? "");
 }
 
 function previewBackgroundTexts(container: HTMLElement): string[] {
-  return [...container.querySelectorAll("span.text-xs.italic")].map((el) => el.textContent ?? "");
+  return [...container.querySelectorAll('[data-testid="line-preview-background"]')].map((el) => el.textContent ?? "");
 }
 
 // -- Tests --------------------------------------------------------------------
