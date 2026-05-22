@@ -70,6 +70,13 @@ function dispatchWindowRedo(opts: { ctrlY?: boolean } = {}): KeyboardEvent {
   return event;
 }
 
+async function openAgentNameInput(screen: Awaited<ReturnType<typeof render>>): Promise<HTMLInputElement> {
+  await screen.getByRole("button", { name: /Add/ }).click();
+  const input = screen.getByPlaceholder("Agent name");
+  await expect.element(input).toBeInTheDocument();
+  return input.element() as HTMLInputElement;
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("editor undo and redo", () => {
@@ -358,6 +365,83 @@ describe("editor window undo handler gating", () => {
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
     expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+});
+
+describe("editor undo handler input exemption", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+  });
+
+  it("does not undo when Cmd+Z is pressed inside a non-lyrics input", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    const indexBefore = useProjectStore.getState().historyIndex;
+
+    const input = await openAgentNameInput(screen);
+    const event = new KeyboardEvent("keydown", {
+      key: "z",
+      code: "KeyZ",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+
+  it("does not redo when Cmd+Shift+Z is pressed inside a non-lyrics input", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useProjectStore.getState().undo();
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+    const indexBefore = useProjectStore.getState().historyIndex;
+
+    const input = await openAgentNameInput(screen);
+    const event = new KeyboardEvent("keydown", {
+      key: "z",
+      code: "KeyZ",
+      metaKey: true,
+      shiftKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    input.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(false);
+    expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+  });
+
+  it("still undoes when Cmd+Z originates from the lyrics textarea", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    const event = new KeyboardEvent("keydown", {
+      key: "z",
+      code: "KeyZ",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    textarea.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
   });
 });
 

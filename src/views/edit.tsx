@@ -491,6 +491,8 @@ const EditPanel: React.FC = () => {
       if (activeTab !== "edit") return;
       if (isAnyModalOpen()) return;
       if (!(e.metaKey || e.ctrlKey)) return;
+      const target = e.target as HTMLElement;
+      if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
       const key = e.key.toLowerCase();
       const isUndo = key === "z" && !e.shiftKey;
       const isRedo = (key === "z" && e.shiftKey) || key === "y";
@@ -503,7 +505,7 @@ const EditPanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, finalizeRun]);
+  }, [activeTab, finalizeRun, textareaId]);
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
