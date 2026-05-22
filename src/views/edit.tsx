@@ -293,7 +293,7 @@ const EditPanel: React.FC = () => {
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
-  const runBaselineRef = useRef<LyricLine[] | null>(null);
+  const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
   const [importResult, setImportResult] = useState<{
     result: ParseResult;
@@ -460,7 +460,7 @@ const EditPanel: React.FC = () => {
     const baseline = runBaselineRef.current;
     if (baseline) {
       runBaselineRef.current = null;
-      useProjectStore.getState().commitPendingLineEdit(baseline);
+      useProjectStore.getState().commitPendingLineEdit(baseline.lines, baseline.wasDirty);
     }
   }, []);
 
@@ -591,7 +591,8 @@ const EditPanel: React.FC = () => {
       }
 
       if (runBaselineRef.current === null) {
-        runBaselineRef.current = useProjectStore.getState().lines;
+        const projectState = useProjectStore.getState();
+        runBaselineRef.current = { lines: projectState.lines, wasDirty: projectState.isDirtySinceHistory };
       }
       linesSetByUs.current = finalLines;
       setLines(finalLines);

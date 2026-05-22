@@ -105,7 +105,7 @@ interface HistoryActions {
   clearHistory: () => void;
   markDirty: () => void;
   markClean: () => void;
-  commitPendingLineEdit: (baseline: LyricLine[]) => void;
+  commitPendingLineEdit: (baseline: LyricLine[], baselineWasDirty?: boolean) => void;
 }
 
 interface LineActions {

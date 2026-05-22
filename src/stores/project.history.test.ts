@@ -322,3 +322,117 @@ describe("commitPendingLineEdit", () => {
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(dirtyBefore);
   });
 });
+
+// -- commitPendingLineEdit · pre-dirty baseline seeding -----------------------
+
+describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
+  it("seeds the baseline when a non-history mutation dirtied the store before the run", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "B" })]);
+    const baseline = useProjectStore.getState().lines;
+    const baselineWasDirty = useProjectStore.getState().isDirtySinceHistory;
+    expect(baselineWasDirty).toBe(true);
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("B");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("A");
+  });
+
+  it("does not seed a duplicate baseline when the store was clean before the run", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    const baseline = useProjectStore.getState().lines;
+    const baselineWasDirty = useProjectStore.getState().isDirtySinceHistory;
+    expect(baselineWasDirty).toBe(false);
+    const lengthBefore = useProjectStore.getState().history.length;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
+
+    expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("A");
+  });
+
+  it("treats an omitted baselineWasDirty as clean", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    const baseline = useProjectStore.getState().lines;
+    const lengthBefore = useProjectStore.getState().history.length;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline);
+
+    expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
+  });
+
+  it("seeds the baseline only once on the dirty path when history is empty", () => {
+    expect(useProjectStore.getState().history).toEqual([]);
+    const baseline = [seedLine("a", { text: "A" })];
+    useProjectStore.getState().setLines(baseline);
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+
+    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+
+    expect(useProjectStore.getState().history).toHaveLength(2);
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("A");
+  });
+
+  it("truncates the redo branch when the dirty path commits mid-history", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "one" })]);
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "two" })]);
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "three" })]);
+    useProjectStore.getState().undo();
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("one");
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "one cross-view" })]);
+    const baseline = useProjectStore.getState().lines;
+    useProjectStore.getState().setLines([seedLine("a", { text: "one typed" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+
+    expect(useProjectStore.getState().canRedo()).toBe(false);
+    expect(useProjectStore.getState().lines[0].text).toBe("one typed");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("one cross-view");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("one");
+  });
+
+  it("does not mutate the baseline array on the dirty path", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "B" })]);
+    const baseline = useProjectStore.getState().lines;
+    const baselineSnapshot = structuredClone(baseline);
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+
+    expect(baseline).toEqual(baselineSnapshot);
+  });
+
+  it("stores the seeded baseline entry as an independent clone", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    useProjectStore.getState().setLines([seedLine("a", { text: "B" })]);
+    const baseline = useProjectStore.getState().lines;
+
+    useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
+    useProjectStore.getState().commitPendingLineEdit(baseline, true);
+
+    baseline[0].text = "live mutation";
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].text).toBe("B");
+  });
+
+  it("no-ops when isDirtySinceHistory is false even if baselineWasDirty is true", () => {
+    useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "A" })]);
+    const indexBefore = useProjectStore.getState().historyIndex;
+
+    useProjectStore.getState().commitPendingLineEdit(useProjectStore.getState().lines, true);
+
+    expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
+  });
+});

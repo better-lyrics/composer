@@ -48,12 +48,12 @@ function commitHistory(
   };
 }
 
-function commitPendingEdit(state: ProjectState, baseline: LyricLine[]) {
+function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
-  // Already dirty (early return above), so unlike commitHistory the pre-edit
-  // baseline only needs seeding when there is no prior history entry at all.
-  if (newHistory.length === 0) {
+  // Seed the pre-run baseline when a non-history mutation dirtied the store
+  // before the run, otherwise undo would skip straight past it.
+  if (newHistory.length === 0 || baselineWasDirty) {
     newHistory.push({
       lines: structuredClone(baseline),
       groups: structuredClone(state.groups),

@@ -49,7 +49,8 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
       };
     }),
 
-  commitPendingLineEdit: (baseline) => set((state) => commitPendingEdit(state, baseline)),
+  commitPendingLineEdit: (baseline, baselineWasDirty) =>
+    set((state) => commitPendingEdit(state, baseline, baselineWasDirty)),
 
   canUndo: () => get().historyIndex > 0,
 
