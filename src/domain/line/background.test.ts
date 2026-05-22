@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { applyBackground, backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
+import {
+  applyBackground,
+  backgroundFields,
+  CLEARED_BACKGROUND,
+  manualBackgroundWordEdit,
+} from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -177,5 +182,33 @@ describe("applyBackground overwriting", () => {
     expect(cleared.backgroundWords).toBeUndefined();
     expect(cleared.backgroundText).toBeUndefined();
     expect(cleared.backgroundTextSource).toBeUndefined();
+  });
+});
+
+describe("manualBackgroundWordEdit", () => {
+  it("stamps source manual and keeps the word array intact", () => {
+    const words: WordTiming[] = [
+      { text: "ooh ", begin: 0, end: 0.5 },
+      { text: "aah", begin: 0.5, end: 1 },
+    ];
+    const fields = manualBackgroundWordEdit(words);
+    expect(fields.backgroundWords).toEqual(words);
+    expect(fields.backgroundTextSource).toBe("manual");
+  });
+
+  it("derives backgroundText coherently from the word array", () => {
+    const fields = manualBackgroundWordEdit([
+      { text: "ooh ", begin: 0, end: 0.5 },
+      { text: "aah", begin: 0.5, end: 1 },
+    ]);
+    expect(fields.backgroundText).toBe("ooh aah");
+  });
+
+  it("reinserts the split character between syllables with no trailing space", () => {
+    const fields = manualBackgroundWordEdit([
+      { text: "oh", begin: 0, end: 0.5 },
+      { text: "oh", begin: 0.5, end: 1 },
+    ]);
+    expect(fields.backgroundText).toBe("oh|oh");
   });
 });

@@ -282,3 +282,79 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     expect(words.map((w) => w.text.trim())).toEqual(["word1", "word3", "word2"]);
   });
 });
+
+// -- Background-word drag provenance ------------------------------------------
+
+function makeBgReorderDragEndEvent(deltaX: number): DragEndEvent {
+  return {
+    active: {
+      id: "bg",
+      data: {
+        current: {
+          lineId: "l1",
+          lineIndex: 0,
+          wordIndex: 1,
+          trackType: "bg",
+          text: "aah",
+          begin: 1,
+          end: 1.5,
+        },
+      },
+      rect: { current: { initial: null, translated: null } },
+    },
+    over: {
+      id: "bg-drop-l1",
+      data: { current: { lineId: "l1" } },
+      rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
+      disabled: false,
+    },
+    delta: { x: deltaX, y: 0 },
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false }),
+    collisions: null,
+  } as unknown as DragEndEvent;
+}
+
+describe("useTimelineDnd · background-word drag provenance", () => {
+  beforeEach(() => {
+    useAudioStore.setState({ duration: 30 });
+    useTimelineStore.setState({ zoom: 100 });
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "main",
+          agentId: "v1",
+          words: [{ text: "main", begin: 0, end: 0.5 }],
+          backgroundText: "ooh aah",
+          backgroundWords: [
+            { text: "ooh ", begin: 0, end: 0.5 },
+            { text: "aah", begin: 1, end: 1.5 },
+          ],
+          backgroundTextSource: "extraction",
+        },
+      ],
+    });
+  });
+
+  it("flips an extraction-sourced background to manual after a bg word is dragged", async () => {
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.backgroundTextSource).toBe("manual");
+    expect(after.backgroundWords?.length).toBe(2);
+  });
+
+  it("preserves the dragged background word texts and count", async () => {
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(makeBgReorderDragEndEvent(-80));
+
+    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    expect(bg).toHaveLength(2);
+    expect(bg.map((w) => w.text.trim()).toSorted()).toEqual(["aah", "ooh"]);
+  });
+});

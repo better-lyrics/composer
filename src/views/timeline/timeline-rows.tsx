@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
@@ -124,7 +125,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, { backgroundWords: updatedWords });
+      updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords));
     },
     [lines, updateLineWithHistory],
   );

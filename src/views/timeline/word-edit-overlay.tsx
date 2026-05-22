@@ -1,5 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -72,7 +73,10 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         const updatedWords = [...wordsArray];
         const hadTrailingSpace = word.text.endsWith(" ");
         updatedWords[wordIndex] = { ...word, text: hadTrailingSpace ? `${trimmed} ` : trimmed };
-        updateLineWithHistory(lineId, type === "word" ? { words: updatedWords } : { backgroundWords: updatedWords });
+        updateLineWithHistory(
+          lineId,
+          type === "word" ? { words: updatedWords } : manualBackgroundWordEdit(updatedWords),
+        );
       }
       clearEditingWord();
     },

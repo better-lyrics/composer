@@ -2,6 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { createLine } from "@/test/factories";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
@@ -48,5 +49,79 @@ describe("useTimelineKeyboard", () => {
 
     const mergedLine = useProjectStore.getState().lines[0];
     expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
+  });
+});
+
+describe("useTimelineKeyboard · background provenance", () => {
+  it("stamps backgroundTextSource manual when a bg word's begin is set to the playhead", async () => {
+    useAudioStore.setState({ currentTime: 1.2, duration: 10 });
+    const line = createLine({
+      text: "main",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "ooh",
+      backgroundWords: [{ text: "ooh", begin: 1, end: 2 }],
+      backgroundTextSource: "extraction",
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" }],
+    });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundTextSource).toBe("manual");
+    expect(updated.backgroundWords?.[0].begin).toBeCloseTo(1.2);
+  });
+
+  it("stamps backgroundTextSource manual when bg words are merged", async () => {
+    const line = createLine({
+      text: "main",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "ooh aah",
+      backgroundWords: [
+        { text: "ooh ", begin: 1, end: 1.5 },
+        { text: "aah", begin: 1.5, end: 2 },
+      ],
+      backgroundTextSource: "extraction",
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [
+        { lineId: line.id, lineIndex: 0, wordIndex: 0, type: "bg" },
+        { lineId: line.id, lineIndex: 0, wordIndex: 1, type: "bg" },
+      ],
+    });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundWords).toEqual([{ text: "oohaah", begin: 1, end: 2 }]);
+    expect(updated.backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves background provenance untouched when a main word's timing is set", async () => {
+    useAudioStore.setState({ currentTime: 0.4, duration: 10 });
+    const line = createLine({
+      text: "main",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "ooh",
+      backgroundWords: [{ text: "ooh", begin: 1, end: 2 }],
+      backgroundTextSource: "extraction",
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
+
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

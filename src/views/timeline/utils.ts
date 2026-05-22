@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { isLinked } from "@/domain/instance/predicates";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
@@ -386,7 +387,7 @@ function nudgeSelectedWords(
     );
     updates.push({
       id: group.line.id,
-      updates: group.type === "word" ? { words: updatedWords } : { backgroundWords: updatedWords },
+      updates: group.type === "word" ? { words: updatedWords } : manualBackgroundWordEdit(updatedWords),
     });
   }
 

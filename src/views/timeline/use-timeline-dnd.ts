@@ -1,4 +1,5 @@
 import { isWordSelected } from "@/domain/selection/identity";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
@@ -131,7 +132,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     if (bgDups.length > 0) {
       const existing = line.backgroundWords ?? [];
       const hasOverlap = bgDups.some((dup) => existing.some((w) => dup.begin < w.end && dup.end > w.begin));
-      if (!hasOverlap) lineUpdates.backgroundWords = mergeWordsIntoTrack(existing, bgDups);
+      if (!hasOverlap) Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(existing, bgDups)));
     }
 
     if (Object.keys(lineUpdates).length > 0) {
@@ -292,15 +293,12 @@ function useTimelineDnd(lines: LyricLine[]) {
           const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
           const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 
-          for (const [indices, trackKey] of [
-            [wordIndices, "words"],
-            [bgIndices, "backgroundWords"],
-          ] as const) {
-            if (indices.size === 0) continue;
-            const source = moveLine[trackKey];
-            if (!source) continue;
-
-            lineUpdates[trackKey] = reorderWordTrack(source, indices, timeDelta, duration);
+          if (wordIndices.size > 0 && moveLine.words) {
+            lineUpdates.words = reorderWordTrack(moveLine.words, wordIndices, timeDelta, duration);
+          }
+          if (bgIndices.size > 0 && moveLine.backgroundWords) {
+            const reordered = reorderWordTrack(moveLine.backgroundWords, bgIndices, timeDelta, duration);
+            Object.assign(lineUpdates, manualBackgroundWordEdit(reordered));
           }
 
           if (Object.keys(lineUpdates).length > 0) {
@@ -322,7 +320,7 @@ function useTimelineDnd(lines: LyricLine[]) {
         if (activeData.trackType === "word") {
           updateLineWithHistory(activeData.lineId, { words: normalized });
         } else {
-          updateLineWithHistory(activeData.lineId, { backgroundWords: normalized });
+          updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized));
         }
       }
     },

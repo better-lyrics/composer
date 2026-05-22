@@ -1067,3 +1067,72 @@ describe("shiftSelectionsTogether", () => {
     expect(l2Words[1].end - l1Words[0].begin).toBeCloseTo(2);
   });
 });
+
+describe("shiftSelectionsTogether · background provenance", () => {
+  it("stamps backgroundTextSource manual when nudging background words", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "A",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 2, end: 3 }],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "bg", wordIndex: 0 }]);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const update = result.updates.find((u) => u.id === "A");
+    expect((update?.updates.backgroundWords as { begin: number }[])?.[0].begin).toBeCloseTo(2.1);
+    expect(update?.updates.backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves the nudged background word data unchanged apart from timing", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "A",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "ooh aah",
+        backgroundWords: [
+          { text: "ooh ", begin: 2, end: 2.5 },
+          { text: "aah", begin: 2.5, end: 3 },
+        ],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const partitioned = partitionNudgeSelections(lines, [
+      { lineId: "A", type: "bg", wordIndex: 0 },
+      { lineId: "A", type: "bg", wordIndex: 1 },
+    ]);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const bg = result.updates.find((u) => u.id === "A")?.updates.backgroundWords as {
+      text: string;
+      begin: number;
+      end: number;
+    }[];
+    expect(bg.map((w) => w.text)).toEqual(["ooh ", "aah"]);
+    expect(bg).toHaveLength(2);
+  });
+
+  it("does not touch background provenance when nudging only main words", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "A",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 5, end: 6 }],
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 2, end: 3 }],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const update = result.updates.find((u) => u.id === "A");
+    expect(update?.updates.backgroundTextSource).toBeUndefined();
+    expect(update?.updates.backgroundWords).toBeUndefined();
+  });
+});

@@ -23,6 +23,7 @@ import { findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-a
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
@@ -167,7 +168,7 @@ function useTimelineKeyboard(
       if (targetWord.type === "word") {
         updateLineWithHistory(line.id, { words: updatedWords });
       } else {
-        updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+        updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
       }
     },
     [lines, duration, scrollContainerRef],
@@ -410,7 +411,12 @@ function useTimelineKeyboard(
           if (run.type === "word") {
             void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "words");
           } else {
-            void handleWordChangeWithDivergenceCheck(run.lineId, updatedWords, "backgroundWords");
+            void handleWordChangeWithDivergenceCheck(
+              run.lineId,
+              updatedWords,
+              "backgroundWords",
+              manualBackgroundWordEdit(updatedWords),
+            );
           }
           useTimelineStore.getState().clearSelection();
           break;

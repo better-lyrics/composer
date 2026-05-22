@@ -3,6 +3,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
@@ -197,7 +198,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
           lineUpdates.words = mergeWordsIntoTrack(line.words ?? [], newWords);
         }
         if (newBgWords.length > 0) {
-          lineUpdates.backgroundWords = mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords);
+          Object.assign(
+            lineUpdates,
+            manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)),
+          );
         }
 
         updates.push({ id: line.id, updates: lineUpdates });

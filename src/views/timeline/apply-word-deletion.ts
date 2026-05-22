@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
@@ -59,21 +60,19 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
       willHaveNoMainWords = nextMain.length === 0;
     }
 
-    let nextBg = line.backgroundWords;
-    if ((line.backgroundWords?.length ?? 0) > 0 && bgIdxs.size > 0 && line.backgroundWords) {
+    const bgEdited = (line.backgroundWords?.length ?? 0) > 0 && bgIdxs.size > 0 && line.backgroundWords !== undefined;
+    let bgFields: Partial<LyricLine> = {};
+    if (bgEdited && line.backgroundWords) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(line.backgroundWords, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
-      nextBg = remaining.length > 0 ? remaining : undefined;
+      bgFields = remaining.length > 0 ? manualBackgroundWordEdit(remaining) : CLEARED_BACKGROUND;
     }
 
-    const bgRemains = nextBg !== undefined && nextBg.length > 0;
     const updatedLine = reconcileLine({
       ...line,
       words: nextMain,
-      backgroundWords: nextBg,
       text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : line.text,
-      backgroundText: nextBg && nextBg.length > 0 ? reconstructLineText(nextBg, splitChar) : undefined,
-      backgroundTextSource: bgRemains ? line.backgroundTextSource : undefined,
+      ...bgFields,
       ...(willHaveNoMainWords ? { begin: undefined, end: undefined } : {}),
     });
 

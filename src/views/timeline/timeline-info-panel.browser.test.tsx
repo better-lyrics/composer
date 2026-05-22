@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -84,5 +85,54 @@ describe("BackgroundTextEditor provenance", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
+  });
+});
+
+describe("TimelineInfoPanel bg word retiming provenance", () => {
+  function lineWithBg() {
+    return createLine({
+      id: "l1",
+      text: "main",
+      words: [createWord({ text: "main", begin: 0, end: 1 })],
+      backgroundText: "ooh",
+      backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
+      backgroundTextSource: "extraction",
+    });
+  }
+
+  it("stamps backgroundTextSource manual when a bg word's begin is set to the cursor", async () => {
+    useAudioStore.setState({ currentTime: 1.3, duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBg()] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].begin).toBeCloseTo(1.3);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("stamps backgroundTextSource manual when a bg word's end is set to the cursor", async () => {
+    useAudioStore.setState({ currentTime: 1.7, duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBg()] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set End/ }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves background provenance untouched when a main word's begin is retimed", async () => {
+    useAudioStore.setState({ currentTime: 0.4, duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBg()] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }] });
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

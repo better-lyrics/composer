@@ -1,6 +1,8 @@
 import type { LineFields, LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
+import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -42,7 +44,19 @@ const CLEARED_BACKGROUND: BackgroundFields = {
   backgroundTextSource: undefined,
 };
 
+// Any timeline edit of a line's background words (retime, split, merge, add,
+// delete, drag) is manual curation: a re-paste or re-extraction must not
+// silently overwrite it. This stamps source "manual" and keeps backgroundText
+// coherent with the edited word array.
+function manualBackgroundWordEdit(words: WordTiming[]): BackgroundFields {
+  return backgroundFields({
+    words,
+    text: reconstructLineText(words, getSplitCharacter()),
+    source: "manual",
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { applyBackground, backgroundFields, CLEARED_BACKGROUND };
+export { applyBackground, backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit };
 export type { BackgroundFields, BackgroundParams, BackgroundSource };

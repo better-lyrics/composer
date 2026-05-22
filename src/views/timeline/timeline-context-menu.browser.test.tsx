@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+
+function findButton(pattern: RegExp): HTMLButtonElement | undefined {
+  return Array.from(document.querySelectorAll("button")).find((b) => pattern.test(b.textContent ?? ""));
+}
 
 function openWordContextMenu(lineId: string) {
   useTimelineStore.setState({
@@ -164,5 +169,134 @@ describe("TimelineContextMenu", () => {
     expect(words[1].end).toBe(words[2].begin);
     expect(words[0].begin).toBe(0);
     expect(words[2].end).toBe(1.3);
+  });
+});
+
+describe("TimelineContextMenu background provenance", () => {
+  function bgLine() {
+    return createLine({
+      id: "l1",
+      text: "main",
+      words: [createWord({ text: "main", begin: 0, end: 1 })],
+      backgroundText: "ooh aah",
+      backgroundWords: [
+        createWord({ text: "ooh ", begin: 1, end: 1.5 }),
+        createWord({ text: "aah", begin: 1.5, end: 2 }),
+      ],
+      backgroundTextSource: "extraction",
+    });
+  }
+
+  it("stamps backgroundTextSource manual when a bg word is deleted but others remain", async () => {
+    useProjectStore.setState({ lines: [bgLine()] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+      },
+      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Delete word/i)?.click();
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundWords?.map((w) => w.text)).toEqual(["aah"]);
+    expect(updated.backgroundTextSource).toBe("manual");
+  });
+
+  it("clears all three background fields when the last bg word is deleted", async () => {
+    const single = createLine({
+      id: "l1",
+      text: "main",
+      words: [createWord({ text: "main", begin: 0, end: 1 })],
+      backgroundText: "ooh",
+      backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
+      backgroundTextSource: "extraction",
+    });
+    useProjectStore.setState({ lines: [single] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+      },
+      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Delete word/i)?.click();
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundWords).toBeUndefined();
+    expect(updated.backgroundText).toBeUndefined();
+    expect(updated.backgroundTextSource).toBeUndefined();
+  });
+
+  it("stamps backgroundTextSource manual when a bg word is added via 'Add word here'", async () => {
+    useAudioStore.setState({ duration: 10 });
+    useProjectStore.setState({ lines: [bgLine()] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "track", lineId: "l1", lineIndex: 0, time: 5, type: "bg" },
+      },
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Add word here/i)?.click();
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundWords?.length).toBe(3);
+    expect(updated.backgroundTextSource).toBe("manual");
+  });
+
+  it("stamps backgroundTextSource manual when bg words are merged", async () => {
+    useProjectStore.setState({ lines: [bgLine()] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+      },
+      selectedWords: [
+        { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" },
+        { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "bg" },
+      ],
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Merge words/i)?.click();
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(updated.backgroundWords).toHaveLength(1);
+    expect(updated.backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves background provenance untouched when a main word is deleted", async () => {
+    const line = createLine({
+      id: "l1",
+      text: "I love",
+      words: [createWord({ text: "I ", begin: 0, end: 0.5 }), createWord({ text: "love", begin: 0.5, end: 1 })],
+      backgroundText: "ooh",
+      backgroundWords: [createWord({ text: "ooh", begin: 1, end: 2 })],
+      backgroundTextSource: "extraction",
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+      },
+      selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Delete word/i)?.click();
+
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

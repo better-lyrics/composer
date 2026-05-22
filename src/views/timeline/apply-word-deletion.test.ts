@@ -182,7 +182,7 @@ describe("applyWordDeletion", () => {
     expect(result[0].backgroundTextSource).toBeUndefined();
   });
 
-  it("keeps backgroundTextSource when bg words remain after deletion (timing-only edit)", () => {
+  it("stamps backgroundTextSource manual when a partial bg deletion leaves words behind", () => {
     const lines: LyricLine[] = [
       {
         id: "l1",
@@ -194,12 +194,36 @@ describe("applyWordDeletion", () => {
           { text: "oh", begin: 0, end: 0.5 },
           { text: "oh", begin: 0.5, end: 1 },
         ],
-        backgroundTextSource: "manual",
+        backgroundTextSource: "extraction",
       },
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
     expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
     expect(result[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves backgroundTextSource untouched when only main words are deleted", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "l1",
+        text: "I love",
+        agentId: "v1",
+        words: [
+          { text: "I ", begin: 0, end: 0.3 },
+          { text: "love", begin: 0.3, end: 0.6 },
+        ],
+        backgroundText: "ohoh",
+        backgroundWords: [
+          { text: "oh", begin: 0, end: 0.5 },
+          { text: "oh", begin: 0.5, end: 1 },
+        ],
+        backgroundTextSource: "extraction",
+      },
+    ];
+    const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 0 }]);
+    expect(result[0].words?.map((w) => w.text)).toEqual(["love"]);
+    expect(result[0].backgroundWords?.length).toBe(2);
+    expect(result[0].backgroundTextSource).toBe("extraction");
   });
 
   it("leaves a word-timed line empty (not removed) when all main + bg words are deleted in one pass", () => {

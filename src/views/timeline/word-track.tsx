@@ -1,4 +1,5 @@
 import { isWordSelected } from "@/domain/selection/identity";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -360,7 +361,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     if (trackType === "word") {
       updateLineWithHistory(lineId, { words: newWords });
     } else {
-      updateLineWithHistory(lineId, { backgroundWords: newWords });
+      updateLineWithHistory(lineId, manualBackgroundWordEdit(newWords));
     }
 
     useTimelineStore.getState().setEditingWord({ lineId, wordIndex: newIndex, type: trackType });

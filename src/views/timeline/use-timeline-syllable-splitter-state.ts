@@ -1,3 +1,4 @@
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -115,7 +116,16 @@ function useTimelineSyllableSplitterState({
 
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
 
-    void handleWordChangeWithDivergenceCheck(lineId, updatedWords, type === "word" ? "words" : "backgroundWords");
+    if (type === "word") {
+      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words");
+    } else {
+      void handleWordChangeWithDivergenceCheck(
+        lineId,
+        updatedWords,
+        "backgroundWords",
+        manualBackgroundWordEdit(updatedWords),
+      );
+    }
   }, [target, splitPoints]);
 
   const confirmSplit = useCallback(async () => {

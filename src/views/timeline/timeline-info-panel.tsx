@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
+import { backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { Button } from "@/ui/button";
 import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -186,7 +186,7 @@ const TimelineInfoPanel: React.FC = () => {
     if (selectedWord.type === "word") {
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
     }
   }, [selectedWord, lines, updateLineWithHistory]);
 
@@ -215,7 +215,7 @@ const TimelineInfoPanel: React.FC = () => {
     if (selectedWord.type === "word") {
       updateLineWithHistory(line.id, { words: updatedWords });
     } else {
-      updateLineWithHistory(line.id, { backgroundWords: updatedWords });
+      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
     }
   }, [selectedWord, lines, duration, updateLineWithHistory]);
 
