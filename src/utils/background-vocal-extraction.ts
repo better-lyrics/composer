@@ -131,6 +131,7 @@ function extractInlineFromLine(line: LyricLine): LyricLine {
   const classified = classifyLine(line.text);
   if (classified.kind !== "inline") return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified);
+  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
   const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
   return applyBackground(
     { ...line, text: classified.mainText },

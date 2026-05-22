@@ -446,6 +446,42 @@ describe("extractInlineFromLine", () => {
     expect(line.text).toBe("Hello (ooh) world");
     expect(line.backgroundText).toBe("ah");
   });
+
+  it("returns the same reference for a line-synced line carrying manual background words", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hi (ooh) there",
+      agentId: "v1",
+      begin: 1,
+      end: 3,
+      backgroundWords: [{ text: "clap", begin: 1.2, end: 1.8 }],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("returns the same reference for an untimed line carrying manual background words", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hi (ooh) there",
+      agentId: "v1",
+      backgroundWords: [{ text: "clap", begin: 1.2, end: 1.8 }],
+    };
+    expect(extractInlineFromLine(line)).toBe(line);
+  });
+
+  it("still extracts a line-synced line when backgroundWords is an empty array", () => {
+    const line: LyricLine = {
+      id: "1",
+      text: "Hi (ooh) there",
+      agentId: "v1",
+      begin: 1,
+      end: 3,
+      backgroundWords: [],
+    };
+    const result = extractInlineFromLine(line);
+    expect(result.text).toBe("Hi there");
+    expect(result.backgroundText).toBe("ooh");
+  });
 });
 
 // -- extractInlineFromLine: word-synced extraction -----------------------------
