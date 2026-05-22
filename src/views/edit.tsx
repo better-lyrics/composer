@@ -472,6 +472,20 @@ const EditPanel: React.FC = () => {
     }, RUN_DEBOUNCE_MS);
   }, [finalizeRun]);
 
+  const handleTextareaBlur = useCallback(() => {
+    finalizeRun();
+    if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
+    const current = useProjectStore.getState().lines;
+    const next = extractBackgroundVocals(current, {
+      mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+    });
+    if (next.length === current.length && next.every((line, i) => line === current[i])) return;
+    useProjectStore.getState().setLinesWithHistory(next);
+    const committed = useProjectStore.getState().lines;
+    linesSetByUs.current = committed;
+    setRawText(committed.map((line) => line.text).join("\n"));
+  }, [finalizeRun]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
@@ -725,7 +739,7 @@ const EditPanel: React.FC = () => {
             id={textareaId}
             value={rawText}
             onChange={handleTextChange}
-            onBlur={finalizeRun}
+            onBlur={handleTextareaBlur}
             onPaste={() => {
               pastedRef.current = true;
             }}

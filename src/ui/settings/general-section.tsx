@@ -38,7 +38,7 @@ const GeneralSection: React.FC<{
       />
       <ToggleSetting
         label="Auto-extract background vocals"
-        description="Move parenthesised text into background vocals when lyrics are pasted or imported."
+        description="Move parenthesised text into background vocals when lyrics are pasted, imported, or edited."
         settingKey="autoExtractBackgroundVocals"
       />
       <ToggleSetting
