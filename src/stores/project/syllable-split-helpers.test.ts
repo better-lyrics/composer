@@ -133,7 +133,7 @@ describe("applySyllableSplitToLines · background provenance", () => {
     expect(result[0].backgroundTextSource).toBe("extraction");
   });
 
-  it("flips a matching sibling line's background track to manual", () => {
+  it("flips a matching identical-word line's background track to manual", () => {
     const lines = [
       createLine({
         id: "l1",
