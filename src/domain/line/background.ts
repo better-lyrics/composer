@@ -59,4 +59,4 @@ function manualBackgroundWordEdit(words: WordTiming[]): BackgroundFields {
 // -- Exports ------------------------------------------------------------------
 
 export { applyBackground, backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit };
-export type { BackgroundFields, BackgroundParams, BackgroundSource };
+export type { BackgroundSource };
