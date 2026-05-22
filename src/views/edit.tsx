@@ -6,6 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import { backgroundFields } from "@/domain/line/background";
+import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
@@ -341,15 +342,19 @@ const EditPanel: React.FC = () => {
     return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
   }, [lines, extractOptions]);
 
+  const commitLinesWithHistory = useCallback((nextLines: LyricLine[], nextGroups?: LinkGroup[]) => {
+    useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
+    const committed = useProjectStore.getState().lines;
+    linesSetByUs.current = committed;
+    setRawText(committed.map((line) => line.text).join("\n"));
+  }, []);
+
   const handleExtractBackgroundVocals = useCallback(() => {
     const current = useProjectStore.getState().lines;
     const next = extractBackgroundVocals(current, extractOptions);
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
-    useProjectStore.getState().setLinesWithHistory(next);
-    const committed = useProjectStore.getState().lines;
-    linesSetByUs.current = committed;
-    setRawText(committed.map((line) => line.text).join("\n"));
-  }, [extractOptions]);
+    commitLinesWithHistory(next);
+  }, [extractOptions, commitLinesWithHistory]);
 
   const handleAgentChange = useCallback((lineId: string, agentId: string) => {
     useProjectStore.getState().updateLineWithHistory(lineId, { agentId });
@@ -480,11 +485,8 @@ const EditPanel: React.FC = () => {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
-    useProjectStore.getState().setLinesWithHistory(next);
-    const committed = useProjectStore.getState().lines;
-    linesSetByUs.current = committed;
-    setRawText(committed.map((line) => line.text).join("\n"));
-  }, [finalizeRun]);
+    commitLinesWithHistory(next);
+  }, [finalizeRun, commitLinesWithHistory]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -563,10 +565,7 @@ const EditPanel: React.FC = () => {
           const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
           const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
           finalizeRun();
-          useProjectStore.getState().setLinesWithHistory(detached, nextGroups);
-          const committed = useProjectStore.getState().lines;
-          linesSetByUs.current = committed;
-          setRawText(committed.map((l) => l.text).join("\n"));
+          commitLinesWithHistory(detached, nextGroups);
         });
         return;
       }
@@ -585,10 +584,7 @@ const EditPanel: React.FC = () => {
           });
         }
         finalizeRun();
-        useProjectStore.getState().setLinesWithHistory(finalLines);
-        const committed = useProjectStore.getState().lines;
-        linesSetByUs.current = committed;
-        setRawText(committed.map((line) => line.text).join("\n"));
+        commitLinesWithHistory(finalLines);
         return;
       }
 
@@ -600,7 +596,7 @@ const EditPanel: React.FC = () => {
       setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, setLines, finalizeRun, scheduleRunFinalize],
+    [confirm, defaultAgentId, groups, lines, setLines, finalizeRun, scheduleRunFinalize, commitLinesWithHistory],
   );
 
   const handleFileImport = useCallback(
