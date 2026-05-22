@@ -1,5 +1,6 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -231,7 +232,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       return rest;
     });
 
-    get().applyWordCountChange(lineId, newWords, field, "apply");
+    const extraUpdates = field === "backgroundWords" ? manualBackgroundWordEdit(newWords) : {};
+    get().applyWordCountChange(lineId, newWords, field, "apply", extraUpdates);
   },
 
   mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>
@@ -249,7 +251,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (!lineWords) return state;
       const snapped = closeIntraGroupGaps(lineWords);
       if (snapped === lineWords) return state;
-      const newLines = state.lines.map((l) => (l.id === lineId ? { ...l, [field]: snapped } : l));
+      const lineUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(snapped) : { [field]: snapped };
+      const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...l, ...lineUpdate }) : l));
       return commitHistory(state, { lines: newLines });
     }),
 

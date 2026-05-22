@@ -1,5 +1,5 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
-import { applyBackground, CLEARED_BACKGROUND } from "@/domain/line/background";
+import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -14,6 +14,14 @@ import { applySiblingWords } from "@/utils/word-diff";
 type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; wordIndex: number };
 
 // -- Helpers ------------------------------------------------------------------
+
+// A field-targeted word write that keeps background provenance coherent: writing
+// the backgroundWords track is a user edit, so it routes through the funnel and
+// stamps source "manual". A main-words write carries no provenance.
+function writeFieldWords(line: LyricLine, field: "words" | "backgroundWords", words: WordTiming[]): LyricLine {
+  if (field === "backgroundWords") return reconcileLine({ ...line, ...manualBackgroundWordEdit(words) });
+  return reconcileLine({ ...line, words });
+}
 
 function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
   const byLineField = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
@@ -46,11 +54,11 @@ function applyExplicitTargetToLines(
 
   return lines.map((line) => {
     if (line.id === lineId) {
-      return { ...line, [field]: newWords };
+      return writeFieldWords(line, field, newWords);
     }
     if (isLinkedSibling(line, linkScope)) {
       const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
-      if (propagated) return { ...line, [field]: propagated };
+      if (propagated) return writeFieldWords(line, field, propagated);
     }
     return line;
   });
@@ -167,7 +175,7 @@ function applyMergeSyllableGroup(
     }
     if (!changed) return line;
     mutated = true;
-    return reconcileLine({ ...line, [field]: collapsed });
+    return writeFieldWords(line, field, collapsed);
   });
   if (!mutated) return null;
   return newLines;

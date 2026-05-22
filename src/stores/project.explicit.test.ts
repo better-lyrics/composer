@@ -403,6 +403,177 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
   });
 });
 
+describe("toggleWordExplicit · background provenance", () => {
+  function seedExtractionBgLine() {
+    seedSingleLine({
+      id: "L1",
+      text: "main",
+      agentId: "v1",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "oh shit",
+      backgroundTextSource: "extraction",
+      backgroundWords: [
+        { text: "oh ", begin: 1, end: 1.25 },
+        { text: "shit", begin: 1.25, end: 1.5 },
+      ],
+    });
+  }
+
+  it("flips backgroundTextSource to manual after a background-word edit", () => {
+    seedExtractionBgLine();
+    useProjectStore.getState().toggleWordExplicit("L1", "backgroundWords", [1]);
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+    expect(line.backgroundWords![1].explicit).toBe(true);
+    expect(line.backgroundWords![0].explicit).toBeUndefined();
+    expect(line.backgroundText).toBe("oh shit");
+  });
+
+  it("leaves backgroundTextSource untouched when editing the main words field", () => {
+    seedExtractionBgLine();
+    useProjectStore.getState().toggleWordExplicit("L1", "words", [0]);
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("extraction");
+    expect(line.words![0].explicit).toBe(true);
+  });
+
+  it("flips linked siblings to manual when a background-word edit propagates", () => {
+    const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().setLines([
+      {
+        id: "A",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { text: "oh ", begin: 1, end: 1.25 },
+          { text: "shit", begin: 1.25, end: 1.5 },
+        ],
+      },
+      {
+        id: "B",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 30, end: 31 }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { text: "oh ", begin: 31, end: 31.25 },
+          { text: "shit", begin: 31.25, end: 31.5 },
+        ],
+      },
+    ]);
+    useProjectStore.getState().toggleWordExplicit("A", "backgroundWords", [1]);
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].backgroundTextSource).toBe("manual");
+    expect(lines[1].backgroundTextSource).toBe("manual");
+    expect(lines[0].backgroundWords![1].explicit).toBe(true);
+    expect(lines[1].backgroundWords![1].explicit).toBe(true);
+    expect(lines[1].backgroundWords![1].begin).toBeCloseTo(31.25);
+  });
+
+  it("undo restores the prior extraction provenance", () => {
+    seedExtractionBgLine();
+    useProjectStore.getState().toggleWordExplicit("L1", "backgroundWords", [1]);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});
+
+describe("markWordsExplicit · background provenance", () => {
+  it("flips backgroundTextSource to manual after a background-word edit", () => {
+    seedSingleLine({
+      id: "L1",
+      text: "main",
+      agentId: "v1",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "oh shit",
+      backgroundTextSource: "extraction",
+      backgroundWords: [
+        { text: "oh ", begin: 1, end: 1.25 },
+        { text: "shit", begin: 1.25, end: 1.5 },
+      ],
+    });
+    useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "backgroundWords", wordIndex: 0 }], true);
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+    expect(line.backgroundWords![0].explicit).toBe(true);
+    expect(line.backgroundText).toBe("oh shit");
+  });
+
+  it("leaves backgroundTextSource untouched when marking the main words field", () => {
+    seedSingleLine({
+      id: "L1",
+      text: "main",
+      agentId: "v1",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundText: "oh shit",
+      backgroundTextSource: "extraction",
+      backgroundWords: [
+        { text: "oh ", begin: 1, end: 1.25 },
+        { text: "shit", begin: 1.25, end: 1.5 },
+      ],
+    });
+    useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true);
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("extraction");
+    expect(line.words![0].explicit).toBe(true);
+  });
+
+  it("flips linked siblings to manual when a background-word edit propagates", () => {
+    const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
+    useProjectStore.getState().setGroups([group]);
+    useProjectStore.getState().setLines([
+      {
+        id: "A",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { text: "oh ", begin: 1, end: 1.25 },
+          { text: "shit", begin: 1.25, end: 1.5 },
+        ],
+      },
+      {
+        id: "B",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 30, end: 31 }],
+        backgroundText: "oh shit",
+        backgroundTextSource: "extraction",
+        backgroundWords: [
+          { text: "oh ", begin: 31, end: 31.25 },
+          { text: "shit", begin: 31.25, end: 31.5 },
+        ],
+      },
+    ]);
+    useProjectStore.getState().markWordsExplicit([{ lineId: "A", field: "backgroundWords", wordIndex: 0 }], true);
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].backgroundTextSource).toBe("manual");
+    expect(lines[1].backgroundTextSource).toBe("manual");
+    expect(lines[0].backgroundWords![0].explicit).toBe(true);
+    expect(lines[1].backgroundWords![0].explicit).toBe(true);
+  });
+});
+
 describe("markWordsExplicit · batch action", () => {
   it("applies multiple targets in a single history entry so one undo reverts them all", () => {
     useProjectStore.getState().setLines([

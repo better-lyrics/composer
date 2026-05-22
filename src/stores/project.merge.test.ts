@@ -164,6 +164,111 @@ describe("mergeSyllableGroupIntoWord · linked propagation", () => {
   });
 });
 
+describe("mergeSyllableGroupIntoWord · background provenance", () => {
+  it("flips backgroundTextSource to manual after a background-track merge", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b1" },
+          { text: "oh", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+        ],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+    expect((line.backgroundWords ?? []).map((w) => w.text)).toEqual(["oooh"]);
+  });
+
+  it("leaves backgroundTextSource untouched when merging the main track", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+          { text: "ful", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+        ],
+        backgroundWords: [{ text: "ooh", begin: 1, end: 1.5 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0, 1, 2]);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("flips linked siblings to manual when a background-track merge propagates", () => {
+    useProjectStore.getState().addGroup({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 });
+    useProjectStore.getState().setLines([
+      {
+        id: "a0",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b_a0" },
+          { text: "oh", begin: 1.2, end: 1.5, syllableGroupId: "b_a0" },
+        ],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+      {
+        id: "a1",
+        text: "main",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 0,
+        words: [{ text: "main", begin: 10, end: 11 }],
+        backgroundWords: [
+          { text: "oo", begin: 11, end: 11.2, syllableGroupId: "b_a1" },
+          { text: "oh", begin: 11.2, end: 11.5, syllableGroupId: "b_a1" },
+        ],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("a0", "backgroundWords", [0, 1]);
+    const lines = useProjectStore.getState().lines;
+    expect(lines.find((l) => l.id === "a0")?.backgroundTextSource).toBe("manual");
+    expect(lines.find((l) => l.id === "a1")?.backgroundTextSource).toBe("manual");
+    expect(lines.find((l) => l.id === "a1")?.backgroundWords?.map((w) => w.text)).toEqual(["oooh"]);
+  });
+
+  it("undo restores the prior extraction provenance", () => {
+    useProjectStore.getState().setLinesWithHistory([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b1" },
+          { text: "oh", begin: 1.2, end: 1.5, syllableGroupId: "b1" },
+        ],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "backgroundWords", [0, 1]);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});
+
 // -- snapSyllablesFlush -------------------------------------------------------
 
 describe("snapSyllablesFlush", () => {
@@ -299,5 +404,62 @@ describe("snapSyllablesFlush", () => {
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0].words?.map((w) => ({ begin: w.begin, end: w.end }));
     expect(restored).toEqual(before);
+  });
+});
+
+describe("snapSyllablesFlush · background provenance", () => {
+  function seedGappedBgLine() {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "main",
+        agentId: "v1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundWords: [
+          { text: "oo", begin: 1, end: 1.2, syllableGroupId: "b1" },
+          { text: "oh", begin: 1.5, end: 1.7, syllableGroupId: "b1" },
+        ],
+        backgroundText: "oooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+  }
+
+  it("flips backgroundTextSource to manual after a background-track snap", () => {
+    seedGappedBgLine();
+    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundTextSource).toBe("manual");
+    expect(line.backgroundWords?.[0].end).toBe(line.backgroundWords?.[1].begin);
+    expect(line.backgroundText).toBe("oo|oh");
+  });
+
+  it("leaves backgroundTextSource untouched when snapping the main track", () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "line-1",
+        text: "beautiful",
+        agentId: "v1",
+        words: [
+          { text: "beau", begin: 0, end: 0.3, syllableGroupId: "g1" },
+          { text: "ti", begin: 0.5, end: 0.8, syllableGroupId: "g1" },
+          { text: "ful", begin: 1.0, end: 1.3, syllableGroupId: "g1" },
+        ],
+        backgroundWords: [{ text: "ooh", begin: 2, end: 2.5 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    useProjectStore.getState().snapSyllablesFlush("line-1", "words");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("undo restores the prior extraction provenance", () => {
+    seedGappedBgLine();
+    useProjectStore.getState().clearHistory();
+    useProjectStore.getState().snapSyllablesFlush("line-1", "backgroundWords");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

@@ -71,3 +71,70 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
     expect(useProjectStore.getState().lines).toBe(before);
   });
 });
+
+describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background provenance", () => {
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+  });
+
+  it("flips backgroundTextSource to manual after splitting a background word", () => {
+    const lines = [
+      createLine({
+        id: "l1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "running",
+        backgroundTextSource: "extraction",
+        backgroundWords: [{ text: "running", begin: 1, end: 2 }],
+      }),
+    ];
+    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "l1", wordIndex: 0, type: "bg" },
+      splitPoints: [3],
+      caseInsensitive: false,
+    });
+    const line = useProjectStore.getState().lines[0];
+    expect(line.backgroundWords).toHaveLength(2);
+    expect(line.backgroundTextSource).toBe("manual");
+  });
+
+  it("leaves backgroundTextSource untouched when only the main track is split", () => {
+    const lines = [
+      createLine({
+        id: "l1",
+        words: [{ text: "running", begin: 0, end: 1 }],
+        backgroundText: "ooh",
+        backgroundTextSource: "extraction",
+        backgroundWords: [{ text: "ooh", begin: 1, end: 2 }],
+      }),
+    ];
+    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "l1", wordIndex: 0, type: "word" },
+      splitPoints: [3],
+      caseInsensitive: false,
+    });
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("undo restores the prior extraction provenance", () => {
+    const lines = [
+      createLine({
+        id: "l1",
+        words: [{ text: "main", begin: 0, end: 1 }],
+        backgroundText: "running",
+        backgroundTextSource: "extraction",
+        backgroundWords: [{ text: "running", begin: 1, end: 2 }],
+      }),
+    ];
+    useProjectStore.getState().setLinesWithHistory(lines);
+    useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({
+      source: { lineId: "l1", wordIndex: 0, type: "bg" },
+      splitPoints: [3],
+      caseInsensitive: false,
+    });
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});

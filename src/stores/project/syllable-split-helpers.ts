@@ -1,3 +1,4 @@
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
@@ -42,7 +43,7 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
   return reconcileLine({
     ...line,
     ...(mainTrack !== line.words ? { words: mainTrack } : {}),
-    ...(bgTrack !== line.backgroundWords ? { backgroundWords: bgTrack } : {}),
+    ...(bgTrack && bgTrack !== line.backgroundWords ? manualBackgroundWordEdit(bgTrack) : {}),
   });
 }
 
