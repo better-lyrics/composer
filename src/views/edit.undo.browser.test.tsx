@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
@@ -47,9 +48,35 @@ function pressRedo(textarea: HTMLTextAreaElement, opts: { ctrlY?: boolean } = {}
   textarea.dispatchEvent(new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true }));
 }
 
+function dispatchWindowUndo(opts: { ctrl?: boolean } = {}): KeyboardEvent {
+  const event = new KeyboardEvent("keydown", {
+    key: "z",
+    code: "KeyZ",
+    metaKey: !opts.ctrl,
+    ctrlKey: opts.ctrl ?? false,
+    bubbles: true,
+    cancelable: true,
+  });
+  window.dispatchEvent(event);
+  return event;
+}
+
+function dispatchWindowRedo(opts: { ctrlY?: boolean } = {}): KeyboardEvent {
+  const init: KeyboardEventInit = opts.ctrlY
+    ? { key: "y", code: "KeyY", ctrlKey: true }
+    : { key: "z", code: "KeyZ", metaKey: true, shiftKey: true };
+  const event = new KeyboardEvent("keydown", { ...init, bubbles: true, cancelable: true });
+  window.dispatchEvent(event);
+  return event;
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("editor undo and redo", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+  });
+
   it("reverts a typing run on blur then undo, and redo restores it", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
@@ -187,7 +214,158 @@ describe("editor undo and redo", () => {
   });
 });
 
+describe("editor undo and redo without textarea focus", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+  });
+
+  it("undoes a history-committed change when focus is outside the textarea", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello", backgroundText: undefined })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    blurTextarea(textarea);
+    document.body.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { backgroundText: "ooh" });
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(document.activeElement).not.toBe(textarea);
+
+    dispatchWindowUndo();
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe(undefined);
+  });
+
+  it("undoes via Ctrl+Z on window when focus is outside the textarea", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    blurTextarea(textarea);
+    document.body.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    dispatchWindowUndo({ ctrl: true });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+  });
+
+  it("still undoes when the textarea itself is focused", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v3" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v3");
+
+    dispatchWindowUndo();
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+  });
+
+  it("redoes via Cmd+Shift+Z on window when focus is outside the textarea", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    blurTextarea(textarea);
+    document.body.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    dispatchWindowUndo();
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+
+    dispatchWindowRedo();
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+
+  it("redoes via Ctrl+Y on window when focus is outside the textarea", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+    blurTextarea(textarea);
+    document.body.focus();
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    dispatchWindowUndo();
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v1");
+
+    dispatchWindowRedo({ ctrlY: true });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+});
+
+describe("editor window undo handler gating", () => {
+  it("does not undo when the active tab is not edit", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "sync" });
+    await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    const event = dispatchWindowUndo();
+    expect(event.defaultPrevented).toBe(false);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+
+  it("does not undo while a modal is open", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
+    await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    useModalStackStore.getState().push();
+    const event = dispatchWindowUndo();
+    expect(event.defaultPrevented).toBe(false);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+    useModalStackStore.getState().pop();
+  });
+
+  it("prevents the browser native undo on a matched Cmd+Z", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
+    await render(<EditPanel />);
+
+    const event = dispatchWindowUndo();
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it("ignores a non-undo modifier combo on window", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
+    await render(<EditPanel />);
+
+    const event = new KeyboardEvent("keydown", {
+      key: "a",
+      code: "KeyA",
+      metaKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    window.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+  });
+
+  it("removes the window listener on unmount", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })], activeTab: "edit" });
+    const screen = await render(<EditPanel />);
+
+    useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+
+    await screen.unmount();
+
+    const event = dispatchWindowUndo();
+    expect(event.defaultPrevented).toBe(false);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+});
+
 describe("editor undo edge cases", () => {
+  beforeEach(() => {
+    useProjectStore.setState({ activeTab: "edit" });
+  });
+
   it("does not corrupt text when Cmd+Z runs with nothing to undo", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Untouched" })] });
     const screen = await render(<EditPanel />);

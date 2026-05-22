@@ -1,6 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
+import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
@@ -280,6 +281,7 @@ const EditPanel: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
+  const activeTab = useProjectStore((s) => s.activeTab);
   const setLines = useProjectStore((s) => s.setLines);
   const setMetadata = useProjectStore((s) => s.setMetadata);
   const addAgent = useProjectStore((s) => s.addAgent);
@@ -470,8 +472,10 @@ const EditPanel: React.FC = () => {
     }, RUN_DEBOUNCE_MS);
   }, [finalizeRun]);
 
-  const handleTextareaKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== "edit") return;
+      if (isAnyModalOpen()) return;
       if (!(e.metaKey || e.ctrlKey)) return;
       const key = e.key.toLowerCase();
       const isUndo = key === "z" && !e.shiftKey;
@@ -481,9 +485,11 @@ const EditPanel: React.FC = () => {
       finalizeRun();
       if (isUndo) useProjectStore.getState().undo();
       else useProjectStore.getState().redo();
-    },
-    [finalizeRun],
-  );
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [activeTab, finalizeRun]);
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
@@ -719,7 +725,6 @@ const EditPanel: React.FC = () => {
             id={textareaId}
             value={rawText}
             onChange={handleTextChange}
-            onKeyDown={handleTextareaKeyDown}
             onBlur={finalizeRun}
             onPaste={() => {
               pastedRef.current = true;
