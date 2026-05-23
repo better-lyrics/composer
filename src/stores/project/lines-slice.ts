@@ -52,8 +52,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   updateLineWithHistory: (id, updates, options = {}) =>
     set((state) => {
+      const { propagateToSiblings = true, ...historyOptions } = options;
       const target = state.lines.find((l) => l.id === id);
-      const linkScope = target ? getLinkScope(target) : null;
+      const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
       const linkedUpdates = linkScope ? extractLinkedFields(updates) : null;
       const sourceWordsBefore = target?.words;
       const sourceWordsAfter = updates.words;
@@ -77,11 +78,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines }, options);
+      return commitHistory(state, { lines: newLines }, historyOptions);
     }),
 
   updateLinesWithHistory: (updates, options = {}) =>
     set((state) => {
+      const { propagateToSiblings = true, ...historyOptions } = options;
       const newLines = [...state.lines];
       const indexById = new Map<string, number>();
       for (let i = 0; i < newLines.length; i++) indexById.set(newLines[i].id, i);
@@ -89,7 +91,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       for (const { id, updates: lineUpdates } of updates) {
         const targetIdx = indexById.get(id);
         const target = targetIdx !== undefined ? newLines[targetIdx] : undefined;
-        const linkScope = target ? getLinkScope(target) : null;
+        const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
         const sourceWordsBefore = target?.words;
         const sourceWordsAfter = lineUpdates.words;
         const sourceBgBefore = target?.backgroundWords;
@@ -115,7 +117,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
       }
 
-      return commitHistory(state, { lines: newLines }, options);
+      return commitHistory(state, { lines: newLines }, historyOptions);
     }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>

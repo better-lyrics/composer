@@ -90,7 +90,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         const lineUpdates: Partial<LyricLine> = {};
         if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
         if (updates.end !== undefined) lineUpdates.end = updates.end;
-        updateLineWithHistory(lineId, lineUpdates);
+        updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
         return;
       }
 
@@ -102,7 +102,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, { words: updatedWords });
+      updateLineWithHistory(lineId, { words: updatedWords }, { propagateToSiblings: false });
     },
     [lines, updateLineWithHistory],
   );
@@ -125,7 +125,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
       );
       if (!updatedWords) return;
-      updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords));
+      updateLineWithHistory(lineId, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     },
     [lines, updateLineWithHistory],
   );

@@ -184,9 +184,9 @@ const TimelineInfoPanel: React.FC = () => {
     updatedWords[wordIndex] = { ...word, begin: clampedBegin };
 
     if (selectedWord.type === "word") {
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
     } else {
-      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
+      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     }
   }, [selectedWord, lines, updateLineWithHistory]);
 
@@ -213,9 +213,9 @@ const TimelineInfoPanel: React.FC = () => {
     updatedWords[wordIndex] = { ...word, end: clampedEnd };
 
     if (selectedWord.type === "word") {
-      updateLineWithHistory(line.id, { words: updatedWords });
+      updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
     } else {
-      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
+      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
     }
   }, [selectedWord, lines, duration, updateLineWithHistory]);
 
