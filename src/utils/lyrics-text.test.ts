@@ -365,3 +365,39 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[1].words).toEqual(existing[1].words);
   });
 });
+
+describe("textToLyricLines · split-character timing preservation", () => {
+  it("preserves word timing on untouched split-character lines when a blank line is appended", () => {
+    const existing: LyricLine[] = [
+      {
+        id: "L0",
+        text: "Suara hujan",
+        agentId: "v1",
+        words: [
+          { text: "Suara ", begin: 0, end: 0.5 },
+          { text: "hujan", begin: 0.5, end: 1 },
+        ],
+      },
+      {
+        id: "L1",
+        text: "Dengar|lah rindu yang menyik|sa i|ni",
+        agentId: "v1",
+        words: [
+          { text: "Dengar", begin: 1, end: 1.2 },
+          { text: "lah ", begin: 1.2, end: 1.4 },
+          { text: "rindu ", begin: 1.4, end: 1.6 },
+          { text: "yang ", begin: 1.6, end: 1.8 },
+          { text: "menyik", begin: 1.8, end: 2 },
+          { text: "sa ", begin: 2, end: 2.2 },
+          { text: "i", begin: 2.2, end: 2.4 },
+          { text: "ni", begin: 2.4, end: 2.6 },
+        ],
+      },
+    ];
+    const result = textToLyricLines("Suara hujan\nDengar|lah rindu yang menyik|sa i|ni\n", "v1", existing);
+    expect(result).toHaveLength(3);
+    expect(result[1].id).toBe("L1");
+    expect(result[1].text).toBe("Dengar|lah rindu yang menyik|sa i|ni");
+    expect(result[1].words).toEqual(existing[1].words);
+  });
+});
