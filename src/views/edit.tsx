@@ -14,7 +14,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
-import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";

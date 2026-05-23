@@ -1,15 +1,7 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import type { WordTiming } from "@/domain/word/timing";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-
-function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string): WordTiming[] | null {
-  const { parts, trailingSpace } = splitIntoWordsWithMeta(newText);
-  if (parts.length !== oldWords.length) return null;
-  return oldWords.map((oldWord, i) => ({ ...oldWord, text: parts[i] + (trailingSpace[i] ? " " : "") }));
-}
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -67,4 +59,4 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
 
 // -- Exports ------------------------------------------------------------------
 
-export { remapWordTextsPreservingTiming, textToLyricLines };
+export { textToLyricLines };

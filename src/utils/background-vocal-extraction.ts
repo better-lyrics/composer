@@ -5,8 +5,8 @@ import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
-import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";
 

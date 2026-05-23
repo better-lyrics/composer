@@ -1,5 +1,5 @@
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { remapWordTextsPreservingTiming } from "@/utils/lyrics-text";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 
 // The single chokepoint for re-deciding timing-staleness after a text edit:
 // both the exact-match and position-match branches of textToLyricLines route
