@@ -112,10 +112,14 @@ interface LineActions {
   setLines: (lines: LyricLine[]) => void;
   setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
-  updateLineWithHistory: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
+  updateLineWithHistory: (
+    id: string,
+    updates: Partial<LyricLine>,
+    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
+  ) => void;
   updateLinesWithHistory: (
     updates: Array<{ id: string; updates: Partial<LyricLine> }>,
-    options?: { deriveText?: boolean },
+    options?: { deriveText?: boolean; propagateToSiblings?: boolean },
   ) => void;
   moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;

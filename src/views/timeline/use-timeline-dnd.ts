@@ -141,7 +141,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   }
 
   if (updates.length > 0) {
-    useProjectStore.getState().updateLinesWithHistory(updates);
+    useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
   }
 }
 
@@ -307,7 +307,7 @@ function useTimelineDnd(lines: LyricLine[]) {
         }
 
         if (updates.length > 0) {
-          useProjectStore.getState().updateLinesWithHistory(updates);
+          useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
         }
       } else {
         const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
@@ -318,9 +318,11 @@ function useTimelineDnd(lines: LyricLine[]) {
 
         const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, duration);
         if (activeData.trackType === "word") {
-          updateLineWithHistory(activeData.lineId, { words: normalized });
+          updateLineWithHistory(activeData.lineId, { words: normalized }, { propagateToSiblings: false });
         } else {
-          updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized));
+          updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized), {
+            propagateToSiblings: false,
+          });
         }
       }
     },

@@ -3,7 +3,11 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-type UpdateLineWithHistory = (id: string, updates: Partial<LyricLine>) => void;
+type UpdateLineWithHistory = (
+  id: string,
+  updates: Partial<LyricLine>,
+  options?: { propagateToSiblings?: boolean },
+) => void;
 
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
@@ -34,7 +38,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     const newBegin = Math.min(word.end, Math.max(minBegin, word.begin + delta));
 
     updatedWords[wordIdx] = { ...word, begin: newBegin };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>);
+    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
+      propagateToSiblings: false,
+    });
   }
 
   function setBegin(
@@ -55,7 +61,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     const minBegin = prevWord?.end ?? 0;
     const clampedBegin = Math.min(word.end, Math.max(minBegin, newBegin));
     updatedWords[wordIdx] = { ...word, begin: clampedBegin };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>);
+    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
+      propagateToSiblings: false,
+    });
   }
 
   function nudgeEnd(
@@ -77,7 +85,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     const newEnd = Math.min(maxEnd, Math.max(word.begin, word.end + delta));
 
     updatedWords[wordIdx] = { ...word, end: newEnd };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>);
+    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
+      propagateToSiblings: false,
+    });
   }
 
   function setEnd(
@@ -98,7 +108,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
     const clampedEnd = Math.min(maxEnd, Math.max(word.begin, newEnd));
     updatedWords[wordIdx] = { ...word, end: clampedEnd };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>);
+    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
+      propagateToSiblings: false,
+    });
   }
 
   return { nudgeBegin, setBegin, nudgeEnd, setEnd };

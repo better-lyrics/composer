@@ -166,9 +166,9 @@ function useTimelineKeyboard(
 
       const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
       if (targetWord.type === "word") {
-        updateLineWithHistory(line.id, { words: updatedWords });
+        updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
       } else {
-        updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords));
+        updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
       }
     },
     [lines, duration, scrollContainerRef],
@@ -634,9 +634,11 @@ function useTimelineKeyboard(
           const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, duration);
           if (result.updates.length === 0) break;
           if (result.updates.length === 1) {
-            useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates);
+            useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {
+              propagateToSiblings: false,
+            });
           } else {
-            useProjectStore.getState().updateLinesWithHistory(result.updates);
+            useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
           }
           break;
         }

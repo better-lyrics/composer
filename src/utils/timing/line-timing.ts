@@ -1,6 +1,10 @@
 import type { LyricLine } from "@/domain/line/model";
 
-type UpdateLineWithHistory = (id: string, updates: Partial<LyricLine>) => void;
+type UpdateLineWithHistory = (
+  id: string,
+  updates: Partial<LyricLine>,
+  options?: { propagateToSiblings?: boolean },
+) => void;
 
 function nudgeLineBegin(
   lines: LyricLine[],
@@ -13,10 +17,7 @@ function nudgeLineBegin(
 
   const newBegin = Math.max(0, line.begin + delta);
   const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, {
-    begin: newBegin,
-    end: newBegin + duration,
-  });
+  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
 }
 
 function setLineBegin(
@@ -29,10 +30,7 @@ function setLineBegin(
   if (line?.begin === undefined) return;
 
   const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, {
-    begin: newBegin,
-    end: newBegin + duration,
-  });
+  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
 }
 
 export { nudgeLineBegin, setLineBegin };
