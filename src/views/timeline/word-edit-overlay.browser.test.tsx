@@ -50,7 +50,7 @@ describe("WordEditOverlay", () => {
     const line = createLine({ id: "line-1", words: [createWord({ text: "hello", begin: 0, end: 1 })] });
     useProjectStore.setState({ lines: [line] });
     useTimelineStore.setState({ zoom: 100 });
-    await render(<PositionedHarness lineId={line.id} wordKey={`${line.id}-word-0`} />);
-    await expect.poll(() => document.querySelector("input")?.getAttribute("aria-label")).toBe("Edit word");
+    const screen = await render(<PositionedHarness lineId={line.id} wordKey={`${line.id}-word-0`} />);
+    await expect.element(screen.getByRole("textbox", { name: "Edit word" })).toBeInTheDocument();
   });
 });
