@@ -95,10 +95,10 @@ const SyncPanel: React.FC = () => {
   const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
 
   const {
-    handleTap: handleTapRaw,
+    handleTap,
     handleHoldStart,
     handleHoldEnd: handleHoldEndRaw,
-    handleHoldTap: handleHoldTapRaw,
+    handleHoldTap,
     handleReset,
     handleStartSync,
     handleJumpToLine,
@@ -126,16 +126,6 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
-
-  const handleTap = useCallback(() => {
-    triggerRippleAtCurrentPosition();
-    handleTapRaw();
-  }, [handleTapRaw, triggerRippleAtCurrentPosition]);
-
-  const handleHoldTap = useCallback(() => {
-    triggerRippleAtCurrentPosition();
-    handleHoldTapRaw();
-  }, [handleHoldTapRaw, triggerRippleAtCurrentPosition]);
 
   const handleHoldEnd = useCallback(() => {
     triggerRippleAtCurrentPosition();
