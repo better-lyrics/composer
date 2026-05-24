@@ -20,6 +20,7 @@ const RenameInput: React.FC<{
     <input
       ref={focusAndSelectOnMount}
       type="text"
+      aria-label="Group name"
       value={value}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => {
