@@ -9,10 +9,16 @@ import {
   commitHeldWord,
   commitTappedWord,
   type SyncState,
-  createInitialBgWords,
   splitIntoWords,
   splitIntoWordsWithMeta,
 } from "@/utils/sync-helpers";
+import {
+  advanceSyncPosition,
+  buildInitialWordUpdates,
+  prepareSyncWord,
+  triggerPulse,
+  withBgSeedIfNeeded,
+} from "@/hooks/useSyncHandlers.helpers";
 import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
@@ -54,30 +60,18 @@ function useSyncHandlers({
   const isComplete = lineIndex >= lines.length && lines.length > 0;
 
   const handleTapWord = useCallback(() => {
-    if (lines.length === 0 || isComplete) return;
+    const prepared = prepareSyncWord(lines, lineIndex, wordIndex, isComplete);
+    if (!prepared) return;
+    const { line, lineWords, textWithSpace } = prepared;
 
-    const line = lines[lineIndex];
-    if (!line) return;
-
-    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const wordText = lineWords[wordIndex];
-    if (!wordText) return;
-
-    const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
     const fallbackEnd = currentTime + useSettingsStore.getState().defaultWordDuration;
-
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
       const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, currentTime, fallbackEnd);
       updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
     } else {
-      const updates: Partial<LyricLine> = {
-        words: [{ text: textWithSpace, begin: currentTime, end: fallbackEnd }],
-      };
-      if (line.backgroundText && !line.backgroundWords?.length) {
-        updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
-      }
+      const updates = buildInitialWordUpdates(line, textWithSpace, currentTime, fallbackEnd);
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
@@ -90,21 +84,8 @@ function useSyncHandlers({
       updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
     }
 
-    setShowPulse(true);
-    setTimeout(() => setShowPulse(false), 100);
-
-    const nextWordIndex = wordIndex + 1;
-    if (nextWordIndex >= lineWords.length) {
-      setSyncState((prev) => ({
-        ...prev,
-        position: { lineIndex: lineIndex + 1, wordIndex: 0 },
-      }));
-    } else {
-      setSyncState((prev) => ({
-        ...prev,
-        position: { ...prev.position, wordIndex: nextWordIndex },
-      }));
-    }
+    triggerPulse(setShowPulse);
+    advanceSyncPosition(setSyncState, lineIndex, wordIndex, lineWords.length);
   }, [
     lines,
     lineIndex,
@@ -128,15 +109,10 @@ function useSyncHandlers({
       updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
-    const updates: Partial<LyricLine> = { begin: currentTime, end: currentTime };
-    if (line.backgroundText && !line.backgroundWords?.length) {
-      updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
-    }
+    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
     updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
 
-    setShowPulse(true);
-    setTimeout(() => setShowPulse(false), 100);
-
+    triggerPulse(setShowPulse);
     setSyncState((prev) => ({
       ...prev,
       position: { lineIndex: lineIndex + 1, wordIndex: 0 },
@@ -154,16 +130,9 @@ function useSyncHandlers({
   ]);
 
   const handleHoldStart = useCallback(() => {
-    if (lines.length === 0 || isComplete) return;
-
-    const line = lines[lineIndex];
-    if (!line) return;
-
-    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const wordText = lineWords[wordIndex];
-    if (!wordText) return;
-
-    const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
+    const prepared = prepareSyncWord(lines, lineIndex, wordIndex, isComplete);
+    if (!prepared) return;
+    const { line, textWithSpace } = prepared;
 
     const existingWords = line.words ?? [];
 
@@ -171,12 +140,7 @@ function useSyncHandlers({
       const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, currentTime);
       updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
     } else {
-      const updates: Partial<LyricLine> = {
-        words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
-      };
-      if (line.backgroundText && !line.backgroundWords?.length) {
-        updates.backgroundWords = createInitialBgWords(line.backgroundText, currentTime);
-      }
+      const updates = buildInitialWordUpdates(line, textWithSpace, currentTime, currentTime);
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
@@ -203,21 +167,8 @@ function useSyncHandlers({
     updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
-    setShowPulse(true);
-    setTimeout(() => setShowPulse(false), 100);
-
-    const nextWordIndex = wordIndex + 1;
-    if (nextWordIndex >= lineWords.length) {
-      setSyncState((prev) => ({
-        ...prev,
-        position: { lineIndex: lineIndex + 1, wordIndex: 0 },
-      }));
-    } else {
-      setSyncState((prev) => ({
-        ...prev,
-        position: { ...prev.position, wordIndex: nextWordIndex },
-      }));
-    }
+    triggerPulse(setShowPulse);
+    advanceSyncPosition(setSyncState, lineIndex, wordIndex, lineWords.length);
   }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
 
   const handleHoldTap = useCallback(() => {
@@ -244,12 +195,7 @@ function useSyncHandlers({
         const nextWordText = nextLineWords[0];
         if (nextWordText) {
           const textWithSpace = nextTrailingSpace[0] ? `${nextWordText} ` : nextWordText;
-          const nextUpdates: Partial<LyricLine> = {
-            words: [{ text: textWithSpace, begin: currentTime, end: currentTime }],
-          };
-          if (nextLine.backgroundText && !nextLine.backgroundWords?.length) {
-            nextUpdates.backgroundWords = createInitialBgWords(nextLine.backgroundText, currentTime);
-          }
+          const nextUpdates = buildInitialWordUpdates(nextLine, textWithSpace, currentTime, currentTime);
           updateLineWithHistory(nextLine.id, nextUpdates, { deriveText: false, propagateToSiblings: false });
         }
       }
@@ -272,8 +218,7 @@ function useSyncHandlers({
       }));
     }
 
-    setShowPulse(true);
-    setTimeout(() => setShowPulse(false), 100);
+    triggerPulse(setShowPulse);
   }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
 
   const handleTap = granularity === "word" ? handleTapWord : handleTapLine;
