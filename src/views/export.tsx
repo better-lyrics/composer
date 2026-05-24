@@ -172,6 +172,7 @@ const ExportPanel: React.FC = () => {
       <input
         ref={fileInputRef}
         type="file"
+        aria-label="Import project file"
         accept=".json,.ttml-project.json"
         onChange={handleImportProject}
         className="hidden"
@@ -239,6 +240,7 @@ const ExportPanel: React.FC = () => {
           <input
             ref={fileInputRef}
             type="file"
+            aria-label="Import project file"
             accept=".json,.ttml-project.json"
             onChange={handleImportProject}
             className="hidden"
@@ -263,6 +265,7 @@ const ExportPanel: React.FC = () => {
         {isEditing ? (
           <textarea
             value={editedContent ?? ""}
+            aria-label="Edit TTML content"
             onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
             className="w-full h-full p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
             spellCheck={false}
