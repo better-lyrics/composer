@@ -94,6 +94,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
           </div>
           <textarea
             id="converter-input"
+            aria-label="Converter input"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
