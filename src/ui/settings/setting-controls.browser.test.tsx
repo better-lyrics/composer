@@ -46,6 +46,21 @@ describe("SliderSetting", () => {
     await expect.poll(() => useSettingsStore.getState().defaultZoom).toBe(260);
   });
 
+  it("labels the slider with the provided label prop", async () => {
+    useSettingsStore.setState({ defaultZoom: 100 });
+    const screen = await render(
+      <SliderSetting
+        label="Zoom"
+        description="Initial zoom level"
+        settingKey="defaultZoom"
+        min={20}
+        max={500}
+        step={20}
+      />,
+    );
+    await expect.element(screen.getByRole("slider", { name: "Zoom" })).toBeInTheDocument();
+  });
+
   it("invokes the action callback when the action button is clicked", async () => {
     let invoked = false;
     const screen = await render(
