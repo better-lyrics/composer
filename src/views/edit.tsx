@@ -302,7 +302,7 @@ const EditPanel: React.FC = () => {
     filename: string;
   } | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
-  const [lastSelectedLine, setLastSelectedLine] = useState<number | null>(null);
+  const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
 
@@ -391,29 +391,27 @@ const EditPanel: React.FC = () => {
     });
   }, []);
 
-  const handleLineSelect = useCallback(
-    (lineNumber: number, shiftKey: boolean) => {
-      setSelectedLines((prev) => {
-        const next = new Set(prev);
-        if (shiftKey && lastSelectedLine !== null) {
-          const start = Math.min(lastSelectedLine, lineNumber);
-          const end = Math.max(lastSelectedLine, lineNumber);
-          for (let i = start; i <= end; i++) {
-            next.add(i);
-          }
-        } else {
-          if (next.has(lineNumber)) {
-            next.delete(lineNumber);
-          } else {
-            next.add(lineNumber);
-          }
+  const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
+    const anchor = lastSelectedLineRef.current;
+    setSelectedLines((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && anchor !== null) {
+        const start = Math.min(anchor, lineNumber);
+        const end = Math.max(anchor, lineNumber);
+        for (let i = start; i <= end; i++) {
+          next.add(i);
         }
-        return next;
-      });
-      setLastSelectedLine(lineNumber);
-    },
-    [lastSelectedLine],
-  );
+      } else {
+        if (next.has(lineNumber)) {
+          next.delete(lineNumber);
+        } else {
+          next.add(lineNumber);
+        }
+      }
+      return next;
+    });
+    lastSelectedLineRef.current = lineNumber;
+  }, []);
 
   const handleGutterMouseDown = useCallback((lineNumber: number, e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -439,7 +437,7 @@ const EditPanel: React.FC = () => {
       next.add(i);
     }
     setSelectedLines(next);
-    setLastSelectedLine(lineNumber);
+    lastSelectedLineRef.current = lineNumber;
   }, []);
 
   const handleBulkAgentChange = useCallback(

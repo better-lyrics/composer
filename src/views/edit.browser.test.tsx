@@ -27,6 +27,12 @@ function previewBackgroundTexts(container: HTMLElement): string[] {
   return [...container.querySelectorAll('[data-testid="line-preview-background"]')].map((el) => el.textContent ?? "");
 }
 
+function selectedRowTexts(container: HTMLElement): string[] {
+  return [...container.querySelectorAll('.bg-composer-accent\\/15 [data-testid="line-preview-text"]')].map(
+    (el) => el.textContent ?? "",
+  );
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("EditPanel", () => {
@@ -212,5 +218,28 @@ describe("manual background vocal editing", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
+  });
+});
+
+describe("bulk line selection", () => {
+  it("shift-clicking a second gutter selects the inclusive range from the prior click", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({ text: "alpha" }),
+        createLine({ text: "bravo" }),
+        createLine({ text: "charlie" }),
+        createLine({ text: "delta" }),
+        createLine({ text: "echo" }),
+      ],
+    });
+    const screen = await render(<EditPanel />);
+
+    const anchorGutter = screen.getByRole("button", { name: "2", exact: true });
+    await anchorGutter.click();
+
+    const targetGutter = screen.getByRole("button", { name: "4", exact: true });
+    await targetGutter.click({ modifiers: ["Shift"] });
+
+    await expect.poll(() => selectedRowTexts(screen.container).sort()).toEqual(["bravo", "charlie", "delta"]);
   });
 });
