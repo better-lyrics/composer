@@ -30,6 +30,11 @@ describe("YouTubeUrlInput", () => {
     expect((loadButton.element() as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("labels the URL input", async () => {
+    const screen = await render(<YouTubeUrlInput />);
+    await expect.element(screen.getByRole("textbox", { name: "YouTube URL or video ID" })).toBeInTheDocument();
+  });
+
   it("enables the Load button once a non-empty value is entered", async () => {
     const screen = await render(<YouTubeUrlInput />);
     await screen.getByPlaceholder(/YouTube URL/i).fill(VALID_VIDEO_ID);

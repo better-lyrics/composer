@@ -62,6 +62,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       <div className="flex gap-2">
         <input
           type="text"
+          aria-label="YouTube URL or video ID"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
