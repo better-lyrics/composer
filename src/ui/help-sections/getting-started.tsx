@@ -87,7 +87,7 @@ const GettingStartedSection: React.FC = () => (
         src="https://www.youtube.com/embed/IEA0W4qpRIs?rel=0"
         title="Composer tutorial"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+        sandbox="allow-scripts allow-presentation allow-popups allow-popups-to-escape-sandbox"
         allowFullScreen
         className="w-full h-full"
       />

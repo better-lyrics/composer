@@ -18,7 +18,7 @@ function switchTab(tabId: string) {
   useProjectStore.getState().setActiveTab(tabId as "import" | "edit" | "sync" | "timeline" | "preview" | "export");
 }
 
-const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="https://www.youtube.com/embed/IEA0W4qpRIs?rel=0" title="Composer demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" allowfullscreen></iframe></div>`;
+const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="https://www.youtube.com/embed/IEA0W4qpRIs?rel=0" title="Composer demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-presentation allow-popups allow-popups-to-escape-sandbox" allowfullscreen></iframe></div>`;
 
 // -- Gate checks --------------------------------------------------------------
 
