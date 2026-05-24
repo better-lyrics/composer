@@ -22,7 +22,7 @@ import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
-import { useCallback, useEffect, useEffectEvent, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -456,7 +456,7 @@ const EditPanel: React.FC = () => {
     setSelectedLines(new Set());
   }, []);
 
-  const finalizeRun = useEffectEvent(() => {
+  const finalizeRun = useCallback(() => {
     if (debounceRef.current !== null) {
       clearTimeout(debounceRef.current);
       debounceRef.current = null;
@@ -466,21 +466,17 @@ const EditPanel: React.FC = () => {
       runBaselineRef.current = null;
       useProjectStore.getState().commitPendingLineEdit(baseline.lines, baseline.wasDirty);
     }
-  });
+  }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
   const scheduleRunFinalize = useCallback(() => {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       debounceRef.current = null;
-      // react-doctor-disable-next-line react-doctor/rules-of-hooks
       finalizeRun();
     }, RUN_DEBOUNCE_MS);
-  }, []);
+  }, [finalizeRun]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
   const handleTextareaBlur = useCallback(() => {
-    // react-doctor-disable-next-line react-doctor/rules-of-hooks
     finalizeRun();
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
@@ -489,9 +485,8 @@ const EditPanel: React.FC = () => {
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
-  }, [commitLinesWithHistory]);
+  }, [commitLinesWithHistory, finalizeRun]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
@@ -511,12 +506,10 @@ const EditPanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, textareaId]);
+  }, [activeTab, textareaId, finalizeRun]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
-  useEffect(() => () => finalizeRun(), []);
+  useEffect(() => () => finalizeRun(), [finalizeRun]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
   const handleTextChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const wasPaste = pastedRef.current;
@@ -570,7 +563,6 @@ const EditPanel: React.FC = () => {
           const detached = detachInstancesFromLines(action.lyricLines, action.impacted);
           const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
           const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
-          // react-doctor-disable-next-line react-doctor/rules-of-hooks
           finalizeRun();
           commitLinesWithHistory(detached, nextGroups);
         });
@@ -590,7 +582,6 @@ const EditPanel: React.FC = () => {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
           });
         }
-        // react-doctor-disable-next-line react-doctor/rules-of-hooks
         finalizeRun();
         commitLinesWithHistory(finalLines);
         return;
@@ -604,7 +595,7 @@ const EditPanel: React.FC = () => {
       setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory],
+    [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
   );
 
   const handleFileImport = useCallback(
