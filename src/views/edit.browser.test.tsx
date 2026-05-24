@@ -147,6 +147,23 @@ describe("background vocal extraction", () => {
 });
 
 describe("manual background vocal editing", () => {
+  it("labels the background vocals input", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
+    const screen = await render(<EditPanel />);
+
+    const bgTrigger = screen.getByRole("button", { name: "BG", exact: true });
+    await bgTrigger.click();
+
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toBeInTheDocument();
+  });
+
+  it("labels the hidden import file input", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+
+    await expect.element(screen.getByLabelText("Import lyrics file")).toBeInTheDocument();
+  });
+
   it("stamps a manual provenance when typing background text in the popover", async () => {
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello world" })] });
     const screen = await render(<EditPanel />);

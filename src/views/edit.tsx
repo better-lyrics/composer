@@ -251,6 +251,7 @@ const LinePreview: React.FC<{
                 )}
                 <input
                   type="text"
+                  aria-label="Background vocals text"
                   value={bgInput}
                   onChange={(e) => setBgInput(e.target.value)}
                   onBlur={handleBgBlur}
@@ -709,6 +710,7 @@ const EditPanel: React.FC = () => {
           <input
             ref={fileInputRef}
             type="file"
+            aria-label="Import lyrics file"
             accept=".txt,.lrc,.srt,.ttml,.xml"
             onChange={handleFileInputChange}
             className="sr-only"
