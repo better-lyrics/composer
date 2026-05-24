@@ -473,12 +473,14 @@ const EditPanel: React.FC = () => {
     if (debounceRef.current !== null) clearTimeout(debounceRef.current);
     debounceRef.current = window.setTimeout(() => {
       debounceRef.current = null;
+      // react-doctor-disable-next-line react-doctor/rules-of-hooks
       finalizeRun();
     }, RUN_DEBOUNCE_MS);
   }, []);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: finalizeRun is a stable useEffectEvent
   const handleTextareaBlur = useCallback(() => {
+    // react-doctor-disable-next-line react-doctor/rules-of-hooks
     finalizeRun();
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
@@ -568,6 +570,7 @@ const EditPanel: React.FC = () => {
           const detached = detachInstancesFromLines(action.lyricLines, action.impacted);
           const remainingGroupIds = new Set(detached.flatMap((l) => (l.groupId ? [l.groupId] : [])));
           const nextGroups = groups.filter((g) => remainingGroupIds.has(g.id));
+          // react-doctor-disable-next-line react-doctor/rules-of-hooks
           finalizeRun();
           commitLinesWithHistory(detached, nextGroups);
         });
@@ -587,6 +590,7 @@ const EditPanel: React.FC = () => {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
           });
         }
+        // react-doctor-disable-next-line react-doctor/rules-of-hooks
         finalizeRun();
         commitLinesWithHistory(finalLines);
         return;
@@ -739,6 +743,7 @@ const EditPanel: React.FC = () => {
           <label htmlFor={textareaId} className="mb-2 text-sm font-medium select-none text-composer-text-secondary">
             Paste or type lyrics
           </label>
+          {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
           <textarea
             id={textareaId}
             value={rawText}
