@@ -25,20 +25,21 @@ function generateAgentId(existingAgents: { id: string }[]): string {
 // -- Components ---------------------------------------------------------------
 
 const AgentBadge: React.FC<
-  { agent: Agent; ref?: React.Ref<HTMLDivElement> } & React.HTMLAttributes<HTMLDivElement>
+  { agent: Agent; ref?: React.Ref<HTMLButtonElement> } & React.ButtonHTMLAttributes<HTMLButtonElement>
 > = ({ agent, ref, ...props }) => {
   const color = getAgentColor(agent.id);
 
   return (
-    <div
+    <button
       ref={ref}
+      type="button"
       {...props}
       className="flex items-center gap-2 pl-2 pr-2.5 py-1 rounded-md bg-composer-button cursor-pointer"
     >
       <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
       <span className="text-sm text-composer-text">{agent.name || agent.id}</span>
       <span className="text-xs text-composer-text-muted">{agent.id}</span>
-    </div>
+    </button>
   );
 };
 
@@ -75,6 +76,7 @@ const EditAgentPopover: React.FC<{
           <div className="flex flex-col gap-2">
             <input
               type="text"
+              aria-label="Agent name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Agent name"
@@ -182,6 +184,7 @@ const AddAgentPopover: React.FC = () => {
           <div className="flex flex-col gap-2">
             <input
               type="text"
+              aria-label="Custom agent name"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="Agent name"

@@ -71,6 +71,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [hoveredBoundary, setHoveredBoundary] = useState<number | null>(null);
   const [altPressed, setAltPressed] = useState(false);
+  // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [resizing, setResizing] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
   const justResizedRef = useRef(false);
@@ -85,6 +86,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useSnapBypass({ active: resizing, getLastPointer });
 
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
       cleanupRef.current?.();

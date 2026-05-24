@@ -109,6 +109,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
       <input
         ref={inputRef}
         type="text"
+        aria-label="Edit word"
         defaultValue={word.text.trimEnd()}
         onKeyDown={handleKeyDown}
         onBlur={commitWordEdit}

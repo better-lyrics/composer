@@ -1,5 +1,5 @@
 import { IconBrandYoutube, IconLoader2 } from "@tabler/icons-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
@@ -18,33 +18,23 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
 }) => {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [pendingVideoId, setPendingVideoId] = useState<string | null>(null);
   const isLoading = useAudioStore((s) => s.isLoading);
-  const source = useAudioStore((s) => s.source);
   const youtubeLoadError = useAudioStore((s) => s.youtubeLoadError);
   const loadYouTubeSource = useLoadYouTubeSource();
 
-  useEffect(() => {
-    if (!pendingVideoId || isLoading) return;
-    if (youtubeLoadError) {
-      setPendingVideoId(null);
-      return;
-    }
-    if (source?.type === "youtube" && source.videoId === pendingVideoId && source.file) {
-      setValue("");
-      setPendingVideoId(null);
-    }
-  }, [pendingVideoId, isLoading, source, youtubeLoadError]);
-
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const videoId = extractVideoId(value);
     if (!videoId) {
       setError("That doesn't look like a valid YouTube URL or ID");
       return;
     }
     setError(null);
-    setPendingVideoId(videoId);
-    loadYouTubeSource(videoId);
+    try {
+      await loadYouTubeSource(videoId);
+      setValue("");
+    } catch {
+      // Error is surfaced via the store's youtubeLoadError; keep the input populated for retry.
+    }
   }, [value, loadYouTubeSource]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -62,6 +52,7 @@ const YouTubeUrlInput: React.FC<YouTubeUrlInputProps> = ({
       <div className="flex gap-2">
         <input
           type="text"
+          aria-label="YouTube URL or video ID"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);

@@ -25,7 +25,7 @@ import {
   hasLineTiming,
 } from "@/utils/sync-helpers";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
-import { SyncCarousel } from "@/views/sync/sync-carousel";
+import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { m } from "motion/react";
@@ -71,14 +71,33 @@ const SyncPanel: React.FC = () => {
   const [showPulse, setShowPulse] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
+  const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
 
+  const linesRef = useRef(lines);
+  linesRef.current = lines;
+  const syncStateRef = useRef(syncState);
+  syncStateRef.current = syncState;
+
+  const triggerRippleAtCurrentPosition = useCallback(() => {
+    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = syncStateRef.current.position;
+    const lineId = linesRef.current[committedLineIndex]?.id;
+    if (!lineId) return;
+    setRippleTarget((prev) => ({
+      lineId,
+      wordIndex: committedWordIndex,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }));
+  }, []);
+
+  const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
+
   const {
     handleTap,
     handleHoldStart,
-    handleHoldEnd,
+    handleHoldEnd: handleHoldEndRaw,
     handleHoldTap,
     handleReset,
     handleStartSync,
@@ -107,6 +126,11 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
+
+  const handleHoldEnd = useCallback(() => {
+    triggerRippleAtCurrentPosition();
+    handleHoldEndRaw();
+  }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
   const updateLine = useProjectStore((s) => s.updateLine);
 
@@ -458,6 +482,7 @@ const SyncPanel: React.FC = () => {
         <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
           {isComplete ? (
             <div className="text-center">
+              {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
               <m.div
                 className="mb-2 text-2xl font-medium"
                 variants={shimmerVariants}
@@ -484,6 +509,8 @@ const SyncPanel: React.FC = () => {
               wordIndex={wordIndex}
               granularity={granularity}
               isHolding={isHolding}
+              rippleTarget={rippleTarget}
+              onRippleComplete={clearRippleTarget}
             />
           )}
         </div>

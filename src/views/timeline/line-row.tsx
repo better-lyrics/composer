@@ -97,6 +97,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const [isResizing, setIsResizing] = useState(false);
   const cleanupRef = useRef<(() => void) | null>(null);
 
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
       cleanupRef.current?.();

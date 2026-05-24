@@ -13,6 +13,12 @@ describe("CobaltInstanceAddForm", () => {
     await expect.element(add).toBeEnabled();
   });
 
+  it("labels the inputs by purpose", async () => {
+    const screen = await render(<CobaltInstanceAddForm onAdd={() => {}} />);
+    await expect.element(screen.getByRole("textbox", { name: "Instance name" })).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Instance URL")).toBeInTheDocument();
+  });
+
   it("shows an error for an invalid URL", async () => {
     const screen = await render(<CobaltInstanceAddForm onAdd={() => {}} />);
     await screen.getByPlaceholder(/your-cobalt-instance/).fill("https://");
@@ -50,6 +56,19 @@ describe("CobaltInstanceEditRow", () => {
     );
     await expect.element(screen.getByRole("textbox").first()).toHaveValue("Old");
     await expect.element(screen.getByRole("textbox").nth(1)).toHaveValue("old.example.com");
+  });
+
+  it("labels the inputs by purpose", async () => {
+    const screen = await render(
+      <CobaltInstanceEditRow
+        initialLabel="Old"
+        initialUrl="https://old.example.com"
+        onSave={() => {}}
+        onCancel={() => {}}
+      />,
+    );
+    await expect.element(screen.getByRole("textbox", { name: "Instance name" })).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Instance URL")).toBeInTheDocument();
   });
 
   it("saves the trimmed label and scheme-normalised URL", async () => {

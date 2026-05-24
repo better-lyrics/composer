@@ -20,6 +20,12 @@ describe("LyricsImportModal", () => {
     expect((importButton.element() as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("labels the lyrics textarea and hidden file input", async () => {
+    const screen = await render(<LyricsImportModal isOpen onClose={() => {}} />);
+    await expect.element(screen.getByRole("textbox", { name: "Lyrics text" })).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Import lyrics file")).toBeInTheDocument();
+  });
+
   it("displays the live line count as content is entered", async () => {
     await render(<LyricsImportModal isOpen onClose={() => {}} />);
     const textarea = document.querySelector("textarea") as HTMLTextAreaElement;

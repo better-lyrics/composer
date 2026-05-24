@@ -251,6 +251,7 @@ const LinePreview: React.FC<{
                 )}
                 <input
                   type="text"
+                  aria-label="Background vocals text"
                   value={bgInput}
                   onChange={(e) => setBgInput(e.target.value)}
                   onBlur={handleBgBlur}
@@ -301,7 +302,7 @@ const EditPanel: React.FC = () => {
     filename: string;
   } | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
-  const [lastSelectedLine, setLastSelectedLine] = useState<number | null>(null);
+  const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
 
@@ -390,29 +391,27 @@ const EditPanel: React.FC = () => {
     });
   }, []);
 
-  const handleLineSelect = useCallback(
-    (lineNumber: number, shiftKey: boolean) => {
-      setSelectedLines((prev) => {
-        const next = new Set(prev);
-        if (shiftKey && lastSelectedLine !== null) {
-          const start = Math.min(lastSelectedLine, lineNumber);
-          const end = Math.max(lastSelectedLine, lineNumber);
-          for (let i = start; i <= end; i++) {
-            next.add(i);
-          }
-        } else {
-          if (next.has(lineNumber)) {
-            next.delete(lineNumber);
-          } else {
-            next.add(lineNumber);
-          }
+  const handleLineSelect = useCallback((lineNumber: number, shiftKey: boolean) => {
+    const anchor = lastSelectedLineRef.current;
+    setSelectedLines((prev) => {
+      const next = new Set(prev);
+      if (shiftKey && anchor !== null) {
+        const start = Math.min(anchor, lineNumber);
+        const end = Math.max(anchor, lineNumber);
+        for (let i = start; i <= end; i++) {
+          next.add(i);
         }
-        return next;
-      });
-      setLastSelectedLine(lineNumber);
-    },
-    [lastSelectedLine],
-  );
+      } else {
+        if (next.has(lineNumber)) {
+          next.delete(lineNumber);
+        } else {
+          next.add(lineNumber);
+        }
+      }
+      return next;
+    });
+    lastSelectedLineRef.current = lineNumber;
+  }, []);
 
   const handleGutterMouseDown = useCallback((lineNumber: number, e: React.MouseEvent) => {
     if (e.button !== 0) return;
@@ -438,7 +437,7 @@ const EditPanel: React.FC = () => {
       next.add(i);
     }
     setSelectedLines(next);
-    setLastSelectedLine(lineNumber);
+    lastSelectedLineRef.current = lineNumber;
   }, []);
 
   const handleBulkAgentChange = useCallback(
@@ -486,7 +485,7 @@ const EditPanel: React.FC = () => {
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
-  }, [finalizeRun, commitLinesWithHistory]);
+  }, [commitLinesWithHistory, finalizeRun]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -507,7 +506,7 @@ const EditPanel: React.FC = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [activeTab, finalizeRun, textareaId]);
+  }, [activeTab, textareaId, finalizeRun]);
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
@@ -596,7 +595,7 @@ const EditPanel: React.FC = () => {
       setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, setLines, finalizeRun, scheduleRunFinalize, commitLinesWithHistory],
+    [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
   );
 
   const handleFileImport = useCallback(
@@ -709,6 +708,7 @@ const EditPanel: React.FC = () => {
           <input
             ref={fileInputRef}
             type="file"
+            aria-label="Import lyrics file"
             accept=".txt,.lrc,.srt,.ttml,.xml"
             onChange={handleFileInputChange}
             className="sr-only"
@@ -734,6 +734,7 @@ const EditPanel: React.FC = () => {
           <label htmlFor={textareaId} className="mb-2 text-sm font-medium select-none text-composer-text-secondary">
             Paste or type lyrics
           </label>
+          {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
           <textarea
             id={textareaId}
             value={rawText}

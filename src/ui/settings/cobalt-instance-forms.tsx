@@ -45,6 +45,7 @@ const CobaltInstanceEditRow: React.FC<{
         <input
           ref={focusOnMount}
           type="text"
+          aria-label="Instance name"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -53,6 +54,7 @@ const CobaltInstanceEditRow: React.FC<{
         <input
           type="url"
           inputMode="url"
+          aria-label="Instance URL"
           value={url}
           onChange={(e) => setUrl(e.target.value.replace(/\s+/g, ""))}
           onKeyDown={handleKeyDown}
@@ -109,6 +111,7 @@ const CobaltInstanceAddForm: React.FC<{
       <div className="flex items-center gap-2">
         <input
           type="text"
+          aria-label="Instance name"
           placeholder="Name"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -118,6 +121,7 @@ const CobaltInstanceAddForm: React.FC<{
         <input
           type="url"
           inputMode="url"
+          aria-label="Instance URL"
           placeholder="https://your-cobalt-instance"
           value={url}
           onChange={handleUrlChange}

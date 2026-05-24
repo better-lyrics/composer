@@ -14,18 +14,26 @@ interface WordFieldConfig {
   updateKey: "words" | "backgroundWords";
 }
 
+interface NeighborContext {
+  word: WordTiming;
+  prevWord: WordTiming | undefined;
+  nextWord: WordTiming | undefined;
+}
+
+type WordMutator = (ctx: NeighborContext) => WordTiming;
+
 // -- Factory ------------------------------------------------------------------
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, updateKey } = config;
 
-  function nudgeBegin(
+  function mutateWord(
     lines: LyricLine[],
     lineIdx: number,
     wordIdx: number,
-    delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
-  ) {
+    mutator: WordMutator,
+  ): void {
     const line = lines[lineIdx];
     if (!line) return;
     const words = getWords(line);
@@ -33,14 +41,31 @@ function createWordTimingOps(config: WordFieldConfig) {
 
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
-    const prevWord = updatedWords[wordIdx - 1];
-    const minBegin = prevWord?.end ?? 0;
-    const newBegin = Math.min(word.end, Math.max(minBegin, word.begin + delta));
+    updatedWords[wordIdx] = mutator({ word, prevWord: updatedWords[wordIdx - 1], nextWord: updatedWords[wordIdx + 1] });
 
-    updatedWords[wordIdx] = { ...word, begin: newBegin };
     updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
       propagateToSiblings: false,
     });
+  }
+
+  function clampBegin({ word, prevWord }: NeighborContext, candidate: number): WordTiming {
+    const minBegin = prevWord?.end ?? 0;
+    return { ...word, begin: Math.min(word.end, Math.max(minBegin, candidate)) };
+  }
+
+  function clampEnd({ word, nextWord }: NeighborContext, candidate: number): WordTiming {
+    const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
+    return { ...word, end: Math.min(maxEnd, Math.max(word.begin, candidate)) };
+  }
+
+  function nudgeBegin(
+    lines: LyricLine[],
+    lineIdx: number,
+    wordIdx: number,
+    delta: number,
+    updateLineWithHistory: UpdateLineWithHistory,
+  ): void {
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampBegin(ctx, ctx.word.begin + delta));
   }
 
   function setBegin(
@@ -49,21 +74,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     newBegin: number,
     updateLineWithHistory: UpdateLineWithHistory,
-  ) {
-    const line = lines[lineIdx];
-    if (!line) return;
-    const words = getWords(line);
-    if (!words?.[wordIdx]) return;
-
-    const updatedWords = [...words];
-    const word = updatedWords[wordIdx];
-    const prevWord = updatedWords[wordIdx - 1];
-    const minBegin = prevWord?.end ?? 0;
-    const clampedBegin = Math.min(word.end, Math.max(minBegin, newBegin));
-    updatedWords[wordIdx] = { ...word, begin: clampedBegin };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
-      propagateToSiblings: false,
-    });
+  ): void {
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampBegin(ctx, newBegin));
   }
 
   function nudgeEnd(
@@ -72,22 +84,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
-  ) {
-    const line = lines[lineIdx];
-    if (!line) return;
-    const words = getWords(line);
-    if (!words?.[wordIdx]) return;
-
-    const updatedWords = [...words];
-    const word = updatedWords[wordIdx];
-    const nextWord = updatedWords[wordIdx + 1];
-    const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-    const newEnd = Math.min(maxEnd, Math.max(word.begin, word.end + delta));
-
-    updatedWords[wordIdx] = { ...word, end: newEnd };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
-      propagateToSiblings: false,
-    });
+  ): void {
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, ctx.word.end + delta));
   }
 
   function setEnd(
@@ -96,21 +94,8 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     newEnd: number,
     updateLineWithHistory: UpdateLineWithHistory,
-  ) {
-    const line = lines[lineIdx];
-    if (!line) return;
-    const words = getWords(line);
-    if (!words?.[wordIdx]) return;
-
-    const updatedWords = [...words];
-    const word = updatedWords[wordIdx];
-    const nextWord = updatedWords[wordIdx + 1];
-    const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
-    const clampedEnd = Math.min(maxEnd, Math.max(word.begin, newEnd));
-    updatedWords[wordIdx] = { ...word, end: clampedEnd };
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
-      propagateToSiblings: false,
-    });
+  ): void {
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, newEnd));
   }
 
   return { nudgeBegin, setBegin, nudgeEnd, setEnd };

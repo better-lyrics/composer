@@ -48,6 +48,7 @@ const ConfirmModalHost: React.FC = () => {
         <div className={cn("flex items-center pt-2", showDontAskAgain ? "justify-between" : "justify-end")}>
           {showDontAskAgain && (
             <label className="flex items-center gap-2 text-xs text-composer-text-muted cursor-pointer select-none">
+              {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
               <input
                 type="checkbox"
                 checked={dontAskAgain}

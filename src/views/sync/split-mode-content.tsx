@@ -101,6 +101,7 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
       {showApplyControls && (
         <div className="flex flex-col gap-2">
           <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
             <span>Apply to all identical words</span>
           </label>
@@ -110,6 +111,7 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
               applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
             )}
           >
+            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <input
               type="checkbox"
               checked={applyToAll && caseInsensitive}

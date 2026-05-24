@@ -125,6 +125,7 @@ const LyricsImportModal: React.FC<LyricsImportModalProps> = ({ isOpen, onClose }
       <div className="flex flex-col gap-4" onDrop={handleDrop} onDragOver={handleDragOver}>
         <textarea
           ref={textareaRef}
+          aria-label="Lyrics text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.stopPropagation()}
@@ -144,6 +145,7 @@ Use | to split syllables (e.g. beau|ti|ful)"
             <input
               ref={fileInputRef}
               type="file"
+              aria-label="Import lyrics file"
               accept=".txt,.lrc,.srt,.ttml,.xml"
               onChange={handleFileInputChange}
               className="sr-only"

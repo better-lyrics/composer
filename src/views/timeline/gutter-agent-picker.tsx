@@ -101,6 +101,7 @@ const GutterAgentPicker: React.FC<GutterAgentPickerProps> = ({ lineId, lineIndex
             <div className="flex gap-1">
               <input
                 type="text"
+                aria-label="New agent name"
                 value={newAgentName}
                 onChange={(e) => setNewAgentName(e.target.value)}
                 onKeyDown={(e) => {

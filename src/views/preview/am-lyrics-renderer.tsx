@@ -29,6 +29,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
   const latestDurationMsRef = useRef(durationSeconds * 1000);
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
+  // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
 
   useEffect(() => {
@@ -84,6 +85,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
   useEffect(() => {
     const el = elementRef.current;
     if (!el) return;
+    // react-doctor-disable-next-line react-doctor/no-event-handler
     if (el.ttml !== ttmlString) el.ttml = ttmlString;
   }, [ttmlString]);
 

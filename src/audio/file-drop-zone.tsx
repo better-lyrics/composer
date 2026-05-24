@@ -100,7 +100,14 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, childre
           : "border-composer-border hover:border-composer-border-hover"
       }`}
     >
-      <input id={inputId} type="file" accept={accept} onChange={handleInputChange} className="sr-only" />
+      <input
+        id={inputId}
+        type="file"
+        aria-label="Upload audio file"
+        accept={accept}
+        onChange={handleInputChange}
+        className="sr-only"
+      />
       {children}
     </label>
   );

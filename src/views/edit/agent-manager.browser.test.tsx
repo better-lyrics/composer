@@ -18,4 +18,18 @@ describe("AgentManager", () => {
     const screen = await render(<AgentManager />);
     await expect.element(screen.getByRole("button", { name: /Add/ })).toBeInTheDocument();
   });
+
+  it("labels the agent name input in the edit popover", async () => {
+    useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
+    const screen = await render(<AgentManager />);
+    await screen.getByRole("button", { name: /v1/ }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Agent name" })).toBeInTheDocument();
+  });
+
+  it("labels the custom agent name input in the add popover", async () => {
+    useProjectStore.setState({ agents: [...DEFAULT_AGENTS] });
+    const screen = await render(<AgentManager />);
+    await screen.getByRole("button", { name: /Add/ }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Custom agent name" })).toBeInTheDocument();
+  });
 });

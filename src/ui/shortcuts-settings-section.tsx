@@ -93,6 +93,7 @@ const ShortcutsSettingsSection: React.FC = () => {
         <input
           ref={inputRef}
           type="text"
+          aria-label="Search shortcuts"
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

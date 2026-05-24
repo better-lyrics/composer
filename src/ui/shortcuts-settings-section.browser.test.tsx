@@ -11,6 +11,11 @@ describe("ShortcutsSettingsSection", () => {
     await expect.element(screen.getByText("General")).toBeInTheDocument();
   });
 
+  it("labels the search input", async () => {
+    const screen = await render(<ShortcutsSettingsSection />);
+    await expect.element(screen.getByRole("textbox", { name: "Search shortcuts" })).toBeInTheDocument();
+  });
+
   it("filters shortcuts by description as the user types", async () => {
     const screen = await render(<ShortcutsSettingsSection />);
     const input = screen.getByPlaceholder("Search shortcuts");

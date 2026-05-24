@@ -22,6 +22,21 @@ describe("ConverterView", () => {
     expect(screen.container.querySelector("textarea")).not.toBeNull();
   });
 
+  it("labels the input textarea", async () => {
+    const screen = await render(
+      <ConverterView
+        title="LRC → TTML"
+        inputLabel="LRC"
+        inputPlaceholder="Paste LRC"
+        sampleInput="[00:01.00] hello"
+        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}" })}
+        downloadFilename="out.ttml"
+      />,
+      { withRouter: true },
+    );
+    await expect.element(screen.getByRole("textbox", { name: "Converter input" })).toBeInTheDocument();
+  });
+
   it("produces TTML output when the user provides input", async () => {
     const screen = await render(
       <ConverterView

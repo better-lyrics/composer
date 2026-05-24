@@ -167,15 +167,19 @@ const ExportPanel: React.FC = () => {
     await clearCurrentProject();
   }, [reset, confirm]);
 
+  const projectFileInput = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      aria-label="Import project file"
+      accept=".json,.ttml-project.json"
+      onChange={handleImportProject}
+      className="hidden"
+    />
+  );
   const importAction = (
     <>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json,.ttml-project.json"
-        onChange={handleImportProject}
-        className="hidden"
-      />
+      {projectFileInput}
       <Button hasIcon variant="secondary" onClick={() => fileInputRef.current?.click()} className="mt-2">
         <IconFolderOpen className="size-4 text-composer-text opacity-50" />
         Import Project
@@ -236,13 +240,7 @@ const ExportPanel: React.FC = () => {
       <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
         <span className="text-sm text-composer-text-muted">Project</span>
         <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,.ttml-project.json"
-            onChange={handleImportProject}
-            className="hidden"
-          />
+          {projectFileInput}
           <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
             <IconFolderOpen className="size-4 text-composer-text opacity-50" />
             Import Project
@@ -263,6 +261,7 @@ const ExportPanel: React.FC = () => {
         {isEditing ? (
           <textarea
             value={editedContent ?? ""}
+            aria-label="Edit TTML content"
             onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
             className="w-full h-full p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
             spellCheck={false}

@@ -209,6 +209,7 @@ const TimelinePanel: React.FC = () => {
     const observer = new ResizeObserver((entries) => {
       setContentHeight(entries[0].contentRect.height);
     });
+    // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(contentRef.current);
     return () => observer.disconnect();
   }, []);
@@ -288,10 +289,12 @@ const TimelinePanel: React.FC = () => {
             },
           ];
 
+    const lineById = new Map(effectiveLines.map((l) => [l.id, l]));
+
     const wordsToShow: typeof baseSelections = [];
     const seen = new Set<string>();
     for (const sel of baseSelections) {
-      const line = effectiveLines.find((l) => l.id === sel.lineId);
+      const line = lineById.get(sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       if (!line || !wordsArray) continue;
       const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
@@ -326,7 +329,7 @@ const TimelinePanel: React.FC = () => {
       const key = `${lineId}:${type}`;
       let positions = positionsByLineTrack.get(key);
       if (!positions) {
-        const line = effectiveLines.find((l) => l.id === lineId);
+        const line = lineById.get(lineId);
         const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
         positions = wordsArray ? getSyllablePositions(wordsArray) : [];
         positionsByLineTrack.set(key, positions);
@@ -335,7 +338,7 @@ const TimelinePanel: React.FC = () => {
     };
 
     const cells = wordsToShow.map((sel) => {
-      const line = effectiveLines.find((l) => l.id === sel.lineId);
+      const line = lineById.get(sel.lineId);
       const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
       if (!word || !line)
