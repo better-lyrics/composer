@@ -75,6 +75,7 @@ const EditAgentPopover: React.FC<{
           <div className="flex flex-col gap-2">
             <input
               type="text"
+              aria-label="Agent name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Agent name"
@@ -182,6 +183,7 @@ const AddAgentPopover: React.FC = () => {
           <div className="flex flex-col gap-2">
             <input
               type="text"
+              aria-label="Custom agent name"
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
               placeholder="Agent name"
