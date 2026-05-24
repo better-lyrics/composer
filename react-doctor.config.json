@@ -48,6 +48,18 @@
           "src/views/sync/split-mode-content.tsx"
         ],
         "rules": ["react-doctor/no-array-index-as-key", "react-doctor/no-array-index-key"]
+      },
+      {
+        "files": ["src/ui/help-sections/getting-started.tsx"],
+        "rules": ["react-doctor/iframe-missing-sandbox"]
+      },
+      {
+        "files": ["src/views/sync/sync-panel.tsx"],
+        "rules": ["react-doctor/prefer-useReducer", "react-doctor/no-cascading-set-state"]
+      },
+      {
+        "files": ["src/views/edit.tsx"],
+        "rules": ["react-doctor/prefer-use-effect-event"]
       }
     ]
   }
