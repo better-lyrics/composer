@@ -3,13 +3,18 @@ import { syncCarouselTransition } from "@/utils/animationVariants";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { AnimatePresence, m } from "motion/react";
-import { useEffect, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
 const LINE_HEIGHT = 100;
 
 // -- Interfaces ---------------------------------------------------------------
+
+interface RippleTarget {
+  lineId: string;
+  wordIndex: number;
+  nonce: number;
+}
 
 interface SyncCarouselProps {
   lines: Array<{
@@ -22,6 +27,8 @@ interface SyncCarouselProps {
   wordIndex: number;
   granularity: "line" | "word";
   isHolding?: boolean;
+  rippleTarget?: RippleTarget | null;
+  onRippleComplete?: () => void;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -43,9 +50,8 @@ interface WordGranularityLineProps {
   wordIndex: number;
   isHolding: boolean;
   isCurrent: boolean;
-  rippleKey: string | null;
-  rippleCounter: number;
-  setRippleKey: (key: string | null) => void;
+  rippleTarget: RippleTarget | null;
+  onRippleComplete: () => void;
 }
 
 const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
@@ -55,9 +61,8 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   wordIndex,
   isHolding,
   isCurrent,
-  rippleKey,
-  rippleCounter,
-  setRippleKey,
+  rippleTarget,
+  onRippleComplete,
 }) => {
   const lineWords = splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
@@ -76,51 +81,37 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
           ? "rgba(255, 255, 255, 0.7)"
           : "rgba(255, 255, 255, 0.4)";
 
-    const wordKey = `${line.id}-${widx}`;
-    const hasRipple = rippleKey === wordKey;
+    const hasRipple = rippleTarget !== null && rippleTarget.lineId === line.id && rippleTarget.wordIndex === widx;
 
     return (
       <m.span
-        key={wordKey}
+        key={`${line.id}-${widx}`}
         animate={{ color, scale: isCurrentHeld ? 0.95 : 1 }}
         transition={syncCarouselTransition}
         className="relative inline-flex items-center justify-center origin-center"
       >
         {word}
         <AnimatePresence>
-          {hasRipple && <RippleRing key={rippleCounter} onComplete={() => setRippleKey(null)} />}
+          {hasRipple && rippleTarget && <RippleRing key={rippleTarget.nonce} onComplete={onRippleComplete} />}
         </AnimatePresence>
       </m.span>
     );
   });
 };
 
-const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex, granularity, isHolding = false }) => {
-  const [rippleKey, setRippleKey] = useState<string | null>(null);
-  const [rippleCounter, setRippleCounter] = useState(0);
-  const prevHoldingRef = useRef(isHolding);
-
-  useEffect(() => {
-    const wasHolding = prevHoldingRef.current;
-    prevHoldingRef.current = isHolding;
-
-    if (!wasHolding || isHolding) return;
-
-    const prevWordIndex = wordIndex - 1;
-    if (prevWordIndex >= 0) {
-      setRippleKey(`${lines[lineIndex]?.id}-${prevWordIndex}`);
-    } else if (lineIndex > 0) {
-      const prevLine = lines[lineIndex - 1];
-      const prevLineWords = splitIntoWords(prevLine.text);
-      setRippleKey(`${prevLine.id}-${prevLineWords.length - 1}`);
-    }
-    setRippleCounter((c) => c + 1);
-  }, [isHolding, lineIndex, wordIndex, lines]);
-
-  // Container height shows 3 lines (prev, current, next)
+const SyncCarousel: React.FC<SyncCarouselProps> = ({
+  lines,
+  lineIndex,
+  wordIndex,
+  granularity,
+  isHolding = false,
+  rippleTarget = null,
+  onRippleComplete,
+}) => {
   const containerHeight = LINE_HEIGHT * 3;
-  // Offset to center the current line in the middle slot
   const translateY = LINE_HEIGHT - lineIndex * LINE_HEIGHT;
+
+  const handleRippleComplete = onRippleComplete ?? noop;
 
   return (
     <div className="relative overflow-hidden" style={{ height: containerHeight }}>
@@ -168,9 +159,8 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
                     wordIndex={wordIndex}
                     isHolding={isHolding}
                     isCurrent={isCurrent}
-                    rippleKey={rippleKey}
-                    rippleCounter={rippleCounter}
-                    setRippleKey={setRippleKey}
+                    rippleTarget={rippleTarget}
+                    onRippleComplete={handleRippleComplete}
                   />
                 )}
               </div>
@@ -182,6 +172,9 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({ lines, lineIndex, wordIndex
   );
 };
 
+const noop = () => {};
+
 // -- Exports ------------------------------------------------------------------
 
 export { SyncCarousel };
+export type { RippleTarget };
