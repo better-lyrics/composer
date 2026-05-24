@@ -263,6 +263,170 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
   });
 });
 
+describe("useSyncHandlers.rippleTarget", () => {
+  it("starts as null on mount", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+    const { result } = await mountSyncHandlers();
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("sets rippleTarget on handleHoldEnd with committed lineId, wordIndex and incrementing nonce", async () => {
+    const TEXT = "Hold this line";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "Hold ", begin: 0, end: 0 })],
+      }),
+    ]);
+
+    const { result, rerender, act, getSyncState } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 0.5,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget).toEqual({ lineId: "l0", wordIndex: 0, nonce: 1 });
+
+    await rerender({ syncState: getSyncState(), currentTime: 1.0 });
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [
+          createWord({ text: "Hold ", begin: 0, end: 0.5 }),
+          createWord({ text: "this ", begin: 0.5, end: 0.5 }),
+        ],
+      }),
+    ]);
+    await rerender({ syncState: getSyncState(), currentTime: 1.0 });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget).toEqual({ lineId: "l0", wordIndex: 1, nonce: 2 });
+  });
+
+  it("does NOT fire ripple on handleTap (tap-only commits)", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleTap();
+    });
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("does NOT fire ripple on handleHoldTap (mid-hold commits)", async () => {
+    const TEXT = "Hold tap test";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "Hold ", begin: 0, end: 0 })],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 0.4,
+    });
+
+    await act(() => {
+      result.current.handleHoldTap();
+    });
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("does NOT fire ripple when handleHoldEnd is called with no words on the current line", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 0.5,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("does NOT fire ripple when sync is complete (lineIndex past end)", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 1.0,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("clearRippleTarget resets rippleTarget to null", async () => {
+    const TEXT = "Hold this line";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "Hold ", begin: 0, end: 0 })],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 0.5,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget).not.toBeNull();
+
+    await act(() => {
+      result.current.clearRippleTarget();
+    });
+    expect(result.current.rippleTarget).toBeNull();
+  });
+
+  it("clearRippleTarget identity is stable across renders", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+    const { result, rerender, getSyncState } = await mountSyncHandlers();
+    const firstClear = result.current.clearRippleTarget;
+    await rerender({ syncState: getSyncState(), currentTime: 0.1 });
+    expect(result.current.clearRippleTarget).toBe(firstClear);
+  });
+
+  it("captures lineId at commit time, not at later render", async () => {
+    const TEXT = "Hold this line";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: TEXT,
+        words: [createWord({ text: "Hold ", begin: 0, end: 0 })],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 0.5,
+    });
+
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+    expect(result.current.rippleTarget?.lineId).toBe("l0");
+
+    useProjectStore.getState().setLines([createLine({ id: "different-id", text: "different text" })]);
+    expect(result.current.rippleTarget?.lineId).toBe("l0");
+  });
+});
+
 describe("sync-panel bg-init contract", () => {
   it("preserves backgroundText and text when seeding backgroundWords on a synced line", async () => {
     const BG_TEXT = "ooh ahh";

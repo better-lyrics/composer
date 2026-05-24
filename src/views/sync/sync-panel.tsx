@@ -25,7 +25,7 @@ import {
   hasLineTiming,
 } from "@/utils/sync-helpers";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
-import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
+import { SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { m } from "motion/react";
@@ -71,33 +71,14 @@ const SyncPanel: React.FC = () => {
   const [showPulse, setShowPulse] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [isHolding, setIsHolding] = useState(false);
-  const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
 
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
-  const syncStateRef = useRef(syncState);
-  syncStateRef.current = syncState;
-
-  const triggerRippleAtCurrentPosition = useCallback(() => {
-    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = syncStateRef.current.position;
-    const lineId = linesRef.current[committedLineIndex]?.id;
-    if (!lineId) return;
-    setRippleTarget((prev) => ({
-      lineId,
-      wordIndex: committedWordIndex,
-      nonce: (prev?.nonce ?? 0) + 1,
-    }));
-  }, []);
-
-  const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
-
   const {
     handleTap,
     handleHoldStart,
-    handleHoldEnd: handleHoldEndRaw,
+    handleHoldEnd,
     handleHoldTap,
     handleReset,
     handleStartSync,
@@ -116,6 +97,8 @@ const SyncPanel: React.FC = () => {
     handleSetBgWordEndTime,
     isComplete,
     currentWord,
+    rippleTarget,
+    clearRippleTarget,
   } = useSyncHandlers({
     lines,
     syncState,
@@ -126,11 +109,6 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
-
-  const handleHoldEnd = useCallback(() => {
-    triggerRippleAtCurrentPosition();
-    handleHoldEndRaw();
-  }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
   const updateLine = useProjectStore((s) => s.updateLine);
 

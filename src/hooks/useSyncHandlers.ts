@@ -19,10 +19,11 @@ import {
   triggerPulse,
   withBgSeedIfNeeded,
 } from "@/hooks/useSyncHandlers.helpers";
+import type { RippleTarget } from "@/views/sync/sync-carousel";
 import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -53,6 +54,8 @@ function useSyncHandlers({
   const updateLine = useProjectStore((s) => s.updateLine);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const confirm = useConfirm();
+  const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
+  const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
 
   const { lineIndex, wordIndex } = syncState.position;
   const currentLine = lines[lineIndex];
@@ -159,6 +162,12 @@ function useSyncHandlers({
 
     const line = lines[lineIndex];
     if (!line?.words?.length) return;
+
+    setRippleTarget((prev) => ({
+      lineId: line.id,
+      wordIndex,
+      nonce: (prev?.nonce ?? 0) + 1,
+    }));
 
     const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
 
@@ -395,6 +404,8 @@ function useSyncHandlers({
     isComplete,
     currentLine,
     currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
+    rippleTarget,
+    clearRippleTarget,
   };
 }
 
