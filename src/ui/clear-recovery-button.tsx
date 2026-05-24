@@ -24,7 +24,7 @@ const ClearRecoveryButton: React.FC<ClearRecoveryButtonProps> = ({
 }) => {
   const [status, setStatus] = useState<ClearStatus>("idle");
 
-  const handleClick = async () => {
+  const advanceClearFlow = async () => {
     if (status !== "confirm") {
       setStatus("confirm");
       return;
@@ -63,7 +63,7 @@ const ClearRecoveryButton: React.FC<ClearRecoveryButtonProps> = ({
         variant="ghost"
         size="sm"
         hasIcon
-        onClick={handleClick}
+        onClick={advanceClearFlow}
         disabled={status === "clearing" || status === "cleared"}
       >
         <IconTrash size={14} />
