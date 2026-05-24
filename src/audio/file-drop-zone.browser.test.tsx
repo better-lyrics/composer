@@ -69,4 +69,14 @@ describe("FileDropZone", () => {
     const input = screen.container.querySelector("input[type='file']") as HTMLInputElement;
     expect(label.getAttribute("for")).toBe(input.id);
   });
+
+  it("labels the hidden file input", async () => {
+    const screen = await render(
+      <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+        <span>Drop here</span>
+      </FileDropZone>,
+    );
+    const input = screen.container.querySelector("input[type='file']") as HTMLInputElement;
+    expect(input.getAttribute("aria-label")).toBe("Upload audio file");
+  });
 });
