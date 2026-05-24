@@ -31,6 +31,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
   };
 
   return (
+    // react-doctor-disable-next-line react-doctor/no-render-prop-children
     <SuggestionsBanner<RepeatingSection>
       suggestions={suggestions}
       dismissed={dismissed}

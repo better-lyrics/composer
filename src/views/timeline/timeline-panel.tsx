@@ -209,6 +209,7 @@ const TimelinePanel: React.FC = () => {
     const observer = new ResizeObserver((entries) => {
       setContentHeight(entries[0].contentRect.height);
     });
+    // react-doctor-disable-next-line react-doctor/no-initialize-state
     observer.observe(contentRef.current);
     return () => observer.disconnect();
   }, []);

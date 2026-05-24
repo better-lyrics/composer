@@ -105,6 +105,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
               Filename
             </label>
+            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
             <input
               id="converter-filename"
               type="text"

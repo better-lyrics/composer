@@ -492,6 +492,7 @@ const SyncPanel: React.FC = () => {
         <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
           {isComplete ? (
             <div className="text-center">
+              {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
               <m.div
                 className="mb-2 text-2xl font-medium"
                 variants={shimmerVariants}

@@ -86,6 +86,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useSnapBypass({ active: resizing, getLastPointer });
 
+  // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
       cleanupRef.current?.();
