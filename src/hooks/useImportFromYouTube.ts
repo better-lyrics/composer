@@ -44,7 +44,9 @@ function useImportFromYouTube(): void {
       toast.error("That URL doesn't look like a valid YouTube video");
       return;
     }
-    loadRef.current(videoId);
+    loadRef.current(videoId).catch(() => {
+      // Error is surfaced via useAudioStore.youtubeLoadError and the tunnel toast.
+    });
   }, []);
 }
 
