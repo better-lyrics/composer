@@ -26,6 +26,20 @@ describe("TimelineInfoPanel", () => {
 });
 
 describe("BackgroundTextEditor provenance", () => {
+  it("labels the background vocals input", async () => {
+    const line = createLine({
+      id: "l1",
+      text: "hello",
+      words: [createWord({ text: "hello", begin: 0, end: 1 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    selectFirstWordOf("l1");
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: "Add BG" }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toBeInTheDocument();
+  });
+
   it("stamps a manual provenance when adding background text", async () => {
     const line = createLine({
       id: "l1",
