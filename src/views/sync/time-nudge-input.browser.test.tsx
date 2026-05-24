@@ -90,6 +90,12 @@ describe("TimeNudgeInput", () => {
     expect(input?.value).toBe(formatTimeMs(3.456));
   });
 
+  it("labels the edit input", async () => {
+    const screen = await render(<Harness value={3.456} />);
+    await screen.getByRole("button", { name: formatTimeMs(3.456) }).click();
+    await expect.element(screen.getByRole("textbox", { name: "Edit time" })).toBeInTheDocument();
+  });
+
   it("commits a parsed value on Enter and exits edit mode", async () => {
     let setTime = -1;
     const screen = await render(

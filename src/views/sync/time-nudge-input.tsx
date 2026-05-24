@@ -81,6 +81,7 @@ const TimeNudgeInput: React.FC<TimeNudgeInputProps> = ({
         <input
           ref={focusAndSelectOnMount}
           type="text"
+          aria-label="Edit time"
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onBlur={handleCommit}
