@@ -17,8 +17,6 @@ describe("GettingStartedSection", () => {
     const screen = await render(<GettingStartedSection />);
     const iframe = screen.container.querySelector('iframe[title="Composer tutorial"]');
     expect(iframe).not.toBeNull();
-    expect(iframe?.getAttribute("sandbox")).toBe(
-      "allow-scripts allow-same-origin allow-presentation allow-popups",
-    );
+    expect(iframe?.getAttribute("sandbox")).toBe("allow-scripts allow-same-origin allow-presentation allow-popups");
   });
 });
