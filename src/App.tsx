@@ -1,5 +1,6 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
+import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
@@ -60,6 +61,7 @@ const AppContent: React.FC = () => {
   useResolveYouTubeTunnel();
   useImportFromYouTube();
   usePanicRecovery();
+  useDocumentTitle();
 
   const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
   const setSettingsOpenCb = useCallback((open: boolean) => setSettingsOpen(open), []);
