@@ -12,14 +12,17 @@ function useDocumentTitle(): void {
     if (baseTitleRef.current === null) {
       baseTitleRef.current = document.title;
     }
-    const base = baseTitleRef.current;
     const trimmed = songTitle.trim();
-    document.title = trimmed ? `${BRAND} ${SEPARATOR} ${trimmed}` : base;
-
-    return () => {
-      document.title = base;
-    };
+    document.title = trimmed ? `${BRAND} ${SEPARATOR} ${trimmed}` : baseTitleRef.current;
   }, [songTitle]);
+
+  useEffect(() => {
+    return () => {
+      if (baseTitleRef.current !== null) {
+        document.title = baseTitleRef.current;
+      }
+    };
+  }, []);
 }
 
 export { useDocumentTitle };
