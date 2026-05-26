@@ -59,7 +59,13 @@
     "onlyBuiltDependencies": [
       "protobufjs",
       "sharp"
-    ]
+    ],
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react-helmet-async>react": "19",
+        "react-helmet-async>react-dom": "19"
+      }
+    }
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
