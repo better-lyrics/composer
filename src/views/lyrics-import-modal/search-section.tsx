@@ -251,7 +251,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         />
       </div>
 
-      <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[168px]">
+      <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[168px] max-h-[280px] overflow-y-auto">
         {renderResults()}
       </div>
 

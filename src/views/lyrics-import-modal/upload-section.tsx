@@ -16,6 +16,7 @@ interface UploadSectionProps {
 
 const ACCEPTED_EXTENSIONS = /\.(txt|lrc|srt|ttml|xml)$/i;
 const ACCEPTED_FILE_INPUT = ".txt,.lrc,.srt,.ttml,.xml";
+const UNSUPPORTED_TYPE_MESSAGE = "Unsupported file type. Use .txt .lrc .srt .ttml";
 
 // -- Component ----------------------------------------------------------------
 
@@ -26,7 +27,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
   const acceptFile = useCallback(
     (file: File) => {
       if (!ACCEPTED_EXTENSIONS.test(file.name)) {
-        toast.error("Unsupported file type. Use .txt .lrc .srt .ttml");
+        toast.error(UNSUPPORTED_TYPE_MESSAGE);
         return;
       }
       void onFile(file);
@@ -110,10 +111,11 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-lg text-center cursor-pointer",
-          "bg-composer-bg-dark border border-dashed",
-          "transition-colors",
-          isDragOver ? "border-composer-accent" : "border-composer-border-strong hover:border-composer-border-strong",
+          "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer",
+          "bg-composer-bg-dark border border-dashed transition-colors",
+          isDragOver
+            ? "border-composer-accent bg-composer-accent/8"
+            : "border-composer-border hover:border-composer-border-strong",
         )}
       >
         <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />
@@ -137,5 +139,5 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
 // -- Exports ------------------------------------------------------------------
 
-export { UploadSection };
+export { ACCEPTED_EXTENSIONS, UNSUPPORTED_TYPE_MESSAGE, UploadSection };
 export type { UploadSectionProps };

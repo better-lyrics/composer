@@ -40,7 +40,7 @@ const SearchField: React.FC<SearchFieldProps> = ({
         {label}
         {optional ? <span className="opacity-70"> ・ optional</span> : null}
       </label>
-      <div className="flex items-center gap-2 px-3 py-2.5 bg-composer-input border border-composer-border rounded-lg transition-colors focus-within:border-composer-accent">
+      <div className="flex items-center gap-2 px-3 py-2 bg-composer-input border border-composer-border rounded-lg transition-colors focus-within:border-composer-accent">
         <span className="text-composer-text opacity-50 shrink-0" aria-hidden="true">
           {icon}
         </span>

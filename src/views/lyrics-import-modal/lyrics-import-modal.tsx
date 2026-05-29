@@ -1,4 +1,4 @@
-import { IconFileImport } from "@tabler/icons-react";
+import { IconFileImport, IconUpload } from "@tabler/icons-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAudioStore } from "@/stores/audio";
@@ -8,6 +8,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
+import { cn } from "@/utils/cn";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
@@ -15,7 +16,11 @@ import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { textToLyricLines } from "@/utils/lyrics-text";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
-import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
+import {
+  ACCEPTED_EXTENSIONS,
+  UNSUPPORTED_TYPE_MESSAGE,
+  UploadSection,
+} from "@/views/lyrics-import-modal/upload-section";
 import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
@@ -64,8 +69,10 @@ const LyricsImportModalShell: React.FC = () => {
   const [pasteText, setPasteText] = useState("");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectingResultId, setSelectingResultId] = useState<string | null>(null);
+  const [isModalDragOver, setIsModalDragOver] = useState(false);
   const closedRef = useRef(false);
   const selectionAbortRef = useRef<AbortController | null>(null);
+  const dragCountRef = useRef(0);
 
   const close = useCallback(() => {
     closedRef.current = true;
@@ -160,6 +167,48 @@ const LyricsImportModalShell: React.FC = () => {
   const switchToPaste = useCallback(() => setCurrentSection("paste"), []);
   const switchToUpload = useCallback(() => setCurrentSection("upload"), []);
 
+  const isFileDrag = useCallback((e: React.DragEvent) => {
+    return Array.from(e.dataTransfer.types).includes("Files");
+  }, []);
+
+  const handleModalDragEnter = useCallback(
+    (e: React.DragEvent) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      dragCountRef.current++;
+      if (dragCountRef.current === 1) setIsModalDragOver(true);
+    },
+    [isFileDrag],
+  );
+
+  const handleModalDragOver = useCallback(
+    (e: React.DragEvent) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+    },
+    [isFileDrag],
+  );
+
+  const handleModalDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCountRef.current = Math.max(0, dragCountRef.current - 1);
+    if (dragCountRef.current === 0) setIsModalDragOver(false);
+  }, []);
+
+  const handleModalDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    dragCountRef.current = 0;
+    setIsModalDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    if (!ACCEPTED_EXTENSIONS.test(file.name)) {
+      toast.error(UNSUPPORTED_TYPE_MESSAGE);
+      return;
+    }
+    setPendingFile(file);
+    setCurrentSection("upload");
+  }, []);
+
   const expectedDurationSec = audioDuration > 0 ? audioDuration : undefined;
 
   const sectionBody = useMemo(() => {
@@ -211,7 +260,13 @@ const LyricsImportModalShell: React.FC = () => {
 
   return (
     <Modal isOpen onClose={close} title="Import Lyrics" className="max-w-lg">
-      <div className="flex flex-col gap-4">
+      <div
+        className="relative flex flex-col gap-4"
+        onDragEnter={handleModalDragEnter}
+        onDragOver={handleModalDragOver}
+        onDragLeave={handleModalDragLeave}
+        onDrop={handleModalDrop}
+      >
         {sectionBody}
 
         {pendingFileLabel && currentSection === "upload" && (
@@ -230,6 +285,21 @@ const LyricsImportModalShell: React.FC = () => {
               Import
             </Button>
           )}
+        </div>
+
+        <div
+          aria-hidden={!isModalDragOver}
+          className={cn(
+            "absolute -inset-2 rounded-xl flex flex-col items-center justify-center gap-2 pointer-events-none transition-opacity",
+            "bg-composer-bg-dark/90 border-2 border-composer-accent",
+            isModalDragOver ? "opacity-100" : "opacity-0",
+          )}
+        >
+          <IconUpload size={32} stroke={1.5} className="text-composer-accent" />
+          <div className="text-sm font-medium text-composer-text">Drop lyrics file to import</div>
+          <div className="font-mono text-[10.5px] tracking-tight text-composer-text opacity-50">
+            .txt .lrc .srt .ttml
+          </div>
         </div>
       </div>
     </Modal>

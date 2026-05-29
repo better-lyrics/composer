@@ -56,7 +56,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         placeholder="Paste lyrics here, one line per line. Use | to split syllables"
         spellCheck={false}
         className={cn(
-          "h-32 p-3 text-sm rounded-lg resize-none",
+          "h-32 px-3 py-2 text-sm rounded-lg resize-none",
           "bg-composer-bg-dark border border-composer-border",
           "text-composer-text placeholder:text-composer-text-muted",
           "focus:outline-none focus:border-composer-accent",
