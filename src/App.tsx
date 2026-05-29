@@ -3,6 +3,7 @@ import { AudioPlayer } from "@/audio/audio-player";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
+import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
@@ -15,6 +16,7 @@ import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
+import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 import { HelpModal } from "@/ui/help-modal";
 import { SettingsModal } from "@/ui/settings-modal";
 import { TabBar } from "@/ui/tab-bar";
@@ -59,6 +61,7 @@ const AppContent: React.FC = () => {
   usePersistence();
   useImportFromHash();
   useResolveYouTubeTunnel();
+  useImportFromQuery();
   useImportFromYouTube();
   usePanicRecovery();
   useDocumentTitle();
@@ -135,6 +138,7 @@ const App: React.FC = () => {
         <AppContent />
         <ConfirmModalHost />
         <DivergenceModalHost />
+        <LyricsImportModalHost />
         <Toaster
           theme="dark"
           position="bottom-center"

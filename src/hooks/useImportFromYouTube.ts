@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import { stripQueryParams } from "@/utils/url-params";
 import { extractVideoId } from "@/utils/youtube-url";
 
 // -- Constants ----------------------------------------------------------------
@@ -18,12 +19,7 @@ function readYouTubeParam(params: URLSearchParams): string | null {
 }
 
 function cleanYouTubeParamsFromUrl(): void {
-  if (typeof window === "undefined") return;
-  const url = new URL(window.location.href);
-  for (const name of YOUTUBE_PARAM_NAMES) url.searchParams.delete(name);
-  const search = url.searchParams.toString();
-  const next = url.pathname + (search ? `?${search}` : "") + url.hash;
-  window.history.replaceState(null, "", next);
+  stripQueryParams(YOUTUBE_PARAM_NAMES);
 }
 
 function useImportFromYouTube(): void {
