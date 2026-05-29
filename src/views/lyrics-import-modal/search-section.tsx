@@ -194,7 +194,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
     }
     return (
       <div className="flex flex-col items-center gap-2 py-9 px-4 text-center">
-        <IconSearch size={22} className="text-composer-text-muted opacity-50" aria-hidden="true" />
+        <IconSearch size={22} className="text-composer-text opacity-25" aria-hidden="true" />
         <span className="text-xs font-medium text-composer-text-secondary">Type a track or paste a video ID</span>
         <span className="text-[11px] text-composer-text-muted">
           Artist narrows results. Album, duration, video ID are optional but help.
@@ -261,7 +261,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           onClick={onSwitchToPaste}
           className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input border border-composer-border rounded-lg text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
         >
-          <IconFileText size={14} stroke={1.75} className="text-composer-text-muted" />
+          <IconFileText size={14} stroke={1.75} className="text-composer-text opacity-50" />
           Paste lyrics instead
         </button>
         <button
@@ -269,7 +269,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           onClick={onSwitchToUpload}
           className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input border border-composer-border rounded-lg text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
         >
-          <IconUpload size={14} stroke={1.75} className="text-composer-text-muted" />
+          <IconUpload size={14} stroke={1.75} className="text-composer-text opacity-50" />
           Upload file
         </button>
       </div>

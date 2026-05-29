@@ -40,7 +40,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
             onClick={onSwitchToSearch}
             className={cn(
               "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text-muted hover:text-composer-text-secondary",
+              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
             )}
           >
             <IconArrowLeft size={11} stroke={2} />
@@ -51,7 +51,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
             onClick={onSwitchToUpload}
             className={cn(
               "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text-muted hover:text-composer-text-secondary",
+              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
             )}
           >
             <IconUpload size={11} stroke={2} />

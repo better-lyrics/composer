@@ -91,7 +91,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
             onClick={onSwitchToSearch}
             className={cn(
               "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text-muted hover:text-composer-text-secondary",
+              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
             )}
           >
             <IconArrowLeft size={11} stroke={2} />
@@ -102,7 +102,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
             onClick={onSwitchToPaste}
             className={cn(
               "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text-muted hover:text-composer-text-secondary",
+              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
             )}
           >
             <IconClipboardText size={11} stroke={2} />
@@ -128,7 +128,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
           isDragOver ? "border-composer-accent" : "border-composer-border-strong hover:border-composer-border-strong",
         )}
       >
-        <IconMusic size={32} stroke={1.5} className="text-composer-text-muted mb-0.5" />
+        <IconMusic size={32} stroke={1.5} className="text-composer-text opacity-50 mb-0.5" />
         <div className="text-sm font-medium text-composer-text">Drop a lyrics file here</div>
         <div className="text-[11.5px] text-composer-text-muted">
           or <span className="text-composer-accent-text underline decoration-composer-accent/40">click to browse</span>

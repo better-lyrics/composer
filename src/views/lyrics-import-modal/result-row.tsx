@@ -68,12 +68,16 @@ const ResultRow: React.FC<ResultRowProps> = ({
     >
       <span
         className={cn(
-          "flex items-center justify-center size-6 rounded-md bg-white/4 text-composer-text-muted",
-          isActive && "bg-composer-accent/18 text-composer-accent-text",
+          "flex items-center justify-center size-6 rounded-md bg-white/4",
+          isActive && "bg-composer-accent/18",
         )}
         aria-hidden="true"
       >
-        <IconMusic size={13} stroke={1.75} />
+        <IconMusic
+          size={13}
+          stroke={1.75}
+          className={cn("text-composer-text opacity-50", isActive && "text-composer-accent-text opacity-100")}
+        />
       </span>
 
       <span className="min-w-0 flex flex-col gap-0.5">
