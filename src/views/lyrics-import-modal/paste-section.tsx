@@ -1,4 +1,5 @@
 import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
+import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
@@ -32,32 +33,19 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
 
   return (
     <div className={cn("flex flex-col gap-2.5 p-3 rounded-lg", "bg-composer-input border border-composer-border")}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-medium text-composer-text">Paste lyrics</div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onSwitchToSearch}
-            className={cn(
-              "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
-            )}
-          >
-            <IconArrowLeft size={11} stroke={2} />
-            Back to search
-          </button>
-          <button
-            type="button"
-            onClick={onSwitchToUpload}
-            className={cn(
-              "inline-flex items-center gap-1 text-[11px] cursor-pointer bg-transparent border-none p-0",
-              "text-composer-text opacity-50 hover:opacity-75 transition-opacity",
-            )}
-          >
-            <IconUpload size={11} stroke={2} />
-            Switch to upload
-          </button>
-        </div>
+      <div className="flex items-center justify-between gap-2">
+        <Button variant="secondary" size="sm" hasIcon onClick={onSwitchToSearch}>
+          <IconArrowLeft size={14} stroke={2} />
+          Back to search
+        </Button>
+        <button
+          type="button"
+          onClick={onSwitchToUpload}
+          className="inline-flex items-center gap-1.5 text-[11px] font-medium cursor-pointer bg-transparent border-none px-1 py-0.5 rounded text-composer-text-secondary hover:text-composer-text transition-colors"
+        >
+          <IconUpload size={12} stroke={2} className="text-composer-text opacity-60" />
+          Upload file instead
+        </button>
       </div>
       <textarea
         ref={focusOnMount}
