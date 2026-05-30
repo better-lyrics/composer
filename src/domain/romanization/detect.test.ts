@@ -38,6 +38,24 @@ describe("detectScript", () => {
     expect(detectScript("ᄀᄂᄃ")).toBe("korean");
   });
 
+  describe("hangul non-syllable ranges", () => {
+    it("detects Hangul Jamo (U+1100)", () => {
+      expect(detectScript("ᄀ")).toBe("korean");
+    });
+
+    it("detects Hangul Compatibility Jamo (U+3131)", () => {
+      expect(detectScript("ㄱ")).toBe("korean");
+    });
+
+    it("detects Hangul Jamo Extended-A (U+A960)", () => {
+      expect(detectScript("ꥠ")).toBe("korean");
+    });
+
+    it("detects Hangul Jamo Extended-B (U+D7B0)", () => {
+      expect(detectScript("ힰ")).toBe("korean");
+    });
+  });
+
   it("returns 'japanese' for mixed kana + latin", () => {
     expect(detectScript("こんにちは world")).toBe("japanese");
   });

@@ -73,10 +73,10 @@ describe("lines-slice: romanization", () => {
     expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
   });
 
-  it("setLineRomanization throws on empty text", () => {
-    expect(() => useProjectStore.getState().setLineRomanization("L1", { text: "", source: "manual" })).toThrow(
-      /empty/i,
-    );
+  it("setLineRomanization stores empty text cleanly without throwing", () => {
+    expect(() => useProjectStore.getState().setLineRomanization("L1", { text: "", source: "manual" })).not.toThrow();
+    const line = useProjectStore.getState().lines.find((l) => l.id === "L1");
+    expect(line?.romanization).toEqual({ text: "", source: "manual" });
   });
 
   it("setLineRomanization preserves other line fields", () => {

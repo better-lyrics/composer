@@ -1,10 +1,10 @@
 import { type LyricLine, reconcileLine, type RomanizationData } from "@/domain/line/model";
 import { commitHistory } from "@/stores/project/history-helpers";
-import type { LinesState, ProjectState } from "@/stores/project/types";
+import type { ProjectState } from "@/stores/project/types";
 
 // -- Types --------------------------------------------------------------------
 
-type RomanizationStateChange = Partial<LinesState & { isDirty: boolean; isDirtySinceHistory: boolean }>;
+type RomanizationStateChange = Partial<ProjectState>;
 
 // -- Internal -----------------------------------------------------------------
 
@@ -23,14 +23,11 @@ function writeRomanization(
   return changed ? next : lines;
 }
 
-function prepare(
+function computeRomanizationUpdate(
   state: ProjectState,
   lineId: string,
   romanization: RomanizationData | undefined,
 ): { next: LyricLine[]; unchanged: boolean } {
-  if (romanization && !romanization.text) {
-    throw new Error("Romanization text cannot be empty");
-  }
   const next = writeRomanization(state.lines, lineId, romanization);
   return { next, unchanged: next === state.lines };
 }
@@ -42,7 +39,7 @@ function applyRomanization(
   lineId: string,
   romanization: RomanizationData | undefined,
 ): RomanizationStateChange | ProjectState {
-  const { next, unchanged } = prepare(state, lineId, romanization);
+  const { next, unchanged } = computeRomanizationUpdate(state, lineId, romanization);
   if (unchanged) return state;
   return { lines: next, isDirty: true, isDirtySinceHistory: true };
 }
@@ -52,7 +49,7 @@ function applyRomanizationWithHistory(
   lineId: string,
   romanization: RomanizationData | undefined,
 ): RomanizationStateChange | ProjectState {
-  const { next, unchanged } = prepare(state, lineId, romanization);
+  const { next, unchanged } = computeRomanizationUpdate(state, lineId, romanization);
   if (unchanged) return state;
   return commitHistory(state, { lines: next });
 }

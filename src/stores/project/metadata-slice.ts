@@ -51,7 +51,6 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => ({
       metadata: { ...state.metadata, romanizationScheme: scheme },
       isDirty: true,
-      isDirtySinceHistory: true,
     }));
   },
 
@@ -59,7 +58,6 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => ({
       metadata: { ...state.metadata, romanizationBannerDismissed: true },
       isDirty: true,
-      isDirtySinceHistory: true,
     })),
 
   reset: () => set(createProjectInitialState()),

@@ -23,9 +23,9 @@ describe("metadata-slice: romanization", () => {
     );
   });
 
-  it("setRomanizationScheme marks isDirtySinceHistory", () => {
+  it("setRomanizationScheme does not mark isDirtySinceHistory", () => {
     useProjectStore.getState().setRomanizationScheme("ja-Latn-hepburn");
-    expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
+    expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
   });
 
   it("setRomanizationScheme leaves the rest of metadata untouched", () => {
@@ -40,9 +40,9 @@ describe("metadata-slice: romanization", () => {
     expect(useProjectStore.getState().metadata.romanizationBannerDismissed).toBe(true);
   });
 
-  it("dismissRomanizationBanner marks isDirtySinceHistory", () => {
+  it("dismissRomanizationBanner does not mark isDirtySinceHistory", () => {
     useProjectStore.getState().dismissRomanizationBanner();
-    expect(useProjectStore.getState().isDirtySinceHistory).toBe(true);
+    expect(useProjectStore.getState().isDirtySinceHistory).toBe(false);
   });
 
   it("reset clears scheme and banner state", () => {
@@ -50,6 +50,6 @@ describe("metadata-slice: romanization", () => {
     useProjectStore.getState().dismissRomanizationBanner();
     useProjectStore.getState().reset();
     expect(useProjectStore.getState().metadata.romanizationScheme).toBeUndefined();
-    expect(useProjectStore.getState().metadata.romanizationBannerDismissed).toBeFalsy();
+    expect(useProjectStore.getState().metadata.romanizationBannerDismissed).toBeUndefined();
   });
 });
