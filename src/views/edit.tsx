@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
@@ -621,9 +622,7 @@ const EditPanel: React.FC = () => {
     [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines],
   );
 
-  const handleOpenImportModal = useCallback(() => {
-    openImportModal();
-  }, [openImportModal]);
+  const importTriggers = useDualClickImport(openImportModal);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -660,10 +659,16 @@ const EditPanel: React.FC = () => {
             <IconMicrophone className="size-4" />
             Extract background vocals
           </Button>
-          <Button hasIcon onClick={handleOpenImportModal}>
+          <Button
+            hasIcon
+            onClick={importTriggers.onClick}
+            onDoubleClick={importTriggers.onDoubleClick}
+            title="Click to search, paste, or upload. Double-click to upload a file directly."
+          >
             <IconFileImport className="size-4" />
             Import Lyrics
           </Button>
+          {importTriggers.fileInput}
         </div>
       </div>
 

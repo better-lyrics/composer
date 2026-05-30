@@ -1,12 +1,20 @@
 import { useQueries } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
+import type { SyncType } from "@/domain/lyrics-search/sync-type";
 import { getProviders } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
 const DEFAULT_DEBOUNCE_MS = 350;
+
+const SYNC_PRECISION_RANK: Record<SyncType, number> = {
+  syllable: 0,
+  word: 1,
+  line: 2,
+  unsynced: 3,
+};
 
 // -- Types --------------------------------------------------------------------
 
@@ -101,7 +109,9 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
     }
   }
 
-  return { results: merged, isFetching, errors };
+  const sorted = merged.toSorted((a, b) => SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType]);
+
+  return { results: sorted, isFetching, errors };
 }
 
 // -- Exports ------------------------------------------------------------------

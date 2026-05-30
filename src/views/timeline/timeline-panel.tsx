@@ -10,6 +10,7 @@ import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
+import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useImportModal } from "@/stores/import-modal-store";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
@@ -172,6 +173,7 @@ const TimelinePanel: React.FC = () => {
 
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
+  const importTriggers = useDualClickImport(openLyricsModal);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
 
@@ -387,10 +389,18 @@ const TimelinePanel: React.FC = () => {
           <IconFileMusic className="size-12 text-composer-text opacity-50" strokeWidth={1} />
           <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
           <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
-          <Button variant="primary" hasIcon onClick={openLyricsModal} className="mt-2">
+          <Button
+            variant="primary"
+            hasIcon
+            onClick={importTriggers.onClick}
+            onDoubleClick={importTriggers.onDoubleClick}
+            title="Click to search, paste, or upload. Double-click to upload a file directly."
+            className="mt-2"
+          >
             <IconFileImport size={16} />
             Import Lyrics
           </Button>
+          {importTriggers.fileInput}
         </div>
       </div>
     );

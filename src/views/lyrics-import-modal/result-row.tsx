@@ -97,8 +97,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
           ) : null}
           {formatDuration(result.durationSec)}
         </span>
-        <SyncTypeBadge syncType={result.syncType} />
-        <span className="text-[10px] font-medium text-composer-text-muted tracking-wide">{result.sourceLabel}</span>
+        <SyncTypeBadge syncType={result.syncType} sourceLabel={result.sourceLabel} />
         {isSelecting ? (
           <IconLoader2 size={12} className="animate-spin text-composer-accent-text" aria-label="Loading" />
         ) : null}

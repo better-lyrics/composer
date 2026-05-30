@@ -9,13 +9,17 @@ import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
-import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { textToLyricLines } from "@/utils/lyrics-text";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
+import {
+  isAbortError,
+  payloadToContent,
+  syntheticFilenameForResult,
+  wrapTextAsParseResult,
+} from "@/views/lyrics-import-modal/shell-helpers";
 import {
   ACCEPTED_EXTENSIONS,
   UNSUPPORTED_TYPE_MESSAGE,
@@ -26,34 +30,6 @@ import {
   type ImportParsedLyricsContext,
   type ImportSourceInfo,
 } from "@/views/lyrics-import-modal/use-import-modal-actions";
-
-// -- Helpers ------------------------------------------------------------------
-
-function wrapTextAsParseResult(lines: LyricLine[]): ParseResult {
-  return { lines, metadata: {}, hasTimingData: false };
-}
-
-function syntheticFilenameForResult(result: LyricsSearchResult): string {
-  const ext = result.payload.kind === "lrc" ? "lrc" : "ttml";
-  return `${result.source}-${result.id}.${ext}`;
-}
-
-async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal): Promise<string | null> {
-  if (result.payload.kind === "ttml") return result.payload.xml;
-  if (result.payload.kind === "lrc") return result.payload.synced ?? result.payload.plain;
-
-  const response = await fetch(result.payload.fetchUrl, { signal });
-  if (!response.ok) {
-    throw new Error(`Failed to fetch lyrics (${response.status})`);
-  }
-  const text = await response.text();
-  if (text.length === 0) return null;
-  return text;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
-}
 
 // -- Component ----------------------------------------------------------------
 

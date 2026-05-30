@@ -193,10 +193,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({
       );
     }
     return (
-      <div className="flex flex-col items-center gap-2 py-9 px-4 text-center">
-        <IconSearch size={22} className="text-composer-text opacity-25" aria-hidden="true" />
+      <div className="m-auto flex flex-col items-center px-4 text-center">
+        <IconSearch size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
         <span className="text-xs font-medium text-composer-text-secondary">Type a track or paste a video ID</span>
-        <span className="text-[11px] text-composer-text-muted">
+        <span className="text-[11px] text-composer-text-muted mt-0.5">
           Artist narrows results. Album, duration, video ID are optional but help.
         </span>
       </div>
