@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import type { ImportSourceInfo } from "@/views/lyrics-import-modal/use-import-modal-actions";
@@ -15,6 +16,7 @@ interface LastImportResult {
 interface ImportModalState {
   isOpen: boolean;
   prefill: LyricsSearchQuery | null;
+  defaultPrefill: LyricsSearchQuery | null;
   initialSection: ImportModalSection | null;
   lastImportResult: LastImportResult | null;
 }
@@ -27,6 +29,8 @@ interface OpenArgs {
 interface ImportModalStore extends ImportModalState {
   open: (args?: OpenArgs) => void;
   close: () => void;
+  setDefaultPrefill: (prefill: LyricsSearchQuery) => void;
+  clearDefaultPrefill: () => void;
   recordImportResult: (parsed: ParseResult, source: ImportSourceInfo) => void;
   clearImportResult: () => void;
 }
@@ -36,35 +40,54 @@ interface ImportModalStore extends ImportModalState {
 const INITIAL_STATE: ImportModalState = {
   isOpen: false,
   prefill: null,
+  defaultPrefill: null,
   initialSection: null,
   lastImportResult: null,
 };
 
 // -- Store --------------------------------------------------------------------
 
-const useImportModalStore = create<ImportModalStore>((set) => ({
-  ...INITIAL_STATE,
+const useImportModalStore = create<ImportModalStore>()(
+  persist(
+    (set, get) => ({
+      ...INITIAL_STATE,
 
-  open: (args) => {
-    set({
-      isOpen: true,
-      prefill: args?.prefill ?? null,
-      initialSection: args?.section ?? null,
-    });
-  },
+      open: (args) => {
+        const explicit = args?.prefill;
+        const fallback = get().defaultPrefill;
+        set({
+          isOpen: true,
+          prefill: explicit ?? fallback,
+          initialSection: args?.section ?? null,
+        });
+      },
 
-  close: () => {
-    set({ isOpen: false, prefill: null, initialSection: null });
-  },
+      close: () => {
+        set({ isOpen: false, prefill: null, initialSection: null });
+      },
 
-  recordImportResult: (parsed, source) => {
-    set({ lastImportResult: { parsed, source } });
-  },
+      setDefaultPrefill: (prefill) => {
+        set({ defaultPrefill: prefill });
+      },
 
-  clearImportResult: () => {
-    set({ lastImportResult: null });
-  },
-}));
+      clearDefaultPrefill: () => {
+        set({ defaultPrefill: null });
+      },
+
+      recordImportResult: (parsed, source) => {
+        set({ lastImportResult: { parsed, source } });
+      },
+
+      clearImportResult: () => {
+        set({ lastImportResult: null });
+      },
+    }),
+    {
+      name: "composer-import-modal",
+      partialize: (state) => ({ defaultPrefill: state.defaultPrefill }),
+    },
+  ),
+);
 
 // -- Public hooks -------------------------------------------------------------
 
@@ -75,8 +98,13 @@ function useImportModal(): (args?: OpenArgs) => void {
 function useImportModalState(): Omit<ImportModalState, "lastImportResult"> {
   const isOpen = useImportModalStore((s) => s.isOpen);
   const prefill = useImportModalStore((s) => s.prefill);
+  const defaultPrefill = useImportModalStore((s) => s.defaultPrefill);
   const initialSection = useImportModalStore((s) => s.initialSection);
-  return { isOpen, prefill, initialSection };
+  return { isOpen, prefill, defaultPrefill, initialSection };
+}
+
+function useDefaultPrefill(): LyricsSearchQuery | null {
+  return useImportModalStore((s) => s.defaultPrefill);
 }
 
 function useLastImportResult(): LastImportResult | null {
@@ -85,5 +113,12 @@ function useLastImportResult(): LastImportResult | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { INITIAL_STATE, useImportModal, useImportModalState, useImportModalStore, useLastImportResult };
+export {
+  INITIAL_STATE,
+  useDefaultPrefill,
+  useImportModal,
+  useImportModalState,
+  useImportModalStore,
+  useLastImportResult,
+};
 export type { ImportModalSection, ImportModalState, LastImportResult, OpenArgs };

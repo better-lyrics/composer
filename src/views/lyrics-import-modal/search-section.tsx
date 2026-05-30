@@ -1,20 +1,12 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
+import { useImportModalStore } from "@/stores/import-modal-store";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
-import { ResultRow } from "@/views/lyrics-import-modal/result-row";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
-import {
-  IconAlbum,
-  IconBrandYoutube,
-  IconClock,
-  IconFileText,
-  IconMicrophone,
-  IconSearch,
-  IconUpload,
-  IconUser,
-} from "@tabler/icons-react";
+import { SearchResults } from "@/views/lyrics-import-modal/search-results";
+import { IconAlbum, IconBrandYoutube, IconClock, IconFileText, IconMicrophone, IconUpload, IconUser } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -36,7 +28,6 @@ interface InputState {
 
 // -- Constants ----------------------------------------------------------------
 
-const SKELETON_ROW_COUNT = 3;
 const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   lrclib: "LRCLib",
   binimum: "Binimum",
@@ -107,6 +98,18 @@ const SearchSection: React.FC<SearchSectionProps> = ({
     };
   }, []);
 
+  const handleClearAll = useCallback(() => {
+    setInputs({ track: "", artist: "", album: "", duration: "", videoId: "" });
+    isrcRef.current = undefined;
+    setFocusedIndex(-1);
+    useImportModalStore.getState().clearDefaultPrefill();
+    trackInputRef.current?.focus();
+  }, []);
+
+  const hasAnyInput = Boolean(
+    inputs.track || inputs.artist || inputs.album || inputs.duration || inputs.videoId,
+  );
+
   const handleSelectResult = useCallback(
     (result: LyricsSearchResult) => {
       setSelectingId(result.id);
@@ -145,68 +148,20 @@ const SearchSection: React.FC<SearchSectionProps> = ({
     [results, focusedIndex, handleSelectResult],
   );
 
-  const renderResults = () => {
-    if (errors.size > 0 && results.length === 0 && !isFetching) {
-      return (
-        <div className="flex flex-col items-center gap-1.5 py-8 text-center" role="alert">
-          <span className="text-xs text-composer-error-text">
-            {[...errors.values()].map((err) => `${formatProviderName(err.provider)}: ${err.message}`).join(" ・ ")}
-          </span>
-          <span className="text-[11px] text-composer-text-muted">Try adjusting your search.</span>
-        </div>
-      );
-    }
-    if (results.length > 0) {
-      return (
-        <div role="listbox" className="flex flex-col gap-1.5">
-          {results.map((result, index) => (
-            <ResultRow
-              key={result.id}
-              result={result}
-              isHovered={hoveredIndex === index}
-              isFocused={focusedIndex === index}
-              isSelecting={selectingId === result.id}
-              expectedDurationSec={effectiveExpectedDuration}
-              onHover={() => setHoveredIndex(index)}
-              onSelect={() => handleSelectResult(result)}
-            />
-          ))}
-        </div>
-      );
-    }
-    if (isFetching) {
-      return (
-        <div className="flex flex-col gap-1.5" aria-busy="true">
-          {Array.from({ length: SKELETON_ROW_COUNT }).map((_, i) => (
-            <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count decorative skeleton
-              key={i}
-              data-testid="result-skeleton"
-              className="grid grid-cols-[24px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg animate-pulse"
-            >
-              <span className="size-6 rounded-md bg-white/4" />
-              <span className="h-3 rounded bg-white/4 w-3/4" />
-              <span className="h-3 rounded bg-white/4 w-12" />
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return (
-      <div className="m-auto flex flex-col items-center px-4 text-center">
-        <IconSearch size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
-        <span className="text-xs font-medium text-composer-text-secondary">Type a track or paste a video ID</span>
-        <span className="text-[11px] text-composer-text-muted mt-0.5">
-          Artist narrows results. Album, duration, video ID are optional but help.
-        </span>
-      </div>
-    );
-  };
-
   return (
     <div className="flex flex-col gap-4" onKeyDown={handleKeyDown}>
-      <div className="grid grid-cols-[1.4fr_1fr] gap-2">
-        <SearchField
+      <div className="relative flex flex-col gap-2">
+        {hasAnyInput && (
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="absolute -top-3.5 right-0 text-[11px] text-composer-text-muted hover:text-composer-text cursor-pointer transition-colors"
+          >
+            Clear all
+          </button>
+        )}
+        <div className="grid grid-cols-[1.4fr_1fr] gap-2">
+          <SearchField
           label="Track"
           icon={<IconMicrophone size={14} stroke={1.75} />}
           value={inputs.track}
@@ -249,17 +204,29 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           placeholder="dQw4w9WgXcQ"
           onChange={handleInputChange("videoId")}
         />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[168px] max-h-[280px] overflow-y-auto">
-        {renderResults()}
+      <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto">
+        <SearchResults
+          results={results}
+          errors={errors}
+          isFetching={isFetching}
+          focusedIndex={focusedIndex}
+          hoveredIndex={hoveredIndex}
+          selectingId={selectingId}
+          expectedDurationSec={effectiveExpectedDuration}
+          onHover={setHoveredIndex}
+          onSelect={handleSelectResult}
+          providerDisplayName={formatProviderName}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={onSwitchToPaste}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input border border-composer-border rounded-lg text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input rounded-xl text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
         >
           <IconFileText size={14} stroke={1.75} className="text-composer-text opacity-50" />
           Paste lyrics instead
@@ -267,7 +234,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         <button
           type="button"
           onClick={onSwitchToUpload}
-          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input border border-composer-border rounded-lg text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
+          className="inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-composer-input rounded-xl text-composer-text-secondary text-xs font-medium cursor-pointer hover:bg-composer-button-hover hover:text-composer-text transition-colors"
         >
           <IconUpload size={14} stroke={1.75} className="text-composer-text opacity-50" />
           Upload file

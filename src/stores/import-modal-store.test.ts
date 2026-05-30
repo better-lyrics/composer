@@ -1,6 +1,3 @@
-/**
- * @vitest-environment node
- */
 import { beforeEach, describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { INITIAL_STATE, useImportModal, useImportModalStore } from "@/stores/import-modal-store";
@@ -13,6 +10,7 @@ function makeParseResult(overrides: Partial<ParseResult> = {}): ParseResult {
 
 beforeEach(() => {
   useImportModalStore.setState({ ...INITIAL_STATE });
+  window.localStorage.removeItem("composer-import-modal");
 });
 
 describe("import-modal-store", () => {
@@ -148,5 +146,57 @@ describe("import-modal-store", () => {
       parsed: second,
       source: { label: "File", filename: "second.lrc" },
     });
+  });
+});
+
+describe("import-modal-store · defaultPrefill", () => {
+  it("starts with no defaultPrefill", () => {
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
+  });
+
+  it("setDefaultPrefill stashes the prefill without opening the modal", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Bohemian Rhapsody", artist: "Queen" });
+    const state = useImportModalStore.getState();
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill).toEqual({ track: "Bohemian Rhapsody", artist: "Queen" });
+  });
+
+  it("clearDefaultPrefill resets defaultPrefill to null", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "X" });
+    useImportModalStore.getState().clearDefaultPrefill();
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
+  });
+
+  it("open() without args falls back to defaultPrefill as the modal's prefill", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Hello", videoId: "abc" });
+    useImportModalStore.getState().open();
+    const state = useImportModalStore.getState();
+    expect(state.isOpen).toBe(true);
+    expect(state.prefill).toEqual({ track: "Hello", videoId: "abc" });
+  });
+
+  it("open({ prefill }) overrides defaultPrefill for that session", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Default" });
+    useImportModalStore.getState().open({ prefill: { track: "Override" } });
+    const state = useImportModalStore.getState();
+    expect(state.prefill).toEqual({ track: "Override" });
+    expect(state.defaultPrefill).toEqual({ track: "Default" });
+  });
+
+  it("close() preserves defaultPrefill so a refresh or reopen still sees it", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Persists" });
+    useImportModalStore.getState().open();
+    useImportModalStore.getState().close();
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Persists" });
+  });
+
+  it("defaultPrefill survives a manual write through the persist key", () => {
+    window.localStorage.setItem(
+      "composer-import-modal",
+      JSON.stringify({ state: { defaultPrefill: { track: "Reloaded" } }, version: 0 }),
+    );
+    // Force a fresh rehydrate by invoking the persist API exposed on the store.
+    useImportModalStore.persist.rehydrate();
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Reloaded" });
   });
 });

@@ -53,13 +53,18 @@ function currentSearch(): string {
   return window.location.search;
 }
 
+function resetStore(): void {
+  useImportModalStore.setState({ ...INITIAL_STATE });
+  window.localStorage.removeItem("composer-import-modal");
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("useImportFromQuery", () => {
   let handle: MountHandle | null = null;
 
   beforeEach(() => {
-    useImportModalStore.setState({ ...INITIAL_STATE });
+    resetStore();
     setUrl("");
   });
 
@@ -71,7 +76,7 @@ describe("useImportFromQuery", () => {
     setUrl("");
   });
 
-  it("opens the modal pre-filled with every supported param and strips the consumed five", () => {
+  it("stashes every supported param into defaultPrefill and strips the consumed five from the URL", () => {
     setUrl(
       "?title=Bohemian%20Rhapsody&artist=Queen&album=A%20Night%20at%20the%20Opera&duration=355&videoId=fJ9rUzIMcZQ&isrc=GBUM71029604",
     );
@@ -79,8 +84,8 @@ describe("useImportFromQuery", () => {
     handle = mountHook();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill).toEqual({
       track: "Bohemian Rhapsody",
       artist: "Queen",
       album: "A Night at the Opera",
@@ -97,35 +102,34 @@ describe("useImportFromQuery", () => {
     expect(remaining.get("videoId")).toBe("fJ9rUzIMcZQ");
   });
 
-  it("opens the modal with only track when only title is present", () => {
+  it("stashes only track when only title is present, leaves modal closed", () => {
     setUrl("?title=Hello");
 
     handle = mountHook();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ track: "Hello" });
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill).toEqual({ track: "Hello" });
   });
 
-  it("opens the modal with only videoId when only videoId is present, and leaves videoId in the URL", () => {
+  it("stashes only videoId when only videoId is present, and leaves videoId in the URL for the YouTube hook", () => {
     setUrl("?videoId=fJ9rUzIMcZQ");
 
     handle = mountHook();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ videoId: "fJ9rUzIMcZQ" });
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill).toEqual({ videoId: "fJ9rUzIMcZQ" });
     expect(new URLSearchParams(currentSearch()).get("videoId")).toBe("fJ9rUzIMcZQ");
   });
 
-  it("ignores a malformed duration but still opens with the other fields, and strips the bad duration from the URL", () => {
+  it("ignores a malformed duration but still stashes the other fields, and strips the bad duration from the URL", () => {
     setUrl("?title=Hello&duration=abc");
 
     handle = mountHook();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ track: "Hello" });
+    expect(state.defaultPrefill).toEqual({ track: "Hello" });
     expect(new URLSearchParams(currentSearch()).get("duration")).toBeNull();
   });
 
@@ -135,9 +139,8 @@ describe("useImportFromQuery", () => {
     handle = mountHook();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ track: "Hello", artist: "Adele" });
-    expect(state.prefill?.isrc).toBeUndefined();
+    expect(state.defaultPrefill).toEqual({ track: "Hello", artist: "Adele" });
+    expect(state.defaultPrefill?.isrc).toBeUndefined();
   });
 
   it("no-ops with no params, leaving the modal closed and the URL untouched", () => {
@@ -146,24 +149,24 @@ describe("useImportFromQuery", () => {
     handle = mountHook();
 
     expect(useImportModalStore.getState().isOpen).toBe(false);
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
     expect(currentSearch()).toBe("");
   });
 
-  it("treats empty param values as missing and does not open the modal", () => {
+  it("treats empty param values as missing and leaves defaultPrefill null", () => {
     setUrl("?title=&artist=");
 
     handle = mountHook();
 
-    expect(useImportModalStore.getState().isOpen).toBe(false);
-    expect(useImportModalStore.getState().prefill).toBeNull();
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
   });
 
-  it("decodes percent-encoded values when assigning prefill", () => {
+  it("decodes percent-encoded values when stashing defaultPrefill", () => {
     setUrl("?title=Bohemian%20Rhapsody");
 
     handle = mountHook();
 
-    expect(useImportModalStore.getState().prefill).toEqual({ track: "Bohemian Rhapsody" });
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Bohemian Rhapsody" });
   });
 
   it("preserves unrelated query params while stripping the import ones", () => {
@@ -176,16 +179,11 @@ describe("useImportFromQuery", () => {
     expect(params.get("title")).toBeNull();
   });
 
-  it("runs once: re-rendering the consumer does not re-open the modal after the user closes it", () => {
+  it("does not auto-open the modal even when params are present", () => {
     setUrl("?title=Hello");
 
     handle = mountHook();
-    expect(useImportModalStore.getState().isOpen).toBe(true);
 
-    useImportModalStore.getState().close();
-    expect(useImportModalStore.getState().isOpen).toBe(false);
-
-    handle.rerender();
     expect(useImportModalStore.getState().isOpen).toBe(false);
   });
 
@@ -194,7 +192,7 @@ describe("useImportFromQuery", () => {
 
     handle = mountHook();
 
-    expect(useImportModalStore.getState().prefill).toEqual({ isrc: "GBUM71029604" });
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ isrc: "GBUM71029604" });
   });
 
   it("rejects a non-positive duration", () => {
@@ -202,7 +200,39 @@ describe("useImportFromQuery", () => {
 
     handle = mountHook();
 
-    expect(useImportModalStore.getState().prefill).toEqual({ track: "Hello" });
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Hello" });
+  });
+
+  it("open() without explicit prefill falls back to defaultPrefill", () => {
+    setUrl("?title=Hello&artist=World");
+
+    handle = mountHook();
+
+    useImportModalStore.getState().open();
+    const state = useImportModalStore.getState();
+    expect(state.isOpen).toBe(true);
+    expect(state.prefill).toEqual({ track: "Hello", artist: "World" });
+  });
+
+  it("explicit prefill on open() overrides the stashed defaultPrefill", () => {
+    setUrl("?title=Hello");
+
+    handle = mountHook();
+
+    useImportModalStore.getState().open({ prefill: { track: "Custom" } });
+    const state = useImportModalStore.getState();
+    expect(state.prefill).toEqual({ track: "Custom" });
+    expect(state.defaultPrefill).toEqual({ track: "Hello" });
+  });
+
+  it("clearDefaultPrefill removes the stashed values", () => {
+    setUrl("?title=Hello");
+
+    handle = mountHook();
+
+    expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Hello" });
+    useImportModalStore.getState().clearDefaultPrefill();
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
   });
 });
 
@@ -242,7 +272,7 @@ describe("useImportFromQuery + useImportFromYouTube mounted together", () => {
   let handle: MountHandle | null = null;
 
   beforeEach(() => {
-    useImportModalStore.setState({ ...INITIAL_STATE });
+    resetStore();
     setUrl("");
   });
 
@@ -254,27 +284,27 @@ describe("useImportFromQuery + useImportFromYouTube mounted together", () => {
     setUrl("");
   });
 
-  it("captures videoId in the modal prefill before useImportFromYouTube strips it", () => {
+  it("captures videoId in defaultPrefill before useImportFromYouTube strips it", () => {
     setUrl("?title=Bohemian%20Rhapsody&videoId=fJ9rUzIMcZQ");
 
     handle = mountBothHooks();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill?.track).toBe("Bohemian Rhapsody");
-    expect(state.prefill?.videoId).toBe("fJ9rUzIMcZQ");
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill?.track).toBe("Bohemian Rhapsody");
+    expect(state.defaultPrefill?.videoId).toBe("fJ9rUzIMcZQ");
     expect(new URLSearchParams(currentSearch()).get("videoId")).toBeNull();
     expect(new URLSearchParams(currentSearch()).get("title")).toBeNull();
   });
 
-  it("opens the modal when only videoId is present, even with YouTube hook also mounted", () => {
+  it("stashes videoId in defaultPrefill when only videoId is present, even with YouTube hook also mounted", () => {
     setUrl("?videoId=fJ9rUzIMcZQ");
 
     handle = mountBothHooks();
 
     const state = useImportModalStore.getState();
-    expect(state.isOpen).toBe(true);
-    expect(state.prefill).toEqual({ videoId: "fJ9rUzIMcZQ" });
+    expect(state.isOpen).toBe(false);
+    expect(state.defaultPrefill).toEqual({ videoId: "fJ9rUzIMcZQ" });
     expect(new URLSearchParams(currentSearch()).get("videoId")).toBeNull();
   });
 });

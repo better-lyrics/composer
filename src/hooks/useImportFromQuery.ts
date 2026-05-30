@@ -56,7 +56,7 @@ function useImportFromQuery(): void {
     const prefill = buildPrefillFromUrl(params);
     if (prefill === null) return;
     stripQueryParams(IMPORT_PARAM_NAMES);
-    useImportModalStore.getState().open({ prefill });
+    useImportModalStore.getState().setDefaultPrefill(prefill);
   }, []);
 }
 
