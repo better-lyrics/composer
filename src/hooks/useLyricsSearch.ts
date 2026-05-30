@@ -8,6 +8,7 @@ import { LyricsSearchError, type LyricsSearchQuery } from "@/utils/lyrics-search
 // -- Constants ----------------------------------------------------------------
 
 const DEFAULT_DEBOUNCE_MS = 350;
+const RESULT_CACHE_MS = 30 * 60 * 1000;
 
 const SYNC_PRECISION_RANK: Record<SyncType, number> = {
   syllable: 0,
@@ -75,7 +76,7 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
     queryKey: ["lyrics-search", provider.name, debouncedQuery] as const,
     queryFn: ({ signal }: { signal: AbortSignal }) => provider.search(debouncedQuery, signal),
     staleTime: Number.POSITIVE_INFINITY,
-    gcTime: 0,
+    gcTime: RESULT_CACHE_MS,
     enabled: enabled && !queryEmpty && provider.canSearch(debouncedQuery),
     retry: false,
   }));
