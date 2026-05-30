@@ -1,7 +1,7 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, type LyricLine, reconcileLine, type RomanizationData } from "@/domain/line/model";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -12,6 +12,7 @@ import {
   applyMoveFromBg,
   applyMoveToBg,
 } from "@/stores/project/lines-slice-helpers";
+import { applyRomanization, applyRomanizationWithHistory } from "@/stores/project/lines-slice-romanization-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -273,41 +274,15 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       return commitHistory(state, { lines: newLines });
     }),
 
-  setLineRomanization: (lineId, romanization) => {
-    if (!romanization.text) throw new Error("Romanization text cannot be empty");
-    set((state) => applyRomanizationUpdate(state.lines, lineId, romanization));
-  },
+  setLineRomanization: (lineId, romanization) => set((state) => applyRomanization(state, lineId, romanization)),
 
-  clearLineRomanization: (lineId) => {
-    set((state) => applyRomanizationUpdate(state.lines, lineId, undefined));
-  },
+  clearLineRomanization: (lineId) => set((state) => applyRomanization(state, lineId, undefined)),
+
+  setLineRomanizationWithHistory: (lineId, romanization) =>
+    set((state) => applyRomanizationWithHistory(state, lineId, romanization)),
+
+  clearLineRomanizationWithHistory: (lineId) => set((state) => applyRomanizationWithHistory(state, lineId, undefined)),
 });
-
-// -- Romanization Helpers -----------------------------------------------------
-
-function writeRomanization(
-  lines: LyricLine[],
-  lineId: string,
-  romanization: RomanizationData | undefined,
-): LyricLine[] {
-  let touched = false;
-  const next = lines.map((line) => {
-    if (line.id !== lineId) return line;
-    touched = true;
-    return reconcileLine({ ...line, romanization });
-  });
-  return touched ? next : lines;
-}
-
-function applyRomanizationUpdate(
-  lines: LyricLine[],
-  lineId: string,
-  romanization: RomanizationData | undefined,
-): Partial<LinesState & { isDirty: boolean; isDirtySinceHistory: boolean }> {
-  const next = writeRomanization(lines, lineId, romanization);
-  if (next === lines) return {};
-  return { lines: next, isDirty: true, isDirtySinceHistory: true };
-}
 
 // -- Exports ------------------------------------------------------------------
 

@@ -146,6 +146,8 @@ interface LineActions {
   }) => void;
   setLineRomanization: (lineId: string, romanization: RomanizationData) => void;
   clearLineRomanization: (lineId: string) => void;
+  setLineRomanizationWithHistory: (lineId: string, romanization: RomanizationData) => void;
+  clearLineRomanizationWithHistory: (lineId: string) => void;
 }
 
 interface GroupActions {
