@@ -181,10 +181,8 @@ function handleSearchRejection(reason: unknown): LrcLibResponse[] {
   throw new LyricsSearchError("lrclib", "LRCLib /api/search request failed", reason);
 }
 
-function handleGetRejection(reason: unknown): LrcLibResponse | null {
-  if (isAbortError(reason)) return null;
-  if (reason instanceof LyricsSearchError) throw reason;
-  throw new LyricsSearchError("lrclib", "LRCLib /api/get request failed", reason);
+function handleGetRejection(_reason: unknown): LrcLibResponse | null {
+  return null;
 }
 
 // -- Provider -----------------------------------------------------------------
