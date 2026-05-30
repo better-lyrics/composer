@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +12,7 @@ interface SearchFieldProps {
   placeholder: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
+  onKeyDown?: React.KeyboardEventHandler<HTMLInputElement>;
   inputRef?: React.Ref<HTMLInputElement>;
 }
 
@@ -28,9 +28,10 @@ const SearchField: React.FC<SearchFieldProps> = ({
   placeholder,
   onChange,
   onBlur,
+  onKeyDown,
   inputRef,
 }) => {
-  const inputId = useMemo(() => `field-${label.toLowerCase().replace(/\s+/g, "-")}`, [label]);
+  const inputId = `field-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div className={cn("flex flex-col gap-1.5 select-none", fullWidth && "col-span-2")}>
       <label htmlFor={inputId} className="text-[11px] font-medium tracking-wide text-composer-text-muted px-0.5">
@@ -47,6 +48,7 @@ const SearchField: React.FC<SearchFieldProps> = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onBlur={onBlur}
+          onKeyDown={onKeyDown}
           placeholder={placeholder}
           className={cn(
             "flex-1 min-w-0 bg-transparent border-0 outline-none text-composer-text placeholder:text-composer-text-muted",

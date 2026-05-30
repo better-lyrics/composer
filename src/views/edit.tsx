@@ -34,6 +34,8 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 
 const RUN_DEBOUNCE_MS = 500;
 
+const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
+
 // -- Components ---------------------------------------------------------------
 
 const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
@@ -635,14 +637,12 @@ const EditPanel: React.FC = () => {
     [handleDroppedFile],
   );
 
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
-
   return (
     <div
       data-tour="edit-panel"
       className="flex flex-col flex-1 gap-4 p-4 overflow-hidden"
       onDrop={handleDrop}
-      onDragOver={handleDragOver}
+      onDragOver={preventDefaultDragOver}
     >
       <div className="flex items-center justify-between select-none">
         <h2 className="text-lg font-medium">Lyrics Editor</h2>

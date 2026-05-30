@@ -83,6 +83,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const [hoveredIndex, setHoveredIndex] = useState(-1);
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const trackInputRef = useRef<HTMLInputElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
   const isrcRef = useRef(initialPrefill?.isrc);
 
   const query = useMemo(() => buildQuery(inputs, isrcRef.current), [inputs]);
@@ -126,16 +127,20 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (results.length === 0) return;
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setFocusedIndex((prev) => Math.min(prev + 1, results.length - 1));
+        const next = Math.min(focusedIndex + 1, results.length - 1);
+        setFocusedIndex(next);
+        (listboxRef.current?.children[next] as HTMLElement | undefined)?.scrollIntoView({ block: "nearest" });
         return;
       }
       if (e.key === "ArrowUp") {
         e.preventDefault();
-        setFocusedIndex((prev) => Math.max(prev - 1, 0));
+        const next = Math.max(focusedIndex - 1, 0);
+        setFocusedIndex(next);
+        (listboxRef.current?.children[next] as HTMLElement | undefined)?.scrollIntoView({ block: "nearest" });
         return;
       }
       if (e.key === "Enter") {
@@ -156,7 +161,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-3" onKeyDown={handleKeyDown}>
+    <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()} role="search">
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-[1.4fr_1fr] gap-2">
           <SearchField
@@ -165,6 +170,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             value={inputs.track}
             placeholder="Bohemian Rhapsody"
             onChange={handleInputChange("track")}
+            onKeyDown={handleKeyDown}
             inputRef={trackInputRef}
           />
           <SearchField
@@ -173,6 +179,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             value={inputs.artist}
             placeholder="Queen"
             onChange={handleInputChange("artist")}
+            onKeyDown={handleKeyDown}
           />
           <SearchField
             label="Album"
@@ -181,6 +188,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             value={inputs.album}
             placeholder="A Night at the Opera"
             onChange={handleInputChange("album")}
+            onKeyDown={handleKeyDown}
           />
           <SearchField
             label="Duration"
@@ -191,6 +199,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             placeholder="3:45"
             onChange={handleInputChange("duration")}
             onBlur={handleDurationBlur}
+            onKeyDown={handleKeyDown}
           />
           <SearchField
             label="Video ID"
@@ -201,6 +210,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
             value={inputs.videoId}
             placeholder="dQw4w9WgXcQ"
             onChange={handleInputChange("videoId")}
+            onKeyDown={handleKeyDown}
           />
         </div>
       </div>
@@ -231,10 +241,12 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           results={results}
           errors={errors}
           isFetching={isFetching}
+          hasQuery={Boolean(query.track || query.videoId || query.isrc)}
           focusedIndex={focusedIndex}
           hoveredIndex={hoveredIndex}
           selectingId={selectingId}
           expectedDurationSec={effectiveExpectedDuration}
+          listboxRef={listboxRef}
           onHover={setHoveredIndex}
           onSelect={handleSelectResult}
           providerDisplayName={formatProviderName}
@@ -259,7 +271,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           Upload file
         </button>
       </div>
-    </div>
+    </form>
   );
 };
 

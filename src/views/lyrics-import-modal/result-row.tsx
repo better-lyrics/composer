@@ -104,7 +104,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
   const isActive = isHovered || isFocused;
   const match = describeDurationMatch(result.durationSec, expectedDurationSec);
 
-  const handleClick = () => {
+  const selectIfIdle = () => {
     if (isSelecting) return;
     onSelect();
   };
@@ -114,7 +114,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
       type="button"
       role="option"
       aria-selected={isActive}
-      onClick={handleClick}
+      onClick={selectIfIdle}
       onMouseEnter={onHover}
       onFocus={onHover}
       aria-busy={isSelecting}

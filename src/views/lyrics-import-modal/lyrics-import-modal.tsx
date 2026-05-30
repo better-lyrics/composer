@@ -33,6 +33,7 @@ import {
 
 // -- Component ----------------------------------------------------------------
 
+// react-doctor-disable-next-line react-doctor/prefer-useReducer
 const LyricsImportModalShell: React.FC = () => {
   const { prefill, initialSection } = useImportModalState();
   const confirm = useConfirm();

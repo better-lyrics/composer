@@ -195,6 +195,24 @@ describe("SearchSection search lifecycle", () => {
     await expect.element(screen.getByText(/Provider blew up/)).toBeInTheDocument();
   });
 
+  it("shows a no-matches state when the provider resolves empty for a typed query", async () => {
+    const screen = await render(
+      withQueryClient(
+        <SearchSection
+          initialPrefill={{ track: "xkcdnonexistent" }}
+          onSelect={noop}
+          onSwitchToPaste={noop}
+          onSwitchToUpload={noop}
+        />,
+      ),
+    );
+    await expect.poll(() => currentProvider?.pending.length ?? 0).toBeGreaterThan(0);
+    const entry = currentProvider!.pending[currentProvider!.pending.length - 1];
+    entry.resolve([]);
+    await expect.element(screen.getByText("No matches")).toBeInTheDocument();
+    expect(screen.getByText("Type a track or paste a video ID").elements().length).toBe(0);
+  });
+
   it("aborts the in-flight search when the track input is cleared", async () => {
     const screen = await render(
       withQueryClient(

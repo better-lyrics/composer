@@ -39,16 +39,6 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
     fileInputRef.current?.click();
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        handleClickToBrowse();
-      }
-    },
-    [handleClickToBrowse],
-  );
-
   const handleDragEnter = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(true);
@@ -99,19 +89,17 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
           Paste lyrics instead
         </button>
       </div>
-      <div
+      <button
+        type="button"
         data-upload-dropzone
-        role="button"
-        tabIndex={0}
         aria-label="Drop a lyrics file here or click to browse"
         onClick={handleClickToBrowse}
-        onKeyDown={handleKeyDown}
         onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer",
+          "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer w-full",
           "bg-composer-overlay border border-dashed transition-colors",
           isDragOver
             ? "border-composer-accent bg-composer-accent/8"
@@ -124,7 +112,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
           or <span className="text-composer-accent-text underline decoration-composer-accent/40">click to browse</span>
         </div>
         <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">.txt .lrc .srt .ttml</div>
-      </div>
+      </button>
       <input
         ref={fileInputRef}
         type="file"

@@ -1,5 +1,5 @@
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
-import { IconSearch } from "@tabler/icons-react";
+import { IconSearch, IconSearchOff } from "@tabler/icons-react";
 import { ResultRow } from "@/views/lyrics-import-modal/result-row";
 import type { LyricsSearchError } from "@/utils/lyrics-search/types";
 
@@ -9,10 +9,12 @@ interface SearchResultsProps {
   results: LyricsSearchResult[];
   errors: Map<ProviderName, LyricsSearchError>;
   isFetching: boolean;
+  hasQuery: boolean;
   focusedIndex: number;
   hoveredIndex: number;
   selectingId: string | null;
   expectedDurationSec: number | undefined;
+  listboxRef?: React.Ref<HTMLDivElement>;
   onHover: (index: number) => void;
   onSelect: (result: LyricsSearchResult) => void;
   providerDisplayName: (name: string) => string;
@@ -28,10 +30,12 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   results,
   errors,
   isFetching,
+  hasQuery,
   focusedIndex,
   hoveredIndex,
   selectingId,
   expectedDurationSec,
+  listboxRef,
   onHover,
   onSelect,
   providerDisplayName,
@@ -48,7 +52,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   }
   if (results.length > 0) {
     return (
-      <div role="listbox" aria-label="Search results" className="flex flex-col gap-1.5">
+      // react-doctor-disable-next-line react-doctor/prefer-tag-over-role
+      <div ref={listboxRef} role="listbox" aria-label="Search results" className="flex flex-col gap-1.5">
         {results.map((result, index) => (
           <ResultRow
             key={result.id}
@@ -79,6 +84,17 @@ const SearchResults: React.FC<SearchResultsProps> = ({
           </div>
         ))}
       </div>
+    );
+  }
+  if (hasQuery) {
+    return (
+      <output className="m-auto flex flex-col items-center px-4 text-center">
+        <IconSearchOff size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
+        <span className="text-xs font-medium text-composer-text-secondary">No matches</span>
+        <span className="text-[11px] text-composer-text-muted mt-0.5">
+          Try a different track or artist, or check the spelling.
+        </span>
+      </output>
     );
   }
   return (
