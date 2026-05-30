@@ -1,5 +1,5 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, INLINE_CODE, PROSE } from "@/ui/help-sections/shared";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
@@ -208,7 +208,8 @@ const TimelineSection: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         Composer also scans your lyrics for likely explicit words and shows a suggestions banner above the timeline.
         From there you can mark a suggested word, mark them all, or dismiss ones that are false positives. Explicit
-        words export as the <code>composer:explicit="true"</code> attribute on the word's TTML span.
+        words export as the <span className={INLINE_CODE}>composer:explicit="true"</span> attribute on the word's TTML
+        span.
       </p>
     </div>
 

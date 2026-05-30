@@ -7,13 +7,13 @@ import {
   IconAward,
   IconDownload,
   IconEye,
+  IconFileImport,
   IconHandClick,
   IconInfoHexagon,
   IconKeyboard,
   IconLayoutRows,
   IconLifebuoy,
   IconLink,
-  IconMusic,
   IconPencil,
   IconRocket,
 } from "@tabler/icons-react";
@@ -31,7 +31,7 @@ interface HelpModalProps {
 const HELP_SECTIONS: ModalNavSection[] = [
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
-  { id: "importing", label: "Importing Audio", icon: IconMusic },
+  { id: "importing", label: "Importing", icon: IconFileImport },
   { id: "editing", label: "Editing Lyrics", icon: IconPencil },
   { id: "syncing", label: "Syncing", icon: IconHandClick },
   { id: "timeline", label: "Timeline", icon: IconLayoutRows },

@@ -1,5 +1,5 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, INLINE_CODE, PROSE } from "@/ui/help-sections/shared";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
 
@@ -280,8 +280,9 @@ const GroupsSection: React.FC = () => (
           chorus you're syncing.
         </li>
         <li>
-          <strong>TTML export</strong>: groups round-trip via a custom <code>composer:groups</code> registry plus
-          per-line attributes. Other TTML players ignore them; Composer reads them back exactly as saved.
+          <strong>TTML export</strong>: groups round-trip via a custom{" "}
+          <span className={INLINE_CODE}>composer:groups</span> registry plus per-line attributes. Other TTML players
+          ignore them; Composer reads them back exactly as saved.
         </li>
       </ul>
     </div>

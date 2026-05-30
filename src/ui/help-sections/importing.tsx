@@ -1,8 +1,8 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, INLINE_CODE, PROSE } from "@/ui/help-sections/shared";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 
-// -- Importing Audio ----------------------------------------------------------
+// -- Importing ----------------------------------------------------------------
 
 const ImportSection: React.FC = () => (
   <div className="space-y-5">
@@ -43,17 +43,37 @@ const ImportSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Lyrics files</h4>
       <p className={PROSE}>
-        Supported formats: .txt (plain text), .lrc (line-level timing), .srt (subtitles), .ttml (full timing + agents).
+        Open the lyrics modal from the import button in Edit or the Timeline header (or press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline). It has three sections:
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
-        <li>In the Edit tab, use the import button at the top.</li>
         <li>
-          In Timeline, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> or click the
-          import button in the header.
+          <strong>Search</strong>: queries LRCLib, Binimum, and Better Lyrics in parallel. Type a track or paste a video
+          ID; artist, album, and duration narrow the results. Each row shows its sync precision (syllable, word, line,
+          or unsynced) and how close its duration is to your project's.
         </li>
-        <li>When importing .lrc, .srt, or .ttml files, existing timing is preserved.</li>
-        <li>Plain .txt files get no timing. You'll sync them manually.</li>
+        <li>
+          <strong>Paste</strong>: drop in raw lyrics. Use <span className={INLINE_CODE}>|</span> to split syllables
+          (e.g. <span className={INLINE_CODE}>beau|ti|ful</span>).
+        </li>
+        <li>
+          <strong>Upload</strong>: drag a file in, or click to browse. Accepts .txt, .lrc, .srt, .ttml.
+        </li>
       </ul>
+      <p className={`${PROSE} mt-3`}>
+        In Edit, double-clicking the import button skips the modal and opens the file picker directly, like the old
+        flow.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        Supported formats: .txt (plain text), .lrc (line-level timing), .srt (subtitles), .ttml (full timing + agents).
+        Imported timing is preserved; plain .txt files get none and you sync them manually.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        If Composer was opened with{" "}
+        <span className={INLINE_CODE}>?title=…&amp;artist=…&amp;duration=…&amp;videoId=…</span> query params (for
+        example from the Better Lyrics extension), the values stick around and pre-fill the next time you open the
+        modal. Clear them with "Reset fields" in the Search section.
+      </p>
     </div>
   </div>
 );
