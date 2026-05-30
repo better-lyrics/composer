@@ -7,6 +7,7 @@ import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { applyTransliterationsFromDoc } from "@/utils/lyrics-parsers/ttml-romanization";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Constants ----------------------------------------------------------------
@@ -76,6 +77,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
   // Parse lyrics - look for <p> elements with timing
   const paragraphs = doc.getElementsByTagName("p");
+  const itunesKeyToIndex = new Map<string, number>();
 
   for (const p of paragraphs) {
     const begin = parseTtmlTimestamp(p.getAttribute("begin") ?? "");
@@ -135,9 +137,16 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
 
     // Check for word-level timing (span elements NOT inside x-bg)
     const words = inferSyllableGroupIds(extractTimedWords(p, bgContainer));
+    const itunesKey = p.getAttribute("itunes:key") ?? null;
+
+    const pushLine = (line: LyricLine): void => {
+      const index = lines.length;
+      lines.push(line);
+      if (itunesKey) itunesKeyToIndex.set(itunesKey, index);
+    };
 
     if (words.length > 0) {
-      lines.push(
+      pushLine(
         reconcileLine({
           id: generateLineId(),
           text: reconstructLineText(words, getSplitCharacter()),
@@ -166,7 +175,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       text = text.trim();
 
       if (text) {
-        lines.push(
+        pushLine(
           reconcileLine({
             id: generateLineId(),
             text,
@@ -183,10 +192,14 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     }
   }
 
+  const transliterations = applyTransliterationsFromDoc(doc, lines, itunesKeyToIndex);
+  const finalLines = transliterations.lines;
+  if (transliterations.scheme) metadata.romanizationScheme = transliterations.scheme;
+
   return {
-    lines,
+    lines: finalLines,
     metadata,
-    hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
+    hasTimingData: finalLines.some((l) => l.begin !== undefined || l.words?.length),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
   };
