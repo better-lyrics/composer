@@ -2,6 +2,12 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
+interface RomanizationData {
+  text: string;
+  words?: WordTiming[];
+  source: "manual" | "generated";
+}
+
 interface LineFields {
   id: string;
   text: string;
@@ -9,6 +15,7 @@ interface LineFields {
   backgroundText?: string;
   backgroundWords?: WordTiming[];
   backgroundTextSource?: "extraction" | "manual";
+  romanization?: RomanizationData;
   groupId?: string;
   instanceIdx?: number;
   templateLineIdx?: number;
@@ -62,4 +69,4 @@ function reconcileLine(line: LooseLine): LyricLine {
 
 export { reconcileLine };
 
-export type { LineFields, LineSyncedLine, LyricLine, LooseLine };
+export type { LineFields, LineSyncedLine, LyricLine, LooseLine, RomanizationData };
