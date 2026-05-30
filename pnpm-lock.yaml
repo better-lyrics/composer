@@ -36,8 +36,8 @@ importers:
         specifier: ^5.100.10
         version: 5.100.10(react@19.2.3)
       '@uimaxbai/am-lyrics':
-        specifier: ^1.5.3
-        version: 1.5.3(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)
+        specifier: ^1.5.4
+        version: 1.5.4(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)
       '@wavesurfer/react':
         specifier: ^1.0.12
         version: 1.0.12(react@19.2.3)(wavesurfer.js@7.12.1)
@@ -1337,8 +1337,8 @@ packages:
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
-  '@uimaxbai/am-lyrics@1.5.3':
-    resolution: {integrity: sha512-1A9pU4UZ+EReiGPNrFdz/7D5+fd//i5q51MtUVZR+KhrumfDmPoo3a593hWjbj8gxmxQdREMaKALFo1kcekNCw==}
+  '@uimaxbai/am-lyrics@1.5.4':
+    resolution: {integrity: sha512-cZ3gPNjpfPs2y/YNrdAX9pI0ZiO7eSUA80ijlTZbpYsCU/Kux1GEw6Ykvr9OknOn0e9Qs5UASFmVC6IVwV/0Kg==}
     peerDependencies:
       '@lit/react': ^1.0.0
       react: '>=17.0.0'
@@ -3770,7 +3770,7 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@uimaxbai/am-lyrics@1.5.3(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)':
+  '@uimaxbai/am-lyrics@1.5.4(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)':
     dependencies:
       '@babel/runtime': 7.29.2
       lit: 3.3.2
