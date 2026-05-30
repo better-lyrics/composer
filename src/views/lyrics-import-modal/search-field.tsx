@@ -33,10 +33,7 @@ const SearchField: React.FC<SearchFieldProps> = ({
   const inputId = useMemo(() => `field-${label.toLowerCase().replace(/\s+/g, "-")}`, [label]);
   return (
     <div className={cn("flex flex-col gap-1.5 select-none", fullWidth && "col-span-2")}>
-      <label
-        htmlFor={inputId}
-        className="text-[11px] font-medium tracking-wide text-composer-text-muted px-0.5"
-      >
+      <label htmlFor={inputId} className="text-[11px] font-medium tracking-wide text-composer-text-muted px-0.5">
         {label}
         {optional ? <span className="opacity-70"> ・ optional</span> : null}
       </label>

@@ -195,8 +195,70 @@ describe("import-modal-store · defaultPrefill", () => {
       "composer-import-modal",
       JSON.stringify({ state: { defaultPrefill: { track: "Reloaded" } }, version: 0 }),
     );
-    // Force a fresh rehydrate by invoking the persist API exposed on the store.
     useImportModalStore.persist.rehydrate();
     expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Reloaded" });
+  });
+});
+
+describe("import-modal-store · slot coexistence", () => {
+  it("recordImportResult does not wipe defaultPrefill", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Persist", artist: "Stays" });
+    useImportModalStore.getState().recordImportResult(makeParseResult(), {
+      label: "Paste",
+      filename: "paste.txt",
+    });
+    const state = useImportModalStore.getState();
+    expect(state.defaultPrefill).toEqual({ track: "Persist", artist: "Stays" });
+    expect(state.lastImportResult).not.toBeNull();
+  });
+
+  it("clearDefaultPrefill does not wipe lastImportResult", () => {
+    useImportModalStore.getState().recordImportResult(makeParseResult(), {
+      label: "File",
+      filename: "song.lrc",
+    });
+    useImportModalStore.getState().setDefaultPrefill({ track: "Will be cleared" });
+    useImportModalStore.getState().clearDefaultPrefill();
+    const state = useImportModalStore.getState();
+    expect(state.defaultPrefill).toBeNull();
+    expect(state.lastImportResult?.source.filename).toBe("song.lrc");
+  });
+
+  it("clearImportResult does not wipe defaultPrefill", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Survives" });
+    useImportModalStore.getState().recordImportResult(makeParseResult(), {
+      label: "Paste",
+      filename: "p.txt",
+    });
+    useImportModalStore.getState().clearImportResult();
+    const state = useImportModalStore.getState();
+    expect(state.defaultPrefill).toEqual({ track: "Survives" });
+    expect(state.lastImportResult).toBeNull();
+  });
+
+  it("open() / close() do not touch lastImportResult or defaultPrefill", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Default" });
+    useImportModalStore.getState().recordImportResult(makeParseResult(), {
+      label: "File",
+      filename: "f.lrc",
+    });
+    useImportModalStore.getState().open({ prefill: { track: "Session" } });
+    useImportModalStore.getState().close();
+    const state = useImportModalStore.getState();
+    expect(state.defaultPrefill).toEqual({ track: "Default" });
+    expect(state.lastImportResult?.source.filename).toBe("f.lrc");
+  });
+
+  it("the persist partializer only persists defaultPrefill (not isOpen, prefill, or lastImportResult)", () => {
+    useImportModalStore.getState().setDefaultPrefill({ track: "Persist me" });
+    useImportModalStore.getState().open({ prefill: { track: "Session-only" }, section: "paste" });
+    useImportModalStore.getState().recordImportResult(makeParseResult(), {
+      label: "Paste",
+      filename: "p.txt",
+    });
+    const persisted = window.localStorage.getItem("composer-import-modal");
+    expect(persisted).not.toBeNull();
+    const parsed = JSON.parse(persisted!) as { state: Record<string, unknown> };
+    expect(parsed.state).toEqual({ defaultPrefill: { track: "Persist me" } });
   });
 });

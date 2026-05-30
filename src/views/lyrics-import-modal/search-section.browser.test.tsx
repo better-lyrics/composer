@@ -359,6 +359,84 @@ describe("SearchSection edge cases", () => {
     expect(track.clientWidth).toBeGreaterThan(0);
   });
 
+  it("Reset fields button is hidden when every input is empty", async () => {
+    const screen = await render(
+      withQueryClient(
+        <SearchSection initialPrefill={null} onSelect={noop} onSwitchToPaste={noop} onSwitchToUpload={noop} />,
+      ),
+    );
+    expect(screen.getByRole("button", { name: /Reset fields/i }).elements().length).toBe(0);
+  });
+
+  it("Reset fields button appears once any input is non-empty", async () => {
+    const screen = await render(
+      withQueryClient(
+        <SearchSection
+          initialPrefill={{ track: "Bohemian" }}
+          onSelect={noop}
+          onSwitchToPaste={noop}
+          onSwitchToUpload={noop}
+        />,
+      ),
+    );
+    await expect.element(screen.getByRole("button", { name: /Reset fields/i })).toBeInTheDocument();
+  });
+
+  it("Reset fields clears every input and focuses the track input", async () => {
+    const screen = await render(
+      withQueryClient(
+        <SearchSection
+          initialPrefill={{
+            track: "Bohemian Rhapsody",
+            artist: "Queen",
+            album: "A Night at the Opera",
+            durationSec: 355,
+            videoId: "fJ9rUzIMcZQ",
+          }}
+          onSelect={noop}
+          onSwitchToPaste={noop}
+          onSwitchToUpload={noop}
+        />,
+      ),
+    );
+    const track = screen.getByLabelText("Track").element() as HTMLInputElement;
+    const artist = screen.getByLabelText("Artist").element() as HTMLInputElement;
+    const album = screen.getByLabelText("Album").element() as HTMLInputElement;
+    const duration = screen.getByLabelText("Duration").element() as HTMLInputElement;
+    const videoId = screen.getByLabelText("Video ID").element() as HTMLInputElement;
+
+    await screen.getByRole("button", { name: /Reset fields/i }).click();
+
+    expect(track.value).toBe("");
+    expect(artist.value).toBe("");
+    expect(album.value).toBe("");
+    expect(duration.value).toBe("");
+    expect(videoId.value).toBe("");
+
+    await expect.poll(() => document.activeElement).toBe(track);
+    await expect.poll(() => screen.getByRole("button", { name: /Reset fields/i }).elements().length).toBe(0);
+  });
+
+  it("Reset fields also clears the persisted defaultPrefill so a reopen starts blank", async () => {
+    const { useImportModalStore } = await import("@/stores/import-modal-store");
+    useImportModalStore.getState().setDefaultPrefill({ track: "Persisted" });
+
+    const screen = await render(
+      withQueryClient(
+        <SearchSection
+          initialPrefill={{ track: "Persisted" }}
+          onSelect={noop}
+          onSwitchToPaste={noop}
+          onSwitchToUpload={noop}
+        />,
+      ),
+    );
+
+    await screen.getByRole("button", { name: /Reset fields/i }).click();
+
+    expect(useImportModalStore.getState().defaultPrefill).toBeNull();
+  });
+
   it("declares a listbox role on the results container", async () => {
     const screen = await render(
       withQueryClient(

@@ -6,7 +6,15 @@ import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
 import { SearchResults } from "@/views/lyrics-import-modal/search-results";
-import { IconAlbum, IconBrandYoutube, IconClock, IconFileText, IconMicrophone, IconUpload, IconUser } from "@tabler/icons-react";
+import {
+  IconAlbum,
+  IconBrandYoutube,
+  IconClock,
+  IconFileText,
+  IconMicrophone,
+  IconUpload,
+  IconUser,
+} from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -107,9 +115,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
     trackInputRef.current?.focus();
   }, []);
 
-  const hasAnyInput = Boolean(
-    inputs.track || inputs.artist || inputs.album || inputs.duration || inputs.videoId,
-  );
+  const hasAnyInput = Boolean(inputs.track || inputs.artist || inputs.album || inputs.duration || inputs.videoId);
 
   const handleSelectResult = useCallback(
     (result: LyricsSearchResult) => {
@@ -154,48 +160,48 @@ const SearchSection: React.FC<SearchSectionProps> = ({
       <div className="flex flex-col gap-2">
         <div className="grid grid-cols-[1.4fr_1fr] gap-2">
           <SearchField
-          label="Track"
-          icon={<IconMicrophone size={14} stroke={1.75} />}
-          value={inputs.track}
-          placeholder="Bohemian Rhapsody"
-          onChange={handleInputChange("track")}
-          inputRef={trackInputRef}
-        />
-        <SearchField
-          label="Artist"
-          icon={<IconUser size={14} stroke={1.75} />}
-          value={inputs.artist}
-          placeholder="Queen"
-          onChange={handleInputChange("artist")}
-        />
-        <SearchField
-          label="Album"
-          optional
-          icon={<IconAlbum size={14} stroke={1.75} />}
-          value={inputs.album}
-          placeholder="A Night at the Opera"
-          onChange={handleInputChange("album")}
-        />
-        <SearchField
-          label="Duration"
-          optional
-          mono
-          icon={<IconClock size={14} stroke={1.75} />}
-          value={inputs.duration}
-          placeholder="3:45"
-          onChange={handleInputChange("duration")}
-          onBlur={handleDurationBlur}
-        />
-        <SearchField
-          label="Video ID"
-          optional
-          mono
-          fullWidth
-          icon={<IconBrandYoutube size={14} stroke={1.75} />}
-          value={inputs.videoId}
-          placeholder="dQw4w9WgXcQ"
-          onChange={handleInputChange("videoId")}
-        />
+            label="Track"
+            icon={<IconMicrophone size={14} stroke={1.75} />}
+            value={inputs.track}
+            placeholder="Bohemian Rhapsody"
+            onChange={handleInputChange("track")}
+            inputRef={trackInputRef}
+          />
+          <SearchField
+            label="Artist"
+            icon={<IconUser size={14} stroke={1.75} />}
+            value={inputs.artist}
+            placeholder="Queen"
+            onChange={handleInputChange("artist")}
+          />
+          <SearchField
+            label="Album"
+            optional
+            icon={<IconAlbum size={14} stroke={1.75} />}
+            value={inputs.album}
+            placeholder="A Night at the Opera"
+            onChange={handleInputChange("album")}
+          />
+          <SearchField
+            label="Duration"
+            optional
+            mono
+            icon={<IconClock size={14} stroke={1.75} />}
+            value={inputs.duration}
+            placeholder="3:45"
+            onChange={handleInputChange("duration")}
+            onBlur={handleDurationBlur}
+          />
+          <SearchField
+            label="Video ID"
+            optional
+            mono
+            fullWidth
+            icon={<IconBrandYoutube size={14} stroke={1.75} />}
+            value={inputs.videoId}
+            placeholder="dQw4w9WgXcQ"
+            onChange={handleInputChange("videoId")}
+          />
         </div>
       </div>
 

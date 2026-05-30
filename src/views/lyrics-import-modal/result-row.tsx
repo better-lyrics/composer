@@ -87,9 +87,7 @@ const DurationDisplay: React.FC<DurationDisplayProps> = ({ match, actualSec }) =
       </span>
     );
   }
-  return (
-    <span className="font-mono text-[11px] text-composer-text-secondary tabular-nums select-text">{text}</span>
-  );
+  return <span className="font-mono text-[11px] text-composer-text-secondary tabular-nums select-text">{text}</span>;
 };
 
 // -- Component ----------------------------------------------------------------

@@ -432,3 +432,224 @@ describe("useLyricsSearch", () => {
     await h.unmount();
   });
 });
+
+// -- Sort order ---------------------------------------------------------------
+
+function makeResultFull(
+  id: string,
+  source: ProviderName,
+  syncType: LyricsSearchResult["syncType"],
+  durationSec: number,
+): LyricsSearchResult {
+  return {
+    id,
+    source,
+    sourceLabel: `Label-${source}`,
+    syncType,
+    track: id,
+    artist: "Artist",
+    durationSec,
+    payload: { kind: "lrc", synced: "[00:01.00]hi", plain: null },
+  };
+}
+
+describe("useLyricsSearch sort order", () => {
+  it("sorts by sync precision first (syllable < word < line < unsynced)", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("unsynced", "lrclib", "unsynced", 200),
+          makeResultFull("line", "lrclib", "line", 200),
+          makeResultFull("syllable", "lrclib", "syllable", 200),
+          makeResultFull("word", "lrclib", "word", 200),
+        ],
+      }),
+    );
+    const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 4);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["syllable", "word", "line", "unsynced"]);
+
+    await h.unmount();
+  });
+
+  it("within the same sync-type bucket, sorts by |durationSec - expectedDurationSec|", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("far", "lrclib", "line", 400),
+          makeResultFull("five-above", "lrclib", "line", 360),
+          makeResultFull("exact", "lrclib", "line", 355),
+          makeResultFull("two-below", "lrclib", "line", 353),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 4);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["exact", "two-below", "five-above", "far"]);
+
+    await h.unmount();
+  });
+
+  it("falls back to natural order within a bucket when expectedDurationSec is undefined", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("a", "lrclib", "line", 400),
+          makeResultFull("b", "lrclib", "line", 200),
+          makeResultFull("c", "lrclib", "line", 100),
+        ],
+      }),
+    );
+    const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b", "c"]);
+
+    await h.unmount();
+  });
+
+  it("falls back to natural order when expectedDurationSec is not finite", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [makeResultFull("a", "lrclib", "line", 400), makeResultFull("b", "lrclib", "line", 200)],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: Number.NaN },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b"]);
+
+    await h.unmount();
+  });
+
+  it("orders across buckets by precision even when a worse-precision result has a closer duration", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("line-exact", "lrclib", "line", 355),
+          makeResultFull("syllable-far", "lrclib", "syllable", 200),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["syllable-far", "line-exact"]);
+
+    await h.unmount();
+  });
+});
+
+// -- Cache lifetime -----------------------------------------------------------
+
+interface SharedClientHarness<T> extends HookHarness<T> {
+  mount: (props: HookProps) => Promise<void>;
+}
+
+function createSharedClientHarness(): SharedClientHarness<UseLyricsSearchResult> {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  const client = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false, staleTime: Number.POSITIVE_INFINITY },
+    },
+  });
+  let root: Root | null = null;
+  const result: { current: UseLyricsSearchResult | null } = { current: null };
+
+  function HookHost({ query, options }: HookProps): ReactNode {
+    const value = useLyricsSearch(query, options);
+    useEffect(() => {
+      result.current = value;
+    });
+    result.current = value;
+    return null;
+  }
+
+  function tree(props: HookProps): ReactNode {
+    return createElement(QueryClientProvider, { client }, createElement(HookHost, props));
+  }
+
+  return {
+    result,
+    mount: async (props) => {
+      await act(async () => {
+        root = createRoot(container);
+        root.render(tree(props));
+      });
+    },
+    rerender: async (props) => {
+      if (!root) throw new Error("not mounted");
+      await act(async () => {
+        root!.render(tree(props));
+      });
+    },
+    unmount: async () => {
+      if (!root) return;
+      await act(async () => {
+        root!.unmount();
+      });
+      root = null;
+    },
+  };
+}
+
+describe("useLyricsSearch cache lifetime", () => {
+  it("reuses cached results across unmount/remount within the gcTime window (no second provider call)", async () => {
+    const fake = track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [makeResult("lrclib-cache-1", "lrclib")],
+      }),
+    );
+    const h = createSharedClientHarness();
+    await h.mount({ query: { track: "Bohemian" }, options: { debounceMs: 0 } });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 1);
+    expect(fake.calls.length).toBe(1);
+
+    await h.unmount();
+    await advanceMicrotasks();
+
+    await h.mount({ query: { track: "Bohemian" }, options: { debounceMs: 0 } });
+    await advanceMicrotasks();
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["lrclib-cache-1"]);
+    expect(fake.calls.length).toBe(1);
+
+    await h.unmount();
+  });
+
+  it("does not reuse a cached entry for a different query (cache key includes the query)", async () => {
+    const fake = track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [makeResult("lrclib-cache-2", "lrclib")],
+      }),
+    );
+    const h = createSharedClientHarness();
+    await h.mount({ query: { track: "Bohemian" }, options: { debounceMs: 0 } });
+    await waitUntil(() => fake.calls.length === 1);
+
+    await h.rerender({ query: { track: "Stairway" }, options: { debounceMs: 0 } });
+    await waitUntil(() => fake.calls.length === 2);
+    expect(fake.calls[0]?.query.track).toBe("Bohemian");
+    expect(fake.calls[1]?.query.track).toBe("Stairway");
+
+    await h.unmount();
+  });
+});
