@@ -20,6 +20,7 @@ import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { generateForLine } from "@/utils/romanization/generate-for-line";
 import { generateForProject } from "@/utils/romanization/generate-for-project";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
@@ -33,7 +34,14 @@ import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
 } from "@/views/lyrics-import-modal/use-import-modal-actions";
-import { IconAlertTriangle, IconFileImport, IconLanguage, IconMicrophone, IconX } from "@tabler/icons-react";
+import {
+  IconAlertTriangle,
+  IconFileImport,
+  IconLanguage,
+  IconMicrophone,
+  IconRefresh,
+  IconX,
+} from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -120,7 +128,23 @@ const LinePreview: React.FC<{
   didDragRef,
 }) => {
   const [bgInput, setBgInput] = useState(line.backgroundText ?? "");
+  const [isRegenerating, setIsRegenerating] = useState(false);
   const agentColor = getAgentColor(line.agentId);
+
+  const handleRegenerateRomanization = useCallback(async () => {
+    if (!line.lineId || !scheme) return;
+    setIsRegenerating(true);
+    try {
+      const target = useProjectStore.getState().lines.find((l) => l.id === line.lineId);
+      if (!target) return;
+      const data = await generateForLine(target, scheme);
+      useProjectStore.getState().setLineRomanizationWithHistory(line.lineId, data);
+    } catch (err) {
+      console.error("[Composer] Romanization regenerate failed", err);
+    } finally {
+      setIsRegenerating(false);
+    }
+  }, [line.lineId, scheme]);
 
   const handleBgBlur = useCallback(() => {
     if (line.lineId) {
@@ -263,21 +287,32 @@ const LinePreview: React.FC<{
         )}
 
         {schemeSet && scheme && line.lineId && hasNonLatinScript(line.text) && line.romanization && (
-          <RomanizationEditPopover
-            lineId={line.lineId}
-            lineText={line.text}
-            romanizationText={line.romanization.text}
-            scheme={scheme}
-            trigger={
-              <button
-                type="button"
-                aria-label="Edit romanization"
-                className="flex items-center justify-center size-5 rounded cursor-pointer bg-composer-button hover:bg-composer-button-hover text-composer-text-muted hover:text-composer-text"
-              >
-                <IconLanguage className="size-3" />
-              </button>
-            }
-          />
+          <>
+            <RomanizationEditPopover
+              lineId={line.lineId}
+              lineText={line.text}
+              romanizationText={line.romanization.text}
+              scheme={scheme}
+              trigger={
+                <button
+                  type="button"
+                  aria-label="Edit romanization"
+                  className="flex items-center justify-center size-5 rounded cursor-pointer bg-composer-button hover:bg-composer-button-hover text-composer-text-muted hover:text-composer-text"
+                >
+                  <IconLanguage className="size-3" />
+                </button>
+              }
+            />
+            <button
+              type="button"
+              aria-label="Regenerate romanization"
+              onClick={handleRegenerateRomanization}
+              disabled={isRegenerating}
+              className="flex items-center justify-center size-5 rounded cursor-pointer bg-composer-button hover:bg-composer-button-hover text-composer-text-muted hover:text-composer-text disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <IconRefresh className={`size-3 ${isRegenerating ? "animate-spin" : ""}`} />
+            </button>
+          </>
         )}
 
         {line.lineId && (
