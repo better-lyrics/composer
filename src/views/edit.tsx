@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import { backgroundFields } from "@/domain/line/background";
+import { hasNonLatinScript } from "@/domain/romanization/detect";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -219,6 +220,9 @@ const LinePreview: React.FC<{
 
         {schemeSet && line.romanization && line.romanization.text.length > 0 && (
           <RomanizationSubrow text={line.romanization.text} />
+        )}
+        {schemeSet && (!line.romanization || line.romanization.text.length === 0) && hasNonLatinScript(line.text) && (
+          <RomanizationSubrow ghost />
         )}
       </div>
 
