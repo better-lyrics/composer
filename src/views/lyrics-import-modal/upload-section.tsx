@@ -112,7 +112,7 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         onDrop={handleDrop}
         className={cn(
           "flex flex-col items-center justify-center gap-2 px-4 py-7 rounded-lg text-center cursor-pointer",
-          "bg-composer-bg-dark border border-dashed transition-colors",
+          "bg-composer-overlay border border-dashed transition-colors",
           isDragOver
             ? "border-composer-accent bg-composer-accent/8"
             : "border-composer-border hover:border-composer-border-strong",

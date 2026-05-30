@@ -57,7 +57,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         spellCheck={false}
         className={cn(
           "h-32 p-3 text-sm rounded-lg resize-none",
-          "bg-composer-bg-dark border border-composer-border",
+          "bg-composer-overlay border border-composer-border",
           "text-composer-text placeholder:text-composer-text-muted",
           "focus:outline-none focus:border-composer-accent",
         )}
