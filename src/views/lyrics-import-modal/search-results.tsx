@@ -72,11 +72,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({
             // biome-ignore lint/suspicious/noArrayIndexKey: fixed-count decorative skeleton
             key={i}
             data-testid="result-skeleton"
-            className="grid grid-cols-[24px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg animate-pulse"
+            className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-1.5 rounded-lg animate-pulse"
           >
-            <span className="size-6 rounded-md bg-white/4" />
             <span className="h-3 rounded bg-white/4 w-3/4" />
-            <span className="h-3 rounded bg-white/4 w-12" />
+            <span className="h-3 rounded bg-white/4 w-16" />
           </div>
         ))}
       </div>

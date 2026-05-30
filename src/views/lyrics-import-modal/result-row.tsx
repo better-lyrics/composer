@@ -2,7 +2,7 @@ import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { cn } from "@/utils/cn";
 import { formatDuration } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SyncTypeBadge } from "@/views/lyrics-import-modal/sync-type-badge";
-import { IconLoader2, IconMusic } from "@tabler/icons-react";
+import { IconLoader2 } from "@tabler/icons-react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -121,33 +121,19 @@ const ResultRow: React.FC<ResultRowProps> = ({
       onFocus={onHover}
       aria-busy={isSelecting}
       className={cn(
-        "grid grid-cols-[24px_1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg w-full text-left cursor-pointer transition-colors",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-3 py-1.5 rounded-lg w-full text-left cursor-pointer transition-colors",
         isActive && "bg-composer-button/30",
         isSelecting && "opacity-60 cursor-progress",
       )}
     >
-      <span
-        className={cn(
-          "flex items-center justify-center size-6 rounded-md bg-white/4",
-          isActive && "bg-composer-accent/18",
-        )}
-        aria-hidden="true"
-      >
-        <IconMusic
-          size={13}
-          stroke={1.75}
-          className={cn("text-composer-text opacity-50", isActive && "text-composer-accent-text opacity-100")}
-        />
-      </span>
-
       <span className="min-w-0 flex flex-col gap-0.5">
-        <span className="truncate text-sm font-medium text-composer-text select-text">{result.track}</span>
-        <span className="truncate text-xs text-composer-text-muted select-text">
+        <span className="truncate text-[13px] font-medium text-composer-text select-text">{result.track}</span>
+        <span className="truncate text-[11px] text-composer-text-muted select-text">
           {joinArtistAlbum(result.artist, result.album)}
         </span>
       </span>
 
-      <span className="flex items-center gap-2 shrink-0">
+      <span className="flex items-center gap-1.5 shrink-0">
         <DurationDisplay match={match} actualSec={result.durationSec} />
         <SyncTypeBadge syncType={result.syncType} sourceLabel={result.sourceLabel} />
         {isSelecting ? (

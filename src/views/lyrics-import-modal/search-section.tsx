@@ -150,17 +150,8 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   );
 
   return (
-    <div className="flex flex-col gap-4" onKeyDown={handleKeyDown}>
-      <div className="relative flex flex-col gap-2">
-        {hasAnyInput && (
-          <button
-            type="button"
-            onClick={handleClearAll}
-            className="absolute -top-3.5 right-0 text-[11px] text-composer-text-muted hover:text-composer-text cursor-pointer transition-colors"
-          >
-            Clear all
-          </button>
-        )}
+    <div className="flex flex-col gap-3" onKeyDown={handleKeyDown}>
+      <div className="flex flex-col gap-2">
         <div className="grid grid-cols-[1.4fr_1fr] gap-2">
           <SearchField
           label="Track"
@@ -207,6 +198,27 @@ const SearchSection: React.FC<SearchSectionProps> = ({
         />
         </div>
       </div>
+
+      {hasAnyInput && (
+        <div className="flex items-center justify-between px-1">
+          <span className="text-[11px] text-composer-text-muted">
+            {isFetching && results.length === 0
+              ? "Searching"
+              : errors.size > 0 && results.length === 0
+                ? "Search failed"
+                : results.length === 0
+                  ? "No results"
+                  : `${results.length} result${results.length === 1 ? "" : "s"}`}
+          </span>
+          <button
+            type="button"
+            onClick={handleClearAll}
+            className="text-[11px] text-composer-text-muted hover:text-composer-text cursor-pointer transition-colors"
+          >
+            Reset fields
+          </button>
+        </div>
+      )}
 
       <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto">
         <SearchResults
