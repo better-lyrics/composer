@@ -1,3 +1,4 @@
+import { isKnownScheme } from "@/domain/romanization/schemes";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
 import { createGroupsInitialState } from "@/stores/project/groups-slice";
@@ -41,6 +42,24 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => ({
       metadata: { ...state.metadata, ...metadata },
       isDirty: true,
+    })),
+
+  setRomanizationScheme: (scheme) => {
+    if (scheme !== undefined && !isKnownScheme(scheme)) {
+      throw new Error(`Unknown romanization scheme: ${scheme}`);
+    }
+    set((state) => ({
+      metadata: { ...state.metadata, romanizationScheme: scheme },
+      isDirty: true,
+      isDirtySinceHistory: true,
+    }));
+  },
+
+  dismissRomanizationBanner: () =>
+    set((state) => ({
+      metadata: { ...state.metadata, romanizationBannerDismissed: true },
+      isDirty: true,
+      isDirtySinceHistory: true,
     })),
 
   reset: () => set(createProjectInitialState()),

@@ -71,6 +71,8 @@ interface HistoryState {
 
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
+  setRomanizationScheme: (scheme: string | undefined) => void;
+  dismissRomanizationBanner: () => void;
   reset: () => void;
 }
 
