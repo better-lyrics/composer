@@ -63,13 +63,24 @@ const MiniPreviewLine: React.FC<{
   line: LyricLine;
   lineIndex: number;
   granularity: "line" | "word";
-}> = ({ line, lineIndex, granularity }) => {
+  showRomanization: boolean;
+}> = ({ line, lineIndex, granularity, showRomanization }) => {
   const timing = effectiveBounds(line);
   const alignment = getAgentAlignment(line.agentId);
   const alignmentClass =
     alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
   const agentColor = getAgentColor(line.agentId);
   const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+  const romaji = showRomanization ? line.romanization?.text : undefined;
+
+  const RomajiBand = romaji ? (
+    <div
+      data-testid="mini-preview-romaji"
+      className="text-[10px] italic leading-tight text-composer-accent-text/80 mb-0.5 truncate"
+    >
+      {romaji}
+    </div>
+  ) : null;
 
   const AgentDotLeft = (
     <span
@@ -98,6 +109,7 @@ const MiniPreviewLine: React.FC<{
         data-line-end={timing?.end ?? 0}
         data-line-idx={lineIndex}
       >
+        {RomajiBand}
         <div className="flex items-center gap-2 text-sm font-medium">
           {alignment === "left" && AgentDotLeft}
           <span className="relative block truncate">
@@ -127,6 +139,7 @@ const MiniPreviewLine: React.FC<{
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
+      {RomajiBand}
       <div className={`flex flex-wrap items-center text-sm font-medium ${alignmentClass}`}>
         {alignment === "left" && AgentDotLeft}
         {words.length > 0
@@ -154,6 +167,8 @@ const MiniPreviewLine: React.FC<{
 const TimelinePreviewSidebar: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const granularity = useProjectStore((s) => s.granularity);
+  const romanizationScheme = useProjectStore((s) => s.metadata.romanizationScheme);
+  const showRomanization = !!romanizationScheme;
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastScrolledLineRef = useRef<number>(-1);
@@ -239,7 +254,13 @@ const TimelinePreviewSidebar: React.FC = () => {
       </div>
       <Scroll viewportRef={containerRef} className="flex-1 py-2">
         {lines.map((line, index) => (
-          <MiniPreviewLine key={line.id} line={line} lineIndex={index} granularity={granularity} />
+          <MiniPreviewLine
+            key={line.id}
+            line={line}
+            lineIndex={index}
+            granularity={granularity}
+            showRomanization={showRomanization}
+          />
         ))}
       </Scroll>
     </div>

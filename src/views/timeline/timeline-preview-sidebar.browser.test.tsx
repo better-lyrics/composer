@@ -19,4 +19,51 @@ describe("TimelinePreviewSidebar", () => {
     await expect.element(screen.getByText("Preview")).toBeInTheDocument();
     expect(screen.container.textContent).toContain("hello");
   });
+
+  it("renders romaji above the source line when the scheme is set", async () => {
+    useProjectStore.setState({
+      metadata: { ...useProjectStore.getState().metadata, romanizationScheme: "ja-Latn-hepburn" },
+      lines: [
+        createLine({
+          text: "夜だけど",
+          words: [createWord({ text: "夜だけど", begin: 0, end: 1 })],
+          romanization: { text: "yoru dakedo", source: "generated" },
+        }),
+      ],
+    });
+    const screen = await render(<TimelinePreviewSidebar />);
+    await expect.element(screen.getByText("Preview")).toBeInTheDocument();
+    expect(screen.container.textContent).toContain("yoru dakedo");
+    const romaji = screen.container.querySelector('[data-testid="mini-preview-romaji"]');
+    expect(romaji).not.toBeNull();
+  });
+
+  it("omits romaji when scheme is set but line has none", async () => {
+    useProjectStore.setState({
+      metadata: { ...useProjectStore.getState().metadata, romanizationScheme: "ja-Latn-hepburn" },
+      lines: [
+        createLine({
+          text: "Hello world",
+          words: [createWord({ text: "Hello", begin: 0, end: 1 })],
+        }),
+      ],
+    });
+    const screen = await render(<TimelinePreviewSidebar />);
+    expect(screen.container.querySelector('[data-testid="mini-preview-romaji"]')).toBeNull();
+  });
+
+  it("omits romaji when scheme is unset even if the line has romanization", async () => {
+    useProjectStore.setState({
+      metadata: { ...useProjectStore.getState().metadata, romanizationScheme: undefined },
+      lines: [
+        createLine({
+          text: "夜だけど",
+          words: [createWord({ text: "夜だけど", begin: 0, end: 1 })],
+          romanization: { text: "yoru dakedo", source: "generated" },
+        }),
+      ],
+    });
+    const screen = await render(<TimelinePreviewSidebar />);
+    expect(screen.container.querySelector('[data-testid="mini-preview-romaji"]')).toBeNull();
+  });
 });
