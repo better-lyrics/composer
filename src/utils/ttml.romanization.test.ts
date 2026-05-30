@@ -121,13 +121,13 @@ describe("TTML export · transliterations", () => {
     expect(ttml).toContain("a &lt; b &amp; c");
   });
 
-  it("escapes XML special chars in the for attribute", () => {
+  it("escapes `<` and `&` in the for attribute", () => {
     const ttml = generateTTML({
       metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
       agents: baseAgents,
       lines: [
         {
-          id: 'L<1&"',
+          id: "L<1&",
           text: "夜",
           agentId: "v1",
           begin: 0,
@@ -138,6 +138,8 @@ describe("TTML export · transliterations", () => {
       granularity: "line",
     });
     expect(ttml).toContain('<text for="L&lt;1&amp;"');
+    const parsed = new DOMParser().parseFromString(ttml, "application/xml");
+    expect(parsed.getElementsByTagName("parsererror").length).toBe(0);
   });
 
   it("emits <composer:generator> with version and url inside metadata when transliterations are present", () => {
@@ -223,5 +225,39 @@ describe("TTML export · transliterations", () => {
     });
     expect(ttml).toContain('xmlns:itunes="http://music.apple.com/lyric-ttml-internal"');
     expect(ttml).toMatch(/itunes:key="L1"/);
+  });
+});
+
+describe("TTML export · itunes:key emission", () => {
+  it("emits itunes:key on every <p> even without transliterations (matches Apple TTML)", () => {
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [
+        { id: "L1", text: "hello", agentId: "v1", begin: 0, end: 1 },
+        { id: "L2", text: "world", agentId: "v1", begin: 1, end: 2 },
+      ],
+      granularity: "line",
+    });
+    expect(ttml).toMatch(/<p [^>]*itunes:key="L1"/);
+    expect(ttml).toMatch(/<p [^>]*itunes:key="L2"/);
+  });
+
+  it("emits itunes:key consistently across romanization on/off toggles", () => {
+    const lines = [{ id: "L1", text: "hello", agentId: "v1", begin: 0, end: 1 }];
+    const withoutRomanization = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines,
+      granularity: "line",
+    });
+    const withRomanization = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [{ ...lines[0], romanization: { text: "hola", source: "manual" } }],
+      granularity: "line",
+    });
+    expect(withoutRomanization).toMatch(/itunes:key="L1"/);
+    expect(withRomanization).toMatch(/itunes:key="L1"/);
   });
 });

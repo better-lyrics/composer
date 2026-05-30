@@ -85,7 +85,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     if (!timing) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXml(line.agentId)}"` : "";
-    const keyAttr = emitTransliterations ? ` itunes:key="${escapeXml(line.id)}"` : "";
+    const keyAttr = ` itunes:key="${escapeXml(line.id)}"`;
     const groupAttr = line.groupId
       ? ` composer:groupId="${escapeXml(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
       : "";
