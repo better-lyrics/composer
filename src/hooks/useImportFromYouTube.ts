@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useLoadYouTubeSource } from "@/hooks/useLoadYouTubeSource";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { useAudioStore } from "@/stores/audio";
 import { stripQueryParams } from "@/utils/url-params";
 import { extractVideoId } from "@/utils/youtube-url";
 
 // -- Constants ----------------------------------------------------------------
 
 const YOUTUBE_PARAM_NAMES = ["youtube", "videoId", "v"] as const;
+const LOG_PREFIX = "[Boot]";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -40,9 +43,25 @@ function useImportFromYouTube(): void {
       toast.error("That URL doesn't look like a valid YouTube video");
       return;
     }
-    loadRef.current(videoId).catch(() => {
-      // Error is surfaced via useAudioStore.youtubeLoadError and the tunnel toast.
+
+    let cancelled = false;
+    if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube awaiting settled`, { videoId });
+    getPersistenceSettled().then(() => {
+      if (cancelled) return;
+      const current = useAudioStore.getState().source;
+      if (current?.type === "youtube" && current.videoId === videoId && current.file) {
+        if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube cache hit`, { videoId });
+        return;
+      }
+      if (import.meta.env.DEV) console.log(`${LOG_PREFIX} useImportFromYouTube loading`, { videoId, current });
+      loadRef.current(videoId).catch(() => {
+        // Error is surfaced via useAudioStore.youtubeLoadError and the tunnel toast.
+      });
     });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 }
 

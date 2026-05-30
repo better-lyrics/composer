@@ -3,10 +3,11 @@
 const DB_NAME = "ttml-composer";
 const STORE_NAME = "projects";
 const CURRENT_KEY = "current";
+const AUDIO_KEY = "current-audio";
 
 // -- Helpers -------------------------------------------------------------------
 
-async function seedProject(project: unknown): Promise<void> {
+function putValue(key: string, value: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
     const open = indexedDB.open(DB_NAME, 1);
     open.onupgradeneeded = () => {
@@ -16,7 +17,7 @@ async function seedProject(project: unknown): Promise<void> {
     open.onsuccess = () => {
       const db = open.result;
       const tx = db.transaction(STORE_NAME, "readwrite");
-      const put = tx.objectStore(STORE_NAME).put(project, CURRENT_KEY);
+      const put = tx.objectStore(STORE_NAME).put(value, key);
       put.onerror = () => {
         db.close();
         reject(put.error);
@@ -29,6 +30,20 @@ async function seedProject(project: unknown): Promise<void> {
   });
 }
 
+async function seedProject(project: unknown): Promise<void> {
+  return putValue(CURRENT_KEY, project);
+}
+
+interface SeedAudioFileArgs {
+  name: string;
+  type: string;
+  data: ArrayBuffer;
+}
+
+async function seedAudioFile(args: SeedAudioFileArgs): Promise<void> {
+  return putValue(AUDIO_KEY, args);
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { seedProject };
+export { seedProject, seedAudioFile };
