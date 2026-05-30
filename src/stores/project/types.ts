@@ -1,6 +1,6 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine, RomanizationData } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -144,6 +144,8 @@ interface LineActions {
     splitPoints: number[];
     caseInsensitive: boolean;
   }) => void;
+  setLineRomanization: (lineId: string, romanization: RomanizationData) => void;
+  clearLineRomanization: (lineId: string) => void;
 }
 
 interface GroupActions {

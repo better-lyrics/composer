@@ -1,7 +1,7 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LooseLine, type LyricLine, reconcileLine, type RomanizationData } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -272,7 +272,42 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (newLines === state.lines) return state;
       return commitHistory(state, { lines: newLines });
     }),
+
+  setLineRomanization: (lineId, romanization) => {
+    if (!romanization.text) throw new Error("Romanization text cannot be empty");
+    set((state) => applyRomanizationUpdate(state.lines, lineId, romanization));
+  },
+
+  clearLineRomanization: (lineId) => {
+    set((state) => applyRomanizationUpdate(state.lines, lineId, undefined));
+  },
 });
+
+// -- Romanization Helpers -----------------------------------------------------
+
+function writeRomanization(
+  lines: LyricLine[],
+  lineId: string,
+  romanization: RomanizationData | undefined,
+): LyricLine[] {
+  let touched = false;
+  const next = lines.map((line) => {
+    if (line.id !== lineId) return line;
+    touched = true;
+    return reconcileLine({ ...line, romanization });
+  });
+  return touched ? next : lines;
+}
+
+function applyRomanizationUpdate(
+  lines: LyricLine[],
+  lineId: string,
+  romanization: RomanizationData | undefined,
+): Partial<LinesState & { isDirty: boolean; isDirtySinceHistory: boolean }> {
+  const next = writeRomanization(lines, lineId, romanization);
+  if (next === lines) return {};
+  return { lines: next, isDirty: true, isDirtySinceHistory: true };
+}
 
 // -- Exports ------------------------------------------------------------------
 
