@@ -9,6 +9,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
+import { getEffectiveLineMainHeight } from "@/views/timeline/get-effective-line-main-height";
 import { findWordsAtTime } from "@/views/timeline/word-at-playhead";
 
 // -- Functions -----------------------------------------------------------------
@@ -142,8 +143,13 @@ interface RowPosition {
   height: number;
 }
 
+interface LineRowPosition extends RowPosition {
+  mainHeight: number;
+  bgHeight: number;
+}
+
 interface RowLayout {
-  lineTops: Map<string, RowPosition>;
+  lineTops: Map<string, LineRowPosition>;
   headerTops: Map<string, RowPosition>;
 }
 
@@ -156,7 +162,7 @@ function computeRowLayout({
   bgDropZoneHeight,
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
-  const lineTops = new Map<string, RowPosition>();
+  const lineTops = new Map<string, LineRowPosition>();
   const headerTops = new Map<string, RowPosition>();
   let rowTop = waveformHeight;
   let lastInstanceKey: string | null = null;
@@ -173,10 +179,12 @@ function computeRowLayout({
     const isCollapsed = inst !== null && collapsedInstances[inst];
     if (isCollapsed) continue;
 
-    const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
+    const baseHeight = rowHeights[line.id] ?? defaultRowHeight;
+    const mainHeight = getEffectiveLineMainHeight(line, baseHeight);
     const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
-    const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
-    lineTops.set(line.id, { top: rowTop, height: rowHeight });
+    const bgHeight = hasBg ? baseHeight : bgDropZoneHeight;
+    const rowHeight = mainHeight + bgHeight + 1;
+    lineTops.set(line.id, { top: rowTop, height: rowHeight, mainHeight, bgHeight });
     rowTop += rowHeight;
   }
 
@@ -409,4 +417,4 @@ export {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 };
-export type { EffectiveRow, GroupHeaderRow, RowLayout };
+export type { EffectiveRow, GroupHeaderRow, LineRowPosition, RowLayout };

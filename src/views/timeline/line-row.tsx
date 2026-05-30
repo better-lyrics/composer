@@ -9,6 +9,7 @@ import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { getEffectiveLineMainHeight } from "@/views/timeline/get-effective-line-main-height";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
@@ -80,7 +81,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
   const hasMainWords = line.words && line.words.length > 0;
 
-  const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
+  const baseRowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
+  const mainRowHeight = getEffectiveLineMainHeight(line, baseRowHeight);
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const setRowHeight = useTimelineStore((s) => s.setRowHeight);
   const zoom = useTimelineStore((s) => s.zoom);
@@ -120,7 +122,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       e.preventDefault();
       setIsResizing(true);
       const startY = e.clientY;
-      const startHeight = rowHeight;
+      const startHeight = baseRowHeight;
 
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const delta = moveEvent.clientY - startY;
@@ -142,7 +144,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     },
-    [line.id, rowHeight, setRowHeight],
+    [line.id, baseRowHeight, setRowHeight],
   );
 
   return (
@@ -184,13 +186,13 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               color={color}
               trackType="word"
               duration={duration}
-              height={rowHeight}
+              height={mainRowHeight}
               onUpdateWord={onUpdateWord}
             />
           ) : (
             <div
               className="relative cursor-pointer"
-              style={{ width: duration * zoom, height: rowHeight }}
+              style={{ width: duration * zoom, height: mainRowHeight }}
               onDoubleClick={(e) => {
                 const zoomPx = useTimelineStore.getState().zoom;
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
@@ -224,7 +226,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             >
               <div
                 className="sticky left-[48px] z-10 inline-flex items-center gap-2 px-3 text-xs text-composer-text-muted italic bg-composer-bg/80 backdrop-blur-sm"
-                style={{ height: rowHeight, maxWidth: "calc(100% - 48px)" }}
+                style={{ height: mainRowHeight, maxWidth: "calc(100% - 48px)" }}
               >
                 <span className="truncate pr-0.5">
                   {displayText.slice(0, 60)}
@@ -254,7 +256,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               color={color}
               trackType="bg"
               duration={duration}
-              height={rowHeight}
+              height={baseRowHeight}
               onUpdateWord={onUpdateBgWord}
             />
           </div>

@@ -393,15 +393,12 @@ function computeGhosts(
       trackTop = layoutEnd;
       trackHeight = defaultRowHeight;
     } else {
-      const hasBg = !!(targetLine.backgroundWords && targetLine.backgroundWords.length > 0);
-      const bgHeight = hasBg ? (targetPos.height - 1) / 2 : BG_DROP_ZONE_HEIGHT;
-      const mainHeight = targetPos.height - 1 - bgHeight;
       if (isBg) {
-        trackTop = targetPos.top + mainHeight + BG_BORDER;
-        trackHeight = bgHeight;
+        trackTop = targetPos.top + targetPos.mainHeight + BG_BORDER;
+        trackHeight = targetPos.bgHeight;
       } else {
         trackTop = targetPos.top;
-        trackHeight = mainHeight;
+        trackHeight = targetPos.mainHeight;
       }
     }
 

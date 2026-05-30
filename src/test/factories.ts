@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine, type RomanizationData } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 interface FactoryLineOptions {
@@ -14,6 +14,7 @@ interface FactoryLineOptions {
   backgroundTextSource?: "extraction" | "manual";
   groupId?: string;
   instanceIdx?: number;
+  romanization?: RomanizationData;
 }
 
 interface FactoryWordOptions {
@@ -60,6 +61,7 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
     ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
+    ...(opts.romanization ? { romanization: opts.romanization } : {}),
   });
 }
 
