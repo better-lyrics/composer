@@ -103,22 +103,11 @@ function useImportModalState(): Omit<ImportModalState, "lastImportResult"> {
   return { isOpen, prefill, defaultPrefill, initialSection };
 }
 
-function useDefaultPrefill(): LyricsSearchQuery | null {
-  return useImportModalStore((s) => s.defaultPrefill);
-}
-
 function useLastImportResult(): LastImportResult | null {
   return useImportModalStore((s) => s.lastImportResult);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  INITIAL_STATE,
-  useDefaultPrefill,
-  useImportModal,
-  useImportModalState,
-  useImportModalStore,
-  useLastImportResult,
-};
+export { INITIAL_STATE, useImportModal, useImportModalState, useImportModalStore, useLastImportResult };
 export type { ImportModalSection, ImportModalState, LastImportResult, OpenArgs };
