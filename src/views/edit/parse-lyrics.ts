@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine, RomanizationData } from "@/domain/line/model";
 
 interface ParsedLine {
   lineNumber: number;
@@ -9,6 +9,7 @@ interface ParsedLine {
   hasTiming: boolean;
   agentId: string;
   backgroundText?: string;
+  romanization?: RomanizationData;
   groupId?: string;
   instanceIdx?: number;
   templateLineIdx?: number;
@@ -34,6 +35,7 @@ function parseLyrics(text: string, lines: LyricLine[], defaultAgentId: string): 
       hasTiming,
       agentId: lyricLine?.agentId ?? defaultAgentId,
       backgroundText: lyricLine?.backgroundText,
+      romanization: lyricLine?.romanization,
       groupId: lyricLine?.groupId,
       instanceIdx: lyricLine?.instanceIdx,
       templateLineIdx: lyricLine?.templateLineIdx,

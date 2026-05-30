@@ -26,6 +26,7 @@ import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { RomanizationBanner, type RomanizationBannerProgress } from "@/views/edit/romanization-banner";
+import { RomanizationSubrow } from "@/views/edit/romanization-subrow";
 import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
@@ -88,6 +89,7 @@ const LinePreview: React.FC<{
   hasMultipleSelected: boolean;
   groupColor?: string;
   groupTooltip?: string;
+  schemeSet: boolean;
   onSelect: (lineNumber: number, shiftKey: boolean) => void;
   onAgentChange: (lineId: string, agentId: string) => void;
   onBulkAgentChange: (agentId: string) => void;
@@ -103,6 +105,7 @@ const LinePreview: React.FC<{
   hasMultipleSelected,
   groupColor,
   groupTooltip,
+  schemeSet,
   onSelect,
   onAgentChange,
   onBulkAgentChange,
@@ -195,19 +198,29 @@ const LinePreview: React.FC<{
         {line.lineNumber}
       </span>
 
-      <span
-        data-testid="line-preview-text"
-        className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
+      <div
+        className="flex flex-col gap-0.5 min-w-0"
         style={{ borderLeft: `2px solid ${agentColor}`, paddingLeft: "6px" }}
       >
-        {stripSplitCharacter(line.text)}
-      </span>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span
+            data-testid="line-preview-text"
+            className={`text-sm ${line.hasBrackets ? "text-composer-error" : "text-composer-text"}`}
+          >
+            {stripSplitCharacter(line.text)}
+          </span>
 
-      {line.backgroundText && (
-        <span data-testid="line-preview-background" className="text-xs italic text-composer-text-muted">
-          {line.backgroundText}
-        </span>
-      )}
+          {line.backgroundText && (
+            <span data-testid="line-preview-background" className="text-xs italic text-composer-text-muted">
+              {line.backgroundText}
+            </span>
+          )}
+        </div>
+
+        {schemeSet && line.romanization && line.romanization.text.length > 0 && (
+          <RomanizationSubrow text={line.romanization.text} />
+        )}
+      </div>
 
       <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
         {agents.length > 1 && line.lineId && (
@@ -821,6 +834,7 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                         hasMultipleSelected={selectedLines.size > 1}
                         groupColor={group?.color}
                         groupTooltip={groupTooltip}
+                        schemeSet={romanizationVisibility.schemeSet}
                         onSelect={handleLineSelect}
                         onAgentChange={handleAgentChange}
                         onBulkAgentChange={handleBulkAgentChange}
