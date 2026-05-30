@@ -78,9 +78,10 @@ const SearchSection: React.FC<SearchSectionProps> = ({
   const isrcRef = useRef(initialPrefill?.isrc);
 
   const query = useMemo(() => buildQuery(inputs, isrcRef.current), [inputs]);
-  const { results, isFetching, errors } = useLyricsSearch(query);
-
   const effectiveExpectedDuration = expectedDurationSec ?? parseDurationInput(inputs.duration);
+  const { results, isFetching, errors } = useLyricsSearch(query, {
+    expectedDurationSec: effectiveExpectedDuration,
+  });
 
   const handleDurationBlur = useCallback(() => {
     const parsed = parseDurationInput(inputs.duration);

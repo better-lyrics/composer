@@ -20,17 +20,77 @@ interface ResultRowProps {
   onSelect: () => void;
 }
 
+type DurationMatch =
+  | { kind: "neutral" }
+  | { kind: "exact" }
+  | { kind: "close"; delta: number }
+  | { kind: "mismatch"; delta: number };
+
 // -- Helpers ------------------------------------------------------------------
 
-function durationMatches(actual: number, expected: number | undefined): boolean {
-  if (expected === undefined || !Number.isFinite(expected)) return false;
-  return Math.abs(actual - expected) <= MATCH_TOLERANCE_SEC;
+function describeDurationMatch(actual: number, expected: number | undefined): DurationMatch {
+  if (expected === undefined || !Number.isFinite(expected)) return { kind: "neutral" };
+  const delta = Math.round(actual) - Math.round(expected);
+  const abs = Math.abs(delta);
+  if (abs === 0) return { kind: "exact" };
+  if (abs <= MATCH_TOLERANCE_SEC) return { kind: "close", delta };
+  return { kind: "mismatch", delta };
+}
+
+function formatDelta(delta: number): string {
+  const sign = delta > 0 ? "+" : "−";
+  return `${sign}${Math.abs(delta)}s`;
 }
 
 function joinArtistAlbum(artist: string, album: string | undefined): string {
   if (album && album.trim().length > 0) return `${artist} ・ ${album}`;
   return artist;
 }
+
+// -- Sub-components -----------------------------------------------------------
+
+interface DurationDisplayProps {
+  match: DurationMatch;
+  actualSec: number;
+}
+
+const DurationDisplay: React.FC<DurationDisplayProps> = ({ match, actualSec }) => {
+  const text = formatDuration(actualSec);
+  if (match.kind === "exact") {
+    return (
+      <span
+        title="Matches your duration"
+        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/22 text-white font-mono text-[11px] font-medium tabular-nums select-text"
+      >
+        {text}
+      </span>
+    );
+  }
+  if (match.kind === "close") {
+    return (
+      <span
+        title={`Off by ${Math.abs(match.delta)}s`}
+        className="inline-flex items-baseline gap-1 px-1.5 py-0.5 rounded-md bg-composer-accent/12 text-composer-accent-text font-mono text-[11px] font-medium tabular-nums select-text"
+      >
+        {text}
+        <span className="text-[9.5px] opacity-85">{formatDelta(match.delta)}</span>
+      </span>
+    );
+  }
+  if (match.kind === "mismatch") {
+    return (
+      <span
+        title={`Off by ${Math.abs(match.delta)}s`}
+        className="font-mono text-[11px] text-composer-text-muted opacity-60 tabular-nums select-text"
+      >
+        {text}
+      </span>
+    );
+  }
+  return (
+    <span className="font-mono text-[11px] text-composer-text-secondary tabular-nums select-text">{text}</span>
+  );
+};
 
 // -- Component ----------------------------------------------------------------
 
@@ -44,7 +104,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
   onSelect,
 }) => {
   const isActive = isHovered || isFocused;
-  const showMatchDot = durationMatches(result.durationSec, expectedDurationSec);
+  const match = describeDurationMatch(result.durationSec, expectedDurationSec);
 
   const handleClick = () => {
     if (isSelecting) return;
@@ -88,15 +148,7 @@ const ResultRow: React.FC<ResultRowProps> = ({
       </span>
 
       <span className="flex items-center gap-2 shrink-0">
-        <span className="tabular-nums font-mono text-[11px] text-composer-text-secondary select-text">
-          {showMatchDot ? (
-            <span
-              aria-label="Matches your duration"
-              className="inline-block size-1.5 rounded-full bg-composer-accent shadow-[0_0_0_3px_rgba(129,140,248,0.18)] mr-1.5 align-middle"
-            />
-          ) : null}
-          {formatDuration(result.durationSec)}
-        </span>
+        <DurationDisplay match={match} actualSec={result.durationSec} />
         <SyncTypeBadge syncType={result.syncType} sourceLabel={result.sourceLabel} />
         {isSelecting ? (
           <IconLoader2 size={12} className="animate-spin text-composer-accent-text" aria-label="Loading" />

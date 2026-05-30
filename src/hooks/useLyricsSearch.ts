@@ -21,6 +21,7 @@ const SYNC_PRECISION_RANK: Record<SyncType, number> = {
 interface UseLyricsSearchOptions {
   enabled?: boolean;
   debounceMs?: number;
+  expectedDurationSec?: number;
 }
 
 interface UseLyricsSearchResult {
@@ -109,7 +110,13 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
     }
   }
 
-  const sorted = merged.toSorted((a, b) => SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType]);
+  const expected = options?.expectedDurationSec;
+  const sorted = merged.toSorted((a, b) => {
+    const syncDiff = SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType];
+    if (syncDiff !== 0) return syncDiff;
+    if (expected === undefined || !Number.isFinite(expected)) return 0;
+    return Math.abs(a.durationSec - expected) - Math.abs(b.durationSec - expected);
+  });
 
   return { results: sorted, isFetching, errors };
 }

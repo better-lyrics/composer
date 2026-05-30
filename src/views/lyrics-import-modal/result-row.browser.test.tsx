@@ -111,51 +111,89 @@ describe("ResultRow rendering", () => {
   });
 });
 
-// -- Match dot ----------------------------------------------------------------
+// -- Duration match display ---------------------------------------------------
 
-describe("ResultRow match dot", () => {
-  it("renders the match dot when expectedDurationSec is within 2 seconds", async () => {
+describe("ResultRow duration match", () => {
+  it("marks the duration as exact when expectedDurationSec matches to the second", async () => {
     const screen = await render(
       <ResultRow
         result={buildResult({ durationSec: 355 })}
         isHovered={false}
         isFocused={false}
         isSelecting={false}
-        expectedDurationSec={356}
+        expectedDurationSec={355}
         onHover={noop}
         onSelect={noop}
       />,
     );
-    await expect.element(screen.getByLabelText("Matches your duration")).toBeInTheDocument();
+    const duration = screen.getByText("5:55").element();
+    expect(duration.getAttribute("title")).toBe("Matches your duration");
+    expect(duration.className).toContain("bg-composer-accent");
   });
 
-  it("does not render the match dot when the mismatch exceeds 2 seconds", async () => {
+  it("shows a delta suffix when within tolerance but not exact", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: 357 })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("5:57")).toBeInTheDocument();
+    await expect.element(screen.getByText("+2s")).toBeInTheDocument();
+  });
+
+  it("dims the duration when the mismatch exceeds tolerance", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: 400 })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    const duration = screen.getByText("6:40").element();
+    expect(duration.className).toContain("opacity-60");
+    expect(duration.className).toContain("text-composer-text-muted");
+  });
+
+  it("renders a plain duration when no expectedDurationSec is provided", async () => {
     const screen = await render(
       <ResultRow
         result={buildResult({ durationSec: 355 })}
         isHovered={false}
         isFocused={false}
         isSelecting={false}
-        expectedDurationSec={400}
         onHover={noop}
         onSelect={noop}
       />,
     );
-    expect(screen.getByLabelText("Matches your duration").elements().length).toBe(0);
+    const duration = screen.getByText("5:55").element();
+    expect(duration.className).not.toContain("bg-composer-accent");
+    expect(duration.className).not.toContain("opacity-60");
+    expect(duration.getAttribute("title")).toBeNull();
   });
 
-  it("does not render the match dot when expectedDurationSec is not provided", async () => {
+  it("uses a minus sign for negative deltas", async () => {
     const screen = await render(
       <ResultRow
-        result={buildResult()}
+        result={buildResult({ durationSec: 354 })}
         isHovered={false}
         isFocused={false}
         isSelecting={false}
+        expectedDurationSec={355}
         onHover={noop}
         onSelect={noop}
       />,
     );
-    expect(screen.getByLabelText("Matches your duration").elements().length).toBe(0);
+    await expect.element(screen.getByText("−1s")).toBeInTheDocument();
   });
 });
 
