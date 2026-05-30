@@ -1,5 +1,5 @@
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
-import { IconSearch, IconSearchOff } from "@tabler/icons-react";
+import { IconMusicExclamation, IconSearch } from "@tabler/icons-react";
 import { ResultRow } from "@/views/lyrics-import-modal/result-row";
 import type { LyricsSearchError } from "@/utils/lyrics-search/types";
 
@@ -89,7 +89,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   if (hasQuery) {
     return (
       <output className="m-auto flex flex-col items-center px-4 text-center">
-        <IconSearchOff size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
+        <IconMusicExclamation size={22} className="text-composer-text opacity-25 mb-2" aria-hidden="true" />
         <span className="text-xs font-medium text-composer-text-secondary">No matches</span>
         <span className="text-[11px] text-composer-text-muted mt-0.5">
           Try a different track or artist, or check the spelling.
