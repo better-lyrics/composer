@@ -13,6 +13,7 @@ interface WordBlockProps {
   wordIndex: number;
   trackType: "word" | "bg";
   text: string;
+  romanization?: string;
   begin: number;
   end: number;
   color: string;
@@ -42,6 +43,8 @@ const SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
   last: "rounded-r-xl rounded-l-none",
 };
 
+const ROMAJI_VISIBILITY_THRESHOLD = 24;
+
 const WordBlock: React.FC<WordBlockProps> = ({
   id,
   lineId,
@@ -49,6 +52,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   wordIndex,
   trackType,
   text,
+  romanization,
   begin,
   end,
   color,
@@ -72,6 +76,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   const naturalWidth = (end - begin) * zoom;
   const width = Math.max(naturalWidth, 4);
   const showText = naturalWidth >= 20;
+  const showRomanization = !!romanization && romanization.length > 0 && naturalWidth >= ROMAJI_VISIBILITY_THRESHOLD;
 
   const myKey = selfKey(lineId, wordIndex, trackType);
   const isSnapped = useTimelineStore((s) => s.snappedBlockId === myKey);
@@ -172,7 +177,19 @@ const WordBlock: React.FC<WordBlockProps> = ({
         onMouseLeave={() => onEdgeHover?.("left", false)}
       />
 
-      {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
+      {showText && (
+        <span className="flex flex-col items-center justify-center min-w-0 px-1 pointer-events-none">
+          <span className="truncate max-w-full leading-tight">{text}</span>
+          {showRomanization && (
+            <span
+              data-testid="word-romanization"
+              className="truncate text-ellipsis italic max-w-full text-[10px] leading-tight opacity-70 pointer-events-none"
+            >
+              {romanization}
+            </span>
+          )}
+        </span>
+      )}
 
       <div
         data-edge="right"

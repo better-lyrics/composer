@@ -21,6 +21,7 @@ interface WordTrackProps {
   lineId: string;
   lineIndex: number;
   words: WordTiming[];
+  wordRomanizations?: ReadonlyArray<string | undefined>;
   color: string;
   trackType: "word" | "bg";
   duration: number;
@@ -53,6 +54,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   lineId,
   lineIndex,
   words,
+  wordRomanizations,
   color,
   trackType,
   duration,
@@ -410,6 +412,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
             wordIndex={wordIndex}
             trackType={trackType}
             text={word.text}
+            romanization={wordRomanizations?.[wordIndex]}
             begin={display.begin}
             end={display.end}
             color={color}

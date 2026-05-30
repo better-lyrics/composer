@@ -15,7 +15,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { useDroppable } from "@dnd-kit/core";
 import { IconPlus } from "@tabler/icons-react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -86,6 +86,14 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const setRowHeight = useTimelineStore((s) => s.setRowHeight);
   const zoom = useTimelineStore((s) => s.zoom);
+  const romanizationScheme = useProjectStore((s) => s.metadata.romanizationScheme);
+
+  const mainWordRomanizations = useMemo<ReadonlyArray<string | undefined> | undefined>(() => {
+    if (!romanizationScheme) return undefined;
+    const romaWords = line.romanization?.words;
+    if (!romaWords) return undefined;
+    return romaWords.map((w) => w.text);
+  }, [romanizationScheme, line.romanization?.words]);
   const dragShiftPx = useTimelineStore((s) =>
     s.draggedGroupShift &&
     line.groupId !== undefined &&
@@ -183,6 +191,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               lineId={line.id}
               lineIndex={lineIndex}
               words={line.words!}
+              wordRomanizations={mainWordRomanizations}
               color={color}
               trackType="word"
               duration={duration}
