@@ -1,5 +1,6 @@
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import type { AmLyrics as AmLyricsElement } from "@uimaxbai/am-lyrics";
 import { useEffect, useRef, useState } from "react";
 
@@ -8,6 +9,15 @@ import { useEffect, useRef, useState } from "react";
 interface AmLyricsRendererProps {
   ttmlString: string;
   durationSeconds: number;
+}
+
+// Lit's @state() marks `showRomanization` private at the TS level, but the
+// underlying runtime element is a plain Lit element instance. Writing to the
+// reactive field triggers a re-render, and calling `requestUpdate` reconciles
+// the template that gates romaji rendering on `this.showRomanization`.
+interface AmLyricsWithRomanization extends AmLyricsElement {
+  showRomanization?: boolean;
+  toggleRomanization?: () => Promise<void> | void;
 }
 
 // -- Element registration -----------------------------------------------------
@@ -29,8 +39,11 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
   const latestDurationMsRef = useRef(durationSeconds * 1000);
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
+  const romanizationEnabled = useProjectStore((s) => !!s.metadata.romanizationScheme);
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
+  // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
+  const [elementReady, setElementReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -63,6 +76,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
 
     container.appendChild(el);
     elementRef.current = el;
+    setElementReady(true);
 
     const injectHideStyle = () => {
       if (!el.shadowRoot) return;
@@ -79,6 +93,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
       el.removeEventListener("line-click", handleLineClick);
       el.remove();
       elementRef.current = null;
+      setElementReady(false);
     };
   }, [isRegistered]);
 
@@ -94,6 +109,21 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     if (!el) return;
     el.songDurationMs = durationSeconds * 1000;
   }, [durationSeconds]);
+
+  useEffect(() => {
+    if (!elementReady) return;
+    const el = elementRef.current as AmLyricsWithRomanization | null;
+    if (!el) return;
+    let cancelled = false;
+    el.updateComplete.then(() => {
+      if (cancelled) return;
+      if ((el.showRomanization ?? false) === romanizationEnabled) return;
+      el.toggleRomanization?.();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [elementReady, romanizationEnabled, ttmlString]);
 
   useRendererAudioSync(elementRef, (el, audio) => {
     el.currentTime = audio.currentTime * 1000;

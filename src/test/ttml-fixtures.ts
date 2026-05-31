@@ -46,6 +46,54 @@ function buildSyncedTtml(): string {
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
 }
 
+/**
+ * Three word-synced Japanese lyric lines with romanization, rendered through
+ * the real TTML generator. Used by the preview renderer tests to assert that
+ * exported `<transliterations>` round-trip into renderer output.
+ */
+function buildRomanizedJapaneseTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-a",
+      text: "夜だけど",
+      words: [
+        { text: "夜", begin: 2, end: 3 },
+        { text: "だけど", begin: 3, end: 6 },
+      ],
+      romanization: {
+        text: "yoru dakedo",
+        words: [
+          { text: "yoru", begin: 2, end: 3 },
+          { text: "dakedo", begin: 3, end: 6 },
+        ],
+        source: "generated",
+      },
+    }),
+    createLine({
+      id: "line-b",
+      text: "夢を見て",
+      words: [
+        { text: "夢", begin: 12, end: 13 },
+        { text: "を", begin: 13, end: 14 },
+        { text: "見て", begin: 14, end: 18 },
+      ],
+      romanization: {
+        text: "yume wo mite",
+        words: [
+          { text: "yume", begin: 12, end: 13 },
+          { text: "wo", begin: 13, end: 14 },
+          { text: "mite", begin: 14, end: 18 },
+        ],
+        source: "generated",
+      },
+    }),
+  ];
+  const baseMetadata = useProjectStore.getState().metadata;
+  const metadata = { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" as const };
+  const { agents } = useProjectStore.getState();
+  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { buildSyncedTtml };
+export { buildSyncedTtml, buildRomanizedJapaneseTtml };
