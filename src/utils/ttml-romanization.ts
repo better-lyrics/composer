@@ -17,33 +17,76 @@ function shouldEmitTransliterations(metadata: ProjectMetadata, lines: LyricLine[
   return lines.some((line) => line.romanization && line.romanization.text.length > 0);
 }
 
-// Word-synced romanization preserves per-word timing as <span> children.
-// Line-synced romanization unwraps to inline text inside <text>.
+type EmittableLine = { id: string; romanization: NonNullable<LyricLine["romanization"]> };
+
+function selectEmittableLines(lines: LyricLine[]): EmittableLine[] {
+  const out: EmittableLine[] = [];
+  for (const line of lines) {
+    const r = line.romanization;
+    if (!r || r.text.length === 0) continue;
+    out.push({ id: line.id, romanization: r });
+  }
+  return out;
+}
+
+function emitWordSpans(
+  r: NonNullable<LyricLine["romanization"]>,
+  ind: (n: number) => string,
+  indent: number,
+): string[] {
+  const parts: string[] = [];
+  if (!r.words?.length) return parts;
+  for (const w of r.words) {
+    parts.push(
+      `${ind(indent)}<span begin="${formatTime(w.begin)}" end="${formatTime(w.end)}">${escapeXml(w.text)}</span>`,
+    );
+  }
+  return parts;
+}
+
+function emitAppleShape(scheme: string, emittable: EmittableLine[], ind: (n: number) => string): string[] {
+  const parts: string[] = [];
+  parts.push(`${ind(4)}<transliteration xml:lang="${escapeXml(scheme)}">`);
+  for (const { id, romanization: r } of emittable) {
+    if (r.words?.length) {
+      parts.push(`${ind(5)}<text for="${escapeXml(id)}">`);
+      parts.push(...emitWordSpans(r, ind, 6));
+      parts.push(`${ind(5)}</text>`);
+    } else {
+      parts.push(`${ind(5)}<text for="${escapeXml(id)}">${escapeXml(r.text)}</text>`);
+    }
+  }
+  parts.push(`${ind(4)}</transliteration>`);
+  return parts;
+}
+
+function emitPerLineShape(scheme: string, emittable: EmittableLine[], ind: (n: number) => string): string[] {
+  const parts: string[] = [];
+  for (const { id, romanization: r } of emittable) {
+    parts.push(`${ind(4)}<transliteration for="${escapeXml(id)}" xml:lang="${escapeXml(scheme)}">`);
+    if (r.words?.length) {
+      parts.push(`${ind(5)}<text>`);
+      parts.push(...emitWordSpans(r, ind, 6));
+      parts.push(`${ind(5)}</text>`);
+    } else {
+      parts.push(`${ind(5)}<text>${escapeXml(r.text)}</text>`);
+    }
+    parts.push(`${ind(4)}</transliteration>`);
+  }
+  return parts;
+}
+
 function emitTransliterationsBlock(
   metadata: ProjectMetadata,
   lines: LyricLine[],
   ind: (n: number) => string,
 ): string[] {
-  const parts: string[] = [];
   const scheme = metadata.romanizationScheme ?? "";
+  const emittable = selectEmittableLines(lines);
+  const parts: string[] = [];
   parts.push(`${ind(3)}<transliterations>`);
-  parts.push(`${ind(4)}<transliteration xml:lang="${escapeXml(scheme)}">`);
-  for (const line of lines) {
-    const r = line.romanization;
-    if (!r || r.text.length === 0) continue;
-    if (r.words?.length) {
-      parts.push(`${ind(5)}<text for="${escapeXml(line.id)}">`);
-      for (const w of r.words) {
-        parts.push(
-          `${ind(6)}<span begin="${formatTime(w.begin)}" end="${formatTime(w.end)}">${escapeXml(w.text)}</span>`,
-        );
-      }
-      parts.push(`${ind(5)}</text>`);
-    } else {
-      parts.push(`${ind(5)}<text for="${escapeXml(line.id)}">${escapeXml(r.text)}</text>`);
-    }
-  }
-  parts.push(`${ind(4)}</transliteration>`);
+  parts.push(...emitAppleShape(scheme, emittable, ind));
+  parts.push(...emitPerLineShape(scheme, emittable, ind));
   parts.push(`${ind(3)}</transliterations>`);
   return parts;
 }

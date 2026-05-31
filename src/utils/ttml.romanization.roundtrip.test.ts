@@ -176,4 +176,69 @@ describe("TTML round-trip · romanization", () => {
     expect(parsed.lines[1].romanization?.text).toBe("yume no naka");
     expect(parsed.lines[1].romanization?.words).toBeUndefined();
   });
+
+  it("re-importing a dual-shape TTML preserves romanization without duplication", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+        romanization: {
+          text: "yoru dakedo",
+          source: "generated",
+          words: [
+            { text: "yoru", begin: 0, end: 1 },
+            { text: "dakedo", begin: 1, end: 2 },
+          ],
+        },
+      },
+      {
+        id: "L2",
+        text: "夢",
+        agentId: "v1",
+        begin: 2,
+        end: 3,
+        romanization: { text: "yume", source: "manual" },
+      },
+    ];
+    const ttml = generateTTML({ metadata: baseMetadata, agents, lines, granularity: "word" });
+
+    expect(ttml).toContain('<transliteration xml:lang="ja-Latn-hepburn">');
+    expect(ttml).toContain('<transliteration for="L1"');
+    expect(ttml).toContain('<transliteration for="L2"');
+
+    const parsed = parseTtml(ttml);
+    expect(parsed.lines).toHaveLength(2);
+    expect(parsed.lines[0].romanization?.text).toBe("yoru dakedo");
+    expect(parsed.lines[0].romanization?.words?.length).toBe(2);
+    expect(parsed.lines[1].romanization?.text).toBe("yume");
+    expect(parsed.lines[1].romanization?.words).toBeUndefined();
+  });
+
+  it("Apple shape wins on re-import when both shapes are present (no double-application)", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜",
+        agentId: "v1",
+        words: [{ text: "夜", begin: 0.5, end: 1.5 }],
+        romanization: {
+          text: "yoru",
+          source: "generated",
+          words: [{ text: "yoru", begin: 0.5, end: 1.5 }],
+        },
+      },
+    ];
+    const ttml = generateTTML({ metadata: baseMetadata, agents, lines, granularity: "word" });
+
+    const parsed = parseTtml(ttml);
+    expect(parsed.lines[0].romanization?.words?.length).toBe(1);
+    expect(parsed.lines[0].romanization?.words?.[0].text).toBe("yoru");
+    expect(parsed.lines[0].romanization?.words?.[0].begin).toBeCloseTo(0.5, 3);
+    expect(parsed.lines[0].romanization?.words?.[0].end).toBeCloseTo(1.5, 3);
+  });
 });

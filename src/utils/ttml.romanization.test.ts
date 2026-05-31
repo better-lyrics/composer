@@ -53,6 +53,160 @@ describe("TTML export · transliterations", () => {
     expect(ttml).toContain("</transliterations>");
   });
 
+  it("dual-emits per-line shape (braccato / better-lyrics) after the Apple shape", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [
+        {
+          id: "L1",
+          text: "夜だけど",
+          agentId: "v1",
+          words: [
+            { text: "夜", begin: 0, end: 1 },
+            { text: "だけど", begin: 1, end: 2 },
+          ],
+          romanization: {
+            text: "yoru dakedo",
+            source: "generated",
+            words: [
+              { text: "yoru", begin: 0, end: 1 },
+              { text: "dakedo", begin: 1, end: 2 },
+            ],
+          },
+        },
+        {
+          id: "L2",
+          text: "夢",
+          agentId: "v1",
+          begin: 2,
+          end: 3,
+          romanization: { text: "yume", source: "manual" },
+        },
+      ],
+      granularity: "word",
+    });
+
+    expect(ttml).toContain('<transliteration for="L1" xml:lang="ja-Latn-hepburn">');
+    expect(ttml).toContain('<transliteration for="L2" xml:lang="ja-Latn-hepburn">');
+
+    const appleOpenIdx = ttml.indexOf('<transliteration xml:lang="ja-Latn-hepburn">');
+    const perLineL1Idx = ttml.indexOf('<transliteration for="L1"');
+    const perLineL2Idx = ttml.indexOf('<transliteration for="L2"');
+    expect(appleOpenIdx).toBeGreaterThan(-1);
+    expect(perLineL1Idx).toBeGreaterThan(appleOpenIdx);
+    expect(perLineL2Idx).toBeGreaterThan(perLineL1Idx);
+
+    const transliterationsOpen = ttml.indexOf("<transliterations>");
+    const transliterationsClose = ttml.indexOf("</transliterations>");
+    expect(transliterationsOpen).toBeGreaterThan(-1);
+    expect(transliterationsClose).toBeGreaterThan(transliterationsOpen);
+    expect(perLineL1Idx).toBeGreaterThan(transliterationsOpen);
+    expect(perLineL1Idx).toBeLessThan(transliterationsClose);
+    expect(perLineL2Idx).toBeLessThan(transliterationsClose);
+
+    const parsed = new DOMParser().parseFromString(ttml, "application/xml");
+    expect(parsed.getElementsByTagName("parsererror").length).toBe(0);
+    const all = parsed.getElementsByTagName("transliteration");
+    expect(all.length).toBe(3);
+    expect(all[0].getAttribute("for")).toBeNull();
+    expect(all[1].getAttribute("for")).toBe("L1");
+    expect(all[2].getAttribute("for")).toBe("L2");
+  });
+
+  it("dual-emits per-line shape with inline text for line-synced romanization", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [
+        {
+          id: "L1",
+          text: "夜だけど",
+          agentId: "v1",
+          begin: 0,
+          end: 4,
+          romanization: { text: "yoru dakedo", source: "manual" },
+        },
+      ],
+      granularity: "line",
+    });
+
+    expect(ttml).toContain('<transliteration for="L1" xml:lang="ja-Latn-hepburn">');
+    const perLineOpenIdx = ttml.indexOf('<transliteration for="L1"');
+    const perLineCloseIdx = ttml.indexOf("</transliteration>", perLineOpenIdx);
+    const perLineSegment = ttml.slice(perLineOpenIdx, perLineCloseIdx);
+    expect(perLineSegment).toContain("<text>yoru dakedo</text>");
+  });
+
+  it("dual-emits per-line shape with word spans for word-synced romanization", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [
+        {
+          id: "L1",
+          text: "夜",
+          agentId: "v1",
+          words: [{ text: "夜", begin: 0, end: 1 }],
+          romanization: {
+            text: "yoru",
+            source: "generated",
+            words: [{ text: "yoru", begin: 0, end: 1 }],
+          },
+        },
+      ],
+      granularity: "word",
+    });
+
+    const perLineOpenIdx = ttml.indexOf('<transliteration for="L1"');
+    const perLineCloseIdx = ttml.indexOf("</transliteration>", perLineOpenIdx);
+    const perLineSegment = ttml.slice(perLineOpenIdx, perLineCloseIdx);
+    expect(perLineSegment).toContain('<span begin="0:00.000" end="0:01.000">yoru</span>');
+    expect(perLineSegment).not.toMatch(/<text for=/);
+  });
+
+  it("dual-emits per-line shape with escaped for and xml:lang attributes", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [
+        {
+          id: "L<1&",
+          text: "夜",
+          agentId: "v1",
+          begin: 0,
+          end: 1,
+          romanization: { text: "yoru", source: "manual" },
+        },
+      ],
+      granularity: "line",
+    });
+    expect(ttml).toContain('<transliteration for="L&lt;1&amp;" xml:lang="ja-Latn-hepburn">');
+    const parsed = new DOMParser().parseFromString(ttml, "application/xml");
+    expect(parsed.getElementsByTagName("parsererror").length).toBe(0);
+  });
+
+  it("skips lines without romanization in both shapes", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [
+        { id: "L1", text: "hello", agentId: "v1", begin: 0, end: 1 },
+        {
+          id: "L2",
+          text: "夜",
+          agentId: "v1",
+          begin: 1,
+          end: 2,
+          romanization: { text: "yoru", source: "manual" },
+        },
+      ],
+      granularity: "line",
+    });
+    expect(ttml).not.toContain('<transliteration for="L1"');
+    expect(ttml).toContain('<transliteration for="L2" xml:lang="ja-Latn-hepburn">');
+  });
+
   it("emits no <transliterations> when scheme is unset", () => {
     const ttml = generateTTML({
       metadata: baseMetadata,
