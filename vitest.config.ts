@@ -2,6 +2,7 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { kuroshiroDictPlugin } from "./scripts/kuroshiro-dict-plugin";
 import pkg from "./package.json";
 
 export default defineConfig({
@@ -45,6 +46,7 @@ export default defineConfig({
       {
         extends: true,
         cacheDir: "node_modules/.vite/vitest-browser",
+        plugins: [kuroshiroDictPlugin()],
         test: {
           name: "browser",
           include: ["src/**/*.browser.test.{ts,tsx}"],

@@ -1,5 +1,4 @@
-import type { RomajiSystem } from "kuroshiro";
-import type Kuroshiro from "kuroshiro";
+import type { RomajiSystem } from "kuroshiro-browser";
 import type { RomanizationGenerator } from "@/domain/romanization/registry";
 import type { WordTiming } from "@/domain/word/timing";
 import { hasNonLatinScript } from "@/domain/romanization/detect";
@@ -19,27 +18,20 @@ const SYSTEM_BY_SCHEME: Record<string, RomajiSystem> = {
 
 // -- Singleton ----------------------------------------------------------------
 
-// In production the kuromoji dictionary files are served from `/dict/` (copied
-// at build time). Tests inject the real `node_modules` path via
-// `setKuroshiroDictPathForTests` so the analyzer reads dicts via fs.
-const DEFAULT_DICT_PATH = "/dict/";
-let dictPathOverride: string | null = null;
-let kuroshiroPromise: Promise<Kuroshiro> | null = null;
+// The kuroshiro-dict Vite plugin serves the dictionary files from /dict/ in
+// both dev and prod, so we always tell kuroshiro-browser to use prod-style URLs
+// (./dict/*.br) rather than its dev-style ./node_modules/... paths.
+const KUROSHIRO_USES_PROD_DICT_URLS = true;
 
-function setKuroshiroDictPathForTests(path: string | null): void {
-  dictPathOverride = path;
-  kuroshiroPromise = null;
-}
+type KuroshiroInstance = import("kuroshiro-browser").KuroshiroInstance;
 
-async function ensureKuroshiro(): Promise<Kuroshiro> {
+let kuroshiroPromise: Promise<KuroshiroInstance> | null = null;
+
+async function ensureKuroshiro(): Promise<KuroshiroInstance> {
   if (!kuroshiroPromise) {
     kuroshiroPromise = (async () => {
-      const { default: KuroshiroCtor } = await import("kuroshiro");
-      const { default: KuromojiAnalyzer } = await import("kuroshiro-analyzer-kuromoji");
-      const instance = new KuroshiroCtor();
-      const dictPath = dictPathOverride ?? DEFAULT_DICT_PATH;
-      await instance.init(new KuromojiAnalyzer({ dictPath }));
-      return instance;
+      const { Kuroshiro } = await import("kuroshiro-browser");
+      return Kuroshiro.buildAndInitWithKuromoji(KUROSHIRO_USES_PROD_DICT_URLS);
     })().catch((err) => {
       kuroshiroPromise = null;
       throw err;
@@ -82,4 +74,4 @@ async function createKuroshiroGenerator(scheme: string): Promise<RomanizationGen
 
 // -- Exports ------------------------------------------------------------------
 
-export { createKuroshiroGenerator, setKuroshiroDictPathForTests };
+export { createKuroshiroGenerator };

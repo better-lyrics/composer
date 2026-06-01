@@ -1,20 +1,5 @@
-import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createKuroshiroGenerator, setKuroshiroDictPathForTests } from "@/utils/romanization/kuroshiro-generator";
-
-// -- Setup --------------------------------------------------------------------
-
-beforeAll(() => {
-  const require = createRequire(import.meta.url);
-  const kuromojiEntry = require.resolve("kuromoji");
-  const dictPath = resolve(dirname(kuromojiEntry), "..", "dict");
-  setKuroshiroDictPathForTests(dictPath);
-});
-
-afterAll(() => {
-  setKuroshiroDictPathForTests(null);
-});
+import { describe, expect, it } from "vitest";
+import { createKuroshiroGenerator } from "@/utils/romanization/kuroshiro-generator";
 
 // -- Tests --------------------------------------------------------------------
 

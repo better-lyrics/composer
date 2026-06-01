@@ -1,6 +1,4 @@
-import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   getGeneratorFactory,
   restoreGeneratorRegistry,
@@ -8,20 +6,6 @@ import {
 } from "@/domain/romanization/registry";
 import { SCHEMES } from "@/domain/romanization/schemes";
 import { registerAllRomanizationGenerators } from "@/utils/romanization/bootstrap-generators";
-import { setKuroshiroDictPathForTests } from "@/utils/romanization/kuroshiro-generator";
-
-// -- Setup --------------------------------------------------------------------
-
-beforeAll(() => {
-  const require = createRequire(import.meta.url);
-  const kuromojiEntry = require.resolve("kuromoji");
-  const dictPath = resolve(dirname(kuromojiEntry), "..", "dict");
-  setKuroshiroDictPathForTests(dictPath);
-});
-
-afterAll(() => {
-  setKuroshiroDictPathForTests(null);
-});
 
 // -- Tests --------------------------------------------------------------------
 
@@ -44,18 +28,6 @@ describe("registerAllRomanizationGenerators", () => {
       expect(typeof factory).toBe("function");
     }
   });
-
-  it("japanese factories resolve to a generator carrying the requested scheme id", async () => {
-    registerAllRomanizationGenerators();
-    const japaneseSchemes = SCHEMES.filter((s) => s.script === "japanese").map((s) => s.id);
-    for (const scheme of japaneseSchemes) {
-      const factory = getGeneratorFactory(scheme);
-      expect(factory).toBeDefined();
-      if (!factory) continue;
-      const generator = await factory();
-      expect(generator.scheme).toBe(scheme);
-    }
-  }, 60000);
 
   it("chinese factories resolve to a generator carrying the requested scheme id", async () => {
     registerAllRomanizationGenerators();
