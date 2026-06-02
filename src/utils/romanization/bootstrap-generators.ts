@@ -17,6 +17,13 @@ function registerAllRomanizationGenerators(): void {
         const { createPinyinGenerator } = await import("@/utils/romanization/pinyin-generator");
         return createPinyinGenerator(scheme.id);
       });
+      continue;
+    }
+    if (scheme.id.endsWith("-google")) {
+      registerGeneratorFactory(scheme.id, async () => {
+        const { createGoogleGenerator } = await import("@/utils/romanization/google-generator");
+        return createGoogleGenerator(scheme.id);
+      });
     }
   }
 }

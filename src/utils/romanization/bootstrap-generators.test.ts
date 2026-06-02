@@ -20,10 +20,9 @@ describe("registerAllRomanizationGenerators", () => {
     restoreGeneratorRegistry(snapshot);
   });
 
-  it("registers a factory for every local scheme in SCHEMES", () => {
+  it("registers a factory for every scheme in SCHEMES", () => {
     registerAllRomanizationGenerators();
-    const localSchemes = SCHEMES.filter((s) => s.script === "japanese" || s.script === "chinese");
-    for (const scheme of localSchemes) {
+    for (const scheme of SCHEMES) {
       const factory = getGeneratorFactory(scheme.id);
       expect(factory, `missing factory for ${scheme.id}`).toBeDefined();
       expect(typeof factory).toBe("function");
@@ -42,11 +41,21 @@ describe("registerAllRomanizationGenerators", () => {
     }
   });
 
-  it("is idempotent: calling it twice still leaves one factory per local scheme", () => {
+  it("registers a factory for each of the 8 google-backed schemes", () => {
+    registerAllRomanizationGenerators();
+    const googleSchemes = SCHEMES.filter((s) => s.id.endsWith("-google")).map((s) => s.id);
+    expect(googleSchemes).toHaveLength(8);
+    for (const scheme of googleSchemes) {
+      const factory = getGeneratorFactory(scheme);
+      expect(factory, `missing factory for ${scheme}`).toBeDefined();
+      expect(typeof factory).toBe("function");
+    }
+  });
+
+  it("is idempotent: calling it twice still leaves one factory per scheme", () => {
     registerAllRomanizationGenerators();
     registerAllRomanizationGenerators();
-    const localSchemes = SCHEMES.filter((s) => s.script === "japanese" || s.script === "chinese");
-    for (const scheme of localSchemes) {
+    for (const scheme of SCHEMES) {
       expect(getGeneratorFactory(scheme.id)).toBeDefined();
     }
   });
