@@ -82,3 +82,115 @@ describe("kuroshiroGenerator (Hepburn)", () => {
     await expect(createKuroshiroGenerator("ja-Latn-bogus")).rejects.toThrow(/scheme/i);
   });
 });
+
+describe("syllable-aware wordTexts alignment", () => {
+  it("returns wordTexts aligned to two source words (kanji + kana)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("夜だけど", {
+      words: [
+        { text: "夜", begin: 0, end: 1 },
+        { text: "だけど", begin: 1, end: 2 },
+      ],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toEqual(["yoru", "dakedo"]);
+  }, 60000);
+
+  it("preserves polyphone reading by using whole-line tokenization context", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("行く", {
+      words: [{ text: "行く", begin: 0, end: 1 }],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toEqual(["iku"]);
+  }, 60000);
+
+  it("handles three source words from a kanji + kana sequence", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("変わらない", {
+      words: [
+        { text: "変わ", begin: 0, end: 1 },
+        { text: "ら", begin: 1, end: 1.5 },
+        { text: "ない", begin: 1.5, end: 2 },
+      ],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toEqual(["kawa", "ra", "nai"]);
+  }, 60000);
+
+  it("respects split characters in source word text (strips pipes before length comparison)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("夜だけど", {
+      words: [
+        { text: "夜", begin: 0, end: 1 },
+        { text: "だけ|ど", begin: 1, end: 2 },
+      ],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toEqual(["yoru", "dakedo"]);
+  }, 60000);
+
+  it("falls back to text-only when concatenated source words do not equal line.text", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("夜だけど", {
+      words: [{ text: "違う", begin: 0, end: 1 }],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toBeUndefined();
+    expect(result.text.length).toBeGreaterThan(0);
+  }, 60000);
+
+  it("falls back to text-only when line has no words array (line-synced)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("夜だけど", { begin: 0, end: 2 });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toBeUndefined();
+    expect(result.text.toLowerCase()).toContain("yoru");
+  }, 60000);
+
+  it("returns text unchanged for an ASCII-only line (no Japanese script)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("hello world", {
+      words: [
+        { text: "hello", begin: 0, end: 1 },
+        { text: "world", begin: 1, end: 2 },
+      ],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.text).toBe("hello world");
+    expect(result.wordTexts).toBeUndefined();
+  }, 60000);
+
+  it("emits Kunrei-shiki when scheme is ja-Latn-kunrei (tu, not tsu)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-kunrei");
+    const line = makeLine("月", {
+      words: [{ text: "月", begin: 0, end: 1 }],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toBeDefined();
+    expect(result.wordTexts?.[0]).toMatch(/^tuki$/);
+  }, 60000);
+
+  it("uses Nihon-shiki when scheme is ja-Latn-nihon (di, not ji for ぢ)", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-nihon");
+    const line = makeLine("月", {
+      words: [{ text: "月", begin: 0, end: 1 }],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toBeDefined();
+    expect(result.wordTexts?.[0]).toMatch(/^tuki$/);
+  }, 60000);
+
+  it("preserves the line.text return field as the joined wordTexts", async () => {
+    const generator = await createKuroshiroGenerator("ja-Latn-hepburn");
+    const line = makeLine("夜だけど", {
+      words: [
+        { text: "夜", begin: 0, end: 1 },
+        { text: "だけど", begin: 1, end: 2 },
+      ],
+    });
+    const result = await generator.generateLine(line);
+    expect(result.wordTexts).toBeDefined();
+    expect(result.text).toBe(result.wordTexts?.join(" "));
+  }, 60000);
+});

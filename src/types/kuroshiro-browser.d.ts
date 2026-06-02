@@ -9,17 +9,23 @@ declare module "kuroshiro-browser" {
     delimiter_end?: string;
   }
 
+  interface KuroshiroUtil {
+    kanaToRomaji(kana: string, system: RomajiSystem): string;
+  }
+
   interface KuroshiroInstance {
     convert(text: string, options?: ConvertOptions): Promise<string>;
     getFurigana(text: string): Promise<string>;
+    Util: KuroshiroUtil;
   }
 
   class Kuroshiro implements KuroshiroInstance {
     convert(text: string, options?: ConvertOptions): Promise<string>;
     getFurigana(text: string): Promise<string>;
+    Util: KuroshiroUtil;
     static buildAndInitWithKuromoji(isProd: boolean): Promise<Kuroshiro>;
   }
 
   export { Kuroshiro };
-  export type { ConvertOptions, KuroshiroInstance, RomajiSystem };
+  export type { ConvertOptions, KuroshiroInstance, KuroshiroUtil, RomajiSystem };
 }
