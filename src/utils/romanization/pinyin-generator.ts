@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { hasNonLatinScript } from "@/domain/romanization/detect";
 import type { GeneratedRomanization, RomanizationGenerator } from "@/domain/romanization/registry";
+import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
@@ -10,7 +11,13 @@ interface SchemeProfile {
   toneType: PinyinToneType;
 }
 
-type PinyinFn = (text: string, options: { type: "string"; toneType: PinyinToneType }) => string;
+interface PinyinArrayOptions {
+  type: "array";
+  multiple: false;
+  toneType: PinyinToneType;
+}
+
+type PinyinFn = (text: string, options: PinyinArrayOptions) => string[];
 
 // -- Constants ----------------------------------------------------------------
 
@@ -49,18 +56,39 @@ async function createPinyinGenerator(scheme: string): Promise<RomanizationGenera
   }
   const pinyin = await ensurePinyin();
 
-  function convert(text: string): string {
-    if (!text) return text;
-    if (!hasNonLatinScript(text)) return text;
-    const result = pinyin(text, { type: "string", toneType: profile.toneType });
-    return typeof result === "string" ? result : text;
-  }
-
   return {
     scheme,
     async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
-      const text = convert(line.text);
-      return { text };
+      const fullText = stripSplitCharacter(line.text);
+      if (!fullText) return { text: fullText };
+      if (!hasNonLatinScript(fullText)) return { text: fullText };
+
+      const perCharPinyin = pinyin(fullText, {
+        type: "array",
+        multiple: false,
+        toneType: profile.toneType,
+      });
+
+      const sourceChars = Array.from(fullText);
+      if (perCharPinyin.length !== sourceChars.length) {
+        return { text: perCharPinyin.join(" ") };
+      }
+
+      if (!line.words?.length) return { text: perCharPinyin.join(" ") };
+
+      const stripped = line.words.map((w) => stripSplitCharacter(w.text));
+      if (stripped.join("") !== fullText) return { text: perCharPinyin.join(" ") };
+
+      const wordTexts: string[] = [];
+      let cursor = 0;
+      for (const word of stripped) {
+        const len = Array.from(word).length;
+        const slice = perCharPinyin.slice(cursor, cursor + len);
+        wordTexts.push(slice.join(" "));
+        cursor += len;
+      }
+
+      return { text: wordTexts.join(" "), wordTexts };
     },
   };
 }
