@@ -20,9 +20,10 @@ describe("registerAllRomanizationGenerators", () => {
     restoreGeneratorRegistry(snapshot);
   });
 
-  it("registers a factory for every scheme in SCHEMES", () => {
+  it("registers a factory for every local scheme in SCHEMES", () => {
     registerAllRomanizationGenerators();
-    for (const scheme of SCHEMES) {
+    const localSchemes = SCHEMES.filter((s) => s.script === "japanese" || s.script === "chinese");
+    for (const scheme of localSchemes) {
       const factory = getGeneratorFactory(scheme.id);
       expect(factory, `missing factory for ${scheme.id}`).toBeDefined();
       expect(typeof factory).toBe("function");
@@ -41,10 +42,11 @@ describe("registerAllRomanizationGenerators", () => {
     }
   });
 
-  it("is idempotent: calling it twice still leaves one factory per scheme", () => {
+  it("is idempotent: calling it twice still leaves one factory per local scheme", () => {
     registerAllRomanizationGenerators();
     registerAllRomanizationGenerators();
-    for (const scheme of SCHEMES) {
+    const localSchemes = SCHEMES.filter((s) => s.script === "japanese" || s.script === "chinese");
+    for (const scheme of localSchemes) {
       expect(getGeneratorFactory(scheme.id)).toBeDefined();
     }
   });

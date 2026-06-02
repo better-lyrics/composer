@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { isRomanizationManual } from "@/domain/line/romanization";
+import type { Script } from "@/domain/romanization/detect";
 import { detectScript } from "@/domain/romanization/detect";
 import { getGeneratorFactory } from "@/domain/romanization/registry";
 import { isKnownScheme, SCHEMES } from "@/domain/romanization/schemes";
@@ -28,12 +29,13 @@ interface GenerateForProjectResult {
 
 // -- Internal -----------------------------------------------------------------
 
-function resolveScript(scheme: string): "japanese" | "chinese" | "korean" | undefined {
+function resolveScript(scheme: string): Exclude<Script, "latin"> | undefined {
   const entry = SCHEMES.find((s) => s.id === scheme);
-  return entry?.script === "latin" ? undefined : entry?.script;
+  if (!entry || entry.script === "latin") return undefined;
+  return entry.script;
 }
 
-function selectTargetLines(lines: LyricLine[], targetScript: string): LyricLine[] {
+function selectTargetLines(lines: LyricLine[], targetScript: Script): LyricLine[] {
   return lines.filter((line) => {
     if (isRomanizationManual(line)) return false;
     return detectScript(line.text) === targetScript;

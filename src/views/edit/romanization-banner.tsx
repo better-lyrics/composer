@@ -26,6 +26,13 @@ const SCRIPT_LABELS: Record<Script, string> = {
   japanese: "Japanese",
   chinese: "Chinese",
   korean: "Korean",
+  russian: "Russian",
+  greek: "Greek",
+  thai: "Thai",
+  arabic: "Arabic",
+  hindi: "Hindi",
+  bengali: "Bengali",
+  hebrew: "Hebrew",
 };
 
 // -- Component ----------------------------------------------------------------

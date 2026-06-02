@@ -16,11 +16,27 @@ const SCHEMES: SchemeEntry[] = [
   { id: "ja-Latn-nihon", label: "Nihon-shiki", script: "japanese" },
   { id: "zh-Latn-pinyin", label: "Pinyin", script: "chinese" },
   { id: "zh-Latn-wadegiles", label: "Wade-Giles", script: "chinese" },
+  { id: "ko-Latn-google", label: "Romanized (auto)", script: "korean" },
+  { id: "ru-Latn-google", label: "Romanized (auto)", script: "russian" },
+  { id: "el-Latn-google", label: "Romanized (auto)", script: "greek" },
+  { id: "th-Latn-google", label: "Romanized (auto)", script: "thai" },
+  { id: "ar-Latn-google", label: "Romanized (auto)", script: "arabic" },
+  { id: "hi-Latn-google", label: "Romanized (auto)", script: "hindi" },
+  { id: "bn-Latn-google", label: "Romanized (auto)", script: "bengali" },
+  { id: "he-Latn-google", label: "Romanized (auto)", script: "hebrew" },
 ];
 
 const DEFAULT_BY_SCRIPT: Partial<Record<Script, string>> = {
   japanese: "ja-Latn-hepburn",
   chinese: "zh-Latn-pinyin",
+  korean: "ko-Latn-google",
+  russian: "ru-Latn-google",
+  greek: "el-Latn-google",
+  thai: "th-Latn-google",
+  arabic: "ar-Latn-google",
+  hindi: "hi-Latn-google",
+  bengali: "bn-Latn-google",
+  hebrew: "he-Latn-google",
 };
 
 // -- Lookups ------------------------------------------------------------------

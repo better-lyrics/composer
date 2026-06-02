@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { Script } from "@/domain/romanization/detect";
 import { detectScript, hasNonLatinScript } from "@/domain/romanization/detect";
 
 describe("detectScript", () => {
@@ -85,5 +86,35 @@ describe("detectScript", () => {
   it("hasNonLatinScript is false for latin or empty", () => {
     expect(hasNonLatinScript("Hello")).toBe(false);
     expect(hasNonLatinScript("")).toBe(false);
+  });
+
+  it.each<[string, Script]>([
+    ["夜だ", "japanese"],
+    ["사랑해", "korean"],
+    ["你好", "chinese"],
+    ["Привет", "russian"],
+    ["Γεια", "greek"],
+    ["สวัสดี", "thai"],
+    ["السلام", "arabic"],
+    ["नमस्ते", "hindi"],
+    ["ভালো", "bengali"],
+    ["שלום", "hebrew"],
+    ["hello world", "latin"],
+  ])("classifies '%s' as %s", (text, expected) => {
+    expect(detectScript(text)).toBe(expected);
+  });
+
+  it("returns 'latin' for the empty string", () => {
+    expect(detectScript("")).toBe("latin");
+  });
+
+  it("returns the first detected script when multiple are present", () => {
+    expect(detectScript("夜だ night")).toBe("japanese");
+  });
+
+  it("hasNonLatinScript returns true for each of the 8 new scripts", () => {
+    for (const text of ["사랑해", "Привет", "Γεια", "สวัสดี", "السلام", "नमस्ते", "ভালো", "שלום"]) {
+      expect(hasNonLatinScript(text)).toBe(true);
+    }
   });
 });
