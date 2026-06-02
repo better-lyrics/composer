@@ -1,4 +1,5 @@
 import type { Agent } from "@/domain/agent/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
@@ -34,10 +35,7 @@ describe("TTML export · transliterations", () => {
           romanization: {
             text: "yoru dakedo",
             source: "generated",
-            words: [
-              { text: "yoru", begin: 0, end: 1 },
-              { text: "dakedo", begin: 1, end: 2 },
-            ],
+            wordTexts: ["yoru", "dakedo"],
           },
         },
       ],
@@ -69,10 +67,7 @@ describe("TTML export · transliterations", () => {
           romanization: {
             text: "yoru dakedo",
             source: "generated",
-            words: [
-              { text: "yoru", begin: 0, end: 1 },
-              { text: "dakedo", begin: 1, end: 2 },
-            ],
+            wordTexts: ["yoru", "dakedo"],
           },
         },
         {
@@ -151,7 +146,7 @@ describe("TTML export · transliterations", () => {
           romanization: {
             text: "yoru",
             source: "generated",
-            words: [{ text: "yoru", begin: 0, end: 1 }],
+            wordTexts: ["yoru"],
           },
         },
       ],
@@ -413,5 +408,223 @@ describe("TTML export · itunes:key emission", () => {
     });
     expect(withoutRomanization).toMatch(/itunes:key="L1"/);
     expect(withRomanization).toMatch(/itunes:key="L1"/);
+  });
+});
+
+describe("TTML export · transliterations v2 wordTexts shape", () => {
+  it("emits transliteration spans with begin/end from line.words and text from wordTexts", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜 だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0.5, end: 1.0 },
+          { text: "だけど", begin: 1.0, end: 1.8 },
+        ],
+        romanization: { text: "yoru dakedo", wordTexts: ["yoru", "dakedo"], source: "generated" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    expect(ttml).toContain('<span begin="0:00.500" end="0:01.000">yoru</span>');
+    expect(ttml).toContain('<span begin="0:01.000" end="0:01.800">dakedo</span>');
+  });
+
+  it("emits line-level text-only (no spans) when romanization has no wordTexts", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        begin: 0,
+        end: 2,
+        romanization: { text: "yoru dakedo", source: "manual" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "line",
+    });
+    expect(ttml).toContain('<text for="L1">yoru dakedo</text>');
+    const appleOpenIdx = ttml.indexOf('<transliteration xml:lang="ja-Latn-hepburn">');
+    const appleCloseIdx = ttml.indexOf("</transliteration>", appleOpenIdx);
+    const appleSegment = ttml.slice(appleOpenIdx, appleCloseIdx);
+    expect(appleSegment).not.toContain("<span");
+  });
+
+  it("emits line-level text-only when wordTexts.length does not match line.words.length", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜 だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+        romanization: { text: "yoru dakedo something", wordTexts: ["yoru"], source: "generated" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    const appleOpenIdx = ttml.indexOf('<transliteration xml:lang="ja-Latn-hepburn">');
+    const appleCloseIdx = ttml.indexOf("</transliteration>", appleOpenIdx);
+    const appleSegment = ttml.slice(appleOpenIdx, appleCloseIdx);
+    expect(appleSegment).toContain('<text for="L1">yoru dakedo something</text>');
+    expect(appleSegment).not.toContain("<span");
+  });
+
+  it("dual-emits Apple shape and per-line shape for the same line", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+        romanization: { text: "yoru dakedo", wordTexts: ["yoru", "dakedo"], source: "generated" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    const appleIdx = ttml.indexOf('<transliteration xml:lang="ja-Latn-hepburn">');
+    const perLineIdx = ttml.indexOf('<transliteration for="L1"');
+    expect(appleIdx).toBeGreaterThan(-1);
+    expect(perLineIdx).toBeGreaterThan(appleIdx);
+    const appleClose = ttml.indexOf("</transliteration>", appleIdx);
+    const appleSeg = ttml.slice(appleIdx, appleClose);
+    const perLineClose = ttml.indexOf("</transliteration>", perLineIdx);
+    const perLineSeg = ttml.slice(perLineIdx, perLineClose);
+    expect(appleSeg).toContain('<text for="L1">');
+    expect(appleSeg).toContain('<span begin="0:00.000" end="0:01.000">yoru</span>');
+    expect(perLineSeg).toContain('<span begin="0:00.000" end="0:01.000">yoru</span>');
+    expect(perLineSeg).toContain('<span begin="0:01.000" end="0:02.000">dakedo</span>');
+  });
+
+  it("does not emit a transliteration block when no line has romanization", () => {
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines: [{ id: "L1", text: "hello", agentId: "v1", begin: 0, end: 1 }],
+      granularity: "line",
+    });
+    expect(ttml).not.toContain("<transliterations>");
+    expect(ttml).not.toContain("<transliteration");
+  });
+
+  it("does not emit a transliteration block when romanizationScheme is unset", () => {
+    const ttml = generateTTML({
+      metadata: baseMetadata,
+      agents: baseAgents,
+      lines: [
+        {
+          id: "L1",
+          text: "夜",
+          agentId: "v1",
+          words: [{ text: "夜", begin: 0, end: 1 }],
+          romanization: { text: "yoru", wordTexts: ["yoru"], source: "generated" },
+        },
+      ],
+      granularity: "word",
+    });
+    expect(ttml).not.toContain("<transliterations>");
+    expect(ttml).not.toContain("<transliteration");
+  });
+
+  it("escapes XML special characters in wordTexts (e.g. ampersand)", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "&",
+        agentId: "v1",
+        words: [{ text: "&", begin: 0, end: 1 }],
+        romanization: { text: "and&", wordTexts: ["and&"], source: "generated" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "x-Latn-test" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    expect(ttml).toContain('<span begin="0:00.000" end="0:01.000">and&amp;</span>');
+  });
+
+  it("emits empty-string wordTexts entries as empty spans (no crash)", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜 だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+        romanization: { text: "yoru", wordTexts: ["yoru", ""], source: "generated" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    expect(ttml).toContain('<span begin="0:00.000" end="0:01.000">yoru</span>');
+    expect(ttml).toContain('<span begin="0:01.000" end="0:02.000"></span>');
+  });
+
+  it("handles a mix of line-synced and word-synced romanized lines in one project", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+        romanization: { text: "yoru dakedo", wordTexts: ["yoru", "dakedo"], source: "generated" },
+      },
+      {
+        id: "L2",
+        text: "夢",
+        agentId: "v1",
+        begin: 2,
+        end: 3,
+        romanization: { text: "yume", source: "manual" },
+      },
+    ];
+    const ttml = generateTTML({
+      metadata: { ...baseMetadata, romanizationScheme: "ja-Latn-hepburn" },
+      agents: baseAgents,
+      lines,
+      granularity: "word",
+    });
+    const appleOpenIdx = ttml.indexOf('<transliteration xml:lang="ja-Latn-hepburn">');
+    const appleCloseIdx = ttml.indexOf("</transliteration>", appleOpenIdx);
+    const appleSegment = ttml.slice(appleOpenIdx, appleCloseIdx);
+    expect(appleSegment).toContain('<text for="L1">');
+    expect(appleSegment).toContain('<span begin="0:00.000" end="0:01.000">yoru</span>');
+    expect(appleSegment).toContain('<span begin="0:01.000" end="0:02.000">dakedo</span>');
+    expect(appleSegment).toContain('<text for="L2">yume</text>');
+    expect(ttml).toContain('<transliteration for="L1" xml:lang="ja-Latn-hepburn">');
+    expect(ttml).toContain('<transliteration for="L2" xml:lang="ja-Latn-hepburn">');
   });
 });

@@ -39,10 +39,7 @@ describe("TTML round-trip · romanization", () => {
         romanization: {
           text: "yoru dakedo",
           source: "generated",
-          words: [
-            { text: "yoru", begin: 0, end: 1 },
-            { text: "dakedo", begin: 1, end: 2 },
-          ],
+          wordTexts: ["yoru", "dakedo"],
         },
       },
     ];
@@ -53,11 +50,11 @@ describe("TTML round-trip · romanization", () => {
     expect(parsed.lines).toHaveLength(1);
     const line = parsed.lines[0];
     expect(line.romanization?.text).toBe("yoru dakedo");
-    expect(line.romanization?.words?.length).toBe(2);
-    expect(line.romanization?.words?.[0].text).toBe("yoru");
-    expect(line.romanization?.words?.[0].begin).toBeCloseTo(0, 3);
-    expect(line.romanization?.words?.[0].end).toBeCloseTo(1, 3);
-    expect(line.romanization?.words?.[1].text).toBe("dakedo");
+    expect(line.romanization?.wordTexts?.length).toBe(2);
+    expect(line.romanization?.wordTexts?.[0]).toBe("yoru");
+    expect(line.romanization?.wordTexts?.[1]).toBe("dakedo");
+    expect(line.words?.[0].begin).toBeCloseTo(0, 3);
+    expect(line.words?.[0].end).toBeCloseTo(1, 3);
   });
 
   it("line-synced romanization survives export -> import unchanged", () => {
@@ -77,7 +74,7 @@ describe("TTML round-trip · romanization", () => {
     expect(parsed.metadata.romanizationScheme).toBe("ja-Latn-hepburn");
     const line = parsed.lines[0];
     expect(line.romanization?.text).toBe("yoru dakedo");
-    expect(line.romanization?.words).toBeUndefined();
+    expect(line.romanization?.wordTexts).toBeUndefined();
   });
 
   it("mixed romanized + non-romanized lines preserve each line's state", () => {
@@ -122,10 +119,7 @@ describe("TTML round-trip · romanization", () => {
         romanization: {
           text: "doudemo ii youna",
           source: "generated",
-          words: [
-            { text: "doudemo", begin: 0.833, end: 1.195 },
-            { text: "ii youna", begin: 1.195, end: 1.887 },
-          ],
+          wordTexts: ["doudemo", "ii youna"],
         },
       },
     ];
@@ -138,9 +132,9 @@ describe("TTML round-trip · romanization", () => {
       granularity: "word",
     });
     const parsed2 = parseTtml(ttml2);
-    expect(parsed2.lines[0].romanization?.words?.[0].text).toBe("doudemo");
-    expect(parsed2.lines[0].romanization?.words?.[0].begin).toBeCloseTo(0.833, 3);
-    expect(parsed2.lines[0].romanization?.words?.[1].text).toBe("ii youna");
+    expect(parsed2.lines[0].romanization?.wordTexts?.[0]).toBe("doudemo");
+    expect(parsed2.lines[0].words?.[0].begin).toBeCloseTo(0.833, 3);
+    expect(parsed2.lines[0].romanization?.wordTexts?.[1]).toBe("ii youna");
     expect(parsed2.metadata.romanizationScheme).toBe("ja-Latn-hepburn");
   });
 
@@ -171,10 +165,10 @@ describe("TTML round-trip · romanization", () => {
     const parsed = parseTtml(ttml);
     expect(parsed.metadata.romanizationScheme).toBe("ja-Latn-hepburn");
     expect(parsed.lines).toHaveLength(2);
-    expect(parsed.lines[0].romanization?.words?.length).toBe(2);
+    expect(parsed.lines[0].romanization?.wordTexts?.length).toBe(2);
     expect(parsed.lines[0].romanization?.text).toBe("doudemo ii youna");
     expect(parsed.lines[1].romanization?.text).toBe("yume no naka");
-    expect(parsed.lines[1].romanization?.words).toBeUndefined();
+    expect(parsed.lines[1].romanization?.wordTexts).toBeUndefined();
   });
 
   it("re-importing a dual-shape TTML preserves romanization without duplication", () => {
@@ -190,10 +184,7 @@ describe("TTML round-trip · romanization", () => {
         romanization: {
           text: "yoru dakedo",
           source: "generated",
-          words: [
-            { text: "yoru", begin: 0, end: 1 },
-            { text: "dakedo", begin: 1, end: 2 },
-          ],
+          wordTexts: ["yoru", "dakedo"],
         },
       },
       {
@@ -214,9 +205,9 @@ describe("TTML round-trip · romanization", () => {
     const parsed = parseTtml(ttml);
     expect(parsed.lines).toHaveLength(2);
     expect(parsed.lines[0].romanization?.text).toBe("yoru dakedo");
-    expect(parsed.lines[0].romanization?.words?.length).toBe(2);
+    expect(parsed.lines[0].romanization?.wordTexts?.length).toBe(2);
     expect(parsed.lines[1].romanization?.text).toBe("yume");
-    expect(parsed.lines[1].romanization?.words).toBeUndefined();
+    expect(parsed.lines[1].romanization?.wordTexts).toBeUndefined();
   });
 
   it("Apple shape wins on re-import when both shapes are present (no double-application)", () => {
@@ -229,16 +220,50 @@ describe("TTML round-trip · romanization", () => {
         romanization: {
           text: "yoru",
           source: "generated",
-          words: [{ text: "yoru", begin: 0.5, end: 1.5 }],
+          wordTexts: ["yoru"],
         },
       },
     ];
     const ttml = generateTTML({ metadata: baseMetadata, agents, lines, granularity: "word" });
 
     const parsed = parseTtml(ttml);
-    expect(parsed.lines[0].romanization?.words?.length).toBe(1);
-    expect(parsed.lines[0].romanization?.words?.[0].text).toBe("yoru");
-    expect(parsed.lines[0].romanization?.words?.[0].begin).toBeCloseTo(0.5, 3);
-    expect(parsed.lines[0].romanization?.words?.[0].end).toBeCloseTo(1.5, 3);
+    expect(parsed.lines[0].romanization?.wordTexts?.length).toBe(1);
+    expect(parsed.lines[0].romanization?.wordTexts?.[0]).toBe("yoru");
+    expect(parsed.lines[0].words?.[0].begin).toBeCloseTo(0.5, 3);
+    expect(parsed.lines[0].words?.[0].end).toBeCloseTo(1.5, 3);
+  });
+
+  it("v2 round-trip: export with wordTexts + line.words, re-import recovers wordTexts and line timing intact", () => {
+    const lines: LyricLine[] = [
+      {
+        id: "L1",
+        text: "夜 だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜 ", begin: 0.5, end: 1.0 },
+          { text: "だけど", begin: 1.0, end: 1.8 },
+        ],
+        romanization: {
+          text: "yoru dakedo",
+          source: "generated",
+          wordTexts: ["yoru", "dakedo"],
+        },
+      },
+    ];
+    const ttml = generateTTML({ metadata: baseMetadata, agents, lines, granularity: "word" });
+    const parsed = parseTtml(ttml);
+
+    expect(parsed.lines).toHaveLength(1);
+    const line = parsed.lines[0];
+    expect(line.romanization?.text).toBe("yoru dakedo");
+    expect(line.romanization?.wordTexts?.length).toBe(2);
+    expect(line.romanization?.wordTexts?.[0]).toBe("yoru");
+    expect(line.romanization?.wordTexts?.[1]).toBe("dakedo");
+    expect((line.romanization as Record<string, unknown> | undefined)?.words).toBeUndefined();
+    expect(line.words?.length).toBe(2);
+    expect(line.words?.[0].begin).toBeCloseTo(0.5, 3);
+    expect(line.words?.[0].end).toBeCloseTo(1.0, 3);
+    expect(line.words?.[1].begin).toBeCloseTo(1.0, 3);
+    expect(line.words?.[1].end).toBeCloseTo(1.8, 3);
   });
 });

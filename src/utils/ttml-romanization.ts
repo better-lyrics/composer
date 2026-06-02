@@ -17,28 +17,38 @@ function shouldEmitTransliterations(metadata: ProjectMetadata, lines: LyricLine[
   return lines.some((line) => line.romanization && line.romanization.text.length > 0);
 }
 
-type EmittableLine = { id: string; romanization: NonNullable<LyricLine["romanization"]> };
+type EmittableLine = {
+  id: string;
+  romanization: NonNullable<LyricLine["romanization"]>;
+  sourceWords?: LyricLine["words"];
+};
 
 function selectEmittableLines(lines: LyricLine[]): EmittableLine[] {
   const out: EmittableLine[] = [];
   for (const line of lines) {
     const r = line.romanization;
     if (!r || r.text.length === 0) continue;
-    out.push({ id: line.id, romanization: r });
+    out.push({ id: line.id, romanization: r, sourceWords: line.words });
   }
   return out;
 }
 
-function emitWordSpans(
-  r: NonNullable<LyricLine["romanization"]>,
-  ind: (n: number) => string,
-  indent: number,
-): string[] {
+function canEmitWordSpans(em: EmittableLine): boolean {
+  const wordTexts = em.romanization.wordTexts;
+  if (!wordTexts?.length) return false;
+  if (!em.sourceWords?.length) return false;
+  return wordTexts.length === em.sourceWords.length;
+}
+
+function emitWordSpans(em: EmittableLine, ind: (n: number) => string, indent: number): string[] {
+  const wordTexts = em.romanization.wordTexts;
+  const sourceWords = em.sourceWords;
+  if (!wordTexts || !sourceWords) return [];
   const parts: string[] = [];
-  if (!r.words?.length) return parts;
-  for (const w of r.words) {
+  for (let i = 0; i < wordTexts.length; i++) {
+    const w = sourceWords[i];
     parts.push(
-      `${ind(indent)}<span begin="${formatTime(w.begin)}" end="${formatTime(w.end)}">${escapeXml(w.text)}</span>`,
+      `${ind(indent)}<span begin="${formatTime(w.begin)}" end="${formatTime(w.end)}">${escapeXml(wordTexts[i])}</span>`,
     );
   }
   return parts;
@@ -47,13 +57,14 @@ function emitWordSpans(
 function emitAppleShape(scheme: string, emittable: EmittableLine[], ind: (n: number) => string): string[] {
   const parts: string[] = [];
   parts.push(`${ind(4)}<transliteration xml:lang="${escapeXml(scheme)}">`);
-  for (const { id, romanization: r } of emittable) {
-    if (r.words?.length) {
-      parts.push(`${ind(5)}<text for="${escapeXml(id)}">`);
-      parts.push(...emitWordSpans(r, ind, 6));
+  for (const em of emittable) {
+    const r = em.romanization;
+    if (canEmitWordSpans(em)) {
+      parts.push(`${ind(5)}<text for="${escapeXml(em.id)}">`);
+      parts.push(...emitWordSpans(em, ind, 6));
       parts.push(`${ind(5)}</text>`);
     } else {
-      parts.push(`${ind(5)}<text for="${escapeXml(id)}">${escapeXml(r.text)}</text>`);
+      parts.push(`${ind(5)}<text for="${escapeXml(em.id)}">${escapeXml(r.text)}</text>`);
     }
   }
   parts.push(`${ind(4)}</transliteration>`);
@@ -62,11 +73,12 @@ function emitAppleShape(scheme: string, emittable: EmittableLine[], ind: (n: num
 
 function emitPerLineShape(scheme: string, emittable: EmittableLine[], ind: (n: number) => string): string[] {
   const parts: string[] = [];
-  for (const { id, romanization: r } of emittable) {
-    parts.push(`${ind(4)}<transliteration for="${escapeXml(id)}" xml:lang="${escapeXml(scheme)}">`);
-    if (r.words?.length) {
+  for (const em of emittable) {
+    const r = em.romanization;
+    parts.push(`${ind(4)}<transliteration for="${escapeXml(em.id)}" xml:lang="${escapeXml(scheme)}">`);
+    if (canEmitWordSpans(em)) {
       parts.push(`${ind(5)}<text>`);
-      parts.push(...emitWordSpans(r, ind, 6));
+      parts.push(...emitWordSpans(em, ind, 6));
       parts.push(`${ind(5)}</text>`);
     } else {
       parts.push(`${ind(5)}<text>${escapeXml(r.text)}</text>`);
