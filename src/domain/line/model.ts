@@ -60,9 +60,22 @@ type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: numb
 // (even empty) wins and drops begin/end.
 function reconcileLine(line: LooseLine): LyricLine {
   const { words, begin, end, ...rest } = line;
-  if (words !== undefined) return { ...rest, words };
-  if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
-  return rest;
+  let narrowed: LyricLine;
+  if (words !== undefined) narrowed = { ...rest, words };
+  else if (begin !== undefined && end !== undefined) narrowed = { ...rest, begin, end };
+  else narrowed = rest;
+  return enforceRomanizationInvariant(narrowed);
+}
+
+function enforceRomanizationInvariant(line: LyricLine): LyricLine {
+  const r = line.romanization;
+  if (!r) return line;
+  if (r.text.length === 0) return { ...line, romanization: undefined };
+  if (r.wordTexts === undefined) return line;
+  const wordCount = line.words?.length;
+  if (wordCount !== undefined && r.wordTexts.length === wordCount) return line;
+  const { wordTexts: _wordTexts, ...rest } = r;
+  return { ...line, romanization: rest };
 }
 
 // -- Exports ------------------------------------------------------------------
