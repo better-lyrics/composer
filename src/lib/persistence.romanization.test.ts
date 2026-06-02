@@ -47,7 +47,7 @@ describe("persistence: romanization round-trip", () => {
     expect(parsed.metadata.romanizationBannerDismissed).toBe(true);
   });
 
-  it("preserves word-synced line romanization with timing", async () => {
+  it("preserves word-synced line romanization with per-word texts", async () => {
     const line: LyricLine = {
       id: "L1",
       text: "夜だけど",
@@ -59,10 +59,7 @@ describe("persistence: romanization round-trip", () => {
       romanization: {
         text: "yoru dakedo",
         source: "generated",
-        words: [
-          { text: "yoru", begin: 0, end: 1 },
-          { text: "dakedo", begin: 1, end: 2 },
-        ],
+        wordTexts: ["yoru", "dakedo"],
       },
     };
     const parsed = await fileRoundtrip({
@@ -75,11 +72,41 @@ describe("persistence: romanization round-trip", () => {
       granularity: "word",
     });
     expect(parsed.lines[0].romanization?.text).toBe("yoru dakedo");
-    expect(parsed.lines[0].romanization?.words?.length).toBe(2);
-    expect(parsed.lines[0].romanization?.words?.[1].text).toBe("dakedo");
-    expect(parsed.lines[0].romanization?.words?.[1].begin).toBe(1);
-    expect(parsed.lines[0].romanization?.words?.[1].end).toBe(2);
+    expect(parsed.lines[0].romanization?.wordTexts).toEqual(["yoru", "dakedo"]);
     expect(parsed.lines[0].romanization?.source).toBe("generated");
+  });
+
+  it("upgrades a v1-shape stored project: r.words[].text becomes wordTexts and timing is dropped", async () => {
+    const v1Project = {
+      version: 1 as const,
+      savedAt: Date.now(),
+      metadata: { ...BASE_METADATA, romanizationScheme: "ja-Latn-hepburn" },
+      agents: DEFAULT_AGENTS,
+      lines: [
+        {
+          id: "L1",
+          text: "夜だけど",
+          agentId: DEFAULT_AGENTS[0].id,
+          words: [
+            { text: "夜", begin: 0, end: 1 },
+            { text: "だけど", begin: 1, end: 2 },
+          ],
+          romanization: {
+            text: "yoru dakedo",
+            source: "generated" as const,
+            words: [
+              { text: "yoru", begin: 0, end: 1 },
+              { text: "dakedo", begin: 1, end: 2 },
+            ],
+          },
+        },
+      ],
+      groups: [],
+      granularity: "word" as const,
+    };
+    const parsed = await fileRoundtrip(v1Project as never);
+    expect(parsed.lines[0].romanization?.wordTexts).toEqual(["yoru", "dakedo"]);
+    expect((parsed.lines[0].romanization as { words?: unknown }).words).toBeUndefined();
   });
 
   it("preserves line-synced line romanization without words", async () => {
