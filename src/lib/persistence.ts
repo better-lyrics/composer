@@ -4,6 +4,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { migrateSavedProjectRomanization } from "@/lib/migrate-romanization";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
@@ -126,7 +127,8 @@ async function saveCurrentProject(
 }
 
 async function loadCurrentProject(): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(CURRENT_PROJECT_KEY);
+  const raw = await getFromStore<SavedProject>(CURRENT_PROJECT_KEY);
+  return raw ? migrateSavedProjectRomanization(raw) : raw;
 }
 
 async function clearCurrentProject(): Promise<void> {
@@ -205,11 +207,8 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
 
-  if (!project.syllableSplitDefaults) {
-    project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
-  }
-
-  return project;
+  if (!project.syllableSplitDefaults) project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
+  return migrateSavedProjectRomanization(project);
 }
 
 // -- Debounced Auto-save ------------------------------------------------------
