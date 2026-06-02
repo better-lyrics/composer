@@ -1,11 +1,15 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
+interface GeneratedRomanization {
+  text: string;
+  wordTexts?: string[];
+}
+
 interface RomanizationGenerator {
   scheme: string;
-  generateLine(text: string): Promise<string>;
-  generateWords(words: WordTiming[]): Promise<WordTiming[]>;
+  generateLine(line: LyricLine): Promise<GeneratedRomanization>;
 }
 
 type GeneratorFactory = () => Promise<RomanizationGenerator>;
@@ -46,4 +50,4 @@ export {
   restoreGeneratorRegistry,
   snapshotGeneratorRegistry,
 };
-export type { GeneratorFactory, RomanizationGenerator };
+export type { GeneratedRomanization, GeneratorFactory, RomanizationGenerator };

@@ -1,26 +1,31 @@
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import type { RomanizationGenerator } from "@/domain/romanization/registry";
+import type { LyricLine } from "@/domain/line/model";
+import type { GeneratedRomanization, RomanizationGenerator } from "@/domain/romanization/registry";
 import {
   clearGeneratorRegistry,
   registerGeneratorFactory,
   restoreGeneratorRegistry,
   snapshotGeneratorRegistry,
 } from "@/domain/romanization/registry";
-import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { clearGeneratorCacheForTests } from "@/utils/romanization/generate-for-line";
 import { generateForProject } from "@/utils/romanization/generate-for-project";
 
 // -- Helpers ------------------------------------------------------------------
 
+function reverseText(text: string): string {
+  return text.split("").reverse().join("");
+}
+
 function makeReverseGenerator(scheme: string): RomanizationGenerator {
   return {
     scheme,
-    async generateLine(text: string) {
-      return text.split("").reverse().join("");
-    },
-    async generateWords(words: WordTiming[]) {
-      return words.map((word) => ({ ...word, text: word.text.split("").reverse().join("") }));
+    async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
+      if (line.words !== undefined) {
+        const wordTexts = line.words.map((w) => reverseText(w.text));
+        return { text: wordTexts.join(""), wordTexts };
+      }
+      return { text: reverseText(line.text) };
     },
   };
 }
@@ -138,12 +143,9 @@ describe("generateForProject", () => {
   it("collects per-line generator errors without aborting the batch", async () => {
     const flakyGenerator: RomanizationGenerator = {
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
-        if (text.includes("X")) throw new Error("simulated failure");
-        return text.split("").reverse().join("");
-      },
-      async generateWords(words: WordTiming[]) {
-        return words.map((word) => ({ ...word, text: word.text.split("").reverse().join("") }));
+      async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
+        if (line.text.includes("X")) throw new Error("simulated failure");
+        return { text: reverseText(line.text) };
       },
     };
     clearGeneratorRegistry();
@@ -170,12 +172,9 @@ describe("generateForProject", () => {
   it("emits a progress callback for each failed line", async () => {
     const flakyGenerator: RomanizationGenerator = {
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
-        if (text.includes("X")) throw new Error("simulated failure");
-        return text.split("").reverse().join("");
-      },
-      async generateWords(words: WordTiming[]) {
-        return words.map((word) => ({ ...word, text: word.text.split("").reverse().join("") }));
+      async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
+        if (line.text.includes("X")) throw new Error("simulated failure");
+        return { text: reverseText(line.text) };
       },
     };
     clearGeneratorRegistry();
@@ -219,13 +218,9 @@ describe("generateForProject", () => {
     const controller = new AbortController();
     const blockingGenerator: RomanizationGenerator = {
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
+      async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
         controller.abort();
-        return text;
-      },
-      async generateWords(words: WordTiming[]) {
-        controller.abort();
-        return words;
+        return { text: line.text };
       },
     };
     clearGeneratorRegistry();
@@ -253,7 +248,7 @@ describe("generateForProject", () => {
     await expect(generateForProject({ scheme: "zz-Latn-missing" })).rejects.toThrow();
   });
 
-  it("preserves word timing when generating word-synced lines", async () => {
+  it("writes wordTexts on the romanization when the generator returns them", async () => {
     useProjectStore.getState().setLines([
       {
         id: "L1",
@@ -269,11 +264,9 @@ describe("generateForProject", () => {
     await generateForProject({ scheme: "ja-Latn-hepburn" });
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.romanization?.words?.length).toBe(2);
-    expect(line.romanization?.words?.[0].begin).toBe(0);
-    expect(line.romanization?.words?.[0].end).toBe(1);
-    expect(line.romanization?.words?.[1].begin).toBe(1);
-    expect(line.romanization?.words?.[1].end).toBe(2);
+    expect(line.romanization?.wordTexts?.length).toBe(2);
+    expect(line.romanization?.wordTexts?.[0]).toBe(reverseText("夜"));
+    expect(line.romanization?.wordTexts?.[1]).toBe(reverseText("だけど"));
   });
 
   it("a bulk run does not push a history entry when nothing matched the script", async () => {

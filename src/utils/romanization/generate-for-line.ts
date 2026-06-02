@@ -24,15 +24,11 @@ async function loadGenerator(scheme: string): Promise<RomanizationGenerator> {
 
 async function generateForLine(line: LyricLine, scheme: string): Promise<RomanizationData> {
   const generator = await loadGenerator(scheme);
-
-  if (line.words !== undefined) {
-    const words = await generator.generateWords(line.words);
-    const text = words.map((word) => word.text).join(" ");
-    return { text, words, source: "generated" };
+  const result = await generator.generateLine(line);
+  if (result.wordTexts) {
+    return { text: result.text, wordTexts: result.wordTexts, source: "generated" };
   }
-
-  const text = await generator.generateLine(line.text);
-  return { text, source: "generated" };
+  return { text: result.text, source: "generated" };
 }
 
 function clearGeneratorCacheForTests(): void {

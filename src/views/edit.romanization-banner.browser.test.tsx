@@ -16,11 +16,8 @@ import { EditPanel } from "@/views/edit";
 function buildPassthroughGenerator(scheme: string): RomanizationGenerator {
   return {
     scheme,
-    async generateLine(text: string) {
-      return `r:${text}`;
-    },
-    async generateWords(words) {
-      return words.map((w) => ({ ...w, text: `r:${w.text}` }));
+    async generateLine(line) {
+      return { text: `r:${line.text}` };
     },
   };
 }
@@ -105,15 +102,10 @@ describe("EditPanel romanization banner", () => {
     let linesProcessed = 0;
     registerGeneratorFactory("ja-Latn-hepburn", async () => ({
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
+      async generateLine(line) {
         linesProcessed += 1;
         if (linesProcessed === 1) await firstLineGate;
-        return `r:${text}`;
-      },
-      async generateWords(words) {
-        linesProcessed += 1;
-        if (linesProcessed === 1) await firstLineGate;
-        return words.map((w) => ({ ...w, text: `r:${w.text}` }));
+        return { text: `r:${line.text}` };
       },
     }));
     seedJapaneseLines();

@@ -28,11 +28,8 @@ function registerStubGenerator(): void {
   clearGeneratorRegistry();
   registerGeneratorFactory("ja-Latn-hepburn", async () => ({
     scheme: "ja-Latn-hepburn",
-    async generateLine(text: string) {
-      return `auto:${text}`;
-    },
-    async generateWords(words) {
-      return words.map((w) => ({ ...w, text: `auto:${w.text}` }));
+    async generateLine(line) {
+      return { text: `auto:${line.text}` };
     },
   }));
 }

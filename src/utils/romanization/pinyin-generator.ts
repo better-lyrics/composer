@@ -1,6 +1,6 @@
-import type { RomanizationGenerator } from "@/domain/romanization/registry";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "@/domain/line/model";
 import { hasNonLatinScript } from "@/domain/romanization/detect";
+import type { GeneratedRomanization, RomanizationGenerator } from "@/domain/romanization/registry";
 
 // -- Types --------------------------------------------------------------------
 
@@ -58,16 +58,9 @@ async function createPinyinGenerator(scheme: string): Promise<RomanizationGenera
 
   return {
     scheme,
-    async generateLine(text: string) {
-      return convert(text);
-    },
-    async generateWords(words: WordTiming[]) {
-      const out: WordTiming[] = [];
-      for (const word of words) {
-        const converted = convert(word.text).trim();
-        out.push({ ...word, text: converted || word.text });
-      }
-      return out;
+    async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
+      const text = convert(line.text);
+      return { text };
     },
   };
 }

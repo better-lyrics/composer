@@ -19,11 +19,8 @@ function registerStubGenerator(): void {
   clearGeneratorRegistry();
   registerGeneratorFactory("ja-Latn-hepburn", async () => ({
     scheme: "ja-Latn-hepburn",
-    async generateLine(text: string) {
-      return `gen:${text}`;
-    },
-    async generateWords(words) {
-      return words.map((w) => ({ ...w, text: `gen:${w.text}` }));
+    async generateLine(line) {
+      return { text: `gen:${line.text}` };
     },
   }));
 }

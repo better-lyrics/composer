@@ -16,11 +16,8 @@ import { clearGeneratorCacheForTests } from "@/utils/romanization/generate-for-l
 function buildPassthroughGenerator(scheme: string): RomanizationGenerator {
   return {
     scheme,
-    async generateLine(text: string) {
-      return `r:${text}`;
-    },
-    async generateWords(words) {
-      return words.map((w) => ({ ...w, text: `r:${w.text}` }));
+    async generateLine(line) {
+      return { text: `r:${line.text}` };
     },
   };
 }
@@ -66,13 +63,9 @@ describe("useRegenerateRomanization", () => {
     });
     registerGeneratorFactory("ja-Latn-hepburn", async () => ({
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
+      async generateLine(line) {
         await gate;
-        return `r:${text}`;
-      },
-      async generateWords(words) {
-        await gate;
-        return words.map((w) => ({ ...w, text: `r:${w.text}` }));
+        return { text: `r:${line.text}` };
       },
     }));
     useProjectStore.getState().setLines([{ id: "L1", text: "夜だけど", agentId: "v1" }]);
@@ -105,13 +98,9 @@ describe("useRegenerateRomanization", () => {
     });
     registerGeneratorFactory("ja-Latn-hepburn", async () => ({
       scheme: "ja-Latn-hepburn",
-      async generateLine(text: string) {
+      async generateLine(line) {
         await gate;
-        return `r:${text}`;
-      },
-      async generateWords(words) {
-        await gate;
-        return words.map((w) => ({ ...w, text: `r:${w.text}` }));
+        return { text: `r:${line.text}` };
       },
     }));
     useProjectStore.getState().setLines([

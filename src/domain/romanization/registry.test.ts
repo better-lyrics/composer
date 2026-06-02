@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it } from "vitest";
+import type { LyricLine } from "@/domain/line/model";
 import {
   clearGeneratorRegistry,
   getGeneratorFactory,
   registerGeneratorFactory,
-  snapshotGeneratorRegistry,
   restoreGeneratorRegistry,
+  snapshotGeneratorRegistry,
 } from "@/domain/romanization/registry";
 import type { RomanizationGenerator } from "@/domain/romanization/registry";
 
@@ -13,8 +14,7 @@ import type { RomanizationGenerator } from "@/domain/romanization/registry";
 function makeFactory(scheme: string): () => Promise<RomanizationGenerator> {
   return async () => ({
     scheme,
-    generateLine: async (text) => text.toUpperCase(),
-    generateWords: async (words) => words.map((w) => ({ ...w, text: w.text.toUpperCase() })),
+    generateLine: async (line: LyricLine) => ({ text: line.text.toUpperCase() }),
   });
 }
 
@@ -53,7 +53,9 @@ describe("generator registry", () => {
       expect(resolved).toBeDefined();
       const generator = await resolved?.();
       expect(generator?.scheme).toBe("scheme-a");
-      expect(await generator?.generateLine("hi")).toBe("HI");
+      const line: LyricLine = { id: "L1", text: "hi", agentId: "v1" };
+      const result = await generator?.generateLine(line);
+      expect(result?.text).toBe("HI");
     });
 
     it("overwrites a previously registered factory for the same scheme", () => {

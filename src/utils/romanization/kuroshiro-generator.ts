@@ -1,7 +1,7 @@
 import type { RomajiSystem } from "kuroshiro-browser";
-import type { RomanizationGenerator } from "@/domain/romanization/registry";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "@/domain/line/model";
 import { hasNonLatinScript } from "@/domain/romanization/detect";
+import type { GeneratedRomanization, RomanizationGenerator } from "@/domain/romanization/registry";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -58,16 +58,9 @@ async function createKuroshiroGenerator(scheme: string): Promise<RomanizationGen
 
   return {
     scheme,
-    async generateLine(text: string) {
-      return convert(text);
-    },
-    async generateWords(words: WordTiming[]) {
-      const out: WordTiming[] = [];
-      for (const word of words) {
-        const converted = await convert(word.text);
-        out.push({ ...word, text: converted.trim() || word.text });
-      }
-      return out;
+    async generateLine(line: LyricLine): Promise<GeneratedRomanization> {
+      const text = await convert(line.text);
+      return { text };
     },
   };
 }
