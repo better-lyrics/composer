@@ -6,6 +6,7 @@ import { getGeneratorFactory } from "@/domain/romanization/registry";
 import { isKnownScheme, SCHEMES } from "@/domain/romanization/schemes";
 import { useProjectStore } from "@/stores/project";
 import { generateForLine } from "@/utils/romanization/generate-for-line";
+import { RateLimitError } from "@/utils/romanization/google/fetch";
 
 // -- Types --------------------------------------------------------------------
 
@@ -25,6 +26,7 @@ interface GenerateForProjectResult {
   total: number;
   errors: GenerateForProjectError[];
   aborted: boolean;
+  rateLimited: boolean;
 }
 
 // -- Internal -----------------------------------------------------------------
@@ -55,7 +57,7 @@ async function generateForProject(options: GenerateForProjectOptions): Promise<G
   }
   const targetScript = resolveScript(scheme);
   if (!targetScript) {
-    return { done: 0, total: 0, errors: [], aborted: false };
+    return { done: 0, total: 0, errors: [], aborted: false, rateLimited: false };
   }
 
   const store = useProjectStore.getState();
@@ -67,12 +69,13 @@ async function generateForProject(options: GenerateForProjectOptions): Promise<G
   onProgress?.(0, total);
 
   if (total === 0) {
-    return { done: 0, total: 0, errors: [], aborted: false };
+    return { done: 0, total: 0, errors: [], aborted: false, rateLimited: false };
   }
 
   const errors: GenerateForProjectError[] = [];
   let done = 0;
   let aborted = false;
+  let rateLimited = false;
 
   for (const line of targets) {
     if (signal?.aborted) {
@@ -89,6 +92,12 @@ async function generateForProject(options: GenerateForProjectOptions): Promise<G
       done += 1;
       onProgress?.(done, total);
     } catch (err) {
+      if (err instanceof RateLimitError) {
+        rateLimited = true;
+        errors.push({ lineId: line.id, message: "Google romanization rate limit; try again later" });
+        onProgress?.(done, total);
+        break;
+      }
       const message = err instanceof Error ? err.message : String(err);
       errors.push({ lineId: line.id, message });
       onProgress?.(done, total);
@@ -100,14 +109,14 @@ async function generateForProject(options: GenerateForProjectOptions): Promise<G
       lines: baseline,
       isDirtySinceHistory: baselineWasDirty,
     });
-    return { done, total, errors, aborted: true };
+    return { done, total, errors, aborted: true, rateLimited };
   }
 
   if (done > 0) {
     useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
   }
 
-  return { done, total, errors, aborted: false };
+  return { done, total, errors, aborted: false, rateLimited };
 }
 
 // -- Exports ------------------------------------------------------------------

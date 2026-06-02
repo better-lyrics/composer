@@ -7,6 +7,7 @@ import {
   restoreGeneratorRegistry,
   snapshotGeneratorRegistry,
 } from "@/domain/romanization/registry";
+import { SCHEMES } from "@/domain/romanization/schemes";
 import { useProjectStore } from "@/stores/project";
 import { clearGeneratorCacheForTests } from "@/utils/romanization/generate-for-line";
 import { generateForProject } from "@/utils/romanization/generate-for-project";
@@ -31,6 +32,12 @@ function makeReverseGenerator(scheme: string): RomanizationGenerator {
 }
 
 let originalSnapshot: ReturnType<typeof snapshotGeneratorRegistry>;
+const ephemeralSchemeIds: string[] = [];
+
+function addEphemeralScheme(id: string, script: "japanese" | "chinese"): void {
+  SCHEMES.push({ id, label: id, script });
+  ephemeralSchemeIds.push(id);
+}
 
 beforeAll(() => {
   originalSnapshot = snapshotGeneratorRegistry();
@@ -46,6 +53,11 @@ beforeEach(() => {
 
 afterEach(() => {
   restoreGeneratorRegistry(originalSnapshot);
+  for (const id of ephemeralSchemeIds) {
+    const idx = SCHEMES.findIndex((s) => s.id === id);
+    if (idx !== -1) SCHEMES.splice(idx, 1);
+  }
+  ephemeralSchemeIds.length = 0;
 });
 
 // -- Tests --------------------------------------------------------------------
@@ -204,6 +216,54 @@ describe("generateForProject", () => {
       expect(progress[i].done).toBeGreaterThanOrEqual(progress[i - 1].done);
       expect(progress[i].total).toBe(progress[0].total);
     }
+  });
+
+  it("stops the run on RateLimitError and surfaces it via a flag", async () => {
+    const { RateLimitError } = await import("@/utils/romanization/google/fetch");
+    addEphemeralScheme("test-rate-limit", "japanese");
+    clearGeneratorRegistry();
+    clearGeneratorCacheForTests();
+    registerGeneratorFactory("test-rate-limit", async () => ({
+      scheme: "test-rate-limit",
+      async generateLine(): Promise<GeneratedRomanization> {
+        throw new RateLimitError();
+      },
+    }));
+
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "よる", agentId: "v1" },
+      { id: "L2", text: "あめ", agentId: "v1" },
+      { id: "L3", text: "かぜ", agentId: "v1" },
+    ]);
+
+    const result = await generateForProject({ scheme: "test-rate-limit" });
+
+    expect(result.rateLimited).toBe(true);
+    expect(result.done).toBe(0);
+    expect(result.errors.length).toBe(1);
+    expect(result.errors[0].lineId).toBe("L1");
+  });
+
+  it("a non-rate-limit error on one line does not set rateLimited", async () => {
+    addEphemeralScheme("test-plain-fail", "japanese");
+    clearGeneratorRegistry();
+    clearGeneratorCacheForTests();
+    registerGeneratorFactory("test-plain-fail", async () => ({
+      scheme: "test-plain-fail",
+      async generateLine(): Promise<GeneratedRomanization> {
+        throw new Error("plain failure");
+      },
+    }));
+
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "よる", agentId: "v1" },
+      { id: "L2", text: "あめ", agentId: "v1" },
+    ]);
+
+    const result = await generateForProject({ scheme: "test-plain-fail" });
+
+    expect(result.rateLimited).toBe(false);
+    expect(result.errors.length).toBe(2);
   });
 
   it("aborts cleanly and restores the pre-run baseline", async () => {
