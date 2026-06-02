@@ -69,6 +69,7 @@
     "@vitest/browser": "^4.1.6",
     "@vitest/browser-playwright": "^4.1.6",
     "@vitest/coverage-v8": "^4.1.6",
+    "fake-indexeddb": "^6.2.5",
     "jscpd": "^4.2.3",
     "jsdom": "^29.0.1",
     "knip": "^6.13.1",
