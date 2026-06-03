@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { ROMANIZATION_LOG_PREFIX } from "@/utils/romanization/log-prefix";
 import { regenerateWord } from "@/utils/romanization/regenerate-word";
+import { toastRomanizationError } from "@/utils/romanization/toast";
 import {
   autoUpdate,
   flip,
@@ -90,6 +91,7 @@ const Panel: React.FC<PanelProps> = ({ lineId, wordIndex, scheme, close }) => {
       close();
     } catch (err) {
       console.error(`${ROMANIZATION_LOG_PREFIX} Per-word regenerate failed`, err);
+      toastRomanizationError("word", err);
     } finally {
       setIsRegenerating(false);
     }

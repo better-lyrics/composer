@@ -2,6 +2,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { generateForLine } from "@/utils/romanization/generate-for-line";
 import { ROMANIZATION_LOG_PREFIX } from "@/utils/romanization/log-prefix";
+import { toastRomanizationError } from "@/utils/romanization/toast";
 import { useCallback, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -33,6 +34,7 @@ function useRegenerateRomanization(scheme: string | undefined): UseRegenerateRom
         useProjectStore.getState().setLineRomanizationWithHistory(lineId, data);
       } catch (err) {
         console.error(`${ROMANIZATION_LOG_PREFIX} Regenerate failed`, err);
+        toastRomanizationError("line", err);
       } finally {
         setBusyIds((prev) => {
           const next = new Set(prev);

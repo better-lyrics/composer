@@ -23,6 +23,8 @@ import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { generateForProject } from "@/utils/romanization/generate-for-project";
 import { ROMANIZATION_LOG_PREFIX } from "@/utils/romanization/log-prefix";
+import { toastBulkRomanizationResult } from "@/utils/romanization/toast";
+import { toast } from "sonner";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
@@ -447,13 +449,15 @@ const EditPanel: React.FC = () => {
     useProjectStore.getState().setRomanizationScheme(scheme);
     setRomanizationProgress({ done: 0, total: 0 });
     try {
-      await generateForProject({
+      const result = await generateForProject({
         scheme,
         signal: controller.signal,
         onProgress: (done, total) => setRomanizationProgress({ done, total }),
       });
+      toastBulkRomanizationResult(result);
     } catch (err) {
       console.error(`${ROMANIZATION_LOG_PREFIX} Bulk generation failed`, err);
+      toast.error("Could not generate romanization.");
     } finally {
       if (romanizationAbortRef.current === controller) {
         romanizationAbortRef.current = null;
