@@ -40,7 +40,7 @@ function shouldShowBanner(eligible: readonly LyricLine[], scheme: string | undef
 const RomanizationBanner: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const metadata = useProjectStore((s) => s.metadata);
-  const siteKeyOverride = useSettingsStore((s) => s.romanizationTurnstileSiteKey);
+  useSettingsStore((s) => s.romanizationTurnstileSiteKey);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const eligible = useMemo(() => linesEligibleForRomanization(lines), [lines]);
@@ -51,7 +51,7 @@ const RomanizationBanner: React.FC = () => {
 
   const visible = shouldShowBanner(eligible, metadata.romanizationScheme);
   const schemes = detectedLang ? availableSchemesForLang(detectedLang) : [];
-  const siteKey = siteKeyOverride.trim() || getRomanizationTurnstileSiteKey();
+  const siteKey = getRomanizationTurnstileSiteKey();
   const siteKeyMissing = siteKey.length === 0;
 
   if (!visible || !detectedLang) return null;
