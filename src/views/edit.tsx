@@ -24,6 +24,7 @@ import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { RomanizationBanner } from "@/views/edit/romanization-banner";
+import { RomanizationSubrow } from "@/views/edit/romanization-subrow";
 import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
@@ -325,6 +326,11 @@ const EditPanel: React.FC = () => {
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
+  const linesById = useMemo(() => {
+    const map = new Map<string, LyricLine>();
+    for (const line of lines) map.set(line.id, line);
+    return map;
+  }, [lines]);
   const instanceCountByGroup = useMemo(() => {
     const indices = new Map<string, Set<number>>();
     for (const l of lines) {
@@ -799,6 +805,9 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                         onGutterMouseEnter={handleGutterMouseEnter}
                         didDragRef={didDragRef}
                       />
+                      {line.lineId && linesById.get(line.lineId)?.romanization?.text && (
+                        <RomanizationSubrow line={linesById.get(line.lineId) as LyricLine} />
+                      )}
                       {isLastOfInstance && group && (
                         <div className="mx-3 mt-1 mb-2 flex items-center select-none" aria-hidden>
                           <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />
