@@ -57,6 +57,7 @@ async function resetAllStores(): Promise<void> {
     renamingGroupId: null,
     renamingInstanceIdx: null,
     draggedGroupShift: null,
+    primaryWordText: "source",
   });
 
   if (hasLocalStorage()) globalThis.localStorage.clear();

@@ -1,5 +1,6 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import type { LyricLine, RomanizationData } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -13,6 +14,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
+import { RomanizationWordEditPopover } from "@/views/edit/romanization-word-edit-popover";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -25,12 +27,18 @@ interface WordTrackProps {
   trackType: "word" | "bg";
   duration: number;
   height: number;
+  romanization?: RomanizationData;
   onUpdateWord: (
     index: number,
     updates: Partial<WordTiming>,
     adjacentIndex?: number,
     adjacentUpdates?: Partial<WordTiming>,
   ) => void;
+}
+
+interface RomajiPopoverState {
+  wordIndex: number;
+  anchor: HTMLElement;
 }
 
 interface DragState {
@@ -57,6 +65,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   trackType,
   duration,
   height,
+  romanization,
   onUpdateWord,
 }) => {
   const zoom = useTimelineStore((s) => s.zoom);
@@ -64,9 +73,25 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
+  const primaryWordText = useTimelineStore((s) => s.primaryWordText);
 
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
+  const romajiArityMatches = trackType === "word" && romanization?.wordTexts?.length === words.length;
+  const wordTexts = romajiArityMatches ? romanization?.wordTexts : undefined;
+
+  const [romajiPopover, setRomajiPopover] = useState<RomajiPopoverState | null>(null);
+
+  const handleWordAltClick = useCallback((wordIndex: number, e: React.MouseEvent<HTMLDivElement>) => {
+    setRomajiPopover({ wordIndex, anchor: e.currentTarget });
+  }, []);
+
+  const closeRomajiPopover = useCallback(() => setRomajiPopover(null), []);
+
+  const romajiPopoverLine = useMemo<LyricLine | null>(() => {
+    if (!romajiPopover) return null;
+    return useProjectStore.getState().lines.find((l) => l.id === lineId) ?? null;
+  }, [romajiPopover, lineId]);
 
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [hoveredBoundary, setHoveredBoundary] = useState<number | null>(null);
@@ -401,6 +426,15 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const gapBefore =
           (syllablePosition === "middle" || syllablePosition === "last") &&
           getDisplay(wordIndex - 1).end < display.begin;
+        const romajiText = wordTexts?.[wordIndex];
+        const sourceText = word.text;
+        const primaryText = primaryWordText === "romaji" && romajiText ? romajiText : sourceText;
+        const secondaryText =
+          primaryWordText === "romaji" && romajiText
+            ? sourceText
+            : romajiText && romajiText.length > 0
+              ? romajiText
+              : undefined;
         return (
           <WordBlock
             key={wordKey}
@@ -409,7 +443,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
             lineIndex={lineIndex}
             wordIndex={wordIndex}
             trackType={trackType}
-            text={word.text}
+            text={primaryText}
+            secondaryText={secondaryText}
+            romajiEditable={romajiArityMatches}
             begin={display.begin}
             end={display.end}
             color={color}
@@ -428,9 +464,19 @@ const WordTrack: React.FC<WordTrackProps> = ({
             onEdgeHover={(edge, hovering) => handleEdgeHover(wordIndex, edge, hovering)}
             onDoubleClick={() => handleWordDoubleClick(wordIndex)}
             onContextMenu={(e) => handleWordContextMenu(wordIndex, e)}
+            onAltClick={romajiArityMatches ? (e) => handleWordAltClick(wordIndex, e) : undefined}
           />
         );
       })}
+      {romajiPopover && romajiPopoverLine && (
+        <RomanizationWordEditPopover
+          line={romajiPopoverLine}
+          wordIndex={romajiPopover.wordIndex}
+          isOpen
+          onClose={closeRomajiPopover}
+          anchor={romajiPopover.anchor}
+        />
+      )}
     </div>
   );
 };

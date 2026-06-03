@@ -1,5 +1,7 @@
+import type { TimelinePrimaryWordText } from "@/domain/project/metadata";
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
@@ -48,6 +50,7 @@ interface TimelineState {
   isBypassing: boolean;
   snappedBlockId: string | null;
   snappedAnchorTime: number | null;
+  primaryWordText: TimelinePrimaryWordText;
 }
 
 interface TimelineActions {
@@ -79,6 +82,8 @@ interface TimelineActions {
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
   setSnappedAnchorTime: (t: number | null) => void;
+  setPrimaryWordText: (mode: TimelinePrimaryWordText) => void;
+  togglePrimaryWordText: () => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -120,6 +125,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     isBypassing: false,
     snappedBlockId: null,
     snappedAnchorTime: null,
+    primaryWordText: "source",
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -158,7 +164,27 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set({ snappedBlockId: id }),
     setSnappedAnchorTime: (t) => set({ snappedAnchorTime: t }),
+    setPrimaryWordText: (mode) => {
+      set({ primaryWordText: mode });
+      useProjectStore.getState().setMetadata({ timelinePrimaryWordText: mode });
+    },
+    togglePrimaryWordText: () => {
+      const next: TimelinePrimaryWordText = get().primaryWordText === "source" ? "romaji" : "source";
+      set({ primaryWordText: next });
+      useProjectStore.getState().setMetadata({ timelinePrimaryWordText: next });
+    },
   };
+});
+
+// -- Metadata Sync -------------------------------------------------------------
+
+useProjectStore.subscribe((state, prev) => {
+  const next = state.metadata.timelinePrimaryWordText;
+  const previous = prev.metadata.timelinePrimaryWordText;
+  if (next === previous) return;
+  const current = useTimelineStore.getState().primaryWordText;
+  const resolved: TimelinePrimaryWordText = next ?? "source";
+  if (resolved !== current) useTimelineStore.setState({ primaryWordText: resolved });
 });
 
 // -- Exports -------------------------------------------------------------------

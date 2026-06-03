@@ -17,6 +17,7 @@ import {
   IconChevronsUp,
   IconEye,
   IconFocusCentered,
+  IconLanguage,
   IconLayoutDistributeHorizontal,
   IconMagnet,
   IconMinus,
@@ -51,8 +52,19 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
+  const primaryWordText = useTimelineStore((s) => s.primaryWordText);
+  const togglePrimaryWordText = useTimelineStore((s) => s.togglePrimaryWordText);
 
   const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
+
+  const hasAnyRomajiWordTexts = useMemo(
+    () =>
+      lines.some(
+        (l) =>
+          l.words?.length !== undefined && l.romanization?.wordTexts?.length === l.words.length && l.words.length > 0,
+      ),
+    [lines],
+  );
 
   const instanceKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -173,6 +185,21 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
           <span>Preview</span>
           {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />}
         </Button>
+
+        {hasAnyRomajiWordTexts && (
+          <Button
+            variant={primaryWordText === "romaji" ? "primary" : "ghost"}
+            size="sm"
+            onClick={togglePrimaryWordText}
+            hasIcon
+            className={cn(primaryWordText !== "romaji" && "opacity-60")}
+            title="Toggle source/romaji primary"
+            data-testid="timeline-primary-word-text-toggle"
+          >
+            <IconLanguage size={16} />
+            <span>{primaryWordText === "romaji" ? "Romaji" : "Source"}</span>
+          </Button>
+        )}
 
         <Button
           variant={snapEnabled ? "primary" : "ghost"}

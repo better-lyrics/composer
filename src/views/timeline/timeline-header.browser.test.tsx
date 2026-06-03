@@ -1,8 +1,45 @@
 import { describe, expect, it } from "vitest";
+import { reconcileLine } from "@/domain/line/model";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
+
+function seedRomanizedLine() {
+  useProjectStore.setState(useProjectStore.getInitialState());
+  useProjectStore.getState().setLinesWithHistory([
+    reconcileLine({
+      id: "L1",
+      text: "夜だけど",
+      agentId: "v1",
+      words: [
+        { text: "夜", begin: 0, end: 1 },
+        { text: "だけど", begin: 1, end: 2 },
+      ],
+    }),
+  ]);
+  useProjectStore.getState().setLineRomanizationWithHistory("L1", {
+    text: "yoru dakedo",
+    wordTexts: ["yoru", "dakedo"],
+    source: "generated",
+  });
+}
+
+function seedPlainLine() {
+  useProjectStore.setState(useProjectStore.getInitialState());
+  useProjectStore.getState().setLinesWithHistory([
+    reconcileLine({
+      id: "L1",
+      text: "hello world",
+      agentId: "v1",
+      words: [
+        { text: "hello", begin: 0, end: 1 },
+        { text: "world", begin: 1, end: 2 },
+      ],
+    }),
+  ]);
+}
 
 describe("TimelineHeader", () => {
   it("renders the Timeline heading and core toolbar buttons", async () => {
@@ -78,5 +115,87 @@ describe("TimelineHeader", () => {
     const screen = await render(<TimelineHeader />);
     const snapButton = screen.container.querySelector("button[title*='Snap']") as HTMLElement;
     expect(snapButton.className).toContain("opacity-50");
+  });
+});
+
+describe("TimelineHeader source/romaji toggle", () => {
+  it("does not render the toggle when no line has arity-matching wordTexts", async () => {
+    seedPlainLine();
+    const screen = await render(<TimelineHeader />);
+    expect(screen.container.querySelector("[data-testid='timeline-primary-word-text-toggle']")).toBeNull();
+  });
+
+  it("renders the toggle when at least one line has arity-matching wordTexts", async () => {
+    seedRomanizedLine();
+    const screen = await render(<TimelineHeader />);
+    await expect.element(screen.getByTestId("timeline-primary-word-text-toggle")).toBeInTheDocument();
+  });
+
+  it("does not render the toggle when wordTexts arity mismatches", async () => {
+    useProjectStore.setState(useProjectStore.getInitialState());
+    useProjectStore.getState().setLinesWithHistory([
+      reconcileLine({
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+      }),
+    ]);
+    useProjectStore.getState().setLineRomanizationWithHistory("L1", {
+      text: "yoru",
+      wordTexts: ["yoru"],
+      source: "generated",
+    });
+    const screen = await render(<TimelineHeader />);
+    expect(screen.container.querySelector("[data-testid='timeline-primary-word-text-toggle']")).toBeNull();
+  });
+
+  it("click cycles primaryWordText source -> romaji -> source", async () => {
+    seedRomanizedLine();
+    useTimelineStore.setState({ primaryWordText: "source" });
+    const screen = await render(<TimelineHeader />);
+    const toggle = screen.getByTestId("timeline-primary-word-text-toggle");
+
+    await toggle.click();
+    expect(useTimelineStore.getState().primaryWordText).toBe("romaji");
+
+    await toggle.click();
+    expect(useTimelineStore.getState().primaryWordText).toBe("source");
+  });
+
+  it("persists the toggle state in metadata.timelinePrimaryWordText", async () => {
+    seedRomanizedLine();
+    useTimelineStore.setState({ primaryWordText: "source" });
+    const screen = await render(<TimelineHeader />);
+    await screen.getByTestId("timeline-primary-word-text-toggle").click();
+    expect(useProjectStore.getState().metadata.timelinePrimaryWordText).toBe("romaji");
+  });
+
+  it("initialises the toggle from metadata.timelinePrimaryWordText on mount", async () => {
+    useProjectStore.setState(useProjectStore.getInitialState());
+    useProjectStore.getState().setLinesWithHistory([
+      reconcileLine({
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+        ],
+      }),
+    ]);
+    useProjectStore.getState().setLineRomanizationWithHistory("L1", {
+      text: "yoru dakedo",
+      wordTexts: ["yoru", "dakedo"],
+      source: "generated",
+    });
+    useProjectStore.getState().setMetadata({ timelinePrimaryWordText: "romaji" });
+    const screen = await render(<TimelineHeader />);
+    const toggle = screen.getByTestId("timeline-primary-word-text-toggle");
+    await expect.element(toggle).toHaveTextContent(/romaji/i);
+    expect(useTimelineStore.getState().primaryWordText).toBe("romaji");
   });
 });

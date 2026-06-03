@@ -185,6 +185,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               trackType="word"
               duration={duration}
               height={rowHeight}
+              romanization={line.romanization}
               onUpdateWord={onUpdateWord}
             />
           ) : (

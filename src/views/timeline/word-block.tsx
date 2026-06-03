@@ -1,8 +1,14 @@
 import { cn } from "@/utils/cn";
+import { ALT_KEY } from "@/utils/platform";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useDraggable } from "@dnd-kit/core";
+
+// -- Constants -----------------------------------------------------------------
+
+const TEXT_VISIBILITY_THRESHOLD = 20;
+const ROMAJI_VISIBILITY_THRESHOLD = 20;
 
 // -- Types ---------------------------------------------------------------------
 
@@ -13,6 +19,8 @@ interface WordBlockProps {
   wordIndex: number;
   trackType: "word" | "bg";
   text: string;
+  secondaryText?: string;
+  romajiEditable?: boolean;
   begin: number;
   end: number;
   color: string;
@@ -31,6 +39,7 @@ interface WordBlockProps {
   onEdgeHover?: (edge: "left" | "right", hovering: boolean) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
+  onAltClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -49,6 +58,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
   wordIndex,
   trackType,
   text,
+  secondaryText,
+  romajiEditable,
   begin,
   end,
   color,
@@ -67,11 +78,16 @@ const WordBlock: React.FC<WordBlockProps> = ({
   onEdgeHover,
   onDoubleClick,
   onContextMenu,
+  onAltClick,
 }) => {
   const left = begin * zoom;
   const naturalWidth = (end - begin) * zoom;
   const width = Math.max(naturalWidth, 4);
-  const showText = naturalWidth >= 20;
+  const showText = naturalWidth >= TEXT_VISIBILITY_THRESHOLD;
+  const hasSecondary = typeof secondaryText === "string" && secondaryText.length > 0;
+  const showSecondary = hasSecondary && naturalWidth >= ROMAJI_VISIBILITY_THRESHOLD;
+  const altEditable = romajiEditable === true && onAltClick !== undefined;
+  const altTitle = altEditable ? `${ALT_KEY}+click to edit romaji` : undefined;
 
   const myKey = selfKey(lineId, wordIndex, trackType);
   const isSnapped = useTimelineStore((s) => s.snappedBlockId === myKey);
@@ -116,8 +132,9 @@ const WordBlock: React.FC<WordBlockProps> = ({
       id={id}
       data-word-block
       data-syllable-position={syllablePosition}
+      title={altTitle}
       className={cn(
-        "absolute top-1 bottom-1 flex items-center justify-center",
+        "absolute top-1 bottom-1 flex flex-col items-center justify-center",
         "text-xs text-white truncate select-none cursor-grab",
         "border transition-opacity duration-100",
         SYLLABLE_RADIUS[syllablePosition],
@@ -135,6 +152,11 @@ const WordBlock: React.FC<WordBlockProps> = ({
       }}
       onClick={(e) => {
         e.stopPropagation();
+        if (e.altKey && altEditable) {
+          e.preventDefault();
+          onAltClick?.(e);
+          return;
+        }
         onClick(e);
       }}
       onDoubleClick={(e) => {
@@ -172,7 +194,19 @@ const WordBlock: React.FC<WordBlockProps> = ({
         onMouseLeave={() => onEdgeHover?.("left", false)}
       />
 
-      {showText && <span className="px-1 pointer-events-none truncate">{text}</span>}
+      {showText && (
+        <span data-word-block-primary className="px-1 pointer-events-none truncate leading-tight w-full text-center">
+          {text}
+        </span>
+      )}
+      {showSecondary && (
+        <span
+          data-word-block-secondary
+          className="px-1 pointer-events-none truncate leading-tight w-full text-center text-[10px] text-white/70"
+        >
+          {secondaryText}
+        </span>
+      )}
 
       <div
         data-edge="right"
@@ -197,4 +231,4 @@ const WordBlock: React.FC<WordBlockProps> = ({
 
 // -- Exports -------------------------------------------------------------------
 
-export { WordBlock };
+export { WordBlock, ROMAJI_VISIBILITY_THRESHOLD };
