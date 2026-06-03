@@ -117,7 +117,7 @@ describe("RomanizationSubrow display", () => {
     await expect.element(screen.getByTestId("romanization-line-text")).toHaveTextContent("yoru dakedo");
   });
 
-  it("does not wire any per-word click handler in this task", async () => {
+  it("marks words as clickable when wordTexts arity matches line.words", async () => {
     const line = seedLineWithRomanization({
       romanizationText: "yoru dakedo",
       wordTexts: ["yoru", "dakedo"],
@@ -125,6 +125,32 @@ describe("RomanizationSubrow display", () => {
     const screen = await render(<RomanizationSubrow line={line} />);
     const firstWord = screen.getByTestId("romanization-word").first();
     const el = firstWord.element() as HTMLElement;
+    expect(el.getAttribute("data-clickable-word")).toBe("true");
+  });
+
+  it("does not mark words clickable when wordTexts arity does not match line.words", async () => {
+    useProjectStore.setState(useProjectStore.getInitialState());
+    useProjectStore.getState().setMetadata({ romanizationScheme: "ja-Latn-hepburn" });
+    useProjectStore.getState().setLinesWithHistory([
+      reconcileLine({
+        id: "L1",
+        text: "夜だけど",
+        agentId: "v1",
+        words: [
+          { text: "夜", begin: 0, end: 1 },
+          { text: "だけど", begin: 1, end: 2 },
+          { text: "ね", begin: 2, end: 3 },
+        ],
+      }),
+    ]);
+    useProjectStore.getState().setLineRomanizationWithHistory("L1", {
+      text: "yoru dakedo",
+      source: "generated",
+    });
+    const line = useProjectStore.getState().lines[0];
+    const screen = await render(<RomanizationSubrow line={line} />);
+    const lineText = screen.getByTestId("romanization-line-text");
+    const el = lineText.element() as HTMLElement;
     expect(el.getAttribute("data-clickable-word")).toBeNull();
   });
 });
@@ -175,6 +201,60 @@ describe("RomanizationSubrow refresh", () => {
     await expect.element(refreshButton).toBeDisabled();
     resolveFetch(jsonResponse({ results: [], errors: [] }));
     await expect.element(refreshButton).not.toBeDisabled();
+  });
+});
+
+// -- Alt+click opens per-word popover -----------------------------------------
+
+describe("RomanizationSubrow per-word Alt+click affordance", () => {
+  it("Alt+click on a word opens the per-word popover", async () => {
+    const line = seedLineWithRomanization({
+      romanizationText: "yoru dakedo",
+      wordTexts: ["yoru", "dakedo"],
+    });
+    const screen = await render(<RomanizationSubrow line={line} />);
+    const secondWord = screen.getByTestId("romanization-word").nth(1);
+    const el = secondWord.element() as HTMLElement;
+    el.dispatchEvent(new MouseEvent("click", { altKey: true, bubbles: true, cancelable: true }));
+    const input = screen.getByRole("textbox", { name: /romanization word/i });
+    await expect.element(input).toBeInTheDocument();
+    await expect.element(input).toHaveValue("dakedo");
+  });
+
+  it("Alt+click on a word does not also open the line-level popover", async () => {
+    const line = seedLineWithRomanization({
+      romanizationText: "yoru dakedo",
+      wordTexts: ["yoru", "dakedo"],
+    });
+    const screen = await render(<RomanizationSubrow line={line} />);
+    const firstWord = screen.getByTestId("romanization-word").first();
+    const el = firstWord.element() as HTMLElement;
+    el.dispatchEvent(new MouseEvent("click", { altKey: true, bubbles: true, cancelable: true }));
+    await expect.element(screen.getByRole("textbox", { name: /romanization word/i })).toBeInTheDocument();
+    expect(screen.container.querySelectorAll('textarea[aria-label="Romanization text"]')).toHaveLength(0);
+  });
+
+  it("non-Alt click on a word bubbles to open the line-level popover", async () => {
+    const line = seedLineWithRomanization({
+      romanizationText: "yoru dakedo",
+      wordTexts: ["yoru", "dakedo"],
+    });
+    const screen = await render(<RomanizationSubrow line={line} />);
+    const firstWord = screen.getByTestId("romanization-word").first();
+    await firstWord.click();
+    await expect.element(screen.getByRole("textbox", { name: /romanization text/i })).toBeInTheDocument();
+  });
+
+  it("word spans carry an Alt+click tooltip when arity matches", async () => {
+    const line = seedLineWithRomanization({
+      romanizationText: "yoru dakedo",
+      wordTexts: ["yoru", "dakedo"],
+    });
+    const screen = await render(<RomanizationSubrow line={line} />);
+    const firstWord = screen.getByTestId("romanization-word").first();
+    const el = firstWord.element() as HTMLElement;
+    const title = el.getAttribute("title") ?? "";
+    expect(title).toMatch(/(Alt|Option)\+click to edit syllable/);
   });
 });
 

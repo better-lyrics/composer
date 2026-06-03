@@ -5,8 +5,14 @@ import { generateForLine } from "@/domain/romanization/generate";
 import { defaultSchemeForLang } from "@/domain/romanization/schemes";
 import { detectNonLatinLanguage } from "@/domain/romanization/detect";
 import { useProjectStore } from "@/stores/project";
+import { ALT_KEY } from "@/utils/platform";
 import { toastBulkResult, toastError } from "@/utils/romanization/toast";
 import { RomanizationEditPopover } from "@/views/edit/romanization-edit-popover";
+import { RomanizationWordEditPopover } from "@/views/edit/romanization-word-edit-popover";
+
+// -- Constants ----------------------------------------------------------------
+
+const WORD_TOOLTIP = `${ALT_KEY}+click to edit syllable`;
 
 // -- Types --------------------------------------------------------------------
 
@@ -35,7 +41,9 @@ function wordTextsForDisplay(line: LyricLine): string[] | null {
 const RomanizationSubrow: React.FC<RomanizationSubrowProps> = ({ line }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const textRegionRef = useRef<HTMLButtonElement>(null);
+  const wordRefs = useRef<Map<number, HTMLElement>>(new Map());
 
   const romanizationText = line.romanization?.text;
   if (!romanizationText) return null;
@@ -60,6 +68,13 @@ const RomanizationSubrow: React.FC<RomanizationSubrowProps> = ({ line }) => {
     setIsPopoverOpen(true);
   };
 
+  const handleWordClick = (event: React.MouseEvent, wordIndex: number) => {
+    if (!event.altKey) return;
+    event.stopPropagation();
+    event.preventDefault();
+    setActiveWordIndex(wordIndex);
+  };
+
   return (
     <div
       data-testid="romanization-subrow"
@@ -75,7 +90,18 @@ const RomanizationSubrow: React.FC<RomanizationSubrowProps> = ({ line }) => {
         {displayWords ? (
           <span className="flex items-center gap-1">
             {displayWords.map((wordText, index) => (
-              <span key={`${line.id}-${index}-${wordText}`} data-testid="romanization-word">
+              <span
+                key={`${line.id}-${index}-${wordText}`}
+                ref={(el) => {
+                  if (el) wordRefs.current.set(index, el);
+                  else wordRefs.current.delete(index);
+                }}
+                data-testid="romanization-word"
+                data-clickable-word="true"
+                title={WORD_TOOLTIP}
+                onClick={(event) => handleWordClick(event, index)}
+                className="cursor-pointer"
+              >
                 {wordText}
               </span>
             ))}
@@ -99,6 +125,15 @@ const RomanizationSubrow: React.FC<RomanizationSubrowProps> = ({ line }) => {
           isOpen
           onClose={() => setIsPopoverOpen(false)}
           anchor={textRegionRef.current}
+        />
+      )}
+      {activeWordIndex !== null && (
+        <RomanizationWordEditPopover
+          line={line}
+          wordIndex={activeWordIndex}
+          isOpen
+          onClose={() => setActiveWordIndex(null)}
+          anchor={wordRefs.current.get(activeWordIndex) ?? null}
         />
       )}
     </div>
