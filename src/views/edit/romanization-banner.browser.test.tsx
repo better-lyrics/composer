@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
+import { detectScript, type Script } from "@/domain/romanization/detect";
 import { render } from "@/test/render";
 import { RomanizationBanner } from "@/views/edit/romanization-banner";
 
@@ -116,6 +117,58 @@ describe("RomanizationBanner", () => {
     );
     const generateButton = screen.getByRole("button", { name: /generating/i });
     await expect.element(generateButton).toBeDisabled();
+  });
+});
+
+describe("RomanizationBanner: v2 script coverage", () => {
+  it.each<[string, Script, string, string]>([
+    ["사랑해", "korean", "ko-Latn-google", "Korean"],
+    ["Привет", "russian", "ru-Latn-google", "Russian"],
+    ["Γεια", "greek", "el-Latn-google", "Greek"],
+    ["สวัสดี", "thai", "th-Latn-google", "Thai"],
+    ["السلام", "arabic", "ar-Latn-google", "Arabic"],
+    ["नमस्ते", "hindi", "hi-Latn-google", "Hindi"],
+    ["ভালো", "bengali", "bn-Latn-google", "Bengali"],
+    ["שלום", "hebrew", "he-Latn-google", "Hebrew"],
+  ])("renders the banner for %s text with the %s default scheme", async (text, script, defaultScheme, scriptLabel) => {
+    expect(detectScript(text)).toBe(script);
+
+    const onPick = vi.fn();
+    const screen = await render(
+      <RomanizationBanner detectedScript={script} detectedLineCount={1} onPick={onPick} onDismiss={noop} />,
+    );
+
+    await expect.element(screen.getByRole("region", { name: /romanization/i })).toBeInTheDocument();
+    expect(screen.container.textContent).toContain(scriptLabel);
+
+    const select = screen.getByLabelText(/romanization scheme/i).element() as HTMLSelectElement;
+    expect(select.value).toBe(defaultScheme);
+
+    const generate = screen.getByRole("button", { name: /generate/i });
+    await expect.element(generate).toBeInTheDocument();
+    await userEvent.click(generate.element());
+    expect(onPick).toHaveBeenCalledWith(defaultScheme);
+  });
+
+  it.each<[Script, string]>([
+    ["korean", "ko-Latn-google"],
+    ["russian", "ru-Latn-google"],
+    ["greek", "el-Latn-google"],
+    ["thai", "th-Latn-google"],
+    ["arabic", "ar-Latn-google"],
+    ["hindi", "hi-Latn-google"],
+    ["bengali", "bn-Latn-google"],
+    ["hebrew", "he-Latn-google"],
+  ])("offers only the %s auto scheme in the dropdown", async (script, expectedSchemeId) => {
+    const screen = await render(
+      <RomanizationBanner detectedScript={script} detectedLineCount={2} onPick={noop} onDismiss={noop} />,
+    );
+
+    const select = screen.getByLabelText(/romanization scheme/i).element() as HTMLSelectElement;
+    const options = Array.from(select.querySelectorAll("option")).map((o) => (o as HTMLOptionElement).value);
+    expect(options).toEqual([expectedSchemeId]);
+    expect(options).not.toContain("ja-Latn-hepburn");
+    expect(options).not.toContain("zh-Latn-pinyin");
   });
 });
 

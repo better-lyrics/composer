@@ -1,4 +1,5 @@
 import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { ALT_KEY } from "@/utils/platform";
 
 // -- Romanization -------------------------------------------------------------
 
@@ -12,8 +13,13 @@ const RomanizationSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Supported schemes</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>Japanese: Hepburn (default), Kunrei, Nihon-shiki.</li>
-        <li>Chinese: Pinyin. Wade-Giles is supported as a best-effort fallback.</li>
+        <li>Japanese: Hepburn (default), Kunrei, Nihon-shiki. Uses kuroshiro locally; Kunrei-shiki maps to nippon.</li>
+        <li>
+          Chinese: Pinyin. Wade-Giles is supported as a best-effort fallback. Uses pinyin-pro locally and renders
+          Wade-Giles as tone-mark-free pinyin.
+        </li>
+        <li>Korean, Russian, Greek, Thai, Arabic, Hindi, Bengali: auto-romanized via Google translate.</li>
+        <li>Hebrew: auto-romanized via Google translate. Quality is limited on text without vowel marks (niqqud).</li>
       </ul>
     </div>
 
@@ -30,6 +36,19 @@ const RomanizationSection: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Generated: Composer produced the romaji. Hover a line and click the regenerate icon to redo it.</li>
         <li>Manual: you typed it yourself. Composer won't overwrite manual romaji.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Timeline editing</h4>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
+          {ALT_KEY} + click a word in the Timeline to open the per-word romanization popover and edit one syllable.
+        </li>
+        <li>
+          The Timeline header has a toggle that swaps the primary word text between source and romaji, so you can sync
+          against whichever reading is easier to follow.
+        </li>
       </ul>
     </div>
 
