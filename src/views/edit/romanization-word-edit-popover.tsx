@@ -13,7 +13,7 @@ import {
 import { IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
 import type { LyricLine, RomanizationData } from "@/domain/line/model";
-import { generateForWord } from "@/domain/romanization/generate";
+import { generateForWord } from "@/lib/romanization/generate";
 import { defaultSchemeForLang } from "@/domain/romanization/schemes";
 import { detectNonLatinLanguage } from "@/domain/romanization/detect";
 import { useProjectStore } from "@/stores/project";

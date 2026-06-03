@@ -1,7 +1,7 @@
 import { IconLanguage } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { detectNonLatinLanguage, linesEligibleForRomanization } from "@/domain/romanization/detect";
-import { generateForLines } from "@/domain/romanization/generate";
+import { generateForLines } from "@/lib/romanization/generate";
 import { availableSchemesForLang, defaultSchemeForLang } from "@/domain/romanization/schemes";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";

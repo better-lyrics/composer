@@ -1,7 +1,7 @@
 import { IconRefresh } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import type { LyricLine } from "@/domain/line/model";
-import { generateForLine } from "@/domain/romanization/generate";
+import { generateForLine } from "@/lib/romanization/generate";
 import { defaultSchemeForLang } from "@/domain/romanization/schemes";
 import { detectNonLatinLanguage } from "@/domain/romanization/detect";
 import { useProjectStore } from "@/stores/project";

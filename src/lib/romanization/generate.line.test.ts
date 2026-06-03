@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reconcileLine } from "@/domain/line/model";
-import { generateForLine } from "@/domain/romanization/generate";
+import { generateForLine } from "@/lib/romanization/generate";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 

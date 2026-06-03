@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { reconcileLine } from "@/domain/line/model";
-import { generateForLines } from "@/domain/romanization/generate";
+import { generateForLines } from "@/lib/romanization/generate";
 import { RomanizationApiError, TurnstileError } from "@/lib/romanization-api";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
