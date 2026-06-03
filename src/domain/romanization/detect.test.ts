@@ -60,4 +60,18 @@ describe("linesEligibleForRomanization", () => {
     const lines = [reconcileLine({ id: "L1", text: "Hello", agentId: "v1", begin: 0, end: 1 })];
     expect(linesEligibleForRomanization(lines)).toEqual([]);
   });
+
+  it("excludes a line whose main text is latin even if backgroundText is non-latin (bg romanization is out of scope for v3)", () => {
+    const lines = [
+      reconcileLine({
+        id: "L1",
+        text: "Hello",
+        agentId: "v1",
+        begin: 0,
+        end: 1,
+        backgroundText: "夜だけど",
+      }),
+    ];
+    expect(linesEligibleForRomanization(lines)).toEqual([]);
+  });
 });
