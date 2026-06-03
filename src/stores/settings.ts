@@ -62,6 +62,9 @@ interface SettingsState {
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
   cobaltInstanceStatus: Record<string, CobaltInstanceStatus>;
+
+  romanizationApiBase: string;
+  romanizationTurnstileSiteKey: string;
 }
 
 interface SettingsActions {
@@ -117,6 +120,9 @@ const DEFAULTS: SettingsState = {
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
   cobaltInstanceStatus: {},
+
+  romanizationApiBase: "",
+  romanizationTurnstileSiteKey: "",
 };
 
 const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
@@ -148,6 +154,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
           cobaltInstanceStatus: state.cobaltInstanceStatus,
+          romanizationApiBase: state.romanizationApiBase,
+          romanizationTurnstileSiteKey: state.romanizationTurnstileSiteKey,
         })),
       addCobaltInstance: (instance) =>
         set((state) => {
@@ -195,6 +203,13 @@ function isUsingDefaultCobaltInstance(): boolean {
   return !state.cobaltInstances.some((i) => i.id === state.selectedCobaltInstanceId);
 }
 
+function getRomanizationTurnstileSiteKey(): string {
+  const override = useSettingsStore.getState().romanizationTurnstileSiteKey;
+  const trimmed = override.trim();
+  if (trimmed) return trimmed;
+  return import.meta.env.VITE_TURNSTILE_SITEKEY ?? "";
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -203,6 +218,7 @@ export {
   BUILTIN_COBALT_INSTANCE,
   DEFAULT_COBALT_INSTANCE_ID,
   getActiveCobaltInstance,
+  getRomanizationTurnstileSiteKey,
   isUsingDefaultCobaltInstance,
 };
 export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction };

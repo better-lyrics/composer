@@ -3,6 +3,7 @@ import {
   DEFAULT_COBALT_INSTANCE_ID,
   DEFAULTS,
   getActiveCobaltInstance,
+  getRomanizationTurnstileSiteKey,
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
@@ -102,5 +103,41 @@ describe("cobalt instance helpers", () => {
     const custom = useSettingsStore.getState().cobaltInstances[0];
     useSettingsStore.getState().selectCobaltInstance(custom.id);
     expect(getActiveCobaltInstance().url).toBe("https://example.test");
+  });
+});
+
+describe("romanization settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("starts with empty api base and site key", () => {
+    expect(useSettingsStore.getState().romanizationApiBase).toBe("");
+    expect(useSettingsStore.getState().romanizationTurnstileSiteKey).toBe("");
+  });
+
+  it("getRomanizationTurnstileSiteKey returns override when set", () => {
+    useSettingsStore.setState({ romanizationTurnstileSiteKey: "self-key" });
+    expect(getRomanizationTurnstileSiteKey()).toBe("self-key");
+  });
+
+  it("getRomanizationTurnstileSiteKey trims whitespace", () => {
+    useSettingsStore.setState({ romanizationTurnstileSiteKey: "  k  " });
+    expect(getRomanizationTurnstileSiteKey()).toBe("k");
+  });
+
+  it("getRomanizationTurnstileSiteKey falls back to VITE_TURNSTILE_SITEKEY when empty", () => {
+    useSettingsStore.setState({ romanizationTurnstileSiteKey: "" });
+    expect(getRomanizationTurnstileSiteKey()).toBe(import.meta.env.VITE_TURNSTILE_SITEKEY ?? "");
+  });
+
+  it("preserves romanization settings on resetToDefaults", () => {
+    useSettingsStore.setState({
+      romanizationApiBase: "https://x.test",
+      romanizationTurnstileSiteKey: "k",
+    });
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().romanizationApiBase).toBe("https://x.test");
+    expect(useSettingsStore.getState().romanizationTurnstileSiteKey).toBe("k");
   });
 });
