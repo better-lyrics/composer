@@ -39,8 +39,29 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
 
   // Root element with namespaces
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:composer="https://composer.boidu.dev/ttml" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" composer:timing="${effectiveGranularity === "word" ? "Word" : "Line"}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="http://music.apple.com/lyric-ttml-internal" xmlns:composer="https://composer.boidu.dev/ttml" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" composer:timing="${effectiveGranularity === "word" ? "Word" : "Line"}">`,
   );
+
+  const displayKeyByLineId = new Map<string, string>();
+  const transliterationRecords: { line: LyricLine; key: string }[] = [];
+  let timedOrdinal = 0;
+  for (const line of lines) {
+    if (!effectiveBounds(line)) continue;
+    timedOrdinal += 1;
+    const key = `L${timedOrdinal}`;
+    displayKeyByLineId.set(line.id, key);
+    if (line.romanization?.text) {
+      transliterationRecords.push({ line, key });
+    }
+  }
+
+  const scheme = metadata.romanizationScheme ?? "";
+  if (transliterationRecords.length > 0 && !scheme) {
+    console.warn(
+      "[Composer] Romanization present but metadata.romanizationScheme is empty; skipping transliteration blocks.",
+    );
+  }
+  const emitTransliterations = transliterationRecords.length > 0 && Boolean(scheme);
 
   // Head section
   parts.push(`${ind(1)}<head>`);
@@ -66,6 +87,25 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     }
     parts.push(`${ind(3)}</composer:groups>`);
   }
+  if (emitTransliterations) {
+    for (const { line, key } of transliterationRecords) {
+      const r = line.romanization!;
+      parts.push(`${ind(3)}<transliteration for="${escapeXml(key)}" xml:lang="${escapeXml(scheme)}">`);
+      if (r.wordTexts && line.words && r.wordTexts.length === line.words.length) {
+        parts.push(`${ind(4)}<text for="${escapeXml(key)}">`);
+        for (let i = 0; i < r.wordTexts.length; i++) {
+          const w = line.words[i];
+          parts.push(
+            `${ind(5)}<span begin="${formatTime(w.begin)}" end="${formatTime(w.end)}">${escapeXml(r.wordTexts[i])}</span>`,
+          );
+        }
+        parts.push(`${ind(4)}</text>`);
+      } else {
+        parts.push(`${ind(4)}<text for="${escapeXml(key)}">${escapeXml(r.text)}</text>`);
+      }
+      parts.push(`${ind(3)}</transliteration>`);
+    }
+  }
   parts.push(`${ind(2)}</metadata>`);
   parts.push(`${ind(1)}</head>`);
 
@@ -82,6 +122,8 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     const groupAttr = line.groupId
       ? ` composer:groupId="${escapeXml(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
       : "";
+    const displayKey = displayKeyByLineId.get(line.id);
+    const itunesKeyAttr = displayKey ? ` itunes:key="${displayKey}"` : "";
     let content = "";
 
     if (granularity === "word" && line.words?.length) {
@@ -113,7 +155,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     }
 
     parts.push(
-      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}${groupAttr}>${content}</p>`,
+      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}${groupAttr}${itunesKeyAttr}>${content}</p>`,
     );
   }
 
