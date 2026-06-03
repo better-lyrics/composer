@@ -15,15 +15,6 @@ function findTransliterationsElement(doc: Document): Element | null {
   return null;
 }
 
-function pickKnownTransliteration(container: Element): Element | null {
-  const candidates = container.getElementsByTagName("transliteration");
-  for (const el of candidates) {
-    const lang = el.getAttribute("xml:lang");
-    if (lang && isKnownScheme(lang)) return el;
-  }
-  return null;
-}
-
 function buildRomanizationFromTextNode(textEl: Element, sourceWordCount: number | undefined): RomanizationData | null {
   const spanTexts: string[] = [];
   for (const node of textEl.childNodes) {
