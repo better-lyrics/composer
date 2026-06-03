@@ -1,8 +1,7 @@
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir } from "node:fs/promises";
 import { createReadStream } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { brotliDecompressSync } from "node:zlib";
 import type { Plugin, ResolvedConfig } from "vite";
 
 const PROJECT_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -45,13 +44,7 @@ function kuroshiroDictPlugin(): Plugin {
       const destDictDir = resolve(outDir, "dict");
       await mkdir(destDictDir, { recursive: true });
       const entries = await readdir(SOURCE_DICT_DIR);
-      await Promise.all(
-        entries.map(async (name) => {
-          const compressed = await readFile(resolve(SOURCE_DICT_DIR, name));
-          const decompressed = brotliDecompressSync(compressed);
-          await writeFile(resolve(destDictDir, name), decompressed);
-        }),
-      );
+      await Promise.all(entries.map((name) => copyFile(resolve(SOURCE_DICT_DIR, name), resolve(destDictDir, name))));
     },
   };
 }
