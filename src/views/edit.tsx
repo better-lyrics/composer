@@ -23,6 +23,7 @@ import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
+import { RomanizationBanner } from "@/views/edit/romanization-banner";
 import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
@@ -681,6 +682,8 @@ const EditPanel: React.FC = () => {
       )}
 
       <BracketWarning count={bracketCount} />
+
+      <RomanizationBanner />
 
       <AgentManager />
 
