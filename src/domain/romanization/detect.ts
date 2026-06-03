@@ -22,7 +22,6 @@ const SCRIPT_MATCHERS: readonly ScriptMatcher[] = [
 ];
 
 const NON_LATIN_PATTERN = /[^\p{Script=Latin}\p{Script=Common}\p{Script=Inherited}\s\p{N}\p{P}\p{Z}]/u;
-const LATIN_PATTERN = /\p{Script=Latin}/u;
 
 function detectNonLatinLanguage(text: string): DetectedLang | "und" | null {
   if (!text.trim()) return null;
@@ -32,10 +31,7 @@ function detectNonLatinLanguage(text: string): DetectedLang | "und" | null {
       best = matcher;
     }
   }
-  if (best) {
-    if (best.lang === "zh" && LATIN_PATTERN.test(text)) return "ja";
-    return best.lang;
-  }
+  if (best) return best.lang;
   if (NON_LATIN_PATTERN.test(text)) return "und";
   return null;
 }

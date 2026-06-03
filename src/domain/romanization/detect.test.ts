@@ -32,8 +32,8 @@ describe("detectNonLatinLanguage", () => {
     expect(detectNonLatinLanguage("  \n  ")).toBeNull();
   });
 
-  it("returns the dominant script when mixed", () => {
-    expect(detectNonLatinLanguage("Hello 夜")).toBe("ja");
+  it("returns zh for han with co-present latin (priority drives the result)", () => {
+    expect(detectNonLatinLanguage("Hello 夜")).toBe("zh");
   });
 
   it("prefers hiragana over han for mixed ja text", () => {
