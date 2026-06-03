@@ -49,6 +49,7 @@ const RomanizationSection: React.FC = () => (
           The Timeline header has a toggle that swaps the primary word text between source and romaji, so you can sync
           against whichever reading is easier to follow.
         </li>
+        <li>Regenerating a single word uses only that word as input, not the whole line.</li>
       </ul>
     </div>
 

@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { generateForLine } from "@/utils/romanization/generate-for-line";
 import { ROMANIZATION_LOG_PREFIX } from "@/utils/romanization/log-prefix";
+import { regenerateWord } from "@/utils/romanization/regenerate-word";
 import {
   autoUpdate,
   flip,
@@ -77,25 +77,16 @@ const Panel: React.FC<PanelProps> = ({ lineId, wordIndex, scheme, close }) => {
 
   const handleRegenerate = useCallback(async () => {
     const current = useProjectStore.getState().lines.find((l) => l.id === lineId);
-    if (!current?.words) return;
-    const word = current.words[wordIndex];
-    if (!word) return;
+    if (!current?.words?.[wordIndex]) return;
     setIsRegenerating(true);
     try {
-      const slice = {
-        ...current,
-        text: stripSplitCharacter(word.text),
-        words: [word],
-        romanization: undefined,
-      };
-      const data = await generateForLine(slice, scheme);
-      const next = (data.wordTexts?.[0] ?? data.text).trim();
-      if (!next) {
+      const { romaji } = await regenerateWord(current, wordIndex, scheme);
+      if (!romaji) {
         close();
         return;
       }
-      setInput(next);
-      commit(next);
+      setInput(romaji);
+      commit(romaji);
       close();
     } catch (err) {
       console.error(`${ROMANIZATION_LOG_PREFIX} Per-word regenerate failed`, err);

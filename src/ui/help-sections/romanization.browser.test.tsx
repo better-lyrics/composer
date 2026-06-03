@@ -99,4 +99,11 @@ describe("RomanizationSection: v2 coverage", () => {
     expect(text.toLowerCase()).toContain("primary");
     expect(text.toLowerCase()).toMatch(/toggle|swap/);
   });
+
+  it("notes that single-word regenerate uses only the selected word as input", async () => {
+    const screen = await render(<RomanizationSection />);
+    const text = screen.container.textContent ?? "";
+    expect(text.toLowerCase()).toContain("regenerating a single word");
+    expect(text.toLowerCase()).toMatch(/not the whole line|only that word/);
+  });
 });
