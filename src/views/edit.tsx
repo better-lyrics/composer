@@ -771,6 +771,7 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                     (next?.groupId !== line.groupId || next?.instanceIdx !== line.instanceIdx);
                   const group = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
                   const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
+                  const lyricLine = line.lineId ? linesById.get(line.lineId) : undefined;
                   const groupTooltip =
                     group && totalInstances > 1
                       ? `Part of ${group.label} · linked to ${totalInstances - 1} other instance${totalInstances - 1 === 1 ? "" : "s"}. Edits propagate.`
@@ -805,9 +806,7 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                         onGutterMouseEnter={handleGutterMouseEnter}
                         didDragRef={didDragRef}
                       />
-                      {line.lineId && linesById.get(line.lineId)?.romanization?.text && (
-                        <RomanizationSubrow line={linesById.get(line.lineId) as LyricLine} />
-                      )}
+                      {lyricLine?.romanization?.text && <RomanizationSubrow line={lyricLine} />}
                       {isLastOfInstance && group && (
                         <div className="mx-3 mt-1 mb-2 flex items-center select-none" aria-hidden>
                           <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />

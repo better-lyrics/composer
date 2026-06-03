@@ -93,12 +93,14 @@ const RomanizationSubrow: React.FC<RomanizationSubrowProps> = ({ line }) => {
       >
         <IconRefresh className="size-3.5" />
       </button>
-      <RomanizationEditPopover
-        line={line}
-        isOpen={isPopoverOpen}
-        onClose={() => setIsPopoverOpen(false)}
-        anchor={textRegionRef.current}
-      />
+      {isPopoverOpen && (
+        <RomanizationEditPopover
+          line={line}
+          isOpen
+          onClose={() => setIsPopoverOpen(false)}
+          anchor={textRegionRef.current}
+        />
+      )}
     </div>
   );
 };

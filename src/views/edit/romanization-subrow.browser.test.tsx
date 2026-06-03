@@ -188,4 +188,29 @@ describe("RomanizationSubrow line-level edit affordance", () => {
     await textRegion.click();
     await expect.element(screen.getByRole("textbox", { name: /romanization text/i })).toBeInTheDocument();
   });
+
+  it("shows the refreshed romanization text in the textarea on reopen", async () => {
+    seedLineWithRomanization({ romanizationText: "old" });
+    const LiveSubrow: React.FC = () => {
+      const liveLine = useProjectStore((s) => s.lines[0]);
+      return <RomanizationSubrow line={liveLine} />;
+    };
+    const screen = await render(<LiveSubrow />);
+
+    await screen.getByTestId("romanization-text-region").click();
+    const initialTextarea = screen.getByRole("textbox", { name: /romanization text/i });
+    await expect.element(initialTextarea).toHaveValue("old");
+    await screen.getByRole("button", { name: /cancel/i }).click();
+    await expect.element(screen.getByRole("textbox", { name: /romanization text/i })).not.toBeInTheDocument();
+
+    useProjectStore.getState().setLineRomanizationWithHistory("L1", {
+      text: "fresh",
+      source: "generated",
+    });
+
+    await expect.element(screen.getByTestId("romanization-line-text")).toHaveTextContent("fresh");
+    await screen.getByTestId("romanization-text-region").click();
+    const reopened = screen.getByRole("textbox", { name: /romanization text/i });
+    await expect.element(reopened).toHaveValue("fresh");
+  });
 });
