@@ -15,7 +15,7 @@ import {
   useRole,
 } from "@floating-ui/react";
 import { IconRefresh } from "@tabler/icons-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 // -- Module-scope refs --------------------------------------------------------
 
@@ -52,13 +52,19 @@ const Panel: React.FC<PanelProps> = ({ lineId, wordIndex, scheme, close }) => {
   const initial = line?.romanization?.wordTexts?.[wordIndex] ?? "";
   const [input, setInput] = useState(initial);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const committedRef = useRef(false);
 
   const commit = useCallback(
     (next: string) => {
+      if (committedRef.current) return;
       const current = useProjectStore.getState().lines.find((l) => l.id === lineId);
       if (!current?.romanization?.wordTexts) return;
       const existing = current.romanization.wordTexts[wordIndex] ?? "";
-      if (existing === next) return;
+      if (existing === next) {
+        committedRef.current = true;
+        return;
+      }
+      committedRef.current = true;
       const nextWordTexts = current.romanization.wordTexts.slice();
       nextWordTexts[wordIndex] = next;
       useProjectStore.getState().setLineRomanizationWithHistory(lineId, {
@@ -110,7 +116,11 @@ const Panel: React.FC<PanelProps> = ({ lineId, wordIndex, scheme, close }) => {
         aria-label="Per-word romanization text"
         value={input}
         onChange={(e) => setInput(e.target.value)}
-        onBlur={() => commit(input)}
+        onBlur={(e) => {
+          const nextFocus = e.relatedTarget as HTMLElement | null;
+          if (nextFocus?.closest("[data-romanization-popover]")) return;
+          commit(input);
+        }}
         onKeyDown={(e) => {
           e.stopPropagation();
           if (e.key === "Enter") {
@@ -170,6 +180,7 @@ const WordBlockRomanizationPopover: React.FC<WordBlockRomanizationPopoverProps> 
       <FloatingFocusManager context={context} modal={false}>
         <div
           ref={refs.setFloating}
+          data-romanization-popover
           style={floatingStyles}
           {...getFloatingProps()}
           className="z-100 border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"

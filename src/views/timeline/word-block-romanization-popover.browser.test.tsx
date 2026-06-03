@@ -253,6 +253,35 @@ describe("WordBlockRomanizationPopover: regenerate-this-word", () => {
   });
 });
 
+// -- History pollution --------------------------------------------------------
+
+describe("WordBlockRomanizationPopover: history pollution", () => {
+  beforeEach(() => {
+    clearGeneratorRegistry();
+    markPersistenceSettled();
+  });
+
+  it("clicking Regenerate after typing does not double-commit (single undo restores original)", async () => {
+    seedWordSyncedWithWordTexts();
+    registerGeneratorFactory("ja-Latn-hepburn", async () => ({
+      scheme: "ja-Latn-hepburn",
+      async generateLine() {
+        return { text: "regen", wordTexts: ["regen"] };
+      },
+    }));
+    const screen = await render(<WordBlock {...BLOCK_PROPS} romanization="yoru" />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    altClick(block);
+    await expect.poll(() => findPopoverInput()).not.toBeNull();
+    await screen.getByRole("textbox", { name: /per-word romanization text/i }).fill("edited");
+    await userEvent.tab();
+    await screen.getByRole("button", { name: "Regenerate", exact: true }).click();
+    await expect.poll(() => useProjectStore.getState().lines[0].romanization?.wordTexts?.[0]).toBe("regen");
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().lines[0].romanization?.wordTexts?.[0]).toBe("yoru");
+  });
+});
+
 // -- Source word display ------------------------------------------------------
 
 describe("WordBlockRomanizationPopover: source word display", () => {
