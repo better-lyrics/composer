@@ -4,6 +4,7 @@
   "compatibility_date": "2026-01-09",
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "run_worker_first": ["/dict/*"]
   }
 }
