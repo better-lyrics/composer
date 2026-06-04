@@ -7,6 +7,7 @@ import { ImportSection } from "@/ui/help-sections/importing";
 import { KeyboardShortcutsSection } from "@/ui/help-sections/keyboard-shortcuts";
 import { PreviewSection } from "@/ui/help-sections/preview";
 import { RecoverySection } from "@/ui/help-sections/recovery";
+import { RomanizationSection } from "@/ui/help-sections/romanization";
 import { SyncSection } from "@/ui/help-sections/syncing";
 import { TimelineSection } from "@/ui/help-sections/timeline";
 import { TtmlStandardsSection } from "@/ui/help-sections/ttml-standards";
@@ -22,6 +23,7 @@ const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
   timeline: TimelineSection,
   groups: GroupsSection,
   preview: PreviewSection,
+  romanization: RomanizationSection,
   exporting: ExportSection,
   recovery: RecoverySection,
   "ttml-standards": TtmlStandardsSection,
