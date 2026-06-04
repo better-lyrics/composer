@@ -43,14 +43,6 @@ function toastBulkResult({ successCount, failureCount }: BulkSummary): void {
   toast.warning(`Romanized ${successCount} ${pluralLine(successCount)}, ${failureCount} failed.`);
 }
 
-function toastPerLineFailure(err: unknown): void {
-  toastError(err);
-}
-
-function toastPerWordFailure(err: unknown): void {
-  toastError(err);
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { toastBulkResult, toastError, toastPerLineFailure, toastPerWordFailure };
+export { toastBulkResult, toastError };

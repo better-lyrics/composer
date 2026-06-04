@@ -1,10 +1,9 @@
+import { DEFAULT_ROMANIZATION_API_BASE, resolveApiBase } from "@/lib/romanization-api";
 import { useSettingsStore } from "@/stores/settings";
 import { useState } from "react";
 import { toast } from "sonner";
 
 // -- Constants ----------------------------------------------------------------
-
-const DEFAULT_API_BASE = "https://composer-romanization-api.boidu.dev";
 
 const INPUT_CLASS =
   "h-7 px-2 text-sm rounded-lg bg-composer-input text-composer-text border border-composer-border focus:outline-none focus:border-composer-accent w-full";
@@ -19,11 +18,6 @@ interface HealthResponse {
 }
 
 // -- Helpers ------------------------------------------------------------------
-
-function resolveBase(override: string): string {
-  const trimmed = override.trim();
-  return (trimmed || DEFAULT_API_BASE).replace(/\/$/, "");
-}
 
 function describeCapabilities(body: HealthResponse): string {
   const libs = body.libraries && body.libraries.length > 0 ? body.libraries.join(", ") : "none yet";
@@ -43,7 +37,7 @@ const RomanizationSettingsSection: React.FC = () => {
   async function handleTest(): Promise<void> {
     setTesting(true);
     try {
-      const response = await fetch(`${resolveBase(apiBase)}/health`);
+      const response = await fetch(`${resolveApiBase(apiBase)}/health`);
       if (!response.ok) {
         toast.error(`Could not reach the romanization backend (${response.status}).`);
         return;
@@ -84,7 +78,7 @@ const RomanizationSettingsSection: React.FC = () => {
             type="text"
             aria-label="API base URL"
             value={apiBase}
-            placeholder={DEFAULT_API_BASE}
+            placeholder={DEFAULT_ROMANIZATION_API_BASE}
             onChange={(e) => set("romanizationApiBase", e.target.value)}
             className={INPUT_CLASS}
           />

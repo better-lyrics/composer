@@ -193,11 +193,11 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics }) => {
             onClick={togglePrimaryWordText}
             hasIcon
             className={cn(primaryWordText !== "romaji" && "opacity-60")}
-            title="Toggle source/romaji primary"
+            title="Toggle source/transliteration primary"
             data-testid="timeline-primary-word-text-toggle"
           >
             <IconLanguage size={16} />
-            <span>{primaryWordText === "romaji" ? "Romaji" : "Source"}</span>
+            <span>{primaryWordText === "romaji" ? "Transliteration" : "Source"}</span>
           </Button>
         )}
 

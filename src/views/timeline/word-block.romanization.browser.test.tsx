@@ -158,11 +158,11 @@ describe("WordBlock romanization subtext", () => {
     expect(screen.container.querySelector("input[aria-label='Romanization word']")).toBeNull();
   });
 
-  it("Alt+click tooltip on each word reads ALT+click to edit romaji when arity matches", async () => {
+  it("Alt+click tooltip on each word reads ALT+click to edit transliteration when arity matches", async () => {
     seedLine({ wordTexts: ["yoru", "dakedo"] });
     const screen = await renderTrack();
     const blocks = screen.container.querySelectorAll("[data-word-block]");
-    expect((blocks[0] as HTMLElement).getAttribute("title")).toMatch(/click to edit romaji/i);
+    expect((blocks[0] as HTMLElement).getAttribute("title")).toMatch(/click to edit transliteration/i);
   });
 
   it("preserves Save semantics: editing via popover updates only the indexed wordText", async () => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RateLimitError, RomanizationApiError, ServiceUnavailableError, TurnstileError } from "@/lib/romanization-api";
-import { toastBulkResult, toastError, toastPerLineFailure, toastPerWordFailure } from "@/utils/romanization/toast";
+import { toastBulkResult, toastError } from "@/utils/romanization/toast";
 
 // TDD policy: sonner is a third-party UI library with visual side effects we cannot
 // assert against in the unit project. We mock it to verify the dispatch + formatting
@@ -81,19 +81,5 @@ describe("toastBulkResult", () => {
     expect(toastMock.success).not.toHaveBeenCalled();
     expect(toastMock.warning).not.toHaveBeenCalled();
     expect(toastMock.error).not.toHaveBeenCalled();
-  });
-});
-
-describe("toastPerLineFailure", () => {
-  it("shows a single-line failure with the API error message", () => {
-    toastPerLineFailure(new ServiceUnavailableError());
-    expect(toastMock.error).toHaveBeenCalledWith("Could not reach romanization service. Try again in a moment.");
-  });
-});
-
-describe("toastPerWordFailure", () => {
-  it("shows a per-word failure with the API error message", () => {
-    toastPerWordFailure(new TurnstileError());
-    expect(toastMock.error).toHaveBeenCalledWith("Verification failed. Refresh the page and try again.");
   });
 });

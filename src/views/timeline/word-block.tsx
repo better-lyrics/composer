@@ -87,7 +87,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   const hasSecondary = typeof secondaryText === "string" && secondaryText.length > 0;
   const showSecondary = hasSecondary && naturalWidth >= ROMAJI_VISIBILITY_THRESHOLD;
   const altEditable = romajiEditable === true && onAltClick !== undefined;
-  const altTitle = altEditable ? `${ALT_KEY}+click to edit romaji` : undefined;
+  const altTitle = altEditable ? `${ALT_KEY}+click to edit transliteration` : undefined;
 
   const myKey = selfKey(lineId, wordIndex, trackType);
   const isSnapped = useTimelineStore((s) => s.snappedBlockId === myKey);

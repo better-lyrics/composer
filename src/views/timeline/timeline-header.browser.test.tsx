@@ -195,7 +195,7 @@ describe("TimelineHeader source/romaji toggle", () => {
     useProjectStore.getState().setMetadata({ timelinePrimaryWordText: "romaji" });
     const screen = await render(<TimelineHeader />);
     const toggle = screen.getByTestId("timeline-primary-word-text-toggle");
-    await expect.element(toggle).toHaveTextContent(/romaji/i);
+    await expect.element(toggle).toHaveTextContent(/transliteration/i);
     expect(useTimelineStore.getState().primaryWordText).toBe("romaji");
   });
 });

@@ -2,7 +2,7 @@ import { useSettingsStore } from "@/stores/settings";
 
 // -- Constants ----------------------------------------------------------------
 
-const DEFAULT_BASE = "https://composer-romanization-api.boidu.dev";
+const DEFAULT_ROMANIZATION_API_BASE = "https://composer-romanization-api.boidu.dev";
 const DEFAULT_RETRY_AFTER_SECONDS = 60;
 
 // -- Types --------------------------------------------------------------------
@@ -80,10 +80,13 @@ class ServiceUnavailableError extends RomanizationApiError {
 
 // -- Functions ----------------------------------------------------------------
 
+function resolveApiBase(override?: string): string {
+  const raw = override !== undefined ? override : useSettingsStore.getState().romanizationApiBase;
+  return (raw?.trim() || DEFAULT_ROMANIZATION_API_BASE).replace(/\/$/, "");
+}
+
 function readBase(): string {
-  const override = useSettingsStore.getState().romanizationApiBase;
-  const base = override?.trim() || DEFAULT_BASE;
-  return base.replace(/\/$/, "");
+  return resolveApiBase();
 }
 
 function parseRetryAfter(response: Response, body: unknown): number {
@@ -135,5 +138,13 @@ async function romanizeLines(args: RomanizeArgs): Promise<RomanizeResponse> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { RateLimitError, RomanizationApiError, ServiceUnavailableError, TurnstileError, romanizeLines };
+export {
+  DEFAULT_ROMANIZATION_API_BASE,
+  RateLimitError,
+  RomanizationApiError,
+  ServiceUnavailableError,
+  TurnstileError,
+  resolveApiBase,
+  romanizeLines,
+};
 export type { RomanizeArgs, RomanizeError, RomanizeLine, RomanizeResponse, RomanizeResult };
