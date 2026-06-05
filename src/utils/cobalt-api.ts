@@ -81,8 +81,7 @@ async function parseError(res: Response): Promise<CobaltApiError> {
   } catch {
     body = { error: "unknown" };
   }
-  const raw = body.error ?? body.code ?? "unknown";
-  const code = raw === "extraction_failed" && body.reason ? mapStandardCobaltErrorCode(body.reason) : raw;
+  const code = body.reason ? mapStandardCobaltErrorCode(body.reason) : (body.error ?? body.code ?? "unknown");
   return new CobaltApiError(code, res.status);
 }
 
