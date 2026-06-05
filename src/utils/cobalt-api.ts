@@ -232,7 +232,7 @@ function formatCobaltErrorForToast(err: unknown, ctx: ToastErrorContext): string
 
     case "bot_detection":
       return isDefault
-        ? "YouTube is rate-limiting Composer right now. Try again in a few minutes."
+        ? "YouTube is blocking Composer's default Cobalt instance. Open Settings → Advanced, add a working instance from cobalt.directory, and switch to it."
         : `YouTube is blocking ${instanceLabel} as a bot.${switchHint}`;
 
     case "geo_blocked":
