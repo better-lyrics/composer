@@ -17,9 +17,9 @@ const ImportSection: React.FC = () => (
       </ul>
       <p className={`${PROSE} mt-3`}>
         For YouTube imports, audio comes from a Cobalt backend. Composer ships with a default instance that handles
-        verification automatically, but YouTube is currently blocking it. To import from YouTube, add a working
-        instance from cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status
-        icon next to its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
+        verification automatically, but YouTube is currently blocking it. To import from YouTube, add a working instance
+        from cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status icon next
+        to its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
       </p>
     </div>
 

@@ -13,7 +13,6 @@ function useAutoSeparate(): void {
       if (key === prevKey) return;
       prevKey = key;
 
-
       const sep = useSeparationStore.getState();
       await sep.refreshForCurrentSource();
 
@@ -22,7 +21,6 @@ function useAutoSeparate(): void {
       if (!sep.hostingConfigured) return;
       if (sep.status === "downloading" || sep.status === "processing") return;
       sep.separate();
-
     });
     return () => unsub();
   }, []);

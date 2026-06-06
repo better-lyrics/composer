@@ -50,106 +50,106 @@ function activeLineText(el: BraccatoElement): string {
 // -- Tests --------------------------------------------------------------------
 
 describe("BraccatoRenderer", () => {
-    beforeAll(() => {
-        addGlobalAllowedConsolePattern(/dev mode/i);
-    });
+  beforeAll(() => {
+    addGlobalAllowedConsolePattern(/dev mode/i);
+  });
 
-    it("highlights the line under the current audio time", async () => {
-        const ttml = buildSyncedTtml();
-        const audio = new Audio();
-        audio.currentTime = 14;
-        useAudioStore.setState({ audioElement: audio });
+  it("highlights the line under the current audio time", async () => {
+    const ttml = buildSyncedTtml();
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio });
 
-        const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
-        const el = getBraccatoElement(screen.container);
-        await waitForLyrics(el);
+    const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
 
-        await expect.poll(() => activeLineText(el)).toContain("second line");
-    });
+    await expect.poll(() => activeLineText(el)).toContain("second line");
+  });
 
-    it("moves the highlight as the audio time advances", async () => {
-        const ttml = buildSyncedTtml();
-        const audio = new Audio();
-        audio.currentTime = 14;
-        useAudioStore.setState({ audioElement: audio });
+  it("moves the highlight as the audio time advances", async () => {
+    const ttml = buildSyncedTtml();
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio });
 
-        const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
-        const el = getBraccatoElement(screen.container);
-        await waitForLyrics(el);
-        await expect.poll(() => activeLineText(el)).toContain("second line");
+    const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => activeLineText(el)).toContain("second line");
 
-        audio.currentTime = 26;
-        await expect.poll(() => activeLineText(el)).toContain("third line");
-    });
+    audio.currentTime = 26;
+    await expect.poll(() => activeLineText(el)).toContain("third line");
+  });
 
-    it("tracks a newly registered audio element", async () => {
-        const ttml = buildSyncedTtml();
-        const firstAudio = new Audio();
-        firstAudio.currentTime = 14;
-        useAudioStore.setState({ audioElement: firstAudio });
+  it("tracks a newly registered audio element", async () => {
+    const ttml = buildSyncedTtml();
+    const firstAudio = new Audio();
+    firstAudio.currentTime = 14;
+    useAudioStore.setState({ audioElement: firstAudio });
 
-        const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
-        const el = getBraccatoElement(screen.container);
-        await waitForLyrics(el);
-        await expect.poll(() => activeLineText(el)).toContain("second line");
+    const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => activeLineText(el)).toContain("second line");
 
-        const replacementAudio = new Audio();
-        replacementAudio.currentTime = 26;
-        useAudioStore.setState({ audioElement: replacementAudio });
+    const replacementAudio = new Audio();
+    replacementAudio.currentTime = 26;
+    useAudioStore.setState({ audioElement: replacementAudio });
 
-        await expect.poll(() => activeLineText(el)).toContain("third line");
-    });
+    await expect.poll(() => activeLineText(el)).toContain("third line");
+  });
 
-    it("starts playback when a line is clicked", async () => {
-        const ttml = buildSyncedTtml();
-        const audio = new Audio();
-        useAudioStore.setState({ audioElement: audio, isPlaying: false });
+  it("starts playback when a line is clicked", async () => {
+    const ttml = buildSyncedTtml();
+    const audio = new Audio();
+    useAudioStore.setState({ audioElement: audio, isPlaying: false });
 
-        const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
-        const el = getBraccatoElement(screen.container);
-        await waitForLyrics(el);
+    const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
 
-        el.shadowRoot?.querySelector<HTMLElement>(".braccato--line")?.click();
+    el.shadowRoot?.querySelector<HTMLElement>(".braccato--line")?.click();
 
-        await expect.poll(() => useAudioStore.getState().isPlaying).toBe(true);
-    });
+    await expect.poll(() => useAudioStore.getState().isPlaying).toBe(true);
+  });
 
-    it("seeks the audio to the clicked line's start time", async () => {
-        const ttml = buildSyncedTtml();
-        const audio = new Audio();
-        useAudioStore.setState({ audioElement: audio });
+  it("seeks the audio to the clicked line's start time", async () => {
+    const ttml = buildSyncedTtml();
+    const audio = new Audio();
+    useAudioStore.setState({ audioElement: audio });
 
-        const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
-        const el = getBraccatoElement(screen.container);
-        await waitForLyrics(el);
+    const screen = await render(<BraccatoRenderer ttmlString={ttml} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
 
-        el.shadowRoot?.querySelector<HTMLElement>(".braccato--line")?.click();
+    el.shadowRoot?.querySelector<HTMLElement>(".braccato--line")?.click();
 
-        await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
-    });
+    await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
+  });
 
-    it("does not bind to #composer-audio before the audio element is registered", async () => {
-        const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
-        const el = screen.container.querySelector("braccato-lyrics");
-        expect(el?.getAttribute("source")).toBeNull();
-    });
+  it("does not bind to #composer-audio before the audio element is registered", async () => {
+    const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
+    const el = screen.container.querySelector("braccato-lyrics");
+    expect(el?.getAttribute("source")).toBeNull();
+  });
 
-    it("rebinds when the registered audio element is replaced", async () => {
-        const firstAudio = makeAudio("https://example.test/first.mp3");
-        useAudioStore.setState({ audioElement: firstAudio });
+  it("rebinds when the registered audio element is replaced", async () => {
+    const firstAudio = makeAudio("https://example.test/first.mp3");
+    useAudioStore.setState({ audioElement: firstAudio });
 
-        const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
-        await waitFor(
-            () => screen.container.querySelector("braccato-lyrics")?.getAttribute("source") === "#composer-audio",
-        );
-        const firstRenderer = screen.container.querySelector("braccato-lyrics");
+    const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
+    await waitFor(
+      () => screen.container.querySelector("braccato-lyrics")?.getAttribute("source") === "#composer-audio",
+    );
+    const firstRenderer = screen.container.querySelector("braccato-lyrics");
 
-        firstAudio.remove();
-        const secondAudio = makeAudio("https://example.test/second.mp3");
-        useAudioStore.setState({ audioElement: secondAudio });
+    firstAudio.remove();
+    const secondAudio = makeAudio("https://example.test/second.mp3");
+    useAudioStore.setState({ audioElement: secondAudio });
 
-        await waitFor(() => screen.container.querySelector("braccato-lyrics") !== firstRenderer);
-        const secondRenderer = screen.container.querySelector("braccato-lyrics");
-        expect(secondRenderer?.getAttribute("source")).toBe("#composer-audio");
-    });
+    await waitFor(() => screen.container.querySelector("braccato-lyrics") !== firstRenderer);
+    const secondRenderer = screen.container.querySelector("braccato-lyrics");
+    expect(secondRenderer?.getAttribute("source")).toBe("#composer-audio");
+  });
 });

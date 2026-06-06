@@ -33,8 +33,8 @@ const AdvancedSection: React.FC = () => {
         <div className="flex flex-col gap-0.5 mb-3">
           <span className="text-sm font-medium text-composer-text">Cobalt instance</span>
           <span className="text-xs text-composer-text-muted">
-            Composer uses a Cobalt backend to fetch YouTube audio. The default one is currently blocked by
-            YouTube, so add a working instance from cobalt.directory below, or self-host.
+            Composer uses a Cobalt backend to fetch YouTube audio. The default one is currently blocked by YouTube, so
+            add a working instance from cobalt.directory below, or self-host.
           </span>
         </div>
 
