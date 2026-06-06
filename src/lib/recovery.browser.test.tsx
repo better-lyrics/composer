@@ -140,7 +140,7 @@ describe("recovery", () => {
       expect((await readRecoveryMetadata()).found).toBe(false);
 
       await new Promise<void>((resolve, reject) => {
-        const open = indexedDB.open(DB_NAME, 1);
+        const open = indexedDB.open(DB_NAME, 2);
         open.onerror = () => reject(open.error);
         open.onsuccess = () => {
           const db = open.result;

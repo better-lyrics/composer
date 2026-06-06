@@ -1,7 +1,9 @@
 // -- Constants -----------------------------------------------------------------
 
 const DB_NAME = "ttml-composer";
+const DB_VERSION = 2;
 const STORE_NAME = "projects";
+const STEM_STORE_NAME = "separated-stems";
 const CURRENT_KEY = "current";
 const AUDIO_KEY = "current-audio";
 
@@ -9,9 +11,11 @@ const AUDIO_KEY = "current-audio";
 
 function putValue(key: string, value: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
-    const open = indexedDB.open(DB_NAME, 1);
+    const open = indexedDB.open(DB_NAME, DB_VERSION);
     open.onupgradeneeded = () => {
-      open.result.createObjectStore(STORE_NAME);
+      const db = open.result;
+      if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME);
+      if (!db.objectStoreNames.contains(STEM_STORE_NAME)) db.createObjectStore(STEM_STORE_NAME);
     };
     open.onerror = () => reject(open.error);
     open.onsuccess = () => {

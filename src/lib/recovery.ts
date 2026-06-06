@@ -23,8 +23,9 @@ interface RecoveryResult {
 // -- Constants ----------------------------------------------------------------
 
 const DB_NAME = "ttml-composer";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "projects";
+const STEM_STORE_NAME = "separated-stems";
 const CURRENT_PROJECT_KEY = "current";
 
 // -- Helpers ------------------------------------------------------------------
@@ -45,6 +46,9 @@ function openRecoveryDB(): Promise<IDBDatabase> {
       const db = (event.target as IDBOpenDBRequest).result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME);
+      }
+      if (!db.objectStoreNames.contains(STEM_STORE_NAME)) {
+        db.createObjectStore(STEM_STORE_NAME);
       }
     };
   });
