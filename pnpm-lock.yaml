@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@braccato/parsers': ^0.1.1
+  '@braccato/parsers': ^0.1.2
 
 importers:
 
@@ -329,8 +329,8 @@ packages:
   '@braccato/core@0.1.5':
     resolution: {integrity: sha512-niByy5+OZpDtg8nIhjlOjYsltnAE10Yg8cXw8HPuno0sgLleOzTz0qhOgH8SN+zGJB19X9xV1OViySwYl+p2+Q==}
 
-  '@braccato/parsers@0.1.1':
-    resolution: {integrity: sha512-S4LlT8vTMNiXvVUC5iaQiLvu8KUNZn7oAI0LRaQ0W75THlX/pTSEp3EoB3UBzI2F0k3ARvxL9qNuxpd3+WHmeQ==}
+  '@braccato/parsers@0.1.2':
+    resolution: {integrity: sha512-v1AIekHvH43hOOybJmwpoon3B7L6649NFJawsa0sm9202klsqSXkA/k3SQ/VlM8KIkghmd+nhUERtp0ITxzxnQ==}
 
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
@@ -3033,10 +3033,10 @@ snapshots:
 
   '@braccato/core@0.1.5':
     dependencies:
-      '@braccato/parsers': 0.1.1
+      '@braccato/parsers': 0.1.2
       lit: 3.3.2
 
-  '@braccato/parsers@0.1.1': {}
+  '@braccato/parsers@0.1.2': {}
 
   '@bramus/specificity@2.4.2':
     dependencies:
