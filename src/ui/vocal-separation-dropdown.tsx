@@ -4,14 +4,21 @@ import { getModelDescriptor } from "@/audio/separation/model-registry";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { IconLoader2, IconMicrophone } from "@tabler/icons-react";
-import { useEffect } from "react";
+import { cn } from "@/utils/cn";
+import { IconCheck, type IconProps, IconLoader2, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
+import { type ComponentType, useEffect } from "react";
 import type { Stem } from "@/audio/separation/types";
 
 const STEM_LABELS: Record<Stem, string> = {
   original: "Original",
   vocals: "Vocals",
-  instrumental: "Instr.",
+  instrumental: "Instrumental",
+};
+
+const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
+  original: IconWaveSine,
+  vocals: IconMicrophone,
+  instrumental: IconMusic,
 };
 
 function formatMb(bytes: number): string {
@@ -75,7 +82,7 @@ const VocalSeparationDropdown: React.FC = () => {
         </Button>
       }
     >
-      <div className="p-3 w-72">
+      <div className="p-3 w-max max-w-80">
         {status === "error" && error && (
           <ErrorState message={error.message} onRetry={retry} onDismiss={() => useSeparationStore.getState().reset()} />
         )}
@@ -176,26 +183,33 @@ const IdleReadyState: React.FC<{
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm font-medium text-composer-text">Playback source</p>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         {(["original", "vocals", "instrumental"] as Stem[]).map((stem) => {
           const enabled = stem === "original" || availableStems.includes(stem);
+          const selected = currentStem === stem;
+          const Icon = STEM_ICONS[stem];
           return (
-            <label
+            <button
               key={stem}
-              className={`flex items-center gap-2 text-sm ${
-                enabled ? "text-composer-text cursor-pointer" : "text-composer-text-muted cursor-not-allowed opacity-60"
-              }`}
+              type="button"
+              disabled={!enabled}
+              onClick={() => onSelect(stem)}
+              className={cn(
+                "flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm text-left text-composer-text transition-colors",
+                selected && "bg-composer-button font-medium",
+                !selected && enabled && "cursor-pointer hover:bg-composer-button",
+                !enabled && "cursor-not-allowed opacity-55",
+              )}
             >
-              <input
-                type="radio"
-                name="stem"
-                checked={currentStem === stem}
-                onChange={() => onSelect(stem)}
-                disabled={!enabled}
-                className="accent-composer-accent"
+              <Icon
+                className={cn(
+                  "size-4 shrink-0",
+                  selected ? "text-composer-accent-text" : "text-composer-text opacity-55",
+                )}
               />
-              {STEM_LABELS[stem]}
-            </label>
+              <span className="flex-1">{STEM_LABELS[stem]}</span>
+              {selected && <IconCheck className="size-3.5 text-composer-accent shrink-0" />}
+            </button>
           );
         })}
       </div>
