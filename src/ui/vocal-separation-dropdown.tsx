@@ -57,18 +57,19 @@ const VocalSeparationDropdown: React.FC = () => {
 
   const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
   const triggerLabel = status === "downloading" || status === "processing" ? `${pct}%` : STEM_LABELS[currentStem];
+  const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
     status === "downloading" || status === "processing" ? (
-      <IconLoader2 className="size-4 animate-spin" />
+      <IconLoader2 className={`${triggerIconClass} animate-spin`} />
     ) : (
-      <IconMicrophone className="size-4" />
+      <IconMicrophone className={triggerIconClass} />
     );
 
   return (
     <Popover
       placement="top-end"
       trigger={
-        <Button variant="ghost" hasIcon className="font-mono tabular-nums min-w-20" aria-label="Vocal separation">
+        <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label="Vocal separation">
           {triggerIcon}
           <span>{triggerLabel}</span>
         </Button>
