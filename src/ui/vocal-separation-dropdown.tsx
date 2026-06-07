@@ -139,7 +139,7 @@ const ProgressState: React.FC<{ title: string; detail: string; pct: number; onCa
   pct,
   onCancel,
 }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col gap-2 min-w-60">
     <p className="text-sm font-medium text-composer-text">{title}</p>
     <p className="text-xs text-composer-text-muted tabular-nums">{detail}</p>
     <ProgressBar pct={pct} />
