@@ -1,14 +1,8 @@
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { type Chunk, SEGMENT_SAMPLES, chunkCount, iterateChunks, stitchChunks } from "@/audio/separation/chunker";
-import {
-  MAGSPEC_CHANNELS,
-  MAGSPEC_DIMS,
-  NUM_FREQ_BINS,
-  NUM_TIME_FRAMES,
-  computeMagspec,
-  waveformFromComplexAsChannels,
-} from "@/audio/separation/demucs-spec";
+import { MAGSPEC_DIMS, computeMagspec } from "@/audio/separation/demucs-spec";
+import { denormalizeDemucsOutput, extractVocalsStem, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
 import { fetchAndCacheModel, hasCachedModel, readCachedModel } from "@/audio/separation/model-cache";
 import { getModelDescriptor } from "@/audio/separation/model-registry";
 import type { VocalModelVariant } from "@/stores/settings";
@@ -21,7 +15,6 @@ import type { VocalModelVariant } from "@/stores/settings";
 //     "output": [1, 4, 4, 2048, 336]  separated spectrogram branch
 //     "add_67": [1, 4, 2, 343980]     separated time branch
 //                                     stem order: drums, bass, other, vocals
-const STEM_INDEX_VOCALS = 3;
 const FREQ_OUTPUT_NAME = "output";
 const TIME_OUTPUT_NAME = "add_67";
 const WAVEFORM_INPUT_NAME = "input";
@@ -231,76 +224,6 @@ async function handleProcess(channels: Float32Array[], totalFrames: number) {
     },
     transfers,
   );
-}
-
-function normalizeForDemucs(
-  channels: Float32Array[],
-  totalFrames: number,
-): {
-  channels: Float32Array[];
-  mean: number;
-  std: number;
-} {
-  if (totalFrames === 0) return { channels, mean: 0, std: 1 };
-
-  let mean = 0;
-  for (let i = 0; i < totalFrames; i++) {
-    mean += ((channels[0]?.[i] ?? 0) + (channels[1]?.[i] ?? 0)) * 0.5;
-  }
-  mean /= totalFrames;
-
-  let variance = 0;
-  for (let i = 0; i < totalFrames; i++) {
-    const mono = ((channels[0]?.[i] ?? 0) + (channels[1]?.[i] ?? 0)) * 0.5;
-    const d = mono - mean;
-    variance += d * d;
-  }
-  const std = Math.sqrt(variance / Math.max(1, totalFrames - 1));
-  if (!Number.isFinite(std) || std < 1e-8) return { channels, mean: 0, std: 1 };
-
-  return {
-    mean,
-    std,
-    channels: channels.map((channel) => {
-      const out = new Float32Array(channel.length);
-      for (let i = 0; i < channel.length; i++) out[i] = (channel[i] - mean) / std;
-      return out;
-    }),
-  };
-}
-
-function denormalizeDemucsOutput(channels: Float32Array[], normalized: { mean: number; std: number }): Float32Array[] {
-  if (normalized.mean === 0 && normalized.std === 1) return channels;
-  for (const channel of channels) {
-    for (let i = 0; i < channel.length; i++) channel[i] = channel[i] * normalized.std + normalized.mean;
-  }
-  return channels;
-}
-
-// add_67 has dims [1, 4, 2, 343980]: batch, stem, channel, sample.
-// output has dims [1, 4, 4, 2048, 336]: batch, stem, complex-as-channels, freq, time.
-// Vocals = stem index 3. Stride per stem = 2 * SEGMENT_SAMPLES.
-function extractVocalsStem(timeTensor: OrtTensor, freqTensor: OrtTensor): Float32Array[] {
-  const timeData = timeTensor.data;
-  const stemStride = 2 * SEGMENT_SAMPLES;
-  const channelStride = SEGMENT_SAMPLES;
-  const base = STEM_INDEX_VOCALS * stemStride;
-
-  const freqSourceStride = MAGSPEC_CHANNELS * NUM_FREQ_BINS * NUM_TIME_FRAMES;
-  const freqBase = STEM_INDEX_VOCALS * freqSourceStride;
-  const freqChannels = waveformFromComplexAsChannels(freqTensor.data.subarray(freqBase, freqBase + freqSourceStride));
-
-  const result: Float32Array[] = [];
-  for (let c = 0; c < 2; c++) {
-    const out = new Float32Array(SEGMENT_SAMPLES);
-    const timeBranch = timeData.subarray(base + c * channelStride, base + c * channelStride + SEGMENT_SAMPLES);
-    const freqBranch = freqChannels[c];
-    for (let i = 0; i < SEGMENT_SAMPLES; i++) {
-      out[i] = timeBranch[i] + freqBranch[i];
-    }
-    result.push(out);
-  }
-  return result;
 }
 
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
