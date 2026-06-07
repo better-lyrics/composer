@@ -181,7 +181,7 @@ const IdleReadyState: React.FC<{
 }> = ({ availableStems, currentStem, onSelect, onSeparate }) => {
   const hasSeparated = availableStems.includes("vocals");
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 min-w-60">
       <p className="text-sm font-medium text-composer-text">Playback source</p>
       <div className="flex flex-col gap-0.5">
         {(["original", "vocals", "instrumental"] as Stem[]).map((stem) => {
@@ -208,7 +208,10 @@ const IdleReadyState: React.FC<{
                 )}
               />
               <span className="flex-1">{STEM_LABELS[stem]}</span>
-              {selected && <IconCheck className="size-3.5 text-composer-accent shrink-0" />}
+              <IconCheck
+                aria-hidden={!selected}
+                className={cn("size-3.5 text-composer-accent shrink-0", !selected && "invisible")}
+              />
             </button>
           );
         })}
