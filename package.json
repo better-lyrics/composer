@@ -51,15 +51,13 @@
   "pnpm": {
     "ignoredBuiltDependencies": [
       "@biomejs/biome",
-      "esbuild"
+      "esbuild",
+      "protobufjs",
+      "sharp"
     ],
     "overrides": {
       "@braccato/parsers": "^0.1.2"
     },
-    "onlyBuiltDependencies": [
-      "protobufjs",
-      "sharp"
-    ],
     "peerDependencyRules": {
       "allowedVersions": {
         "react-helmet-async>react": "19",
