@@ -1,12 +1,11 @@
 import {
   clearAudioFile,
-  debouncedSave,
-  flushPendingSave,
   loadAudioFile,
   loadCurrentProject,
   saveAudioFile,
   type SavedAudioSource,
 } from "@/lib/persistence";
+import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";

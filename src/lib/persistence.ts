@@ -4,7 +4,6 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,7 +32,6 @@ const STORE_NAME = "projects";
 const STEM_STORE_NAME = "separated-stems";
 const CURRENT_PROJECT_KEY = "current";
 const AUDIO_FILE_KEY = "current-audio";
-const LOG_PREFIX = "[Persistence]";
 
 // -- IndexedDB Helpers --------------------------------------------------------
 
@@ -216,87 +214,14 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
   return project;
 }
 
-// -- Debounced Auto-save ------------------------------------------------------
-
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
-let pendingSaveArgs:
-  | [
-      ProjectMetadata,
-      Agent[],
-      LyricLine[],
-      LinkGroup[],
-      GranularityMode,
-      SyllableSplitDefaults,
-      SavedAudioSource | undefined,
-      string[],
-      string[],
-    ]
-  | null = null;
-
-function debouncedSave(
-  metadata: ProjectMetadata,
-  agents: Agent[],
-  lines: LyricLine[],
-  groups: LinkGroup[],
-  granularity: GranularityMode,
-  syllableSplitDefaults: SyllableSplitDefaults,
-  audioSource: SavedAudioSource | undefined,
-  dismissedSuggestions: string[],
-  dismissedExplicitSuggestions: string[],
-): void {
-  pendingSaveArgs = [
-    metadata,
-    agents,
-    lines,
-    groups,
-    granularity,
-    syllableSplitDefaults,
-    audioSource,
-    dismissedSuggestions,
-    dismissedExplicitSuggestions,
-  ];
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-  }
-  const saveDelay = useSettingsStore.getState().autoSaveDelay;
-  saveTimeout = setTimeout(() => {
-    if (pendingSaveArgs) {
-      saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Auto-save failed:", err));
-      pendingSaveArgs = null;
-    }
-    saveTimeout = null;
-  }, saveDelay);
-}
-
-function cancelPendingSave(): void {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-    saveTimeout = null;
-  }
-  pendingSaveArgs = null;
-}
-
-function flushPendingSave(): void {
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-    saveTimeout = null;
-  }
-  if (pendingSaveArgs) {
-    saveCurrentProject(...pendingSaveArgs).catch((err) => console.error(LOG_PREFIX, "Flush save failed:", err));
-    pendingSaveArgs = null;
-  }
-}
-
 // -- Exports ------------------------------------------------------------------
 
 export {
+  saveCurrentProject,
   loadCurrentProject,
   clearCurrentProject,
   exportProjectToFile,
   importProjectFromFile,
-  debouncedSave,
-  flushPendingSave,
-  cancelPendingSave,
   saveAudioFile,
   loadAudioFile,
   clearAudioFile,
