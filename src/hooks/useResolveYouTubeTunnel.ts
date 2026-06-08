@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { flushPendingSave } from "@/lib/persistence-debounce";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -177,23 +178,30 @@ function useResolveYouTubeTunnel(): void {
   useEffect(() => {
     const data = query.data;
     if (!data || !videoId) return;
-    const current = useAudioStore.getState().source;
-    if (current?.type !== "youtube" || current.videoId !== videoId) return;
-    useAudioStore.getState().setYouTubeFile(data.file);
-    useAudioStore.getState().setYouTubeLoadError(null);
+    let cancelled = false;
+    void getPersistenceSettled().then(() => {
+      if (cancelled) return;
+      const current = useAudioStore.getState().source;
+      if (current?.type !== "youtube" || current.videoId !== videoId) return;
+      useAudioStore.getState().setYouTubeFile(data.file);
+      useAudioStore.getState().setYouTubeLoadError(null);
 
-    const project = useProjectStore.getState();
-    const currentTitle = project.metadata.title;
-    if (!currentTitle || currentTitle === videoId) {
-      const metadataPatch: Partial<typeof project.metadata> = { title: data.filename || videoId };
-      if (data.artist) metadataPatch.artist = data.artist;
-      if (data.album) metadataPatch.album = data.album;
-      project.setMetadata(metadataPatch);
-      flushPendingSave();
-    }
-    if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
-      useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
-    }
+      const project = useProjectStore.getState();
+      const currentTitle = project.metadata.title;
+      if (!currentTitle || currentTitle === videoId) {
+        const metadataPatch: Partial<typeof project.metadata> = { title: data.filename || videoId };
+        if (data.artist) metadataPatch.artist = data.artist;
+        if (data.album) metadataPatch.album = data.album;
+        project.setMetadata(metadataPatch);
+        flushPendingSave();
+      }
+      if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
+        useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [query.data, videoId]);
 
   useEffect(() => {

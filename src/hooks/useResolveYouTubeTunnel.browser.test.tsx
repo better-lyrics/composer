@@ -2,6 +2,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
+import {
+  __resetPersistenceSettledForTests,
+  markPersistenceSettled,
+} from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -116,6 +120,10 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+});
+
+beforeEach(() => {
+  markPersistenceSettled();
 });
 
 // -- Helpers ------------------------------------------------------------------
@@ -315,6 +323,32 @@ describe("useResolveYouTubeTunnel — thumbnail", () => {
     await new Promise((r) => setTimeout(r, 150));
     expect(useProjectStore.getState().metadata.thumbnailDataUrl).toBe(bThumb);
   });
+
+  it("clears the previous song's thumb immediately on videoId change so the album-art UI renders a skeleton before the new thumb arrives", async () => {
+    bridge.audio.set("AAAAAAAAAAA", { buffer: asBytes("opus"), mimeType: "audio/opus" });
+    bridge.thumb.set("AAAAAAAAAAA", { kind: "ok", bytes: asBytes("thumb-A") });
+
+    enableBridgeAndSelectVideo("AAAAAAAAAAA");
+    await render(withQueryClient(<HookHost />));
+    await waitFor(() => Boolean(useProjectStore.getState().metadata.thumbnailDataUrl));
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toMatch(/^data:image/);
+
+    let resolveBThumb!: (bytes: ArrayBuffer) => void;
+    const bThumbPromise = new Promise<ArrayBuffer>((r) => {
+      resolveBThumb = r;
+    });
+    bridge.audio.set("BBBBBBBBBBB", { buffer: asBytes("opus"), mimeType: "audio/opus" });
+    bridge.thumb.set("BBBBBBBBBBB", { kind: "deferred", promise: bThumbPromise });
+
+    useAudioStore.getState().setYouTubeSource("BBBBBBBBBBB");
+
+    await waitFor(() => useProjectStore.getState().metadata.thumbnailDataUrl === undefined);
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toBeUndefined();
+
+    resolveBThumb(asBytes("thumb-B"));
+    await waitFor(() => Boolean(useProjectStore.getState().metadata.thumbnailDataUrl));
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toMatch(/^data:image/);
+  });
 });
 
 // -- mimeType / file format ---------------------------------------------------
@@ -350,5 +384,32 @@ describe("useResolveYouTubeTunnel — file format", () => {
     const file = (useAudioStore.getState().source as { file: File }).file;
     expect(file.name).toBe("dQw4w9WgXcQ.m4a");
     expect(file.type).toBe("audio/mp4");
+  });
+});
+
+// -- Reload race --------------------------------------------------------------
+
+describe("useResolveYouTubeTunnel: reload race", () => {
+  it("does not overwrite the persisted title with videoId before persistence has hydrated", async () => {
+    __resetPersistenceSettledForTests();
+    useProjectStore.getState().setMetadata({
+      title: "Never Gonna Give You Up",
+      artist: "",
+      album: "",
+      duration: 0,
+    });
+
+    bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus-bytes") });
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => bridge.audioCalls.includes("dQw4w9WgXcQ"));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
+
+    markPersistenceSettled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
   });
 });
