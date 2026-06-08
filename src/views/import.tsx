@@ -35,15 +35,19 @@ const ROW_HEIGHT = 56;
 const YouTubeSourceThumb: React.FC<{ videoId: string }> = ({ videoId }) => {
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
-  const [failed, setFailed] = useState(false);
-  if (!bridgeEnabled || failed) {
+  const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
+  const [liveFailed, setLiveFailed] = useState(false);
+  if (persistedThumb) {
+    return <img src={persistedThumb} alt="" className="size-full object-cover" />;
+  }
+  if (!bridgeEnabled || liveFailed) {
     return <IconBrandYoutube size={16} className="text-composer-accent" />;
   }
   return (
     <img
       src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
       alt=""
-      onError={() => setFailed(true)}
+      onError={() => setLiveFailed(true)}
       className="size-full object-cover"
     />
   );

@@ -23,6 +23,10 @@ const BRIDGE_INSTANCE_LABEL = "Composer Bridge";
 interface TunnelResult {
   file: File;
   filename: string | undefined;
+  title?: string;
+  artist?: string;
+  album?: string;
+  thumbnailDataUrl?: string;
   instanceLabel: string;
   instanceId: string;
   wasDefault: boolean;
@@ -54,12 +58,17 @@ function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, video
 async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<TunnelResult> {
   const baseUrl = useSettingsStore.getState().composerBridgeUrl;
   try {
-    const { buffer, title, artist } = await getAudioFromBridge(baseUrl, videoId, signal);
+    const { buffer, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
+    const thumbnailDataUrl = await fetchBridgeThumbAsDataUrl(baseUrl, videoId, signal);
     return {
       file: buildBridgeAudioFile(buffer, videoId),
       filename: filename || undefined,
+      title,
+      artist,
+      album,
+      thumbnailDataUrl,
       instanceLabel: BRIDGE_INSTANCE_LABEL,
       instanceId: BRIDGE_INSTANCE_ID,
       wasDefault: false,
@@ -67,6 +76,29 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
     throw new TunnelError(err, BRIDGE_INSTANCE_ID, BRIDGE_INSTANCE_LABEL, false);
+  }
+}
+
+async function fetchBridgeThumbAsDataUrl(
+  baseUrl: string,
+  videoId: string,
+  signal: AbortSignal,
+): Promise<string | undefined> {
+  try {
+    const url = `${baseUrl.replace(/\/+$/, "")}/thumb/${encodeURIComponent(videoId)}`;
+    const res = await fetch(url, { signal });
+    if (!res.ok) return undefined;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"));
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return undefined;
+    console.warn(LOG_PREFIX, "thumb fetch failed", err);
+    return undefined;
   }
 }
 
@@ -165,7 +197,13 @@ function useResolveYouTubeTunnel(): void {
       const project = useProjectStore.getState();
       const currentTitle = project.metadata.title;
       if (!currentTitle || currentTitle === videoId) {
-        project.setMetadata({ title: data.filename });
+        const metadataPatch: Partial<typeof project.metadata> = { title: data.filename };
+        if (data.artist) metadataPatch.artist = data.artist;
+        if (data.album) metadataPatch.album = data.album;
+        if (data.thumbnailDataUrl) metadataPatch.thumbnailDataUrl = data.thumbnailDataUrl;
+        project.setMetadata(metadataPatch);
+      } else if (data.thumbnailDataUrl && !project.metadata.thumbnailDataUrl) {
+        project.setMetadata({ thumbnailDataUrl: data.thumbnailDataUrl });
       }
     }
     if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {

@@ -36,6 +36,17 @@ function normalizeBaseUrl(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
+// decodeHeader undoes the percent-encoding the bridge applies to UTF-8 header
+// values so they survive the Latin-1 byte path of HTTP headers.
+function decodeHeader(value: string | null): string | undefined {
+  if (!value) return undefined;
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}
+
 async function checkBridgeHealth(baseUrl: string, signal?: AbortSignal): Promise<BridgeHealth> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
@@ -69,9 +80,9 @@ async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: Abo
     return {
       buffer,
       mimeType: res.headers.get("content-type") ?? "audio/mp4",
-      title: res.headers.get("x-track-title") ?? undefined,
-      artist: res.headers.get("x-track-artist") ?? undefined,
-      album: res.headers.get("x-track-album") ?? undefined,
+      title: decodeHeader(res.headers.get("x-track-title")),
+      artist: decodeHeader(res.headers.get("x-track-artist")),
+      album: decodeHeader(res.headers.get("x-track-album")),
     };
   } catch (err) {
     if (err instanceof BridgeError) throw err;

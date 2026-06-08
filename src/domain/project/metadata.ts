@@ -6,6 +6,7 @@ interface ProjectMetadata {
   album: string;
   duration: number;
   language?: string;
+  thumbnailDataUrl?: string;
 }
 
 // -- Exports ------------------------------------------------------------------
