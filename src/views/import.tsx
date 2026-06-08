@@ -3,8 +3,10 @@ import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { checkBridgeHealth, HEALTH_QUERY_KEY } from "@/utils/composer-bridge-api";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
-import { useCallback, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -36,18 +38,24 @@ const YouTubeSourceThumb: React.FC<{ videoId: string }> = ({ videoId }) => {
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
-  const [liveFailed, setLiveFailed] = useState(false);
+  const health = useQuery({
+    queryKey: [HEALTH_QUERY_KEY, bridgeUrl],
+    queryFn: ({ signal }) => checkBridgeHealth(bridgeUrl, signal),
+    enabled: bridgeEnabled && !persistedThumb,
+    staleTime: 0,
+    gcTime: 0,
+    retry: false,
+  });
   if (persistedThumb) {
     return <img src={persistedThumb} alt="" className="size-full object-cover" />;
   }
-  if (!bridgeEnabled || liveFailed) {
+  if (!bridgeEnabled || !health.data) {
     return <IconBrandYoutube size={16} className="text-composer-accent" />;
   }
   return (
     <img
       src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
       alt=""
-      onError={() => setLiveFailed(true)}
       className="size-full object-cover"
     />
   );
