@@ -162,16 +162,22 @@ describe("usePersistence:stem persists in audio-only sessions", () => {
     await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("vocals");
   });
 
-  it("does not save when there is neither audio nor lyrics (true empty session)", async () => {
+  // This mirrors the real-world flow: default debounce delay (no fastSaves
+  // shortcut). The user picks a stem and immediately reloads, within the
+  // 2-second debounce window. The save must still land.
+  it("persists across an immediate reload at the default debounce delay", async () => {
     await render(<HookHost />);
     await getPersistenceSettled();
-    fastSaves();
+    // intentionally NOT calling fastSaves(); use the real autoSaveDelay.
+
+    const file = new File([new Uint8Array([1, 2, 3, 4])], "song.mp3", { type: "audio/mpeg" });
+    useAudioStore.getState().setSource({ type: "file", file });
     useSeparationStore.setState({ availableStems: ["original", "vocals", "instrumental"] });
 
     useSeparationStore.getState().selectStem("vocals");
+    // Reload immediately, before the 2-second debounce fires.
+    window.dispatchEvent(new Event("beforeunload"));
 
-    // Nothing about the session is worth persisting; project record stays absent.
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(await loadCurrentProject()).toBeUndefined();
+    await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("vocals");
   });
 });

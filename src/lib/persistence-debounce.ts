@@ -88,6 +88,37 @@ function flushPendingSave(): void {
   }
 }
 
+// Skip the debounce entirely and write to IDB now. Used for discrete user
+// actions (stem selection) where the debounce buys nothing and an immediate
+// reload would otherwise lose the save. Cancels any pending debounced save so
+// the immediate write isn't shadowed by a stale queued one.
+function saveProjectNow(
+  metadata: ProjectMetadata,
+  agents: Agent[],
+  lines: LyricLine[],
+  groups: LinkGroup[],
+  granularity: GranularityMode,
+  syllableSplitDefaults: SyllableSplitDefaults,
+  audioSource: SavedAudioSource | undefined,
+  dismissedSuggestions: string[],
+  dismissedExplicitSuggestions: string[],
+  currentStem: Stem,
+): Promise<void> {
+  cancelPendingSave();
+  return saveCurrentProject(
+    metadata,
+    agents,
+    lines,
+    groups,
+    granularity,
+    syllableSplitDefaults,
+    audioSource,
+    dismissedSuggestions,
+    dismissedExplicitSuggestions,
+    currentStem,
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { debouncedSave, cancelPendingSave, flushPendingSave };
+export { debouncedSave, cancelPendingSave, flushPendingSave, saveProjectNow };
