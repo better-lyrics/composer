@@ -125,7 +125,7 @@ function enableBridgeAndSelectVideo(videoId: string) {
     experiments: { youtubeBridge: true },
     composerBridgeUrl: DEFAULT_BRIDGE_URL,
   });
-  useAudioStore.getState().setYouTubeSource(videoId, null);
+  useAudioStore.getState().setYouTubeSource(videoId);
 }
 
 async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void> {
@@ -152,8 +152,12 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
     await render(withQueryClient(<HookHost />));
 
-    await waitFor(() => useAudioStore.getState().source?.type === "youtube" && useAudioStore.getState().source?.file !== null);
-    const file = (useAudioStore.getState().source as { type: "youtube"; file: File | null }).file!;
+    await waitFor(
+      () =>
+        useAudioStore.getState().source?.type === "youtube" &&
+        (useAudioStore.getState().source as { file?: File }).file !== undefined,
+    );
+    const file = (useAudioStore.getState().source as { type: "youtube"; file: File }).file;
     expect(file.name).toBe("dQw4w9WgXcQ.opus");
     expect(file.type).toBe("audio/opus");
   });
@@ -254,7 +258,7 @@ describe("useResolveYouTubeTunnel — thumbnail", () => {
     // Round 2: switch to video B.
     bridge.audio.set("BBBBBBBBBBB", { buffer: asBytes("opus"), mimeType: "audio/opus" });
     bridge.thumb.set("BBBBBBBBBBB", { kind: "ok", bytes: asBytes("THUMB-B-DIFFERENT-BYTES") });
-    useAudioStore.getState().setYouTubeSource("BBBBBBBBBBB", null);
+    useAudioStore.getState().setYouTubeSource("BBBBBBBBBBB");
 
     await waitFor(
       () =>
@@ -300,7 +304,7 @@ describe("useResolveYouTubeTunnel — thumbnail", () => {
     await waitFor(() => bridge.thumbCalls.includes("AAAAAAAAAAA"));
 
     // Switch to B before A's thumb has resolved.
-    useAudioStore.getState().setYouTubeSource("BBBBBBBBBBB", null);
+    useAudioStore.getState().setYouTubeSource("BBBBBBBBBBB");
     await waitFor(() => Boolean(useProjectStore.getState().metadata.thumbnailDataUrl));
     const bThumb = useProjectStore.getState().metadata.thumbnailDataUrl!;
 

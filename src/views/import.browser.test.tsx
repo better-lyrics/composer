@@ -82,7 +82,7 @@ describe("ImportPanel — file source", () => {
 describe("ImportPanel — YouTube title", () => {
   it("shows the loading spinner while a YouTube source is downloading", async () => {
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "abc123", file: null },
+      source: { type: "youtube", videoId: "abc123" },
       isLoading: true,
     });
     const screen = await render(withQueryClient(<ImportPanel />));
@@ -91,7 +91,7 @@ describe("ImportPanel — YouTube title", () => {
 
   it("shows a pulsing skeleton instead of the bare videoId while downloading and no title set", async () => {
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       duration: 0,
       isLoading: true,
     });
@@ -102,7 +102,7 @@ describe("ImportPanel — YouTube title", () => {
 
   it("replaces the skeleton with the project title once it arrives", async () => {
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       duration: 0,
       isLoading: true,
     });
@@ -131,7 +131,7 @@ describe("ImportPanel — YouTube title", () => {
 describe("ImportPanel — YouTube thumbnail", () => {
   it("renders the persisted thumbnail image when one is in project metadata", async () => {
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: false,
     });
     useProjectStore.getState().setMetadata({ thumbnailDataUrl: PNG_DATA_URL });
@@ -157,7 +157,7 @@ describe("ImportPanel — YouTube thumbnail", () => {
   it("shows a pulsing skeleton while download is in flight and no persisted thumb exists yet", async () => {
     useSettingsStore.setState({ experiments: { youtubeBridge: false } });
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: true,
     });
 
@@ -189,7 +189,7 @@ describe("ImportPanel — YouTube thumbnail", () => {
       composerBridgeUrl: DEFAULT_BRIDGE_URL,
     });
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: false,
     });
     useProjectStore.getState().setMetadata({ thumbnailDataUrl: PNG_DATA_URL });
@@ -208,7 +208,7 @@ describe("ImportPanel — YouTube thumbnail", () => {
 describe("ImportPanel — YouTube subtitle", () => {
   it("says 'Downloading from YouTube' while downloading", async () => {
     useAudioStore.setState({
-      source: { type: "youtube", videoId: "dQw4w9WgXcQ", file: null },
+      source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: true,
     });
     const screen = await render(withQueryClient(<ImportPanel />));
