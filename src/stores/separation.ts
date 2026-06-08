@@ -34,6 +34,7 @@ interface SeparationActions {
   downloadModel: () => Promise<void>;
   separate: () => Promise<void>;
   selectStem: (stem: Stem) => void;
+  restoreCurrentStem: (stem: Stem) => void;
   cancel: () => void;
   retry: () => Promise<void>;
   reset: () => void;
@@ -231,6 +232,16 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   selectStem: (stem) => {
     const available = get().availableStems;
     if (!available.includes(stem)) return;
+    set({ currentStem: stem });
+  },
+
+  // Called once at boot by usePersistence to seed currentStem from the saved
+  // project, before useAutoSeparate's source subscription runs
+  // refreshForCurrentSource. Unlike selectStem this intentionally bypasses the
+  // availableStems guard, because at restore time the available list hasn't
+  // been populated yet. refreshForCurrentSource handles eviction by overwriting
+  // back to "original" when the cached stems are gone.
+  restoreCurrentStem: (stem) => {
     set({ currentStem: stem });
   },
 

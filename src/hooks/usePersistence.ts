@@ -91,7 +91,7 @@ function usePersistence(): void {
         // which preserves currentStem when the cached stems are still available, and
         // falls back to "original" when they aren't (LRU eviction or variant change).
         if (project?.currentStem) {
-          useSeparationStore.setState({ currentStem: project.currentStem });
+          useSeparationStore.getState().restoreCurrentStem(project.currentStem);
         }
 
         const savedSource = project?.audioSource;
@@ -128,10 +128,8 @@ function usePersistence(): void {
   // above. Subscribe to currentStem directly so picking a stem from the
   // dropdown persists across reloads.
   useEffect(() => {
-    let prevStem = useSeparationStore.getState().currentStem;
-    const unsubscribe = useSeparationStore.subscribe((state) => {
-      if (state.currentStem === prevStem) return;
-      prevStem = state.currentStem;
+    const unsubscribe = useSeparationStore.subscribe((state, prevState) => {
+      if (state.currentStem === prevState.currentStem) return;
       commitProjectSave();
     });
     return () => unsubscribe();
