@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { DB_NAME, DB_VERSION, PROJECT_STORE_NAME } from "@/lib/persistence-idb";
 import { clearRecoveryStorage, downloadRecoveryFile, readRecoveryMetadata } from "@/lib/recovery";
 import { seedProject } from "@/test/idb";
 
 // -- Helpers ------------------------------------------------------------------
 
-const DB_NAME = "ttml-composer";
-const STORE_NAME = "projects";
+const STORE_NAME = PROJECT_STORE_NAME;
 const CURRENT_KEY = "current";
 
 function captureDownload(): { resolve: () => Promise<{ filename: string; size: number }>; cleanup: () => void } {
@@ -140,7 +140,7 @@ describe("recovery", () => {
       expect((await readRecoveryMetadata()).found).toBe(false);
 
       await new Promise<void>((resolve, reject) => {
-        const open = indexedDB.open(DB_NAME, 2);
+        const open = indexedDB.open(DB_NAME, DB_VERSION);
         open.onerror = () => reject(open.error);
         open.onsuccess = () => {
           const db = open.result;
