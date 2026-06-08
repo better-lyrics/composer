@@ -31,7 +31,10 @@ async function getFromStore<T>(storeName: string, key: string): Promise<T | unde
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readonly");
     const request = transaction.objectStore(storeName).get(key);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
     request.onsuccess = () => resolve(request.result as T | undefined);
     transaction.oncomplete = () => db.close();
   });
@@ -42,7 +45,10 @@ async function setInStore<T>(storeName: string, key: string, value: T): Promise<
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readwrite");
     const request = transaction.objectStore(storeName).put(value, key);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
     request.onsuccess = () => resolve();
     transaction.oncomplete = () => db.close();
   });
@@ -53,7 +59,10 @@ async function deleteFromStore(storeName: string, key: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, "readwrite");
     const request = transaction.objectStore(storeName).delete(key);
-    request.onerror = () => reject(request.error);
+    request.onerror = () => {
+      db.close();
+      reject(request.error);
+    };
     request.onsuccess = () => resolve();
     transaction.oncomplete = () => db.close();
   });
