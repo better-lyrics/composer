@@ -7,6 +7,7 @@ interface ProjectMetadata {
   duration: number;
   language?: string;
   thumbnailDataUrl?: string;
+  thumbnailForVideoId?: string;
 }
 
 // -- Exports ------------------------------------------------------------------
