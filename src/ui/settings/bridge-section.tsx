@@ -1,15 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
 import { useSettingsStore } from "@/stores/settings";
 import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
-import { type BridgeHealth, checkBridgeHealth, DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import {
+  type BridgeHealth,
+  checkBridgeHealth,
+  DEFAULT_BRIDGE_URL,
+  HEALTH_QUERY_KEY,
+} from "@/utils/composer-bridge-api";
 import { cn } from "@/utils/cn";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 
 // -- Constants ----------------------------------------------------------------
 
-const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_REFETCH_INTERVAL = 8000;
 
 // -- Sub-components -----------------------------------------------------------
@@ -95,13 +99,23 @@ const BridgeSection: React.FC = () => {
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const setSetting = useSettingsStore((s) => s.set);
 
+  const [draftUrl, setDraftUrl] = useState(bridgeUrl);
+  useEffect(() => {
+    setDraftUrl(bridgeUrl);
+  }, [bridgeUrl]);
+
   const toggleEnabled = () => {
     const current = useSettingsStore.getState().experiments;
     setSetting("experiments", { ...current, youtubeBridge: !current.youtubeBridge });
   };
 
-  const updateUrl = (next: string) => setSetting("composerBridgeUrl", next);
-  const resetUrl = () => setSetting("composerBridgeUrl", DEFAULT_BRIDGE_URL);
+  const commitUrl = () => {
+    if (draftUrl !== bridgeUrl) setSetting("composerBridgeUrl", draftUrl);
+  };
+  const resetUrl = () => {
+    setDraftUrl(DEFAULT_BRIDGE_URL);
+    setSetting("composerBridgeUrl", DEFAULT_BRIDGE_URL);
+  };
 
   const everDetectedAtMount = useMemo(() => hasBridgeEverBeenDetected(), []);
 
@@ -129,7 +143,7 @@ const BridgeSection: React.FC = () => {
         <div className="flex flex-col gap-0.5 pr-4">
           <span className="text-sm font-medium text-composer-text">
             Composer Bridge for YouTube
-            <span className="ml-2 text-[10px] uppercase tracking-wider text-composer-accent-text">Experimental</span>
+            <span className="ml-2 text-[10px] tracking-wide text-composer-accent-text">Experimental</span>
           </span>
           <span className="text-xs text-composer-text-muted">
             Route YouTube imports through a small local binary running on your machine instead of Cobalt. Uses your
@@ -151,8 +165,14 @@ const BridgeSection: React.FC = () => {
             <div className="flex items-center gap-2">
               <input
                 type="url"
-                value={bridgeUrl}
-                onChange={(e) => updateUrl(e.target.value)}
+                value={draftUrl}
+                onChange={(e) => setDraftUrl(e.target.value)}
+                onBlur={commitUrl}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
                 spellCheck={false}
                 className="flex-1 h-7 px-2 text-xs font-mono rounded bg-composer-bg text-composer-text border border-composer-border focus:outline-none focus:border-composer-accent select-text"
                 placeholder={DEFAULT_BRIDGE_URL}
