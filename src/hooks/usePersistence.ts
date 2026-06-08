@@ -11,6 +11,7 @@ import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 
@@ -66,6 +67,14 @@ function usePersistence(): void {
           state.markClean();
         }
 
+        // Restore the saved stem selection BEFORE setting the audio source.
+        // useAutoSeparate's source subscription will then run refreshForCurrentSource
+        // which preserves currentStem when the cached stems are still available, and
+        // falls back to "original" when they aren't (LRU eviction or variant change).
+        if (project?.currentStem) {
+          useSeparationStore.setState({ currentStem: project.currentStem });
+        }
+
         const savedSource = project?.audioSource;
         if (savedSource?.kind === "youtube") {
           useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
@@ -92,6 +101,7 @@ function usePersistence(): void {
       if (!state.isDirty) return;
       if (state.lines.length > 0 || state.metadata.title) {
         const audioSource = toSavedAudioSource(useAudioStore.getState().source);
+        const currentStem = useSeparationStore.getState().currentStem;
         debouncedSave(
           state.metadata,
           state.agents,
@@ -102,6 +112,7 @@ function usePersistence(): void {
           audioSource,
           state.dismissedSuggestions,
           state.dismissedExplicitSuggestions,
+          currentStem,
         );
       }
     });

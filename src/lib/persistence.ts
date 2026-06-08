@@ -1,3 +1,4 @@
+import type { Stem } from "@/audio/separation/types";
 import type { GranularityMode } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
 import type { Agent } from "@/domain/agent/model";
@@ -23,6 +24,7 @@ interface SavedProject {
   audioSource?: SavedAudioSource;
   dismissedSuggestions?: string[];
   dismissedExplicitSuggestions?: string[];
+  currentStem?: Stem;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -42,6 +44,7 @@ async function saveCurrentProject(
   audioSource: SavedAudioSource | undefined,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
+  currentStem: Stem,
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -57,6 +60,7 @@ async function saveCurrentProject(
     audioSource,
     dismissedSuggestions,
     dismissedExplicitSuggestions,
+    currentStem,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }
