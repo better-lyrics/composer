@@ -95,5 +95,4 @@ function extractVocalsStem(timeTensor: TensorLike, freqTensor: TensorLike): Floa
 
 // -- Exports ------------------------------------------------------------------
 
-export { STEM_INDEX_VOCALS, normalizeForDemucs, denormalizeDemucsOutput, extractVocalsStem };
-export type { NormalizationStats, NormalizedAudio, TensorLike };
+export { normalizeForDemucs, denormalizeDemucsOutput, extractVocalsStem };
