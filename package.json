@@ -14,7 +14,7 @@
     "test:component:watch": "vitest --project browser",
     "test:coverage": "vitest run --coverage",
     "lint:fix": "biome lint --write . && biome format --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "knip": "knip",
     "knip:production": "knip --production",
     "jscpd": "jscpd"
