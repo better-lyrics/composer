@@ -1,4 +1,5 @@
 import { BUILTIN_COBALT_INSTANCE, DEFAULT_COBALT_INSTANCE_ID, useSettingsStore } from "@/stores/settings";
+import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstanceAddForm, CobaltInstanceEditRow } from "@/ui/settings/cobalt-instance-forms";
 import { CobaltDirectoryLink, CobaltInstanceRow } from "@/ui/settings/cobalt-instances";
 import { SelectSetting } from "@/ui/settings/setting-controls";
@@ -28,6 +29,8 @@ const AdvancedSection: React.FC = () => {
           { value: "am-lyrics", label: "am-lyrics" },
         ]}
       />
+
+      <BridgeSection />
 
       <div className="pt-3 mt-3 border-t border-composer-border">
         <div className="flex flex-col gap-0.5 mb-3">

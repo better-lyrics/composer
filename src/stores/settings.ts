@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
 // -- Types --------------------------------------------------------------------
 
@@ -7,6 +8,10 @@ type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
 type VocalModelVariant = "fp16" | "fp32";
+
+interface ExperimentFlags {
+  youtubeBridge: boolean;
+}
 
 interface CobaltInstance {
   id: string;
@@ -66,6 +71,9 @@ interface SettingsState {
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
   cobaltInstanceStatus: Record<string, CobaltInstanceStatus>;
+
+  experiments: ExperimentFlags;
+  composerBridgeUrl: string;
 }
 
 interface SettingsActions {
@@ -124,6 +132,9 @@ const DEFAULTS: SettingsState = {
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
   cobaltInstanceStatus: {},
+
+  experiments: { youtubeBridge: false },
+  composerBridgeUrl: DEFAULT_BRIDGE_URL,
 };
 
 const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
@@ -166,6 +177,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
           cobaltInstanceStatus: state.cobaltInstanceStatus,
+          experiments: state.experiments,
+          composerBridgeUrl: state.composerBridgeUrl,
         })),
       addCobaltInstance: (instance) =>
         set((state) => {
