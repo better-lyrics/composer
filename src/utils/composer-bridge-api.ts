@@ -3,8 +3,26 @@
 // See `experiments/composer-bridge/README.md` for what the binary is.
 
 const DEFAULT_BRIDGE_URL = "http://localhost:7777";
+const HEALTH_QUERY_KEY = "composer-bridge-health";
 const HEALTH_TIMEOUT_MS = 1500;
 const AUDIO_TIMEOUT_MS = 5 * 60 * 1000;
+const THUMB_TIMEOUT_MS = 15 * 1000;
+
+// composeAbortSignals returns an AbortSignal that aborts when EITHER input
+// aborts. Falls back to a manual listener pair when AbortSignal.any is missing
+// so a caller-provided signal still propagates to the underlying fetch.
+function composeAbortSignals(a: AbortSignal | undefined, b: AbortSignal): AbortSignal {
+  if (!a) return b;
+  const composed = AbortSignal.any?.([a, b]);
+  if (composed) return composed;
+  const local = new AbortController();
+  const abortLocal = () => local.abort();
+  if (a.aborted) local.abort();
+  else a.addEventListener("abort", abortLocal, { once: true });
+  if (b.aborted) local.abort();
+  else b.addEventListener("abort", abortLocal, { once: true });
+  return local.signal;
+}
 
 interface BridgeHealth {
   bridge: string;
@@ -50,7 +68,7 @@ function decodeHeader(value: string | null): string | undefined {
 async function checkBridgeHealth(baseUrl: string, signal?: AbortSignal): Promise<BridgeHealth> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
-  const composed = signal ? (AbortSignal.any?.([signal, controller.signal]) ?? controller.signal) : controller.signal;
+  const composed = composeAbortSignals(signal, controller.signal);
   try {
     const res = await fetch(`${normalizeBaseUrl(baseUrl)}/health`, { signal: composed });
     if (!res.ok) throw new BridgeError("http", `health: ${res.status}`, res.status);
@@ -69,7 +87,7 @@ async function checkBridgeHealth(baseUrl: string, signal?: AbortSignal): Promise
 async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: AbortSignal): Promise<BridgeAudio> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AUDIO_TIMEOUT_MS);
-  const composed = signal ? (AbortSignal.any?.([signal, controller.signal]) ?? controller.signal) : controller.signal;
+  const composed = composeAbortSignals(signal, controller.signal);
   try {
     const res = await fetch(`${normalizeBaseUrl(baseUrl)}/audio/${encodeURIComponent(videoId)}`, {
       signal: composed,
@@ -95,6 +113,28 @@ async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: Abo
   }
 }
 
+async function getThumbFromBridge(baseUrl: string, videoId: string, signal?: AbortSignal): Promise<string | undefined> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), THUMB_TIMEOUT_MS);
+  const composed = composeAbortSignals(signal, controller.signal);
+  try {
+    const res = await fetch(`${normalizeBaseUrl(baseUrl)}/thumb/${encodeURIComponent(videoId)}`, { signal: composed });
+    if (!res.ok) return undefined;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+      reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"));
+      reader.readAsDataURL(blob);
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") return undefined;
+    return undefined;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 function formatBridgeErrorForToast(err: unknown): string {
   if (err instanceof BridgeError) {
     switch (err.code) {
@@ -111,5 +151,13 @@ function formatBridgeErrorForToast(err: unknown): string {
   return "Composer Bridge failed for an unknown reason.";
 }
 
-export { DEFAULT_BRIDGE_URL, BridgeError, checkBridgeHealth, getAudioFromBridge, formatBridgeErrorForToast };
+export {
+  DEFAULT_BRIDGE_URL,
+  HEALTH_QUERY_KEY,
+  BridgeError,
+  checkBridgeHealth,
+  getAudioFromBridge,
+  getThumbFromBridge,
+  formatBridgeErrorForToast,
+};
 export type { BridgeHealth, BridgeAudio };
