@@ -3,7 +3,7 @@ import { detectPlatform, type Platform } from "@/utils/detect-platform";
 
 // -- Constants ----------------------------------------------------------------
 
-const RELEASE_BASE = "https://github.com/boidushya/composer-bridge/releases/latest";
+const RELEASE_BASE = "https://github.com/better-lyrics/composer-bridge/releases/latest";
 const DOWNLOAD = (asset: string) => `${RELEASE_BASE}/download/${asset}`;
 
 const ASSET = {

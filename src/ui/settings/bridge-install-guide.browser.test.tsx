@@ -49,7 +49,7 @@ describe("BridgeInstallGuide", () => {
   it("falls back to releases page on unknown UA", async () => {
     const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.unknown} />);
     const cta = screen.getByRole("link", { name: /See all releases/ });
-    await expect.element(cta).toHaveAttribute("href", "https://github.com/boidushya/composer-bridge/releases/latest");
+    await expect.element(cta).toHaveAttribute("href", "https://github.com/better-lyrics/composer-bridge/releases/latest");
   });
 
   it("calls onCheckNow when the Check now button is clicked", async () => {
@@ -79,6 +79,6 @@ describe("BridgeInstallGuide", () => {
   it("always exposes an Other platforms link to the releases page", async () => {
     const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.linux} />);
     const other = screen.getByRole("link", { name: /Other platforms/ });
-    await expect.element(other).toHaveAttribute("href", "https://github.com/boidushya/composer-bridge/releases/latest");
+    await expect.element(other).toHaveAttribute("href", "https://github.com/better-lyrics/composer-bridge/releases/latest");
   });
 });

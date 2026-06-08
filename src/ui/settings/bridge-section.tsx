@@ -76,7 +76,7 @@ const BridgeStoppedHint: React.FC = () => (
     <p className="mt-2">
       If you don't have it yet, grab a binary from{" "}
       <a
-        href="https://github.com/boidushya/composer-bridge/releases"
+        href="https://github.com/better-lyrics/composer-bridge/releases"
         target="_blank"
         rel="noopener noreferrer"
         className="text-composer-accent-text hover:text-composer-accent underline"
