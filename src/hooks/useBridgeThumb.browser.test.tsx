@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { __resetPersistenceSettledForTests, markPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
@@ -70,6 +70,10 @@ beforeEach(() => {
   );
 
   markPersistenceSettled();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 // -- Helpers ------------------------------------------------------------------
