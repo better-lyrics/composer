@@ -1,4 +1,4 @@
-import { decodeMp3ToWav, isMp3File } from "@/audio/audio-decode";
+import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { useAudioStore } from "@/stores/audio";
@@ -61,11 +61,12 @@ const AudioEngine: React.FC = () => {
       }
     };
 
-    // mp3 seeks slowly because the streaming decoder has no reliable frame
-    // index. Decoding to uncompressed WAV up front gives the <audio> element
-    // an O(1)-seekable source. Non-mp3 inputs already seek fine.
+    // mp3 and raw aac seek slowly because the streaming decoder has no
+    // reliable frame index. Decoding to uncompressed WAV up front gives the
+    // <audio> element an O(1)-seekable source. Other inputs (opus, webm,
+    // m4a-with-mp4-container, ogg) already seek fine.
     const resolvePlaybackUrl = async (): Promise<string> => {
-      if (!isMp3File(playableFile)) {
+      if (!needsWavConversion(playableFile)) {
         return URL.createObjectURL(playableFile);
       }
       slowTimer = window.setTimeout(() => {
@@ -74,10 +75,10 @@ const AudioEngine: React.FC = () => {
         setIsLoading(true);
       }, SLOW_DECODE_MS);
       try {
-        const wavBlob = await decodeMp3ToWav(playableFile);
+        const wavBlob = await decodeAudioToWav(playableFile);
         return URL.createObjectURL(wavBlob);
       } catch (err) {
-        console.warn(LOG_PREFIX, "mp3 decode failed, using original file", err);
+        console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
         return URL.createObjectURL(playableFile);
       }
     };
