@@ -2,8 +2,9 @@ import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -30,6 +31,23 @@ const GUTTER_WIDTH = 56;
 const ROW_HEIGHT = 56;
 
 // -- Sub-components -----------------------------------------------------------
+
+const YouTubeSourceThumb: React.FC<{ videoId: string }> = ({ videoId }) => {
+  const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
+  const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
+  const [failed, setFailed] = useState(false);
+  if (!bridgeEnabled || failed) {
+    return <IconBrandYoutube size={16} className="text-composer-accent" />;
+  }
+  return (
+    <img
+      src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
+      alt=""
+      onError={() => setFailed(true)}
+      className="size-full object-cover"
+    />
+  );
+};
 
 const OrDivider: React.FC = () => (
   <div className="flex items-center gap-3 w-full max-w-md select-none">
@@ -143,10 +161,10 @@ const ImportPanel: React.FC = () => {
       <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
         <div className="flex border-t border-composer-border">
           <div
-            className="shrink-0 flex items-center justify-center bg-composer-accent/10"
+            className="shrink-0 flex items-center justify-center bg-composer-accent/10 overflow-hidden"
             style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
           >
-            <IconBrandYoutube size={16} className="text-composer-accent" />
+            <YouTubeSourceThumb videoId={videoId} />
           </div>
 
           <div

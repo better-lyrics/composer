@@ -54,11 +54,12 @@ function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, video
 async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<TunnelResult> {
   const baseUrl = useSettingsStore.getState().composerBridgeUrl;
   try {
-    const { buffer } = await getAudioFromBridge(baseUrl, videoId, signal);
+    const { buffer, title, artist } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
+    const filename = [artist, title].filter(Boolean).join(" - ") || title;
     return {
       file: buildBridgeAudioFile(buffer, videoId),
-      filename: undefined,
+      filename: filename || undefined,
       instanceLabel: BRIDGE_INSTANCE_LABEL,
       instanceId: BRIDGE_INSTANCE_ID,
       wasDefault: false,

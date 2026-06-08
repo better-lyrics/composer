@@ -15,6 +15,9 @@ interface BridgeHealth {
 interface BridgeAudio {
   buffer: ArrayBuffer;
   mimeType: string;
+  title?: string;
+  artist?: string;
+  album?: string;
 }
 
 class BridgeError extends Error {
@@ -63,7 +66,13 @@ async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: Abo
     if (!res.ok) throw new BridgeError("http", `bridge audio: ${res.status}`, res.status);
     const buffer = await res.arrayBuffer();
     if (buffer.byteLength === 0) throw new BridgeError("empty", "bridge returned empty audio");
-    return { buffer, mimeType: res.headers.get("content-type") ?? "audio/mp4" };
+    return {
+      buffer,
+      mimeType: res.headers.get("content-type") ?? "audio/mp4",
+      title: res.headers.get("x-track-title") ?? undefined,
+      artist: res.headers.get("x-track-artist") ?? undefined,
+      album: res.headers.get("x-track-album") ?? undefined,
+    };
   } catch (err) {
     if (err instanceof BridgeError) throw err;
     if (err instanceof DOMException && err.name === "AbortError") {
