@@ -25,11 +25,30 @@ interface RecoveryResult {
 // -- Constants ----------------------------------------------------------------
 
 const CURRENT_PROJECT_KEY = "current";
+const NOT_FOUND_RESULT: RecoveryResult = {
+  found: false,
+  filename: "",
+  lineCount: 0,
+  savedAt: undefined,
+  title: "",
+};
 
 // -- Helpers ------------------------------------------------------------------
 
 function readProjectFromIDB(): Promise<RecoveredProject | undefined> {
   return getFromStore<RecoveredProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
+}
+
+function buildRecoveryResult(project: RecoveredProject): RecoveryResult {
+  const title = project.metadata?.title?.trim() || "recovered";
+  const date = new Date().toISOString().slice(0, 10);
+  return {
+    found: true,
+    filename: `${title}-${date}.ttml-project.json`,
+    lineCount: project.lines?.length ?? 0,
+    savedAt: project.savedAt,
+    title,
+  };
 }
 
 function triggerDownload(blob: Blob, filename: string): void {
@@ -47,37 +66,16 @@ function triggerDownload(blob: Blob, filename: string): void {
 
 async function readRecoveryMetadata(): Promise<RecoveryResult> {
   const project = await readProjectFromIDB();
-  if (!project) {
-    return { found: false, filename: "", lineCount: 0, savedAt: undefined, title: "" };
-  }
-  const title = project.metadata?.title?.trim() || "recovered";
-  const date = new Date().toISOString().slice(0, 10);
-  return {
-    found: true,
-    filename: `${title}-${date}.ttml-project.json`,
-    lineCount: project.lines?.length ?? 0,
-    savedAt: project.savedAt,
-    title,
-  };
+  return project ? buildRecoveryResult(project) : NOT_FOUND_RESULT;
 }
 
 async function downloadRecoveryFile(): Promise<RecoveryResult> {
   const project = await readProjectFromIDB();
-  if (!project) {
-    return { found: false, filename: "", lineCount: 0, savedAt: undefined, title: "" };
-  }
-  const title = project.metadata?.title?.trim() || "recovered";
-  const date = new Date().toISOString().slice(0, 10);
-  const filename = `${title}-${date}.ttml-project.json`;
+  if (!project) return NOT_FOUND_RESULT;
+  const result = buildRecoveryResult(project);
   const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-  triggerDownload(blob, filename);
-  return {
-    found: true,
-    filename,
-    lineCount: project.lines?.length ?? 0,
-    savedAt: project.savedAt,
-    title,
-  };
+  triggerDownload(blob, result.filename);
+  return result;
 }
 
 async function clearRecoveryStorage(): Promise<void> {
