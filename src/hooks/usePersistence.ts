@@ -35,6 +35,25 @@ function playableFile(source: AudioSource): File | null {
   return null;
 }
 
+function commitProjectSave(): void {
+  const projectState = useProjectStore.getState();
+  if (projectState.lines.length === 0 && !projectState.metadata.title) return;
+  const audioSource = toSavedAudioSource(useAudioStore.getState().source);
+  const currentStem = useSeparationStore.getState().currentStem;
+  debouncedSave(
+    projectState.metadata,
+    projectState.agents,
+    projectState.lines,
+    projectState.groups,
+    projectState.granularity,
+    projectState.syllableSplitDefaults,
+    audioSource,
+    projectState.dismissedSuggestions,
+    projectState.dismissedExplicitSuggestions,
+    currentStem,
+  );
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function usePersistence(): void {
@@ -99,24 +118,22 @@ function usePersistence(): void {
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
       if (!state.isDirty) return;
-      if (state.lines.length > 0 || state.metadata.title) {
-        const audioSource = toSavedAudioSource(useAudioStore.getState().source);
-        const currentStem = useSeparationStore.getState().currentStem;
-        debouncedSave(
-          state.metadata,
-          state.agents,
-          state.lines,
-          state.groups,
-          state.granularity,
-          state.syllableSplitDefaults,
-          audioSource,
-          state.dismissedSuggestions,
-          state.dismissedExplicitSuggestions,
-          currentStem,
-        );
-      }
+      commitProjectSave();
     });
+    return () => unsubscribe();
+  }, []);
 
+  // Stem selection lives in a separate store, so changes to currentStem alone
+  // don't mark the project dirty and wouldn't trigger the project subscription
+  // above. Subscribe to currentStem directly so picking a stem from the
+  // dropdown persists across reloads.
+  useEffect(() => {
+    let prevStem = useSeparationStore.getState().currentStem;
+    const unsubscribe = useSeparationStore.subscribe((state) => {
+      if (state.currentStem === prevStem) return;
+      prevStem = state.currentStem;
+      commitProjectSave();
+    });
     return () => unsubscribe();
   }, []);
 
