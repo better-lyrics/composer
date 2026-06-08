@@ -3,9 +3,10 @@ import {
   loadAudioFile,
   loadCurrentProject,
   saveAudioFile,
+  saveCurrentProject,
   type SavedAudioSource,
 } from "@/lib/persistence";
-import { debouncedSave, flushPendingSave, saveProjectNow } from "@/lib/persistence-debounce";
+import { cancelPendingSave, debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -67,11 +68,13 @@ function commitProjectSave(): void {
 }
 
 // Discrete user actions (stem picking) should not wait for the typing-tuned
-// debounce. Skipping it means the save lands in IDB before the user can reload.
+// debounce. Cancel any queued debounced save so it can't overwrite this one
+// with stale args, then write to IDB now.
 function commitProjectSaveNow(): void {
   const args = buildSaveArgs();
   if (!args) return;
-  saveProjectNow(...args).catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
+  cancelPendingSave();
+  saveCurrentProject(...args).catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
 }
 
 // -- Hook ---------------------------------------------------------------------
