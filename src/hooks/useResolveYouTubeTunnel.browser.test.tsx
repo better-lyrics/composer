@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import {
   __resetPersistenceSettledForTests,
+  getPersistenceSettled,
   markPersistenceSettled,
 } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { seedProject } from "@/test/idb";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
@@ -143,6 +146,14 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void
     await new Promise((r) => setTimeout(r, 10));
   }
   throw new Error(`waitFor timed out after ${timeoutMs}ms`);
+}
+
+async function waitForBootSettled(): Promise<void> {
+  await getPersistenceSettled();
+}
+
+function seedSavedProject(project: Parameters<typeof seedProject>[0]): Promise<void> {
+  return seedProject(project);
 }
 
 // -- Bridge happy path --------------------------------------------------------
@@ -390,26 +401,47 @@ describe("useResolveYouTubeTunnel — file format", () => {
 // -- Reload race --------------------------------------------------------------
 
 describe("useResolveYouTubeTunnel: reload race", () => {
-  it("does not overwrite the persisted title with videoId before persistence has hydrated", async () => {
+  function RaceHost() {
+    usePersistence();
+    useResolveYouTubeTunnel();
+    return null;
+  }
+
+  it("preserves the persisted title against the videoId fallback when the tunnel resolves before persistence", async () => {
     __resetPersistenceSettledForTests();
-    useProjectStore.getState().setMetadata({
-      title: "Never Gonna Give You Up",
-      artist: "",
-      album: "",
-      duration: 0,
+
+    await seedSavedProject({
+      version: 1,
+      savedAt: Date.now(),
+      metadata: { title: "Never Gonna Give You Up", artist: "Rick Astley", album: "", duration: 0 },
+      lines: [],
+      agents: [{ id: "v1", type: "person", name: "Lead" }],
+      granularity: "word",
+      audioSource: { kind: "youtube", videoId: "dQw4w9WgXcQ" },
     });
 
     bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus-bytes") });
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
 
-    await render(withQueryClient(<HookHost />));
+    const seenTitles: string[] = [useProjectStore.getState().metadata.title];
+    const unsubscribe = useProjectStore.subscribe((state, prev) => {
+      if (state.metadata.title !== prev.metadata.title) {
+        seenTitles.push(state.metadata.title);
+      }
+    });
 
-    await waitFor(() => bridge.audioCalls.includes("dQw4w9WgXcQ"));
-    await new Promise((r) => setTimeout(r, 50));
-    expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
+    try {
+      await render(withQueryClient(<RaceHost />));
 
-    markPersistenceSettled();
-    await new Promise((r) => setTimeout(r, 50));
-    expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
+      await waitFor(() => bridge.audioCalls.includes("dQw4w9WgXcQ"));
+      await waitForBootSettled();
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
+      expect(useProjectStore.getState().metadata.artist).toBe("Rick Astley");
+      expect(seenTitles).not.toContain("dQw4w9WgXcQ");
+    } finally {
+      unsubscribe();
+    }
   });
 });
