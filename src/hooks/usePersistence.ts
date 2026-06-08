@@ -3,14 +3,16 @@ import {
   loadAudioFile,
   loadCurrentProject,
   saveAudioFile,
+  saveCurrentProject,
   type SavedAudioSource,
 } from "@/lib/persistence";
-import { debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
+import { cancelPendingSave, debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
 
@@ -32,6 +34,47 @@ function playableFile(source: AudioSource): File | null {
   if (source.type === "file") return source.file;
   if (source.type === "youtube") return source.file ?? null;
   return null;
+}
+
+type ProjectSaveArgs = Parameters<typeof debouncedSave>;
+
+function buildSaveArgs(): ProjectSaveArgs | null {
+  const projectState = useProjectStore.getState();
+  const liveAudioSource = useAudioStore.getState().source;
+  // Skip only when the session is truly empty. Audio-loaded sessions need to
+  // persist non-lyric fields like currentStem and the audio source kind, even
+  // before the user types any lyrics.
+  const hasContent = projectState.lines.length > 0 || projectState.metadata.title;
+  const hasContext = liveAudioSource !== null;
+  if (!hasContent && !hasContext) return null;
+  return [
+    projectState.metadata,
+    projectState.agents,
+    projectState.lines,
+    projectState.groups,
+    projectState.granularity,
+    projectState.syllableSplitDefaults,
+    toSavedAudioSource(liveAudioSource),
+    projectState.dismissedSuggestions,
+    projectState.dismissedExplicitSuggestions,
+    useSeparationStore.getState().currentStem,
+  ];
+}
+
+function commitProjectSave(): void {
+  const args = buildSaveArgs();
+  if (!args) return;
+  debouncedSave(...args);
+}
+
+// Discrete user actions (stem picking) should not wait for the typing-tuned
+// debounce. Cancel any queued debounced save so it can't overwrite this one
+// with stale args, then write to IDB now.
+function commitProjectSaveNow(): void {
+  const args = buildSaveArgs();
+  if (!args) return;
+  cancelPendingSave();
+  saveCurrentProject(...args).catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -66,6 +109,14 @@ function usePersistence(): void {
           state.markClean();
         }
 
+        // Restore the saved stem selection BEFORE setting the audio source.
+        // useAutoSeparate's source subscription will then run refreshForCurrentSource
+        // which preserves currentStem when the cached stems are still available, and
+        // falls back to "original" when they aren't (LRU eviction or variant change).
+        if (project?.currentStem) {
+          useSeparationStore.getState().restoreCurrentStem(project.currentStem);
+        }
+
         const savedSource = project?.audioSource;
         if (savedSource?.kind === "youtube") {
           useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
@@ -90,22 +141,21 @@ function usePersistence(): void {
   useEffect(() => {
     const unsubscribe = useProjectStore.subscribe((state) => {
       if (!state.isDirty) return;
-      if (state.lines.length > 0 || state.metadata.title) {
-        const audioSource = toSavedAudioSource(useAudioStore.getState().source);
-        debouncedSave(
-          state.metadata,
-          state.agents,
-          state.lines,
-          state.groups,
-          state.granularity,
-          state.syllableSplitDefaults,
-          audioSource,
-          state.dismissedSuggestions,
-          state.dismissedExplicitSuggestions,
-        );
-      }
+      commitProjectSave();
     });
+    return () => unsubscribe();
+  }, []);
 
+  // Stem selection lives in a separate store, so changes to currentStem alone
+  // don't mark the project dirty and wouldn't trigger the project subscription
+  // above. Subscribe to currentStem directly and save IMMEDIATELY (no debounce):
+  // picking a stem is a discrete action and the user can reload at any time,
+  // so the debounce window would silently lose the choice.
+  useEffect(() => {
+    const unsubscribe = useSeparationStore.subscribe((state, prevState) => {
+      if (state.currentStem === prevState.currentStem) return;
+      commitProjectSaveNow();
+    });
     return () => unsubscribe();
   }, []);
 
@@ -148,9 +198,13 @@ function usePersistence(): void {
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Always flush so debounced saves (title edits, lyrics typing, anything
+      // queued within the debounce window) land in IDB before the page closes.
+      // The leave-confirmation prompt below stays gated on meaningful project
+      // content so we don't nag on every audio-only reload.
+      flushPendingSave();
       const state = useProjectStore.getState();
       if (state.isDirty && state.lines.length > 0) {
-        flushPendingSave();
         e.preventDefault();
         return "";
       }

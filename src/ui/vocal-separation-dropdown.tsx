@@ -82,53 +82,71 @@ const VocalSeparationDropdown: React.FC = () => {
         </Button>
       }
     >
-      <div className="p-3 w-max max-w-80">
-        {status === "error" && error && (
-          <ErrorState message={error.message} onRetry={retry} onDismiss={() => useSeparationStore.getState().reset()} />
-        )}
+      {(close) => {
+        const selectAndClose = (stem: Stem) => {
+          selectStem(stem);
+          close();
+        };
+        return (
+          <div className="p-3 w-max max-w-80">
+            {status === "error" && error && (
+              <ErrorState
+                message={error.message}
+                onRetry={retry}
+                onDismiss={() => useSeparationStore.getState().reset()}
+              />
+            )}
 
-        {status === "downloading" && (
-          <ProgressState
-            title="Downloading model…"
-            detail={`${formatMb(progress.loaded)} / ${formatMb(progress.total || (descriptor?.approxBytes ?? 0))}`}
-            pct={pct}
-            onCancel={cancel}
-          />
-        )}
+            {status === "downloading" && (
+              <ProgressState
+                title="Downloading model…"
+                detail={`${formatMb(progress.loaded)} / ${formatMb(progress.total || (descriptor?.approxBytes ?? 0))}`}
+                pct={pct}
+                onCancel={cancel}
+              />
+            )}
 
-        {status === "processing" && (
-          <ProgressState
-            title="Separating vocals…"
-            detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
-            pct={pct}
-            onCancel={cancel}
-          />
-        )}
+            {status === "processing" && (
+              <ProgressState
+                title="Separating vocals…"
+                detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
+                pct={pct}
+                onCancel={cancel}
+              />
+            )}
 
-        {status === "idle" && !modelCached && (
-          <IdleNoModelState approxMb={descriptor?.approxMb ?? 85} onDownload={downloadModel} onSeparate={separate} />
-        )}
+            {status === "idle" && !modelCached && (
+              <IdleNoModelState
+                approxMb={descriptor?.approxMb ?? 85}
+                onDownload={downloadModel}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "idle" && modelCached && (
-          <IdleReadyState
-            availableStems={availableStems}
-            currentStem={currentStem}
-            onSelect={selectStem}
-            onSeparate={separate}
-          />
-        )}
+            {status === "idle" && modelCached && (
+              <IdleReadyState
+                availableStems={availableStems}
+                currentStem={currentStem}
+                onSelect={selectAndClose}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "ready" && (
-          <IdleReadyState
-            availableStems={availableStems}
-            currentStem={currentStem}
-            onSelect={selectStem}
-            onSeparate={separate}
-          />
-        )}
+            {status === "ready" && (
+              <IdleReadyState
+                availableStems={availableStems}
+                currentStem={currentStem}
+                onSelect={selectAndClose}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "cancelled" && <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>}
-      </div>
+            {status === "cancelled" && (
+              <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
+            )}
+          </div>
+        );
+      }}
     </Popover>
   );
 };
