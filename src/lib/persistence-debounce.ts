@@ -1,3 +1,4 @@
+import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -23,6 +24,7 @@ type SaveArgs = [
   SavedAudioSource | undefined,
   string[],
   string[],
+  Stem,
 ];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -40,6 +42,7 @@ function debouncedSave(
   audioSource: SavedAudioSource | undefined,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
+  currentStem: Stem,
 ): void {
   pendingSaveArgs = [
     metadata,
@@ -51,6 +54,7 @@ function debouncedSave(
     audioSource,
     dismissedSuggestions,
     dismissedExplicitSuggestions,
+    currentStem,
   ];
   if (saveTimeout) {
     clearTimeout(saveTimeout);

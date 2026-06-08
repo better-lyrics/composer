@@ -1,5 +1,5 @@
 import type { Stem } from "@/audio/separation/types";
-import { STEM_STORE_NAME, openDB } from "@/lib/persistence";
+import { STEM_STORE_NAME, openDB } from "@/lib/persistence-idb";
 import type { VocalModelVariant } from "@/stores/settings";
 
 const MAX_ENTRIES = 3;
