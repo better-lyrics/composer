@@ -34,7 +34,7 @@ const ROW_HEIGHT = 56;
 
 // -- Sub-components -----------------------------------------------------------
 
-const YouTubeSourceThumb: React.FC<{ videoId: string }> = ({ videoId }) => {
+const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ videoId, loading }) => {
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
@@ -49,16 +49,19 @@ const YouTubeSourceThumb: React.FC<{ videoId: string }> = ({ videoId }) => {
   if (persistedThumb) {
     return <img src={persistedThumb} alt="" className="size-full object-cover" />;
   }
-  if (!bridgeEnabled || !health.data) {
-    return <IconBrandYoutube size={16} className="text-composer-accent" />;
+  if (bridgeEnabled && health.data) {
+    return (
+      <img
+        src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
+        alt=""
+        className="size-full object-cover"
+      />
+    );
   }
-  return (
-    <img
-      src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
-      alt=""
-      className="size-full object-cover"
-    />
-  );
+  if (loading || (bridgeEnabled && health.isFetching)) {
+    return <div className="size-full bg-composer-bg-elevated animate-pulse" />;
+  }
+  return <IconBrandYoutube size={16} className="text-composer-accent" />;
 };
 
 const OrDivider: React.FC = () => (
@@ -166,8 +169,9 @@ const ImportPanel: React.FC = () => {
 
   if (source && source.type === "youtube") {
     const videoId = source.videoId;
-    const displayTitle = projectTitle && projectTitle !== videoId ? projectTitle : videoId;
+    const hasResolvedTitle = Boolean(projectTitle && projectTitle !== videoId);
     const downloading = isLoading && !source.file;
+    const titleLoading = downloading && !hasResolvedTitle;
 
     return (
       <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
@@ -176,7 +180,7 @@ const ImportPanel: React.FC = () => {
             className="shrink-0 flex items-center justify-center bg-composer-accent/10 overflow-hidden"
             style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
           >
-            <YouTubeSourceThumb videoId={videoId} />
+            <YouTubeSourceThumb videoId={videoId} loading={downloading} />
           </div>
 
           <div
@@ -184,7 +188,13 @@ const ImportPanel: React.FC = () => {
             style={{ height: ROW_HEIGHT }}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-composer-text select-text">{displayTitle}</p>
+              {titleLoading ? (
+                <div className="h-4 w-40 rounded bg-composer-bg-elevated animate-pulse" />
+              ) : (
+                <p className="text-sm font-medium truncate text-composer-text select-text">
+                  {hasResolvedTitle ? projectTitle : videoId}
+                </p>
+              )}
               <p className="text-xs text-composer-text-muted select-text">
                 {videoId} ・ {downloading ? "Downloading from YouTube" : "from YouTube"}
               </p>

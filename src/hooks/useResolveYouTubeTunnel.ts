@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
+import { flushPendingSave } from "@/lib/persistence-debounce";
 import { useEnsureAuth } from "@/hooks/useEnsureAuth";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -13,6 +14,7 @@ import {
 import { CobaltApiError, formatCobaltErrorForToast, getAudio, getAudioFromStandardCobalt } from "@/utils/cobalt-api";
 import {
   BridgeError,
+  buildBridgeAudioFile,
   formatBridgeErrorForToast,
   getAudioFromBridge,
   getThumbFromBridge,
@@ -62,7 +64,7 @@ function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, video
 async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<TunnelResult> {
   const baseUrl = useSettingsStore.getState().composerBridgeUrl;
   try {
-    const { buffer, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
+    const { buffer, mimeType, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
     void getThumbFromBridge(baseUrl, videoId, signal).then((thumb) => {
@@ -70,12 +72,13 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
       const current = useAudioStore.getState().source;
       if (current?.type !== "youtube" || current.videoId !== videoId) return;
       const project = useProjectStore.getState();
-      if (!project.metadata.thumbnailDataUrl) {
-        project.setMetadata({ thumbnailDataUrl: thumb });
-      }
+      const patch: Partial<typeof project.metadata> = { thumbnailDataUrl: thumb };
+      if (!project.metadata.title) patch.title = videoId;
+      project.setMetadata(patch);
+      flushPendingSave();
     });
     return {
-      file: buildBridgeAudioFile(buffer, videoId),
+      file: buildBridgeAudioFile(buffer, mimeType, videoId),
       filename: filename || undefined,
       title,
       artist,
@@ -129,10 +132,6 @@ async function fetchViaCobalt(
   }
 }
 
-function buildBridgeAudioFile(buffer: ArrayBuffer, videoId: string): File {
-  return new File([buffer], `${videoId}.m4a`, { type: "audio/mp4" });
-}
-
 function fetchTunnel(videoId: string, signal: AbortSignal, ensureAuth: () => Promise<string>): Promise<TunnelResult> {
   if (useSettingsStore.getState().experiments.youtubeBridge) {
     return fetchViaBridge(videoId, signal);
@@ -183,15 +182,14 @@ function useResolveYouTubeTunnel(): void {
     useAudioStore.getState().setYouTubeFile(data.file);
     useAudioStore.getState().setYouTubeLoadError(null);
 
-    if (data.filename) {
-      const project = useProjectStore.getState();
-      const currentTitle = project.metadata.title;
-      if (!currentTitle || currentTitle === videoId) {
-        const metadataPatch: Partial<typeof project.metadata> = { title: data.filename };
-        if (data.artist) metadataPatch.artist = data.artist;
-        if (data.album) metadataPatch.album = data.album;
-        project.setMetadata(metadataPatch);
-      }
+    const project = useProjectStore.getState();
+    const currentTitle = project.metadata.title;
+    if (!currentTitle || currentTitle === videoId) {
+      const metadataPatch: Partial<typeof project.metadata> = { title: data.filename || videoId };
+      if (data.artist) metadataPatch.artist = data.artist;
+      if (data.album) metadataPatch.album = data.album;
+      project.setMetadata(metadataPatch);
+      flushPendingSave();
     }
     if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
       useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");

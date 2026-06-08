@@ -135,6 +135,20 @@ async function getThumbFromBridge(baseUrl: string, videoId: string, signal?: Abo
   }
 }
 
+function extensionForBridgeMime(mimeType: string): string {
+  const m = mimeType.toLowerCase();
+  if (m.includes("opus")) return "opus";
+  if (m.includes("webm")) return "webm";
+  if (m.includes("ogg")) return "ogg";
+  if (m.includes("mp4") || m.includes("m4a") || m.includes("aac")) return "m4a";
+  if (m.includes("mpeg") || m.includes("mp3")) return "mp3";
+  return "audio";
+}
+
+function buildBridgeAudioFile(buffer: ArrayBuffer, mimeType: string, videoId: string): File {
+  return new File([buffer], `${videoId}.${extensionForBridgeMime(mimeType)}`, { type: mimeType });
+}
+
 function formatBridgeErrorForToast(err: unknown): string {
   if (err instanceof BridgeError) {
     switch (err.code) {
@@ -159,5 +173,10 @@ export {
   getAudioFromBridge,
   getThumbFromBridge,
   formatBridgeErrorForToast,
+  composeAbortSignals,
+  normalizeBaseUrl,
+  decodeHeader,
+  extensionForBridgeMime,
+  buildBridgeAudioFile,
 };
 export type { BridgeHealth, BridgeAudio };
