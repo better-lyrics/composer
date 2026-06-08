@@ -96,5 +96,5 @@ async function clearRecoveryStorage(): Promise<void> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { readRecoveryMetadata, downloadRecoveryFile, clearRecoveryStorage };
-export type { RecoveryResult };
+export { readRecoveryMetadata, downloadRecoveryFile, clearRecoveryStorage, buildRecoveryResult, NOT_FOUND_RESULT };
+export type { RecoveredProject, RecoveryResult };
