@@ -3,6 +3,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { loadCurrentProject } from "@/lib/persistence";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { seedProject } from "@/test/idb";
@@ -138,5 +139,39 @@ describe("usePersistence:saved project field shape", () => {
     useSeparationStore.getState().selectStem("instrumental");
 
     await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("instrumental");
+  });
+});
+
+// -- Regression: audio-only setup (no lyrics, no title) ---------------------
+
+describe("usePersistence:stem persists in audio-only sessions", () => {
+  it("persists the stem when the user has audio loaded but no project content", async () => {
+    // No seeded project, no title, no lines. The realistic "I'm trying out
+    // vocal separation before writing lyrics" flow that previously hit the
+    // empty-project save guard and never wrote currentStem.
+    await render(<HookHost />);
+    await getPersistenceSettled();
+    fastSaves();
+
+    const file = new File([new Uint8Array([1, 2, 3, 4])], "song.mp3", { type: "audio/mpeg" });
+    useAudioStore.getState().setSource({ type: "file", file });
+    useSeparationStore.setState({ availableStems: ["original", "vocals", "instrumental"] });
+
+    useSeparationStore.getState().selectStem("vocals");
+
+    await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("vocals");
+  });
+
+  it("does not save when there is neither audio nor lyrics (true empty session)", async () => {
+    await render(<HookHost />);
+    await getPersistenceSettled();
+    fastSaves();
+    useSeparationStore.setState({ availableStems: ["original", "vocals", "instrumental"] });
+
+    useSeparationStore.getState().selectStem("vocals");
+
+    // Nothing about the session is worth persisting; project record stays absent.
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(await loadCurrentProject()).toBeUndefined();
   });
 });

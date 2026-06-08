@@ -37,8 +37,14 @@ function playableFile(source: AudioSource): File | null {
 
 function commitProjectSave(): void {
   const projectState = useProjectStore.getState();
-  if (projectState.lines.length === 0 && !projectState.metadata.title) return;
-  const audioSource = toSavedAudioSource(useAudioStore.getState().source);
+  const liveAudioSource = useAudioStore.getState().source;
+  // Skip only when the session is truly empty. Audio-loaded sessions need to
+  // persist non-lyric fields like currentStem and the audio source kind, even
+  // before the user types any lyrics.
+  const hasContent = projectState.lines.length > 0 || projectState.metadata.title;
+  const hasContext = liveAudioSource !== null;
+  if (!hasContent && !hasContext) return;
+  const audioSource = toSavedAudioSource(liveAudioSource);
   const currentStem = useSeparationStore.getState().currentStem;
   debouncedSave(
     projectState.metadata,
