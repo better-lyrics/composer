@@ -11,7 +11,12 @@ import {
   useSettingsStore,
 } from "@/stores/settings";
 import { CobaltApiError, formatCobaltErrorForToast, getAudio, getAudioFromStandardCobalt } from "@/utils/cobalt-api";
-import { BridgeError, formatBridgeErrorForToast, getAudioFromBridge } from "@/utils/composer-bridge-api";
+import {
+  BridgeError,
+  formatBridgeErrorForToast,
+  getAudioFromBridge,
+  getThumbFromBridge,
+} from "@/utils/composer-bridge-api";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -26,7 +31,6 @@ interface TunnelResult {
   title?: string;
   artist?: string;
   album?: string;
-  thumbnailDataUrl?: string;
   instanceLabel: string;
   instanceId: string;
   wasDefault: boolean;
@@ -61,14 +65,21 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
     const { buffer, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
-    const thumbnailDataUrl = await fetchBridgeThumbAsDataUrl(baseUrl, videoId, signal);
+    void getThumbFromBridge(baseUrl, videoId, signal).then((thumb) => {
+      if (signal.aborted || !thumb) return;
+      const current = useAudioStore.getState().source;
+      if (current?.type !== "youtube" || current.videoId !== videoId) return;
+      const project = useProjectStore.getState();
+      if (!project.metadata.thumbnailDataUrl) {
+        project.setMetadata({ thumbnailDataUrl: thumb });
+      }
+    });
     return {
       file: buildBridgeAudioFile(buffer, videoId),
       filename: filename || undefined,
       title,
       artist,
       album,
-      thumbnailDataUrl,
       instanceLabel: BRIDGE_INSTANCE_LABEL,
       instanceId: BRIDGE_INSTANCE_ID,
       wasDefault: false,
@@ -76,29 +87,6 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") throw err;
     throw new TunnelError(err, BRIDGE_INSTANCE_ID, BRIDGE_INSTANCE_LABEL, false);
-  }
-}
-
-async function fetchBridgeThumbAsDataUrl(
-  baseUrl: string,
-  videoId: string,
-  signal: AbortSignal,
-): Promise<string | undefined> {
-  try {
-    const url = `${baseUrl.replace(/\/+$/, "")}/thumb/${encodeURIComponent(videoId)}`;
-    const res = await fetch(url, { signal });
-    if (!res.ok) return undefined;
-    const blob = await res.blob();
-    return await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
-      reader.onerror = () => reject(reader.error ?? new Error("FileReader failed"));
-      reader.readAsDataURL(blob);
-    });
-  } catch (err) {
-    if (err instanceof DOMException && err.name === "AbortError") return undefined;
-    console.warn(LOG_PREFIX, "thumb fetch failed", err);
-    return undefined;
   }
 }
 
@@ -167,10 +155,12 @@ function useResolveYouTubeTunnel(): void {
     };
   }, [source]);
 
+  const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
+  const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const videoId = source?.type === "youtube" && !source.file ? source.videoId : null;
 
   const query = useQuery<TunnelResult>({
-    queryKey: ["youtube-tunnel", videoId],
+    queryKey: ["youtube-tunnel", videoId, bridgeEnabled, bridgeUrl],
     enabled: videoId !== null,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
@@ -200,10 +190,7 @@ function useResolveYouTubeTunnel(): void {
         const metadataPatch: Partial<typeof project.metadata> = { title: data.filename };
         if (data.artist) metadataPatch.artist = data.artist;
         if (data.album) metadataPatch.album = data.album;
-        if (data.thumbnailDataUrl) metadataPatch.thumbnailDataUrl = data.thumbnailDataUrl;
         project.setMetadata(metadataPatch);
-      } else if (data.thumbnailDataUrl && !project.metadata.thumbnailDataUrl) {
-        project.setMetadata({ thumbnailDataUrl: data.thumbnailDataUrl });
       }
     }
     if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
