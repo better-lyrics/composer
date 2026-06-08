@@ -148,14 +148,6 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void
   throw new Error(`waitFor timed out after ${timeoutMs}ms`);
 }
 
-async function waitForBootSettled(): Promise<void> {
-  await getPersistenceSettled();
-}
-
-function seedSavedProject(project: Parameters<typeof seedProject>[0]): Promise<void> {
-  return seedProject(project);
-}
-
 // -- Bridge happy path --------------------------------------------------------
 
 describe("useResolveYouTubeTunnel — bridge happy path", () => {
@@ -410,7 +402,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
   it("preserves the persisted title against the videoId fallback when the tunnel resolves before persistence", async () => {
     __resetPersistenceSettledForTests();
 
-    await seedSavedProject({
+    await seedProject({
       version: 1,
       savedAt: Date.now(),
       metadata: { title: "Never Gonna Give You Up", artist: "Rick Astley", album: "", duration: 0 },
@@ -434,7 +426,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
       await render(withQueryClient(<RaceHost />));
 
       await waitFor(() => bridge.audioCalls.includes("dQw4w9WgXcQ"));
-      await waitForBootSettled();
+      await getPersistenceSettled();
       await new Promise((r) => setTimeout(r, 50));
 
       expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
