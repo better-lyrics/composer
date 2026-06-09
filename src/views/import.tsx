@@ -53,13 +53,7 @@ const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ v
     return <img src={persistedThumb} alt="" className="size-full object-cover" />;
   }
   if (bridgeEnabled && health.data) {
-    return (
-      <img
-        src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`}
-        alt=""
-        className="size-full object-cover"
-      />
-    );
+    return <img src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`} alt="" className="size-full object-cover" />;
   }
   if (loading || (bridgeEnabled && health.isFetching)) {
     return <div className="size-full bg-composer-bg-elevated animate-pulse" />;

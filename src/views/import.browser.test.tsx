@@ -109,9 +109,7 @@ describe("ImportPanel — YouTube title", () => {
     useProjectStore.getState().setMetadata({ title: "Rick Astley - Never Gonna Give You Up" });
 
     const screen = await render(withQueryClient(<ImportPanel />));
-    await expect
-      .element(screen.getByText("Rick Astley - Never Gonna Give You Up"))
-      .toBeInTheDocument();
+    await expect.element(screen.getByText("Rick Astley - Never Gonna Give You Up")).toBeInTheDocument();
   });
 
   it("falls back to the videoId once the audio file is resolved but no title was set", async () => {

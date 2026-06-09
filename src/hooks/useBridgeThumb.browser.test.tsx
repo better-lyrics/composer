@@ -41,33 +41,30 @@ beforeEach(() => {
   thumbResponses.clear();
   thumbCalls = [];
 
-  vi.stubGlobal(
-    "fetch",
-    async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
-      const thumbMatch = url.match(/\/thumb\/([A-Za-z0-9_-]+)$/);
-      if (!thumbMatch) return new Response(null, { status: 404 });
-      const videoId = thumbMatch[1];
-      thumbCalls.push(videoId);
-      const cfg = thumbResponses.get(videoId);
-      if (!cfg || cfg.kind === "404") return new Response(null, { status: 404 });
-      if (cfg.kind === "deferred") {
-        const signal = init?.signal;
-        return new Promise<Response>((resolve, reject) => {
-          cfg.promise!.then(
-            (bytes) => resolve(new Response(bytes, { headers: { "content-type": "image/png" } })),
-            (err) => reject(err),
-          );
-          if (signal) {
-            const onAbort = () => reject(new DOMException("aborted", "AbortError"));
-            if (signal.aborted) onAbort();
-            else signal.addEventListener("abort", onAbort, { once: true });
-          }
-        });
-      }
-      return new Response(cfg.bytes!, { headers: { "content-type": "image/png" } });
-    },
-  );
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+    const thumbMatch = url.match(/\/thumb\/([A-Za-z0-9_-]+)$/);
+    if (!thumbMatch) return new Response(null, { status: 404 });
+    const videoId = thumbMatch[1];
+    thumbCalls.push(videoId);
+    const cfg = thumbResponses.get(videoId);
+    if (!cfg || cfg.kind === "404") return new Response(null, { status: 404 });
+    if (cfg.kind === "deferred") {
+      const signal = init?.signal;
+      return new Promise<Response>((resolve, reject) => {
+        cfg.promise!.then(
+          (bytes) => resolve(new Response(bytes, { headers: { "content-type": "image/png" } })),
+          (err) => reject(err),
+        );
+        if (signal) {
+          const onAbort = () => reject(new DOMException("aborted", "AbortError"));
+          if (signal.aborted) onAbort();
+          else signal.addEventListener("abort", onAbort, { once: true });
+        }
+      });
+    }
+    return new Response(cfg.bytes!, { headers: { "content-type": "image/png" } });
+  });
 
   markPersistenceSettled();
 });

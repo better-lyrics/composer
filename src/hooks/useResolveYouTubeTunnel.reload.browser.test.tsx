@@ -78,44 +78,41 @@ beforeEach(() => {
     thumbCalls: [],
   };
 
-  vi.stubGlobal(
-    "fetch",
-    async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
-      const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, _init?: RequestInit): Promise<Response> => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
 
-      const healthMatch = url.match(/\/health$/);
-      if (healthMatch) {
-        return new Response(JSON.stringify({ bridge: "0.1.0", ytdlp: "2025.06.30", status: "ok" }), {
-          headers: { "content-type": "application/json" },
-        });
-      }
+    const healthMatch = url.match(/\/health$/);
+    if (healthMatch) {
+      return new Response(JSON.stringify({ bridge: "0.1.0", ytdlp: "2025.06.30", status: "ok" }), {
+        headers: { "content-type": "application/json" },
+      });
+    }
 
-      const audioMatch = url.match(/\/audio\/([A-Za-z0-9_-]+)$/);
-      if (audioMatch) {
-        const videoId = audioMatch[1];
-        bridge.audioCalls.push(videoId);
-        const entry = bridge.audio.get(videoId);
-        if (!entry) return new Response(null, { status: 502 });
-        const headers = new Headers();
-        headers.set("content-type", entry.mimeType ?? "audio/opus");
-        if (entry.titlePercentEncoded) headers.set("x-track-title", entry.titlePercentEncoded);
-        if (entry.artistPercentEncoded) headers.set("x-track-artist", entry.artistPercentEncoded);
-        if (entry.albumPercentEncoded) headers.set("x-track-album", entry.albumPercentEncoded);
-        return new Response(entry.buffer, { headers });
-      }
+    const audioMatch = url.match(/\/audio\/([A-Za-z0-9_-]+)$/);
+    if (audioMatch) {
+      const videoId = audioMatch[1];
+      bridge.audioCalls.push(videoId);
+      const entry = bridge.audio.get(videoId);
+      if (!entry) return new Response(null, { status: 502 });
+      const headers = new Headers();
+      headers.set("content-type", entry.mimeType ?? "audio/opus");
+      if (entry.titlePercentEncoded) headers.set("x-track-title", entry.titlePercentEncoded);
+      if (entry.artistPercentEncoded) headers.set("x-track-artist", entry.artistPercentEncoded);
+      if (entry.albumPercentEncoded) headers.set("x-track-album", entry.albumPercentEncoded);
+      return new Response(entry.buffer, { headers });
+    }
 
-      const thumbMatch = url.match(/\/thumb\/([A-Za-z0-9_-]+)$/);
-      if (thumbMatch) {
-        const videoId = thumbMatch[1];
-        bridge.thumbCalls.push(videoId);
-        const bytes = bridge.thumb.get(videoId);
-        if (!bytes) return new Response(null, { status: 404 });
-        return new Response(bytes, { headers: { "content-type": "image/png" } });
-      }
+    const thumbMatch = url.match(/\/thumb\/([A-Za-z0-9_-]+)$/);
+    if (thumbMatch) {
+      const videoId = thumbMatch[1];
+      bridge.thumbCalls.push(videoId);
+      const bytes = bridge.thumb.get(videoId);
+      if (!bytes) return new Response(null, { status: 404 });
+      return new Response(bytes, { headers: { "content-type": "image/png" } });
+    }
 
-      return new Response(null, { status: 404 });
-    },
-  );
+    return new Response(null, { status: 404 });
+  });
 
   useSettingsStore.setState({
     experiments: { youtubeBridge: true },
@@ -166,9 +163,7 @@ describe("post-reload survival", () => {
 
     await getPersistenceSettled();
 
-    await waitFor(
-      () => useProjectStore.getState().metadata.thumbnailForVideoId === "dQw4w9WgXcQ",
-    );
+    await waitFor(() => useProjectStore.getState().metadata.thumbnailForVideoId === "dQw4w9WgXcQ");
 
     const md = useProjectStore.getState().metadata;
     expect(md.title).toBe("Never Gonna Give You Up");

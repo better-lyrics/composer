@@ -184,7 +184,11 @@ function useResolveYouTubeTunnel(): void {
         project.setMetadata(metadataPatch);
         flushPendingSave();
       }
-      if (data.instanceId !== BRIDGE_INSTANCE_ID && !data.wasDefault && data.instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
+      if (
+        data.instanceId !== BRIDGE_INSTANCE_ID &&
+        !data.wasDefault &&
+        data.instanceId !== DEFAULT_COBALT_INSTANCE_ID
+      ) {
         useSettingsStore.getState().recordCobaltInstanceResult(data.instanceId, "success");
       }
     });
