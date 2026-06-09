@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { type UseQueryResult, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
@@ -12,15 +12,18 @@ const QUERY_KEY = "composer-bridge-thumb";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useBridgeThumb(): void {
+function useBridgeThumb(): UseQueryResult<string | null, Error> {
   const source = useAudioStore((s) => s.source);
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
+  const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
+  const persistedFor = useProjectStore((s) => s.metadata.thumbnailForVideoId);
   const videoId = source?.type === "youtube" ? source.videoId : null;
+  const hasMatchingPersistedThumb = Boolean(persistedThumb && videoId && persistedFor === videoId);
 
   const query = useQuery<string | null>({
     queryKey: [QUERY_KEY, videoId, bridgeUrl],
-    enabled: bridgeEnabled && videoId !== null,
+    enabled: bridgeEnabled && videoId !== null && !hasMatchingPersistedThumb,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
     retry: false,
@@ -47,6 +50,8 @@ function useBridgeThumb(): void {
       cancelled = true;
     };
   }, [query.data, videoId]);
+
+  return query;
 }
 
 // -- Exports ------------------------------------------------------------------

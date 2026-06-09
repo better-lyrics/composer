@@ -1,7 +1,6 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useAutoSeparate } from "@/hooks/useAutoSeparate";
-import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
@@ -63,7 +62,6 @@ const AppContent: React.FC = () => {
   usePersistence();
   useImportFromHash();
   useResolveYouTubeTunnel();
-  useBridgeThumb();
   useImportFromQuery();
   useImportFromYouTube();
   usePanicRecovery();

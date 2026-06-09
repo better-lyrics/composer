@@ -294,4 +294,19 @@ describe("ImportPanel: videoId-gated thumb fallback", () => {
     const persisted = screen.container.querySelector("img[src^='data:image/png']");
     expect(persisted).toBeNull();
   });
+
+  it("never renders a raw bridge URL as an img src (regression: broken-image cache pollution)", async () => {
+    useSettingsStore.setState({
+      experiments: { youtubeBridge: true },
+      composerBridgeUrl: DEFAULT_BRIDGE_URL,
+    });
+    useAudioStore.setState({
+      source: { type: "youtube", videoId: "y2j3n0iF_T4" },
+      isLoading: true,
+    });
+
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const liveBridgeImg = screen.container.querySelector(`img[src^='${DEFAULT_BRIDGE_URL}']`);
+    expect(liveBridgeImg).toBeNull();
+  });
 });

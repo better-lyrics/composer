@@ -1,11 +1,10 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
+import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { checkBridgeHealth, HEALTH_QUERY_KEY } from "@/utils/composer-bridge-api";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
-import { useQuery } from "@tanstack/react-query";
 import { useCallback } from "react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -36,26 +35,15 @@ const ROW_HEIGHT = 56;
 
 const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ videoId, loading }) => {
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
-  const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
   const persistedFor = useProjectStore((s) => s.metadata.thumbnailForVideoId);
   const hasMatchingPersistedThumb = Boolean(persistedThumb && persistedFor === videoId);
+  const thumbQuery = useBridgeThumb();
 
-  const health = useQuery({
-    queryKey: [HEALTH_QUERY_KEY, bridgeUrl],
-    queryFn: ({ signal }) => checkBridgeHealth(bridgeUrl, signal),
-    enabled: bridgeEnabled && !hasMatchingPersistedThumb,
-    staleTime: 0,
-    gcTime: 0,
-    retry: false,
-  });
   if (hasMatchingPersistedThumb) {
     return <img src={persistedThumb} alt="" className="size-full object-cover" />;
   }
-  if (bridgeEnabled && health.data) {
-    return <img src={`${bridgeUrl.replace(/\/+$/, "")}/thumb/${videoId}`} alt="" className="size-full object-cover" />;
-  }
-  if (loading || (bridgeEnabled && health.isFetching)) {
+  if (loading || (bridgeEnabled && thumbQuery.isFetching)) {
     return <div className="size-full bg-composer-bg-elevated animate-pulse" />;
   }
   return <IconBrandYoutube size={16} className="text-composer-accent" />;
