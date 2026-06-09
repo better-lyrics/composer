@@ -18,7 +18,6 @@ import {
   buildBridgeAudioFile,
   formatBridgeErrorForToast,
   getAudioFromBridge,
-  getThumbFromBridge,
 } from "@/utils/composer-bridge-api";
 
 // -- Constants ----------------------------------------------------------------
@@ -68,16 +67,6 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
     const { buffer, mimeType, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
-    void getThumbFromBridge(baseUrl, videoId, signal).then((thumb) => {
-      if (signal.aborted || !thumb) return;
-      const current = useAudioStore.getState().source;
-      if (current?.type !== "youtube" || current.videoId !== videoId) return;
-      const project = useProjectStore.getState();
-      const patch: Partial<typeof project.metadata> = { thumbnailDataUrl: thumb };
-      if (!project.metadata.title) patch.title = videoId;
-      project.setMetadata(patch);
-      flushPendingSave();
-    });
     return {
       file: buildBridgeAudioFile(buffer, mimeType, videoId),
       filename: filename || undefined,

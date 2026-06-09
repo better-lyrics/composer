@@ -437,3 +437,23 @@ describe("useResolveYouTubeTunnel: reload race", () => {
     }
   });
 });
+
+// -- Thumbnail ownership ------------------------------------------------------
+
+describe("useResolveYouTubeTunnel: thumbnail ownership", () => {
+  it("does not fetch or write the thumbnail when bridge audio resolves (delegated to useBridgeThumb)", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus-bytes"),
+      mimeType: "audio/opus",
+    });
+    bridge.thumb.set("dQw4w9WgXcQ", { kind: "ok", bytes: asBytes("thumb-bytes") });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => bridge.audioCalls.includes("dQw4w9WgXcQ"));
+    await new Promise((r) => setTimeout(r, 50));
+    expect(bridge.thumbCalls).not.toContain("dQw4w9WgXcQ");
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toBeUndefined();
+  });
+});
