@@ -106,6 +106,31 @@ describe("useBridgeThumb: happy path", () => {
     expect(m.thumbnailDataUrl).toMatch(/^data:image\/png/);
     expect(m.thumbnailForVideoId).toBe("abc123");
   });
+
+  it("refetches once the audio file lands so a stale 404 during yt-dlp extraction does not stick", async () => {
+    enableBridge();
+    // First attempt: bridge has not extracted the thumb yet, returns 404.
+    thumbResponses.set("late-id", { kind: "404" });
+    useAudioStore.getState().setYouTubeSource("late-id");
+
+    await render(withQueryClient(<HookHost />));
+    await waitFor(() => thumbCalls.filter((id) => id === "late-id").length === 1);
+
+    // Store is untouched: no thumb to write.
+    await new Promise((r) => setTimeout(r, 30));
+    expect(useProjectStore.getState().metadata.thumbnailDataUrl).toBeUndefined();
+
+    // Bridge finishes extracting the thumb; audio file lands in the store.
+    thumbResponses.set("late-id", { kind: "ok", bytes: PNG_BYTES });
+    const file = new File([new Uint8Array(8)], "late-id.opus", { type: "audio/opus" });
+    useAudioStore.setState({ source: { type: "youtube", videoId: "late-id", file } });
+
+    await waitFor(() => Boolean(useProjectStore.getState().metadata.thumbnailDataUrl));
+    const m = useProjectStore.getState().metadata;
+    expect(m.thumbnailDataUrl).toMatch(/^data:image\/png/);
+    expect(m.thumbnailForVideoId).toBe("late-id");
+    expect(thumbCalls.filter((id) => id === "late-id").length).toBe(2);
+  });
 });
 
 // -- Persistence gate ---------------------------------------------------------

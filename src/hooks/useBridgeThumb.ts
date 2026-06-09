@@ -19,10 +19,16 @@ function useBridgeThumb(): UseQueryResult<string | null, Error> {
   const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
   const persistedFor = useProjectStore((s) => s.metadata.thumbnailForVideoId);
   const videoId = source?.type === "youtube" ? source.videoId : null;
+  // Refetch once the audio file lands: the bridge extracts the thumb at the
+  // tail end of the yt-dlp run, so an early fetch (kicked off when the source
+  // is first set) often races with the extraction and 404s. Flipping the
+  // queryKey when the file is ready forces a second attempt that finds the
+  // thumb in place.
+  const audioReady = source?.type === "youtube" && source.file !== undefined;
   const hasMatchingPersistedThumb = Boolean(persistedThumb && videoId && persistedFor === videoId);
 
   const query = useQuery<string | null>({
-    queryKey: [QUERY_KEY, videoId, bridgeUrl],
+    queryKey: [QUERY_KEY, videoId, bridgeUrl, audioReady],
     enabled: bridgeEnabled && videoId !== null && !hasMatchingPersistedThumb,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 0,
