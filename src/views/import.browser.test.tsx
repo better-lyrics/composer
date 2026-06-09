@@ -134,7 +134,10 @@ describe("ImportPanel — YouTube thumbnail", () => {
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: false,
     });
-    useProjectStore.getState().setMetadata({ thumbnailDataUrl: PNG_DATA_URL });
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "dQw4w9WgXcQ",
+    });
 
     const screen = await render(withQueryClient(<ImportPanel />));
     const img = screen.container.querySelector("img[src^='data:image/png']");
@@ -174,7 +177,10 @@ describe("ImportPanel — YouTube thumbnail", () => {
       source: { type: "youtube", videoId: "dQw4w9WgXcQ", file },
       isLoading: false,
     });
-    useProjectStore.getState().setMetadata({ thumbnailDataUrl: PNG_DATA_URL });
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "dQw4w9WgXcQ",
+    });
 
     const screen = await render(withQueryClient(<ImportPanel />));
     const img = screen.container.querySelector("img[src^='data:image/png']");
@@ -182,8 +188,9 @@ describe("ImportPanel — YouTube thumbnail", () => {
   });
 
   it("does not probe the bridge for a thumb when one is already persisted", async () => {
-    // The useQuery health probe must be disabled when persistedThumb is set,
-    // otherwise the bridge gets hit on every YouTube source row render.
+    // The useQuery health probe must be disabled when a matching persisted
+    // thumb is set, otherwise the bridge gets hit on every YouTube source row
+    // render.
     useSettingsStore.setState({
       experiments: { youtubeBridge: true },
       composerBridgeUrl: DEFAULT_BRIDGE_URL,
@@ -192,10 +199,12 @@ describe("ImportPanel — YouTube thumbnail", () => {
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
       isLoading: false,
     });
-    useProjectStore.getState().setMetadata({ thumbnailDataUrl: PNG_DATA_URL });
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "dQw4w9WgXcQ",
+    });
 
     const screen = await render(withQueryClient(<ImportPanel />));
-    // Persisted PNG image wins; no live <img> at the bridge URL.
     const persisted = screen.container.querySelector("img[src^='data:image/png']");
     const liveBridgeImg = screen.container.querySelector(`img[src^='${DEFAULT_BRIDGE_URL}']`);
     expect(persisted).not.toBeNull();
@@ -223,5 +232,32 @@ describe("ImportPanel — YouTube subtitle", () => {
     });
     const screen = await render(withQueryClient(<ImportPanel />));
     await expect.element(screen.getByText(/^dQw4w9WgXcQ ・ from YouTube/)).toBeInTheDocument();
+  });
+});
+
+describe("YouTubeSourceThumb: videoId-gated fallback", () => {
+  it("uses the persisted thumb when thumbnailForVideoId matches the active videoId", async () => {
+    useAudioStore.getState().setYouTubeSource("match-id");
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "match-id",
+    });
+
+    const screen = await render(<ImportPanel />);
+    const img = screen.container.querySelector("img");
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute("src")).toBe(PNG_DATA_URL);
+  });
+
+  it("ignores the persisted thumb when thumbnailForVideoId does not match the active videoId", async () => {
+    useAudioStore.getState().setYouTubeSource("new-id");
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "old-id",
+    });
+
+    const screen = await render(<ImportPanel />);
+    const imgs = Array.from(screen.container.querySelectorAll("img"));
+    expect(imgs.some((img) => img.getAttribute("src") === PNG_DATA_URL)).toBe(false);
   });
 });

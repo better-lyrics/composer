@@ -38,15 +38,18 @@ const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ v
   const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
+  const persistedFor = useProjectStore((s) => s.metadata.thumbnailForVideoId);
+  const hasMatchingPersistedThumb = Boolean(persistedThumb && persistedFor === videoId);
+
   const health = useQuery({
     queryKey: [HEALTH_QUERY_KEY, bridgeUrl],
     queryFn: ({ signal }) => checkBridgeHealth(bridgeUrl, signal),
-    enabled: bridgeEnabled && !persistedThumb,
+    enabled: bridgeEnabled && !hasMatchingPersistedThumb,
     staleTime: 0,
     gcTime: 0,
     retry: false,
   });
-  if (persistedThumb) {
+  if (hasMatchingPersistedThumb) {
     return <img src={persistedThumb} alt="" className="size-full object-cover" />;
   }
   if (bridgeEnabled && health.data) {
