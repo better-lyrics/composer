@@ -235,7 +235,7 @@ describe("ImportPanel — YouTube subtitle", () => {
   });
 });
 
-describe("YouTubeSourceThumb: videoId-gated fallback", () => {
+describe("ImportPanel: videoId-gated thumb fallback", () => {
   it("uses the persisted thumb when thumbnailForVideoId matches the active videoId", async () => {
     useAudioStore.getState().setYouTubeSource("match-id");
     useProjectStore.getState().setMetadata({
@@ -244,7 +244,7 @@ describe("YouTubeSourceThumb: videoId-gated fallback", () => {
     });
 
     const screen = await render(<ImportPanel />);
-    const img = screen.container.querySelector("img");
+    const img = screen.container.querySelector("img[src^='data:image/png']");
     expect(img).not.toBeNull();
     expect(img?.getAttribute("src")).toBe(PNG_DATA_URL);
   });
@@ -257,7 +257,43 @@ describe("YouTubeSourceThumb: videoId-gated fallback", () => {
     });
 
     const screen = await render(<ImportPanel />);
-    const imgs = Array.from(screen.container.querySelectorAll("img"));
-    expect(imgs.some((img) => img.getAttribute("src") === PNG_DATA_URL)).toBe(false);
+    const persisted = screen.container.querySelector("img[src^='data:image/png']");
+    expect(persisted).toBeNull();
+  });
+
+  it("re-enables the bridge probe when persisted tag mismatches so a fresh thumb can load", async () => {
+    useSettingsStore.setState({
+      experiments: { youtubeBridge: true },
+      composerBridgeUrl: DEFAULT_BRIDGE_URL,
+    });
+    useAudioStore.setState({
+      source: { type: "youtube", videoId: "new-id" },
+      isLoading: false,
+    });
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+      thumbnailForVideoId: "old-id",
+    });
+
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const persisted = screen.container.querySelector("img[src^='data:image/png']");
+    expect(persisted).toBeNull();
+    // The probe being enabled is observable via the skeleton or via the live
+    // bridge image landing. Either way, no stale PNG must render.
+    const stale = Array.from(screen.container.querySelectorAll("img")).some(
+      (img) => img.getAttribute("src") === PNG_DATA_URL,
+    );
+    expect(stale).toBe(false);
+  });
+
+  it("treats a legacy persisted thumb without a videoId tag as unsafe to display", async () => {
+    useAudioStore.getState().setYouTubeSource("any-id");
+    useProjectStore.getState().setMetadata({
+      thumbnailDataUrl: PNG_DATA_URL,
+    });
+
+    const screen = await render(<ImportPanel />);
+    const persisted = screen.container.querySelector("img[src^='data:image/png']");
+    expect(persisted).toBeNull();
   });
 });
