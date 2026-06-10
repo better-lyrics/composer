@@ -163,6 +163,43 @@ describe("scrub-stem-router", () => {
     });
   });
 
+  describe("clearCache", () => {
+    test("clearCache invalidates the cache and forces refetch on next selectStem", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      let urlCalls = 0;
+      const getVocalsUrl = () => {
+        urlCalls += 1;
+        return vocalsUrl;
+      };
+
+      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem()).toBe("vocals");
+      expect(urlCalls).toBe(1);
+
+      scrubStemRouter.clearCache();
+      expect(scrubStemRouter.getActiveStem()).toBeNull();
+
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+      expect(urlCalls).toBe(2);
+
+      URL.revokeObjectURL(vocalsUrl);
+    });
+
+    test("clearCache leaves scrubPreview with no active buffer", () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("original", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      scrubStemRouter.clearCache();
+      scrubPreview.play(0.5, 1);
+      expect(scrubPreview.getActiveSnippet()).toBeNull();
+    });
+  });
+
   describe("race protection", () => {
     test("rapid switch only applies the latest selection", async () => {
       scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
