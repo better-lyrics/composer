@@ -7,6 +7,7 @@ import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { bracketWordList, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";
 
@@ -160,11 +161,19 @@ function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricL
 
 // -- Whole-list transform -----------------------------------------------------
 
-function carriedBackgroundWords(standalone: LyricLine, bgText: string): WordTiming[] | null {
+function carriedBackgroundWords(standalone: LyricLine, bgText: string, preserveBrackets: boolean): WordTiming[] | null {
   const words = standalone.words;
-  if (words && words.length > 0) return remapWordTextsPreservingTiming(words, bgText);
-  if (isLineSynced(standalone)) return createInitialBgWords(bgText, standalone.begin, standalone.end);
-  return null;
+  let carry: WordTiming[] | null;
+  if (words && words.length > 0) {
+    carry = remapWordTextsPreservingTiming(words, bgText);
+  } else if (isLineSynced(standalone)) {
+    carry = createInitialBgWords(bgText, standalone.begin, standalone.end);
+  } else {
+    carry = null;
+  }
+  if (!preserveBrackets) return carry;
+  if (!carry || carry.length === 0) return carry;
+  return bracketWordList(carry);
 }
 
 function mergeStandaloneInto(
@@ -182,7 +191,7 @@ function mergeStandaloneInto(
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
   const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
   const baseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
-  const carried = carriedBackgroundWords(standalone, bgText);
+  const carried = carriedBackgroundWords(standalone, bgText, options.preserveBrackets);
 
   // Source for a result that keeps the prev base: a surviving extraction base
   // is necessarily fresh same-pass output (stale extraction was dropped above),
@@ -191,7 +200,8 @@ function mergeStandaloneInto(
 
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0) {
-      const combined = [...baseWords, ...carried];
+      const canSeamStrip = options.preserveBrackets && prevTrailingBracketFromSamePass;
+      const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
       return applyBackground(prev, {
         words: combined,
         text: reconstructLineText(combined, getSplitCharacter()),

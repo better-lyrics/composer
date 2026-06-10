@@ -1711,3 +1711,189 @@ describe("preserveBrackets: invariants", () => {
     expect(bg).toBe("(ooh yeah la)");
   });
 });
+
+describe("preserveBrackets: word-synced bg", () => {
+  it("brackets a multi-word standalone carried into prev with no existing bg", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundWords).toEqual([
+      { text: "(ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah)", begin: 5.6, end: 6.2 },
+    ]);
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("brackets a single-word standalone", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.6 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].backgroundWords).toEqual([{ text: "(ooh)", begin: 5.0, end: 5.6 }]);
+    expect(result[0].backgroundText).toBe("(ooh)");
+  });
+
+  it("merges a second standalone into the same outer pair, stripping seam brackets", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.5 }],
+      }),
+      createLine({
+        id: "3",
+        text: "(yeah)",
+        words: [{ text: "(yeah)", begin: 5.6, end: 6.1 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundWords).toEqual([
+      { text: "(ooh ", begin: 5.0, end: 5.5 },
+      { text: "yeah)", begin: 5.6, end: 6.1 },
+    ]);
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("appends bracketed carry next to existing manual bg words without merging into manual pair", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "ah ",
+        backgroundWords: [{ text: "ah ", begin: 1.0, end: 1.5 }],
+        backgroundTextSource: "manual",
+      }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.5 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundWords).toEqual([
+      { text: "ah ", begin: 1.0, end: 1.5 },
+      { text: "(ooh)", begin: 5.0, end: 5.5 },
+    ]);
+  });
+
+  it("falls back to text-only addition when standalone has no words", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].backgroundWords).toBeUndefined();
+    expect(result[0].backgroundText).toBe("(ooh)");
+  });
+
+  it("off-state: word carry is unchanged (regression guard)", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.0, end: 5.6 },
+          { text: "yeah)", begin: 5.6, end: 6.2 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
+    expect(result[0].backgroundWords).toEqual([
+      { text: "ooh ", begin: 5.0, end: 5.6 },
+      { text: "yeah", begin: 5.6, end: 6.2 },
+    ]);
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+
+  it("does not fuse a manually-bracketed bg with a fresh bracketed carry", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "(clap)",
+        backgroundWords: [{ text: "(clap)", begin: 1.0, end: 1.5 }],
+        backgroundTextSource: "manual",
+      }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.5 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundWords).toEqual([
+      { text: "(clap)", begin: 1.0, end: 1.5 },
+      { text: "(ooh)", begin: 5.0, end: 5.5 },
+    ]);
+  });
+});
+
+describe("preserveBrackets: word-synced invariants", () => {
+  it("preserves timing values exactly across bracket wrapping", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh yeah)",
+        words: [
+          { text: "(ooh ", begin: 5.123, end: 5.617 },
+          { text: "yeah)", begin: 5.617, end: 6.234 },
+        ],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    const w = result[0].backgroundWords ?? [];
+    expect(w[0].begin).toBe(5.123);
+    expect(w[0].end).toBe(5.617);
+    expect(w[1].begin).toBe(5.617);
+    expect(w[1].end).toBe(6.234);
+  });
+
+  it("reconstructed backgroundText stays consistent with bracketed words", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.5 }],
+      }),
+      createLine({
+        id: "3",
+        text: "(yeah)",
+        words: [{ text: "(yeah)", begin: 5.6, end: 6.1 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("does not introduce parens in the main line text", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({
+        id: "2",
+        text: "(ooh)",
+        words: [{ text: "(ooh)", begin: 5.0, end: 5.5 }],
+      }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].text).toBe("Real line");
+  });
+});
