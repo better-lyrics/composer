@@ -233,6 +233,43 @@ describe("scrub-stem-router", () => {
       URL.revokeObjectURL(instrumentalUrl);
     });
   });
+
+  describe("decode failure", () => {
+    test("garbage blob URL leaves the previous active stem in place", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("original", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      const garbageBlob = new Blob([new Uint8Array([1, 2, 3, 4, 5])], { type: "audio/wav" });
+      const garbageUrl = URL.createObjectURL(garbageBlob);
+
+      allowConsole(/\[ScrubStemRouter\]/);
+      scrubStemRouter.selectStem("vocals", () => garbageUrl);
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      URL.revokeObjectURL(garbageUrl);
+    });
+
+    test("decode failure does not poison the cache for the failed stem", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("original", () => undefined);
+
+      const garbageUrl = URL.createObjectURL(new Blob([new Uint8Array([0, 0, 0, 0])], { type: "audio/wav" }));
+      allowConsole(/\[ScrubStemRouter\]/);
+      scrubStemRouter.selectStem("vocals", () => garbageUrl);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      URL.revokeObjectURL(garbageUrl);
+      const validUrl = bufferToBlobUrl(makeSineBuffer(1));
+      scrubStemRouter.selectStem("vocals", () => validUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+
+      URL.revokeObjectURL(validUrl);
+    });
+  });
 });
 
 function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
