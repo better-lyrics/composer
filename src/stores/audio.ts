@@ -15,7 +15,6 @@ interface AudioState {
   isMuted: boolean;
   isLoading: boolean;
   audioElement: HTMLAudioElement | null;
-  currentSrc: string | null;
   youtubeLoadError: string | null;
 }
 
@@ -32,7 +31,6 @@ interface AudioActions {
   setIsLoading: (isLoading: boolean) => void;
   setYouTubeLoadError: (error: string | null) => void;
   registerAudioElement: (element: HTMLAudioElement | null) => void;
-  setCurrentSrc: (src: string | null) => void;
   seekTo: (time: number) => void;
   reset: () => void;
 }
@@ -51,7 +49,6 @@ function createInitialState(): AudioState {
     isMuted: false,
     isLoading: false,
     audioElement: null,
-    currentSrc: null,
     youtubeLoadError: null,
   };
 }
@@ -92,7 +89,6 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setYouTubeLoadError: (youtubeLoadError) => set({ youtubeLoadError }),
   registerAudioElement: (audioElement) => set({ audioElement }),
-  setCurrentSrc: (currentSrc) => set({ currentSrc }),
   seekTo: (time: number) => {
     if (!Number.isFinite(time) || time < 0) return;
     const audio = get().audioElement;

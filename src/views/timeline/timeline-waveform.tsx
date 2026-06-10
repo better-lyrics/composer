@@ -10,7 +10,6 @@ const TimelineWaveform: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const audioElement = useAudioStore((s) => s.audioElement);
-  const currentSrc = useAudioStore((s) => s.currentSrc);
   const seekTo = useAudioStore((s) => s.seekTo);
 
   const zoom = useTimelineStore((s) => s.zoom);
@@ -18,7 +17,7 @@ const TimelineWaveform: React.FC = () => {
   const [ws, setWs] = useState<WaveSurfer | null>(null);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
-  const waveformKey = currentSrc ?? "no-audio";
+  const waveformKey = audioElement?.src ?? "no-audio";
 
   // Sync zoom imperatively
   useEffect(() => {
