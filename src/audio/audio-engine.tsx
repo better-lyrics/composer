@@ -1,6 +1,7 @@
 import { decodeMp3ToWav, isMp3File } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
+import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useEffect, useRef } from "react";
@@ -34,14 +35,14 @@ const AudioEngine: React.FC = () => {
   useEffect(() => {
     if (!source) {
       registerAudioElement(null);
-      scrubPreview.useBuffer(null);
+      scrubStemRouter.clearCache();
       return;
     }
 
     const playableFile = source.type === "file" ? source.file : source.type === "youtube" ? source.file : null;
     if (!playableFile) {
       registerAudioElement(null);
-      scrubPreview.useBuffer(null);
+      scrubStemRouter.clearCache();
       return;
     }
 
@@ -88,11 +89,11 @@ const AudioEngine: React.FC = () => {
         if (aborted) return;
         const audioBuffer = await scrubPreview.decode(bytes);
         if (aborted) return;
-        scrubPreview.useBuffer(audioBuffer);
+        scrubStemRouter.setOriginalBuffer(audioBuffer);
       } catch (err) {
         if (aborted) return;
         console.warn(LOG_PREFIX, "scrub-preview decode failed", err);
-        scrubPreview.useBuffer(null);
+        scrubStemRouter.setOriginalBuffer(null);
       }
     };
     void loadScrubBuffer();
@@ -163,7 +164,7 @@ const AudioEngine: React.FC = () => {
       clearSlowLoading();
       if (teardown) teardown();
       registerAudioElement(null);
-      scrubPreview.useBuffer(null);
+      scrubStemRouter.clearCache();
     };
   }, [source, setDuration, setCurrentTime, setIsPlaying, setIsLoading, registerAudioElement]);
 
@@ -206,6 +207,10 @@ const AudioEngine: React.FC = () => {
     audio.muted = currentIsMuted;
     if (wasPlaying) audio.play().catch(() => {});
   }, [currentStem, stemUrls, audioElement]);
+
+  useEffect(() => {
+    scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);
+  }, [currentStem, stemUrls]);
 
   return null;
 };
