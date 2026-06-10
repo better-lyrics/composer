@@ -241,20 +241,11 @@ const DiagnosticsFallback: React.FC = () => (
   </div>
 );
 
-const SeparationDiagnosticPage: React.FC = () => {
-  if (!import.meta.env.DEV) {
-    return (
-      <div className="min-h-screen bg-composer-bg text-composer-text flex items-center justify-center p-6">
-        <p className="text-sm text-composer-text-muted">Not available in production.</p>
-      </div>
-    );
-  }
-  return (
-    <ClientOnly fallback={<DiagnosticsFallback />}>
-      <DiagnosticsPanel />
-    </ClientOnly>
-  );
-};
+const SeparationDiagnosticPage: React.FC = () => (
+  <ClientOnly fallback={<DiagnosticsFallback />}>
+    <DiagnosticsPanel />
+  </ClientOnly>
+);
 
 // -- Exports ------------------------------------------------------------------
 
