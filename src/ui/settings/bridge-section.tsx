@@ -147,7 +147,16 @@ const BridgeSection: React.FC = () => {
           </span>
           <span className="text-xs text-composer-text-muted">
             Route YouTube imports through a small local binary running on your machine instead of Cobalt. Uses your
-            residential IP, so YouTube doesn't block it. Requires running the bridge.
+            residential IP, so YouTube doesn't block it. Requires running{" "}
+            <a
+              href="https://github.com/better-lyrics/composer-bridge"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 transition-colors hover:text-composer-text"
+            >
+              Composer Bridge
+            </a>
+            .
           </span>
         </div>
         <BridgeToggle enabled={enabled} onToggle={toggleEnabled} />
