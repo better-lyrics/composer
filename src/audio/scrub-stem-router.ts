@@ -45,6 +45,9 @@ function setOriginalBuffer(buffer: AudioBuffer | null): void {
 }
 
 function selectStem(stem: Stem, getUrl: () => string | undefined): void {
+  selectionToken += 1;
+  const myToken = selectionToken;
+
   if (stem === activeStem) {
     const alreadyRouted = cache.get(stem);
     if (alreadyRouted) return;
@@ -56,8 +59,6 @@ function selectStem(stem: Stem, getUrl: () => string | undefined): void {
   }
   if (stem === "original") return;
 
-  selectionToken += 1;
-  const myToken = selectionToken;
   const url = getUrl();
   if (!url) {
     console.warn(LOG_PREFIX, `no URL provided for stem "${stem}"; staying on previous stem`);
@@ -71,6 +72,7 @@ function selectStem(stem: Stem, getUrl: () => string | undefined): void {
       activate(stem, buf);
     })
     .catch((err) => {
+      if (myToken !== selectionToken) return;
       console.warn(LOG_PREFIX, `failed to load stem "${stem}":`, err);
     });
 }
