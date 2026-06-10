@@ -75,6 +75,23 @@ describe("scrub-stem-router", () => {
       scrubPreview.play(0.3, 1);
       expect(scrubPreview.getActiveSnippet()?.time).toBe(0.3);
     });
+
+    test("selectStem('original') deactivates a non-original stem when original is uncached", async () => {
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+
+      scrubStemRouter.setOriginalBuffer(null);
+      expect(scrubStemRouter.getActiveStem()).toBe("vocals");
+
+      scrubStemRouter.selectStem("original", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBeNull();
+      scrubPreview.play(0.5, 1);
+      expect(scrubPreview.getActiveSnippet()).toBeNull();
+
+      URL.revokeObjectURL(vocalsUrl);
+    });
   });
 
   describe("uncached fetch path", () => {

@@ -57,7 +57,10 @@ function selectStem(stem: Stem, getUrl: () => string | undefined): void {
     activate(stem, cached);
     return;
   }
-  if (stem === "original") return;
+  if (stem === "original") {
+    if (activeStem !== null) deactivate();
+    return;
+  }
 
   const url = getUrl();
   if (!url) {
