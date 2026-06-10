@@ -1,10 +1,12 @@
 import { AudioEngine } from "@/audio/audio-engine";
+import { scrubPreview } from "@/audio/scrub-preview";
+import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 function waitFor(predicate: () => boolean, timeout = 1000): Promise<void> {
   const start = Date.now();
@@ -19,6 +21,10 @@ function waitFor(predicate: () => boolean, timeout = 1000): Promise<void> {
 }
 
 describe("AudioEngine", () => {
+  afterEach(() => {
+    scrubStemRouter.clearCache();
+  });
+
   it("registers an <audio> element on the store when a file source is set", async () => {
     await render(<AudioEngine />);
     expect(useAudioStore.getState().audioElement).toBeNull();
@@ -218,5 +224,41 @@ describe("AudioEngine", () => {
     } finally {
       URL.revokeObjectURL(vocalsUrl);
     }
+  });
+
+  it("routes the scrub-preview through the currently-selected stem", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+
+    await waitFor(() => scrubStemRouter.getActiveStem() === "original", 5000);
+
+    const vocalsUrl = URL.createObjectURL(createAudioFile("vocals.wav"));
+    try {
+      useSeparationStore.setState({
+        currentStem: "vocals",
+        availableStems: ["original", "vocals"],
+        stemUrls: { vocals: vocalsUrl },
+      });
+      await waitFor(() => scrubStemRouter.getActiveStem() === "vocals", 5000);
+      scrubPreview.play(0.05, 1);
+      expect(scrubPreview.getActiveSnippet()?.time).toBe(0);
+
+      useSeparationStore.setState({ currentStem: "original" });
+      await waitFor(() => scrubStemRouter.getActiveStem() === "original", 5000);
+    } finally {
+      URL.revokeObjectURL(vocalsUrl);
+    }
+  });
+
+  it("clears the scrub router cache when the source becomes null", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    await waitFor(() => scrubStemRouter.getActiveStem() === "original", 5000);
+
+    useAudioStore.setState({ source: null });
+    await waitFor(() => useAudioStore.getState().audioElement === null);
+    expect(scrubStemRouter.getActiveStem()).toBeNull();
   });
 });

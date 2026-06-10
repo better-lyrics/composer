@@ -19,7 +19,15 @@ const TimelineWaveform: React.FC = () => {
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
 
-  // Sync zoom imperatively
+  useEffect(() => {
+    if (!ws || !audioElement) return;
+    const onLoadStart = () => {
+      if (audioElement.src) void ws.load(audioElement.src);
+    };
+    audioElement.addEventListener("loadstart", onLoadStart);
+    return () => audioElement.removeEventListener("loadstart", onLoadStart);
+  }, [ws, audioElement]);
+
   useEffect(() => {
     if (!ws) return;
     ws.zoom(zoom);
