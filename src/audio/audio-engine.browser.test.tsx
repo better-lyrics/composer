@@ -261,4 +261,30 @@ describe("AudioEngine", () => {
     await waitFor(() => useAudioStore.getState().audioElement === null);
     expect(scrubStemRouter.getActiveStem()).toBeNull();
   });
+
+  it("sets primingStripped to true after the audio element is registered for a wav source", async () => {
+    await render(<AudioEngine />);
+    expect(useAudioStore.getState().primingStripped).toBe(false);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    await waitFor(() => useAudioStore.getState().primingStripped === true);
+    expect(useAudioStore.getState().primingStripped).toBe(true);
+  });
+
+  it("sets primingStripped to true after the audio element is registered for an mp3 source", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createMp3File() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    await waitFor(() => useAudioStore.getState().primingStripped === true, 5000);
+    expect(useAudioStore.getState().primingStripped).toBe(true);
+  });
+
+  it("resets primingStripped to false when the source changes via setSource", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.getState().setSource({ type: "file", file: createAudioFile() });
+    await waitFor(() => useAudioStore.getState().primingStripped === true);
+    useAudioStore.getState().setSource({ type: "file", file: createAudioFile("second.wav") });
+    await waitFor(() => useAudioStore.getState().primingStripped === true);
+    expect(useAudioStore.getState().primingStripped).toBe(true);
+  });
 });

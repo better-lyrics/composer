@@ -128,6 +128,7 @@ const AudioEngine: React.FC = () => {
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
+      useAudioStore.getState().setPrimingStripped(true);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);

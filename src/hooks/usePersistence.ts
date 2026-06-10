@@ -58,6 +58,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     projectState.dismissedSuggestions,
     projectState.dismissedExplicitSuggestions,
     useSeparationStore.getState().currentStem,
+    useAudioStore.getState().primingStripped,
   ];
 }
 
