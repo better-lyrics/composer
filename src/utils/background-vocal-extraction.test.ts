@@ -1553,3 +1553,161 @@ describe("lineHasInlineParens", () => {
     expect(lineHasInlineParens(createLine({ id: "1", text: "Hello (ooh" }))).toBe(false);
   });
 });
+
+// -- preserveBrackets: text-only bg -------------------------------------------
+
+describe("preserveBrackets: text-only bg", () => {
+  it("wraps a single inline group in one outer pair", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("A B");
+    expect(result[0].backgroundText).toBe("(ooh)");
+  });
+
+  it("wraps multiple inline groups on the same line in one outer pair", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].text).toBe("A B");
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("merges a standalone into prev with one outer pair", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("merges multiple consecutive standalones into one outer pair", () => {
+    const lines = [
+      createLine({ id: "1", text: "Real line" }),
+      createLine({ id: "2", text: "(ooh)" }),
+      createLine({ id: "3", text: "(yeah)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("merges inline-then-standalone same-pass into one outer pair", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" }), createLine({ id: "2", text: "(yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("A B");
+    expect(result[0].backgroundText).toBe("(ooh yeah)");
+  });
+
+  it("appends a bracketed addition next to existing manual bg text", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "ah",
+        backgroundTextSource: "manual",
+      }),
+      createLine({ id: "2", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ah (ooh)");
+  });
+
+  it("groups multiple bracketed additions inside one pair after manual bg", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "ah",
+        backgroundTextSource: "manual",
+      }),
+      createLine({ id: "2", text: "(ooh)" }),
+      createLine({ id: "3", text: "(yeah)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("ah (ooh yeah)");
+  });
+
+  it("preserves backgroundTextSource as extraction for fresh additions", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].backgroundTextSource).toBe("extraction");
+  });
+
+  it("is idempotent on already-bracketed extracted bg (no double wrap)", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+    const once = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    const twice = extractBackgroundVocals(once, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(twice[0].backgroundText).toBe("(ooh)");
+    expect(twice[0].text).toBe("A B");
+  });
+
+  it("does not change main text under preserveBrackets", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result[0].text).toBe("A B");
+  });
+
+  it("does not peel a trailing ')' from manual bg text", () => {
+    const lines = [
+      createLine({
+        id: "1",
+        text: "Real line",
+        backgroundText: "my note)",
+        backgroundTextSource: "manual",
+      }),
+      createLine({ id: "2", text: "(ooh)" }),
+    ];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    expect(result[0].backgroundText).toBe("my note) (ooh)");
+  });
+});
+
+// -- preserveBrackets: invariants ---------------------------------------------
+
+describe("preserveBrackets: invariants", () => {
+  it("regression: off-state inline single group matches pre-task output", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("A B");
+    expect(result[0].backgroundText).toBe("ooh");
+  });
+
+  it("regression: off-state standalone merge matches pre-task output", () => {
+    const lines = [createLine({ id: "1", text: "Real line" }), createLine({ id: "2", text: "(ooh yeah)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
+    expect(result).toHaveLength(1);
+    expect(result[0].text).toBe("Real line");
+    expect(result[0].backgroundText).toBe("ooh yeah");
+  });
+
+  it("off-state and on-state produce different bg text for inline parens", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) B" })];
+    const off = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
+    const on = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(off[0].backgroundText).toBe("ooh");
+    expect(on[0].backgroundText).toBe("(ooh)");
+    expect(off[0].backgroundText).not.toBe(on[0].backgroundText);
+  });
+
+  it("paren-free line is reference-equality pass-through regardless of flag", () => {
+    const lines = [createLine({ id: "1", text: "Plain line" })];
+    const off = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
+    const on = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(off[0]).toBe(lines[0]);
+    expect(on[0]).toBe(lines[0]);
+  });
+
+  it("inline groups plus same-pass standalone merge yield exactly one outer pair", () => {
+    const lines = [createLine({ id: "1", text: "A (ooh) (yeah) B" }), createLine({ id: "2", text: "(la)" })];
+    const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: true });
+    expect(result).toHaveLength(1);
+    const bg = result[0].backgroundText ?? "";
+    expect((bg.match(/\(/g) ?? []).length).toBe(1);
+    expect((bg.match(/\)/g) ?? []).length).toBe(1);
+    expect(bg).toBe("(ooh yeah la)");
+  });
+});
