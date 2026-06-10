@@ -1,6 +1,7 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { makeSineBuffer } from "@/test/audio-fixtures";
+import { allowConsole } from "@/test/console-guard";
 import { afterEach, describe, expect, test } from "vitest";
 
 describe("scrub-stem-router", () => {
@@ -73,6 +74,47 @@ describe("scrub-stem-router", () => {
       expect(scrubStemRouter.getActiveStem()).toBe("original");
       scrubPreview.play(0.3, 1);
       expect(scrubPreview.getActiveSnippet()?.time).toBe(0.3);
+    });
+  });
+
+  describe("uncached fetch path", () => {
+    test("selectStem('vocals') fetches and decodes the URL on cache miss", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsBuf = makeSineBuffer(1);
+      const vocalsUrl = bufferToBlobUrl(vocalsBuf);
+
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+
+      scrubPreview.play(0.5, 1);
+      const snippet = scrubPreview.getActiveSnippet();
+      expect(snippet?.time).toBe(0.5);
+      expect(snippet?.rate).toBe(1);
+
+      URL.revokeObjectURL(vocalsUrl);
+    });
+
+    test("selectStem('vocals') with no URL provider warns and stays on previous stem", () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      scrubStemRouter.selectStem("original", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      allowConsole(/\[ScrubStemRouter\]/);
+      scrubStemRouter.selectStem("vocals", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+    });
+
+    test("selectStem('instrumental') routes to scrubPreview after decode", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const instrUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      scrubStemRouter.selectStem("instrumental", () => instrUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("instrumental");
+
+      scrubPreview.play(0.2, 1);
+      expect(scrubPreview.getActiveSnippet()?.time).toBe(0.2);
+
+      URL.revokeObjectURL(instrUrl);
     });
   });
 });
