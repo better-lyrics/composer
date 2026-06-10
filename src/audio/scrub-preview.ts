@@ -1,4 +1,4 @@
-import { parseLamePriming } from "@/audio/lame-priming";
+import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -26,14 +26,7 @@ async function decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
   const ctx = getContext();
   const priming = parseLamePriming(bytes);
   const decoded = await ctx.decodeAudioData(bytes.slice(0));
-  if (priming <= 0 || priming >= decoded.length) return decoded;
-  const trimmedLength = decoded.length - priming;
-  const trimmed = ctx.createBuffer(decoded.numberOfChannels, trimmedLength, decoded.sampleRate);
-  for (let c = 0; c < decoded.numberOfChannels; c++) {
-    const src = decoded.getChannelData(c);
-    trimmed.getChannelData(c).set(src.subarray(priming, priming + trimmedLength));
-  }
-  return trimmed;
+  return cropAudioBufferHead(decoded, priming, ctx);
 }
 
 function useBuffer(next: AudioBuffer | null): void {

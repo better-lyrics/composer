@@ -1,4 +1,4 @@
-import { parseLamePriming } from "@/audio/lame-priming";
+import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
 
 // -- Types --------------------------------------------------------------------
 
@@ -75,31 +75,10 @@ async function decodeAudioToWav(file: File): Promise<Blob> {
   const ctx = new AudioContext();
   try {
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    if (priming === 0) return audioBufferToWav(audioBuffer);
-    const stripped = makeStrippedAudio(audioBuffer, priming);
-    return audioBufferToWav(stripped);
+    return audioBufferToWav(cropAudioBufferHead(audioBuffer, priming, ctx));
   } finally {
     void ctx.close();
   }
-}
-
-function makeStrippedAudio(audio: AudioBuffer, priming: number): DecodedAudio {
-  const length = Math.max(0, audio.length - priming);
-  const channels: Float32Array[] = [];
-  for (let c = 0; c < audio.numberOfChannels; c++) {
-    const data = audio.getChannelData(c);
-    const out = new Float32Array(length);
-    out.set(data.subarray(priming, priming + length));
-    channels.push(out);
-  }
-  return {
-    sampleRate: audio.sampleRate,
-    numberOfChannels: audio.numberOfChannels,
-    length,
-    getChannelData(channel: number) {
-      return channels[channel];
-    },
-  };
 }
 
 // -- Exports ------------------------------------------------------------------

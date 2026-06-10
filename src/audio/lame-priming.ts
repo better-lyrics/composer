@@ -47,6 +47,17 @@ function stripLeading<T extends Float32Array>(channels: T[], n: number): T[] {
   return channels.map((c) => c.slice(n) as T);
 }
 
+function cropAudioBufferHead(audio: AudioBuffer, startSample: number, ctx: BaseAudioContext): AudioBuffer {
+  if (startSample <= 0) return audio;
+  const length = Math.max(0, audio.length - startSample);
+  const out = ctx.createBuffer(audio.numberOfChannels, length, audio.sampleRate);
+  for (let c = 0; c < audio.numberOfChannels; c++) {
+    const src = audio.getChannelData(c);
+    out.getChannelData(c).set(src.subarray(startSample, startSample + length));
+  }
+  return out;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { findFirstMp3FrameOffset, parseLamePriming, stripLeading };
+export { cropAudioBufferHead, findFirstMp3FrameOffset, parseLamePriming, stripLeading };
