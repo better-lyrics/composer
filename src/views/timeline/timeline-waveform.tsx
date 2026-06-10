@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useSeparationStore } from "@/stores/separation";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
@@ -11,13 +12,14 @@ const TimelineWaveform: React.FC = () => {
   const duration = useAudioStore((s) => s.duration);
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
+  const currentStem = useSeparationStore((s) => s.currentStem);
 
   const zoom = useTimelineStore((s) => s.zoom);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
-  const waveformKey = audioElement?.src ?? "no-audio";
+  const waveformKey = `${audioElement?.src ?? "no-audio"}|${currentStem}`;
 
   // Sync zoom imperatively
   useEffect(() => {
