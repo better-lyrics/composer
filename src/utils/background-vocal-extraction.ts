@@ -34,6 +34,11 @@ interface LineClassification {
   mainText: string;
 }
 
+interface ExtractOptions {
+  mergeStandaloneLines: boolean;
+  preserveBrackets: boolean;
+}
+
 // -- Scanner ------------------------------------------------------------------
 
 function scanParenGroups(text: string): ParenScan {
@@ -90,7 +95,7 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
-function extractInlineWordSynced(line: LyricLine, classified: LineClassification): LyricLine {
+function extractInlineWordSynced(line: LyricLine, classified: LineClassification, _options: ExtractOptions): LyricLine {
   const words = line.words;
   if (!words || words.length === 0) return line;
   if (line.backgroundWords && line.backgroundWords.length > 0) return line;
@@ -127,10 +132,10 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   );
 }
 
-function extractInlineFromLine(line: LyricLine): LyricLine {
+function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricLine {
   const classified = classifyLine(line.text);
   if (classified.kind !== "inline") return line;
-  if (isWordSynced(line)) return extractInlineWordSynced(line, classified);
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
   if (line.backgroundWords && line.backgroundWords.length > 0) return line;
   const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
   return applyBackground(
@@ -140,10 +145,6 @@ function extractInlineFromLine(line: LyricLine): LyricLine {
 }
 
 // -- Whole-list transform -----------------------------------------------------
-
-interface ExtractOptions {
-  mergeStandaloneLines: boolean;
-}
 
 function carriedBackgroundWords(standalone: LyricLine, bgText: string): WordTiming[] | null {
   const words = standalone.words;
@@ -209,7 +210,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
   for (const line of lines) {
     const classified = classifyLine(line.text);
     if (classified.kind === "inline") {
-      const extracted = extractInlineFromLine(line);
+      const extracted = extractInlineFromLine(line, options);
       result.push(extracted);
       // extracted === line means nothing was extracted; such a pass-through
       // line may carry stale prior-pass provenance and must not count as fresh.

@@ -62,6 +62,7 @@ async function importParsedLyrics(parsed: ParseResult, ctx: ImportParsedLyricsCo
   let workingLines = ctx.applyBackgroundExtraction
     ? extractBackgroundVocals(parsed.lines, {
         mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
+        preserveBrackets: false,
       })
     : parsed.lines;
 

@@ -342,7 +342,10 @@ const EditPanel: React.FC = () => {
   }, [lines]);
 
   const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const extractOptions = useMemo(() => ({ mergeStandaloneLines: mergeStandalone }), [mergeStandalone]);
+  const extractOptions = useMemo(
+    () => ({ mergeStandaloneLines: mergeStandalone, preserveBrackets: false }),
+    [mergeStandalone],
+  );
   const canExtractBackgroundVocals = useMemo(() => {
     const extracted = extractBackgroundVocals(lines, extractOptions);
     return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
@@ -383,7 +386,7 @@ const EditPanel: React.FC = () => {
   const handleExtractLine = useCallback((lineId: string) => {
     const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
     if (!target) return;
-    const extracted = extractInlineFromLine(target);
+    const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
     if (extracted === target) return;
     useProjectStore.getState().updateLineWithHistory(lineId, {
       text: extracted.text,
@@ -487,6 +490,7 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+      preserveBrackets: false,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
@@ -585,6 +589,7 @@ const EditPanel: React.FC = () => {
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
           finalLines = extractBackgroundVocals(finalLines, {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+            preserveBrackets: false,
           });
         }
         finalizeRun();
