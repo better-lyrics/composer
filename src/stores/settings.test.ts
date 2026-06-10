@@ -114,4 +114,3 @@ describe("cobalt instance helpers", () => {
     expect(getActiveCobaltInstance().url).toBe("https://example.test");
   });
 });
-

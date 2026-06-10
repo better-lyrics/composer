@@ -167,4 +167,4 @@ export {
   loadAudioFile,
   clearAudioFile,
 };
-export type { SavedAudioSource };
+export type { SavedAudioSource, SavedProject };

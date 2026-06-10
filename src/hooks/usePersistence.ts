@@ -1,13 +1,13 @@
 import {
   clearAudioFile,
   loadAudioFile,
-  loadCurrentProject,
   saveAudioFile,
   saveCurrentProject,
   type SavedAudioSource,
 } from "@/lib/persistence";
 import { cancelPendingSave, debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
+import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
@@ -82,7 +82,7 @@ function commitProjectSaveNow(): void {
 
 function usePersistence(): void {
   useEffect(() => {
-    Promise.all([loadCurrentProject(), loadAudioFile()])
+    Promise.all([loadCurrentProjectWithPrimingMigration(), loadAudioFile()])
       .then(([project, file]) => {
         if (project) {
           const issues: string[] = [];
