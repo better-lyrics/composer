@@ -3,6 +3,7 @@ import { TARGET_SAMPLE_RATE } from "@/audio/separation/audio-codec";
 import {
   computeOverallLag,
   crossCorrelateLag,
+  detectLeadingSilence,
   downmixToMono,
   findEnergeticWindow,
 } from "@/pages/diagnostics/separation-diagnostics";
@@ -129,5 +130,53 @@ describe("computeOverallLag", () => {
     expect(result).not.toBeNull();
     if (!result) return;
     expect(result.lagSamples).toBe(100);
+  });
+});
+
+describe("detectLeadingSilence", () => {
+  it("returns 0 when the first sample is above threshold", () => {
+    const left = new Float32Array(1000);
+    const right = new Float32Array(1000);
+    left[0] = 0.5;
+    expect(detectLeadingSilence([left, right])).toBe(0);
+  });
+
+  it("returns the index of the first non-silent sample on either channel", () => {
+    const left = new Float32Array(2000);
+    const right = new Float32Array(2000);
+    right[1105] = 0.8;
+    expect(detectLeadingSilence([left, right])).toBe(1105);
+  });
+
+  it("picks the earlier of two non-silent transitions across channels", () => {
+    const left = new Float32Array(2000);
+    const right = new Float32Array(2000);
+    left[1500] = 0.6;
+    right[800] = 0.7;
+    expect(detectLeadingSilence([left, right])).toBe(800);
+  });
+
+  it("respects a custom threshold so subthreshold noise stays counted as silent", () => {
+    const left = new Float32Array(1000);
+    const right = new Float32Array(1000);
+    left[200] = 5e-5;
+    left[500] = 0.4;
+    expect(detectLeadingSilence([left, right], 1e-3)).toBe(500);
+  });
+
+  it("returns the scan limit when the buffer is silent throughout", () => {
+    const left = new Float32Array(20000);
+    const right = new Float32Array(20000);
+    expect(detectLeadingSilence([left, right], 1e-4, 8192)).toBe(8192);
+  });
+
+  it("returns 0 for an empty channel list", () => {
+    expect(detectLeadingSilence([])).toBe(0);
+  });
+
+  it("handles a single mono channel", () => {
+    const mono = new Float32Array(1000);
+    mono[42] = 0.3;
+    expect(detectLeadingSilence([mono])).toBe(42);
   });
 });

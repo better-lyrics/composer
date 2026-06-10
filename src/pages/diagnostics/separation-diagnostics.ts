@@ -23,6 +23,23 @@ interface PerChunkLag {
 const DEFAULT_SEARCH_RADIUS = 4096;
 const DEFAULT_WINDOW_LENGTH = 8192;
 const MIN_RMS_FOR_LAG = 1e-4;
+const DEFAULT_SILENCE_THRESHOLD = 1e-4;
+const MAX_LEADING_SILENCE_SCAN = 8192;
+
+function detectLeadingSilence(
+  channels: Float32Array[],
+  threshold: number = DEFAULT_SILENCE_THRESHOLD,
+  maxScan: number = MAX_LEADING_SILENCE_SCAN,
+): number {
+  if (channels.length === 0) return 0;
+  const limit = Math.min(channels[0]?.length ?? 0, maxScan);
+  for (let i = 0; i < limit; i++) {
+    for (let c = 0; c < channels.length; c++) {
+      if (Math.abs(channels[c]?.[i] ?? 0) > threshold) return i;
+    }
+  }
+  return limit;
+}
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -221,10 +238,12 @@ function drawOverlaidWaveforms(
 
 export {
   DEFAULT_SEARCH_RADIUS,
+  DEFAULT_SILENCE_THRESHOLD,
   DEFAULT_WINDOW_LENGTH,
   computeOverallLag,
   computePerChunkLag,
   crossCorrelateLag,
+  detectLeadingSilence,
   downmixToMono,
   drawOverlaidWaveforms,
   findEnergeticWindow,

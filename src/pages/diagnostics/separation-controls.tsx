@@ -29,6 +29,16 @@ interface ControlsProps {
   onReset: () => void;
 }
 
+interface TrimPanelProps {
+  inputTrim: number;
+  sampleRate: number;
+  maxTrim: number;
+  leadingSilence: number | null;
+  presets: ReadonlyArray<{ label: string; samples: number }>;
+  busy: boolean;
+  onChange: (samples: number) => void;
+}
+
 // -- Components ---------------------------------------------------------------
 
 const FileSlot: React.FC<FileSlotProps> = ({ phase, busy, onFile }) => {
@@ -114,6 +124,65 @@ const Controls: React.FC<ControlsProps> = ({
   );
 };
 
+const TrimPanel: React.FC<TrimPanelProps> = ({
+  inputTrim,
+  sampleRate,
+  maxTrim,
+  leadingSilence,
+  presets,
+  busy,
+  onChange,
+}) => {
+  const trimMs = (inputTrim / sampleRate) * 1000;
+  return (
+    <div className="rounded-md border border-composer-border bg-composer-button p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-sm font-medium">Trim input samples</span>
+          <span className="text-xs text-composer-text-muted select-text cursor-text">
+            Strips this many samples from the start of the decoded buffer before the model runs. Use to A/B against an
+            externally-decoded reference that already had LAME priming stripped.
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            max={maxTrim}
+            step={1}
+            value={inputTrim}
+            onChange={(e) => onChange(Math.max(0, Number.parseInt(e.target.value, 10) || 0))}
+            disabled={busy}
+            aria-label="Trim input samples"
+            className="w-28 bg-composer-bg border border-composer-border rounded px-2 py-1 text-sm text-right tabular-nums select-text cursor-text"
+          />
+          <span className="text-xs text-composer-text-muted tabular-nums select-text cursor-text">
+            {trimMs.toFixed(2)} ms
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 flex-wrap">
+        {presets.map((preset) => (
+          <Button
+            key={preset.label}
+            variant={inputTrim === preset.samples ? "primary" : "secondary"}
+            onClick={() => onChange(preset.samples)}
+            disabled={busy}
+          >
+            {preset.label}
+          </Button>
+        ))}
+      </div>
+      {leadingSilence !== null && (
+        <p className="text-xs text-composer-text-muted select-text cursor-text">
+          Detected leading silence: {leadingSilence} samples ({((leadingSilence / sampleRate) * 1000).toFixed(2)} ms).
+          LAME priming is typically 1105 samples (CBR) or 2257 (VBR).
+        </p>
+      )}
+    </div>
+  );
+};
+
 // -- Exports ------------------------------------------------------------------
 
-export { Controls, FileSlot };
+export { Controls, FileSlot, TrimPanel };

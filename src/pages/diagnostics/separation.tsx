@@ -1,10 +1,11 @@
 import { decodeFileToFloat32, floatChannelsToWavBlob, TARGET_SAMPLE_RATE } from "@/audio/separation/audio-codec";
 import { computeInstrumental } from "@/audio/separation/derived-stems";
 import { SeparationWorker } from "@/audio/separation/worker-host";
-import { Controls, FileSlot } from "@/pages/diagnostics/separation-controls";
+import { Controls, FileSlot, TrimPanel } from "@/pages/diagnostics/separation-controls";
 import {
   computeOverallLag,
   computePerChunkLag,
+  detectLeadingSilence,
   drawOverlaidWaveforms,
 } from "@/pages/diagnostics/separation-diagnostics";
 import { type Diagnostics, DiagnosticsResults, PLOT_DURATION_SEC } from "@/pages/diagnostics/separation-results";
@@ -15,6 +16,11 @@ import { useEffect, useRef, useState } from "react";
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[SeparationDiag]";
+const TRIM_PRESETS: ReadonlyArray<{ label: string; samples: number }> = [
+  { label: "0", samples: 0 },
+  { label: "1105 (LAME CBR)", samples: 1105 },
+  { label: "2257 (LAME VBR)", samples: 2257 },
+];
 
 // -- Types --------------------------------------------------------------------
 
@@ -61,9 +67,12 @@ function phaseFile(phase: Phase): DecodedFile | undefined {
 const DiagnosticsPanel: React.FC = () => {
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
+  const [inputTrim, setInputTrim] = useState(0);
   const workerRef = useRef<SeparationWorker | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const variant = useSettingsStore((s) => s.vocalModelVariant);
+  const decodedFile = phaseFile(phase);
+  const leadingSilence = decodedFile ? detectLeadingSilence(decodedFile.channels) : null;
 
   useEffect(() => {
     return () => {
@@ -139,21 +148,25 @@ const DiagnosticsPanel: React.FC = () => {
       return;
     }
     const file = phase.file;
+    const trim = Math.max(0, Math.min(inputTrim, file.numFrames));
+    const trimmedChannels = trim > 0 ? file.channels.map((c) => c.slice(trim)) : file.channels;
+    const trimmedFrames = file.numFrames - trim;
     setPhase({ kind: "processing", file, processed: 0, total: 0 });
     try {
       const result = await worker.process({
-        channels: file.channels,
-        totalFrames: file.numFrames,
+        channels: trimmedChannels,
+        totalFrames: trimmedFrames,
         onProgress: (processed, total) => {
           setPhase({ kind: "processing", file, processed, total });
         },
       });
-      const instrumental = computeInstrumental(file.channels, result.vocals);
-      const vocalsLag = computeOverallLag(file.channels, result.vocals);
-      const instrumentalLag = computeOverallLag(file.channels, instrumental);
-      const perChunkLag = computePerChunkLag(file.channels, result.vocals);
+      const instrumental = computeInstrumental(trimmedChannels, result.vocals);
+      const vocalsLag = computeOverallLag(trimmedChannels, result.vocals);
+      const instrumentalLag = computeOverallLag(trimmedChannels, instrumental);
+      const perChunkLag = computePerChunkLag(trimmedChannels, result.vocals);
       setDiagnostics({ vocalsLag, instrumentalLag, perChunkLag });
-      setPhase({ kind: "done", file, output: { vocals: result.vocals, instrumental } });
+      const doneFile: DecodedFile = trim > 0 ? { ...file, channels: trimmedChannels, numFrames: trimmedFrames } : file;
+      setPhase({ kind: "done", file: doneFile, output: { vocals: result.vocals, instrumental } });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.warn(`${LOG_PREFIX} process failed`, err);
@@ -198,6 +211,18 @@ const DiagnosticsPanel: React.FC = () => {
         </header>
 
         <FileSlot phase={{ kind: phase.kind, file: phaseFile(phase) }} busy={busy} onFile={handleFile} />
+
+        {decodedFile && (
+          <TrimPanel
+            inputTrim={inputTrim}
+            sampleRate={decodedFile.sampleRate}
+            maxTrim={decodedFile.numFrames}
+            leadingSilence={leadingSilence}
+            presets={TRIM_PRESETS}
+            busy={busy}
+            onChange={setInputTrim}
+          />
+        )}
 
         <Controls
           variant={variant}
