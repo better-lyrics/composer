@@ -46,6 +46,11 @@ const GeneralSection: React.FC<{
         description="When a whole line is in parentheses, attach it to the line above instead of keeping it as its own line."
         settingKey="mergeStandaloneBackgroundLines"
       />
+      <ToggleSetting
+        label="Preserve brackets when extracting"
+        description="Keep parentheses around extracted background vocals. Multiple snippets share one outer pair."
+        settingKey="preserveBracketsOnExtraction"
+      />
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-composer-text">Reset product tour</span>

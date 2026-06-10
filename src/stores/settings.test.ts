@@ -57,6 +57,18 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
+  it("defaults preserveBracketsOnExtraction to false", () => {
+    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(false);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  });
+
+  it("allows toggling preserveBracketsOnExtraction via set()", () => {
+    useSettingsStore.getState().set("preserveBracketsOnExtraction", true);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(true);
+    useSettingsStore.getState().set("preserveBracketsOnExtraction", false);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  });
+
   it("allows toggling autoExtractBackgroundVocals via set()", () => {
     useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
     expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);

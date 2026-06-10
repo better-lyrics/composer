@@ -52,6 +52,7 @@ interface SettingsState {
   splitCharacter: string;
   autoExtractBackgroundVocals: boolean;
   mergeStandaloneBackgroundLines: boolean;
+  preserveBracketsOnExtraction: boolean;
 
   confirmReplaceProjectFromHash: boolean;
   confirmReplaceLyrics: boolean;
@@ -113,6 +114,7 @@ const DEFAULTS: SettingsState = {
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
+  preserveBracketsOnExtraction: false,
 
   confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,

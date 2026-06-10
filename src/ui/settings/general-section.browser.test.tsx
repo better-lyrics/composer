@@ -6,13 +6,21 @@ import { GeneralSection } from "@/ui/settings/general-section";
 describe("GeneralSection", () => {
   it("renders a switch for each toggle setting", async () => {
     const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(4);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(5);
   });
 
   it("renders the background vocal toggles", async () => {
     const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
     await expect.element(screen.getByRole("switch", { name: "Auto-extract background vocals" })).toBeInTheDocument();
     await expect.element(screen.getByRole("switch", { name: "Merge standalone background lines" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("switch", { name: "Preserve brackets when extracting" })).toBeInTheDocument();
+  });
+
+  it("flips preserveBracketsOnExtraction when its switch is clicked", async () => {
+    useSettingsStore.setState({ preserveBracketsOnExtraction: false });
+    const screen = await render(<GeneralSection onResetTour={() => {}} onClose={() => {}} />);
+    await screen.getByRole("switch", { name: "Preserve brackets when extracting" }).click();
+    await expect.poll(() => useSettingsStore.getState().preserveBracketsOnExtraction).toBe(true);
   });
 
   it("flips autoExtractBackgroundVocals when its switch is clicked", async () => {
