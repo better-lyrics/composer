@@ -117,6 +117,51 @@ describe("scrub-stem-router", () => {
       URL.revokeObjectURL(instrUrl);
     });
   });
+
+  describe("cache hit", () => {
+    test("re-selecting a stem uses the cached buffer (no second URL call)", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      let urlCalls = 0;
+      const getVocalsUrl = () => {
+        urlCalls += 1;
+        return vocalsUrl;
+      };
+
+      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+      expect(urlCalls).toBe(1);
+
+      scrubStemRouter.selectStem("original", () => undefined);
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      expect(scrubStemRouter.getActiveStem()).toBe("vocals");
+      expect(urlCalls).toBe(1);
+
+      URL.revokeObjectURL(vocalsUrl);
+    });
+
+    test("re-selecting the currently-active stem is a no-op (does not stop mid-scrub)", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("vocals");
+
+      scrubPreview.play(0.5, 1);
+      const before = scrubPreview.getActiveSnippet();
+      expect(before).not.toBeNull();
+
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      const after = scrubPreview.getActiveSnippet();
+      expect(after?.time).toBe(before?.time);
+      expect(after?.rate).toBe(before?.rate);
+
+      URL.revokeObjectURL(vocalsUrl);
+    });
+  });
 });
 
 function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
