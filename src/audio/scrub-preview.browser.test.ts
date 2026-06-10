@@ -1,6 +1,6 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { useSettingsStore } from "@/stores/settings";
-import { makeSineBuffer } from "@/test/audio-fixtures";
+import { encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { afterEach, describe, expect, test } from "vitest";
 
 describe("scrub-preview", () => {
@@ -78,38 +78,3 @@ describe("scrub-preview", () => {
     expect(decoded.duration).toBeCloseTo(1, 1);
   });
 });
-
-function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
-  const channelCount = audioBuffer.numberOfChannels;
-  const sampleRate = audioBuffer.sampleRate;
-  const samples = audioBuffer.length;
-  const dataLength = samples * channelCount * 2;
-  const buffer = new ArrayBuffer(44 + dataLength);
-  const view = new DataView(buffer);
-  const writeString = (offset: number, text: string) => {
-    for (let i = 0; i < text.length; i++) view.setUint8(offset + i, text.charCodeAt(i));
-  };
-  writeString(0, "RIFF");
-  view.setUint32(4, 36 + dataLength, true);
-  writeString(8, "WAVE");
-  writeString(12, "fmt ");
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);
-  view.setUint16(22, channelCount, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * channelCount * 2, true);
-  view.setUint16(32, channelCount * 2, true);
-  view.setUint16(34, 16, true);
-  writeString(36, "data");
-  view.setUint32(40, dataLength, true);
-  const channels = Array.from({ length: channelCount }, (_, c) => audioBuffer.getChannelData(c));
-  let offset = 44;
-  for (let i = 0; i < samples; i++) {
-    for (let c = 0; c < channelCount; c++) {
-      const sample = Math.max(-1, Math.min(1, channels[c][i]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += 2;
-    }
-  }
-  return buffer;
-}
