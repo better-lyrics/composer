@@ -1,88 +1,122 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { render } from "@/test/render";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 
-// -- Constants ----------------------------------------------------------------
+const EXPECTED_INSTALL_CMD =
+  "curl -fsSL https://github.com/better-lyrics/composer-bridge/releases/latest/download/install.sh | sh";
 
-const UA = {
-  macArm:
-    "Mozilla/5.0 (Macintosh; ARM64 Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-  macIntel:
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-  windows:
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-  linux: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
-  unknown: "Mozilla/5.0 (PlayStation 6; iPad; Apple TV)",
-} as const;
+const RELEASES_URL = "https://github.com/better-lyrics/composer-bridge/releases/latest";
+
+// -- Clipboard stub -----------------------------------------------------------
+
+interface ClipboardStub {
+  writes: string[];
+  restore: () => void;
+}
+
+const stubClipboard = (): ClipboardStub => {
+  const writes: string[] = [];
+  const original = Object.getOwnPropertyDescriptor(Navigator.prototype, "clipboard");
+  Object.defineProperty(Navigator.prototype, "clipboard", {
+    configurable: true,
+    get: () => ({
+      writeText: async (text: string) => {
+        writes.push(text);
+      },
+    }),
+  });
+  return {
+    writes,
+    restore: () => {
+      if (original) {
+        Object.defineProperty(Navigator.prototype, "clipboard", original);
+      } else {
+        delete (Navigator.prototype as unknown as Record<string, unknown>).clipboard;
+      }
+    },
+  };
+};
+
+let clipboard: ClipboardStub;
+
+beforeEach(() => {
+  clipboard = stubClipboard();
+});
+
+afterEach(() => {
+  clipboard.restore();
+});
 
 // -- Tests --------------------------------------------------------------------
 
 describe("BridgeInstallGuide", () => {
-  it("renders all four numbered steps", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.macArm} />);
-    await expect.element(screen.getByRole("heading", { name: /Download/ })).toBeInTheDocument();
-    await expect.element(screen.getByRole("heading", { name: /Install/ })).toBeInTheDocument();
-    await expect.element(screen.getByRole("heading", { name: /Launch/ })).toBeInTheDocument();
-    await expect.element(screen.getByRole("heading", { name: /Return here/ })).toBeInTheDocument();
+  describe("happy path", () => {
+    it("renders three numbered steps", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      await expect.element(screen.getByRole("heading", { name: /Install/ })).toBeInTheDocument();
+      await expect.element(screen.getByRole("heading", { name: /Launch/ })).toBeInTheDocument();
+      await expect.element(screen.getByRole("heading", { name: /Return here/ })).toBeInTheDocument();
+    });
+
+    it("shows the install.sh terminal command", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      await expect.element(screen.getByText(EXPECTED_INSTALL_CMD)).toBeInTheDocument();
+    });
+
+    it("provides a manual download link to the GitHub releases page", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      const link = screen.getByRole("link", { name: /Windows or manual download/ });
+      await expect.element(link).toHaveAttribute("href", RELEASES_URL);
+    });
+
+    it("opens the manual download link in a new tab safely", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      const link = screen.getByRole("link", { name: /Windows or manual download/ });
+      await expect.element(link).toHaveAttribute("target", "_blank");
+      await expect.element(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("calls onCheckNow when the Check now button is clicked", async () => {
+      let checked = 0;
+      const screen = await render(
+        <BridgeInstallGuide
+          onCheckNow={() => {
+            checked += 1;
+          }}
+        />,
+      );
+      await screen.getByRole("button", { name: /Check now/ }).click();
+      await expect.poll(() => checked).toBe(1);
+    });
   });
 
-  it("offers both macOS architectures when UA reports Apple Silicon", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.macArm} />);
-    const apple = screen.getByRole("link", { name: /macOS \(Apple Silicon\)/ });
-    const intel = screen.getByRole("link", { name: /macOS \(Intel\)/ });
-    await expect.element(apple).toHaveAttribute("href", expect.stringContaining("darwin-arm64.dmg"));
-    await expect.element(intel).toHaveAttribute("href", expect.stringContaining("darwin-amd64.dmg"));
+  describe("copy behavior", () => {
+    it("writes the install command to the clipboard when Copy is clicked", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      await screen.getByRole("button", { name: /Copy install command/ }).click();
+      await expect.poll(() => clipboard.writes).toEqual([EXPECTED_INSTALL_CMD]);
+    });
+
+    it("flips Copy to Copied feedback after a successful copy", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      await screen.getByRole("button", { name: /Copy install command/ }).click();
+      await expect
+        .element(screen.getByRole("button", { name: /Copy install command/ }))
+        .toHaveTextContent(/Copied/);
+    });
   });
 
-  it("links Windows UA to the Setup.exe", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.windows} />);
-    const cta = screen.getByRole("link", { name: /Download for Windows/ });
-    await expect.element(cta).toHaveAttribute("href", expect.stringContaining("Composer-Bridge-Setup.exe"));
-  });
+  describe("invariants", () => {
+    it("the install command is rendered as selectable text so users can copy it manually", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      const code = screen.getByText(EXPECTED_INSTALL_CMD);
+      await expect.element(code).toHaveClass("select-text");
+    });
 
-  it("links Linux UA to the AppImage", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.linux} />);
-    const cta = screen.getByRole("link", { name: /Download for Linux/ });
-    await expect.element(cta).toHaveAttribute("href", expect.stringContaining("composer-bridge.AppImage"));
-  });
-
-  it("falls back to releases page on unknown UA", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.unknown} />);
-    const cta = screen.getByRole("link", { name: /See all releases/ });
-    await expect
-      .element(cta)
-      .toHaveAttribute("href", "https://github.com/better-lyrics/composer-bridge/releases/latest");
-  });
-
-  it("calls onCheckNow when the Check now button is clicked", async () => {
-    let checked = 0;
-    const screen = await render(
-      <BridgeInstallGuide
-        onCheckNow={() => {
-          checked += 1;
-        }}
-        uaOverride={UA.macArm}
-      />,
-    );
-    await screen.getByRole("button", { name: /Check now/ }).click();
-    await expect.poll(() => checked).toBe(1);
-  });
-
-  it("renders the Mac install copy when UA is Mac", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.macArm} />);
-    await expect.element(screen.getByText(/drag Composer Bridge to Applications/)).toBeInTheDocument();
-  });
-
-  it("renders the Windows install copy when UA is Windows", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.windows} />);
-    await expect.element(screen.getByText(/SmartScreen/)).toBeInTheDocument();
-  });
-
-  it("always exposes an Other platforms link to the releases page", async () => {
-    const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} uaOverride={UA.linux} />);
-    const other = screen.getByRole("link", { name: /Other platforms/ });
-    await expect
-      .element(other)
-      .toHaveAttribute("href", "https://github.com/better-lyrics/composer-bridge/releases/latest");
+    it("the install command uses the stable releases/latest path so it never points at a specific version", async () => {
+      const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
+      const code = screen.getByText(EXPECTED_INSTALL_CMD);
+      await expect.element(code).toHaveTextContent("/releases/latest/download/install.sh");
+    });
   });
 });
