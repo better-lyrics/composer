@@ -87,6 +87,12 @@ const routes: RouteRecord[] = [
     errorElement,
   },
   {
+    path: "/diagnostics/separation",
+    lazy: async () => ({ Component: (await import("@/pages/diagnostics/separation")).default }),
+    entry: "src/pages/diagnostics/separation.tsx",
+    errorElement,
+  },
+  {
     path: "*",
     element: errorElement,
   },
