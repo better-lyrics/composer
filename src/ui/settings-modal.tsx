@@ -1,3 +1,4 @@
+import { useUIStore } from "@/stores/ui";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
 import { AdvancedSection } from "@/ui/settings/advanced-section";
@@ -18,7 +19,7 @@ import {
   IconPlugConnected,
   IconSettings,
 } from "@tabler/icons-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -58,6 +59,13 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetTour }) => {
   const [activeSection, setActiveSection] = useState("general");
+  const settingsHighlight = useUIStore((s) => s.settingsHighlight);
+
+  useEffect(() => {
+    if (isOpen && settingsHighlight === "bridge-section") {
+      setActiveSection("advanced");
+    }
+  }, [isOpen, settingsHighlight]);
 
   const Content = SECTION_CONTENT[activeSection];
 

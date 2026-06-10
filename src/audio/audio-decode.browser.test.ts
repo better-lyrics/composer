@@ -1,10 +1,10 @@
-import { decodeMp3ToWav } from "@/audio/audio-decode";
+import { decodeAudioToWav } from "@/audio/audio-decode";
 import { createMp3File } from "@/test/audio-fixtures";
 import { describe, expect, it } from "vitest";
 
-describe("decodeMp3ToWav", () => {
+describe("decodeAudioToWav", () => {
   it("decodes an mp3 file into a valid wav blob", async () => {
-    const blob = await decodeMp3ToWav(createMp3File());
+    const blob = await decodeAudioToWav(createMp3File());
     expect(blob.type).toBe("audio/wav");
     const bytes = new Uint8Array(await blob.arrayBuffer());
     expect(String.fromCharCode(...bytes.slice(0, 4))).toBe("RIFF");
@@ -12,7 +12,7 @@ describe("decodeMp3ToWav", () => {
   });
 
   it("produces wav that itself decodes back to playable audio", async () => {
-    const blob = await decodeMp3ToWav(createMp3File());
+    const blob = await decodeAudioToWav(createMp3File());
     const ctx = new AudioContext();
     try {
       const decoded = await ctx.decodeAudioData(await blob.arrayBuffer());
@@ -26,6 +26,6 @@ describe("decodeMp3ToWav", () => {
 
   it("rejects a file that is not decodable audio", async () => {
     const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.mp3", { type: "audio/mpeg" });
-    await expect(decodeMp3ToWav(garbage)).rejects.toBeTruthy();
+    await expect(decodeAudioToWav(garbage)).rejects.toBeTruthy();
   });
 });

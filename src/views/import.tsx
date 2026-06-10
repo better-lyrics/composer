@@ -1,7 +1,9 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
+import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
 import { useCallback } from "react";
 
@@ -30,6 +32,22 @@ const GUTTER_WIDTH = 56;
 const ROW_HEIGHT = 56;
 
 // -- Sub-components -----------------------------------------------------------
+
+const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ videoId, loading }) => {
+  const bridgeEnabled = useSettingsStore((s) => s.experiments.youtubeBridge);
+  const persistedThumb = useProjectStore((s) => s.metadata.thumbnailDataUrl);
+  const persistedFor = useProjectStore((s) => s.metadata.thumbnailForVideoId);
+  const hasMatchingPersistedThumb = Boolean(persistedThumb && persistedFor === videoId);
+  const thumbQuery = useBridgeThumb();
+
+  if (hasMatchingPersistedThumb) {
+    return <img src={persistedThumb} alt="" className="size-full object-cover" />;
+  }
+  if (loading || (bridgeEnabled && thumbQuery.isFetching)) {
+    return <div className="size-full bg-composer-bg-elevated animate-pulse" />;
+  }
+  return <IconBrandYoutube size={16} className="text-composer-accent" />;
+};
 
 const OrDivider: React.FC = () => (
   <div className="flex items-center gap-3 w-full max-w-md select-none">
@@ -136,17 +154,18 @@ const ImportPanel: React.FC = () => {
 
   if (source && source.type === "youtube") {
     const videoId = source.videoId;
-    const displayTitle = projectTitle && projectTitle !== videoId ? projectTitle : videoId;
+    const hasResolvedTitle = Boolean(projectTitle && projectTitle !== videoId);
     const downloading = isLoading && !source.file;
+    const titleLoading = downloading && !hasResolvedTitle;
 
     return (
       <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
         <div className="flex border-t border-composer-border">
           <div
-            className="shrink-0 flex items-center justify-center bg-composer-accent/10"
+            className="shrink-0 flex items-center justify-center bg-composer-accent/10 overflow-hidden"
             style={{ width: GUTTER_WIDTH, height: ROW_HEIGHT }}
           >
-            <IconBrandYoutube size={16} className="text-composer-accent" />
+            <YouTubeSourceThumb videoId={videoId} loading={downloading} />
           </div>
 
           <div
@@ -154,7 +173,13 @@ const ImportPanel: React.FC = () => {
             style={{ height: ROW_HEIGHT }}
           >
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate text-composer-text select-text">{displayTitle}</p>
+              {titleLoading ? (
+                <div className="h-4 w-40 rounded bg-composer-bg-elevated animate-pulse" />
+              ) : (
+                <p className="text-sm font-medium truncate text-composer-text select-text">
+                  {hasResolvedTitle ? projectTitle : videoId}
+                </p>
+              )}
               <p className="text-xs text-composer-text-muted select-text">
                 {videoId} ・ {downloading ? "Downloading from YouTube" : "from YouTube"}
               </p>
