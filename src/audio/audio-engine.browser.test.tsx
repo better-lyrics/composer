@@ -261,4 +261,41 @@ describe("AudioEngine", () => {
     await waitFor(() => useAudioStore.getState().audioElement === null);
     expect(scrubStemRouter.getActiveStem()).toBeNull();
   });
+
+  it("publishes currentSrc to the audio store on every src change", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
+    const originalUrl = audio.src;
+    await waitFor(() => useAudioStore.getState().currentSrc === originalUrl);
+    expect(useAudioStore.getState().currentSrc).toBe(originalUrl);
+
+    const vocalsUrl = URL.createObjectURL(createAudioFile("vocals.wav"));
+    const instrumentalUrl = URL.createObjectURL(createAudioFile("instrumental.wav"));
+    try {
+      useSeparationStore.setState({
+        currentStem: "vocals",
+        availableStems: ["original", "vocals", "instrumental"],
+        stemUrls: { vocals: vocalsUrl, instrumental: instrumentalUrl },
+      });
+      await waitFor(() => useAudioStore.getState().currentSrc === vocalsUrl);
+      expect(useAudioStore.getState().currentSrc).toBe(vocalsUrl);
+
+      useSeparationStore.setState({ currentStem: "instrumental" });
+      await waitFor(() => useAudioStore.getState().currentSrc === instrumentalUrl);
+      expect(useAudioStore.getState().currentSrc).toBe(instrumentalUrl);
+
+      useSeparationStore.setState({ currentStem: "original" });
+      await waitFor(() => useAudioStore.getState().currentSrc === originalUrl);
+      expect(useAudioStore.getState().currentSrc).toBe(originalUrl);
+    } finally {
+      URL.revokeObjectURL(vocalsUrl);
+      URL.revokeObjectURL(instrumentalUrl);
+    }
+
+    useAudioStore.setState({ source: null });
+    await waitFor(() => useAudioStore.getState().currentSrc === null);
+    expect(useAudioStore.getState().currentSrc).toBeNull();
+  });
 });

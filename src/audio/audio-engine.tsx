@@ -28,6 +28,7 @@ const AudioEngine: React.FC = () => {
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const setIsLoading = useAudioStore((s) => s.setIsLoading);
   const registerAudioElement = useAudioStore((s) => s.registerAudioElement);
+  const setCurrentSrc = useAudioStore((s) => s.setCurrentSrc);
 
   const currentStem = useSeparationStore((s) => s.currentStem);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
@@ -113,6 +114,7 @@ const AudioEngine: React.FC = () => {
       const audio = new Audio();
       audio.id = "composer-audio";
       audio.src = objectUrl;
+      setCurrentSrc(objectUrl);
       const {
         playbackRate: initialPlaybackRate,
         volume: initialVolume,
@@ -150,6 +152,7 @@ const AudioEngine: React.FC = () => {
         unbindStateEvents();
         audio.pause();
         audio.src = "";
+        setCurrentSrc(null);
         audio.remove();
         if (audioRef.current === audio) audioRef.current = null;
         if (originalUrlRef.current === objectUrl) originalUrlRef.current = null;
@@ -166,7 +169,7 @@ const AudioEngine: React.FC = () => {
       registerAudioElement(null);
       scrubStemRouter.clearCache();
     };
-  }, [source, setDuration, setCurrentTime, setIsPlaying, setIsLoading, registerAudioElement]);
+  }, [source, setDuration, setCurrentTime, setIsPlaying, setIsLoading, registerAudioElement, setCurrentSrc]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -201,12 +204,13 @@ const AudioEngine: React.FC = () => {
       isMuted: currentIsMuted,
     } = useAudioStore.getState();
     audio.src = targetUrl;
+    setCurrentSrc(targetUrl);
     audio.currentTime = time;
     audio.playbackRate = currentPlaybackRate;
     audio.volume = currentVolume;
     audio.muted = currentIsMuted;
     if (wasPlaying) audio.play().catch(() => {});
-  }, [currentStem, stemUrls, audioElement]);
+  }, [currentStem, stemUrls, audioElement, setCurrentSrc]);
 
   useEffect(() => {
     scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);
