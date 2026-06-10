@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "1.23.1",
+  "version": "1.24.1",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
@@ -14,7 +14,7 @@
     "test:component:watch": "vitest --project browser",
     "test:coverage": "vitest run --coverage",
     "lint:fix": "biome lint --write . && biome format --write .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc -b",
     "knip": "knip",
     "knip:production": "knip --production",
     "jscpd": "jscpd"
