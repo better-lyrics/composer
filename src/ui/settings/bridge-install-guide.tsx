@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { IconCheck, IconCopy, IconExternalLink, IconRefresh } from "@tabler/icons-react";
 import { Button } from "@/ui/button";
+import { Scroll } from "@/ui/scroll";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -32,9 +33,11 @@ const InstallCommand: React.FC = () => {
 
   return (
     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-composer-bg-dark border border-composer-border">
-      <code className="flex-1 font-mono text-[11px] text-composer-text-secondary select-text overflow-x-auto whitespace-nowrap">
-        {INSTALL_CMD}
-      </code>
+      <Scroll className="flex-1 min-w-0" autoHide="leave">
+        <code className="block font-mono text-[11px] text-composer-text-secondary select-text whitespace-nowrap">
+          {INSTALL_CMD}
+        </code>
+      </Scroll>
       <Button
         variant="secondary"
         size="sm"
@@ -86,7 +89,7 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
     <div className="flex flex-col gap-1.5">
       <StepHeader index={3} title="Return here" />
       <p>Once the bridge is running, this card goes green automatically. No restart needed.</p>
-      <Button variant="secondary" size="sm" hasIcon onClick={onCheckNow}>
+      <Button variant="secondary" size="sm" hasIcon onClick={onCheckNow} className="mt-2 w-fit">
         <IconRefresh size={12} />
         Check now
       </Button>
