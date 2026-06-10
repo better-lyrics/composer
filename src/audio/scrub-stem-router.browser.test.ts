@@ -162,6 +162,40 @@ describe("scrub-stem-router", () => {
       URL.revokeObjectURL(vocalsUrl);
     });
   });
+
+  describe("race protection", () => {
+    test("rapid switch only applies the latest selection", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+      const instrumentalUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      scrubStemRouter.selectStem("instrumental", () => instrumentalUrl);
+
+      await expect.poll(() => scrubStemRouter.getActiveStem(), { timeout: 5000 }).toBe("instrumental");
+
+      URL.revokeObjectURL(vocalsUrl);
+      URL.revokeObjectURL(instrumentalUrl);
+    });
+
+    test("three rapid switches converge on the third stem", async () => {
+      scrubStemRouter.setOriginalBuffer(makeSineBuffer(1));
+      const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
+      const instrumentalUrl = bufferToBlobUrl(makeSineBuffer(1));
+
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
+      scrubStemRouter.selectStem("instrumental", () => instrumentalUrl);
+      scrubStemRouter.selectStem("original", () => undefined);
+
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(scrubStemRouter.getActiveStem()).toBe("original");
+
+      URL.revokeObjectURL(vocalsUrl);
+      URL.revokeObjectURL(instrumentalUrl);
+    });
+  });
 });
 
 function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
