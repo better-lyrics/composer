@@ -206,8 +206,6 @@ describe("composeAbortSignals", () => {
 
     beforeEach(() => {
       originalAny = AbortSignal.any;
-      // Simulate older browsers that don't ship AbortSignal.any.
-      // biome-ignore lint/suspicious/noExplicitAny: removing an inherited static for the test
       (AbortSignal as unknown as { any: unknown }).any = undefined;
     });
 

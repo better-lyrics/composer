@@ -39,13 +39,7 @@ const InstallCommand: React.FC = () => {
           {INSTALL_CMD}
         </code>
       </Scroll>
-      <Button
-        variant="secondary"
-        size="sm"
-        hasIcon
-        onClick={copy}
-        aria-label="Copy install command"
-      >
+      <Button variant="secondary" size="sm" hasIcon onClick={copy} aria-label="Copy install command">
         {copied ? <IconCheck size={12} /> : <IconCopy size={12} />}
         {copied ? "Copied" : "Copy"}
       </Button>
@@ -74,9 +68,8 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
           Composer Bridge
         </a>
         . It picks the right build for your machine, verifies the checksum, and installs to{" "}
-        <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">/Applications</code> on
-        Mac or <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">~/.local/bin</code>{" "}
-        on Linux.
+        <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">/Applications</code> on Mac or{" "}
+        <code className="font-mono text-[11px] px-1 bg-composer-bg rounded">~/.local/bin</code> on Linux.
       </p>
       <InstallCommand />
       <a
@@ -92,8 +85,8 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
     <div className="flex flex-col gap-1.5">
       <StepHeader index={2} title="Launch" />
       <p>
-        Open Composer Bridge. The app runs in the background. Look for its icon in your menu bar
-        (Mac) or system tray (Windows or Linux). Leave it running.
+        Open Composer Bridge. The app runs in the background. Look for its icon in your menu bar (Mac) or system tray
+        (Windows or Linux). Leave it running.
       </p>
     </div>
 

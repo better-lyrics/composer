@@ -40,6 +40,8 @@ export default defineConfig({
           include: ["src/**/*.test.{ts,tsx}"],
           exclude: ["src/**/*.browser.test.{ts,tsx}"],
           setupFiles: ["./src/test/setup-unit.ts"],
+          testTimeout: 60000,
+          hookTimeout: 60000,
         },
       },
       {

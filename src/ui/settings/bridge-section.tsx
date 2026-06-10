@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
 import {
   type BridgeHealth,
@@ -15,6 +16,7 @@ import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 // -- Constants ----------------------------------------------------------------
 
 const HEALTH_REFETCH_INTERVAL = 8000;
+const HIGHLIGHT_PULSE_MS = 2000;
 
 // -- Sub-components -----------------------------------------------------------
 
@@ -98,6 +100,28 @@ const BridgeSection: React.FC = () => {
   const enabled = useSettingsStore((s) => s.experiments.youtubeBridge);
   const bridgeUrl = useSettingsStore((s) => s.composerBridgeUrl);
   const setSetting = useSettingsStore((s) => s.set);
+  const settingsHighlight = useUIStore((s) => s.settingsHighlight);
+  const clearHighlight = useUIStore((s) => s.clearHighlight);
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pulsing, setPulsing] = useState(false);
+  useEffect(() => {
+    if (settingsHighlight !== "bridge-section") return;
+    containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current);
+    setPulsing(true);
+    pulseTimerRef.current = setTimeout(() => {
+      setPulsing(false);
+      pulseTimerRef.current = null;
+    }, HIGHLIGHT_PULSE_MS);
+    clearHighlight();
+  }, [settingsHighlight, clearHighlight]);
+  useEffect(() => {
+    return () => {
+      if (pulseTimerRef.current !== null) clearTimeout(pulseTimerRef.current);
+    };
+  }, []);
 
   const [draftUrl, setDraftUrl] = useState(bridgeUrl);
   useEffect(() => {
@@ -138,7 +162,14 @@ const BridgeSection: React.FC = () => {
   const errorMessage = health.error instanceof Error ? health.error.message : undefined;
 
   return (
-    <div className="pt-3 mt-3 border-t border-composer-border">
+    <div
+      ref={containerRef}
+      data-testid="bridge-section"
+      className={cn(
+        "pt-3 mt-3 border-t border-composer-border transition-shadow duration-300",
+        pulsing && "ring-2 ring-composer-accent",
+      )}
+    >
       <div className="flex items-start justify-between mb-3">
         <div className="flex flex-col gap-0.5 pr-4">
           <span className="text-sm font-medium text-composer-text">

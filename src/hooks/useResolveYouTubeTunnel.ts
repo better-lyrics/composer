@@ -12,6 +12,8 @@ import {
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
+import { shouldShowBridgeCta } from "@/utils/bridge-cta";
 import { CobaltApiError, formatCobaltErrorForToast, getAudio, getAudioFromStandardCobalt } from "@/utils/cobalt-api";
 import {
   BridgeError,
@@ -211,7 +213,16 @@ function useResolveYouTubeTunnel(): void {
       cause instanceof BridgeError
         ? formatBridgeErrorForToast(cause)
         : formatCobaltErrorForToast(cause, { isDefault: wasDefault, instanceLabel });
-    toast.error(message);
+    if (shouldShowBridgeCta(cause)) {
+      toast.error(message, {
+        action: {
+          label: "Try Bridge",
+          onClick: () => useUIStore.getState().openSettings("bridge-section"),
+        },
+      });
+    } else {
+      toast.error(message);
+    }
     if (instanceId !== BRIDGE_INSTANCE_ID && !wasDefault && instanceId !== DEFAULT_COBALT_INSTANCE_ID) {
       useSettingsStore.getState().recordCobaltInstanceResult(instanceId, "error", message);
     }

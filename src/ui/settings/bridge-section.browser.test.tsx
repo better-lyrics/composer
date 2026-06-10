@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { render } from "@/test/render";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { BridgeSection } from "@/ui/settings/bridge-section";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
@@ -97,5 +98,40 @@ describe("BridgeSection", () => {
     await expect.element(reset).toBeInTheDocument();
     await reset.click();
     await expect.poll(() => useSettingsStore.getState().composerBridgeUrl).toBe(DEFAULT_BRIDGE_URL);
+  });
+
+  describe("highlight pulse", () => {
+    it("applies the accent ring while settingsHighlight is bridge-section, then clears it", async () => {
+      const screen = await render(withQueryClient(<BridgeSection />));
+      useUIStore.getState().openSettings("bridge-section");
+      const container = screen.getByTestId("bridge-section");
+      await expect.element(container).toHaveClass("ring-2");
+      await expect.element(container).toHaveClass("ring-composer-accent");
+      await expect.poll(() => container.element().className, { timeout: 4000 }).not.toContain("ring-2");
+    });
+
+    it("consumes the highlight by clearing the UI store flag so a stale signal cannot re-fire", async () => {
+      await render(withQueryClient(<BridgeSection />));
+      useUIStore.getState().openSettings("bridge-section");
+      await expect.poll(() => useUIStore.getState().settingsHighlight).toBeNull();
+    });
+
+    it("does not pulse on initial mount when settingsHighlight is null", async () => {
+      useUIStore.setState({ settingsHighlight: null });
+      const screen = await render(withQueryClient(<BridgeSection />));
+      const container = screen.getByTestId("bridge-section");
+      expect(container.element().className).not.toContain("ring-2");
+    });
+
+    it("re-pulses when the highlight is re-set after being cleared", async () => {
+      const screen = await render(withQueryClient(<BridgeSection />));
+      useUIStore.getState().openSettings("bridge-section");
+      const container = screen.getByTestId("bridge-section");
+      await expect.element(container).toHaveClass("ring-2");
+      await expect.poll(() => container.element().className, { timeout: 4000 }).not.toContain("ring-2");
+
+      useUIStore.getState().openSettings("bridge-section");
+      await expect.element(container).toHaveClass("ring-2");
+    });
   });
 });

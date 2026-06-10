@@ -31,7 +31,7 @@ const stubClipboard = (): ClipboardStub => {
       if (original) {
         Object.defineProperty(Navigator.prototype, "clipboard", original);
       } else {
-        delete (Navigator.prototype as unknown as Record<string, unknown>).clipboard;
+        (Navigator.prototype as unknown as Record<string, unknown>).clipboard = undefined;
       }
     },
   };
@@ -100,9 +100,7 @@ describe("BridgeInstallGuide", () => {
     it("flips Copy to Copied feedback after a successful copy", async () => {
       const screen = await render(<BridgeInstallGuide onCheckNow={() => {}} />);
       await screen.getByRole("button", { name: /Copy install command/ }).click();
-      await expect
-        .element(screen.getByRole("button", { name: /Copy install command/ }))
-        .toHaveTextContent(/Copied/);
+      await expect.element(screen.getByRole("button", { name: /Copy install command/ })).toHaveTextContent(/Copied/);
     });
   });
 
