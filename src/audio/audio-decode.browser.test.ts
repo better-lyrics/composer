@@ -35,8 +35,9 @@ describe("decodeAudioToWav LAME priming strip", () => {
   it("returns a WAV blob whose sample count is reduced by the parsed LAME priming", async () => {
     const file = createMp3File();
     const bytes = await file.arrayBuffer();
-    const priming = parseLamePriming(bytes);
-    expect(priming).toBeGreaterThan(0);
+    const { samples, sampleRate } = parseLamePriming(bytes);
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
 
     const blob = await decodeAudioToWav(file);
     const wav = await blob.arrayBuffer();
@@ -49,6 +50,7 @@ describe("decodeAudioToWav LAME priming strip", () => {
     const unstripped = await ctx.decodeAudioData(bytes.slice(0));
     await ctx.close();
 
-    expect(wavFrames).toBe(unstripped.length - priming);
+    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
+    expect(wavFrames).toBe(unstripped.length - expectedStrip);
   });
 });

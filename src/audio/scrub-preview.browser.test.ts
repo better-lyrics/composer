@@ -82,14 +82,16 @@ describe("scrub-preview", () => {
   test("decode strips LAME priming from an MP3 source", async () => {
     const mp3 = createMp3File();
     const bytes = await mp3.arrayBuffer();
-    const priming = parseLamePriming(bytes);
-    expect(priming).toBeGreaterThan(0);
+    const { samples, sampleRate } = parseLamePriming(bytes);
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
 
     const ctx = new AudioContext();
     const unstripped = await ctx.decodeAudioData(bytes.slice(0));
     await ctx.close();
 
     const decoded = await scrubPreview.decode(bytes);
-    expect(decoded.length).toBe(unstripped.length - priming);
+    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
+    expect(decoded.length).toBe(unstripped.length - expectedStrip);
   });
 });

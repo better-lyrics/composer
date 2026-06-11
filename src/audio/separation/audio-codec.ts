@@ -16,8 +16,12 @@ interface DecodeOptions {
 async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}): Promise<DecodedAudio> {
   const buf = await file.arrayBuffer();
   const shouldStrip = opts.stripPriming !== false;
-  const priming = shouldStrip ? parseLamePriming(buf) : 0;
-  const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, priming);
+  const priming = shouldStrip ? parseLamePriming(buf) : { samples: 0, sampleRate: 0 };
+  const trimAtTarget =
+    priming.samples > 0 && priming.sampleRate > 0
+      ? Math.round((priming.samples * TARGET_SAMPLE_RATE) / priming.sampleRate)
+      : 0;
+  const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, trimAtTarget);
 
   const ctx = new OfflineAudioContext(TARGET_CHANNELS, 1, TARGET_SAMPLE_RATE);
   const decoded = await ctx.decodeAudioData(buf);

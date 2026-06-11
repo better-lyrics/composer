@@ -75,7 +75,11 @@ async function decodeAudioToWav(file: File): Promise<Blob> {
   const ctx = new AudioContext();
   try {
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    return audioBufferToWav(cropAudioBufferHead(audioBuffer, priming, ctx));
+    const startSample =
+      priming.samples > 0 && priming.sampleRate > 0
+        ? Math.round((priming.samples * audioBuffer.sampleRate) / priming.sampleRate)
+        : 0;
+    return audioBufferToWav(cropAudioBufferHead(audioBuffer, startSample, ctx));
   } finally {
     void ctx.close();
   }

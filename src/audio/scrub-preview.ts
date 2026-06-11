@@ -25,8 +25,13 @@ function getContext(): AudioContext {
 async function decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
   const ctx = getContext();
   const priming = parseLamePriming(bytes);
+  // decodeAudioData detaches its input ArrayBuffer in some browsers; copy first
   const decoded = await ctx.decodeAudioData(bytes.slice(0));
-  return cropAudioBufferHead(decoded, priming, ctx);
+  const startSample =
+    priming.samples > 0 && priming.sampleRate > 0
+      ? Math.round((priming.samples * decoded.sampleRate) / priming.sampleRate)
+      : 0;
+  return cropAudioBufferHead(decoded, startSample, ctx);
 }
 
 function useBuffer(next: AudioBuffer | null): void {
