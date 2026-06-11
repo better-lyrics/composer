@@ -430,7 +430,7 @@ const TimelinePanel: React.FC = () => {
       }}
     >
       <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader onImportLyrics={openLyricsModal} />
+        <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
         <GroupingSuggestionsBanner />
         <ExplicitSuggestionsBanner />
 

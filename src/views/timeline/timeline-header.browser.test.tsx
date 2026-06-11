@@ -1,4 +1,6 @@
+import { createRef } from "react";
 import { describe, expect, it } from "vitest";
+import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -78,5 +80,55 @@ describe("TimelineHeader", () => {
     const screen = await render(<TimelineHeader />);
     const snapButton = screen.container.querySelector("button[title*='Snap']") as HTMLElement;
     expect(snapButton.className).toContain("opacity-50");
+  });
+
+  describe("zoom without a scroll ref", () => {
+    it("renders without crashing", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const screen = await render(<TimelineHeader />);
+      expect(screen.container.querySelector("h2")?.textContent).toBe("Timeline");
+    });
+
+    it("clicking zoom in still increments zoom via the plain store action", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const screen = await render(<TimelineHeader />);
+      const buttons = Array.from(screen.container.querySelectorAll<HTMLButtonElement>("button"));
+      const plus = buttons.at(-1);
+      if (!plus) throw new Error("zoom + button not found");
+      plus.click();
+      await expect.poll(() => useTimelineStore.getState().zoom).toBe(120);
+    });
+  });
+
+  describe("zoom with a scroll ref (playhead-anchored)", () => {
+    it("clicking zoom in goes through useTimelineZoom and adjusts scrollLeft", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      useAudioStore.setState({ currentTime: 5, audioElement: null });
+
+      const ref = createRef<HTMLDivElement | null>();
+      const screen = await render(
+        <div>
+          <div ref={ref} style={{ width: 800, height: 200, overflowX: "scroll" }} data-testid="scroll-host">
+            <div style={{ width: 5000, height: 200 }} />
+          </div>
+          <TimelineHeader scrollContainerRef={ref} />
+        </div>,
+      );
+
+      const host = ref.current;
+      if (!host) throw new Error("ref did not attach");
+      host.scrollLeft = 400;
+
+      const beforePlayheadX = 5 * 100 - host.scrollLeft;
+
+      const buttons = Array.from(screen.container.querySelectorAll<HTMLButtonElement>("button"));
+      const plus = buttons.at(-1);
+      if (!plus) throw new Error("zoom + button not found");
+      plus.click();
+
+      await expect.poll(() => useTimelineStore.getState().zoom).toBe(120);
+      const afterPlayheadX = 5 * 120 - host.scrollLeft;
+      expect(afterPlayheadX).toBeCloseTo(beforePlayheadX, 0);
+    });
   });
 });
