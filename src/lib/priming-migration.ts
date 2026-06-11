@@ -1,8 +1,8 @@
 import { parseLamePriming } from "@/audio/lame-priming";
-import { TARGET_SAMPLE_RATE } from "@/audio/separation/audio-codec";
+import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { loadAudioFile, loadCurrentProject, type SavedProject } from "@/lib/persistence";
+import { loadAudioFile, loadCurrentProject, replaceCurrentProject, type SavedProject } from "@/lib/persistence";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,7 +19,7 @@ function shiftLine(line: LyricLine, shiftSec: number): LyricLine {
   if ("words" in next && next.words) {
     (next as { words: WordTiming[] }).words = next.words.map((w) => shiftWord(w, shiftSec));
   }
-  if ("begin" in next && next.begin !== undefined && "end" in next && next.end !== undefined) {
+  if (isLineSynced(next)) {
     (next as { begin: number; end: number }).begin = Math.max(0, next.begin - shiftSec);
     (next as { begin: number; end: number }).end = Math.max(0, next.end - shiftSec);
   }
@@ -43,12 +43,13 @@ async function loadCurrentProjectWithPrimingMigration(): Promise<SavedProject | 
   const audioFile = await loadAudioFile();
   if (!audioFile) return project;
   const buf = await audioFile.arrayBuffer();
-  const priming = parseLamePriming(buf);
-  if (priming > 0) {
-    const shiftSec = priming / TARGET_SAMPLE_RATE;
+  const { samples, sampleRate } = parseLamePriming(buf);
+  if (samples > 0 && sampleRate > 0) {
+    const shiftSec = samples / sampleRate;
     project.lines = shiftAllTimings(project.lines ?? [], shiftSec);
   }
   project.primingStripped = true;
+  await replaceCurrentProject(project);
   return project;
 }
 

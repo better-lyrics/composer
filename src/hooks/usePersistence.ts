@@ -124,6 +124,9 @@ function usePersistence(): void {
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });
         }
+        if (project) {
+          useAudioStore.getState().setPrimingStripped(project.primingStripped ?? false);
+        }
       })
       .catch((err) => {
         console.error(`${LOG_PREFIX} initial load failed:`, err);

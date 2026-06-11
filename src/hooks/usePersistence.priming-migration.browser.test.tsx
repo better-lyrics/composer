@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { parseLamePriming } from "@/audio/lame-priming";
-import { TARGET_SAMPLE_RATE } from "@/audio/separation/audio-codec";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { WordTiming } from "@/domain/word/timing";
 import { clearCurrentProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
@@ -47,14 +46,15 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
 
   it("shifts saved line/word timings when project lacks primingStripped and audio has LAME priming", async () => {
     const mp3 = createMp3File();
-    const priming = parseLamePriming(await mp3.arrayBuffer());
-    expect(priming).toBeGreaterThan(0);
+    const { samples, sampleRate } = parseLamePriming(await mp3.arrayBuffer());
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
     await saveAudioFile(mp3);
     await seedSavedProject({ primingStripped: false });
 
     const migrated = await loadCurrentProjectWithPrimingMigration();
     expect(migrated).toBeDefined();
-    const shiftSec = priming / TARGET_SAMPLE_RATE;
+    const shiftSec = samples / sampleRate;
     const words = (migrated!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0 - shiftSec);
     expect(words[0].end).toBeCloseTo(1.5 - shiftSec);
@@ -92,7 +92,7 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
 
   it("sets primingStripped to true even when audio has zero priming", async () => {
     const noPrimingMp3 = new File([new Uint8Array([0, 1, 2, 3])], "not-mp3.bin", { type: "audio/mpeg" });
-    expect(parseLamePriming(await noPrimingMp3.arrayBuffer())).toBe(0);
+    expect(parseLamePriming(await noPrimingMp3.arrayBuffer()).samples).toBe(0);
     await saveAudioFile(noPrimingMp3);
     await seedSavedProject({ primingStripped: false });
 

@@ -72,6 +72,10 @@ async function loadCurrentProject(): Promise<SavedProject | undefined> {
   return getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
 }
 
+async function replaceCurrentProject(project: SavedProject): Promise<void> {
+  await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
+}
+
 async function clearCurrentProject(): Promise<void> {
   await deleteFromStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
   await clearAudioFile();
@@ -160,6 +164,7 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
 export {
   saveCurrentProject,
   loadCurrentProject,
+  replaceCurrentProject,
   clearCurrentProject,
   exportProjectToFile,
   importProjectFromFile,

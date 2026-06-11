@@ -66,9 +66,9 @@ const AudioEngine: React.FC = () => {
     // reliable frame index. Decoding to uncompressed WAV up front gives the
     // <audio> element an O(1)-seekable source. Other inputs (opus, webm,
     // m4a-with-mp4-container, ogg) already seek fine.
-    const resolvePlaybackUrl = async (): Promise<string> => {
+    const resolvePlaybackUrl = async (): Promise<{ url: string; stripped: boolean }> => {
       if (!needsWavConversion(playableFile)) {
-        return URL.createObjectURL(playableFile);
+        return { url: URL.createObjectURL(playableFile), stripped: true };
       }
       slowTimer = window.setTimeout(() => {
         slowTimer = null;
@@ -77,10 +77,10 @@ const AudioEngine: React.FC = () => {
       }, SLOW_DECODE_MS);
       try {
         const wavBlob = await decodeAudioToWav(playableFile);
-        return URL.createObjectURL(wavBlob);
+        return { url: URL.createObjectURL(wavBlob), stripped: true };
       } catch (err) {
         console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
-        return URL.createObjectURL(playableFile);
+        return { url: URL.createObjectURL(playableFile), stripped: false };
       }
     };
 
@@ -101,8 +101,9 @@ const AudioEngine: React.FC = () => {
 
     const setup = async () => {
       let objectUrl: string;
+      let stripped: boolean;
       try {
-        objectUrl = await resolvePlaybackUrl();
+        ({ url: objectUrl, stripped } = await resolvePlaybackUrl());
       } finally {
         clearSlowLoading();
       }
@@ -128,7 +129,7 @@ const AudioEngine: React.FC = () => {
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
-      useAudioStore.getState().setPrimingStripped(true);
+      useAudioStore.getState().setPrimingStripped(stripped);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);
