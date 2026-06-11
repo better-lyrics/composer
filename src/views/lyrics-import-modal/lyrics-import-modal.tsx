@@ -41,6 +41,7 @@ const LyricsImportModalShell: React.FC = () => {
   const audioDuration = useAudioStore((s) => s.duration);
   const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [currentSection, setCurrentSection] = useState<ImportModalSection>(initialSection ?? "search");
   const [pasteText, setPasteText] = useState("");
@@ -70,12 +71,20 @@ const LyricsImportModalShell: React.FC = () => {
       audioDuration,
       applyBackgroundExtraction: autoExtractBackgroundVocals,
       backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
+      backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
       source,
       onResult: (parsed, src) => {
         useImportModalStore.getState().recordImportResult(parsed, src);
       },
     }),
-    [agents, audioDuration, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines],
+    [
+      agents,
+      audioDuration,
+      autoExtractBackgroundVocals,
+      confirm,
+      mergeStandaloneBackgroundLines,
+      preserveBracketsOnExtraction,
+    ],
   );
 
   const handleImportPaste = useCallback(async () => {

@@ -327,7 +327,7 @@ describe("textToLyricLines · group attrs preservation", () => {
   it("re-pasting parenthesised lyrics over an already-extracted line does not double the background text", () => {
     const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
     const reparsed = textToLyricLines("Hello (ooh) world", "v1", existing);
-    const extracted = extractBackgroundVocals(reparsed, { mergeStandaloneLines: false });
+    const extracted = extractBackgroundVocals(reparsed, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(extracted).toHaveLength(1);
     expect(extracted[0].text).toBe("Hello world");
     expect(extracted[0].backgroundText).toBe("ooh");

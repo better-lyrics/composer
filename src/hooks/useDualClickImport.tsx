@@ -26,6 +26,7 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
   const audioDuration = useAudioStore((s) => s.duration);
   const autoExtract = useSettingsStore((s) => s.autoExtractBackgroundVocals);
   const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const preserveBrackets = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const clickTimerRef = useRef<number | null>(null);
@@ -63,13 +64,14 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
         audioDuration,
         applyBackgroundExtraction: autoExtract,
         backgroundExtractionMergeStandalone: mergeStandalone,
+        backgroundExtractionPreserveBrackets: preserveBrackets,
         source: { label: "File", filename: file.name },
         onResult: (parsedResult, source) => {
           useImportModalStore.getState().recordImportResult(parsedResult, source);
         },
       });
     },
-    [agents, audioDuration, autoExtract, confirm, mergeStandalone],
+    [agents, audioDuration, autoExtract, confirm, mergeStandalone, preserveBrackets],
   );
 
   const fileInput = (

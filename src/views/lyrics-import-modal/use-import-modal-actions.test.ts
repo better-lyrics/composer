@@ -34,6 +34,7 @@ function buildContext(overrides: Partial<ImportParsedLyricsContext> = {}): Impor
     audioDuration: 0,
     applyBackgroundExtraction: false,
     backgroundExtractionMergeStandalone: false,
+    backgroundExtractionPreserveBrackets: false,
     source: { label: "Test", filename: "test.lrc" },
     ...overrides,
   };

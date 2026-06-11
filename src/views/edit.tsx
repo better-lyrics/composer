@@ -297,6 +297,7 @@ const EditPanel: React.FC = () => {
   const lastImportResult = useLastImportResult();
   const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => l.text).join("\n") : ""));
   const rawTextRef = useRef(rawText);
@@ -341,8 +342,13 @@ const EditPanel: React.FC = () => {
     return counts;
   }, [lines]);
 
-  const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const extractOptions = useMemo(() => ({ mergeStandaloneLines: mergeStandalone }), [mergeStandalone]);
+  const extractOptions = useMemo(
+    () => ({
+      mergeStandaloneLines: mergeStandaloneBackgroundLines,
+      preserveBrackets: preserveBracketsOnExtraction,
+    }),
+    [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
+  );
   const canExtractBackgroundVocals = useMemo(() => {
     const extracted = extractBackgroundVocals(lines, extractOptions);
     return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
@@ -383,7 +389,10 @@ const EditPanel: React.FC = () => {
   const handleExtractLine = useCallback((lineId: string) => {
     const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
     if (!target) return;
-    const extracted = extractInlineFromLine(target);
+    const extracted = extractInlineFromLine(target, {
+      mergeStandaloneLines: false,
+      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
+    });
     if (extracted === target) return;
     useProjectStore.getState().updateLineWithHistory(lineId, {
       text: extracted.text,
@@ -487,6 +496,7 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
@@ -585,6 +595,7 @@ const EditPanel: React.FC = () => {
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
           finalLines = extractBackgroundVocals(finalLines, {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+            preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
           });
         }
         finalizeRun();
@@ -614,6 +625,7 @@ const EditPanel: React.FC = () => {
         audioDuration,
         applyBackgroundExtraction: autoExtractBackgroundVocals,
         backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
+        backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
         source: { label: "Drop", filename: file.name },
         onResult: (result, source) => {
           useImportModalStore.getState().recordImportResult(result, source);
@@ -621,7 +633,7 @@ const EditPanel: React.FC = () => {
       };
       await importParsedLyrics(parsed, context);
     },
-    [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines],
+    [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
   );
 
   const importTriggers = useDualClickImport(openImportModal);

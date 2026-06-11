@@ -20,6 +20,7 @@ interface ImportParsedLyricsContext {
   audioDuration: number;
   applyBackgroundExtraction: boolean;
   backgroundExtractionMergeStandalone: boolean;
+  backgroundExtractionPreserveBrackets: boolean;
   source: ImportSourceInfo;
   onResult?: (parsed: ParseResult, source: ImportSourceInfo) => void;
 }
@@ -62,6 +63,7 @@ async function importParsedLyrics(parsed: ParseResult, ctx: ImportParsedLyricsCo
   let workingLines = ctx.applyBackgroundExtraction
     ? extractBackgroundVocals(parsed.lines, {
         mergeStandaloneLines: ctx.backgroundExtractionMergeStandalone,
+        preserveBrackets: ctx.backgroundExtractionPreserveBrackets,
       })
     : parsed.lines;
 
