@@ -284,6 +284,7 @@ describe("AudioEngine", () => {
     useAudioStore.getState().setSource({ type: "file", file: createAudioFile() });
     await waitFor(() => useAudioStore.getState().primingStripped === true);
     useAudioStore.getState().setSource({ type: "file", file: createAudioFile("second.wav") });
+    expect(useAudioStore.getState().primingStripped).toBe(false);
     await waitFor(() => useAudioStore.getState().primingStripped === true);
     expect(useAudioStore.getState().primingStripped).toBe(true);
   });
