@@ -66,7 +66,7 @@ const AudioEngine: React.FC = () => {
     // reliable frame index. Decoding to uncompressed WAV up front gives the
     // <audio> element an O(1)-seekable source. Other inputs (opus, webm,
     // m4a-with-mp4-container, ogg) already seek fine.
-    const resolvePlaybackUrl = async (): Promise<{ url: string; stripped: boolean }> => {
+    const resolvePlaybackUrl = async (): Promise<{ url: string; stripped: boolean | null }> => {
       if (!needsWavConversion(playableFile)) {
         return { url: URL.createObjectURL(playableFile), stripped: true };
       }
@@ -80,7 +80,7 @@ const AudioEngine: React.FC = () => {
         return { url: URL.createObjectURL(wavBlob), stripped: true };
       } catch (err) {
         console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
-        return { url: URL.createObjectURL(playableFile), stripped: false };
+        return { url: URL.createObjectURL(playableFile), stripped: null };
       }
     };
 
@@ -101,7 +101,7 @@ const AudioEngine: React.FC = () => {
 
     const setup = async () => {
       let objectUrl: string;
-      let stripped: boolean;
+      let stripped: boolean | null;
       try {
         ({ url: objectUrl, stripped } = await resolvePlaybackUrl());
       } finally {
@@ -129,7 +129,7 @@ const AudioEngine: React.FC = () => {
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
-      useAudioStore.getState().setPrimingStripped(stripped);
+      if (stripped !== null) useAudioStore.getState().setPrimingStripped(stripped);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);

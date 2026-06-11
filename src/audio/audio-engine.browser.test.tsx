@@ -288,4 +288,16 @@ describe("AudioEngine", () => {
     await waitFor(() => useAudioStore.getState().primingStripped === true);
     expect(useAudioStore.getState().primingStripped).toBe(true);
   });
+
+  it("regression: preserves primingStripped when mp3 decode fails so the migrated flag survives", async () => {
+    allowConsole(/audio decode failed/);
+    allowConsole(/scrub-preview decode failed/);
+    allowConsole(/Audio error/);
+    await render(<AudioEngine />);
+    useAudioStore.setState({ primingStripped: true });
+    const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.mp3", { type: "audio/mpeg" });
+    useAudioStore.setState({ source: { type: "file", file: garbage } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    expect(useAudioStore.getState().primingStripped).toBe(true);
+  });
 });
