@@ -2,7 +2,7 @@
 
 const DECODER_DELAY_SAMPLES = 528;
 const PRIMING_HARD_CAP = 8192;
-const LOG_PREFIX = "[Composer]";
+const LOG_PREFIX = "[LamePriming]";
 
 const MPEG1_SAMPLE_RATES: readonly number[] = [44_100, 48_000, 32_000];
 const MPEG2_SAMPLE_RATES: readonly number[] = [22_050, 24_000, 16_000];
