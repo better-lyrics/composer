@@ -19,7 +19,7 @@ describe("computeAnchoredScrollLeft", () => {
       expect(anchorTime * newZoom - scroll).toBeCloseTo(anchorViewportX);
     });
 
-    it("is identity when newZoom equals oldZoom-derived scroll", () => {
+    it("returns the unclamped anchorTime * newZoom - anchorViewportX for the typical positive case", () => {
       const anchorTime = 3;
       const anchorViewportX = 100;
       const scroll = computeAnchoredScrollLeft(anchorTime, anchorViewportX, 100);
@@ -56,22 +56,42 @@ describe("computeAnchoredScrollLeft", () => {
 
   describe("invariants", () => {
     it("always returns a non-negative number", () => {
-      const samples = [
-        [0, 0, 20],
-        [0.5, 1000, 20],
-        [50, 50, 500],
-        [0, 100, 100],
-        [100, 0, 20],
-      ] as const;
-      for (const [t, x, z] of samples) {
+      const samples: Array<{ t: number; x: number; z: number }> = [
+        { t: 0, x: 0, z: 20 },
+        { t: 0.5, x: 1000, z: 20 },
+        { t: 50, x: 50, z: 500 },
+        { t: 0, x: 100, z: 100 },
+        { t: 100, x: 0, z: 20 },
+      ];
+      for (const { t, x, z } of samples) {
         expect(computeAnchoredScrollLeft(t, x, z)).toBeGreaterThanOrEqual(0);
       }
     });
 
-    it("is pure (no mutation, deterministic)", () => {
-      const a = computeAnchoredScrollLeft(5, 200, 100);
-      const b = computeAnchoredScrollLeft(5, 200, 100);
-      expect(a).toBe(b);
+    it("invariant: anchor stays under the same viewport X when unclamped", () => {
+      const cases: Array<{ t: number; x: number; z: number }> = [
+        { t: 5, x: 200, z: 80 },
+        { t: 5, x: 200, z: 120 },
+        { t: 10, x: 50, z: 500 },
+        { t: 0.5, x: 5, z: 100 },
+        { t: 3, x: 100, z: 100 },
+      ];
+      for (const { t, x, z } of cases) {
+        const scroll = computeAnchoredScrollLeft(t, x, z);
+        if (t * z >= x) {
+          expect(t * z - scroll).toBeCloseTo(x);
+        }
+      }
+    });
+
+    it("invariant: non-decreasing in newZoom for fixed anchor (zoom in moves scroll right or holds)", () => {
+      const t = 5;
+      const x = 200;
+      const a = computeAnchoredScrollLeft(t, x, 80);
+      const b = computeAnchoredScrollLeft(t, x, 100);
+      const c = computeAnchoredScrollLeft(t, x, 200);
+      expect(a).toBeLessThanOrEqual(b);
+      expect(b).toBeLessThanOrEqual(c);
     });
   });
 });
