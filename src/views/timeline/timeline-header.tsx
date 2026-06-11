@@ -229,7 +229,15 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
 
         {/* Zoom controls */}
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={zoomOut} disabled={zoom <= MIN_ZOOM} className="size-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={zoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="size-7"
+            title="Zoom out"
+            aria-label="Zoom out"
+          >
             <IconMinus size={16} />
           </Button>
 
@@ -237,7 +245,15 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
             {zoomPercent}%
           </span>
 
-          <Button variant="ghost" size="icon" onClick={zoomIn} disabled={zoom >= MAX_ZOOM} className="size-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={zoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="size-7"
+            title="Zoom in"
+            aria-label="Zoom in"
+          >
             <IconPlus size={16} />
           </Button>
         </div>

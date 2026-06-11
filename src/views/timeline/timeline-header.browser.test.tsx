@@ -92,10 +92,7 @@ describe("TimelineHeader", () => {
     it("clicking zoom in still increments zoom via the plain store action", async () => {
       useTimelineStore.setState({ zoom: 100 });
       const screen = await render(<TimelineHeader />);
-      const buttons = Array.from(screen.container.querySelectorAll<HTMLButtonElement>("button"));
-      const plus = buttons.at(-1);
-      if (!plus) throw new Error("zoom + button not found");
-      plus.click();
+      await screen.getByRole("button", { name: "Zoom in" }).click();
       await expect.poll(() => useTimelineStore.getState().zoom).toBe(120);
     });
   });
@@ -121,10 +118,7 @@ describe("TimelineHeader", () => {
 
       const beforePlayheadX = 5 * 100 - host.scrollLeft;
 
-      const buttons = Array.from(screen.container.querySelectorAll<HTMLButtonElement>("button"));
-      const plus = buttons.at(-1);
-      if (!plus) throw new Error("zoom + button not found");
-      plus.click();
+      await screen.getByRole("button", { name: "Zoom in" }).click();
 
       await expect.poll(() => useTimelineStore.getState().zoom).toBe(120);
       const afterPlayheadX = 5 * 120 - host.scrollLeft;
