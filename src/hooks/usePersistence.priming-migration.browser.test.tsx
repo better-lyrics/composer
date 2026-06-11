@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 import { parseLamePriming } from "@/audio/lame-priming";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { WordTiming } from "@/domain/word/timing";
-import { clearCurrentProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
+import { usePersistence } from "@/hooks/usePersistence";
+import { clearCurrentProject, loadCurrentProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 
 // -- Helpers ------------------------------------------------------------------
@@ -100,5 +104,77 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
     expect(loaded!.primingStripped).toBe(true);
     const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
+  });
+});
+
+describe("usePersistence priming-stripped flag survives the post-load debounced save", () => {
+  const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
+
+  beforeEach(async () => {
+    useSettingsStore.setState({ autoSaveDelay: 30 });
+    await clearCurrentProject();
+  });
+  afterEach(async () => {
+    useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
+    await clearCurrentProject();
+  });
+
+  async function waitForProjectHydration(): Promise<void> {
+    for (let i = 0; i < 200; i++) {
+      if (useProjectStore.getState().lines.length > 0) return;
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    throw new Error("project store never hydrated");
+  }
+
+  it("regression: post-migration debounced save does not overwrite primingStripped with false", async () => {
+    const mp3 = createMp3File();
+    expect(parseLamePriming(await mp3.arrayBuffer()).samples).toBeGreaterThan(0);
+    await saveAudioFile(mp3);
+    await saveCurrentProject(
+      { title: "race", artist: "", album: "", duration: 0 },
+      DEFAULT_AGENTS,
+      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      [],
+      "word",
+      { applyToAll: false, caseInsensitive: false },
+      { kind: "file", name: "silence.mp3" },
+      [],
+      [],
+      "original",
+      false,
+    );
+
+    await renderHook(() => usePersistence());
+    await waitForProjectHydration();
+    await new Promise((r) => setTimeout(r, 150));
+
+    const reloaded = await loadCurrentProject();
+    expect(reloaded?.primingStripped).toBe(true);
+  });
+
+  it("flag stays true after debounced save even when audio has zero priming", async () => {
+    const noPrimingMp3 = new File([new Uint8Array([0, 1, 2, 3])], "not-mp3.bin", { type: "audio/mpeg" });
+    await saveAudioFile(noPrimingMp3);
+    await saveCurrentProject(
+      { title: "race-zero", artist: "", album: "", duration: 0 },
+      DEFAULT_AGENTS,
+      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      [],
+      "word",
+      { applyToAll: false, caseInsensitive: false },
+      { kind: "file", name: "not-mp3.bin" },
+      [],
+      [],
+      "original",
+      false,
+    );
+
+    await renderHook(() => usePersistence());
+    await waitForProjectHydration();
+    await new Promise((r) => setTimeout(r, 150));
+
+    const reloaded = await loadCurrentProject();
+    expect(reloaded?.primingStripped).toBe(true);
   });
 });

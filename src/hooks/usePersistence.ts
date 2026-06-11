@@ -98,6 +98,22 @@ function usePersistence(): void {
             );
           }
 
+          // Restore the saved stem selection BEFORE setting the audio source.
+          // useAutoSeparate's source subscription will then run refreshForCurrentSource
+          // which preserves currentStem when the cached stems are still available, and
+          // falls back to "original" when they aren't (LRU eviction or variant change).
+          if (project.currentStem) {
+            useSeparationStore.getState().restoreCurrentStem(project.currentStem);
+          }
+
+          const savedSource = project.audioSource;
+          if (savedSource?.kind === "youtube") {
+            useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
+          } else if (file) {
+            useAudioStore.getState().setSource({ type: "file", file });
+          }
+          useAudioStore.getState().setPrimingStripped(project.primingStripped ?? false);
+
           const state = useProjectStore.getState();
           state.setMetadata(project.metadata);
           state.setLines(safeLines);
@@ -108,24 +124,8 @@ function usePersistence(): void {
           state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
           state.markClean();
-        }
-
-        // Restore the saved stem selection BEFORE setting the audio source.
-        // useAutoSeparate's source subscription will then run refreshForCurrentSource
-        // which preserves currentStem when the cached stems are still available, and
-        // falls back to "original" when they aren't (LRU eviction or variant change).
-        if (project?.currentStem) {
-          useSeparationStore.getState().restoreCurrentStem(project.currentStem);
-        }
-
-        const savedSource = project?.audioSource;
-        if (savedSource?.kind === "youtube") {
-          useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });
-        }
-        if (project) {
-          useAudioStore.getState().setPrimingStripped(project.primingStripped ?? false);
         }
       })
       .catch((err) => {
