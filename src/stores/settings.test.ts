@@ -5,6 +5,7 @@ import {
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("preview renderer settings", () => {
@@ -124,5 +125,79 @@ describe("cobalt instance helpers", () => {
     const custom = useSettingsStore.getState().cobaltInstances[0];
     useSettingsStore.getState().selectCobaltInstance(custom.id);
     expect(getActiveCobaltInstance().url).toBe("https://example.test");
+  });
+});
+
+describe("timeline header toggle defaults", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults defaultRollingEdit to false", () => {
+    expect(DEFAULTS.defaultRollingEdit).toBe(false);
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
+  });
+
+  it("defaults defaultPreviewSidebar to false", () => {
+    expect(DEFAULTS.defaultPreviewSidebar).toBe(false);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+  });
+
+  it("set() persists defaultRollingEdit", () => {
+    useSettingsStore.getState().set("defaultRollingEdit", true);
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(true);
+  });
+
+  it("set() persists defaultPreviewSidebar", () => {
+    useSettingsStore.getState().set("defaultPreviewSidebar", true);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(true);
+  });
+
+  it("resetToDefaults restores both to false", () => {
+    useSettingsStore.getState().set("defaultRollingEdit", true);
+    useSettingsStore.getState().set("defaultPreviewSidebar", true);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+  });
+});
+
+describe("settings v2 -> v3 migration", () => {
+  it("fills missing defaultRollingEdit with false", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultRollingEdit: boolean };
+    expect(migrated.defaultRollingEdit).toBe(false);
+  });
+
+  it("fills missing defaultPreviewSidebar with false", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultPreviewSidebar: boolean };
+    expect(migrated.defaultPreviewSidebar).toBe(false);
+  });
+
+  it("preserves user-set values when migrating from v3", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
+      defaultRollingEdit: boolean;
+      defaultPreviewSidebar: boolean;
+    };
+    expect(migrated.defaultRollingEdit).toBe(true);
+    expect(migrated.defaultPreviewSidebar).toBe(true);
+  });
+
+  it("still applies the vocalModelVariant fp16 -> fp32 rule", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
+    expect(migrated.vocalModelVariant).toBe("fp32");
+  });
+});
+
+describe("timeline store reads header-toggle defaults at init", () => {
+  it("initial previewSidebarOpen matches settings.defaultPreviewSidebar at the moment the store was created", () => {
+    expect(useTimelineStore.getState().previewSidebarOpen).toBe(useSettingsStore.getState().defaultPreviewSidebar);
+  });
+
+  it("initial rollingEditMode matches settings.defaultRollingEdit at the moment the store was created", () => {
+    expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().defaultRollingEdit);
   });
 });

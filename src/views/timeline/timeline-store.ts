@@ -99,7 +99,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   return {
     zoom: settings.defaultZoom,
     followEnabled: settings.followPlayhead,
-    previewSidebarOpen: false,
+    previewSidebarOpen: settings.defaultPreviewSidebar,
     selectedWords: [],
 
     clipboard: null,
@@ -111,7 +111,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    rollingEditMode: false,
+    rollingEditMode: settings.defaultRollingEdit,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,

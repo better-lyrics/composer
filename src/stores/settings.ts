@@ -36,6 +36,8 @@ interface SettingsState {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
+  defaultRollingEdit: boolean;
+  defaultPreviewSidebar: boolean;
   timelineSnap: boolean;
   timelineSnapThreshold: number;
   timelineHorizontalScroll: boolean;
@@ -98,6 +100,8 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
+  defaultRollingEdit: false,
+  defaultPreviewSidebar: false,
   timelineSnap: true,
   timelineSnapThreshold: 12,
   timelineHorizontalScroll: false,
@@ -145,15 +149,18 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 2;
+const SETTINGS_PERSIST_VERSION = 3;
 
-function migrateSettings(persistedState: unknown): unknown {
+function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
   const state = persistedState as Partial<SettingsState>;
-  return {
-    ...state,
-    vocalModelVariant: state.vocalModelVariant === "fp16" ? "fp32" : state.vocalModelVariant,
-  };
+  const next: Partial<SettingsState> = { ...state };
+  if (version < 2 || next.vocalModelVariant === "fp16") {
+    next.vocalModelVariant = "fp32";
+  }
+  if (next.defaultRollingEdit === undefined) next.defaultRollingEdit = false;
+  if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
+  return next;
 }
 
 // -- Store --------------------------------------------------------------------
@@ -237,5 +244,6 @@ export {
   DEFAULT_COBALT_INSTANCE_ID,
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
+  migrateSettings as migrateSettingsForTest,
 };
 export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction, VocalModelVariant };
