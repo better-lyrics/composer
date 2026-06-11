@@ -55,6 +55,16 @@ const TimelineSection: React.FC = () => {
         settingKey="followPlayhead"
       />
       <ToggleSetting
+        label="Default rolling edit mode"
+        description="Start in rolling edit mode when opening a project."
+        settingKey="defaultRollingEdit"
+      />
+      <ToggleSetting
+        label="Default preview sidebar"
+        description="Open the preview sidebar by default."
+        settingKey="defaultPreviewSidebar"
+      />
+      <ToggleSetting
         label="Scroll wheel scrolls timeline"
         description="Plain scroll moves the timeline horizontally. Hold Shift to scroll vertically."
         settingKey="timelineHorizontalScroll"

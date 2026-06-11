@@ -8,7 +8,27 @@ describe("TimelineSection", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(3);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(5);
+  });
+
+  it("flips the default rolling edit setting when its toggle is clicked", async () => {
+    useSettingsStore.setState({ defaultRollingEdit: false });
+    const screen = await render(<TimelineSection />);
+    const toggle = screen.getByRole("switch", { name: "Default rolling edit mode" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect.poll(() => useSettingsStore.getState().defaultRollingEdit).toBe(true);
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("flips the default preview sidebar setting when its toggle is clicked", async () => {
+    useSettingsStore.setState({ defaultPreviewSidebar: false });
+    const screen = await render(<TimelineSection />);
+    const toggle = screen.getByRole("switch", { name: "Default preview sidebar" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect.poll(() => useSettingsStore.getState().defaultPreviewSidebar).toBe(true);
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
   });
 
   it("flips the snap setting when its toggle is clicked", async () => {
