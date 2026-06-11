@@ -2,6 +2,7 @@ import { scrubPreview } from "@/audio/scrub-preview";
 import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { computeAnchoredScrollLeft } from "@/utils/timeline/zoom-anchor";
 import { GUTTER_WIDTH, MAX_ZOOM, MIN_ZOOM, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeScrubTime, decideWheelAction, normalizeWheelDelta } from "@/views/timeline/timeline-wheel";
 import { type RefObject, useCallback, useEffect, useRef } from "react";
@@ -42,14 +43,13 @@ function useTimelineWheel(scrollContainerRef: RefObject<HTMLDivElement | null>, 
       e.preventDefault();
 
       if (action.kind === "zoom") {
-        const cursorX = e.clientX - rect.left - GUTTER_WIDTH + container.scrollLeft;
-        const cursorTime = cursorX / zoom;
+        const anchorViewportX = e.clientX - rect.left - GUTTER_WIDTH;
+        const cursorTime = (anchorViewportX + container.scrollLeft) / zoom;
         const delta = e.deltaY > 0 ? -20 : 20;
         const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
         if (newZoom === zoom) return;
-        const newScrollLeft = Math.max(0, cursorTime * newZoom - (e.clientX - rect.left - GUTTER_WIDTH));
         useTimelineStore.getState().setZoom(newZoom);
-        container.scrollLeft = newScrollLeft;
+        container.scrollLeft = computeAnchoredScrollLeft(cursorTime, anchorViewportX, newZoom);
         return;
       }
 
