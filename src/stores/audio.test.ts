@@ -109,49 +109,6 @@ describe("useAudioStore - seekTo", () => {
   });
 });
 
-describe("useAudioStore - primingStripped", () => {
-  it("defaults to false", () => {
-    expect(useAudioStore.getState().primingStripped).toBe(false);
-  });
-
-  it("can be set true via setPrimingStripped", () => {
-    useAudioStore.getState().setPrimingStripped(true);
-    expect(useAudioStore.getState().primingStripped).toBe(true);
-  });
-
-  it("can be set back to false via setPrimingStripped", () => {
-    useAudioStore.getState().setPrimingStripped(true);
-    useAudioStore.getState().setPrimingStripped(false);
-    expect(useAudioStore.getState().primingStripped).toBe(false);
-  });
-
-  it("resets to false when setSource is called", () => {
-    useAudioStore.getState().setPrimingStripped(true);
-    const file = new File([], "x.wav", { type: "audio/wav" });
-    useAudioStore.getState().setSource({ type: "file", file });
-    expect(useAudioStore.getState().primingStripped).toBe(false);
-  });
-
-  it("resets to false when setSource(null) is called", () => {
-    useAudioStore.getState().setPrimingStripped(true);
-    useAudioStore.getState().setSource(null);
-    expect(useAudioStore.getState().primingStripped).toBe(false);
-  });
-
-  it("resets to false on reset()", () => {
-    useAudioStore.getState().setPrimingStripped(true);
-    useAudioStore.getState().reset();
-    expect(useAudioStore.getState().primingStripped).toBe(false);
-  });
-
-  it("does not affect other audio state when toggling", () => {
-    useAudioStore.setState({ currentTime: 5, duration: 100 });
-    useAudioStore.getState().setPrimingStripped(true);
-    expect(useAudioStore.getState().currentTime).toBe(5);
-    expect(useAudioStore.getState().duration).toBe(100);
-  });
-});
-
 describe("useAudioStore - setPlaybackRate", () => {
   it("persists the selected playback rate as the default", () => {
     useAudioStore.getState().setPlaybackRate(1.5);

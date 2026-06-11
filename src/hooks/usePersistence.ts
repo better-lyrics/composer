@@ -58,7 +58,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     projectState.dismissedSuggestions,
     projectState.dismissedExplicitSuggestions,
     useSeparationStore.getState().currentStem,
-    useAudioStore.getState().primingStripped,
+    projectState.primingStripped,
   ];
 }
 
@@ -112,7 +112,6 @@ function usePersistence(): void {
           } else if (file) {
             useAudioStore.getState().setSource({ type: "file", file });
           }
-          useAudioStore.getState().setPrimingStripped(project.primingStripped ?? false);
 
           const state = useProjectStore.getState();
           state.setMetadata(project.metadata);
@@ -123,6 +122,7 @@ function usePersistence(): void {
           state.setAgents(safeAgents);
           state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
+          state.setPrimingStripped(project.primingStripped ?? false);
           state.markClean();
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });

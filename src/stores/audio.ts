@@ -16,7 +16,6 @@ interface AudioState {
   isLoading: boolean;
   audioElement: HTMLAudioElement | null;
   youtubeLoadError: string | null;
-  primingStripped: boolean;
 }
 
 interface AudioActions {
@@ -32,7 +31,6 @@ interface AudioActions {
   setIsLoading: (isLoading: boolean) => void;
   setYouTubeLoadError: (error: string | null) => void;
   registerAudioElement: (element: HTMLAudioElement | null) => void;
-  setPrimingStripped: (value: boolean) => void;
   seekTo: (time: number) => void;
   reset: () => void;
 }
@@ -52,7 +50,6 @@ function createInitialState(): AudioState {
     isLoading: false,
     audioElement: null,
     youtubeLoadError: null,
-    primingStripped: false,
   };
 }
 
@@ -70,7 +67,6 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
       duration: 0,
       isPlaying: false,
       youtubeLoadError: null,
-      primingStripped: false,
     }),
   setYouTubeSource: (videoId, file) =>
     set({
@@ -79,7 +75,6 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
       duration: 0,
       isPlaying: false,
       youtubeLoadError: null,
-      primingStripped: false,
     }),
   setYouTubeFile: (file) =>
     set((s) => {
@@ -101,7 +96,6 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
   setYouTubeLoadError: (youtubeLoadError) => set({ youtubeLoadError }),
   registerAudioElement: (audioElement) => set({ audioElement }),
-  setPrimingStripped: (primingStripped) => set({ primingStripped }),
   seekTo: (time: number) => {
     if (!Number.isFinite(time) || time < 0) return;
     const audio = get().audioElement;

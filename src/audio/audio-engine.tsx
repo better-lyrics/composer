@@ -3,6 +3,7 @@ import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useEffect, useRef } from "react";
 
@@ -129,7 +130,7 @@ const AudioEngine: React.FC = () => {
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
-      if (stripped !== null) useAudioStore.getState().setPrimingStripped(stripped);
+      if (stripped !== null) useProjectStore.getState().setPrimingStripped(stripped);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);
