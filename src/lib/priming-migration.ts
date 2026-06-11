@@ -1,5 +1,5 @@
 import { parseLamePriming } from "@/audio/lame-priming";
-import { isLineSynced } from "@/domain/line/predicates";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { loadAudioFile, loadCurrentProject, replaceCurrentProject, type SavedProject } from "@/lib/persistence";
@@ -16,8 +16,8 @@ function shiftWord(word: WordTiming, shiftSec: number): WordTiming {
 
 function shiftLine(line: LyricLine, shiftSec: number): LyricLine {
   const next = { ...line } as LyricLine;
-  if ("words" in next && next.words) {
-    (next as { words: WordTiming[] }).words = next.words.map((w) => shiftWord(w, shiftSec));
+  if (isWordSynced(next)) {
+    (next as { words: WordTiming[] }).words = next.words!.map((w) => shiftWord(w, shiftSec));
   }
   if (isLineSynced(next)) {
     (next as { begin: number; end: number }).begin = Math.max(0, next.begin - shiftSec);
