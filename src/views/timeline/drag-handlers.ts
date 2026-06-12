@@ -252,6 +252,13 @@ function buildCrossLineMoves({
   return moves;
 }
 
+// Drives every cross-track drag: across different lines, AND across tracks on
+// the same line (main<->bg toggles). Routing both through the same primitive
+// keeps user-facing behaviour consistent: neither path propagates to linked
+// siblings. The cross-line case can't propagate cleanly anyway (two distinct
+// sibling sets), and matching same-line to cross-line removes a silent
+// divergence that previously made a same-line bg toggle mutate every linked
+// instance while a cross-line drag did not.
 function applyCrossLineMove(args: CrossLineMoveArgs) {
   const moves = buildCrossLineMoves(args);
   if (moves.length === 0) return;

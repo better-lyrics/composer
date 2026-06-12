@@ -20,17 +20,17 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 function useTimelineDnd(lines: LyricLine[]) {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-  const moveWordToBg = useProjectStore((s) => s.moveWordToBg);
-  const moveWordFromBg = useProjectStore((s) => s.moveWordFromBg);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);
 
   const [activeDrag, setActiveDrag] = useState<DragData | null>(null);
   const dragShiftRef = useRef(false);
-  const shiftListenersCleanupRef = useRef<(() => void) | null>(null);
+  const pointerXRef = useRef(0);
+  const pointerYRef = useRef(0);
+  const dragListenersCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    return () => shiftListenersCleanupRef.current?.();
+    return () => dragListenersCleanupRef.current?.();
   }, []);
 
   const sensors = useSensors(
@@ -49,10 +49,16 @@ function useTimelineDnd(lines: LyricLine[]) {
     setActiveDrag({ ...data, initialShiftKey });
     document.body.style.cursor = "grabbing";
 
-    shiftListenersCleanupRef.current?.();
+    dragListenersCleanupRef.current?.();
     dragShiftRef.current = initialShiftKey;
+    if (event.activatorEvent instanceof PointerEvent) {
+      pointerXRef.current = event.activatorEvent.clientX;
+      pointerYRef.current = event.activatorEvent.clientY;
+    }
     const onPointer = (e: PointerEvent) => {
       dragShiftRef.current = e.shiftKey;
+      pointerXRef.current = e.clientX;
+      pointerYRef.current = e.clientY;
     };
     const onKey = (e: KeyboardEvent) => {
       dragShiftRef.current = e.shiftKey;
@@ -60,7 +66,7 @@ function useTimelineDnd(lines: LyricLine[]) {
     window.addEventListener("pointermove", onPointer);
     document.addEventListener("keydown", onKey);
     document.addEventListener("keyup", onKey);
-    shiftListenersCleanupRef.current = () => {
+    dragListenersCleanupRef.current = () => {
       window.removeEventListener("pointermove", onPointer);
       document.removeEventListener("keydown", onKey);
       document.removeEventListener("keyup", onKey);
@@ -73,8 +79,10 @@ function useTimelineDnd(lines: LyricLine[]) {
       document.body.style.cursor = "";
 
       const isShiftDrag = dragShiftRef.current;
-      shiftListenersCleanupRef.current?.();
-      shiftListenersCleanupRef.current = null;
+      const clientX = pointerXRef.current;
+      const clientY = pointerYRef.current;
+      dragListenersCleanupRef.current?.();
+      dragListenersCleanupRef.current = null;
       dragShiftRef.current = false;
 
       const { active, delta, activatorEvent } = event;
@@ -88,7 +96,7 @@ function useTimelineDnd(lines: LyricLine[]) {
         return;
       }
 
-      const target = resolveDropTarget(event, lines);
+      const target = resolveDropTarget({ clientX, clientY, lines });
       if (!target) return;
 
       const targetLine = lines[target.targetLineIndex];
@@ -112,21 +120,6 @@ function useTimelineDnd(lines: LyricLine[]) {
       const sameLine = targetLine.id === activeData.lineId;
       const sameTrack = target.targetTrack === activeData.trackType;
 
-      if (sameLine && !sameTrack) {
-        if (activeData.trackType === "word" && target.targetTrack === "bg") {
-          const indices = wordsToMove.flatMap((s) =>
-            s.lineId === activeData.lineId && s.type === "word" ? [s.wordIndex] : [],
-          );
-          moveWordToBg(activeData.lineId, indices, timeDelta, duration);
-          return;
-        }
-        const indices = wordsToMove.flatMap((s) =>
-          s.lineId === activeData.lineId && s.type === "bg" ? [s.wordIndex] : [],
-        );
-        moveWordFromBg(activeData.lineId, indices, timeDelta, duration);
-        return;
-      }
-
       if (sameLine && sameTrack) {
         if (Math.abs(delta.x) < DRAG_X_MIN_THRESHOLD) return;
         applySameLineReorder(activeData, wordsToMove, lines, timeDelta, duration, updateLineWithHistory);
@@ -143,14 +136,14 @@ function useTimelineDnd(lines: LyricLine[]) {
         duration,
       });
     },
-    [moveWordToBg, moveWordFromBg, updateLineWithHistory, zoom, duration, lines],
+    [updateLineWithHistory, zoom, duration, lines],
   );
 
   const handleDragCancel = useCallback(() => {
     setActiveDrag(null);
     document.body.style.cursor = "";
-    shiftListenersCleanupRef.current?.();
-    shiftListenersCleanupRef.current = null;
+    dragListenersCleanupRef.current?.();
+    dragListenersCleanupRef.current = null;
     dragShiftRef.current = false;
   }, []);
 
