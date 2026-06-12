@@ -84,18 +84,18 @@ body {
 }
 
 @utility waveform-loading-dots {
-  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 1.2px, transparent 1.8px);
-  background-size: 12px 12px;
-  background-position: 6px 6px;
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
+  background-size: 8px 8px;
+  background-position: 4px 4px;
   isolation: isolate;
 
   &::before {
     content: "";
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(circle at center, rgba(129, 140, 248, 0.85) 1.4px, transparent 2px);
-    background-size: 12px 12px;
-    background-position: 6px 6px;
+    background-image: radial-gradient(circle at center, rgba(129, 140, 248, 0.85) 1.2px, transparent 1.7px);
+    background-size: 8px 8px;
+    background-position: 4px 4px;
     mask-image: linear-gradient(90deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
     -webkit-mask-image: linear-gradient(
       90deg,
