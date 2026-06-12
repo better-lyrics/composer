@@ -1,6 +1,7 @@
+import { parseLamePriming } from "@/audio/lame-priming";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { useSettingsStore } from "@/stores/settings";
-import { encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
+import { createMp3File, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { afterEach, describe, expect, test } from "vitest";
 
 describe("scrub-preview", () => {
@@ -76,5 +77,21 @@ describe("scrub-preview", () => {
     const wavBytes = encodeWav(rendered);
     const decoded = await scrubPreview.decode(wavBytes);
     expect(decoded.duration).toBeCloseTo(1, 1);
+  });
+
+  test("decode strips LAME priming from an MP3 source", async () => {
+    const mp3 = createMp3File();
+    const bytes = await mp3.arrayBuffer();
+    const { samples, sampleRate } = parseLamePriming(bytes);
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
+
+    const ctx = new AudioContext();
+    const unstripped = await ctx.decodeAudioData(bytes.slice(0));
+    await ctx.close();
+
+    const decoded = await scrubPreview.decode(bytes);
+    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
+    expect(decoded.length).toBe(unstripped.length - expectedStrip);
   });
 });

@@ -1,3 +1,5 @@
+import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
+
 // -- Types --------------------------------------------------------------------
 
 interface DecodedAudio {
@@ -69,10 +71,15 @@ function audioBufferToWav(audio: DecodedAudio): Blob {
 // the original file.
 async function decodeAudioToWav(file: File): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
+  const priming = parseLamePriming(arrayBuffer);
   const ctx = new AudioContext();
   try {
     const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    return audioBufferToWav(audioBuffer);
+    const startSample =
+      priming.samples > 0 && priming.sampleRate > 0
+        ? Math.round((priming.samples * audioBuffer.sampleRate) / priming.sampleRate)
+        : 0;
+    return audioBufferToWav(cropAudioBufferHead(audioBuffer, startSample, ctx));
   } finally {
     void ctx.close();
   }

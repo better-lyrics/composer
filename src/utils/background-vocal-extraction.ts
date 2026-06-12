@@ -230,11 +230,6 @@ function mergeStandaloneInto(
 
 function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): LyricLine[] {
   const result: LyricLine[] = [];
-  // Result indices whose bg was written or appended to during this pass. Used
-  // for two decisions: (a) the extraction-source bg is fresh, not stale prior
-  // output to discard on re-paste, and (b) a trailing ')' is safe to peel when
-  // grouping a later standalone inside. Pre-existing prev bg is never in the
-  // set, so manual text typed by the user is left intact.
   const sameSessionWriteIndices = new Set<number>();
   for (const line of lines) {
     const classified = classifyLine(line.text);

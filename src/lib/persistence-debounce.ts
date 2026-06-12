@@ -25,6 +25,7 @@ type SaveArgs = [
   string[],
   string[],
   Stem,
+  boolean,
 ];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -43,6 +44,7 @@ function debouncedSave(
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
   currentStem: Stem,
+  primingStripped: boolean,
 ): void {
   pendingSaveArgs = [
     metadata,
@@ -55,6 +57,7 @@ function debouncedSave(
     dismissedSuggestions,
     dismissedExplicitSuggestions,
     currentStem,
+    primingStripped,
   ];
   if (saveTimeout) {
     clearTimeout(saveTimeout);

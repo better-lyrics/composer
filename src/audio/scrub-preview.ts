@@ -1,3 +1,4 @@
+import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 
@@ -23,8 +24,14 @@ function getContext(): AudioContext {
 
 async function decode(bytes: ArrayBuffer): Promise<AudioBuffer> {
   const ctx = getContext();
+  const priming = parseLamePriming(bytes);
   // decodeAudioData detaches its input ArrayBuffer in some browsers; copy first
-  return await ctx.decodeAudioData(bytes.slice(0));
+  const decoded = await ctx.decodeAudioData(bytes.slice(0));
+  const startSample =
+    priming.samples > 0 && priming.sampleRate > 0
+      ? Math.round((priming.samples * decoded.sampleRate) / priming.sampleRate)
+      : 0;
+  return cropAudioBufferHead(decoded, startSample, ctx);
 }
 
 function useBuffer(next: AudioBuffer | null): void {

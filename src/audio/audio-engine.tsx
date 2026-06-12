@@ -3,6 +3,7 @@ import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useEffect, useRef } from "react";
 
@@ -66,9 +67,9 @@ const AudioEngine: React.FC = () => {
     // reliable frame index. Decoding to uncompressed WAV up front gives the
     // <audio> element an O(1)-seekable source. Other inputs (opus, webm,
     // m4a-with-mp4-container, ogg) already seek fine.
-    const resolvePlaybackUrl = async (): Promise<string> => {
+    const resolvePlaybackUrl = async (): Promise<{ url: string; stripped: boolean | null }> => {
       if (!needsWavConversion(playableFile)) {
-        return URL.createObjectURL(playableFile);
+        return { url: URL.createObjectURL(playableFile), stripped: true };
       }
       slowTimer = window.setTimeout(() => {
         slowTimer = null;
@@ -77,10 +78,10 @@ const AudioEngine: React.FC = () => {
       }, SLOW_DECODE_MS);
       try {
         const wavBlob = await decodeAudioToWav(playableFile);
-        return URL.createObjectURL(wavBlob);
+        return { url: URL.createObjectURL(wavBlob), stripped: true };
       } catch (err) {
         console.warn(LOG_PREFIX, "audio decode failed, using original file", err);
-        return URL.createObjectURL(playableFile);
+        return { url: URL.createObjectURL(playableFile), stripped: null };
       }
     };
 
@@ -101,8 +102,9 @@ const AudioEngine: React.FC = () => {
 
     const setup = async () => {
       let objectUrl: string;
+      let stripped: boolean | null;
       try {
-        objectUrl = await resolvePlaybackUrl();
+        ({ url: objectUrl, stripped } = await resolvePlaybackUrl());
       } finally {
         clearSlowLoading();
       }
@@ -128,6 +130,7 @@ const AudioEngine: React.FC = () => {
       audioRef.current = audio;
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
+      if (stripped !== null) useProjectStore.getState().setPrimingStripped(stripped);
       if (initialIsPlaying) audio.play().catch(() => undefined);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);

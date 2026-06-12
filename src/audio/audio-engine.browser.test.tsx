@@ -2,6 +2,7 @@ import { AudioEngine } from "@/audio/audio-engine";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
@@ -260,5 +261,34 @@ describe("AudioEngine", () => {
     useAudioStore.setState({ source: null });
     await waitFor(() => useAudioStore.getState().audioElement === null);
     expect(scrubStemRouter.getActiveStem()).toBeNull();
+  });
+
+  it("sets primingStripped to true after the audio element is registered for a wav source", async () => {
+    await render(<AudioEngine />);
+    expect(useProjectStore.getState().primingStripped).toBe(false);
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null);
+    await waitFor(() => useProjectStore.getState().primingStripped === true);
+    expect(useProjectStore.getState().primingStripped).toBe(true);
+  });
+
+  it("sets primingStripped to true after the audio element is registered for an mp3 source", async () => {
+    await render(<AudioEngine />);
+    useAudioStore.setState({ source: { type: "file", file: createMp3File() } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    await waitFor(() => useProjectStore.getState().primingStripped === true, 5000);
+    expect(useProjectStore.getState().primingStripped).toBe(true);
+  });
+
+  it("regression: preserves primingStripped when mp3 decode fails so the migrated flag survives", async () => {
+    allowConsole(/audio decode failed/);
+    allowConsole(/scrub-preview decode failed/);
+    allowConsole(/Audio error/);
+    await render(<AudioEngine />);
+    useProjectStore.setState({ primingStripped: true });
+    const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.mp3", { type: "audio/mpeg" });
+    useAudioStore.setState({ source: { type: "file", file: garbage } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+    expect(useProjectStore.getState().primingStripped).toBe(true);
   });
 });

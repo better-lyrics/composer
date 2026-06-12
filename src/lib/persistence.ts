@@ -25,6 +25,7 @@ interface SavedProject {
   dismissedSuggestions?: string[];
   dismissedExplicitSuggestions?: string[];
   currentStem?: Stem;
+  primingStripped?: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -45,6 +46,7 @@ async function saveCurrentProject(
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
   currentStem: Stem,
+  primingStripped: boolean,
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -61,12 +63,17 @@ async function saveCurrentProject(
     dismissedSuggestions,
     dismissedExplicitSuggestions,
     currentStem,
+    primingStripped,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }
 
 async function loadCurrentProject(): Promise<SavedProject | undefined> {
   return getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
+}
+
+async function replaceCurrentProject(project: SavedProject): Promise<void> {
+  await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }
 
 async function clearCurrentProject(): Promise<void> {
@@ -157,6 +164,7 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
 export {
   saveCurrentProject,
   loadCurrentProject,
+  replaceCurrentProject,
   clearCurrentProject,
   exportProjectToFile,
   importProjectFromFile,
@@ -164,4 +172,4 @@ export {
   loadAudioFile,
   clearAudioFile,
 };
-export type { SavedAudioSource };
+export type { SavedAudioSource, SavedProject };
