@@ -60,10 +60,14 @@ const TimelineWaveform: React.FC = () => {
 
   return (
     <div
-      data-waveform-host
       className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg transition-opacity duration-150 ease-in"
       style={{ opacity: ws ? 1 : 0 }}
     >
+      <div
+        data-waveform-redraw-bg
+        className="absolute top-0 left-0 bg-composer-bg pointer-events-none"
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
+      />
       {audioElement && (
         <WavesurferPlayer
           key={waveformKey}

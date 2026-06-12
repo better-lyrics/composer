@@ -83,10 +83,6 @@ body {
   overflow-anchor: none;
 }
 
-[data-waveform-host] div::part(scroll) {
-  background-color: var(--color-composer-bg);
-}
-
 /* Timeline panning mode */
 @layer components {
   .is-panning,

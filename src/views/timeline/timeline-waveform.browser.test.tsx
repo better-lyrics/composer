@@ -97,19 +97,73 @@ describe("TimelineWaveform", () => {
 });
 
 describe("TimelineWaveform redraw background", () => {
-  function getHost(): HTMLElement | null {
-    return document.querySelector<HTMLElement>("[data-waveform-host]");
+  function getBackground(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("[data-waveform-redraw-bg]");
   }
 
-  it("tags the waveform host with data-waveform-host so the index.css ::part(scroll) rule can target it", async () => {
+  it("renders a standalone background element behind the WaveSurfer canvases so reRender cannot remove it", async () => {
     setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
     await render(<TimelineWaveform />);
-    expect(getHost()).not.toBeNull();
+    const bg = getBackground();
+    expect(bg).not.toBeNull();
+    expect(bg?.style.width).toBe("1500px");
+    expect(bg?.style.height).toBe("80px");
   });
 
-  it("does not render the waveform host when there is no audio source", async () => {
+  it("background uses bg-composer-bg so it matches the page and the area never visually 'pops'", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getBackground()?.className).toContain("bg-composer-bg");
+  });
+
+  it("background is non-interactive so it never intercepts seek clicks", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getBackground()?.className).toContain("pointer-events-none");
+  });
+
+  it("background is absolutely positioned at the top-left so it sits under the canvases", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    const bg = getBackground();
+    expect(bg?.className).toContain("absolute");
+    expect(bg?.className).toContain("top-0");
+    expect(bg?.className).toContain("left-0");
+  });
+
+  it("background width tracks zoom changes so it always covers the redraw area", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
+    await render(<TimelineWaveform />);
+    expect(getBackground()?.style.width).toBe("1500px");
+
+    useTimelineStore.setState({ zoom: 80 });
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(getBackground()?.style.width).toBe("2400px");
+  });
+
+  it("renders the background before the WaveSurfer host in DOM order so canvases paint on top", async () => {
+    setupWaveformAudio(30);
+    const screen = await render(<TimelineWaveform />);
+    const host = screen.container.querySelector<HTMLElement>(".sticky");
+    if (!host) throw new Error("waveform host not found");
+    const children = Array.from(host.children) as HTMLElement[];
+    const bgIdx = children.findIndex((c) => c.hasAttribute("data-waveform-redraw-bg"));
+    const clickLayerIdx = children.findIndex((c) => c.classList.contains("cursor-pointer"));
+    expect(bgIdx).toBeGreaterThanOrEqual(0);
+    expect(bgIdx).toBeLessThan(clickLayerIdx);
+  });
+
+  it("background width is 0 when duration is unset so it never extends past the audio range", async () => {
+    setupWaveformAudio(0);
+    await render(<TimelineWaveform />);
+    expect(getBackground()?.style.width).toBe("0px");
+  });
+
+  it("does not render the background when there is no audio source (component is null)", async () => {
     useAudioStore.setState({ source: null });
     await render(<TimelineWaveform />);
-    expect(getHost()).toBeNull();
+    expect(getBackground()).toBeNull();
   });
 });
