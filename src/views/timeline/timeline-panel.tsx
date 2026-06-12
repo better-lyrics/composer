@@ -5,6 +5,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
+import { boundsOverlap } from "@/domain/word/overlap";
 import { selfKey } from "@/views/timeline/snap";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
@@ -112,7 +113,7 @@ function makeDragOverlapCheck(
     const newEnd = data.end + shift;
     return !wordsArr.some((w, i) => {
       if (i === data.wordIndex) return false;
-      return newBegin < w.end && newEnd > w.begin;
+      return boundsOverlap({ begin: newBegin, end: newEnd }, w);
     });
   };
 }
