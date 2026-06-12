@@ -26,7 +26,6 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   "views/timeline/utils.ts",
   "views/timeline/word-track.tsx",
   "views/timeline/paste-preview.tsx",
-  "views/timeline/use-timeline-dnd.ts",
   // timeline-context-menu.tsx is intentionally exempt: it is a pure
   // declarative menu JSX tree. Carving it into per-target sub-components is
   // negative value (it would force four new .browser.test.tsx files for a

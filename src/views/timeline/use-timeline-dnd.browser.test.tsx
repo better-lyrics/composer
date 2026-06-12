@@ -4,8 +4,37 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+import { toast } from "sonner";
+
+// Row 0 main track sits at y ~100 with default row height 44 and waveform 81.
+// Picking 100 lands inside the main half; 130 lands inside the bg drop zone.
+const POINTER_Y_MAIN = 100;
+const POINTER_Y_BG = 130;
+
+function installScrollHost(): HTMLDivElement {
+  const host = document.createElement("div");
+  host.setAttribute("data-scroll-container", "");
+  Object.defineProperty(host, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      top: 0,
+      left: 0,
+      right: 1000,
+      bottom: 1000,
+      width: 1000,
+      height: 1000,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }),
+  });
+  Object.defineProperty(host, "scrollLeft", { configurable: true, value: 0, writable: true });
+  Object.defineProperty(host, "scrollTop", { configurable: true, value: 0, writable: true });
+  document.body.appendChild(host);
+  return host;
+}
 
 function makeDragStartEvent(shiftKey: boolean): DragStartEvent {
   return {
@@ -28,7 +57,23 @@ function makeDragStartEvent(shiftKey: boolean): DragStartEvent {
   } as unknown as DragStartEvent;
 }
 
-function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolean, deltaX = 5): DragEndEvent {
+interface DragEndOptions {
+  overId: string;
+  deltaY: number;
+  activatorShift: boolean;
+  deltaX?: number;
+  pointerY?: number;
+  pointerX?: number;
+}
+
+function makeDragEndEvent({
+  overId,
+  deltaY,
+  activatorShift,
+  deltaX = 5,
+  pointerY = POINTER_Y_MAIN,
+  pointerX = 200,
+}: DragEndOptions): DragEndEvent {
   return {
     active: {
       id: "w",
@@ -52,14 +97,17 @@ function makeDragEndEvent(overId: string, deltaY: number, activatorShift: boolea
       disabled: false,
     },
     delta: { x: deltaX, y: deltaY },
-    activatorEvent: new PointerEvent("pointerdown", { shiftKey: activatorShift }),
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: activatorShift, clientX: pointerX, clientY: pointerY }),
     collisions: null,
   } as unknown as DragEndEvent;
 }
 
 describe("useTimelineDnd · live shift state", () => {
+  let scrollHost: HTMLDivElement;
+
   beforeEach(() => {
     useAudioStore.setState({ duration: 30 });
+    useTimelineStore.setState({ rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
         {
@@ -74,6 +122,11 @@ describe("useTimelineDnd · live shift state", () => {
         },
       ],
     });
+    scrollHost = installScrollHost();
+  });
+
+  afterEach(() => {
+    scrollHost.remove();
   });
 
   it("moves the whole group across tracks when shift is pressed mid-drag, even though pointerdown had no shift", async () => {
@@ -82,7 +135,9 @@ describe("useTimelineDnd · live shift state", () => {
 
     result.current.handleDragStart(makeDragStartEvent(false));
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Shift", shiftKey: true, bubbles: true }));
-    result.current.handleDragEnd(makeDragEndEvent("bg-drop-l1", 50, false));
+    result.current.handleDragEnd(
+      makeDragEndEvent({ overId: "bg-drop-l1", deltaY: 0, activatorShift: false, pointerY: POINTER_Y_BG }),
+    );
 
     const after = useProjectStore.getState().lines[0];
     expect(after.words?.length ?? 0).toBe(0);
@@ -103,7 +158,15 @@ describe("useTimelineDnd · live shift state", () => {
     result.current.handleDragStart(makeDragStartEvent(true));
 
     const deltaX = 60;
-    result.current.handleDragEnd(makeDragEndEvent("main-drop-l1", 0, true, deltaX));
+    result.current.handleDragEnd(
+      makeDragEndEvent({
+        overId: "main-drop-l1",
+        deltaY: 0,
+        activatorShift: true,
+        deltaX,
+        pointerY: POINTER_Y_MAIN,
+      }),
+    );
 
     const after = useProjectStore.getState().lines[0];
     const words = after.words ?? [];
@@ -130,7 +193,9 @@ describe("useTimelineDnd · live shift state", () => {
 
     result.current.handleDragStart(makeDragStartEvent(true));
     document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", shiftKey: false, bubbles: true }));
-    result.current.handleDragEnd(makeDragEndEvent("bg-drop-l1", 50, true));
+    result.current.handleDragEnd(
+      makeDragEndEvent({ overId: "bg-drop-l1", deltaY: 0, activatorShift: true, pointerY: POINTER_Y_BG }),
+    );
 
     const after = useProjectStore.getState().lines[0];
     expect(after.words?.length ?? 0).toBe(0);
@@ -238,15 +303,17 @@ function makeReorderDragEndEvent(): DragEndEvent {
       disabled: false,
     },
     delta: { x: -150, y: 0 },
-    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false }),
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false, clientX: 400, clientY: POINTER_Y_MAIN }),
     collisions: null,
   } as unknown as DragEndEvent;
 }
 
 describe("useTimelineDnd · within-track reorder seam", () => {
+  let scrollHost: HTMLDivElement;
+
   beforeEach(() => {
     useAudioStore.setState({ duration: 30 });
-    useTimelineStore.setState({ zoom: 100 });
+    useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
         {
@@ -261,6 +328,11 @@ describe("useTimelineDnd · within-track reorder seam", () => {
         },
       ],
     });
+    scrollHost = installScrollHost();
+  });
+
+  afterEach(() => {
+    scrollHost.remove();
   });
 
   it("keeps the dragged last word separate when it crosses a neighbor", async () => {
@@ -309,15 +381,17 @@ function makeBgReorderDragEndEvent(deltaX: number): DragEndEvent {
       disabled: false,
     },
     delta: { x: deltaX, y: 0 },
-    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false }),
+    activatorEvent: new PointerEvent("pointerdown", { shiftKey: false, clientX: 300, clientY: 140 }),
     collisions: null,
   } as unknown as DragEndEvent;
 }
 
 describe("useTimelineDnd · background-word drag provenance", () => {
+  let scrollHost: HTMLDivElement;
+
   beforeEach(() => {
     useAudioStore.setState({ duration: 30 });
-    useTimelineStore.setState({ zoom: 100 });
+    useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
         {
@@ -334,6 +408,11 @@ describe("useTimelineDnd · background-word drag provenance", () => {
         },
       ],
     });
+    scrollHost = installScrollHost();
+  });
+
+  afterEach(() => {
+    scrollHost.remove();
   });
 
   it("flips an extraction-sourced background to manual after a bg word is dragged", async () => {
@@ -356,5 +435,462 @@ describe("useTimelineDnd · background-word drag provenance", () => {
     const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
     expect(bg).toHaveLength(2);
     expect(bg.map((w) => w.text.trim()).toSorted()).toEqual(["aah", "ooh"]);
+  });
+});
+
+// -- Cross-line and reliable track switch -------------------------------------
+
+interface CursorTargetingOptions {
+  lineId: string;
+  lineIndex: number;
+  wordIndex: number;
+  trackType: "word" | "bg";
+  text: string;
+  begin: number;
+  end: number;
+  pointerX: number;
+  pointerY: number;
+  deltaX: number;
+  deltaY: number;
+}
+
+function makeCursorTargetingEvent({
+  lineId,
+  lineIndex,
+  wordIndex,
+  trackType,
+  text,
+  begin,
+  end,
+  pointerX,
+  pointerY,
+  deltaX,
+  deltaY,
+}: CursorTargetingOptions): DragEndEvent {
+  return {
+    active: {
+      id: "w",
+      data: {
+        current: { lineId, lineIndex, wordIndex, trackType, text, begin, end },
+      },
+      rect: { current: { initial: null, translated: null } },
+    },
+    over: {
+      id: `main-drop-${lineId}`,
+      data: { current: { lineId } },
+      rect: { width: 0, height: 0, top: 0, left: 0, right: 0, bottom: 0 },
+      disabled: false,
+    },
+    delta: { x: deltaX, y: deltaY },
+    activatorEvent: new PointerEvent("pointerdown", { clientX: pointerX, clientY: pointerY }),
+    collisions: null,
+  } as unknown as DragEndEvent;
+}
+
+describe("useTimelineDnd · cross-line and reliable track switch", () => {
+  let scrollHost: HTMLDivElement;
+
+  beforeEach(() => {
+    useAudioStore.setState({ duration: 30 });
+    useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
+    scrollHost = installScrollHost();
+  });
+
+  afterEach(() => {
+    scrollHost.remove();
+  });
+
+  it("drops a main word into the same line's empty bg zone reliably even when cursor x stays put", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "hello world",
+          agentId: "v1",
+          words: [
+            { text: "hello ", begin: 0.1, end: 0.5 },
+            { text: "world", begin: 0.5, end: 0.9 },
+          ],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "l1",
+        lineIndex: 0,
+        wordIndex: 1,
+        trackType: "word",
+        text: "world",
+        begin: 0.5,
+        end: 0.9,
+        pointerX: 100,
+        pointerY: 100,
+        deltaX: 0,
+        deltaY: 30,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.length).toBe(1);
+    expect(after.backgroundWords?.length).toBe(1);
+    expect(after.backgroundWords?.[0].text.trim()).toBe("world");
+  });
+
+  it("drops a bg word back into the same line's main zone reliably", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "hello",
+          agentId: "v1",
+          words: [{ text: "hello", begin: 0.1, end: 0.4 }],
+          backgroundText: "ooh aah",
+          backgroundWords: [
+            { text: "ooh ", begin: 1.0, end: 1.4 },
+            { text: "aah", begin: 1.5, end: 1.9 },
+          ],
+          backgroundTextSource: "manual",
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "l1",
+        lineIndex: 0,
+        wordIndex: 1,
+        trackType: "bg",
+        text: "aah",
+        begin: 1.5,
+        end: 1.9,
+        pointerX: 200,
+        pointerY: 150,
+        deltaX: 0,
+        deltaY: -50,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.length).toBe(2);
+    expect(after.backgroundWords?.length).toBe(1);
+    expect(after.words?.some((w) => w.text.trim() === "aah")).toBe(true);
+  });
+
+  it("drops a main word from line A into line B's main track", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "lA",
+          text: "alpha beta",
+          agentId: "v1",
+          words: [
+            { text: "alpha ", begin: 0.1, end: 0.4 },
+            { text: "beta", begin: 0.4, end: 0.7 },
+          ],
+        },
+        {
+          id: "lB",
+          text: "delta",
+          agentId: "v1",
+          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "lA",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "alpha",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 200,
+        pointerY: 100,
+        deltaX: 600,
+        deltaY: 60,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines;
+    const a = after.find((l) => l.id === "lA");
+    const b = after.find((l) => l.id === "lB");
+    expect(a?.words?.length).toBe(1);
+    expect(b?.words?.some((w) => w.text.trim() === "alpha")).toBe(true);
+  });
+
+  it("drops a main word from line A into line B's bg track", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "lA",
+          text: "alpha beta",
+          agentId: "v1",
+          words: [
+            { text: "alpha ", begin: 0.1, end: 0.4 },
+            { text: "beta", begin: 0.4, end: 0.7 },
+          ],
+        },
+        {
+          id: "lB",
+          text: "delta",
+          agentId: "v1",
+          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "lA",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "alpha",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 200,
+        pointerY: 100,
+        deltaX: 1000,
+        deltaY: 110,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines;
+    const a = after.find((l) => l.id === "lA");
+    const b = after.find((l) => l.id === "lB");
+    expect(a?.words?.length).toBe(1);
+    expect(b?.backgroundWords?.some((w) => w.text.trim() === "alpha")).toBe(true);
+  });
+
+  it("rejects with a toast on cross-instance attempts and leaves both lines untouched", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "lA",
+          text: "alpha beta",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          words: [
+            { text: "alpha ", begin: 0.1, end: 0.4 },
+            { text: "beta", begin: 0.4, end: 0.7 },
+          ],
+        },
+        {
+          id: "lB",
+          text: "delta",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          words: [{ text: "delta", begin: 5.0, end: 5.4 }],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const before = lines.map((l) => l.words?.map((w) => w.text).join("|"));
+    const baseline = toast.getHistory().length;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "lA",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "alpha",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 200,
+        pointerY: 240,
+        deltaX: 600,
+        deltaY: 0,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines.map((l) => l.words?.map((w) => w.text).join("|"));
+    expect(after).toEqual(before);
+    const fired = toast.getHistory().slice(baseline);
+    expect(fired.some((t) => "title" in t && /Detach the line first/.test(String(t.title)))).toBe(true);
+  });
+
+  it("rejects with a toast when target line is line-synced and leaves data untouched", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "lA",
+          text: "alpha beta",
+          agentId: "v1",
+          words: [
+            { text: "alpha ", begin: 0.1, end: 0.4 },
+            { text: "beta", begin: 0.4, end: 0.7 },
+          ],
+        },
+        {
+          id: "lB",
+          text: "delta",
+          agentId: "v1",
+          begin: 5.0,
+          end: 5.4,
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const baseline = toast.getHistory().length;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "lA",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "alpha",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 200,
+        pointerY: 100,
+        deltaX: 600,
+        deltaY: 60,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines;
+    expect(after.find((l) => l.id === "lA")?.words?.length).toBe(2);
+    expect(after.find((l) => l.id === "lB")?.words).toBeUndefined();
+    const fired = toast.getHistory().slice(baseline);
+    expect(fired.some((t) => "title" in t && /Sync this line into words first/.test(String(t.title)))).toBe(true);
+  });
+
+  it("silently rejects an overlap and leaves both lines untouched", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "lA",
+          text: "alpha beta",
+          agentId: "v1",
+          words: [
+            { text: "alpha ", begin: 0.1, end: 0.4 },
+            { text: "beta", begin: 0.4, end: 0.7 },
+          ],
+        },
+        {
+          id: "lB",
+          text: "delta",
+          agentId: "v1",
+          words: [{ text: "delta", begin: 6.0, end: 6.6 }],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const before = JSON.stringify(lines);
+    const baseline = toast.getHistory().length;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "lA",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "alpha",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 200,
+        pointerY: 160,
+        deltaX: 595,
+        deltaY: 0,
+      }),
+    );
+
+    const after = JSON.stringify(useProjectStore.getState().lines);
+    expect(after).toEqual(before);
+    expect(toast.getHistory().length).toBe(baseline);
+  });
+
+  it("no-ops when cursor falls outside any row on drop", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "hello world",
+          agentId: "v1",
+          words: [
+            { text: "hello ", begin: 0.1, end: 0.5 },
+            { text: "world", begin: 0.5, end: 0.9 },
+          ],
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const before = JSON.stringify(lines);
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "l1",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "hello",
+        begin: 0.1,
+        end: 0.5,
+        pointerX: 200,
+        pointerY: 100,
+        deltaX: 0,
+        deltaY: 900,
+      }),
+    );
+
+    const after = JSON.stringify(useProjectStore.getState().lines);
+    expect(after).toEqual(before);
+  });
+
+  it("switches track when the cursor lands in the bg zone even with only a few pixels of delta.y", async () => {
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "l1",
+          text: "hello",
+          agentId: "v1",
+          words: [{ text: "hello", begin: 0.1, end: 0.4 }],
+          backgroundText: "ooh",
+          backgroundWords: [{ text: "ooh", begin: 1.0, end: 1.4 }],
+          backgroundTextSource: "manual",
+        },
+      ],
+    });
+    const lines = useProjectStore.getState().lines;
+    const { result } = await renderHook(() => useTimelineDnd(lines));
+
+    result.current.handleDragEnd(
+      makeCursorTargetingEvent({
+        lineId: "l1",
+        lineIndex: 0,
+        wordIndex: 0,
+        trackType: "word",
+        text: "hello",
+        begin: 0.1,
+        end: 0.4,
+        pointerX: 100,
+        pointerY: 120,
+        deltaX: 0,
+        deltaY: 5,
+      }),
+    );
+
+    const after = useProjectStore.getState().lines[0];
+    expect(after.words?.length ?? 0).toBe(0);
+    expect(after.backgroundWords?.length).toBe(2);
   });
 });
