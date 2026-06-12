@@ -446,7 +446,7 @@ const TimelinePanel: React.FC = () => {
                 role="application"
                 aria-label="Timeline"
                 data-scroll-container
-                className="flex-1 overflow-auto overscroll-none static! z-[unset]"
+                className="flex-1 overflow-auto overscroll-none static! z-[unset] overflow-anchor-none"
                 onScroll={handleScroll}
                 onMouseDown={handleMouseDown}
                 onAuxClick={(e) => e.preventDefault()}

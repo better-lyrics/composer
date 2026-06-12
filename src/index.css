@@ -79,6 +79,10 @@ body {
   }
 }
 
+@utility overflow-anchor-none {
+  overflow-anchor: none;
+}
+
 /* Timeline panning mode */
 @layer components {
   .is-panning,
