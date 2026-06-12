@@ -1,4 +1,4 @@
-type Stem = "original" | "vocals" | "instrumental";
+import type { Stem } from "@/domain/audio/stem";
 
 type SeparationStatus = "idle" | "downloading" | "processing" | "ready" | "error" | "cancelled";
 

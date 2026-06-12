@@ -1,25 +1,16 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import type { GranularityMode } from "@/domain/project/granularity";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { WordTiming } from "@/domain/word/timing";
 import type { AudioBlobStore } from "@/lib/audio-blob-store";
 
 // -- Store-local Types --------------------------------------------------------
 
-type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
-
-interface SyllableSplitDefaults {
-  applyToAll: boolean;
-  caseInsensitive: boolean;
-}
-
-const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
-  applyToAll: false,
-  caseInsensitive: false,
-};
 
 interface HistoryEntry {
   lines: LyricLine[];

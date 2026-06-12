@@ -1,11 +1,11 @@
-import type { Stem } from "@/audio/separation/types";
+import type { Stem } from "@/domain/audio/stem";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SavedAudioSource } from "@/lib/persistence";
-import type { GranularityMode } from "@/stores/project";
-import type { SyllableSplitDefaults } from "@/stores/project/types";
+import type { GranularityMode } from "@/domain/project/granularity";
+import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 
 // -- Types --------------------------------------------------------------------
 
