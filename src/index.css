@@ -96,9 +96,9 @@ body {
     background-image: radial-gradient(circle at center, rgba(129, 140, 248, 0.85) 1.2px, transparent 1.7px);
     background-size: 8px 8px;
     background-position: 4px 4px;
-    mask-image: linear-gradient(90deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
+    mask-image: linear-gradient(135deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
     -webkit-mask-image: linear-gradient(
-      90deg,
+      135deg,
       transparent 0%,
       transparent 35%,
       black 50%,
