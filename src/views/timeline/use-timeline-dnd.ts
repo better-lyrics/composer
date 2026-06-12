@@ -1,5 +1,6 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { mainWordEditFields } from "@/domain/line/main-words";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
@@ -127,7 +128,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     if (wordDups.length > 0) {
       const existing = line.words ?? [];
       const hasOverlap = wordDups.some((dup) => existing.some((w) => boundsOverlap(dup, w)));
-      if (!hasOverlap) lineUpdates.words = mergeWordsIntoTrack(existing, wordDups);
+      if (!hasOverlap) Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(existing, wordDups)));
     }
 
     if (bgDups.length > 0) {
@@ -295,7 +296,10 @@ function useTimelineDnd(lines: LyricLine[]) {
           const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 
           if (wordIndices.size > 0 && moveLine.words) {
-            lineUpdates.words = reorderWordTrack(moveLine.words, wordIndices, timeDelta, duration);
+            Object.assign(
+              lineUpdates,
+              mainWordEditFields(reorderWordTrack(moveLine.words, wordIndices, timeDelta, duration)),
+            );
           }
           if (bgIndices.size > 0 && moveLine.backgroundWords) {
             const reordered = reorderWordTrack(moveLine.backgroundWords, bgIndices, timeDelta, duration);
@@ -319,7 +323,7 @@ function useTimelineDnd(lines: LyricLine[]) {
 
         const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, duration);
         if (activeData.trackType === "word") {
-          updateLineWithHistory(activeData.lineId, { words: normalized }, { propagateToSiblings: false });
+          updateLineWithHistory(activeData.lineId, mainWordEditFields(normalized), { propagateToSiblings: false });
         } else {
           updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized), {
             propagateToSiblings: false,

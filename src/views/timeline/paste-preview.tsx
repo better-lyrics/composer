@@ -3,12 +3,10 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
-import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
-import type { WordTiming } from "@/domain/word/timing";
 import { cn } from "@/utils/cn";
+import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -168,45 +166,8 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       const hasOverlap = checkOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
       if (hasOverlap) return;
 
-      const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-
-      const grouped = new Map<number, typeof clipboard.entries>();
-      for (const entry of clipboard.entries) {
-        const lineIdx = targetLineIndex + entry.lineOffset;
-        if (lineIdx < 0 || lineIdx >= lines.length) return;
-        const arr = grouped.get(lineIdx) ?? [];
-        arr.push(entry);
-        grouped.set(lineIdx, arr);
-      }
-
-      for (const [lineIdx, entries] of grouped) {
-        const line = lines[lineIdx];
-        const newWords: WordTiming[] = [];
-        const newBgWords: WordTiming[] = [];
-
-        for (const entry of entries) {
-          const newBegin = Math.max(0, entry.word.begin + timeDelta);
-          const newEnd = Math.min(duration, entry.word.end + timeDelta);
-          const newWord = { ...entry.word, begin: newBegin, end: newEnd };
-
-          if (entry.trackType === "word") newWords.push(newWord);
-          else newBgWords.push(newWord);
-        }
-
-        const lineUpdates: Partial<LyricLine> = {};
-
-        if (newWords.length > 0) {
-          lineUpdates.words = mergeWordsIntoTrack(line.words ?? [], newWords);
-        }
-        if (newBgWords.length > 0) {
-          Object.assign(
-            lineUpdates,
-            manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)),
-          );
-        }
-
-        updates.push({ id: line.id, updates: lineUpdates });
-      }
+      const updates = applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, duration });
+      if (!updates) return;
 
       if (updates.length > 0) {
         useProjectStore.getState().updateLinesWithHistory(updates);

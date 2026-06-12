@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMainWordEdit } from "@/domain/line/main-words";
+import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -62,6 +62,50 @@ describe("applyMainWordEdit", () => {
       ];
       const result = applyMainWordEdit(baseLine(), words);
       expect(result.text).toBe(reconstructLineText(words, getSplitCharacter()));
+    });
+  });
+});
+
+describe("mainWordEditFields", () => {
+  describe("happy paths", () => {
+    it("returns a { words, text } pair", () => {
+      const words: WordTiming[] = [
+        { text: "hi ", begin: 0, end: 0.5 },
+        { text: "there", begin: 0.5, end: 1 },
+      ];
+      const fields = mainWordEditFields(words);
+      expect(fields.words).toEqual(words);
+      expect(typeof fields.text).toBe("string");
+    });
+
+    it("derives text via reconstructLineText", async () => {
+      const { reconstructLineText } = await import("@/domain/line/reconstruct-text");
+      const { getSplitCharacter } = await import("@/utils/split-character");
+      const words: WordTiming[] = [
+        { text: "foo ", begin: 0, end: 0.5 },
+        { text: "bar", begin: 0.5, end: 1 },
+      ];
+      expect(mainWordEditFields(words).text).toBe(reconstructLineText(words, getSplitCharacter()));
+    });
+  });
+
+  describe("invariants", () => {
+    it("produces the same text as applyMainWordEdit when spread into a line", () => {
+      const words: WordTiming[] = [
+        { text: "ping ", begin: 0, end: 0.5 },
+        { text: "pong", begin: 0.5, end: 1 },
+      ];
+      const direct = applyMainWordEdit(baseLine(), words);
+      const fields = mainWordEditFields(words);
+      expect(direct.text).toBe(fields.text);
+      expect(direct.words).toEqual(fields.words);
+    });
+
+    it("does not mutate the input words array", () => {
+      const words: WordTiming[] = [{ text: "z", begin: 0, end: 1 }];
+      const before = JSON.stringify(words);
+      mainWordEditFields(words);
+      expect(JSON.stringify(words)).toBe(before);
     });
   });
 });
