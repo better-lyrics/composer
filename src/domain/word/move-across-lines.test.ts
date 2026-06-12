@@ -734,9 +734,10 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       id: "A",
       words: [{ text: "only", begin: 0, end: 0.5 }],
     });
-    const result = applyWordMoveAcrossLines([lineA], [], DURATION);
+    const input = [lineA];
+    const result = applyWordMoveAcrossLines(input, [], DURATION);
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    expect(result.lines).toBe(result.lines);
+    expect(result.lines).toBe(input);
   });
 });
