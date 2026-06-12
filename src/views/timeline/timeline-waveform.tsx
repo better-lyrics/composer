@@ -59,33 +59,32 @@ const TimelineWaveform: React.FC = () => {
   if (!source) return null;
 
   return (
-    <div
-      className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg transition-opacity duration-150 ease-in"
-      style={{ opacity: ws ? 1 : 0 }}
-    >
+    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max">
       <div
         data-waveform-redraw-bg
-        className="absolute top-0 left-0 bg-composer-bg pointer-events-none"
+        className="absolute top-0 left-0 bg-composer-bg border-b border-composer-border shadow-lg pointer-events-none"
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
       />
       {audioElement && (
-        <WavesurferPlayer
-          key={waveformKey}
-          height={WAVEFORM_HEIGHT}
-          waveColor="#737476"
-          progressColor="#818cf8"
-          cursorColor="transparent"
-          barWidth={2}
-          barGap={1}
-          barRadius={12}
-          media={audioElement}
-          interact={false}
-          hideScrollbar={true}
-          fillParent={false}
-          minPxPerSec={useTimelineStore.getState().zoom}
-          onDestroy={onDestroy}
-          onReady={onReady}
-        />
+        <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
+          <WavesurferPlayer
+            key={waveformKey}
+            height={WAVEFORM_HEIGHT}
+            waveColor="#737476"
+            progressColor="#818cf8"
+            cursorColor="transparent"
+            barWidth={2}
+            barGap={1}
+            barRadius={12}
+            media={audioElement}
+            interact={false}
+            hideScrollbar={true}
+            fillParent={false}
+            minPxPerSec={useTimelineStore.getState().zoom}
+            onDestroy={onDestroy}
+            onReady={onReady}
+          />
+        </div>
       )}
       <div
         role="button"

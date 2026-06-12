@@ -117,6 +117,48 @@ describe("TimelineWaveform redraw background", () => {
     expect(getBackground()?.className).toContain("bg-composer-bg");
   });
 
+  it("background owns the border and shadow so they remain visible while the WaveSurfer fade-in is mid-flight", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    const bg = getBackground();
+    expect(bg?.className).toContain("border-b");
+    expect(bg?.className).toContain("border-composer-border");
+    expect(bg?.className).toContain("shadow-lg");
+  });
+
+  it("the WaveSurfer fade wrapper holds the opacity transition, NOT the outer sticky host", async () => {
+    setupWaveformAudio(30);
+    useAudioStore.setState({ audioElement: new Audio() });
+    await render(<TimelineWaveform />);
+    const fade = document.querySelector<HTMLElement>("[data-waveform-fade]");
+    expect(fade).not.toBeNull();
+    expect(fade?.className).toContain("transition-opacity");
+    expect(fade?.style.opacity).toBe("0");
+  });
+
+  it("does not render the fade wrapper when there is no audio element", async () => {
+    setupWaveformAudio(30);
+    useAudioStore.setState({ audioElement: null });
+    await render(<TimelineWaveform />);
+    expect(document.querySelector<HTMLElement>("[data-waveform-fade]")).toBeNull();
+  });
+
+  it("outer sticky host does not own the opacity transition (so the bg + chrome are never faded)", async () => {
+    setupWaveformAudio(30);
+    const screen = await render(<TimelineWaveform />);
+    const host = screen.container.querySelector<HTMLElement>(".sticky");
+    expect(host?.className).not.toContain("transition-opacity");
+    expect(host?.style.opacity).toBe("");
+  });
+
+  it("outer sticky host does not own border or shadow (they belong to the bg element now)", async () => {
+    setupWaveformAudio(30);
+    const screen = await render(<TimelineWaveform />);
+    const host = screen.container.querySelector<HTMLElement>(".sticky");
+    expect(host?.className).not.toContain("border-b");
+    expect(host?.className).not.toContain("shadow-lg");
+  });
+
   it("background is non-interactive so it never intercepts seek clicks", async () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
