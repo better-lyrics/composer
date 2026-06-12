@@ -4,7 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { wordsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "@/domain/word/overlap";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -126,13 +126,13 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
 
     if (wordDups.length > 0) {
       const existing = line.words ?? [];
-      const hasOverlap = wordDups.some((dup) => existing.some((w) => wordsOverlap(dup, w)));
+      const hasOverlap = wordDups.some((dup) => existing.some((w) => boundsOverlap(dup, w)));
       if (!hasOverlap) lineUpdates.words = mergeWordsIntoTrack(existing, wordDups);
     }
 
     if (bgDups.length > 0) {
       const existing = line.backgroundWords ?? [];
-      const hasOverlap = bgDups.some((dup) => existing.some((w) => wordsOverlap(dup, w)));
+      const hasOverlap = bgDups.some((dup) => existing.some((w) => boundsOverlap(dup, w)));
       if (!hasOverlap) Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(existing, bgDups)));
     }
 

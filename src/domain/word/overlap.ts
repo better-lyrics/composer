@@ -1,7 +1,11 @@
-import type { WordTiming } from "@/domain/word/timing";
+import type { Bounds } from "@/domain/word/bounds";
 
-function wordsOverlap(a: WordTiming, b: WordTiming): boolean {
+// -- Functions ----------------------------------------------------------------
+
+function boundsOverlap(a: Bounds, b: Bounds): boolean {
   return a.begin < b.end && a.end > b.begin;
 }
 
-export { wordsOverlap };
+// -- Exports ------------------------------------------------------------------
+
+export { boundsOverlap };

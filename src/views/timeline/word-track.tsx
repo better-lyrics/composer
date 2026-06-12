@@ -5,7 +5,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
-import { wordsOverlap } from "@/domain/word/overlap";
+import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
@@ -127,7 +127,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           return !words.some((other, i) => {
             if (i === wordIndex) return false;
             if (conjoinedRef.current.active && i === adj) return false;
-            return wordsOverlap({ text: "", begin: newBegin, end: newEnd }, other);
+            return boundsOverlap({ begin: newBegin, end: newEnd }, other);
           });
         },
       });
