@@ -13,7 +13,7 @@ import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { computeRowLayout, type RowLayout } from "@/views/timeline/utils";
+import { computeRowLayout, getLineIndexAtY, type RowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -268,15 +268,6 @@ function countInstances(lines: LyricLine[], groupId: string): number {
     if (line.groupId === groupId && line.instanceIdx !== undefined) seen.add(line.instanceIdx);
   }
   return seen.size;
-}
-
-function getLineIndexAtY(y: number, lines: LyricLine[], layout: RowLayout): number {
-  for (let i = 0; i < lines.length; i++) {
-    const pos = layout.lineTops.get(lines[i].id);
-    if (!pos) continue;
-    if (y >= pos.top && y < pos.top + pos.height) return i;
-  }
-  return -1;
 }
 
 function checkOverlaps(
