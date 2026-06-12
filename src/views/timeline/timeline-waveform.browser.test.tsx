@@ -96,61 +96,72 @@ describe("TimelineWaveform", () => {
   });
 });
 
-// -- Zoom skeleton tests ------------------------------------------------------
+describe("TimelineWaveform redraw placeholder", () => {
+  function getPlaceholder(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("[data-waveform-placeholder]");
+  }
 
-function getSkeleton(): HTMLElement | null {
-  return document.querySelector<HTMLElement>("[data-waveform-zoom-skeleton]");
-}
-
-describe("TimelineWaveform zoom skeleton", () => {
-  describe("happy paths", () => {
-    it("does not render the skeleton on initial mount", async () => {
-      setupWaveformAudio(30);
-      await render(<TimelineWaveform />);
-      expect(getSkeleton()).toBeNull();
-    });
+  it("renders a placeholder behind the WaveSurfer canvases so the area never goes empty", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
+    await render(<TimelineWaveform />);
+    const placeholder = getPlaceholder();
+    expect(placeholder).not.toBeNull();
+    expect(placeholder?.style.width).toBe("1500px");
+    expect(placeholder?.style.height).toBe("80px");
   });
 
-  describe("edge cases", () => {
-    it("does not render the skeleton when there is no audio source (component returns null)", async () => {
-      useAudioStore.setState({ source: null });
-      await render(<TimelineWaveform />);
-      expect(getSkeleton()).toBeNull();
-    });
-
-    it("does not render the skeleton on a zoom change while ws is still null", async () => {
-      setupWaveformAudio(30);
-      useTimelineStore.setState({ zoom: 50 });
-      await render(<TimelineWaveform />);
-
-      useTimelineStore.setState({ zoom: 80 });
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      expect(getSkeleton()).toBeNull();
-    });
+  it("does not render the placeholder when there is no audio source (component is null)", async () => {
+    useAudioStore.setState({ source: null });
+    await render(<TimelineWaveform />);
+    expect(getPlaceholder()).toBeNull();
   });
 
-  describe("invariants", () => {
-    it("re-mounting with audio source does not flash the skeleton across the first five frames", async () => {
-      setupWaveformAudio(30);
-      useTimelineStore.setState({ zoom: 50 });
-      await render(<TimelineWaveform />);
-
-      for (let i = 0; i < 5; i++) {
-        await new Promise((r) => requestAnimationFrame(r));
-        expect(getSkeleton()).toBeNull();
-      }
-    });
+  it("placeholder is non-interactive so it never intercepts seek clicks", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    const placeholder = getPlaceholder();
+    expect(placeholder?.className).toContain("pointer-events-none");
   });
 
-  describe("regressions", () => {
-    it("setting zoom to the same value while ws is null does not throw", async () => {
-      setupWaveformAudio(30);
-      useTimelineStore.setState({ zoom: 50 });
-      await render(<TimelineWaveform />);
+  it("placeholder is absolutely positioned at the top-left of the waveform host", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    const placeholder = getPlaceholder();
+    expect(placeholder?.className).toContain("absolute");
+    expect(placeholder?.className).toContain("top-0");
+    expect(placeholder?.className).toContain("left-0");
+  });
 
-      expect(() => useTimelineStore.setState({ zoom: 50 })).not.toThrow();
-      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
-      expect(getSkeleton()).toBeNull();
-    });
+  it("placeholder width tracks zoom changes so it always covers the redraw area", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
+    const screen = await render(<TimelineWaveform />);
+    expect(getPlaceholder()?.style.width).toBe("1500px");
+
+    useTimelineStore.setState({ zoom: 80 });
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(getPlaceholder()?.style.width).toBe("2400px");
+
+    screen.unmount();
+  });
+
+  it("renders the placeholder before the WaveSurfer canvas wrapper in DOM order so canvases paint on top", async () => {
+    setupWaveformAudio(30);
+    const screen = await render(<TimelineWaveform />);
+    const host = screen.container.querySelector<HTMLElement>(".sticky");
+    if (!host) throw new Error("waveform host not found");
+    const children = Array.from(host.children) as HTMLElement[];
+    const placeholderIdx = children.findIndex((c) => c.hasAttribute("data-waveform-placeholder"));
+    const clickLayerIdx = children.findIndex((c) => c.classList.contains("cursor-pointer"));
+    expect(placeholderIdx).toBeGreaterThanOrEqual(0);
+    expect(placeholderIdx).toBeLessThan(clickLayerIdx);
+  });
+
+  it("placeholder has width 0 when duration is unset so it never shows past the audio range", async () => {
+    setupWaveformAudio(0);
+    await render(<TimelineWaveform />);
+    const placeholder = getPlaceholder();
+    expect(placeholder?.style.width).toBe("0px");
   });
 });

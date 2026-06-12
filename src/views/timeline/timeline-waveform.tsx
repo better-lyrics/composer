@@ -1,12 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
-
-// -- Constants ----------------------------------------------------------------
-
-const SKELETON_FALLBACK_MS = 300;
 
 // -- Component -----------------------------------------------------------------
 
@@ -19,8 +15,6 @@ const TimelineWaveform: React.FC = () => {
   const zoom = useTimelineStore((s) => s.zoom);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
-  const [isZooming, setIsZooming] = useState(false);
-  const previousZoomRef = useRef(zoom);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
@@ -36,28 +30,7 @@ const TimelineWaveform: React.FC = () => {
 
   useEffect(() => {
     if (!ws) return;
-    const previousZoom = previousZoomRef.current;
-    previousZoomRef.current = zoom;
-    if (previousZoom === zoom) {
-      ws.zoom(zoom);
-      return;
-    }
-    setIsZooming(true);
     ws.zoom(zoom);
-
-    let unsubscribe: (() => void) | null = null;
-    const finish = () => {
-      setIsZooming(false);
-      unsubscribe?.();
-      unsubscribe = null;
-      window.clearTimeout(timer);
-    };
-    unsubscribe = ws.once("redrawcomplete", finish);
-    const timer = window.setTimeout(finish, SKELETON_FALLBACK_MS);
-    return () => {
-      unsubscribe?.();
-      window.clearTimeout(timer);
-    };
   }, [ws, zoom]);
 
   // Handle click to seek
@@ -90,6 +63,11 @@ const TimelineWaveform: React.FC = () => {
       className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg transition-opacity duration-150 ease-in"
       style={{ opacity: ws ? 1 : 0 }}
     >
+      <div
+        data-waveform-placeholder
+        className="absolute top-0 left-0 bg-composer-button pointer-events-none"
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
+      />
       {audioElement && (
         <WavesurferPlayer
           key={waveformKey}
@@ -107,13 +85,6 @@ const TimelineWaveform: React.FC = () => {
           minPxPerSec={useTimelineStore.getState().zoom}
           onDestroy={onDestroy}
           onReady={onReady}
-        />
-      )}
-      {isZooming && (
-        <div
-          data-waveform-zoom-skeleton
-          className="absolute top-0 left-0 bg-composer-button animate-pulse pointer-events-none"
-          style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
         />
       )}
       <div
