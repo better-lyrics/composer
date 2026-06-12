@@ -95,3 +95,62 @@ describe("TimelineWaveform", () => {
     expect(seeked).toBeCloseTo(20, 3);
   });
 });
+
+// -- Zoom skeleton tests ------------------------------------------------------
+
+function getSkeleton(): HTMLElement | null {
+  return document.querySelector<HTMLElement>("[data-waveform-zoom-skeleton]");
+}
+
+describe("TimelineWaveform zoom skeleton", () => {
+  describe("happy paths", () => {
+    it("does not render the skeleton on initial mount", async () => {
+      setupWaveformAudio(30);
+      await render(<TimelineWaveform />);
+      expect(getSkeleton()).toBeNull();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("does not render the skeleton when there is no audio source (component returns null)", async () => {
+      useAudioStore.setState({ source: null });
+      await render(<TimelineWaveform />);
+      expect(getSkeleton()).toBeNull();
+    });
+
+    it("does not render the skeleton on a zoom change while ws is still null", async () => {
+      setupWaveformAudio(30);
+      useTimelineStore.setState({ zoom: 50 });
+      await render(<TimelineWaveform />);
+
+      useTimelineStore.setState({ zoom: 80 });
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      expect(getSkeleton()).toBeNull();
+    });
+  });
+
+  describe("invariants", () => {
+    it("re-mounting with audio source does not flash the skeleton across the first five frames", async () => {
+      setupWaveformAudio(30);
+      useTimelineStore.setState({ zoom: 50 });
+      await render(<TimelineWaveform />);
+
+      for (let i = 0; i < 5; i++) {
+        await new Promise((r) => requestAnimationFrame(r));
+        expect(getSkeleton()).toBeNull();
+      }
+    });
+  });
+
+  describe("regressions", () => {
+    it("setting zoom to the same value while ws is null does not throw", async () => {
+      setupWaveformAudio(30);
+      useTimelineStore.setState({ zoom: 50 });
+      await render(<TimelineWaveform />);
+
+      expect(() => useTimelineStore.setState({ zoom: 50 })).not.toThrow();
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      expect(getSkeleton()).toBeNull();
+    });
+  });
+});
