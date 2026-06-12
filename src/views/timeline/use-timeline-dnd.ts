@@ -10,7 +10,7 @@ import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { cloneWord } from "@/utils/word-timing";
-import { wouldDropCrossInstance } from "@/views/timeline/dnd-group-guard";
+import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import type { WordSelection } from "@/domain/selection/model";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";

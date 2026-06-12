@@ -3,7 +3,7 @@
  */
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { wouldDropCrossInstance } from "./dnd-group-guard";
+import { wouldDropCrossInstance } from "./cross-instance";
 
 const grouped = (id: string, gid: string, inst: number): LyricLine => ({
   id,
