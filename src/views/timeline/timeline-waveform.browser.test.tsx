@@ -96,72 +96,20 @@ describe("TimelineWaveform", () => {
   });
 });
 
-describe("TimelineWaveform redraw placeholder", () => {
-  function getPlaceholder(): HTMLElement | null {
-    return document.querySelector<HTMLElement>("[data-waveform-placeholder]");
+describe("TimelineWaveform redraw background", () => {
+  function getHost(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("[data-waveform-host]");
   }
 
-  it("renders a placeholder behind the WaveSurfer canvases so the area never goes empty", async () => {
+  it("tags the waveform host with data-waveform-host so the index.css ::part(scroll) rule can target it", async () => {
     setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50 });
     await render(<TimelineWaveform />);
-    const placeholder = getPlaceholder();
-    expect(placeholder).not.toBeNull();
-    expect(placeholder?.style.width).toBe("1500px");
-    expect(placeholder?.style.height).toBe("80px");
+    expect(getHost()).not.toBeNull();
   });
 
-  it("does not render the placeholder when there is no audio source (component is null)", async () => {
+  it("does not render the waveform host when there is no audio source", async () => {
     useAudioStore.setState({ source: null });
     await render(<TimelineWaveform />);
-    expect(getPlaceholder()).toBeNull();
-  });
-
-  it("placeholder is non-interactive so it never intercepts seek clicks", async () => {
-    setupWaveformAudio(30);
-    await render(<TimelineWaveform />);
-    const placeholder = getPlaceholder();
-    expect(placeholder?.className).toContain("pointer-events-none");
-  });
-
-  it("placeholder is absolutely positioned at the top-left of the waveform host", async () => {
-    setupWaveformAudio(30);
-    await render(<TimelineWaveform />);
-    const placeholder = getPlaceholder();
-    expect(placeholder?.className).toContain("absolute");
-    expect(placeholder?.className).toContain("top-0");
-    expect(placeholder?.className).toContain("left-0");
-  });
-
-  it("placeholder width tracks zoom changes so it always covers the redraw area", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50 });
-    const screen = await render(<TimelineWaveform />);
-    expect(getPlaceholder()?.style.width).toBe("1500px");
-
-    useTimelineStore.setState({ zoom: 80 });
-    await new Promise((r) => requestAnimationFrame(r));
-    expect(getPlaceholder()?.style.width).toBe("2400px");
-
-    screen.unmount();
-  });
-
-  it("renders the placeholder before the WaveSurfer canvas wrapper in DOM order so canvases paint on top", async () => {
-    setupWaveformAudio(30);
-    const screen = await render(<TimelineWaveform />);
-    const host = screen.container.querySelector<HTMLElement>(".sticky");
-    if (!host) throw new Error("waveform host not found");
-    const children = Array.from(host.children) as HTMLElement[];
-    const placeholderIdx = children.findIndex((c) => c.hasAttribute("data-waveform-placeholder"));
-    const clickLayerIdx = children.findIndex((c) => c.classList.contains("cursor-pointer"));
-    expect(placeholderIdx).toBeGreaterThanOrEqual(0);
-    expect(placeholderIdx).toBeLessThan(clickLayerIdx);
-  });
-
-  it("placeholder has width 0 when duration is unset so it never shows past the audio range", async () => {
-    setupWaveformAudio(0);
-    await render(<TimelineWaveform />);
-    const placeholder = getPlaceholder();
-    expect(placeholder?.style.width).toBe("0px");
+    expect(getHost()).toBeNull();
   });
 });
