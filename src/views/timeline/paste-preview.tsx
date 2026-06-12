@@ -6,6 +6,7 @@ import type { LineTemplate } from "@/domain/group/template";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
+import { wordsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import { cn } from "@/utils/cn";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
@@ -337,7 +338,7 @@ function checkOverlaps(
     if (!wordsArray) continue;
 
     for (const existing of wordsArray) {
-      if (newBegin < existing.end && newEnd > existing.begin) return true;
+      if (wordsOverlap({ text: "", begin: newBegin, end: newEnd }, existing)) return true;
     }
   }
   return false;
@@ -378,7 +379,7 @@ function computeGhosts(
       const wordsArray = isBg ? targetLine.backgroundWords : targetLine.words;
       if (wordsArray) {
         for (const existing of wordsArray) {
-          if (newBegin < existing.end && newEnd > existing.begin) {
+          if (wordsOverlap({ text: "", begin: newBegin, end: newEnd }, existing)) {
             overlaps = true;
             break;
           }
