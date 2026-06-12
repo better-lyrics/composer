@@ -49,6 +49,7 @@ interface UiState {
   editorMode: EditorMode;
   activeTab: SimpleTab;
   syllableSplitDefaults: SyllableSplitDefaults;
+  primingStripped: boolean;
 }
 
 interface DismissalsState {
@@ -86,6 +87,7 @@ interface UiActions {
   setEditorMode: (mode: EditorMode) => void;
   setActiveTab: (tab: SimpleTab) => void;
   setSyllableSplitDefaults: (defaults: SyllableSplitDefaults) => void;
+  setPrimingStripped: (value: boolean) => void;
 }
 
 interface DismissalActions {

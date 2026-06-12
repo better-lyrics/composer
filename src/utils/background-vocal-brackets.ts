@@ -33,11 +33,6 @@ function bracketWordList(words: WordTiming[]): WordTiming[] {
 
 // -- Seam-aware concatenation -------------------------------------------------
 
-// Peels the trailing ')' off the base's last word and the leading '(' off the
-// carried first word so the two arrays land inside one outer pair. Reinserts a
-// space at the seam to keep token boundaries intact. Falls back to plain
-// concatenation when either side lacks the matching bracket at the seam,
-// which is how manual base words stay untouched next to a bracketed carry.
 function joinBracketedCarriedWords(
   baseWords: WordTiming[],
   carried: WordTiming[],

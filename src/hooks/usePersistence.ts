@@ -1,13 +1,13 @@
 import {
   clearAudioFile,
   loadAudioFile,
-  loadCurrentProject,
   saveAudioFile,
   saveCurrentProject,
   type SavedAudioSource,
 } from "@/lib/persistence";
 import { cancelPendingSave, debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
+import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
@@ -58,6 +58,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     projectState.dismissedSuggestions,
     projectState.dismissedExplicitSuggestions,
     useSeparationStore.getState().currentStem,
+    projectState.primingStripped,
   ];
 }
 
@@ -81,7 +82,7 @@ function commitProjectSaveNow(): void {
 
 function usePersistence(): void {
   useEffect(() => {
-    Promise.all([loadCurrentProject(), loadAudioFile()])
+    Promise.all([loadCurrentProjectWithPrimingMigration(), loadAudioFile()])
       .then(([project, file]) => {
         if (project) {
           const issues: string[] = [];
@@ -97,6 +98,21 @@ function usePersistence(): void {
             );
           }
 
+          // Restore the saved stem selection BEFORE setting the audio source.
+          // useAutoSeparate's source subscription will then run refreshForCurrentSource
+          // which preserves currentStem when the cached stems are still available, and
+          // falls back to "original" when they aren't (LRU eviction or variant change).
+          if (project.currentStem) {
+            useSeparationStore.getState().restoreCurrentStem(project.currentStem);
+          }
+
+          const savedSource = project.audioSource;
+          if (savedSource?.kind === "youtube") {
+            useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
+          } else if (file) {
+            useAudioStore.getState().setSource({ type: "file", file });
+          }
+
           const state = useProjectStore.getState();
           state.setMetadata(project.metadata);
           state.setLines(safeLines);
@@ -106,20 +122,8 @@ function usePersistence(): void {
           state.setAgents(safeAgents);
           state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
+          state.setPrimingStripped(project.primingStripped ?? false);
           state.markClean();
-        }
-
-        // Restore the saved stem selection BEFORE setting the audio source.
-        // useAutoSeparate's source subscription will then run refreshForCurrentSource
-        // which preserves currentStem when the cached stems are still available, and
-        // falls back to "original" when they aren't (LRU eviction or variant change).
-        if (project?.currentStem) {
-          useSeparationStore.getState().restoreCurrentStem(project.currentStem);
-        }
-
-        const savedSource = project?.audioSource;
-        if (savedSource?.kind === "youtube") {
-          useAudioStore.getState().setYouTubeSource(savedSource.videoId, file);
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });
         }

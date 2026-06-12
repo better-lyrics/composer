@@ -1,4 +1,5 @@
 import { decodeAudioToWav } from "@/audio/audio-decode";
+import { parseLamePriming } from "@/audio/lame-priming";
 import { createMp3File } from "@/test/audio-fixtures";
 import { describe, expect, it } from "vitest";
 
@@ -27,5 +28,29 @@ describe("decodeAudioToWav", () => {
   it("rejects a file that is not decodable audio", async () => {
     const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.mp3", { type: "audio/mpeg" });
     await expect(decodeAudioToWav(garbage)).rejects.toBeTruthy();
+  });
+});
+
+describe("decodeAudioToWav LAME priming strip", () => {
+  it("returns a WAV blob whose sample count is reduced by the parsed LAME priming", async () => {
+    const file = createMp3File();
+    const bytes = await file.arrayBuffer();
+    const { samples, sampleRate } = parseLamePriming(bytes);
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
+
+    const blob = await decodeAudioToWav(file);
+    const wav = await blob.arrayBuffer();
+    const view = new DataView(wav);
+    const dataSize = view.getUint32(40, true);
+    const channels = view.getUint16(22, true);
+    const wavFrames = dataSize / (channels * 2);
+
+    const ctx = new AudioContext();
+    const unstripped = await ctx.decodeAudioData(bytes.slice(0));
+    await ctx.close();
+
+    const expectedStrip = Math.round((samples * unstripped.sampleRate) / sampleRate);
+    expect(wavFrames).toBe(unstripped.length - expectedStrip);
   });
 });
