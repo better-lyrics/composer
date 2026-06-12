@@ -83,6 +83,47 @@ body {
   overflow-anchor: none;
 }
 
+@utility waveform-loading-dots {
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.08) 1.2px, transparent 1.8px);
+  background-size: 12px 12px;
+  background-position: 6px 6px;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle at center, rgba(129, 140, 248, 0.85) 1.4px, transparent 2px);
+    background-size: 12px 12px;
+    background-position: 6px 6px;
+    mask-image: linear-gradient(90deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      transparent 35%,
+      black 50%,
+      transparent 65%,
+      transparent 100%
+    );
+    mask-size: 200% 100%;
+    -webkit-mask-size: 200% 100%;
+    mask-position: -100% 0;
+    -webkit-mask-position: -100% 0;
+    animation: waveform-loading-sweep 1.4s linear infinite;
+  }
+}
+
+@keyframes waveform-loading-sweep {
+  0% {
+    mask-position: -100% 0;
+    -webkit-mask-position: -100% 0;
+  }
+  100% {
+    mask-position: 100% 0;
+    -webkit-mask-position: 100% 0;
+  }
+}
+
 /* Timeline panning mode */
 @layer components {
   .is-panning,

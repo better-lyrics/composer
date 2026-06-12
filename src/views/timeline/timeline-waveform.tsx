@@ -65,6 +65,12 @@ const TimelineWaveform: React.FC = () => {
         className="absolute top-0 left-0 bg-composer-bg border-b border-composer-border shadow-lg pointer-events-none"
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
       />
+      <div
+        data-waveform-loading-dots
+        aria-hidden="true"
+        className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT, opacity: ws ? 0 : 1 }}
+      />
       {audioElement && (
         <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
           <WavesurferPlayer

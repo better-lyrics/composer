@@ -209,3 +209,108 @@ describe("TimelineWaveform redraw background", () => {
     expect(getBackground()).toBeNull();
   });
 });
+
+describe("TimelineWaveform loading dots", () => {
+  function getDots(): HTMLElement | null {
+    return document.querySelector<HTMLElement>("[data-waveform-loading-dots]");
+  }
+
+  it("renders the dots loading layer above the static bg when an audio source exists", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()).not.toBeNull();
+  });
+
+  it("does not render the dots layer without an audio source (component is null)", async () => {
+    useAudioStore.setState({ source: null });
+    await render(<TimelineWaveform />);
+    expect(getDots()).toBeNull();
+  });
+
+  it("uses the waveform-loading-dots utility so the shimmer sweep pattern paints", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.className).toContain("waveform-loading-dots");
+  });
+
+  it("matches the waveform width and height so it covers the entire redraw area", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
+    await render(<TimelineWaveform />);
+    expect(getDots()?.style.width).toBe("1500px");
+    expect(getDots()?.style.height).toBe("80px");
+  });
+
+  it("is non-interactive so it never intercepts seek clicks", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.className).toContain("pointer-events-none");
+  });
+
+  it("is fully visible (opacity 1) while WaveSurfer has not become ready", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.style.opacity).toBe("1");
+  });
+
+  it("holds an opacity transition so it crossfades with the WaveSurfer layer instead of popping", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.className).toContain("transition-opacity");
+  });
+
+  it("is absolutely positioned at top-left so it stacks directly over the static bg", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    const dots = getDots();
+    expect(dots?.className).toContain("absolute");
+    expect(dots?.className).toContain("top-0");
+    expect(dots?.className).toContain("left-0");
+  });
+
+  it("width tracks zoom changes so the loading shimmer never falls short of the redraw area", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50 });
+    await render(<TimelineWaveform />);
+    expect(getDots()?.style.width).toBe("1500px");
+
+    useTimelineStore.setState({ zoom: 80 });
+    await new Promise((r) => requestAnimationFrame(r));
+    expect(getDots()?.style.width).toBe("2400px");
+  });
+
+  it("sits BETWEEN the static bg and the WaveSurfer fade wrapper in DOM order", async () => {
+    setupWaveformAudio(30);
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(<TimelineWaveform />);
+    const host = screen.container.querySelector<HTMLElement>(".sticky");
+    if (!host) throw new Error("waveform host not found");
+    const children = Array.from(host.children) as HTMLElement[];
+    const bgIdx = children.findIndex((c) => c.hasAttribute("data-waveform-redraw-bg"));
+    const dotsIdx = children.findIndex((c) => c.hasAttribute("data-waveform-loading-dots"));
+    const fadeIdx = children.findIndex((c) => c.hasAttribute("data-waveform-fade"));
+    expect(bgIdx).toBeGreaterThanOrEqual(0);
+    expect(dotsIdx).toBeGreaterThan(bgIdx);
+    expect(fadeIdx).toBeGreaterThan(dotsIdx);
+  });
+
+  it("width is 0 when duration is unset so it never extends past the audio range", async () => {
+    setupWaveformAudio(0);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.style.width).toBe("0px");
+  });
+
+  it("renders even when there is no audioElement yet (covers the brief pre-load gap)", async () => {
+    setupWaveformAudio(30);
+    useAudioStore.setState({ audioElement: null });
+    await render(<TimelineWaveform />);
+    expect(getDots()).not.toBeNull();
+    expect(getDots()?.style.opacity).toBe("1");
+  });
+
+  it("is decorative (aria-hidden) so screen readers don't announce the loading shimmer", async () => {
+    setupWaveformAudio(30);
+    await render(<TimelineWaveform />);
+    expect(getDots()?.getAttribute("aria-hidden")).toBe("true");
+  });
+});
