@@ -137,7 +137,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           className={cn(
             "absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-xs",
             "text-[10px] font-semibold tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]",
-            SYNC_TYPE_VARIANTS[syncType].colorClasses,
+            SYNC_TYPE_VARIANTS[syncType].bgClass,
+            SYNC_TYPE_VARIANTS[syncType].textClass,
           )}
         >
           <SyncTypeIcon syncType={syncType} size={10} className="shrink-0" />
