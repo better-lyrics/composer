@@ -2,7 +2,6 @@ import { parseLamePriming } from "@/audio/lame-priming";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { loadAudioFile, loadCurrentProject, replaceCurrentProject, type SavedProject } from "@/lib/persistence";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -36,23 +35,30 @@ function shiftAllTimings(lines: LyricLine[], shiftSec: number): LyricLine[] {
   return lines.map((line) => shiftLine(line, shiftSec));
 }
 
-async function loadCurrentProjectWithPrimingMigration(): Promise<SavedProject | undefined> {
-  const project = await loadCurrentProject();
-  if (!project) return project;
-  if (project.primingStripped === true) return project;
-  const audioFile = await loadAudioFile();
-  if (!audioFile) return project;
-  const buf = await audioFile.arrayBuffer();
-  const { samples, sampleRate } = parseLamePriming(buf);
-  if (samples > 0 && sampleRate > 0) {
-    const shiftSec = samples / sampleRate;
-    project.lines = shiftAllTimings(project.lines ?? [], shiftSec);
+interface PrimingShiftResult {
+  lines: LyricLine[];
+  primingStripped: boolean;
+}
+
+function applyPrimingShiftIfNeeded(
+  lines: LyricLine[],
+  audioBytes: ArrayBuffer | undefined,
+  primingStripped: boolean | undefined,
+): PrimingShiftResult {
+  if (primingStripped === true) {
+    return { lines, primingStripped: true };
   }
-  project.primingStripped = true;
-  await replaceCurrentProject(project);
-  return project;
+  if (!audioBytes) {
+    return { lines, primingStripped: primingStripped ?? false };
+  }
+  const { samples, sampleRate } = parseLamePriming(audioBytes);
+  if (samples > 0 && sampleRate > 0) {
+    return { lines: shiftAllTimings(lines, samples / sampleRate), primingStripped: true };
+  }
+  return { lines, primingStripped: true };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { shiftAllTimings, loadCurrentProjectWithPrimingMigration };
+export { shiftAllTimings, applyPrimingShiftIfNeeded };
+export type { PrimingShiftResult };

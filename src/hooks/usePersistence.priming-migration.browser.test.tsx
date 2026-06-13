@@ -4,17 +4,19 @@ import { parseLamePriming } from "@/audio/lame-priming";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { WordTiming } from "@/domain/word/timing";
 import { usePersistence } from "@/hooks/usePersistence";
-import { getLibraryProject } from "@/lib/library-persistence";
+import { MemoryAudioBlobStore } from "@/lib/audio-blob-store";
+import { migrateSingleSlotToLibrary } from "@/lib/library-migration";
+import { getLibraryProject, listLibraryProjects } from "@/lib/library-persistence";
 import { clearCurrentProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
-import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
+import { applyPrimingShiftIfNeeded } from "@/lib/priming-migration";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createMp3File } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { seedLibraryProject } from "@/test/idb";
 
 // -- Helpers ------------------------------------------------------------------
 
-function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
+function seedSavedProject(opts: { primingStripped: boolean; audioName?: string }): Promise<void> {
   return saveCurrentProject(
     { title: "t", artist: "", album: "", duration: 0 },
     DEFAULT_AGENTS,
@@ -32,7 +34,7 @@ function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
     [],
     "word",
     { applyToAll: false, caseInsensitive: false },
-    { kind: "file", name: "silence.mp3" },
+    { kind: "file", name: opts.audioName ?? "silence.mp3" },
     [],
     [],
     "original",
@@ -40,9 +42,79 @@ function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
   );
 }
 
-// -- Tests --------------------------------------------------------------------
+// -- applyPrimingShiftIfNeeded ------------------------------------------------
 
-describe("loadCurrentProjectWithPrimingMigration", () => {
+describe("applyPrimingShiftIfNeeded", () => {
+  it("shifts timings when primingStripped is false and audio has LAME priming", async () => {
+    const mp3 = createMp3File();
+    const audioBytes = await mp3.arrayBuffer();
+    const { samples, sampleRate } = parseLamePriming(audioBytes);
+    expect(samples).toBeGreaterThan(0);
+    expect(sampleRate).toBeGreaterThan(0);
+
+    const lines = [
+      {
+        id: "L1",
+        text: "hello",
+        agentId: "v1",
+        words: [
+          { text: "hello", begin: 1.0, end: 1.5 },
+          { text: "world", begin: 1.5, end: 2.0 },
+        ],
+      },
+    ];
+    const result = applyPrimingShiftIfNeeded(lines, audioBytes, false);
+    const shiftSec = samples / sampleRate;
+    const words = (result.lines[0] as { words: WordTiming[] }).words;
+    expect(words[0].begin).toBeCloseTo(1.0 - shiftSec);
+    expect(words[1].end).toBeCloseTo(2.0 - shiftSec);
+    expect(result.primingStripped).toBe(true);
+  });
+
+  it("does not shift when primingStripped is already true", async () => {
+    const mp3 = createMp3File();
+    const audioBytes = await mp3.arrayBuffer();
+    const lines = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 1.0, end: 1.5 }] }];
+
+    const result = applyPrimingShiftIfNeeded(lines, audioBytes, true);
+    expect(result.lines).toBe(lines);
+    expect((result.lines[0] as { words: WordTiming[] }).words[0].begin).toBeCloseTo(1.0);
+    expect(result.primingStripped).toBe(true);
+  });
+
+  it("does not shift and preserves the flag when audio bytes are missing", () => {
+    const lines = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 1.0, end: 1.5 }] }];
+    const result = applyPrimingShiftIfNeeded(lines, undefined, false);
+    expect(result.lines).toBe(lines);
+    expect(result.primingStripped).toBe(false);
+  });
+
+  it("sets primingStripped to true even when MP3 has zero priming", async () => {
+    const noPriming = new File([new Uint8Array([0, 1, 2, 3])], "x.bin", { type: "audio/mpeg" });
+    const bytes = await noPriming.arrayBuffer();
+    expect(parseLamePriming(bytes).samples).toBe(0);
+
+    const lines = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 1.0, end: 1.5 }] }];
+    const result = applyPrimingShiftIfNeeded(lines, bytes, false);
+    expect((result.lines[0] as { words: WordTiming[] }).words[0].begin).toBeCloseTo(1.0);
+    expect(result.primingStripped).toBe(true);
+  });
+
+  it("does not shift non-MP3 audio that lacks a LAME tag and still flips the flag", async () => {
+    const wav = createAudioFile();
+    const bytes = await wav.arrayBuffer();
+    expect(parseLamePriming(bytes).samples).toBe(0);
+
+    const lines = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 1.0, end: 1.5 }] }];
+    const result = applyPrimingShiftIfNeeded(lines, bytes, false);
+    expect((result.lines[0] as { words: WordTiming[] }).words[0].begin).toBeCloseTo(1.0);
+    expect(result.primingStripped).toBe(true);
+  });
+});
+
+// -- migrateSingleSlotToLibrary integration ----------------------------------
+
+describe("migrateSingleSlotToLibrary applies the priming shift", () => {
   beforeEach(async () => {
     await clearCurrentProject();
   });
@@ -50,66 +122,65 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
     await clearCurrentProject();
   });
 
-  it("shifts saved line/word timings when project lacks primingStripped and audio has LAME priming", async () => {
+  it("shifts saved timings into the new library record when the old slot lacks primingStripped", async () => {
     const mp3 = createMp3File();
     const { samples, sampleRate } = parseLamePriming(await mp3.arrayBuffer());
     expect(samples).toBeGreaterThan(0);
-    expect(sampleRate).toBeGreaterThan(0);
     await saveAudioFile(mp3);
     await seedSavedProject({ primingStripped: false });
 
-    const migrated = await loadCurrentProjectWithPrimingMigration();
-    expect(migrated).toBeDefined();
+    const result = await migrateSingleSlotToLibrary({ audioBlobs: new MemoryAudioBlobStore() });
+    expect(result.migratedId).toBeDefined();
+
+    const stored = await getLibraryProject(result.migratedId as string);
+    expect(stored?.primingStripped).toBe(true);
     const shiftSec = samples / sampleRate;
-    const words = (migrated!.lines[0] as { words: WordTiming[] }).words;
+    const words = (stored?.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0 - shiftSec);
-    expect(words[0].end).toBeCloseTo(1.5 - shiftSec);
-    expect(words[1].begin).toBeCloseTo(1.5 - shiftSec);
     expect(words[1].end).toBeCloseTo(2.0 - shiftSec);
-    expect(migrated!.primingStripped).toBe(true);
   });
 
-  it("does not shift when primingStripped is already true", async () => {
+  it("does not double-shift when primingStripped is already true on the old slot", async () => {
     const mp3 = createMp3File();
     await saveAudioFile(mp3);
     await seedSavedProject({ primingStripped: true });
 
-    const loaded = await loadCurrentProjectWithPrimingMigration();
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
-    expect(words[0].begin).toBeCloseTo(1.0);
-    expect(words[1].end).toBeCloseTo(2.0);
-    expect(loaded!.primingStripped).toBe(true);
-  });
-
-  it("leaves timings unchanged and does not set the flag when audio bytes are missing", async () => {
-    await seedSavedProject({ primingStripped: false });
-
-    const loaded = await loadCurrentProjectWithPrimingMigration();
-    expect(loaded!.primingStripped).toBe(false);
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
+    const result = await migrateSingleSlotToLibrary({ audioBlobs: new MemoryAudioBlobStore() });
+    const stored = await getLibraryProject(result.migratedId as string);
+    expect(stored?.primingStripped).toBe(true);
+    const words = (stored?.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
     expect(words[1].end).toBeCloseTo(2.0);
   });
 
-  it("returns undefined when there is no saved project", async () => {
-    const loaded = await loadCurrentProjectWithPrimingMigration();
-    expect(loaded).toBeUndefined();
-  });
-
-  it("sets primingStripped to true even when audio has zero priming", async () => {
-    const noPrimingMp3 = new File([new Uint8Array([0, 1, 2, 3])], "not-mp3.bin", { type: "audio/mpeg" });
-    expect(parseLamePriming(await noPrimingMp3.arrayBuffer()).samples).toBe(0);
-    await saveAudioFile(noPrimingMp3);
+  it("does not shift when audio is missing and preserves the unset flag", async () => {
     await seedSavedProject({ primingStripped: false });
 
-    const loaded = await loadCurrentProjectWithPrimingMigration();
-    expect(loaded!.primingStripped).toBe(true);
-    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
+    const result = await migrateSingleSlotToLibrary({ audioBlobs: new MemoryAudioBlobStore() });
+    const stored = await getLibraryProject(result.migratedId as string);
+    expect(stored?.primingStripped).toBe(false);
+    const words = (stored?.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
+    expect(words[1].end).toBeCloseTo(2.0);
+  });
+
+  it("does not shift non-MP3 audio (WAV) and flips the flag", async () => {
+    const wav = createAudioFile();
+    await saveAudioFile(wav);
+    await seedSavedProject({ primingStripped: false, audioName: "silence.wav" });
+
+    const result = await migrateSingleSlotToLibrary({ audioBlobs: new MemoryAudioBlobStore() });
+    const stored = await getLibraryProject(result.migratedId as string);
+    expect(stored?.primingStripped).toBe(true);
+    const words = (stored?.lines[0] as { words: WordTiming[] }).words;
+    expect(words[0].begin).toBeCloseTo(1.0);
+    expect(words[1].end).toBeCloseTo(2.0);
   });
 });
 
-describe("usePersistence primingStripped flag survives the post-load debounced save", () => {
+// -- Boot path: debounced save preserves primingStripped ----------------------
+
+describe("usePersistence boot path preserves primingStripped through the debounced save", () => {
   const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
   const SEEDED_ID = "priming-project";
 
@@ -164,5 +235,28 @@ describe("usePersistence primingStripped flag survives the post-load debounced s
 
     const reloaded = await getLibraryProject(SEEDED_ID);
     expect(reloaded?.primingStripped).toBe(true);
+  });
+
+  it("regression: migration on boot shifts timings AND survives the post-load debounced save", async () => {
+    const mp3 = createMp3File();
+    const { samples, sampleRate } = parseLamePriming(await mp3.arrayBuffer());
+    expect(samples).toBeGreaterThan(0);
+    await saveAudioFile(mp3);
+    await seedSavedProject({ primingStripped: false });
+
+    expect(await listLibraryProjects()).toHaveLength(0);
+
+    await renderHook(() => usePersistence());
+    await waitForProjectHydration();
+    await new Promise((r) => setTimeout(r, 150));
+
+    const list = await listLibraryProjects();
+    expect(list).toHaveLength(1);
+    const stored = await getLibraryProject(list[0].id);
+    expect(stored?.primingStripped).toBe(true);
+    const shiftSec = samples / sampleRate;
+    const words = (stored?.lines[0] as { words: WordTiming[] }).words;
+    expect(words[0].begin).toBeCloseTo(1.0 - shiftSec);
+    expect(words[1].end).toBeCloseTo(2.0 - shiftSec);
   });
 });

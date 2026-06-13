@@ -2,6 +2,7 @@ import type { LibraryProject } from "@/domain/project/library-project";
 import type { AudioBlobStore } from "@/lib/audio-blob-store";
 import { listLibraryProjects, putLibraryProject } from "@/lib/library-persistence";
 import { clearCurrentProject, loadAudioFile, loadCurrentProject } from "@/lib/persistence";
+import { applyPrimingShiftIfNeeded } from "@/lib/priming-migration";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 
 // -- Types --------------------------------------------------------------------
@@ -32,18 +33,21 @@ async function migrateSingleSlotToLibrary(deps: MigrationDeps): Promise<Migratio
 
   const oldAudio = await loadAudioFile();
   let audioBytesCached = false;
+  let audioBytes: ArrayBuffer | undefined;
   if (oldAudio) {
-    const bytes = await oldAudio.arrayBuffer();
-    await deps.audioBlobs.put(id, bytes);
+    audioBytes = await oldAudio.arrayBuffer();
+    await deps.audioBlobs.put(id, audioBytes);
     audioBytesCached = true;
   }
+
+  const shifted = applyPrimingShiftIfNeeded(old.lines ?? [], audioBytes, old.primingStripped);
 
   const project: LibraryProject = {
     version: 1,
     id,
     metadata: old.metadata,
     agents: old.agents ?? [],
-    lines: old.lines ?? [],
+    lines: shifted.lines,
     groups: old.groups ?? [],
     granularity: old.granularity ?? "line",
     syllableSplitDefaults: old.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
@@ -52,7 +56,7 @@ async function migrateSingleSlotToLibrary(deps: MigrationDeps): Promise<Migratio
     dismissedSuggestions: old.dismissedSuggestions ?? [],
     dismissedExplicitSuggestions: old.dismissedExplicitSuggestions ?? [],
     currentStem: old.currentStem ?? "original",
-    primingStripped: old.primingStripped,
+    primingStripped: shifted.primingStripped,
     createdAt: old.savedAt ?? now,
     updatedAt: now,
     lastOpenedAt: now,
