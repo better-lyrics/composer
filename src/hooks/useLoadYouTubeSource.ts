@@ -1,22 +1,34 @@
 import { useCallback } from "react";
+import { audioBlobs } from "@/lib/audio-blob-store-singleton";
+import { createProjectFromAudio } from "@/lib/create-project";
+import { getLibraryProject } from "@/lib/library-persistence";
+import { openLibraryProject } from "@/lib/library-resume";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useUIStore } from "@/stores/ui";
 
 // -- Hook ---------------------------------------------------------------------
 
 function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
-  return useCallback((videoId: string) => {
-    const audio = useAudioStore.getState();
-    const prevVideoId = audio.source?.type === "youtube" ? audio.source.videoId : null;
-    audio.setYouTubeSource(videoId);
-
-    const project = useProjectStore.getState();
-    if (!project.metadata.title || prevVideoId !== videoId) {
-      project.setMetadata({ title: videoId });
+  return useCallback(async (videoId: string) => {
+    const alreadyActiveForVideo = await isVideoIdAlreadyActive(videoId);
+    if (!alreadyActiveForVideo) {
+      const id = await createProjectFromAudio({ kind: "youtube", videoId }, { audioBlobs });
+      await openLibraryProject(id, { audioBlobs });
+      useUIStore.getState().setViewingLibrary(false);
+    } else {
+      useAudioStore.getState().setYouTubeSource(videoId);
     }
 
     return waitForYouTubeLoad(videoId);
   }, []);
+}
+
+async function isVideoIdAlreadyActive(videoId: string): Promise<boolean> {
+  const activeId = useProjectStore.getState().activeProjectId;
+  if (!activeId) return false;
+  const project = await getLibraryProject(activeId);
+  return project?.audioSource?.kind === "youtube" && project.audioSource.videoId === videoId;
 }
 
 function waitForYouTubeLoad(videoId: string): Promise<void> {

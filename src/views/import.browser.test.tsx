@@ -350,7 +350,7 @@ describe("ImportPanel — drop creates a library project", () => {
     const created = projects.find((p) => p.id === activeId);
     expect(created?.metadata.title).toBe("Pink White");
     expect(created?.audioSource).toEqual({ kind: "file", name: "Pink White.mp3" });
-    expect(useUIStore.getState().viewingLibrary).toBe(false);
+    await expect.poll(() => useUIStore.getState().viewingLibrary).toBe(false);
   });
 
   it("creates a NEW library entry when a file is dropped while editing an existing project", async () => {

@@ -21,6 +21,19 @@ function simulateTunnelFailure(message: string): void {
   useAudioStore.setState({ isLoading: false });
 }
 
+async function waitForYouTubeSource(videoId: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const start = performance.now();
+    const tick = () => {
+      const src = useAudioStore.getState().source;
+      if (src?.type === "youtube" && src.videoId === videoId) return resolve();
+      if (performance.now() - start > 2000) return reject(new Error(`timed out waiting for youtube ${videoId}`));
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
 describe("YouTubeUrlInput", () => {
   it("renders the input and a disabled Load button when empty", async () => {
     const screen = await render(<YouTubeUrlInput />);
@@ -81,6 +94,7 @@ describe("YouTubeUrlInput", () => {
     const input = screen.getByPlaceholder(/YouTube URL/i);
     await input.fill(VALID_VIDEO_ID);
     await screen.getByRole("button", { name: /Load$/ }).click();
+    await waitForYouTubeSource(VALID_VIDEO_ID);
     simulateTunnelSuccess(VALID_VIDEO_ID);
     await expect.poll(() => (input.element() as HTMLInputElement).value).toBe("");
   });
@@ -90,6 +104,7 @@ describe("YouTubeUrlInput", () => {
     const input = screen.getByPlaceholder(/YouTube URL/i);
     await input.fill(VALID_VIDEO_ID);
     await screen.getByRole("button", { name: /Load$/ }).click();
+    await waitForYouTubeSource(VALID_VIDEO_ID);
     simulateTunnelFailure("Could not load that video. Try again.");
     await expect.poll(() => (input.element() as HTMLInputElement).value).toBe(VALID_VIDEO_ID);
     await expect.poll(() => (input.element() as HTMLInputElement).disabled).toBe(false);
@@ -100,6 +115,7 @@ describe("YouTubeUrlInput", () => {
     const input = screen.getByPlaceholder(/YouTube URL/i);
     await input.fill(VALID_VIDEO_ID);
     await screen.getByRole("button", { name: /Load$/ }).click();
+    await waitForYouTubeSource(VALID_VIDEO_ID);
     simulateTunnelFailure("Could not load that video. Try again.");
     await expect.poll(() => useAudioStore.getState().youtubeLoadError).toBe("Could not load that video. Try again.");
     await input.fill(`${VALID_VIDEO_ID}X`);

@@ -51,6 +51,19 @@ async function waitForBootSettled(): Promise<void> {
   await getPersistenceSettled();
 }
 
+async function waitForYouTubeSource(videoId: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const start = performance.now();
+    const tick = () => {
+      const src = useAudioStore.getState().source;
+      if (src?.type === "youtube" && src.videoId === videoId) return resolve();
+      if (performance.now() - start > 2000) return reject(new Error(`timed out waiting for youtube ${videoId}`));
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+
 function seedSavedYoutubeAudio(videoId: string): Promise<void> {
   return seedAudioFile({
     name: `${videoId}.opus`,
@@ -92,6 +105,7 @@ describe("usePersistence + useImportFromYouTube — URL overrides persistence", 
 
     await render(<BootHost />);
     await waitForBootSettled();
+    await waitForYouTubeSource(URL_VIDEO_ID);
 
     const source = audioSource();
     expect(source?.type).toBe("youtube");
@@ -106,6 +120,7 @@ describe("usePersistence + useImportFromYouTube — URL overrides persistence", 
 
     await render(<BootHost />);
     await waitForBootSettled();
+    await waitForYouTubeSource(URL_VIDEO_ID);
 
     const source = audioSource();
     expect(source?.type).toBe("youtube");
@@ -174,6 +189,7 @@ describe("usePersistence + useImportFromYouTube — cold start", () => {
 
     await render(<BootHost />);
     await waitForBootSettled();
+    await waitForYouTubeSource(URL_VIDEO_ID);
 
     const source = audioSource();
     expect(source?.type).toBe("youtube");
@@ -220,6 +236,7 @@ describe("usePersistence + useImportFromYouTube — edge cases", () => {
 
     await render(<BootHost />);
     await waitForBootSettled();
+    await waitForYouTubeSource(URL_VIDEO_ID);
 
     const source = audioSource();
     expect(source?.type).toBe("youtube");
@@ -231,6 +248,7 @@ describe("usePersistence + useImportFromYouTube — edge cases", () => {
 
     await render(<BootHost />);
     await waitForBootSettled();
+    await waitForYouTubeSource(URL_VIDEO_ID);
 
     const source = audioSource();
     expect(source?.type).toBe("youtube");
