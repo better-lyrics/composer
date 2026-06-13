@@ -4,7 +4,7 @@ import { useUIStore } from "@/stores/ui";
 // -- Setup --------------------------------------------------------------------
 
 beforeEach(() => {
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
+  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, viewingLibrary: true });
 });
 
 // -- Tests --------------------------------------------------------------------
@@ -66,6 +66,29 @@ describe("useUIStore", () => {
     });
   });
 
+  describe("setViewingLibrary", () => {
+    it("setViewingLibrary(true) sets viewingLibrary to true", () => {
+      useUIStore.setState({ viewingLibrary: false });
+      useUIStore.getState().setViewingLibrary(true);
+      expect(useUIStore.getState().viewingLibrary).toBe(true);
+    });
+
+    it("setViewingLibrary(false) sets viewingLibrary to false", () => {
+      useUIStore.setState({ viewingLibrary: true });
+      useUIStore.getState().setViewingLibrary(false);
+      expect(useUIStore.getState().viewingLibrary).toBe(false);
+    });
+
+    it("does not touch settings state when toggling library view", () => {
+      useUIStore.setState({ settingsOpen: true, settingsHighlight: "bridge-section", viewingLibrary: true });
+      useUIStore.getState().setViewingLibrary(false);
+      const state = useUIStore.getState();
+      expect(state.settingsOpen).toBe(true);
+      expect(state.settingsHighlight).toBe("bridge-section");
+      expect(state.viewingLibrary).toBe(false);
+    });
+  });
+
   describe("invariants", () => {
     it("settingsHighlight is null whenever settings is closed via closeSettings", () => {
       useUIStore.getState().openSettings("bridge-section");
@@ -76,6 +99,11 @@ describe("useUIStore", () => {
     it("does not persist across reloads (no persist middleware)", () => {
       useUIStore.getState().openSettings("bridge-section");
       expect(localStorage.getItem("composer-ui")).toBeNull();
+    });
+
+    it("defaults viewingLibrary to true on a fresh store", () => {
+      useUIStore.setState({ viewingLibrary: true });
+      expect(useUIStore.getState().viewingLibrary).toBe(true);
     });
   });
 });

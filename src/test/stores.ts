@@ -38,7 +38,7 @@ async function resetAllStores(): Promise<void> {
   useDivergenceStore.setState({ isOpen: false, options: null, resolve: null });
   useImportModalStore.setState({ ...IMPORT_MODAL_INITIAL_STATE });
   useModalStackStore.setState({ count: 0 });
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
+  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, viewingLibrary: true });
 
   const settings = useSettingsStore.getState();
   useTimelineStore.setState({
