@@ -49,6 +49,7 @@ const AppContent: React.FC = () => {
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
+  const setViewingLibrary = useUIStore((s) => s.setViewingLibrary);
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
@@ -89,6 +90,7 @@ const AppContent: React.FC = () => {
         onSettingsOpen={() => openSettings()}
         onHelpOpen={() => setHelpOpen(true)}
         onTourStart={resumeOrStartTour}
+        onLibraryOpen={() => setViewingLibrary(true)}
       />
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsModal
