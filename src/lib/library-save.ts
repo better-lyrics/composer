@@ -17,6 +17,24 @@ interface AudioFieldsPatch {
   audioSource: SavedAudioSource | undefined;
 }
 
+// -- Save Lock ----------------------------------------------------------------
+
+let saveLock: Promise<void> = Promise.resolve();
+
+async function acquireSaveLock<T>(task: () => Promise<T>): Promise<T> {
+  const previous = saveLock;
+  let release!: () => void;
+  saveLock = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await previous;
+  try {
+    return await task();
+  } finally {
+    release();
+  }
+}
+
 // -- Helpers ------------------------------------------------------------------
 
 function toSavedAudioSource(source: AudioSource): SavedAudioSource | undefined {
@@ -109,8 +127,10 @@ async function saveActiveProject(): Promise<void> {
   const id = useProjectStore.getState().activeProjectId;
   if (!id) return;
   const snapshot = snapshotLiveState(id);
-  const previous = await getLibraryProject(id);
-  await putLibraryProject(mergeSnapshot(snapshot, previous));
+  await acquireSaveLock(async () => {
+    const previous = await getLibraryProject(id);
+    await putLibraryProject(mergeSnapshot(snapshot, previous));
+  });
 }
 
 async function saveActiveProjectAudio(file: File | null, deps: SaveDeps): Promise<void> {
@@ -120,13 +140,13 @@ async function saveActiveProjectAudio(file: File | null, deps: SaveDeps): Promis
 
   if (file === null) {
     await deps.audioBlobs.delete(id);
-    await applyAudioPatch(snapshot, { audioBytesCached: false, audioSource: undefined });
+    await acquireSaveLock(() => applyAudioPatch(snapshot, { audioBytesCached: false, audioSource: undefined }));
     return;
   }
 
   const bytes = await file.arrayBuffer();
   await deps.audioBlobs.put(id, bytes);
-  await applyAudioPatch(snapshot, { audioBytesCached: true, audioSource: snapshot.audioSource });
+  await acquireSaveLock(() => applyAudioPatch(snapshot, { audioBytesCached: true, audioSource: snapshot.audioSource }));
 }
 
 async function applyAudioPatch(snapshot: LiveStateSnapshot, patch: AudioFieldsPatch): Promise<void> {

@@ -201,6 +201,30 @@ class SlowAudioBlobStore implements AudioBlobStore {
 }
 
 describe("library-save · concurrency races", () => {
+  it("regression: concurrent saveActiveProjectAudio does not get audioBytesCached clobbered to false by saveActiveProject", async () => {
+    await putLibraryProject(
+      makeProject("p1", {
+        metadata: { title: "race", artist: "", album: "", duration: 0 },
+        audioBytesCached: false,
+      }),
+    );
+
+    await useProjectStore.getState().setActiveProject("p1", { audioBlobs: new MemoryAudioBlobStore() });
+    useProjectStore.getState().setMetadata({ title: "Edited" });
+
+    const audioSavePromise = saveActiveProjectAudio(
+      new File([new Uint8Array([1, 2, 3])], "song.mp3", { type: "audio/mpeg" }),
+      { audioBlobs: new MemoryAudioBlobStore() },
+    );
+    const projectSavePromise = saveActiveProject();
+    await audioSavePromise;
+    await projectSavePromise;
+
+    const reloaded = await getLibraryProject("p1");
+    expect(reloaded?.audioBytesCached).toBe(true);
+    expect(reloaded?.metadata.title).toBe("Edited");
+  });
+
   it("regression: setActiveProject during audio save does not leak the new project's audio source into the old record", async () => {
     await putLibraryProject(makeProject("A", { metadata: { title: "A song", artist: "", album: "", duration: 0 } }));
     await putLibraryProject(makeProject("B", { metadata: { title: "B song", artist: "", album: "", duration: 0 } }));
