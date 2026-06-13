@@ -13,6 +13,7 @@ interface MigrationDeps {
 
 interface MigrationResult {
   migratedId?: string;
+  justMigrated?: boolean;
 }
 
 // -- Migration ----------------------------------------------------------------
@@ -65,7 +66,7 @@ async function migrateSingleSlotToLibrary(deps: MigrationDeps): Promise<Migratio
   await putLibraryProject(project);
   await clearCurrentProject();
 
-  return { migratedId: id };
+  return { migratedId: id, justMigrated: true };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -191,6 +191,16 @@ describe("library-migration · invariants", () => {
     expect((await listLibraryProjects()).length).toBe(1);
   });
 
+  it("flags justMigrated only on the call that actually moved data, not on subsequent resumes", async () => {
+    await seedOldSlot({ audioSource: undefined });
+    const audioBlobs = new MemoryAudioBlobStore();
+    const first = await migrateSingleSlotToLibrary({ audioBlobs });
+    expect(first.justMigrated).toBe(true);
+
+    const second = await migrateSingleSlotToLibrary({ audioBlobs });
+    expect(second.justMigrated).toBeUndefined();
+  });
+
   it("clears both the old project slot and the old audio file after migration", async () => {
     await seedOldSlot({ audioSource: { kind: "file", name: "old.mp3" } });
     await saveAudioFile(new File([new Uint8Array([42])], "old.mp3", { type: "audio/mpeg" }));

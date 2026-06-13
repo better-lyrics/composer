@@ -103,7 +103,7 @@ async function resumeMostRecentProject(deps: { audioBlobs: AudioBlobStore }): Pr
   await useProjectStore.getState().setActiveProject(resumeId, deps);
   await restoreAudioForProject(resumeId, deps);
 
-  if (result.migratedId) {
+  if (result.justMigrated) {
     toast("Your project is now in your library");
   }
 
