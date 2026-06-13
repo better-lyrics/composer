@@ -209,12 +209,7 @@ const LibraryPage: React.FC<LibraryPageProps> = ({ onOpenProject, onOpenSearch }
   return (
     <main className="flex-1 overflow-auto px-12 pt-9 pb-20">
       <header className="flex items-center justify-between gap-6 mb-7 select-none">
-        <div>
-          <h1 className="text-[26px] font-bold tracking-tight">Your library</h1>
-          <p className="text-[13px] text-composer-text-muted mt-1">
-            {projects.length} {projects.length === 1 ? "project" : "projects"}, stored locally in your browser
-          </p>
-        </div>
+        <h1 className="text-[26px] font-bold tracking-tight">Your library</h1>
         <SearchBox onClick={onOpenSearch} />
       </header>
 
