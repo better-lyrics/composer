@@ -12,8 +12,8 @@ importers:
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^0.1.6
-        version: 0.1.6
+        specifier: ^0.1.7
+        version: 0.1.7
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -329,8 +329,8 @@ packages:
   '@blazediff/core@1.9.1':
     resolution: {integrity: sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA==}
 
-  '@braccato/core@0.1.6':
-    resolution: {integrity: sha512-F9CK9wzPgXpbTg1M6Khri+pvIKurpsfLFFJmZ9WNiKHQU4SLNL4XLvAazVIut4GZWH/+LABk/u9+uDNQfmrrqQ==}
+  '@braccato/core@0.1.7':
+    resolution: {integrity: sha512-z9TXJXiIToCu8uEDDxoLjpQjs7YseQE8De+cDN/iPgYqRJwrFx+xP+2c3se6g91lLqfh3Hyku7FKJtCjGPaXGA==}
 
   '@braccato/parsers@0.1.2':
     resolution: {integrity: sha512-v1AIekHvH43hOOybJmwpoon3B7L6649NFJawsa0sm9202klsqSXkA/k3SQ/VlM8KIkghmd+nhUERtp0ITxzxnQ==}
@@ -3086,7 +3086,7 @@ snapshots:
 
   '@blazediff/core@1.9.1': {}
 
-  '@braccato/core@0.1.6':
+  '@braccato/core@0.1.7':
     dependencies:
       '@braccato/parsers': 0.1.2
       lit: 3.3.2
