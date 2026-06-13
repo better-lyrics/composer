@@ -10,50 +10,47 @@ const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
 
 describe("relativeTime", () => {
-  it("returns 'Just now' for sub-minute deltas", () => {
-    expect(relativeTime(NOW - 30 * 1000, NOW)).toBe("Just now");
+  it("returns 'just now' for sub-minute deltas", () => {
+    expect(relativeTime(NOW - 30 * 1000, NOW)).toBe("just now");
   });
 
   it("returns minute counts within the hour", () => {
-    expect(relativeTime(NOW - 1 * MINUTE, NOW)).toBe("1 min");
-    expect(relativeTime(NOW - 5 * MINUTE, NOW)).toBe("5 mins");
+    expect(relativeTime(NOW - 1 * MINUTE, NOW)).toBe("1m ago");
+    expect(relativeTime(NOW - 5 * MINUTE, NOW)).toBe("5m ago");
   });
 
-  it("returns 'Today' for less than 24 hours", () => {
-    expect(relativeTime(NOW - 3 * HOUR, NOW)).toBe("Today");
+  it("returns hour counts within the day", () => {
+    expect(relativeTime(NOW - 3 * HOUR, NOW)).toBe("3h ago");
+    expect(relativeTime(NOW - 23 * HOUR, NOW)).toBe("23h ago");
   });
 
-  it("returns 'Yesterday' for the second day", () => {
-    expect(relativeTime(NOW - 1 * DAY - 1 * HOUR, NOW)).toBe("Yesterday");
+  it("returns day counts within the week", () => {
+    expect(relativeTime(NOW - 3 * DAY, NOW)).toBe("3d ago");
+    expect(relativeTime(NOW - 6 * DAY, NOW)).toBe("6d ago");
   });
 
-  it("returns N days within the week", () => {
-    expect(relativeTime(NOW - 3 * DAY, NOW)).toBe("3 days");
-    expect(relativeTime(NOW - 6 * DAY, NOW)).toBe("6 days");
+  it("returns week counts within the month", () => {
+    expect(relativeTime(NOW - 1 * WEEK, NOW)).toBe("1w ago");
+    expect(relativeTime(NOW - 3 * WEEK, NOW)).toBe("3w ago");
   });
 
-  it("returns N weeks within the month", () => {
-    expect(relativeTime(NOW - 1 * WEEK, NOW)).toBe("1 week");
-    expect(relativeTime(NOW - 3 * WEEK, NOW)).toBe("3 weeks");
+  it("returns month counts within the year", () => {
+    expect(relativeTime(NOW - 1 * MONTH, NOW)).toBe("1mo ago");
+    expect(relativeTime(NOW - 6 * MONTH, NOW)).toBe("6mo ago");
   });
 
-  it("returns N months within the year", () => {
-    expect(relativeTime(NOW - 1 * MONTH, NOW)).toBe("1 month");
-    expect(relativeTime(NOW - 6 * MONTH, NOW)).toBe("6 months");
-  });
-
-  it("returns N years past the year boundary", () => {
-    expect(relativeTime(NOW - 1 * YEAR, NOW)).toBe("1 year");
-    expect(relativeTime(NOW - 2 * YEAR, NOW)).toBe("2 years");
+  it("returns year counts past the year boundary", () => {
+    expect(relativeTime(NOW - 1 * YEAR, NOW)).toBe("1y ago");
+    expect(relativeTime(NOW - 2 * YEAR, NOW)).toBe("2y ago");
   });
 
   describe("edge cases", () => {
-    it("returns 'Just now' for future timestamps", () => {
-      expect(relativeTime(NOW + 5 * MINUTE, NOW)).toBe("Just now");
+    it("returns 'just now' for future timestamps", () => {
+      expect(relativeTime(NOW + 5 * MINUTE, NOW)).toBe("just now");
     });
 
-    it("handles the zero delta", () => {
-      expect(relativeTime(NOW, NOW)).toBe("Just now");
+    it("returns 'just now' for the zero delta", () => {
+      expect(relativeTime(NOW, NOW)).toBe("just now");
     });
   });
 });
