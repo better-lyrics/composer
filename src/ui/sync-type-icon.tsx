@@ -22,21 +22,21 @@ const SYNC_TYPE_VARIANTS: Record<SyncType, SyncVariant> = {
   syllable: {
     label: "Syllable",
     textClass: "text-[#fcd34d]",
-    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg-elevated)_75%,#fcd34d_25%)]",
+    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg)_75%,#fcd34d_25%)]",
     colorClasses: "text-[#fcd34d] bg-[#fcd34d]/15",
     fillStates: [1, 0.5, 0.5, 0.5],
   },
   word: {
     label: "Word",
     textClass: "text-[#93c5fd]",
-    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg-elevated)_75%,#93c5fd_25%)]",
+    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg)_75%,#93c5fd_25%)]",
     colorClasses: "text-[#93c5fd] bg-[#93c5fd]/15",
     fillStates: [1, 1, 0.5, 0.5],
   },
   line: {
     label: "Line",
     textClass: "text-[#86efac]",
-    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg-elevated)_75%,#86efac_25%)]",
+    bgClass: "bg-[color-mix(in_srgb,var(--color-composer-bg)_75%,#86efac_25%)]",
     colorClasses: "text-[#86efac] bg-[#86efac]/15",
     fillStates: [1, 1, 1, 0.5],
   },
@@ -45,7 +45,7 @@ const SYNC_TYPE_VARIANTS: Record<SyncType, SyncVariant> = {
   unsynced: {
     label: "Unsynced",
     textClass: "text-white/60",
-    bgClass: "bg-composer-bg-elevated/85",
+    bgClass: "bg-composer-bg/85",
     colorClasses: "text-white/50 bg-white/5",
     fillStates: [0.5, 0.5, 0.5, 0.5],
   },
