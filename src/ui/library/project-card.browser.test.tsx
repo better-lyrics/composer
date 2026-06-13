@@ -145,4 +145,84 @@ describe("ProjectCard", () => {
       await expect.element(screen.getByText("No audio")).toBeInTheDocument();
     });
   });
+
+  describe("rename", () => {
+    it("renders an editable input when isRenaming is true", async () => {
+      const project = makeProject({
+        id: "rn-1",
+        metadata: { title: "Editable", artist: "", album: "", duration: 0 },
+      });
+      const screen = await render(<ProjectCard project={project} onOpen={noop} isRenaming />);
+      const input = screen.getByLabelText("Project title").element() as HTMLInputElement;
+      expect(input.value).toBe("Editable");
+    });
+
+    it("commits the new title on Enter", async () => {
+      const project = makeProject({
+        id: "rn-2",
+        metadata: { title: "Old", artist: "", album: "", duration: 0 },
+      });
+      const onCommit = vi.fn();
+      const screen = await render(<ProjectCard project={project} onOpen={noop} isRenaming onRenameCommit={onCommit} />);
+      const input = screen.getByLabelText("Project title").element() as HTMLInputElement;
+      input.focus();
+      input.setSelectionRange(0, input.value.length);
+      await userEvent.keyboard("Brand new{Enter}");
+      expect(onCommit).toHaveBeenCalledWith("rn-2", "Brand new");
+    });
+
+    it("commits the new title on blur", async () => {
+      const project = makeProject({
+        id: "rn-3",
+        metadata: { title: "Old", artist: "", album: "", duration: 0 },
+      });
+      const onCommit = vi.fn();
+      const screen = await render(<ProjectCard project={project} onOpen={noop} isRenaming onRenameCommit={onCommit} />);
+      const input = screen.getByLabelText("Project title").element() as HTMLInputElement;
+      input.focus();
+      input.setSelectionRange(0, input.value.length);
+      await userEvent.keyboard("Via blur");
+      input.blur();
+      expect(onCommit).toHaveBeenCalledWith("rn-3", "Via blur");
+    });
+
+    it("cancels rename on Escape and calls onRenameCancel", async () => {
+      const project = makeProject({
+        id: "rn-4",
+        metadata: { title: "Old", artist: "", album: "", duration: 0 },
+      });
+      const onCancel = vi.fn();
+      const screen = await render(<ProjectCard project={project} onOpen={noop} isRenaming onRenameCancel={onCancel} />);
+      const input = screen.getByLabelText("Project title").element() as HTMLInputElement;
+      input.focus();
+      await userEvent.keyboard("{Escape}");
+      expect(onCancel).toHaveBeenCalledWith("rn-4");
+    });
+
+    it("does not call onOpen when the editor input is clicked", async () => {
+      const project = makeProject({
+        id: "rn-5",
+        metadata: { title: "Static", artist: "", album: "", duration: 0 },
+      });
+      const onOpen = vi.fn();
+      const screen = await render(<ProjectCard project={project} onOpen={onOpen} isRenaming />);
+      const input = screen.getByLabelText("Project title").element() as HTMLInputElement;
+      input.click();
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+
+    it("does not activate onOpen via keyboard while renaming", async () => {
+      const project = makeProject({
+        id: "rn-6",
+        metadata: { title: "Static", artist: "", album: "", duration: 0 },
+      });
+      const onOpen = vi.fn();
+      const screen = await render(<ProjectCard project={project} onOpen={onOpen} isRenaming />);
+      const card = screen.getByRole("button", { name: /Static/ }).element() as HTMLElement;
+      card.focus();
+      await expect.poll(() => document.activeElement).toBe(card);
+      await userEvent.keyboard("{Enter}");
+      expect(onOpen).not.toHaveBeenCalled();
+    });
+  });
 });
