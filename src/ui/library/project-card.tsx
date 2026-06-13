@@ -146,7 +146,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         <span
           className={cn(
             "absolute top-2 left-2 inline-flex items-center gap-1.5",
-            "px-1.5 py-1 rounded-full bg-black/55 backdrop-blur-sm text-white text-[10px] font-medium",
+            "px-2 py-0.5 rounded-md bg-composer-bg-dark/85 border border-composer-border",
+            "text-[11px] font-medium text-composer-text-secondary",
           )}
         >
           <span className={cn("size-1.5 rounded-full", SYNC_DOT_CLASS[state])} aria-hidden="true" />
