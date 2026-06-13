@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { renderHook } from "vitest-browser-react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { LibraryProject } from "@/domain/project/library-project";
 import { useLibraryActions } from "@/hooks/useLibraryActions";
 import { audioBlobs } from "@/lib/audio-blob-store-singleton";
@@ -11,8 +11,11 @@ import {
   listLibraryProjects,
   putLibraryProject,
 } from "@/lib/library-persistence";
+import { saveActiveProject } from "@/lib/library-save";
+import { debouncedSave } from "@/lib/persistence-debounce";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { render } from "@/test/render";
@@ -336,5 +339,131 @@ describe("useLibraryActions.evictAudio", () => {
   it("is a no-op for unknown project ids", async () => {
     const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
     await result.current.evictAudio("missing");
+  });
+});
+
+describe("useLibraryActions exports", () => {
+  let createSpy: ReturnType<typeof vi.spyOn>;
+  let revokeSpy: ReturnType<typeof vi.spyOn>;
+  let clickSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    createSpy = vi.spyOn(URL, "createObjectURL").mockReturnValue("blob:fake");
+    revokeSpy = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => {});
+    clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    createSpy.mockRestore();
+    revokeSpy.mockRestore();
+    clickSpy.mockRestore();
+  });
+
+  it("exportTtml triggers a download for the given project id", async () => {
+    await putLibraryProject(
+      makeProject({ id: "exp-1", metadata: { title: "Song", artist: "A", album: "", duration: 0 } }),
+    );
+    const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+
+    await result.current.exportTtml("exp-1");
+    expect(createSpy).toHaveBeenCalledTimes(1);
+    const [blobArg] = createSpy.mock.calls[0];
+    expect(blobArg).toBeInstanceOf(Blob);
+    expect((blobArg as Blob).type).toContain("application/ttml+xml");
+  });
+
+  it("exportTtml is a no-op when the project does not exist", async () => {
+    const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+    await result.current.exportTtml("nope");
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("exportProjectJson triggers a download with the correct filename pattern", async () => {
+    let downloadName: string | undefined;
+    clickSpy.mockImplementation(function (this: HTMLAnchorElement) {
+      downloadName = this.download;
+    });
+    await putLibraryProject(
+      makeProject({ id: "exp-2", metadata: { title: "MyTitle", artist: "A", album: "", duration: 0 } }),
+    );
+    const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+
+    await result.current.exportProjectJson("exp-2");
+    expect(createSpy).toHaveBeenCalledTimes(1);
+
+    const datePart = new Date().toISOString().slice(0, 10);
+    expect(downloadName).toBe(`MyTitle-${datePart}.ttml-project.json`);
+  });
+
+  it("exportProjectJson is a no-op when the project does not exist", async () => {
+    const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+    await result.current.exportProjectJson("nope");
+    expect(createSpy).not.toHaveBeenCalled();
+  });
+
+  it("flushes pending saves before reading the active project for TTML export", async () => {
+    try {
+      await putLibraryProject(
+        makeProject({ id: "flush-ttml", metadata: { title: "Stale", artist: "", album: "", duration: 0 } }),
+      );
+      useProjectStore.setState({ activeProjectId: "flush-ttml" });
+      useSettingsStore.getState().set("autoSaveDelay", 100000);
+      useProjectStore.getState().setMetadata({ title: "Fresh" });
+      debouncedSave(() => saveActiveProject());
+
+      const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+      await result.current.exportTtml("flush-ttml");
+
+      const persisted = await getLibraryProject("flush-ttml");
+      expect(persisted?.metadata.title).toBe("Fresh");
+    } finally {
+      useSettingsStore.getState().set("autoSaveDelay", 2000);
+      useProjectStore.setState({ activeProjectId: undefined });
+    }
+  });
+
+  it("flushes pending saves before reading the active project for JSON export", async () => {
+    try {
+      await putLibraryProject(
+        makeProject({ id: "flush-json", metadata: { title: "Stale", artist: "", album: "", duration: 0 } }),
+      );
+      useProjectStore.setState({ activeProjectId: "flush-json" });
+      useSettingsStore.getState().set("autoSaveDelay", 100000);
+      useProjectStore.getState().setMetadata({ title: "Fresh" });
+      debouncedSave(() => saveActiveProject());
+
+      const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+      await result.current.exportProjectJson("flush-json");
+
+      const persisted = await getLibraryProject("flush-json");
+      expect(persisted?.metadata.title).toBe("Fresh");
+    } finally {
+      useSettingsStore.getState().set("autoSaveDelay", 2000);
+      useProjectStore.setState({ activeProjectId: undefined });
+    }
+  });
+
+  it("does not flush when exporting a non-active project", async () => {
+    try {
+      await putLibraryProject(
+        makeProject({ id: "active", metadata: { title: "Active stale", artist: "", album: "", duration: 0 } }),
+      );
+      await putLibraryProject(
+        makeProject({ id: "other", metadata: { title: "Other", artist: "", album: "", duration: 0 } }),
+      );
+      useProjectStore.setState({ activeProjectId: "active" });
+      useSettingsStore.getState().set("autoSaveDelay", 100000);
+      useProjectStore.getState().setMetadata({ title: "Active fresh" });
+      debouncedSave(() => saveActiveProject());
+
+      const { result } = await renderHook(() => useLibraryActions(), { wrapper: buildWrapper() });
+      await result.current.exportTtml("other");
+
+      const persistedActive = await getLibraryProject("active");
+      expect(persistedActive?.metadata.title).toBe("Active stale");
+    } finally {
+      useSettingsStore.getState().set("autoSaveDelay", 2000);
+      useProjectStore.setState({ activeProjectId: undefined });
+    }
   });
 });

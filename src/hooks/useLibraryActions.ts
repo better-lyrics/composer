@@ -3,6 +3,7 @@ import type { LibraryProject } from "@/domain/project/library-project";
 import { audioBlobs } from "@/lib/audio-blob-store-singleton";
 import { deleteLibraryProject, getLibraryProject, putLibraryProject } from "@/lib/library-persistence";
 import { exportProjectToFile } from "@/lib/persistence";
+import { flushPendingSave } from "@/lib/persistence-debounce";
 import { useInvalidateLibraryProjects } from "@/hooks/useLibraryProjects";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -133,12 +134,18 @@ function useLibraryActions(): LibraryActionsApi {
   );
 
   const exportTtml = useCallback(async (id: string) => {
+    if (id === useProjectStore.getState().activeProjectId) {
+      await flushPendingSave();
+    }
     const project = await getLibraryProject(id);
     if (!project) return;
     downloadTtml(project);
   }, []);
 
   const exportProjectJson = useCallback(async (id: string) => {
+    if (id === useProjectStore.getState().activeProjectId) {
+      await flushPendingSave();
+    }
     const project = await getLibraryProject(id);
     if (!project) return;
     const audioFileName = project.audioSource?.kind === "file" ? project.audioSource.name : undefined;
