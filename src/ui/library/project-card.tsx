@@ -1,12 +1,13 @@
-import { IconCircleCheckFilled, IconDots, IconHourglassLow, IconMusic } from "@tabler/icons-react";
-import type { ComponentType, KeyboardEvent, MouseEvent } from "react";
+import { IconDots } from "@tabler/icons-react";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { useState } from "react";
 import type { LibraryProject } from "@/domain/project/library-project";
+import { syncTypeOf } from "@/domain/project/sync-state";
 import { WaveformFallback } from "@/ui/library/waveform-fallback";
+import { SYNC_TYPE_VARIANTS, SyncTypeIcon } from "@/ui/sync-type-icon";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { relativeTime } from "@/utils/library/relative-time";
-import { syncStateOf, type SyncState } from "@/domain/project/sync-state";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -19,30 +20,7 @@ interface ProjectCardProps {
   onRenameCancel?: (id: string) => void;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const SYNC_LABEL: Record<SyncState, string> = {
-  synced: "Synced",
-  partial: "In progress",
-  empty: "Lyrics only",
-};
-
-interface TablerIconProps {
-  className?: string;
-  size?: number | string;
-}
-
-const SYNC_ICON: Record<SyncState, ComponentType<TablerIconProps>> = {
-  synced: IconCircleCheckFilled,
-  partial: IconHourglassLow,
-  empty: IconMusic,
-};
-
-const SYNC_CHIP_CLASS: Record<SyncState, string> = {
-  synced: "bg-composer-success/20 text-composer-success border-composer-success/30",
-  partial: "bg-composer-warning/20 text-composer-warning border-composer-warning/30",
-  empty: "bg-composer-bg-elevated/85 text-composer-text-secondary border-composer-border",
-};
+// -- Helpers ------------------------------------------------------------------
 
 function focusAndSelectOnMount(node: HTMLInputElement | null) {
   if (!node) return;
@@ -101,13 +79,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   onRenameCommit,
   onRenameCancel,
 }) => {
-  const state = syncStateOf(project);
+  const syncType = syncTypeOf(project);
   const title = project.metadata.title || "Untitled";
   const artist = project.metadata.artist || "";
   const duration = project.metadata.duration > 0 ? formatTime(project.metadata.duration, 0) : "No audio";
   const opened = relativeTime(project.lastOpenedAt);
   const thumb = project.metadata.thumbnailDataUrl;
-  const SyncIcon = SYNC_ICON[state];
 
   const handleContext = (e: MouseEvent) => {
     if (!onContextMenu) return;
@@ -156,15 +133,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
           <WaveformFallback seed={project.id} />
         )}
         <span
-          aria-label={SYNC_LABEL[state]}
+          aria-label={`${SYNC_TYPE_VARIANTS[syncType].label} sync`}
           className={cn(
-            "absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border backdrop-blur-xs backdrop-brightness-25",
-            "text-[10px] font-medium drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]",
-            SYNC_CHIP_CLASS[state],
+            "absolute top-2 left-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md backdrop-blur-xs",
+            "text-[10px] font-semibold tracking-wide drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]",
+            SYNC_TYPE_VARIANTS[syncType].colorClasses,
           )}
         >
-          <SyncIcon className="size-3" />
-          {SYNC_LABEL[state]}
+          <SyncTypeIcon syncType={syncType} size={10} className="shrink-0" />
+          {SYNC_TYPE_VARIANTS[syncType].label}
         </span>
         <button
           type="button"

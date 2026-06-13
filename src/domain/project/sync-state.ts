@@ -1,4 +1,5 @@
-import { hasAnyTiming } from "@/domain/line/predicates";
+import { hasAnyTiming, isWordSynced } from "@/domain/line/predicates";
+import type { SyncType } from "@/domain/lyrics-search/sync-type";
 import type { LibraryProject } from "@/domain/project/library-project";
 
 // -- Types --------------------------------------------------------------------
@@ -16,7 +17,16 @@ function syncStateOf(project: LibraryProject): SyncState {
   return "partial";
 }
 
+function syncTypeOf(project: LibraryProject): SyncType {
+  const lines = project.lines;
+  if (lines.length === 0) return "unsynced";
+  if (lines.some((line) => line.words?.some((w) => w.syllableGroupId !== undefined))) return "syllable";
+  if (lines.some(isWordSynced)) return "word";
+  if (lines.some(hasAnyTiming)) return "line";
+  return "unsynced";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { syncStateOf };
+export { syncStateOf, syncTypeOf };
 export type { SyncState };

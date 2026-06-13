@@ -69,26 +69,34 @@ describe("ProjectCard", () => {
     expect(onOpen).toHaveBeenCalledWith("proj-42");
   });
 
-  it("shows the synced badge for fully synced projects", async () => {
+  it("shows the Line sync badge when lines have begin/end only", async () => {
     const project = makeProject({
       lines: [createLine({ text: "a", begin: 0, end: 1 }), createLine({ text: "b", begin: 1, end: 2 })],
     });
     const screen = await render(<ProjectCard project={project} onOpen={noop} />);
-    await expect.element(screen.getByLabelText("Synced")).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Line sync")).toBeInTheDocument();
   });
 
-  it("shows the in-progress badge when some lines are synced", async () => {
+  it("shows the Word sync badge when any line has words timing", async () => {
     const project = makeProject({
-      lines: [createLine({ text: "a", begin: 0, end: 1 }), createLine({ text: "b" })],
+      lines: [
+        createLine({
+          text: "a b",
+          words: [
+            { text: "a", begin: 0, end: 0.5 },
+            { text: "b", begin: 0.5, end: 1 },
+          ],
+        }),
+      ],
     });
     const screen = await render(<ProjectCard project={project} onOpen={noop} />);
-    await expect.element(screen.getByLabelText("In progress")).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Word sync")).toBeInTheDocument();
   });
 
-  it("shows the lyrics-only badge when no lines are synced", async () => {
+  it("shows the Unsynced badge when no line has timing", async () => {
     const project = makeProject({ lines: [createLine({ text: "a" })] });
     const screen = await render(<ProjectCard project={project} onOpen={noop} />);
-    await expect.element(screen.getByLabelText("Lyrics only")).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Unsynced sync")).toBeInTheDocument();
   });
 
   it("calls onContextMenu on right-click", async () => {
