@@ -1,9 +1,13 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
+import { audioBlobs } from "@/lib/audio-blob-store-singleton";
+import { createProjectFromAudio } from "@/lib/create-project";
+import { openLibraryProject } from "@/lib/library-resume";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
 import { useCallback } from "react";
 
@@ -24,6 +28,12 @@ function formatFileSize(bytes: number): string {
 
 function getFileExtension(filename: string): string {
   return filename.split(".").pop()?.toUpperCase() || "AUDIO";
+}
+
+async function importFileAsLibraryProject(file: File): Promise<void> {
+  const id = await createProjectFromAudio({ kind: "file", file }, { audioBlobs });
+  await openLibraryProject(id, { audioBlobs });
+  useUIStore.getState().setViewingLibrary(false);
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -105,17 +115,12 @@ const ImportPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const duration = useAudioStore((s) => s.duration);
   const isLoading = useAudioStore((s) => s.isLoading);
-  const setSource = useAudioStore((s) => s.setSource);
-  const setMetadata = useProjectStore((s) => s.setMetadata);
   const projectTitle = useProjectStore((s) => s.metadata.title);
 
-  const handleFileDrop = useCallback(
-    (file: File) => {
-      setSource({ type: "file", file });
-      setMetadata({ title: file.name.replace(/\.[^/.]+$/, "") });
-    },
-    [setSource, setMetadata],
-  );
+  const handleFileDrop = useCallback((file: File) => {
+    if (useAudioStore.getState().isLoading) return;
+    void importFileAsLibraryProject(file);
+  }, []);
 
   if (source && source.type === "file") {
     const file = source.file;

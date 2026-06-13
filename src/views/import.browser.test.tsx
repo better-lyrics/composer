@@ -1,9 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
+import { listLibraryProjects } from "@/lib/library-persistence";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
@@ -24,6 +26,25 @@ function withQueryClient(children: ReactNode) {
 // that won't actually decode in the test runner.
 const PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+function dispatchDragEvent(target: Element, type: string, files: File[] = []) {
+  const dataTransfer = new DataTransfer();
+  for (const file of files) dataTransfer.items.add(file);
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
+  target.dispatchEvent(event);
+}
+
+async function waitForActiveProject(predicate: (id: string | undefined) => boolean): Promise<string> {
+  return await new Promise<string>((resolve) => {
+    const tick = () => {
+      const id = useProjectStore.getState().activeProjectId;
+      if (id && predicate(id)) return resolve(id);
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
 
 // -- Empty state --------------------------------------------------------------
 
@@ -308,5 +329,58 @@ describe("ImportPanel: videoId-gated thumb fallback", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
     const liveBridgeImg = screen.container.querySelector(`img[src^='${DEFAULT_BRIDGE_URL}']`);
     expect(liveBridgeImg).toBeNull();
+  });
+});
+
+// -- File drop creates library project ---------------------------------------
+
+describe("ImportPanel — drop creates a library project", () => {
+  it("creates a library entry when a file is dropped on the empty zone", async () => {
+    useAudioStore.setState({ source: null });
+    useUIStore.setState({ viewingLibrary: true });
+    useProjectStore.setState({ activeProjectId: undefined });
+
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const label = screen.container.querySelector("label") as HTMLLabelElement;
+    const file = new File([new Uint8Array([1, 2, 3])], "Pink White.mp3", { type: "audio/mpeg" });
+    dispatchDragEvent(label, "drop", [file]);
+
+    const activeId = await waitForActiveProject(() => true);
+    const projects = await listLibraryProjects();
+    const created = projects.find((p) => p.id === activeId);
+    expect(created?.metadata.title).toBe("Pink White");
+    expect(created?.audioSource).toEqual({ kind: "file", name: "Pink White.mp3" });
+    expect(useUIStore.getState().viewingLibrary).toBe(false);
+  });
+
+  it("creates a NEW library entry when a file is dropped while editing an existing project", async () => {
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile("original.wav") },
+    });
+    useProjectStore.setState({ activeProjectId: "previous" });
+
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const label = screen.container.querySelector("label") as HTMLLabelElement;
+    const replacement = new File([new Uint8Array([7, 8])], "fresh.mp3", { type: "audio/mpeg" });
+    dispatchDragEvent(label, "drop", [replacement]);
+
+    const activeId = await waitForActiveProject((id) => id !== "previous");
+    expect(activeId).not.toBe("previous");
+    const projects = await listLibraryProjects();
+    const created = projects.find((p) => p.id === activeId);
+    expect(created?.metadata.title).toBe("fresh");
+  });
+
+  it("does not change activeProjectId when isLoading is already true (idempotent against double-fire)", async () => {
+    useProjectStore.setState({ activeProjectId: "existing-id" });
+    useAudioStore.setState({ source: null, isLoading: true });
+
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const label = screen.container.querySelector("label") as HTMLLabelElement;
+    const file = new File([new Uint8Array([1])], "ignored.mp3", { type: "audio/mpeg" });
+    dispatchDragEvent(label, "drop", [file]);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(useProjectStore.getState().activeProjectId).toBe("existing-id");
   });
 });
