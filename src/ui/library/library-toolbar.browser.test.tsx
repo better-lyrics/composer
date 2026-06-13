@@ -21,7 +21,7 @@ describe("LibraryToolbar", () => {
       <LibraryToolbar filter="all" onFilterChange={() => {}} sort="recent" onSortChange={onSort} />,
     );
     await screen.getByRole("button", { name: /Recently opened/ }).click();
-    await screen.getByRole("button", { name: "Title A to Z" }).click();
+    await screen.getByRole("menuitem", { name: "Title A to Z" }).click();
     expect(onSort).toHaveBeenCalledWith("title");
   });
 
@@ -47,7 +47,7 @@ describe("LibraryToolbar", () => {
       <LibraryToolbar filter="all" onFilterChange={() => {}} sort="recent" onSortChange={() => {}} />,
     );
     await screen.getByRole("button", { name: /Recently opened/ }).click();
-    await expect.element(screen.getByRole("button", { name: "Title A to Z" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("menuitem", { name: "Title A to Z" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");
     await expect.poll(() => screen.container.querySelector("[role='dialog']")).toBeNull();
   });

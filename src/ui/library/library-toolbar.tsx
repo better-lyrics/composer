@@ -1,4 +1,5 @@
 import { IconChevronDown, IconSortDescending } from "@tabler/icons-react";
+import { MenuItem } from "@/ui/menu";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
 import type { FilterChip, SortKey } from "@/utils/library/filter-sort";
@@ -35,8 +36,8 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({ filter, onFilterChange,
   const sortLabel = SORTS.find((s) => s.key === sort)?.label ?? SORTS[0].label;
 
   return (
-    <div className="flex items-center justify-between gap-4 mb-4 select-none">
-      <div role="tablist" aria-label="Filter projects" className="flex gap-1.5">
+    <div className="flex items-end justify-between gap-4 mb-4 border-b border-composer-border select-none">
+      <div role="tablist" aria-label="Filter projects" className="flex">
         {FILTERS.map(({ chip, label }) => {
           const active = filter === chip;
           return (
@@ -47,11 +48,10 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({ filter, onFilterChange,
               aria-selected={active}
               onClick={() => onFilterChange(chip)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer",
-                "transition-colors duration-150",
+                "px-3 py-2 text-xs font-medium cursor-pointer transition-colors -mb-px border-b-2",
                 active
-                  ? "bg-composer-accent/15 text-composer-accent-text"
-                  : "bg-composer-button text-composer-text-secondary hover:bg-composer-button-hover hover:text-composer-text",
+                  ? "border-composer-accent text-composer-text"
+                  : "border-transparent text-composer-text-muted hover:text-composer-text-secondary",
               )}
             >
               {label}
@@ -65,7 +65,7 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({ filter, onFilterChange,
           <button
             type="button"
             className={cn(
-              "inline-flex items-center gap-2 pl-3 pr-2.5 py-1.5 rounded-lg cursor-pointer",
+              "inline-flex items-center gap-2 pl-3 pr-2.5 py-1.5 mb-1.5 rounded-md cursor-pointer",
               "text-xs font-medium bg-composer-button hover:bg-composer-button-hover",
               "transition-colors duration-150",
             )}
@@ -80,22 +80,14 @@ const LibraryToolbar: React.FC<LibraryToolbarProps> = ({ filter, onFilterChange,
           <ul className="py-1 min-w-44">
             {SORTS.map(({ key, label }) => (
               <li key={key}>
-                <button
-                  type="button"
+                <MenuItem
+                  label={label}
+                  selected={sort === key}
                   onClick={() => {
                     onSortChange(key);
                     close();
                   }}
-                  aria-current={sort === key}
-                  className={cn(
-                    "flex w-full items-center text-left px-3 py-1.5 text-xs cursor-pointer",
-                    sort === key
-                      ? "text-composer-accent-text bg-composer-accent/10"
-                      : "text-composer-text-secondary hover:bg-composer-button hover:text-composer-text",
-                  )}
-                >
-                  {label}
-                </button>
+                />
               </li>
             ))}
           </ul>
