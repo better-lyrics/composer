@@ -9,6 +9,9 @@ import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
+import { audioBlobs } from "@/lib/audio-blob-store-singleton";
+import { openLibraryProject } from "@/lib/library-resume";
+import { LibraryPage } from "@/pages/library/library-page";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
@@ -44,17 +47,29 @@ const queryClient = new QueryClient({
 const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
+  const activeProjectId = useProjectStore((s) => s.activeProjectId);
   const source = useAudioStore((s) => s.source);
   const [helpOpen, setHelpOpen] = useState(false);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
+  const viewingLibrary = useUIStore((s) => s.viewingLibrary);
   const setViewingLibrary = useUIStore((s) => s.setViewingLibrary);
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
 
-  const showPlayer = source && TABS_WITH_PLAYER.includes(activeTab);
+  const showLibrary = viewingLibrary || activeProjectId === undefined;
+  const showPlayer = !showLibrary && source && TABS_WITH_PLAYER.includes(activeTab);
+
+  const handleOpenProject = useCallback(async (id: string) => {
+    await openLibraryProject(id, { audioBlobs });
+    useUIStore.getState().setViewingLibrary(false);
+  }, []);
+
+  const handleExitLibrary = useCallback(() => {
+    setViewingLibrary(false);
+  }, [setViewingLibrary]);
 
   // Auto-start quick tour on first visit
   useEffect(() => {
@@ -101,6 +116,32 @@ const AppContent: React.FC = () => {
           localStorage.removeItem("composer-tour-resume");
         }}
       />
+      <AppViewSwitch
+        showLibrary={showLibrary}
+        activeTab={activeTab}
+        onOpenProject={handleOpenProject}
+        onExitLibrary={handleExitLibrary}
+      />
+      {source && <AudioEngine />}
+      {showPlayer && <AudioPlayer />}
+      <GuideCard state={guideCard} onSkip={skipGuideCard} />
+    </div>
+  );
+};
+
+interface AppViewSwitchProps {
+  showLibrary: boolean;
+  activeTab: string;
+  onOpenProject: (id: string) => void | Promise<void>;
+  onExitLibrary: () => void;
+}
+
+const AppViewSwitch: React.FC<AppViewSwitchProps> = ({ showLibrary, activeTab, onOpenProject, onExitLibrary }) => (
+  <>
+    <Activity mode={showLibrary ? "visible" : "hidden"}>
+      <LibraryPage onOpenProject={onOpenProject} onNewProject={onExitLibrary} />
+    </Activity>
+    <Activity mode={showLibrary ? "hidden" : "visible"}>
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
         <Activity mode={activeTab === "import" ? "visible" : "hidden"}>
@@ -134,12 +175,9 @@ const AppContent: React.FC = () => {
           </div>
         </Activity>
       </main>
-      {source && <AudioEngine />}
-      {showPlayer && <AudioPlayer />}
-      <GuideCard state={guideCard} onSkip={skipGuideCard} />
-    </div>
-  );
-};
+    </Activity>
+  </>
+);
 
 const App: React.FC = () => {
   return (
@@ -165,4 +203,4 @@ const App: React.FC = () => {
   );
 };
 
-export { App };
+export { App, AppViewSwitch };

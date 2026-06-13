@@ -1,6 +1,8 @@
-import { type AudioBlobStore, OpfsAudioBlobStore } from "@/lib/audio-blob-store";
+import type { AudioBlobStore } from "@/lib/audio-blob-store";
+import { audioBlobs } from "@/lib/audio-blob-store-singleton";
 import { migrateSingleSlotToLibrary } from "@/lib/library-migration";
-import { getLibraryProject, listLibraryProjects } from "@/lib/library-persistence";
+import { listLibraryProjects } from "@/lib/library-persistence";
+import { restoreAudioForProject } from "@/lib/library-resume";
 import { saveActiveProject, saveActiveProjectAudio } from "@/lib/library-save";
 import { cancelPendingSave, debouncedSave, flushPendingSave } from "@/lib/persistence-debounce";
 import { markPersistenceSettled } from "@/lib/persistence-settled";
@@ -8,6 +10,7 @@ import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -17,7 +20,6 @@ const LOG_PREFIX = "[Persistence]";
 
 // -- Module singletons --------------------------------------------------------
 
-const audioBlobs = new OpfsAudioBlobStore();
 let isBooting = false;
 let activeUnsubscribers: Array<() => void> = [];
 
@@ -89,45 +91,23 @@ function commitProjectSaveNow(): void {
   saveActiveProject().catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
 }
 
-async function resumeMostRecentProject(deps: { audioBlobs: AudioBlobStore }): Promise<void> {
+async function resumeMostRecentProject(deps: { audioBlobs: AudioBlobStore }): Promise<string | undefined> {
   const result = await migrateSingleSlotToLibrary(deps);
   let resumeId = result.migratedId;
   if (!resumeId) {
     const list = await listLibraryProjects();
     if (list.length > 0) resumeId = list[0].id;
   }
-  if (!resumeId) return;
+  if (!resumeId) return undefined;
 
   await useProjectStore.getState().setActiveProject(resumeId, deps);
-
-  const loaded = await getLibraryProject(resumeId);
-  if (loaded?.currentStem) {
-    useSeparationStore.getState().restoreCurrentStem(loaded.currentStem);
-  }
-
-  if (loaded?.audioBytesCached) {
-    const bytes = await deps.audioBlobs.get(resumeId);
-    if (bytes) {
-      const name =
-        loaded.audioSource?.kind === "file"
-          ? loaded.audioSource.name
-          : loaded.audioSource?.kind === "youtube"
-            ? `${loaded.audioSource.videoId}.opus`
-            : "audio.bin";
-      const file = new File([bytes], name);
-      if (loaded.audioSource?.kind === "youtube") {
-        useAudioStore.getState().setYouTubeSource(loaded.audioSource.videoId, file);
-      } else {
-        useAudioStore.getState().setSource({ type: "file", file });
-      }
-    }
-  } else if (loaded?.audioSource?.kind === "youtube") {
-    useAudioStore.getState().setYouTubeSource(loaded.audioSource.videoId);
-  }
+  await restoreAudioForProject(resumeId, deps);
 
   if (result.migratedId) {
     toast("Your project is now in your library");
   }
+
+  return resumeId;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -137,12 +117,14 @@ function usePersistence(): void {
     isBooting = true;
     let cancelled = false;
     void (async () => {
+      let resumedId: string | undefined;
       try {
-        await resumeMostRecentProject({ audioBlobs });
+        resumedId = await resumeMostRecentProject({ audioBlobs });
       } catch (err) {
         console.error(`${LOG_PREFIX} initial load failed:`, err);
       }
       if (cancelled) return;
+      useUIStore.getState().setViewingLibrary(resumedId === undefined);
       isBooting = false;
       attachSubscriptions();
       if (import.meta.env.DEV) {
