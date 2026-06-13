@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { ExportPanel } from "@/views/export";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { ExportPanel } from "@/views/export";
 
 describe("ExportPanel", () => {
   it("shows the 'No lyrics to export' empty state when there are no lines", async () => {

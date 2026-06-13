@@ -1,28 +1,40 @@
-import { exportProjectToFile, importProjectFromFile, clearCurrentProject } from "@/lib/persistence";
-import { cancelPendingSave } from "@/lib/persistence-debounce";
-import { useAudioStore } from "@/stores/audio";
+import { IconCheck, IconCopy, IconDownload, IconEdit, IconFolderOpen, IconRefresh } from "@tabler/icons-react";
+import { Highlight, themes } from "prism-react-renderer";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { effectiveBounds } from "@/domain/line/bounds";
+import { importProjectFromFile } from "@/lib/persistence";
 import { useConfirm } from "@/stores/confirm-store";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
-import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
-import {
-  IconCheck,
-  IconCopy,
-  IconDownload,
-  IconEdit,
-  IconFolderOpen,
-  IconRefresh,
-  IconTrash,
-  IconUpload,
-} from "@tabler/icons-react";
-import { Highlight, themes } from "prism-react-renderer";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { ExportProjectToolbar } from "@/views/export-project-toolbar";
 
 // -- Components ---------------------------------------------------------------
+
+const TtmlPreview: React.FC<{ content: string }> = ({ content }) => (
+  <Highlight theme={themes.nightOwl} code={content} language="xml">
+    {({ style, tokens, getLineProps, getTokenProps }) => (
+      <pre
+        className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
+        style={{ ...style, background: "var(--color-composer-bg-elevated)" }}
+      >
+        {tokens.map((line, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
+          <div key={i} {...getLineProps({ line })}>
+            {line.map((token, j) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
+              <span key={j} {...getTokenProps({ token })} />
+            ))}
+          </div>
+        ))}
+      </pre>
+    )}
+  </Highlight>
+);
 
 const ExportPanel: React.FC = () => {
   const metadata = useProjectStore((s) => s.metadata);
@@ -35,7 +47,6 @@ const ExportPanel: React.FC = () => {
   const setLines = useProjectStore((s) => s.setLines);
   const setGranularity = useProjectStore((s) => s.setGranularity);
   const setAgents = useProjectStore((s) => s.setAgents);
-  const reset = useProjectStore((s) => s.reset);
   const markClean = useProjectStore((s) => s.markClean);
   const confirm = useConfirm();
 
@@ -98,23 +109,6 @@ const ExportPanel: React.FC = () => {
     setEditState(null);
   }, []);
 
-  const handleExportProject = useCallback(() => {
-    const audioSource = useAudioStore.getState().source;
-    const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults } = useProjectStore.getState();
-    exportProjectToFile(
-      metadata,
-      agents,
-      lines,
-      groups,
-      granularity,
-      syllableSplitDefaults,
-      dismissedSuggestions,
-      dismissedExplicitSuggestions,
-      audioFileName,
-    );
-  }, [metadata, agents, lines, groups, granularity]);
-
   const handleImportProject = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -153,20 +147,6 @@ const ExportPanel: React.FC = () => {
     },
     [setMetadata, setLines, setGranularity, setAgents, markClean, confirm],
   );
-
-  const handleClearProject = useCallback(async () => {
-    const ok = await confirm({
-      title: "Clear all project data?",
-      description: "Remove every line, all metadata, and the audio file from this project. This cannot be undone.",
-      confirmLabel: "Clear",
-      variant: "destructive",
-      settingsKey: "confirmClearProject",
-    });
-    if (!ok) return;
-    cancelPendingSave();
-    reset();
-    await clearCurrentProject();
-  }, [reset, confirm]);
 
   const projectFileInput = (
     <input
@@ -237,25 +217,8 @@ const ExportPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Project management */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border bg-composer-bg-elevated/50">
-        <span className="text-sm text-composer-text-muted">Project</span>
-        <div className="flex items-center gap-2">
-          {projectFileInput}
-          <Button hasIcon variant="ghost" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <IconFolderOpen className="size-4 text-composer-text opacity-50" />
-            Import Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleExportProject}>
-            <IconUpload className="size-4 text-composer-text opacity-50" />
-            Export Project
-          </Button>
-          <Button hasIcon variant="ghost" size="sm" onClick={handleClearProject}>
-            <IconTrash className="size-4 text-composer-text opacity-50" />
-            Clear
-          </Button>
-        </div>
-      </div>
+      {projectFileInput}
+      <ExportProjectToolbar onImportClick={() => fileInputRef.current?.click()} />
 
       {/* Preview / Editor */}
       <Scroll className="flex-1 p-6">
@@ -268,27 +231,7 @@ const ExportPanel: React.FC = () => {
             spellCheck={false}
           />
         ) : (
-          <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
-            {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre
-                className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
-                style={{
-                  ...style,
-                  background: "var(--color-composer-bg-elevated)",
-                }}
-              >
-                {tokens.map((line, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
-                  <div key={i} {...getLineProps({ line })}>
-                    {line.map((token, j) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
-                      <span key={j} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                ))}
-              </pre>
-            )}
-          </Highlight>
+          <TtmlPreview content={displayContent} />
         )}
       </Scroll>
     </div>
