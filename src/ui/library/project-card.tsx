@@ -24,7 +24,7 @@ const SYNC_LABEL: Record<SyncState, string> = {
 };
 
 const SYNC_DOT_CLASS: Record<SyncState, string> = {
-  synced: "bg-[#6bd28a]",
+  synced: "bg-composer-success",
   partial: "bg-composer-warning",
   empty: "bg-composer-text-faint",
 };
