@@ -1,3 +1,5 @@
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { decodeAudioToWav, needsWavConversion } from "@/audio/audio-decode";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
 import { scrubPreview } from "@/audio/scrub-preview";
@@ -5,12 +7,24 @@ import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
-import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[AudioEngine]";
 const SLOW_DECODE_MS = 800;
+
+// -- Helpers -------------------------------------------------------------------
+
+function audioErrorMessage(err: MediaError | null, isYouTube: boolean): string {
+  if (err?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
+    return isYouTube
+      ? "Composer Bridge returned an unsupported audio format. Try another video or update the bridge."
+      : "This audio file can't be played in the browser.";
+  }
+  if (err?.code === MediaError.MEDIA_ERR_DECODE) return "Audio decoder failed. The file may be corrupted.";
+  if (err?.code === MediaError.MEDIA_ERR_NETWORK) return "Audio playback failed due to a network error.";
+  return "Audio playback failed.";
+}
 
 // -- Component -----------------------------------------------------------------
 
@@ -136,8 +150,13 @@ const AudioEngine: React.FC = () => {
       const handleLoadedMetadata = () => setDuration(audio.duration);
       const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
       const handleEnded = () => setIsPlaying(false);
-      const handleError = (e: Event) => {
-        console.error(LOG_PREFIX, "Audio error:", e);
+      const handleError = () => {
+        if (aborted) return;
+        const mediaError = audio.error;
+        console.error(LOG_PREFIX, "Audio error:", mediaError?.code, mediaError?.message);
+        setIsPlaying(false);
+        const isYouTube = useAudioStore.getState().source?.type === "youtube";
+        toast.error(audioErrorMessage(mediaError, isYouTube));
       };
 
       audio.addEventListener("loadedmetadata", handleLoadedMetadata);

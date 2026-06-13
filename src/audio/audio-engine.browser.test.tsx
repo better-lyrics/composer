@@ -1,3 +1,5 @@
+import { Toaster } from "sonner";
+import { afterEach, describe, expect, it } from "vitest";
 import { AudioEngine } from "@/audio/audio-engine";
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
@@ -7,7 +9,6 @@ import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
-import { afterEach, describe, expect, it } from "vitest";
 
 function waitFor(predicate: () => boolean, timeout = 1000): Promise<void> {
   const start = Date.now();
@@ -290,5 +291,46 @@ describe("AudioEngine", () => {
     useAudioStore.setState({ source: { type: "file", file: garbage } });
     await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
     expect(useProjectStore.getState().primingStripped).toBe(true);
+  });
+
+  describe("playback error surfacing", () => {
+    it("shows a toast and clears isPlaying when the audio element emits an error", async () => {
+      allowConsole(/audio decode failed/);
+      allowConsole(/scrub-preview decode failed/);
+      allowConsole(/Audio error/);
+      await render(
+        <>
+          <Toaster />
+          <AudioEngine />
+        </>,
+      );
+      useAudioStore.setState({ isPlaying: true });
+      const garbage = new File([new Uint8Array([1, 2, 3, 4, 5])], "broken.bin", { type: "audio/webm" });
+      useAudioStore.setState({ source: { type: "file", file: garbage } });
+      await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+      await expect.poll(() => useAudioStore.getState().isPlaying, { timeout: 5000 }).toBe(false);
+      await expect
+        .poll(() => document.body.textContent, { timeout: 5000 })
+        .toMatch(/can't be played|decoder failed|playback failed/i);
+    });
+
+    it("mentions the bridge in the toast when the failing source is a YouTube stream", async () => {
+      allowConsole(/audio decode failed/);
+      allowConsole(/scrub-preview decode failed/);
+      allowConsole(/Audio error/);
+      await render(
+        <>
+          <Toaster />
+          <AudioEngine />
+        </>,
+      );
+      const garbage = new File([new Uint8Array([9, 9, 9])], "broken.bin", { type: "audio/webm" });
+      useAudioStore.setState({ source: { type: "youtube", videoId: "abc12345678", file: garbage } });
+      await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
+      await expect.poll(() => useAudioStore.getState().isPlaying, { timeout: 5000 }).toBe(false);
+      await expect
+        .poll(() => document.body.textContent, { timeout: 5000 })
+        .toMatch(/Composer Bridge|unsupported audio format|decoder failed|playback failed/i);
+    });
   });
 });
