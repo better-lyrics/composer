@@ -66,4 +66,21 @@ describe("TimelineSection", () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("Scroll horizontally to move through time");
   });
+
+  it("documents cross-line word drag", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect
+      .element(screen.getByRole("heading", { name: "Moving words across lines and tracks" }))
+      .toBeInTheDocument();
+  });
+
+  it("documents stem-aware scrub preview", async () => {
+    const screen = await render(<TimelineSection />);
+    expect(screen.container.textContent).toContain("separated the song into stems");
+  });
+
+  it("documents playhead-anchored zoom on the header buttons", async () => {
+    const screen = await render(<TimelineSection />);
+    expect(screen.container.textContent).toContain("playhead pinned in place");
+  });
 });

@@ -15,12 +15,6 @@ const ImportSection: React.FC = () => (
         <li>The file name auto-fills the project title in metadata.</li>
         <li>To replace audio, just drop a new file on the Import tab.</li>
       </ul>
-      <p className={`${PROSE} mt-3`}>
-        For YouTube imports, audio comes from a Cobalt backend. Composer ships with a default instance that handles
-        verification automatically, but YouTube is currently blocking it. To import from YouTube, add a working instance
-        from cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status icon next
-        to its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
-      </p>
     </div>
 
     <div>
@@ -38,6 +32,55 @@ const ImportSection: React.FC = () => (
           some other way and drop the file into the Import tab.
         </li>
       </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>YouTube backends: Cobalt and Composer Bridge</h4>
+      <p className={PROSE}>
+        YouTube audio doesn't come from YouTube directly. Composer routes the request through a small backend service
+        that fetches the audio and hands it back. There are two options.
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        <strong>Cobalt</strong> is the default. Composer ships with a public instance that handles verification
+        automatically, but YouTube is currently blocking it. To get unblocked, add a working instance from
+        cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status icon next to
+        its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        <strong>Composer Bridge</strong>
+        <span className="ml-2 text-[10px] tracking-wide text-composer-accent-text">Experimental</span>
+        <br />A tiny binary you run on your own machine that downloads YouTube audio over your residential IP, so
+        YouTube doesn't block it the way it blocks shared Cobalt hosts. Composer talks to it over localhost; nothing
+        leaves your machine. Toggle "Composer Bridge for YouTube" on in Settings → Advanced and every YouTube import
+        routes through the bridge instead of Cobalt.
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>
+          If the bridge isn't installed yet, an inline guide appears with a one-line install command for macOS and
+          Linux, plus a link to the Windows download.
+        </li>
+        <li>
+          Once installed, launch <span className={INLINE_CODE}>Composer Bridge</span> from your Applications folder or
+          run the binary from a terminal. It lives in your menu bar (Mac) or system tray (Windows, Linux). Leave it
+          running.
+        </li>
+        <li>
+          The default URL is <span className={INLINE_CODE}>http://localhost:7777</span>. Change it in the bridge URL
+          field if you're running on a different port, and hit "Reset" to restore the default.
+        </li>
+      </ul>
+      <p className={`${PROSE} mt-3`}>
+        Sources, releases, and self-build instructions live on{" "}
+        <a
+          href="https://github.com/better-lyrics/composer-bridge"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-composer-text underline underline-offset-2 hover:text-composer-text-bright"
+        >
+          GitHub
+        </a>
+        . The install script verifies the release checksum before unpacking.
+      </p>
     </div>
 
     <div>
