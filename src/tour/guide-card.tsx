@@ -8,6 +8,7 @@ import { AnimatePresence, m, useReducedMotion } from "motion/react";
 interface GuideCardState {
   task: string;
   stepLabel: string;
+  stepIndex: number;
   isComplete: boolean;
 }
 
