@@ -4,6 +4,7 @@ import { getModelDescriptor } from "@/audio/separation/model-registry";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
+import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { cn } from "@/utils/cn";
 import { IconCheck, type IconProps, IconLoader2, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
 import { type ComponentType, useEffect } from "react";
@@ -239,6 +240,9 @@ const IdleReadyState: React.FC<{
           Separate now
         </Button>
       )}
+      <div className="border-t border-composer-border pt-2 mt-1">
+        <VocalOnsetSnapToggle />
+      </div>
     </div>
   );
 };
