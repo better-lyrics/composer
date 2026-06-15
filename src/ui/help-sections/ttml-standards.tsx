@@ -1,4 +1,4 @@
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, INLINE_CODE, PROSE } from "@/ui/help-sections/shared";
 
 // -- TTML Standards -----------------------------------------------------------
 
@@ -16,14 +16,16 @@ const TtmlStandardsSection: React.FC = () => (
         TTML 1
       </a>{" "}
       (W3C Recommendation, November 2018). The output is well-formed XML that any TTML 1 conformant parser can read,
-      including the standard structure: <code>&lt;tt&gt;</code> root with the TTML namespace, <code>&lt;head&gt;</code>{" "}
-      with <code>&lt;ttm:title&gt;</code> and <code>&lt;ttm:agent&gt;</code> declarations, and{" "}
-      <code>&lt;body&gt;&lt;div&gt;&lt;p&gt;</code> for lines with <code>&lt;span&gt;</code> per word for word-level
-      timing.
+      including the standard structure: <span className={INLINE_CODE}>&lt;tt&gt;</span> root with the TTML namespace,{" "}
+      <span className={INLINE_CODE}>&lt;head&gt;</span> with <span className={INLINE_CODE}>&lt;ttm:title&gt;</span> and{" "}
+      <span className={INLINE_CODE}>&lt;ttm:agent&gt;</span> declarations, and{" "}
+      <span className={INLINE_CODE}>&lt;body&gt;&lt;div&gt;&lt;p&gt;</span> for lines with{" "}
+      <span className={INLINE_CODE}>&lt;span&gt;</span> per word for word-level timing.
     </p>
     <p className={PROSE}>
-      Background vocals use <code>ttm:role="x-bg"</code>, which is the spec-sanctioned <code>x-</code> extension prefix
-      for custom roles. Singer assignments go through the standard <code>ttm:agent</code> reference.
+      Background vocals use <span className={INLINE_CODE}>ttm:role="x-bg"</span>, which is the spec-sanctioned{" "}
+      <span className={INLINE_CODE}>x-</span> extension prefix for custom roles. Singer assignments go through the
+      standard <span className={INLINE_CODE}>ttm:agent</span> reference.
     </p>
 
     <h4 className={HEADING}>Foreign-namespace extensions</h4>
@@ -43,18 +45,19 @@ const TtmlStandardsSection: React.FC = () => (
       vocabulary. That's the W3C-sanctioned way to add application-specific data while keeping the document conformant.
     </p>
     <p className={PROSE}>
-      Composer's namespace URI is <code>https://composer.boidu.dev/ttml</code>. Custom attributes show up as{" "}
-      <code>composer:groupId</code>, <code>composer:instanceIdx</code>, and so on, on the root <code>&lt;tt&gt;</code>{" "}
-      element and on <code>&lt;p&gt;</code> elements that belong to a linked group. A{" "}
-      <code>&lt;composer:groups&gt;</code> block lives inside <code>&lt;metadata&gt;</code> to declare the group
-      registry (id, label, color).
+      Composer's namespace URI is <span className={INLINE_CODE}>https://composer.boidu.dev/ttml</span>. Custom
+      attributes show up as <span className={INLINE_CODE}>composer:groupId</span>,{" "}
+      <span className={INLINE_CODE}>composer:instanceIdx</span>, and so on, on the root{" "}
+      <span className={INLINE_CODE}>&lt;tt&gt;</span> element and on <span className={INLINE_CODE}>&lt;p&gt;</span>{" "}
+      elements that belong to a linked group. A <span className={INLINE_CODE}>&lt;composer:groups&gt;</span> block lives
+      inside <span className={INLINE_CODE}>&lt;metadata&gt;</span> to declare the group registry (id, label, color).
     </p>
 
     <h4 className={HEADING}>Why this matters</h4>
     <p className={PROSE}>
       You can hand a Composer file to any TTML 1 parser and it will work. Tools that don't recognize the{" "}
-      <code>composer:</code> namespace can safely skip the extensions: foreign attributes get pruned during validation
-      (per{" "}
+      <span className={INLINE_CODE}>composer:</span> namespace can safely skip the extensions: foreign attributes get
+      pruned during validation (per{" "}
       <a
         href="https://www.w3.org/TR/2018/REC-ttml1-20181108/#document-types"
         target="_blank"

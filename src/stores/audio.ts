@@ -60,7 +60,14 @@ const INITIAL_STATE: AudioState = createInitialState();
 const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   ...INITIAL_STATE,
 
-  setSource: (source) => set({ source, currentTime: 0, duration: 0, isPlaying: false, youtubeLoadError: null }),
+  setSource: (source) =>
+    set({
+      source,
+      currentTime: 0,
+      duration: 0,
+      isPlaying: false,
+      youtubeLoadError: null,
+    }),
   setYouTubeSource: (videoId, file) =>
     set({
       source: { type: "youtube", videoId, file },

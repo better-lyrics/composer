@@ -7,6 +7,7 @@ import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { bracketWordList, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
 import { getSplitCharacter } from "@/utils/split-character";
 import { createInitialBgWords } from "@/utils/sync-helpers";
 
@@ -32,6 +33,11 @@ interface LineClassification {
   groups: ParenGroup[];
   bgText: string;
   mainText: string;
+}
+
+interface ExtractOptions {
+  mergeStandaloneLines: boolean;
+  preserveBrackets: boolean;
 }
 
 // -- Scanner ------------------------------------------------------------------
@@ -70,9 +76,17 @@ function collapseSpaces(text: string): string {
   return text.replace(/ {2,}/g, " ").trim();
 }
 
-function joinBackgroundText(existing: string | undefined, addition: string): string {
+function joinBackgroundText(
+  existing: string | undefined,
+  addition: string,
+  preserveBrackets: boolean,
+  trailingBracketFromSamePass: boolean,
+): string {
   const base = existing?.trim() ?? "";
-  return base.length > 0 ? `${base} ${addition}` : addition;
+  if (!preserveBrackets) return base.length > 0 ? `${base} ${addition}` : addition;
+  if (base.length === 0) return `(${addition})`;
+  if (trailingBracketFromSamePass && base.endsWith(")")) return `${base.slice(0, -1)} ${addition})`;
+  return `${base} (${addition})`;
 }
 
 function classifyLine(text: string): LineClassification {
@@ -90,7 +104,7 @@ function classifyLine(text: string): LineClassification {
 
 // -- Extraction ---------------------------------------------------------------
 
-function extractInlineWordSynced(line: LyricLine, classified: LineClassification): LyricLine {
+function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
   const words = line.words;
   if (!words || words.length === 0) return line;
   if (line.backgroundWords && line.backgroundWords.length > 0) return line;
@@ -123,50 +137,61 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
       words: trimmedSurvivors,
       text: reconstructLineText(trimmedSurvivors, splitChar),
     }),
-    { text: joinBackgroundText(base, classified.bgText), source: base ? "manual" : "extraction" },
+    {
+      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+      source: base ? "manual" : "extraction",
+    },
   );
 }
 
-function extractInlineFromLine(line: LyricLine): LyricLine {
+function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricLine {
   const classified = classifyLine(line.text);
   if (classified.kind !== "inline") return line;
-  if (isWordSynced(line)) return extractInlineWordSynced(line, classified);
+  if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
   if (line.backgroundWords && line.backgroundWords.length > 0) return line;
   const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
   return applyBackground(
     { ...line, text: classified.mainText },
-    { text: joinBackgroundText(base, classified.bgText), source: base ? "manual" : "extraction" },
+    {
+      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+      source: base ? "manual" : "extraction",
+    },
   );
 }
 
 // -- Whole-list transform -----------------------------------------------------
 
-interface ExtractOptions {
-  mergeStandaloneLines: boolean;
-}
-
-function carriedBackgroundWords(standalone: LyricLine, bgText: string): WordTiming[] | null {
+function carriedBackgroundWords(standalone: LyricLine, bgText: string, preserveBrackets: boolean): WordTiming[] | null {
   const words = standalone.words;
-  if (words && words.length > 0) return remapWordTextsPreservingTiming(words, bgText);
-  if (isLineSynced(standalone)) return createInitialBgWords(bgText, standalone.begin, standalone.end);
-  return null;
+  let carry: WordTiming[] | null;
+  if (words && words.length > 0) {
+    carry = remapWordTextsPreservingTiming(words, bgText);
+  } else if (isLineSynced(standalone)) {
+    carry = createInitialBgWords(bgText, standalone.begin, standalone.end);
+  } else {
+    carry = null;
+  }
+  if (!preserveBrackets) return carry;
+  if (!carry || carry.length === 0) return carry;
+  return bracketWordList(carry);
 }
 
 function mergeStandaloneInto(
   prev: LyricLine,
   standalone: LyricLine,
   bgText: string,
-  prevMergedThisPass: boolean,
+  prevTrailingBracketFromSamePass: boolean,
+  options: ExtractOptions,
 ): LyricLine | null {
   // On re-paste, prev's extraction-sourced background is stale output from a
   // prior pass, so the standalone line replaces it. Manual background is kept.
   // Extraction-sourced background produced earlier in this same pass (an
   // already-merged standalone) is fresh, so further standalones append to it.
   const prevIsExtraction = prev.backgroundTextSource === "extraction";
-  const prevIsStaleExtraction = prevIsExtraction && !prevMergedThisPass;
+  const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
   const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
   const baseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
-  const carried = carriedBackgroundWords(standalone, bgText);
+  const carried = carriedBackgroundWords(standalone, bgText, options.preserveBrackets);
 
   // Source for a result that keeps the prev base: a surviving extraction base
   // is necessarily fresh same-pass output (stale extraction was dropped above),
@@ -175,7 +200,8 @@ function mergeStandaloneInto(
 
   if (carried && carried.length > 0) {
     if (baseWords && baseWords.length > 0) {
-      const combined = [...baseWords, ...carried];
+      const canSeamStrip = options.preserveBrackets && prevTrailingBracketFromSamePass;
+      const combined = joinBracketedCarriedWords(baseWords, carried, canSeamStrip);
       return applyBackground(prev, {
         words: combined,
         text: reconstructLineText(combined, getSplitCharacter()),
@@ -189,33 +215,28 @@ function mergeStandaloneInto(
         source: "extraction",
       });
     }
-    return applyBackground(prev, { text: joinBackgroundText(baseText, bgText), source: keptBaseSource });
+    return applyBackground(prev, {
+      text: joinBackgroundText(baseText, bgText, options.preserveBrackets, prevTrailingBracketFromSamePass),
+      source: keptBaseSource,
+    });
   }
 
   if (baseWords && baseWords.length > 0) return null;
   return applyBackground(prev, {
-    text: joinBackgroundText(baseText, bgText),
+    text: joinBackgroundText(baseText, bgText, options.preserveBrackets, prevTrailingBracketFromSamePass),
     source: baseText ? keptBaseSource : "extraction",
   });
 }
 
 function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): LyricLine[] {
   const result: LyricLine[] = [];
-  // Result indices whose extraction-sourced background was written during this
-  // pass. Such content is fresh, so a later standalone appends to it; an
-  // extraction-sourced background carried in unchanged is stale prior output
-  // that a standalone replaces instead.
-  const freshExtractionIndices = new Set<number>();
+  const sameSessionWriteIndices = new Set<number>();
   for (const line of lines) {
     const classified = classifyLine(line.text);
     if (classified.kind === "inline") {
-      const extracted = extractInlineFromLine(line);
+      const extracted = extractInlineFromLine(line, options);
       result.push(extracted);
-      // extracted === line means nothing was extracted; such a pass-through
-      // line may carry stale prior-pass provenance and must not count as fresh.
-      if (extracted !== line && extracted.backgroundTextSource === "extraction") {
-        freshExtractionIndices.add(result.length - 1);
-      }
+      if (extracted !== line) sameSessionWriteIndices.add(result.length - 1);
       continue;
     }
     if (classified.kind === "standalone" && options.mergeStandaloneLines) {
@@ -228,10 +249,16 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
         !isLinked(prev) &&
         !isLinked(line)
       ) {
-        const merged = mergeStandaloneInto(prev, line, classified.bgText, freshExtractionIndices.has(prevIndex));
+        const merged = mergeStandaloneInto(
+          prev,
+          line,
+          classified.bgText,
+          sameSessionWriteIndices.has(prevIndex),
+          options,
+        );
         if (merged) {
           result[prevIndex] = merged;
-          if (merged.backgroundTextSource === "extraction") freshExtractionIndices.add(prevIndex);
+          sameSessionWriteIndices.add(prevIndex);
           continue;
         }
       }

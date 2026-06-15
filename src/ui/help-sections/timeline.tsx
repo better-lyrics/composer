@@ -1,6 +1,7 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, PROSE } from "@/ui/help-sections/shared";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 
 // -- Timeline -----------------------------------------------------------------
@@ -38,7 +39,10 @@ const TimelineSection: React.FC = () => (
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
           follows it. This works whichever way the "Scroll wheel scrolls timeline" setting is set.
         </li>
-        <li>{MOD_KEY} + scroll wheel to zoom in and out.</li>
+        <li>
+          {MOD_KEY} + scroll wheel to zoom in and out. Zoom anchors under the cursor. The header zoom buttons (and the
+          shortcuts they expose) anchor on the playhead when it's on screen, and on the viewport center otherwise.
+        </li>
         <li>Middle-click and drag to pan freely. Hold Shift while middle-dragging to lock panning to one axis.</li>
         <li>
           Drag the playhead near the left or right edge of the viewport and the view auto-scrolls in that direction, so
@@ -58,6 +62,11 @@ const TimelineSection: React.FC = () => (
         audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
         press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
         stays silent when the audio is muted. If it gets in the way, turn it off in Settings, under Playback.
+      </p>
+      <p className={`${PROSE} mt-2`}>
+        If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
+        stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
+        The full track plays back as normal regardless of the stem choice.
       </p>
     </div>
 
@@ -110,6 +119,29 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
         <li>Press Delete or Backspace to remove selected words.</li>
+      </ul>
+    </div>
+
+    <div>
+      <h4 className={HEADING}>Moving words across lines and tracks</h4>
+      <p className={PROSE}>
+        Grab a word block and drop it on a different line, or on the background track of the same line, to relocate it.
+        Multi-select moves them as a group: every selected word follows the dragged one, keeping its relative offset.
+        Linked syllables stay together.
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>
+          The drop falls back to a "reorder within the same row" when you keep it on the source line, so the same drag
+          handles both cases.
+        </li>
+        <li>
+          A drop is refused if it would overlap an existing word on the target track, if the target is line-synced (it
+          has no word slots to land in), or if it would break a linked-group instance. The toast tells you which.
+        </li>
+        <li>
+          Moves into the background track convert the word's role; the destination line picks up <strong>x-bg</strong>{" "}
+          markup at export.
+        </li>
       </ul>
     </div>
 
@@ -197,86 +229,7 @@ const TimelineSection: React.FC = () => (
       </p>
     </div>
 
-    <div>
-      <h4 className={HEADING}>Explicit words</h4>
-      <p className={PROSE}>
-        Mark a word as explicit so it carries the right flag through to export. Select one or more words and press{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleExplicit")} />, or right-click and pick{" "}
-        <strong>Mark as explicit</strong> (the same item reads <strong>Unmark explicit</strong> when the words are
-        already flagged).
-      </p>
-      <p className={`${PROSE} mt-2`}>
-        Composer also scans your lyrics for likely explicit words and shows a suggestions banner above the timeline.
-        From there you can mark a suggested word, mark them all, or dismiss ones that are false positives. Explicit
-        words export as the <code>composer:explicit="true"</code> attribute on the word's TTML span.
-      </p>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Right-click menus</h4>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>
-          Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
-          selected. On a word already split into syllables you also get Merge syllables and Snap syllables flush. Mark
-          as explicit (or Unmark explicit) toggles the explicit flag. Group this line and Split into words show up when
-          they apply, and Delete word is always there.
-        </li>
-        <li>Right-click empty track space: Add word here.</li>
-        <li>Right-click the gutter: Add line above/below, Assign agent, Delete line.</li>
-        <li>
-          Right-click a group banner: Add instance, Shift to playhead, Rename, Recolor, Detach instance, Delete group.
-        </li>
-      </ul>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Linked groups</h4>
-      <p className={PROSE}>
-        Mark repeating sections (chorus, verse, bridge) as a group so structural edits fan out to every instance. See
-        the <strong>Linked groups</strong> section in this help modal for the full walkthrough.
-      </p>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Header toolbar</h4>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>
-          <strong>Follow</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />
-          ): auto-scrolls the view to keep the playhead visible during playback.
-        </li>
-        <li>
-          <strong>Rolling</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />
-          ): the rolling edit tool. When on, dragging a flush boundary moves both adjacent words together while keeping
-          their combined duration.
-        </li>
-        <li>
-          <strong>Preview</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />
-          ): opens a live lyrics preview sidebar on the right.
-        </li>
-        <li>
-          <strong>Snap</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleSnap")} />
-          ): a magnet for word edges and the playhead. Hold {MOD_KEY} mid-drag to bypass.
-        </li>
-        <li>
-          <strong>Import</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />
-          ): imports lyrics directly into the Timeline without switching tabs.
-        </li>
-        <li>
-          <strong>Zoom</strong>: use the +/- buttons or {MOD_KEY} + scroll wheel to zoom in and out.
-        </li>
-      </ul>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Other features</h4>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>
-          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.insertLineBelow")} /> with a word selected to
-          insert a new empty line below it.
-        </li>
-        <li>The info panel at the bottom shows details for the selected word, including background text editing.</li>
-      </ul>
-    </div>
+    <TimelineExtras />
   </div>
 );
 

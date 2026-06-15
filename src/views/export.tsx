@@ -1,4 +1,5 @@
-import { exportProjectToFile, importProjectFromFile, clearCurrentProject, cancelPendingSave } from "@/lib/persistence";
+import { exportProjectToFile, importProjectFromFile, clearCurrentProject } from "@/lib/persistence";
+import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";

@@ -1,6 +1,8 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
+import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -21,12 +23,18 @@ import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
+import {
+  importParsedLyrics,
+  type ImportParsedLyricsContext,
+} from "@/views/lyrics-import-modal/use-import-modal-actions";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
 const RUN_DEBOUNCE_MS = 500;
+
+const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
 // -- Components ---------------------------------------------------------------
 
@@ -279,15 +287,17 @@ const LinePreview: React.FC<{
 
 const EditPanel: React.FC = () => {
   const textareaId = useId();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const agents = useProjectStore((s) => s.agents);
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const activeTab = useProjectStore((s) => s.activeTab);
   const setLines = useProjectStore((s) => s.setLines);
-  const setMetadata = useProjectStore((s) => s.setMetadata);
-  const addAgent = useProjectStore((s) => s.addAgent);
   const confirm = useConfirm();
+  const openImportModal = useImportModal();
+  const lastImportResult = useLastImportResult();
+  const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
+  const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
+  const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => l.text).join("\n") : ""));
   const rawTextRef = useRef(rawText);
@@ -297,10 +307,6 @@ const EditPanel: React.FC = () => {
   const pastedRef = useRef(false);
   const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
-  const [importResult, setImportResult] = useState<{
-    result: ParseResult;
-    filename: string;
-  } | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
@@ -336,8 +342,13 @@ const EditPanel: React.FC = () => {
     return counts;
   }, [lines]);
 
-  const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const extractOptions = useMemo(() => ({ mergeStandaloneLines: mergeStandalone }), [mergeStandalone]);
+  const extractOptions = useMemo(
+    () => ({
+      mergeStandaloneLines: mergeStandaloneBackgroundLines,
+      preserveBrackets: preserveBracketsOnExtraction,
+    }),
+    [mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
+  );
   const canExtractBackgroundVocals = useMemo(() => {
     const extracted = extractBackgroundVocals(lines, extractOptions);
     return extracted.length !== lines.length || extracted.some((line, i) => line !== lines[i]);
@@ -378,7 +389,10 @@ const EditPanel: React.FC = () => {
   const handleExtractLine = useCallback((lineId: string) => {
     const target = useProjectStore.getState().lines.find((line) => line.id === lineId);
     if (!target) return;
-    const extracted = extractInlineFromLine(target);
+    const extracted = extractInlineFromLine(target, {
+      mergeStandaloneLines: false,
+      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
+    });
     if (extracted === target) return;
     useProjectStore.getState().updateLineWithHistory(lineId, {
       text: extracted.text,
@@ -482,6 +496,7 @@ const EditPanel: React.FC = () => {
     const current = useProjectStore.getState().lines;
     const next = extractBackgroundVocals(current, {
       mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+      preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
     });
     if (next.length === current.length && next.every((line, i) => line === current[i])) return;
     commitLinesWithHistory(next);
@@ -570,7 +585,7 @@ const EditPanel: React.FC = () => {
       }
 
       setRawText(text);
-      setImportResult(null);
+      useImportModalStore.getState().clearImportResult();
 
       if (action.kind === "noop") return;
 
@@ -580,6 +595,7 @@ const EditPanel: React.FC = () => {
         if (useSettingsStore.getState().autoExtractBackgroundVocals) {
           finalLines = extractBackgroundVocals(finalLines, {
             mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
+            preserveBrackets: useSettingsStore.getState().preserveBracketsOnExtraction,
           });
         }
         finalizeRun();
@@ -598,93 +614,47 @@ const EditPanel: React.FC = () => {
     [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
   );
 
-  const handleFileImport = useCallback(
+  const handleDroppedFile = useCallback(
     async (file: File) => {
       const content = await file.text();
       const audioDuration = useAudioStore.getState().duration;
-      const result = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
-
-      if (result.lines.length > 0) {
-        const existingLineCount = useProjectStore.getState().lines.length;
-        if (existingLineCount > 0) {
-          const ok = await confirm({
-            title: "Replace existing lyrics?",
-            description: `This will replace your ${existingLineCount} existing line${existingLineCount === 1 ? "" : "s"}. This cannot be undone.`,
-            confirmLabel: "Replace",
-            variant: "destructive",
-            settingsKey: "confirmReplaceLyrics",
-          });
-          if (!ok) return;
-        }
-
-        const importedLines = useSettingsStore.getState().autoExtractBackgroundVocals
-          ? extractBackgroundVocals(result.lines, {
-              mergeStandaloneLines: useSettingsStore.getState().mergeStandaloneBackgroundLines,
-            })
-          : result.lines;
-        linesSetByUs.current = importedLines;
-        setLines(importedLines);
-        setRawText(importedLines.map((l) => l.text).join("\n"));
-        useProjectStore.getState().setGroups(result.groups ?? []);
-
-        if (Object.keys(result.metadata).length > 0) {
-          setMetadata(result.metadata);
-        }
-
-        // Reconcile imported agents: update name/type on matching id, add otherwise
-        if (result.agents?.length) {
-          const updateAgent = useProjectStore.getState().updateAgent;
-          const agentsById = new Map(agents.map((a) => [a.id, a] as const));
-          for (const agent of result.agents) {
-            if (agentsById.has(agent.id)) {
-              updateAgent(agent.id, { name: agent.name, type: agent.type });
-            } else {
-              addAgent(agent);
-            }
-          }
-        }
-
-        setImportResult({ result, filename: file.name });
-      }
+      const parsed = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
+      const context: ImportParsedLyricsContext = {
+        confirm,
+        agents,
+        audioDuration,
+        applyBackgroundExtraction: autoExtractBackgroundVocals,
+        backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
+        backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
+        source: { label: "Drop", filename: file.name },
+        onResult: (result, source) => {
+          useImportModalStore.getState().recordImportResult(result, source);
+        },
+      };
+      await importParsedLyrics(parsed, context);
     },
-    [setLines, setMetadata, agents, addAgent, confirm],
+    [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
   );
 
-  const handleFileInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        handleFileImport(file);
-      }
-      // Reset input so same file can be selected again
-      e.target.value = "";
-    },
-    [handleFileImport],
-  );
-
-  const handleImportClick = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+  const importTriggers = useDualClickImport(openImportModal);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
       if (file && /\.(txt|lrc|srt|ttml|xml)$/i.test(file.name)) {
-        handleFileImport(file);
+        handleDroppedFile(file);
       }
     },
-    [handleFileImport],
+    [handleDroppedFile],
   );
-
-  const handleDragOver = (e: React.DragEvent) => e.preventDefault();
 
   return (
     <div
       data-tour="edit-panel"
       className="flex flex-col flex-1 gap-4 p-4 overflow-hidden"
       onDrop={handleDrop}
-      onDragOver={handleDragOver}
+      onDragOver={preventDefaultDragOver}
     >
       <div className="flex items-center justify-between select-none">
         <h2 className="text-lg font-medium">Lyrics Editor</h2>
@@ -701,26 +671,24 @@ const EditPanel: React.FC = () => {
             <IconMicrophone className="size-4" />
             Extract background vocals
           </Button>
-          <Button hasIcon onClick={handleImportClick}>
+          <Button
+            hasIcon
+            onClick={importTriggers.onClick}
+            onDoubleClick={importTriggers.onDoubleClick}
+            title="Click to search, paste, or upload. Double-click to upload a file directly."
+          >
             <IconFileImport className="size-4" />
-            Import File
+            Import Lyrics
           </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            aria-label="Import lyrics file"
-            accept=".txt,.lrc,.srt,.ttml,.xml"
-            onChange={handleFileInputChange}
-            className="sr-only"
-          />
+          {importTriggers.fileInput}
         </div>
       </div>
 
-      {importResult && (
+      {lastImportResult && (
         <ImportSuccessBanner
-          result={importResult.result}
-          filename={importResult.filename}
-          onDismiss={() => setImportResult(null)}
+          result={lastImportResult.parsed}
+          filename={lastImportResult.source.filename}
+          onDismiss={() => useImportModalStore.getState().clearImportResult()}
         />
       )}
 

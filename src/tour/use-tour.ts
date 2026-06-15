@@ -1,7 +1,7 @@
 import { type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 import type { GuideCardState } from "@/tour/guide-card";
 import { driver, type Driver, type DriveStep } from "driver.js";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 
 // -- Constants ----------------------------------------------------------------
@@ -97,7 +97,7 @@ function useTour() {
       const nextStepIndex = gatedStep.stepIndex + 1;
       const stepLabel = `Step ${gatedStep.stepIndex + 1} / ${totalSteps}`;
 
-      setGuideCard({ task: gatedStep.task, stepLabel, isComplete: false });
+      setGuideCard({ task: gatedStep.task, stepLabel, stepIndex: gatedStep.stepIndex, isComplete: false });
       saveResumeState(gatedStep.stepIndex);
 
       gateIntervalRef.current = setInterval(() => {
@@ -152,20 +152,13 @@ function useTour() {
 
   const skipGuideCard = useCallback(() => {
     clearGateInterval();
+    const currentIdx = guideCard?.stepIndex;
     setGuideCard(null);
+    if (currentIdx === undefined) return;
 
     const steps = createTourSteps();
     const gatedIndices = new Set(TOUR_GATED_STEPS.map((g) => g.stepIndex));
-
-    let currentGatedIdx = 0;
-    for (const gs of TOUR_GATED_STEPS) {
-      if (!gs.gateCheck()) {
-        currentGatedIdx = gs.stepIndex;
-        break;
-      }
-    }
-
-    let nextIdx = currentGatedIdx + 1;
+    let nextIdx = currentIdx + 1;
     while (nextIdx < steps.length && gatedIndices.has(nextIdx)) {
       nextIdx++;
     }
@@ -176,7 +169,7 @@ function useTour() {
       driverRef.current = d;
       d.drive(nextIdx);
     }
-  }, [clearGateInterval, createDriverInstance, patchStepsWithGates]);
+  }, [guideCard, clearGateInterval, createDriverInstance, patchStepsWithGates]);
 
   const driveTour = useCallback(
     (startIndex?: number) => {
@@ -199,6 +192,13 @@ function useTour() {
     clearResumeState();
     driveTour();
   }, [markTourSeen, driveTour]);
+
+  useEffect(() => {
+    return () => {
+      destroyDriver();
+      clearGateInterval();
+    };
+  }, [destroyDriver, clearGateInterval]);
 
   const resumeOrStartTour = useCallback(() => {
     const isActive = driverRef.current?.isActive() || guideCard !== null;

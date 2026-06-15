@@ -5,12 +5,14 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
+import { boundsOverlap } from "@/domain/word/overlap";
 import { selfKey } from "@/views/timeline/snap";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
-import { LyricsImportModal } from "@/views/timeline/lyrics-import-modal";
+import { useImportModal } from "@/stores/import-modal-store";
+import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
@@ -38,8 +40,7 @@ import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { Button } from "@/ui/button";
-import { IconFileImport, IconFileMusic, IconMusic } from "@tabler/icons-react";
+import { IconMusic } from "@tabler/icons-react";
 import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
@@ -112,7 +113,7 @@ function makeDragOverlapCheck(
     const newEnd = data.end + shift;
     return !wordsArr.some((w, i) => {
       if (i === data.wordIndex) return false;
-      return newBegin < w.end && newEnd > w.begin;
+      return boundsOverlap({ begin: newBegin, end: newEnd }, w);
     });
   };
 }
@@ -132,7 +133,7 @@ const TimelinePanel: React.FC = () => {
   const contentRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [contentHeight, setContentHeight] = useState(400);
-  const [lyricsModalOpen, setLyricsModalOpen] = useState(false);
+  const openImportModal = useImportModal();
 
   const effectiveLines = useMemo(() => getEffectiveLines(lines), [lines]);
 
@@ -171,7 +172,7 @@ const TimelinePanel: React.FC = () => {
   }, [activeDrag]);
 
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
-  const openLyricsModal = useCallback(() => setLyricsModalOpen(true), []);
+  const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
 
@@ -382,17 +383,8 @@ const TimelinePanel: React.FC = () => {
   if (lines.length === 0) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 p-4">
-          <IconFileMusic className="size-12 text-composer-text opacity-50" strokeWidth={1} />
-          <p className="text-lg text-composer-text-secondary">No lyrics loaded</p>
-          <p className="text-sm text-composer-text-muted">Paste lyrics or import a file</p>
-          <Button variant="primary" hasIcon onClick={() => setLyricsModalOpen(true)} className="mt-2">
-            <IconFileImport size={16} />
-            Import Lyrics
-          </Button>
-        </div>
-        <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
+        <TimelineHeader onImportLyrics={openLyricsModal} />
+        <EmptyTimelineImport openLyricsModal={openLyricsModal} />
       </div>
     );
   }
@@ -439,7 +431,7 @@ const TimelinePanel: React.FC = () => {
       }}
     >
       <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader onImportLyrics={() => setLyricsModalOpen(true)} />
+        <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
         <GroupingSuggestionsBanner />
         <ExplicitSuggestionsBanner />
 
@@ -455,7 +447,7 @@ const TimelinePanel: React.FC = () => {
                 role="application"
                 aria-label="Timeline"
                 data-scroll-container
-                className="flex-1 overflow-auto overscroll-none static! z-[unset]"
+                className="flex-1 overflow-auto overscroll-none static! z-[unset] overflow-anchor-none"
                 onScroll={handleScroll}
                 onMouseDown={handleMouseDown}
                 onAuxClick={(e) => e.preventDefault()}
@@ -522,7 +514,6 @@ const TimelinePanel: React.FC = () => {
 
       <TimelineContextMenu />
       <TimelineSyllableSplitter />
-      <LyricsImportModal isOpen={lyricsModalOpen} onClose={() => setLyricsModalOpen(false)} />
     </DndContext>
   );
 };

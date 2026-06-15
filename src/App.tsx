@@ -4,6 +4,7 @@ import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
+import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
@@ -11,12 +12,14 @@ import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
+import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 import { HelpModal } from "@/ui/help-modal";
 import { SettingsModal } from "@/ui/settings-modal";
 import { TabBar } from "@/ui/tab-bar";
@@ -44,7 +47,9 @@ const AppContent: React.FC = () => {
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const [helpOpen, setHelpOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsOpen = useUIStore((s) => s.settingsOpen);
+  const openSettings = useUIStore((s) => s.openSettings);
+  const closeSettings = useUIStore((s) => s.closeSettings);
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
@@ -61,6 +66,7 @@ const AppContent: React.FC = () => {
   usePersistence();
   useImportFromHash();
   useResolveYouTubeTunnel();
+  useImportFromQuery();
   useImportFromYouTube();
   usePanicRecovery();
   useAutoSeparate();
@@ -68,7 +74,10 @@ const AppContent: React.FC = () => {
   useVocalOnsetSnapPoints();
 
   const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
-  const setSettingsOpenCb = useCallback((open: boolean) => setSettingsOpen(open), []);
+  const setSettingsOpenCb = useCallback(
+    (open: boolean) => (open ? openSettings() : closeSettings()),
+    [openSettings, closeSettings],
+  );
 
   useGlobalShortcuts({
     setActiveTab,
@@ -79,14 +88,14 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
       <AppHeader
-        onSettingsOpen={() => setSettingsOpen(true)}
+        onSettingsOpen={() => openSettings()}
         onHelpOpen={() => setHelpOpen(true)}
         onTourStart={resumeOrStartTour}
       />
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsModal
         isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        onClose={closeSettings}
         onResetTour={() => {
           localStorage.removeItem("composer-tour-seen");
           localStorage.removeItem("composer-tour-resume");
@@ -139,6 +148,7 @@ const App: React.FC = () => {
         <AppContent />
         <ConfirmModalHost />
         <DivergenceModalHost />
+        <LyricsImportModalHost />
         <Toaster
           theme="dark"
           position="bottom-center"

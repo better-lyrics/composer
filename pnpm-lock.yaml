@@ -5,15 +5,15 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@braccato/parsers': ^0.1.1
+  '@braccato/parsers': ^0.1.2
 
 importers:
 
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^0.1.4
-        version: 0.1.4
+        specifier: ^0.1.7
+        version: 0.1.7
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -36,8 +36,8 @@ importers:
         specifier: ^5.100.10
         version: 5.100.10(react@19.2.3)
       '@uimaxbai/am-lyrics':
-        specifier: ^1.5.3
-        version: 1.5.3(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)
+        specifier: ^1.5.4
+        version: 1.5.4(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)
       '@wavesurfer/react':
         specifier: ^1.0.12
         version: 1.0.12(react@19.2.3)(wavesurfer.js@7.12.1)
@@ -333,11 +333,11 @@ packages:
   '@blazediff/core@1.9.1':
     resolution: {integrity: sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA==}
 
-  '@braccato/core@0.1.4':
-    resolution: {integrity: sha512-/Qj26/+uVJhmztn9AQHC3919A0WEXT7Qgy8MQWyv8tbRr/4aqyQMUQ/r7+IcNs4+FWJS8jZHSyPrEhAk0tnm3A==}
+  '@braccato/core@0.1.7':
+    resolution: {integrity: sha512-z9TXJXiIToCu8uEDDxoLjpQjs7YseQE8De+cDN/iPgYqRJwrFx+xP+2c3se6g91lLqfh3Hyku7FKJtCjGPaXGA==}
 
-  '@braccato/parsers@0.1.1':
-    resolution: {integrity: sha512-S4LlT8vTMNiXvVUC5iaQiLvu8KUNZn7oAI0LRaQ0W75THlX/pTSEp3EoB3UBzI2F0k3ARvxL9qNuxpd3+WHmeQ==}
+  '@braccato/parsers@0.1.2':
+    resolution: {integrity: sha512-v1AIekHvH43hOOybJmwpoon3B7L6649NFJawsa0sm9202klsqSXkA/k3SQ/VlM8KIkghmd+nhUERtp0ITxzxnQ==}
 
   '@bramus/specificity@2.4.2':
     resolution: {integrity: sha512-ctxtJ/eA+t+6q2++vj5j7FYX3nRu311q1wfYH3xjlLOsczhlhxAg2FWNUXhpGvAw3BWo1xBcvOV6/YLc2r5FJw==}
@@ -1423,8 +1423,8 @@ packages:
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
-  '@uimaxbai/am-lyrics@1.5.3':
-    resolution: {integrity: sha512-1A9pU4UZ+EReiGPNrFdz/7D5+fd//i5q51MtUVZR+KhrumfDmPoo3a593hWjbj8gxmxQdREMaKALFo1kcekNCw==}
+  '@uimaxbai/am-lyrics@1.5.4':
+    resolution: {integrity: sha512-cZ3gPNjpfPs2y/YNrdAX9pI0ZiO7eSUA80ijlTZbpYsCU/Kux1GEw6Ykvr9OknOn0e9Qs5UASFmVC6IVwV/0Kg==}
     peerDependencies:
       '@lit/react': ^1.0.0
       react: '>=17.0.0'
@@ -3143,12 +3143,12 @@ snapshots:
 
   '@blazediff/core@1.9.1': {}
 
-  '@braccato/core@0.1.4':
+  '@braccato/core@0.1.7':
     dependencies:
-      '@braccato/parsers': 0.1.1
+      '@braccato/parsers': 0.1.2
       lit: 3.3.2
 
-  '@braccato/parsers@0.1.1': {}
+  '@braccato/parsers@0.1.2': {}
 
   '@bramus/specificity@2.4.2':
     dependencies:
@@ -3904,7 +3904,7 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@uimaxbai/am-lyrics@1.5.3(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)':
+  '@uimaxbai/am-lyrics@1.5.4(@lit/react@1.0.8(@types/react@19.2.7))(react@19.2.3)':
     dependencies:
       '@babel/runtime': 7.29.2
       lit: 3.3.2

@@ -1,4 +1,5 @@
 import { beforeEach } from "vitest";
+import { __resetPersistenceSettledForTests } from "@/lib/persistence-settled";
 import { resetAllStores } from "@/test/stores";
 import { registerConsoleGuard, addGlobalAllowedConsolePattern } from "@/test/console-guard";
 
@@ -16,6 +17,7 @@ async function deleteDB(name: string): Promise<void> {
 beforeEach(async () => {
   await Promise.all(COMPOSER_DBS.map(deleteDB));
   await resetAllStores();
+  __resetPersistenceSettledForTests();
 });
 
 addGlobalAllowedConsolePattern(/Reduced Motion enabled/);

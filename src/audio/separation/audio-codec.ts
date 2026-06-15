@@ -1,3 +1,5 @@
+import { parseLamePriming, stripLeading } from "@/audio/lame-priming";
+
 const TARGET_SAMPLE_RATE = 44_100;
 const TARGET_CHANNELS = 2;
 
@@ -7,8 +9,20 @@ interface DecodedAudio {
   numFrames: number;
 }
 
-async function decodeFileToFloat32(file: File | Blob): Promise<DecodedAudio> {
+interface DecodeOptions {
+  stripPriming?: boolean;
+}
+
+async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}): Promise<DecodedAudio> {
   const buf = await file.arrayBuffer();
+  const shouldStrip = opts.stripPriming !== false;
+  const priming = shouldStrip ? parseLamePriming(buf) : { samples: 0, sampleRate: 0 };
+  const trimAtTarget =
+    priming.samples > 0 && priming.sampleRate > 0
+      ? Math.round((priming.samples * TARGET_SAMPLE_RATE) / priming.sampleRate)
+      : 0;
+  const applyStrip = (channels: Float32Array[]): Float32Array[] => stripLeading(channels, trimAtTarget);
+
   const ctx = new OfflineAudioContext(TARGET_CHANNELS, 1, TARGET_SAMPLE_RATE);
   const decoded = await ctx.decodeAudioData(buf);
 
@@ -19,7 +33,8 @@ async function decodeFileToFloat32(file: File | Blob): Promise<DecodedAudio> {
       decoded.copyFromChannel(out, c);
       channels.push(out);
     }
-    return { channels, sampleRate: TARGET_SAMPLE_RATE, numFrames: decoded.length };
+    const stripped = applyStrip(channels);
+    return { channels: stripped, sampleRate: TARGET_SAMPLE_RATE, numFrames: stripped[0]?.length ?? 0 };
   }
 
   const durationSec = decoded.length / decoded.sampleRate;
@@ -46,7 +61,8 @@ async function decodeFileToFloat32(file: File | Blob): Promise<DecodedAudio> {
     rendered.copyFromChannel(out, c);
     channels.push(out);
   }
-  return { channels, sampleRate: TARGET_SAMPLE_RATE, numFrames: rendered.length };
+  const stripped = applyStrip(channels);
+  return { channels: stripped, sampleRate: TARGET_SAMPLE_RATE, numFrames: stripped[0]?.length ?? 0 };
 }
 
 function floatChannelsToWavBlob(channels: Float32Array[], sampleRate: number): Blob {

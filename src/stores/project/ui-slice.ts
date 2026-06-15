@@ -16,6 +16,7 @@ function createUiInitialState(): UiState {
     editorMode: "simple",
     activeTab: "import",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
+    primingStripped: false,
   };
 }
 
@@ -36,6 +37,8 @@ const createUiSlice: StateCreator<ProjectStore, [], [], UiState & UiActions> = (
   },
 
   setSyllableSplitDefaults: (syllableSplitDefaults) => set({ syllableSplitDefaults, isDirty: true }),
+
+  setPrimingStripped: (primingStripped) => set({ primingStripped, isDirty: true }),
 });
 
 // -- Exports ------------------------------------------------------------------

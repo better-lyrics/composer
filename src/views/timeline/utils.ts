@@ -137,14 +137,18 @@ interface RowLayoutInput {
   groupHeaderHeight: number;
 }
 
-interface RowPosition {
+interface HeaderPosition {
   top: number;
   height: number;
 }
 
+interface RowPosition extends HeaderPosition {
+  mainBottom: number;
+}
+
 interface RowLayout {
   lineTops: Map<string, RowPosition>;
-  headerTops: Map<string, RowPosition>;
+  headerTops: Map<string, HeaderPosition>;
 }
 
 function computeRowLayout({
@@ -157,7 +161,7 @@ function computeRowLayout({
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
   const lineTops = new Map<string, RowPosition>();
-  const headerTops = new Map<string, RowPosition>();
+  const headerTops = new Map<string, HeaderPosition>();
   let rowTop = waveformHeight;
   let lastInstanceKey: string | null = null;
 
@@ -176,7 +180,7 @@ function computeRowLayout({
     const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
     const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
     const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
-    lineTops.set(line.id, { top: rowTop, height: rowHeight });
+    lineTops.set(line.id, { top: rowTop, height: rowHeight, mainBottom: rowTop + mainHeight });
     rowTop += rowHeight;
   }
 
@@ -394,6 +398,29 @@ function nudgeSelectedWords(
   return { appliedDelta, updates };
 }
 
+// -- Hit testing ---------------------------------------------------------------
+
+function getLineIndexAtY(y: number, lines: LyricLine[], layout: RowLayout): number {
+  for (let i = 0; i < lines.length; i++) {
+    const pos = layout.lineTops.get(lines[i].id);
+    if (!pos) continue;
+    if (y >= pos.top && y < pos.top + pos.height) return i;
+  }
+  return -1;
+}
+
+function getLineAndTrackAtY(
+  y: number,
+  lines: LyricLine[],
+  layout: RowLayout,
+): { lineIndex: number; track: "word" | "bg" } | null {
+  const lineIndex = getLineIndexAtY(y, lines, layout);
+  if (lineIndex < 0) return null;
+  const pos = layout.lineTops.get(lines[lineIndex].id);
+  if (!pos) return null;
+  return { lineIndex, track: y < pos.mainBottom ? "word" : "bg" };
+}
+
 // -- Exports -------------------------------------------------------------------
 
 export {
@@ -404,6 +431,8 @@ export {
   getEffectiveRows,
   getWordsInInstance,
   computeRowLayout,
+  getLineIndexAtY,
+  getLineAndTrackAtY,
   nudgeSelectedWords,
   partitionNudgeSelections,
   shiftLineSyncedRows,

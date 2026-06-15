@@ -12,6 +12,7 @@ import type { SeparationError, SeparationStatus, Stem } from "@/audio/separation
 import { hasOnlyFiniteSamples } from "@/audio/separation/validate-channels";
 import { SeparationWorker } from "@/audio/separation/worker-host";
 import { useAudioStore } from "@/stores/audio";
+import type { VocalModelVariant } from "@/stores/settings";
 import { useSettingsStore } from "@/stores/settings";
 import { create } from "zustand";
 
@@ -33,6 +34,7 @@ interface SeparationActions {
   downloadModel: () => Promise<void>;
   separate: () => Promise<void>;
   selectStem: (stem: Stem) => void;
+  restoreCurrentStem: (stem: Stem) => void;
   cancel: () => void;
   retry: () => Promise<void>;
   reset: () => void;
@@ -56,6 +58,30 @@ function disposeWorker() {
 function revokeUrls(urls: Partial<Record<Stem, string>>) {
   for (const url of Object.values(urls)) {
     if (url) URL.revokeObjectURL(url);
+  }
+}
+
+type SetSeparationState = (partial: Partial<SeparationState>) => void;
+
+// Shared download-init prologue used by both `downloadModel` (which then sets
+// idle) and `separate` (which then continues to processing). Returns true if
+// the model initialised, false if it aborted or errored. On abort/error the
+// caller's status has already been written to "idle" or "error".
+async function runModelDownload(set: SetSeparationState, variant: VocalModelVariant): Promise<boolean> {
+  set({ status: "downloading", error: null, progress: { loaded: 0, total: 0 } });
+  try {
+    await getWorker().init({
+      variant,
+      onProgress: (loaded, total) => set({ progress: { loaded, total } }),
+    });
+    return true;
+  } catch (err) {
+    if ((err as Error).name === "AbortError" || isCancelling) {
+      set({ status: "idle" });
+    } else {
+      set({ status: "error", error: { code: "fetch-failed", message: (err as Error).message } });
+    }
+    return false;
   }
 }
 
@@ -122,22 +148,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
     }
     isCancelling = false;
     const variant = useSettingsStore.getState().vocalModelVariant;
-    set({ status: "downloading", error: null, progress: { loaded: 0, total: 0 } });
-    try {
-      await getWorker().init({
-        variant,
-        onProgress: (loaded, total) => set({ progress: { loaded, total } }),
-      });
+    if (await runModelDownload(set, variant)) {
       set({ status: "idle", modelCached: true });
-    } catch (err) {
-      if ((err as Error).name === "AbortError" || isCancelling) {
-        set({ status: "idle" });
-        return;
-      }
-      set({
-        status: "error",
-        error: { code: "fetch-failed", message: (err as Error).message },
-      });
     }
   },
 
@@ -155,21 +167,8 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
 
     isCancelling = false;
     const variant = useSettingsStore.getState().vocalModelVariant;
-    set({ status: "downloading", error: null, progress: { loaded: 0, total: 0 } });
-    try {
-      await getWorker().init({
-        variant,
-        onProgress: (loaded, total) => set({ progress: { loaded, total } }),
-      });
-      set({ modelCached: true });
-    } catch (err) {
-      if ((err as Error).name === "AbortError" || isCancelling) {
-        set({ status: "idle" });
-        return;
-      }
-      set({ status: "error", error: { code: "fetch-failed", message: (err as Error).message } });
-      return;
-    }
+    if (!(await runModelDownload(set, variant))) return;
+    set({ modelCached: true });
 
     set({ status: "processing", progress: { loaded: 0, total: 0 } });
     let decoded: Awaited<ReturnType<typeof decodeFileToFloat32>>;
@@ -233,6 +232,16 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
   selectStem: (stem) => {
     const available = get().availableStems;
     if (!available.includes(stem)) return;
+    set({ currentStem: stem });
+  },
+
+  // Called once at boot by usePersistence to seed currentStem from the saved
+  // project, before useAutoSeparate's source subscription runs
+  // refreshForCurrentSource. Unlike selectStem this intentionally bypasses the
+  // availableStems guard, because at restore time the available list hasn't
+  // been populated yet. refreshForCurrentSource handles eviction by overwriting
+  // back to "original" when the cached stems are gone.
+  restoreCurrentStem: (stem) => {
     set({ currentStem: stem });
   },
 

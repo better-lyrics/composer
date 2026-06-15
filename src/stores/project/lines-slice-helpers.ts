@@ -1,5 +1,6 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -106,7 +107,7 @@ function applyMoveFromBg(
   const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
   const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(line.words ?? [], movedWords), duration);
 
-  const withMain = reconcileLine({ ...line, words: mergedMain });
+  const withMain = applyMainWordEdit(line, mergedMain);
   if (remainingBg.length === 0) {
     return reconcileLine({ ...withMain, ...CLEARED_BACKGROUND });
   }

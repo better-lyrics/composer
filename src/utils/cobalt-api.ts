@@ -81,7 +81,7 @@ async function parseError(res: Response): Promise<CobaltApiError> {
   } catch {
     body = { error: "unknown" };
   }
-  const code = body.error ?? body.code ?? "unknown";
+  const code = body.reason ? mapStandardCobaltErrorCode(body.reason) : (body.error ?? body.code ?? "unknown");
   return new CobaltApiError(code, res.status);
 }
 
@@ -232,7 +232,7 @@ function formatCobaltErrorForToast(err: unknown, ctx: ToastErrorContext): string
 
     case "bot_detection":
       return isDefault
-        ? "YouTube is rate-limiting Composer right now. Try again in a few minutes."
+        ? "YouTube is blocking Composer's default Cobalt instance. Open Settings → Advanced, add a working instance from cobalt.directory, and switch to it."
         : `YouTube is blocking ${instanceLabel} as a bot.${switchHint}`;
 
     case "geo_blocked":

@@ -84,7 +84,7 @@ const GettingStartedSection: React.FC = () => (
 
     <div className="aspect-video w-full rounded-lg overflow-hidden border border-composer-border">
       <iframe
-        src="https://www.youtube.com/embed/IEA0W4qpRIs?rel=0"
+        src="https://www.youtube.com/embed/to138zXZ0nc?rel=0"
         title="Composer tutorial"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"

@@ -4,14 +4,21 @@ import { getModelDescriptor } from "@/audio/separation/model-registry";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { IconLoader2, IconMicrophone } from "@tabler/icons-react";
-import { useEffect } from "react";
+import { cn } from "@/utils/cn";
+import { IconCheck, type IconProps, IconLoader2, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
+import { type ComponentType, useEffect } from "react";
 import type { Stem } from "@/audio/separation/types";
 
 const STEM_LABELS: Record<Stem, string> = {
   original: "Original",
   vocals: "Vocals",
-  instrumental: "Instr.",
+  instrumental: "Instrumental",
+};
+
+const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
+  original: IconWaveSine,
+  vocals: IconMicrophone,
+  instrumental: IconMusic,
 };
 
 function formatMb(bytes: number): string {
@@ -57,70 +64,89 @@ const VocalSeparationDropdown: React.FC = () => {
 
   const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
   const triggerLabel = status === "downloading" || status === "processing" ? `${pct}%` : STEM_LABELS[currentStem];
+  const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
     status === "downloading" || status === "processing" ? (
-      <IconLoader2 className="size-4 animate-spin" />
+      <IconLoader2 className={`${triggerIconClass} animate-spin`} />
     ) : (
-      <IconMicrophone className="size-4" />
+      <IconMicrophone className={triggerIconClass} />
     );
 
   return (
     <Popover
       placement="top-end"
       trigger={
-        <Button variant="ghost" hasIcon className="font-mono tabular-nums min-w-20" aria-label="Vocal separation">
+        <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label="Vocal separation">
           {triggerIcon}
           <span>{triggerLabel}</span>
         </Button>
       }
     >
-      <div className="p-3 w-72">
-        {status === "error" && error && (
-          <ErrorState message={error.message} onRetry={retry} onDismiss={() => useSeparationStore.getState().reset()} />
-        )}
+      {(close) => {
+        const selectAndClose = (stem: Stem) => {
+          selectStem(stem);
+          close();
+        };
+        return (
+          <div className="p-3 w-max max-w-80">
+            {status === "error" && error && (
+              <ErrorState
+                message={error.message}
+                onRetry={retry}
+                onDismiss={() => useSeparationStore.getState().reset()}
+              />
+            )}
 
-        {status === "downloading" && (
-          <ProgressState
-            title="Downloading model…"
-            detail={`${formatMb(progress.loaded)} / ${formatMb(progress.total || (descriptor?.approxBytes ?? 0))}`}
-            pct={pct}
-            onCancel={cancel}
-          />
-        )}
+            {status === "downloading" && (
+              <ProgressState
+                title="Downloading model…"
+                detail={`${formatMb(progress.loaded)} / ${formatMb(progress.total || (descriptor?.approxBytes ?? 0))}`}
+                pct={pct}
+                onCancel={cancel}
+              />
+            )}
 
-        {status === "processing" && (
-          <ProgressState
-            title="Separating vocals…"
-            detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
-            pct={pct}
-            onCancel={cancel}
-          />
-        )}
+            {status === "processing" && (
+              <ProgressState
+                title="Separating vocals…"
+                detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
+                pct={pct}
+                onCancel={cancel}
+              />
+            )}
 
-        {status === "idle" && !modelCached && (
-          <IdleNoModelState approxMb={descriptor?.approxMb ?? 85} onDownload={downloadModel} onSeparate={separate} />
-        )}
+            {status === "idle" && !modelCached && (
+              <IdleNoModelState
+                approxMb={descriptor?.approxMb ?? 85}
+                onDownload={downloadModel}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "idle" && modelCached && (
-          <IdleReadyState
-            availableStems={availableStems}
-            currentStem={currentStem}
-            onSelect={selectStem}
-            onSeparate={separate}
-          />
-        )}
+            {status === "idle" && modelCached && (
+              <IdleReadyState
+                availableStems={availableStems}
+                currentStem={currentStem}
+                onSelect={selectAndClose}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "ready" && (
-          <IdleReadyState
-            availableStems={availableStems}
-            currentStem={currentStem}
-            onSelect={selectStem}
-            onSeparate={separate}
-          />
-        )}
+            {status === "ready" && (
+              <IdleReadyState
+                availableStems={availableStems}
+                currentStem={currentStem}
+                onSelect={selectAndClose}
+                onSeparate={separate}
+              />
+            )}
 
-        {status === "cancelled" && <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>}
-      </div>
+            {status === "cancelled" && (
+              <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
+            )}
+          </div>
+        );
+      }}
     </Popover>
   );
 };
@@ -131,7 +157,7 @@ const ProgressState: React.FC<{ title: string; detail: string; pct: number; onCa
   pct,
   onCancel,
 }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col gap-2 min-w-60">
     <p className="text-sm font-medium text-composer-text">{title}</p>
     <p className="text-xs text-composer-text-muted tabular-nums">{detail}</p>
     <ProgressBar pct={pct} />
@@ -173,28 +199,38 @@ const IdleReadyState: React.FC<{
 }> = ({ availableStems, currentStem, onSelect, onSeparate }) => {
   const hasSeparated = availableStems.includes("vocals");
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-2 min-w-60">
       <p className="text-sm font-medium text-composer-text">Playback source</p>
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         {(["original", "vocals", "instrumental"] as Stem[]).map((stem) => {
           const enabled = stem === "original" || availableStems.includes(stem);
+          const selected = currentStem === stem;
+          const Icon = STEM_ICONS[stem];
           return (
-            <label
+            <button
               key={stem}
-              className={`flex items-center gap-2 text-sm ${
-                enabled ? "text-composer-text cursor-pointer" : "text-composer-text-muted cursor-not-allowed opacity-60"
-              }`}
+              type="button"
+              disabled={!enabled}
+              onClick={() => onSelect(stem)}
+              className={cn(
+                "flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm text-left text-composer-text transition-colors",
+                selected && "bg-composer-button font-medium",
+                !selected && enabled && "cursor-pointer hover:bg-composer-button",
+                !enabled && "cursor-not-allowed opacity-55",
+              )}
             >
-              <input
-                type="radio"
-                name="stem"
-                checked={currentStem === stem}
-                onChange={() => onSelect(stem)}
-                disabled={!enabled}
-                className="accent-composer-accent"
+              <Icon
+                className={cn(
+                  "size-4 shrink-0",
+                  selected ? "text-composer-accent-text" : "text-composer-text opacity-55",
+                )}
               />
-              {STEM_LABELS[stem]}
-            </label>
+              <span className="flex-1">{STEM_LABELS[stem]}</span>
+              <IconCheck
+                aria-hidden={!selected}
+                className={cn("size-3.5 text-composer-accent shrink-0", !selected && "invisible")}
+              />
+            </button>
           );
         })}
       </div>

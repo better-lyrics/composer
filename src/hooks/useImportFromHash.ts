@@ -1,4 +1,5 @@
 import { loadCurrentProject } from "@/lib/persistence";
+import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import type { Agent } from "@/domain/agent/model";
@@ -43,9 +44,15 @@ function useImportFromHash(): void {
   const confirm = useConfirm();
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      markHashImportSettled();
+      return;
+    }
     const { hash } = window.location;
-    if (!hash.startsWith(IMPORT_HASH_PREFIX)) return;
+    if (!hash.startsWith(IMPORT_HASH_PREFIX)) {
+      markHashImportSettled();
+      return;
+    }
 
     const runImport = async () => {
       try {
@@ -57,6 +64,10 @@ function useImportFromHash(): void {
           toast.error("Could not import converter result");
           return;
         }
+
+        if (import.meta.env.DEV) console.log("[Boot] useImportFromHash awaiting settled");
+        await getPersistenceSettled();
+        if (import.meta.env.DEV) console.log("[Boot] useImportFromHash settled");
 
         if (await isProjectNonEmpty()) {
           const ok = await confirm({
@@ -91,6 +102,8 @@ function useImportFromHash(): void {
       } catch (importError) {
         console.error("[Composer] Failed to import from hash", importError);
         toast.error("Could not import converter result");
+      } finally {
+        markHashImportSettled();
       }
     };
 

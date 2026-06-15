@@ -5,6 +5,7 @@ import {
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
 describe("preview renderer settings", () => {
@@ -57,6 +58,18 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
+  it("defaults preserveBracketsOnExtraction to false", () => {
+    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(false);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  });
+
+  it("allows toggling preserveBracketsOnExtraction via set()", () => {
+    useSettingsStore.getState().set("preserveBracketsOnExtraction", true);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(true);
+    useSettingsStore.getState().set("preserveBracketsOnExtraction", false);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  });
+
   it("allows toggling autoExtractBackgroundVocals via set()", () => {
     useSettingsStore.getState().set("autoExtractBackgroundVocals", false);
     expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(false);
@@ -75,6 +88,30 @@ describe("background vocal extraction settings", () => {
     useSettingsStore.getState().resetToDefaults();
     expect(useSettingsStore.getState().autoExtractBackgroundVocals).toBe(true);
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
+  });
+});
+
+describe("vocal onset snap settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults vocalOnsetSnap to true", () => {
+    expect(DEFAULTS.vocalOnsetSnap).toBe(true);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
+  });
+
+  it("allows toggling vocalOnsetSnap via set()", () => {
+    useSettingsStore.getState().set("vocalOnsetSnap", false);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(false);
+    useSettingsStore.getState().set("vocalOnsetSnap", true);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
+  });
+
+  it("resetToDefaults restores vocalOnsetSnap to true", () => {
+    useSettingsStore.getState().set("vocalOnsetSnap", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
   });
 });
 
@@ -112,5 +149,93 @@ describe("cobalt instance helpers", () => {
     const custom = useSettingsStore.getState().cobaltInstances[0];
     useSettingsStore.getState().selectCobaltInstance(custom.id);
     expect(getActiveCobaltInstance().url).toBe("https://example.test");
+  });
+});
+
+describe("timeline header toggle defaults", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults defaultRollingEdit to false", () => {
+    expect(DEFAULTS.defaultRollingEdit).toBe(false);
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
+  });
+
+  it("defaults defaultPreviewSidebar to false", () => {
+    expect(DEFAULTS.defaultPreviewSidebar).toBe(false);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+  });
+
+  it("set() persists defaultRollingEdit", () => {
+    useSettingsStore.getState().set("defaultRollingEdit", true);
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(true);
+  });
+
+  it("set() persists defaultPreviewSidebar", () => {
+    useSettingsStore.getState().set("defaultPreviewSidebar", true);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(true);
+  });
+
+  it("resetToDefaults restores both to false", () => {
+    useSettingsStore.getState().set("defaultRollingEdit", true);
+    useSettingsStore.getState().set("defaultPreviewSidebar", true);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().defaultRollingEdit).toBe(false);
+    expect(useSettingsStore.getState().defaultPreviewSidebar).toBe(false);
+  });
+});
+
+describe("settings v2 -> v3 migration", () => {
+  it("fills missing defaultRollingEdit with false", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultRollingEdit: boolean };
+    expect(migrated.defaultRollingEdit).toBe(false);
+  });
+
+  it("fills missing defaultPreviewSidebar with false", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultPreviewSidebar: boolean };
+    expect(migrated.defaultPreviewSidebar).toBe(false);
+  });
+
+  it("preserves user-set values when migrating from v3", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
+      defaultRollingEdit: boolean;
+      defaultPreviewSidebar: boolean;
+    };
+    expect(migrated.defaultRollingEdit).toBe(true);
+    expect(migrated.defaultPreviewSidebar).toBe(true);
+  });
+
+  it("still applies the vocalModelVariant fp16 -> fp32 rule", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
+    expect(migrated.vocalModelVariant).toBe("fp32");
+  });
+});
+
+describe("settings v3 -> v4 migration (vocalOnsetSnap)", () => {
+  it("fills missing vocalOnsetSnap with true", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
+    expect(migrated.vocalOnsetSnap).toBe(true);
+  });
+
+  it("preserves an explicitly disabled vocalOnsetSnap", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
+    expect(migrated.vocalOnsetSnap).toBe(false);
+  });
+});
+
+describe("timeline store reads header-toggle defaults at init", () => {
+  it("initial previewSidebarOpen matches settings.defaultPreviewSidebar at the moment the store was created", () => {
+    expect(useTimelineStore.getState().previewSidebarOpen).toBe(useSettingsStore.getState().defaultPreviewSidebar);
+  });
+
+  it("initial rollingEditMode matches settings.defaultRollingEdit at the moment the store was created", () => {
+    expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().defaultRollingEdit);
   });
 });

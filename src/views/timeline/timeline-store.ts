@@ -104,7 +104,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
   return {
     zoom: settings.defaultZoom,
     followEnabled: settings.followPlayhead,
-    previewSidebarOpen: false,
+    previewSidebarOpen: settings.defaultPreviewSidebar,
     selectedWords: [],
 
     clipboard: null,
@@ -116,7 +116,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     dragTime: 0,
     contextMenu: null,
     editingWord: null,
-    rollingEditMode: false,
+    rollingEditMode: settings.defaultRollingEdit,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,
@@ -177,4 +177,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT };
+export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT, ZOOM_STEP };

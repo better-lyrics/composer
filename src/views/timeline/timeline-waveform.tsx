@@ -19,7 +19,15 @@ const TimelineWaveform: React.FC = () => {
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
 
-  // Sync zoom imperatively
+  useEffect(() => {
+    if (!ws || !audioElement) return;
+    const onLoadStart = () => {
+      if (audioElement.src) void ws.load(audioElement.src);
+    };
+    audioElement.addEventListener("loadstart", onLoadStart);
+    return () => audioElement.removeEventListener("loadstart", onLoadStart);
+  }, [ws, audioElement]);
+
   useEffect(() => {
     if (!ws) return;
     ws.zoom(zoom);
@@ -51,28 +59,38 @@ const TimelineWaveform: React.FC = () => {
   if (!source) return null;
 
   return (
-    <div
-      className="sticky ml-12 top-0 z-40 bg-composer-bg w-max border-b border-composer-border shadow-lg transition-opacity duration-150 ease-in"
-      style={{ opacity: ws ? 1 : 0 }}
-    >
+    <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max">
+      <div
+        data-waveform-redraw-bg
+        className="absolute top-0 left-0 bg-composer-bg border-b border-composer-border shadow-lg pointer-events-none"
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT }}
+      />
+      <div
+        data-waveform-loading-dots
+        aria-hidden="true"
+        className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT, opacity: ws ? 0 : 1 }}
+      />
       {audioElement && (
-        <WavesurferPlayer
-          key={waveformKey}
-          height={WAVEFORM_HEIGHT}
-          waveColor="#737476"
-          progressColor="#818cf8"
-          cursorColor="transparent"
-          barWidth={2}
-          barGap={1}
-          barRadius={12}
-          media={audioElement}
-          interact={false}
-          hideScrollbar={true}
-          fillParent={false}
-          minPxPerSec={useTimelineStore.getState().zoom}
-          onDestroy={onDestroy}
-          onReady={onReady}
-        />
+        <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
+          <WavesurferPlayer
+            key={waveformKey}
+            height={WAVEFORM_HEIGHT}
+            waveColor="#737476"
+            progressColor="#818cf8"
+            cursorColor="transparent"
+            barWidth={2}
+            barGap={1}
+            barRadius={12}
+            media={audioElement}
+            interact={false}
+            hideScrollbar={true}
+            fillParent={false}
+            minPxPerSec={useTimelineStore.getState().zoom}
+            onDestroy={onDestroy}
+            onReady={onReady}
+          />
+        </div>
       )}
       <div
         role="button"

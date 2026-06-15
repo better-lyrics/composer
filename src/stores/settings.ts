@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
 // -- Types --------------------------------------------------------------------
 
@@ -7,6 +8,10 @@ type GranularityDefault = "word" | "line";
 type LinkedDivergenceAction = "ask" | "apply" | "detach";
 type PreviewRenderer = "braccato" | "am-lyrics";
 type VocalModelVariant = "fp16" | "fp32";
+
+interface ExperimentFlags {
+  youtubeBridge: boolean;
+}
 
 interface CobaltInstance {
   id: string;
@@ -31,10 +36,12 @@ interface SettingsState {
   defaultZoom: number;
   defaultRowHeight: number;
   followPlayhead: boolean;
+  defaultRollingEdit: boolean;
+  defaultPreviewSidebar: boolean;
   timelineSnap: boolean;
   timelineSnapThreshold: number;
-  timelineHorizontalScroll: boolean;
   vocalOnsetSnap: boolean;
+  timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
   defaultWordDuration: number;
@@ -48,6 +55,7 @@ interface SettingsState {
   splitCharacter: string;
   autoExtractBackgroundVocals: boolean;
   mergeStandaloneBackgroundLines: boolean;
+  preserveBracketsOnExtraction: boolean;
 
   confirmReplaceProjectFromHash: boolean;
   confirmReplaceLyrics: boolean;
@@ -67,6 +75,9 @@ interface SettingsState {
   cobaltInstances: CobaltInstance[];
   selectedCobaltInstanceId: string;
   cobaltInstanceStatus: Record<string, CobaltInstanceStatus>;
+
+  experiments: ExperimentFlags;
+  composerBridgeUrl: string;
 }
 
 interface SettingsActions {
@@ -90,10 +101,12 @@ const DEFAULTS: SettingsState = {
   defaultZoom: 100,
   defaultRowHeight: 44,
   followPlayhead: true,
+  defaultRollingEdit: false,
+  defaultPreviewSidebar: false,
   timelineSnap: true,
   timelineSnapThreshold: 12,
-  timelineHorizontalScroll: false,
   vocalOnsetSnap: true,
+  timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
@@ -107,6 +120,7 @@ const DEFAULTS: SettingsState = {
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
+  preserveBracketsOnExtraction: false,
 
   confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,
@@ -126,6 +140,9 @@ const DEFAULTS: SettingsState = {
   cobaltInstances: [],
   selectedCobaltInstanceId: DEFAULT_COBALT_INSTANCE_ID,
   cobaltInstanceStatus: {},
+
+  experiments: { youtubeBridge: false },
+  composerBridgeUrl: DEFAULT_BRIDGE_URL,
 };
 
 const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
@@ -134,15 +151,19 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 2;
+const SETTINGS_PERSIST_VERSION = 4;
 
-function migrateSettings(persistedState: unknown): unknown {
+function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
   const state = persistedState as Partial<SettingsState>;
-  return {
-    ...state,
-    vocalModelVariant: state.vocalModelVariant === "fp16" ? "fp32" : state.vocalModelVariant,
-  };
+  const next: Partial<SettingsState> = { ...state };
+  if (version < 2 || next.vocalModelVariant === "fp16") {
+    next.vocalModelVariant = "fp32";
+  }
+  if (next.defaultRollingEdit === undefined) next.defaultRollingEdit = false;
+  if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
+  if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
+  return next;
 }
 
 // -- Store --------------------------------------------------------------------
@@ -168,6 +189,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
           cobaltInstanceStatus: state.cobaltInstanceStatus,
+          experiments: state.experiments,
+          composerBridgeUrl: state.composerBridgeUrl,
         })),
       addCobaltInstance: (instance) =>
         set((state) => {
@@ -224,5 +247,6 @@ export {
   DEFAULT_COBALT_INSTANCE_ID,
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
+  migrateSettings as migrateSettingsForTest,
 };
 export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction, VocalModelVariant };
