@@ -18,7 +18,9 @@ function useVocalOnsetSnapPoints(): void {
     const generate = async (vocalsUrl: string | null) => {
       if (!vocalsUrl) {
         lastVocalsUrl = null;
-        useTimelineStore.getState().setVocalOnsetDetectionStatus("idle");
+        const timeline = useTimelineStore.getState();
+        timeline.setVocalOnsetSnapPoints([]);
+        timeline.setVocalOnsetDetectionStatus("idle");
         return;
       }
       if (vocalsUrl === lastVocalsUrl) return;
@@ -50,7 +52,9 @@ function useVocalOnsetSnapPoints(): void {
       if (audioSourceKey(state.source) === audioSourceKey(prev.source)) return;
       generationId++;
       lastVocalsUrl = null;
-      useTimelineStore.getState().setVocalOnsetDetectionStatus("idle");
+      const timeline = useTimelineStore.getState();
+      timeline.setVocalOnsetSnapPoints([]);
+      timeline.setVocalOnsetDetectionStatus("idle");
     });
 
     return () => {
