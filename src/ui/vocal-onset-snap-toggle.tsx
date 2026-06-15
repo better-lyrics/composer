@@ -5,10 +5,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Status hint --------------------------------------------------------------
 
-function describeOnsetStatus(
-  status: "idle" | "processing" | "error",
-  pointCount: number,
-): string {
+function describeOnsetStatus(status: "idle" | "processing" | "error", pointCount: number): string {
   if (status === "processing") return "Detecting onsets...";
   if (pointCount > 0) return `${pointCount} snap point${pointCount === 1 ? "" : "s"}`;
   if (status === "error") return "Detection failed";
