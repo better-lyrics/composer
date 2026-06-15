@@ -5,10 +5,14 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Status hint --------------------------------------------------------------
 
-function describeOnsetStatus(status: "idle" | "processing" | "error", pointCount: number): string {
+function describeOnsetStatus(
+  status: "idle" | "processing" | "error",
+  pointCount: number,
+  error: string | null,
+): string {
   if (status === "processing") return "Detecting onsets...";
   if (pointCount > 0) return `${pointCount} snap point${pointCount === 1 ? "" : "s"}`;
-  if (status === "error") return "Detection failed";
+  if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
   return "Separate vocals to detect onsets";
 }
 
@@ -18,8 +22,9 @@ const VocalOnsetSnapToggle: React.FC = () => {
   const enabled = useSettingsStore((s) => s.vocalOnsetSnap);
   const detectionStatus = useTimelineStore((s) => s.vocalOnsetDetectionStatus);
   const pointCount = useTimelineStore((s) => s.vocalOnsetSnapPoints.length);
+  const detectionError = useTimelineStore((s) => s.vocalOnsetDetectionError);
 
-  const hint = describeOnsetStatus(detectionStatus, pointCount);
+  const hint = describeOnsetStatus(detectionStatus, pointCount, detectionError);
 
   return (
     <div className="flex items-center gap-2.5 px-2 py-1.5 rounded-md select-none">

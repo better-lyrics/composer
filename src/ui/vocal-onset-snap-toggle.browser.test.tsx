@@ -51,10 +51,20 @@ describe("VocalOnsetSnapToggle", () => {
       await expect.element(screen.getByText("3 snap points")).toBeInTheDocument();
     });
 
-    it("shows a failure hint when detection errored", async () => {
+    it("surfaces the specific error message when detection errored", async () => {
       useTimelineStore.setState({
         vocalOnsetDetectionStatus: "error",
-        vocalOnsetDetectionError: "boom",
+        vocalOnsetDetectionError: "worker terminated unexpectedly",
+        vocalOnsetSnapPoints: [],
+      });
+      const screen = await render(<VocalOnsetSnapToggle />);
+      await expect.element(screen.getByText("Detection failed: worker terminated unexpectedly")).toBeInTheDocument();
+    });
+
+    it("falls back to a generic failure hint when no error message exists", async () => {
+      useTimelineStore.setState({
+        vocalOnsetDetectionStatus: "error",
+        vocalOnsetDetectionError: null,
         vocalOnsetSnapPoints: [],
       });
       const screen = await render(<VocalOnsetSnapToggle />);
