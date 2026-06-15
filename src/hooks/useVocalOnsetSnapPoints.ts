@@ -6,8 +6,16 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
 function audioSourceKey(source: AudioSource): string | null {
-  const file = source?.type === "file" ? source.file : source?.type === "youtube" ? source.file : null;
-  return file ? `${file.name}|${file.size}|${file.lastModified ?? 0}` : null;
+  if (source?.type === "file") {
+    const file = source.file;
+    return `file:${file.name}|${file.size}|${file.lastModified ?? 0}`;
+  }
+  if (source?.type === "youtube") {
+    const file = source.file;
+    const filePart = file ? `|file:${file.name}|${file.size}|${file.lastModified ?? 0}` : "";
+    return `youtube:${source.videoId}${filePart}`;
+  }
+  return null;
 }
 
 function useVocalOnsetSnapPoints(): void {
@@ -37,7 +45,9 @@ function useVocalOnsetSnapPoints(): void {
         nextTimeline.setVocalOnsetDetectionStatus("idle");
       } catch (err) {
         if (id !== generationId) return;
-        useTimelineStore.getState().setVocalOnsetDetectionStatus("error", (err as Error).message);
+        useTimelineStore
+          .getState()
+          .setVocalOnsetDetectionStatus("error", err instanceof Error ? err.message : String(err));
       }
     };
 

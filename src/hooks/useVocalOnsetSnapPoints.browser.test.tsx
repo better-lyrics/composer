@@ -54,6 +54,19 @@ describe("useVocalOnsetSnapPoints", () => {
       await expect.poll(() => useTimelineStore.getState().vocalOnsetSnapPoints).toEqual([]);
       expect(useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("idle");
     });
+
+    it("regression: clears stale onset points when switching between file-less youtube sources", async () => {
+      await render(<HookHarness />);
+
+      useAudioStore.setState({ source: { type: "youtube", videoId: "video-a" } });
+      useTimelineStore.getState().setVocalOnsetSnapPoints([1, 2, 3]);
+      expect(useTimelineStore.getState().vocalOnsetSnapPoints).toEqual([1, 2, 3]);
+
+      useAudioStore.setState({ source: { type: "youtube", videoId: "video-b" } });
+
+      await expect.poll(() => useTimelineStore.getState().vocalOnsetSnapPoints).toEqual([]);
+      expect(useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("idle");
+    });
   });
 
   it("clears points when the vocals url is removed", async () => {
