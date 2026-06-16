@@ -27,7 +27,7 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import { revealTimeScrollLeft } from "@/views/timeline/coords";
+import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
@@ -278,8 +278,7 @@ function useTimelineKeyboard(
           const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
           const { zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
 
-          const viewportWidth = scrollContainer.clientWidth;
-          scrollContainer.scrollLeft = Math.max(0, currentTime * zoom - viewportWidth / 2 + GUTTER_WIDTH);
+          scrollContainer.scrollLeft = centerTimeScrollLeft(currentTime, zoom, scrollContainer.clientWidth);
 
           let activeLineIndex = -1;
           for (let i = 0; i < lines.length; i++) {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { GUTTER_WIDTH, REVEAL_MARGIN_PX, revealTimeScrollLeft, timeToX, xToTime } from "@/views/timeline/coords";
+import {
+  GUTTER_WIDTH,
+  REVEAL_MARGIN_PX,
+  centerTimeScrollLeft,
+  revealTimeScrollLeft,
+  timeToX,
+  xToTime,
+} from "@/views/timeline/coords";
 
 describe("timeToX", () => {
   it("maps seconds to gutter-offset pixels", () => {
@@ -29,6 +36,25 @@ describe("xToTime", () => {
   it("accounts for scrollLeft", () => {
     const rect = { left: 0 } as DOMRect;
     expect(xToTime(GUTTER_WIDTH, rect, 100, 200)).toBeCloseTo(2);
+  });
+});
+
+describe("centerTimeScrollLeft", () => {
+  it("places the time at the horizontal center of the viewport", () => {
+    expect(centerTimeScrollLeft(10, 100, 500)).toBe(1000 + GUTTER_WIDTH - 250);
+  });
+
+  it("clamps to zero when centering would scroll past the start", () => {
+    expect(centerTimeScrollLeft(0, 100, 500)).toBe(0);
+    expect(centerTimeScrollLeft(1, 100, 5000)).toBe(0);
+  });
+
+  it("accounts for the gutter so the centered time matches timeToX at viewport center", () => {
+    const time = 12;
+    const zoom = 80;
+    const clientWidth = 600;
+    const scrollLeft = centerTimeScrollLeft(time, zoom, clientWidth);
+    expect(timeToX(time, zoom, scrollLeft)).toBeCloseTo(clientWidth / 2);
   });
 });
 
