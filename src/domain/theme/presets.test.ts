@@ -56,6 +56,12 @@ describe("seed completeness", () => {
     }
   });
 
+  it("every preset sets an onset token", () => {
+    for (const preset of PRESETS) {
+      expect(preset.tokens.onset).toBeTruthy();
+    }
+  });
+
   it("never sets wave-progress explicitly (it derives)", () => {
     for (const preset of PRESETS) {
       expect(preset.tokens["wave-progress"]).toBeUndefined();
@@ -115,6 +121,7 @@ describe("regression: default preset reproduces the current look", () => {
       wave: "#737476",
       "wave-progress": "#818cf8",
       snap: "#ffd66b",
+      onset: "#4fd6c0",
     };
     const resolved = deriveTheme(PRESET_BY_ID.get("default") as NonNullable<ReturnType<typeof PRESET_BY_ID.get>>);
     expect(resolved).toEqual(expected);
@@ -165,6 +172,22 @@ describe("light presets", () => {
     for (const preset of PRESETS) {
       if (preset.scheme === "dark") {
         expect(preset.tokens.snap).toBe("#ffd66b");
+      }
+    }
+  });
+
+  it("light presets carry the darker teal onset", () => {
+    for (const preset of PRESETS) {
+      if (preset.scheme === "light") {
+        expect(preset.tokens.onset).toBe("#2a9d8f");
+      }
+    }
+  });
+
+  it("dark presets use the bright teal onset", () => {
+    for (const preset of PRESETS) {
+      if (preset.scheme === "dark") {
+        expect(preset.tokens.onset).toBe("#4fd6c0");
       }
     }
   });

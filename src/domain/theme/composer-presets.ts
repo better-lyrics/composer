@@ -5,6 +5,7 @@
 // look (the rgb values in src/index.css do not equal the shade formula).
 
 import type { Theme } from "@/domain/theme/model";
+import { DARK_ONSET, LIGHT_ONSET } from "@/domain/theme/onset-constants";
 import { DARK_SNAP, LIGHT_SNAP } from "@/domain/theme/snap-constants";
 
 const COMPOSER_PRESETS: Theme[] = [
@@ -34,6 +35,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff7a85",
       wave: "#737476",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -62,6 +64,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#d65560",
       wave: "#c4c5ca",
       snap: LIGHT_SNAP,
+      onset: LIGHT_ONSET,
     },
   },
   {
@@ -90,6 +93,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff9aa3",
       wave: "#9a9a9a",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -115,6 +119,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff8a93",
       wave: "#3f5a78",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -140,6 +145,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff8e8e",
       wave: "#3e5a4c",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -165,6 +171,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff8a93",
       wave: "#5e4452",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -190,6 +197,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#d99a9a",
       wave: "#555555",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -215,6 +223,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff8a93",
       wave: "#5a4a38",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -240,6 +249,7 @@ const COMPOSER_PRESETS: Theme[] = [
       explicit: "#ff8a93",
       wave: "#2f5450",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
 ];

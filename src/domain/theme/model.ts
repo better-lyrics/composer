@@ -1,5 +1,5 @@
 // -- Theme token model ---------------------------------------------------------
-// Single source of truth for the 30 --color-composer-* tokens, their derivation
+// Single source of truth for the 31 --color-composer-* tokens, their derivation
 // type, and the metadata the editor + deriver read. Mirrors src/index.css @theme.
 
 type Scheme = "dark" | "light";
@@ -34,7 +34,8 @@ type TokenKey =
   | "explicit"
   | "wave"
   | "wave-progress"
-  | "snap";
+  | "snap"
+  | "onset";
 
 type ThemeId = string;
 
@@ -262,6 +263,7 @@ const TOKENS: TokenMeta[] = [
     lighten: 0,
   },
   { key: "snap", varName: "--color-composer-snap", label: "Snap guideline", group: "Waveform", type: "seed" },
+  { key: "onset", varName: "--color-composer-onset", label: "Vocal onset", group: "Waveform", type: "seed" },
 ];
 
 const SEED_TOKENS: TokenKey[] = TOKENS.filter((t) => t.type === "seed").map((t) => t.key);

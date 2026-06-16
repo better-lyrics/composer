@@ -4,6 +4,7 @@
 // alpha + shade tokens.
 
 import type { Theme } from "@/domain/theme/model";
+import { DARK_ONSET, LIGHT_ONSET } from "@/domain/theme/onset-constants";
 import { DARK_SNAP, LIGHT_SNAP } from "@/domain/theme/snap-constants";
 
 const CLASSIC_PRESETS: Theme[] = [
@@ -30,6 +31,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#ff79c6",
       wave: "#44475a",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -55,6 +57,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#b48ead",
       wave: "#4c566a",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -80,6 +83,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#d33682",
       wave: "#33555f",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -105,6 +109,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#d33682",
       wave: "#cfcbb8",
       snap: LIGHT_SNAP,
+      onset: LIGHT_ONSET,
     },
   },
   {
@@ -130,6 +135,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#d3869b",
       wave: "#504945",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -155,6 +161,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#bb9af7",
       wave: "#3b4261",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -180,6 +187,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#f5c2e7",
       wave: "#45475a",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -205,6 +213,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#ebbcba",
       wave: "#403d52",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
   {
@@ -230,6 +239,7 @@ const CLASSIC_PRESETS: Theme[] = [
       explicit: "#c678dd",
       wave: "#4b5263",
       snap: DARK_SNAP,
+      onset: DARK_ONSET,
     },
   },
 ];
