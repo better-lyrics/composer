@@ -27,6 +27,36 @@ describe("useTimelineKeyboard", () => {
     expect(useTimelineStore.getState().rollingEditMode).toBe(true);
   });
 
+  it("toggles marker mode on and off when the marker mode shortcut is pressed", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i", bubbles: true }));
+    expect(useTimelineStore.getState().markerMode).toBe(true);
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i", bubbles: true }));
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+  });
+
+  it("does not toggle marker mode while a text input is focused", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    await expect.poll(() => document.activeElement).toBe(input);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "i", bubbles: true }));
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+
+    input.remove();
+  });
+
   it("merges two space-separated words into one when the merge shortcut is pressed", async () => {
     const line = createLine({
       text: "every day",
