@@ -97,7 +97,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
             className="w-full rounded-lg border border-composer-border bg-composer-input px-3 py-1.5 text-sm text-composer-text outline-none cursor-text select-text focus:border-composer-border-hover"
           />
         </label>
-        <Button size="sm" variant="ghost" onClick={onClose}>
+        <Button size="sm" variant="ghost" className="self-end" onClick={onClose}>
           Close
         </Button>
       </div>

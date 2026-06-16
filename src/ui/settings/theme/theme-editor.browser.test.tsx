@@ -45,6 +45,17 @@ describe("ThemeEditor", () => {
     expect(nameInput(screen).value).toBe(`${base?.name} (copy)`);
   });
 
+  it("vertically centers the Close button against the theme-name input", async () => {
+    const screen = await render(<ThemeEditor baseThemeId={DEFAULT_PRESET_ID} onClose={() => {}} />);
+    const input = nameInput(screen);
+    const close = screen.getByRole("button", { name: "Close" }).element() as HTMLButtonElement;
+    const inputRect = input.getBoundingClientRect();
+    const closeRect = close.getBoundingClientRect();
+    const inputCenter = inputRect.top + inputRect.height / 2;
+    const closeCenter = closeRect.top + closeRect.height / 2;
+    expect(Math.abs(closeCenter - inputCenter)).toBeLessThanOrEqual(2);
+  });
+
   it("falls back to the default preset when the base id is unknown", async () => {
     const screen = await render(<ThemeEditor baseThemeId="does-not-exist" onClose={() => {}} />);
     const fallback = PRESET_BY_ID.get(DEFAULT_PRESET_ID);
