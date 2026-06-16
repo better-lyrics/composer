@@ -1,4 +1,4 @@
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitHistory, commitSnapPointEdit } from "@/stores/project/history-helpers";
 import { normalizeSnapPoints } from "@/stores/project/snap-points-helpers";
 import type { ProjectStore, SnapPointActions, SnapPointsState } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
@@ -22,8 +22,14 @@ const createSnapPointsSlice: StateCreator<ProjectStore, [], [], SnapPointsState 
       if (index < 0 || index >= state.customSnapPoints.length) return state;
       return commitHistory(state, { customSnapPoints: state.customSnapPoints.filter((_, i) => i !== index) });
     }),
-  moveCustomSnapPoint: () => {},
-  commitSnapPointDrag: () => {},
+  moveCustomSnapPoint: (index, time) =>
+    set((state) => {
+      if (index < 0 || index >= state.customSnapPoints.length) return state;
+      return {
+        customSnapPoints: normalizeSnapPoints(state.customSnapPoints.map((point, i) => (i === index ? time : point))),
+      };
+    }),
+  commitSnapPointDrag: (baseline) => set((state) => commitSnapPointEdit(state, normalizeSnapPoints(baseline))),
   clearCustomSnapPoints: () => set({ customSnapPoints: [] }),
 });
 

@@ -80,6 +80,32 @@ function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineW
   };
 }
 
+function snapPointsEqual(a: number[], b: number[]): boolean {
+  return a.length === b.length && a.every((value, index) => value === b[index]);
+}
+
+function commitSnapPointEdit(state: ProjectState, baseline: number[]) {
+  if (snapPointsEqual(baseline, state.customSnapPoints)) return {};
+  const newHistory = state.history.slice(0, state.historyIndex + 1);
+  const top = newHistory[newHistory.length - 1];
+  if (newHistory.length === 0 || !top || !snapPointsEqual(baseline, top.customSnapPoints)) {
+    newHistory.push({
+      lines: structuredClone(state.lines),
+      groups: structuredClone(state.groups),
+      customSnapPoints: structuredClone(baseline),
+      timestamp: Date.now(),
+    });
+  }
+  newHistory.push({
+    lines: structuredClone(state.lines),
+    groups: structuredClone(state.groups),
+    customSnapPoints: structuredClone(state.customSnapPoints),
+    timestamp: Date.now(),
+  });
+  if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
+  return { isDirty: true, isDirtySinceHistory: false, history: newHistory, historyIndex: newHistory.length - 1 };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { commitHistory, commitPendingEdit, MAX_HISTORY_SIZE };
+export { commitHistory, commitPendingEdit, commitSnapPointEdit, MAX_HISTORY_SIZE };
