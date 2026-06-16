@@ -194,9 +194,9 @@ const TimelineSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Snap points and marker mode</h4>
       <p className={PROSE}>
-        Two kinds of snap marker can sit over the waveform. Teal dashed lines are vocal onsets, which Composer detects
+        Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
         from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
-        onsets" in the stem dropdown. Amber pins are custom snap points you place yourself. Both pull word edges in the
+        onsets" in the stem dropdown. Solid pins are custom snap points you place yourself. Both pull word edges in the
         way the magnet does, and custom points keep snapping even when Snap and onset snapping are both off.
       </p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
