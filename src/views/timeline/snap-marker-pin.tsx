@@ -51,8 +51,9 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
     onOpenChange: setIsOpen,
-    placement: "bottom",
-    middleware: [offset(8), flip(), shift({ padding: 8 })],
+    placement: "bottom-start",
+    // crossAxis centers the leading delete control under the rotated head; visually tuned.
+    middleware: [offset({ mainAxis: 8, crossAxis: -6 }), flip(), shift({ padding: 8 })],
     whileElementsMounted: autoUpdate,
   });
 
@@ -124,21 +125,21 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
             style={floatingStyles}
             {...getFloatingProps()}
           >
+            <button
+              type="button"
+              data-snap-marker-delete
+              aria-label="Delete custom snap point"
+              className="relative expanded-hit-sm flex items-center justify-center size-4 text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
+              onClick={() => onDelete(index)}
+            >
+              <IconTrash size={13} />
+            </button>
             <span
               data-snap-marker-time-label
               className="font-mono text-[10.5px] leading-none text-composer-text select-text cursor-text"
             >
               {formatTime(time)}
             </span>
-            <button
-              type="button"
-              data-snap-marker-delete
-              aria-label="Delete custom snap point"
-              className="flex items-center justify-center size-4 text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
-              onClick={() => onDelete(index)}
-            >
-              <IconTrash size={13} />
-            </button>
           </div>
         </FloatingPortal>
       )}

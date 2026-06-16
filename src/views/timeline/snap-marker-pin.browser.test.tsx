@@ -128,6 +128,46 @@ describe("SnapMarkerPin", () => {
       await userEvent.click(button);
       expect(onDelete).toHaveBeenCalledWith(4);
     });
+
+    it("renders the delete button before the time label in DOM order", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head(screen.container);
+      if (headEl) await userEvent.hover(headEl);
+
+      const tooltipEl = await vi.waitFor(() => {
+        const el = tooltip();
+        if (!el) throw new Error("tooltip not yet rendered");
+        return el;
+      });
+
+      const interactiveChildren = tooltipEl.querySelectorAll<HTMLElement>(
+        "[data-snap-marker-delete], [data-snap-marker-time-label]",
+      );
+      expect(interactiveChildren.length).toBe(2);
+      expect(interactiveChildren[0]?.hasAttribute("data-snap-marker-delete")).toBe(true);
+      expect(interactiveChildren[1]?.hasAttribute("data-snap-marker-time-label")).toBe(true);
+
+      const firstButton = tooltipEl.querySelector<HTMLButtonElement>("button");
+      expect(firstButton?.hasAttribute("data-snap-marker-delete")).toBe(true);
+    });
+
+    it("gives the delete button an enlarged hit area anchored to itself", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head(screen.container);
+      if (headEl) await userEvent.hover(headEl);
+
+      const button = await vi.waitFor(() => {
+        const el = deleteButton();
+        if (!el) throw new Error("delete button not yet rendered");
+        return el;
+      });
+
+      expect(button.classList.contains("expanded-hit-sm")).toBe(true);
+      expect(button.classList.contains("relative")).toBe(true);
+      expect(button.classList.contains("size-4")).toBe(true);
+      expect(tooltip()?.contains(button)).toBe(true);
+      expect(timeLabel()).not.toBeNull();
+    });
   });
 
   describe("placement animation", () => {
