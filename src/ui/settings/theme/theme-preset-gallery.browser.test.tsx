@@ -21,9 +21,9 @@ function makeCustomTheme(overrides: Partial<Theme> = {}): Theme {
 // -- Tests --------------------------------------------------------------------
 
 describe("ThemePresetGallery", () => {
-  it("renders the Composer and Classics group headings", async () => {
+  it("renders the Built-in and Classics group headings", async () => {
     const screen = await render(<ThemePresetGallery />);
-    await expect.element(screen.getByText("Composer")).toBeInTheDocument();
+    await expect.element(screen.getByText("Built-in")).toBeInTheDocument();
     await expect.element(screen.getByText("Classics")).toBeInTheDocument();
   });
 

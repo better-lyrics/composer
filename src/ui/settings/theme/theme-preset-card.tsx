@@ -14,10 +14,9 @@ interface ThemePresetCardProps {
 
 // -- Styles --------------------------------------------------------------------
 
-const CARD_BASE =
-  "relative text-left rounded-xl border bg-composer-bg-elevated px-2.5 pt-2.5 pb-3 cursor-pointer transition-colors select-none";
+const CARD_BASE = "relative text-left rounded-xl border px-2 pt-2.5 pb-3 cursor-pointer transition-colors select-none";
 
-const CARD_INACTIVE = "border-composer-border hover:border-composer-border-hover";
+const CARD_INACTIVE = "border-composer-border hover:border-composer-border-hover hover:bg-composer-button/40";
 
 const CARD_ACTIVE = "border-composer-accent ring-2 ring-composer-accent";
 
@@ -59,7 +58,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({ theme, active, onSele
           <span
             key={`${theme.id}-chip-${index}`}
             data-theme-chip
-            className="size-6.5 shrink-0"
+            className="size-6 shrink-0"
             style={{ backgroundColor: chip }}
           />
         ))}

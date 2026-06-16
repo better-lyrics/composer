@@ -19,7 +19,7 @@ interface ThemeGroupProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_GRID = "grid grid-cols-[repeat(2,max-content)] justify-start gap-2.5";
+const GROUP_GRID = "grid grid-cols-3 gap-2.5";
 
 const GROUP_LABEL = "font-mono text-[10.5px] tracking-wider text-composer-text-faint select-none";
 
@@ -52,7 +52,7 @@ const ThemePresetGallery: React.FC<ThemePresetGalleryProps> = ({ onCustomize }) 
 
   return (
     <div className="flex flex-col gap-4">
-      <ThemeGroup label="Composer" themes={COMPOSER_PRESETS} activeThemeId={activeThemeId} />
+      <ThemeGroup label="Built-in" themes={COMPOSER_PRESETS} activeThemeId={activeThemeId} />
       <ThemeGroup label="Classics" themes={CLASSIC_PRESETS} activeThemeId={activeThemeId} />
       {customThemes.length > 0 && (
         <ThemeGroup label="Your themes" themes={customThemes} activeThemeId={activeThemeId} custom />
