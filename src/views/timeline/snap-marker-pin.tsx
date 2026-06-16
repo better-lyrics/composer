@@ -11,7 +11,7 @@ import {
   useInteractions,
   useRole,
 } from "@floating-ui/react";
-import { IconX } from "@tabler/icons-react";
+import { IconTrash } from "@tabler/icons-react";
 import { m, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import { cn } from "@/utils/cn";
@@ -134,10 +134,10 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
               type="button"
               data-snap-marker-delete
               aria-label="Delete custom snap point"
-              className="flex items-center text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
+              className="flex items-center justify-center size-4 text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
               onClick={() => onDelete(index)}
             >
-              <IconX size={12} />
+              <IconTrash size={13} />
             </button>
           </div>
         </FloatingPortal>
