@@ -71,7 +71,7 @@ describe("customSnapPoints", () => {
     s.addCustomSnapPoint(3);
     s.addCustomSnapPoint(1);
     s.addCustomSnapPoint(-2);
-    s.addCustomSnapPoint(NaN);
+    s.addCustomSnapPoint(Number.NaN);
     expect(useTimelineStore.getState().customSnapPoints).toEqual([1, 3]);
   });
 
@@ -125,7 +125,7 @@ describe("customSnapPoints", () => {
       const s = useTimelineStore.getState();
       s.addCustomSnapPoint(1);
       s.addCustomSnapPoint(3);
-      s.moveCustomSnapPoint(0, NaN);
+      s.moveCustomSnapPoint(0, Number.NaN);
       expect(useTimelineStore.getState().customSnapPoints).toEqual([3]);
     });
 
