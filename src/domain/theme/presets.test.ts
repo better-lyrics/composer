@@ -8,8 +8,8 @@ import { type ResolvedTheme, SEED_TOKENS } from "./model";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID, PRESETS } from "./presets";
 
 describe("PRESETS shape", () => {
-  it("ships 15 presets", () => {
-    expect(PRESETS).toHaveLength(15);
+  it("ships 18 presets", () => {
+    expect(PRESETS).toHaveLength(18);
   });
 
   it("every preset has kind preset", () => {

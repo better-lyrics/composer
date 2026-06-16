@@ -30,7 +30,7 @@ const CLASSIC_PRESETS = PRESETS.filter((theme) => theme.group === "Classics");
 // -- Components ----------------------------------------------------------------
 
 const ThemeGroup: React.FC<ThemeGroupProps> = ({ label, themes, activeThemeId, custom = false }) => (
-  <div className="flex flex-col gap-2">
+  <div className="flex flex-col gap-3">
     <span className={GROUP_LABEL}>{label}</span>
     <div className={GROUP_GRID}>
       {themes.map((theme) => (

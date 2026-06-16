@@ -207,6 +207,31 @@ const CLASSIC_PRESETS: Theme[] = [
       snap: DARK_SNAP,
     },
   },
+  {
+    id: "one-dark",
+    name: "One Dark",
+    kind: "preset",
+    group: "Classics",
+    scheme: "dark",
+    desc: "Atom's signature palette.",
+    tokens: {
+      bg: "#282c34",
+      "bg-dark": "#21252b",
+      "bg-elevated": "#2c313a",
+      text: "#abb2bf",
+      "text-tertiary": "#828997",
+      "text-faint": "#5c6370",
+      accent: "#61afef",
+      "accent-warm": "#e5c07b",
+      link: "#56b6c2",
+      error: "#e06c75",
+      "error-text": "#ffe5e5",
+      warning: "#d19a66",
+      explicit: "#c678dd",
+      wave: "#4b5263",
+      snap: DARK_SNAP,
+    },
+  },
 ];
 
 export { CLASSIC_PRESETS };
