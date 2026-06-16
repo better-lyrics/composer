@@ -297,6 +297,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Toggle rolling edit tool",
     defaultBinding: { key: "r" },
   },
+  {
+    id: "timeline.toggleMarkerMode",
+    scope: "timeline",
+    description: "Toggle marker mode",
+    defaultBinding: { key: "i" },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------
