@@ -10,6 +10,57 @@ describe("rollingEditMode", () => {
   });
 });
 
+describe("markerMode", () => {
+  beforeEach(() => {
+    useTimelineStore.setState({ markerMode: false });
+  });
+
+  it("defaults to false", () => {
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+  });
+
+  it("toggleMarkerMode flips it", () => {
+    useTimelineStore.getState().toggleMarkerMode();
+    expect(useTimelineStore.getState().markerMode).toBe(true);
+  });
+
+  it("setMarkerMode sets the given boolean", () => {
+    useTimelineStore.getState().setMarkerMode(true);
+    expect(useTimelineStore.getState().markerMode).toBe(true);
+    useTimelineStore.getState().setMarkerMode(false);
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+  });
+
+  describe("invariants", () => {
+    it("toggling twice returns to false", () => {
+      const s = useTimelineStore.getState();
+      s.toggleMarkerMode();
+      s.toggleMarkerMode();
+      expect(useTimelineStore.getState().markerMode).toBe(false);
+    });
+
+    it("setMarkerMode(false) when already false is idempotent", () => {
+      useTimelineStore.getState().setMarkerMode(false);
+      expect(useTimelineStore.getState().markerMode).toBe(false);
+      useTimelineStore.getState().setMarkerMode(false);
+      expect(useTimelineStore.getState().markerMode).toBe(false);
+    });
+
+    it("is independent of customSnapPoints", () => {
+      const s = useTimelineStore.getState();
+      useTimelineStore.setState({ customSnapPoints: [] });
+      s.setMarkerMode(true);
+      expect(useTimelineStore.getState().customSnapPoints).toEqual([]);
+
+      s.addCustomSnapPoint(2);
+      expect(useTimelineStore.getState().markerMode).toBe(true);
+
+      s.setMarkerMode(false);
+      expect(useTimelineStore.getState().customSnapPoints).toEqual([2]);
+    });
+  });
+});
+
 describe("customSnapPoints", () => {
   beforeEach(() => {
     useTimelineStore.setState({ customSnapPoints: [] });
