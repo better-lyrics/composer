@@ -117,9 +117,11 @@ describe("contrast tokens", () => {
     expect(resolved["on-accent"]).toBe("#15161a");
   });
 
-  it("regression: keeps white text on a saturated medium indigo (does not flip to black too early)", () => {
-    const resolved = deriveTheme(darkTheme({ accent: "#818cf8", "accent-dark": "#777ce4" }));
-    expect(resolved["on-accent"]).toBe("#ffffff");
+  it("regression: picks black on light accents like rosewater and moss, not white", () => {
+    const rosewater = deriveTheme(darkTheme({ accent: "#e08aa6", "accent-dark": "#ce7f98" }));
+    expect(rosewater["on-accent"]).toBe("#15161a");
+    const moss = deriveTheme(darkTheme({ accent: "#6fc28a", "accent-dark": "#66b37f" }));
+    expect(moss["on-accent"]).toBe("#15161a");
   });
 });
 

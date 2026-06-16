@@ -3,15 +3,12 @@
 // tokens flip white-on-dark vs black-on-light; shade tokens lighten/darken
 // their already-resolved base. Explicit theme.tokens entries always win.
 
-import { hexToRgb, lighten, relativeLuminance } from "./color";
+import { contrastRatio, lighten } from "./color";
 import { type ResolvedTheme, type Theme, TOKENS } from "./model";
 
 const SEED_FALLBACK = "#ff00ff";
 
-// White text is the convention on a colored fill; only switch to dark text once
-// the fill is genuinely light. The threshold sits above saturated accents
-// (indigo lands near 0.2 to 0.35) and below pale tints (~0.45+).
-const ON_ACCENT_LIGHT_THRESHOLD = 0.4;
+// Pick whichever of near-white / near-black reads better on the accent fill.
 const ON_ACCENT_DARK = "#15161a";
 const ON_ACCENT_LIGHT = "#ffffff";
 
@@ -30,8 +27,9 @@ function deriveTheme(theme: Theme): ResolvedTheme {
     } else if (token.type === "shade" && token.from) {
       out[token.key] = lighten(out[token.from], token.lighten ?? 0);
     } else if (token.type === "contrast" && token.from) {
-      const light = relativeLuminance(hexToRgb(out[token.from])) > ON_ACCENT_LIGHT_THRESHOLD;
-      out[token.key] = light ? ON_ACCENT_DARK : ON_ACCENT_LIGHT;
+      const base = out[token.from];
+      out[token.key] =
+        contrastRatio(ON_ACCENT_LIGHT, base) >= contrastRatio(ON_ACCENT_DARK, base) ? ON_ACCENT_LIGHT : ON_ACCENT_DARK;
     } else {
       out[token.key] = SEED_FALLBACK;
     }
