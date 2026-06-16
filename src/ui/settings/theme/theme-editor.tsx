@@ -1,4 +1,5 @@
 import { Activity, useEffect, useState } from "react";
+import { contrastRatio } from "@/domain/theme/color";
 import { deriveTheme } from "@/domain/theme/derive";
 import type { Scheme, Theme, TokenKey } from "@/domain/theme/model";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
@@ -9,6 +10,7 @@ import { ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
 import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
 import { applyResolvedTheme } from "@/utils/theme/apply";
 import { cn } from "@/utils/cn";
+import { IconAlertTriangle } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -48,6 +50,8 @@ const TABS: { value: EditorTab; label: string }[] = [
   { value: "advanced", label: "Advanced" },
 ];
 
+const MIN_AA_CONTRAST = 4.5;
+
 const SEGMENT = "inline-flex gap-0.5 rounded-lg bg-composer-bg-dark p-0.5 select-none";
 
 const SEGMENT_BUTTON =
@@ -64,6 +68,10 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
   useEffect(() => {
     applyResolvedTheme(deriveTheme(draft), draft.scheme);
   }, [draft]);
+
+  const resolved = deriveTheme(draft);
+  const ratio = contrastRatio(resolved.text, resolved.bg);
+  const lowContrast = ratio < MIN_AA_CONTRAST;
 
   const handleTokenChange = (key: TokenKey, value: string) => {
     setDraft((current) => ({ ...current, tokens: { ...current.tokens, [key]: value } }));
@@ -125,6 +133,16 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
           </button>
         ))}
       </div>
+
+      {lowContrast && (
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-composer-warning/20 bg-composer-warning/10 px-2.5 py-2 text-xs text-composer-warning select-text cursor-text"
+        >
+          <IconAlertTriangle size={14} className="shrink-0" />
+          <span>{`Text on background is ${ratio.toFixed(1)}:1, below WCAG AA (4.5:1)`}</span>
+        </div>
+      )}
 
       <Activity mode={tab === "quick" ? "visible" : "hidden"}>
         <ThemeEditorQuick draft={draft} onTokenChange={handleTokenChange} />

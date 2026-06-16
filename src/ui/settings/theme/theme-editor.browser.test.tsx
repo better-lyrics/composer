@@ -82,6 +82,17 @@ describe("ThemeEditor", () => {
     expect(document.body.textContent).toContain("below WCAG AA");
   });
 
+  it("keeps the contrast warning visible after switching to the Advanced tab", async () => {
+    const screen = await render(<ThemeEditor baseThemeId={DEFAULT_PRESET_ID} onClose={() => {}} />);
+    await fillVisibleHex("Background hex", "#fefefe");
+    await fillVisibleHex("Text hex", "#ffffff");
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "Advanced" }).click();
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+    expect(document.body.textContent).toContain("below WCAG AA");
+  });
+
   it("renders a share box whose value equals encodeThemeCode(draft)", async () => {
     const screen = await render(<ThemeEditor baseThemeId="harbor" onClose={() => {}} />);
     const base = PRESET_BY_ID.get("harbor");
