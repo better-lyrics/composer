@@ -125,22 +125,20 @@ const TimelineSection: React.FC = () => (
     <div>
       <h4 className={HEADING}>Moving words across lines and tracks</h4>
       <p className={PROSE}>
-        Grab a word block and drop it on a different line, or on the background track of the same line, to relocate it.
-        Multi-select moves them as a group: every selected word follows the dragged one, keeping its relative offset.
-        Linked syllables stay together.
+        Drag any word block onto another line to move it there. It can land on a different line's main track, on a
+        background track, or on the background track of its own line. Multi-select moves the whole selection at once:
+        each word keeps its offset from the one you grabbed, and linked syllables stay joined.
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
+        <li>Keep the word on its own line and the same drag reorders it within that row instead.</li>
         <li>
-          The drop falls back to a "reorder within the same row" when you keep it on the source line, so the same drag
-          handles both cases.
-        </li>
-        <li>
-          A drop is refused if it would overlap an existing word on the target track, if the target is line-synced (it
-          has no word slots to land in), or if it would break a linked-group instance. The toast tells you which.
-        </li>
-        <li>
-          Moves into the background track convert the word's role; the destination line picks up <strong>x-bg</strong>{" "}
+          Dropping a word onto a background track converts its role, and the destination line gets <strong>x-bg</strong>{" "}
           markup at export.
+        </li>
+        <li>
+          Two drops are refused, each with a short toast: moving a word out of a linked group (detach the line first),
+          and dropping onto a line that is still line-synced instead of split into words. A drop that would land on top
+          of an existing word just stays put.
         </li>
       </ul>
     </div>
