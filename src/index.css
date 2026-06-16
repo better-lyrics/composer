@@ -92,6 +92,29 @@ body {
   opacity: 0.85;
 }
 
+@utility snap-onset-covered {
+  opacity: 0;
+}
+
+@utility snap-custom-line {
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    var(--color-composer-warning) 0%,
+    var(--color-composer-warning) 6%,
+    transparent 88%
+  );
+}
+
+@utility snap-custom-head {
+  width: 14px;
+  height: 14px;
+  background: var(--color-composer-warning);
+  border-radius: 50% 50% 50% 0;
+  transform: translateX(-50%) rotate(45deg);
+  box-shadow: 0 2px 9px rgba(0, 0, 0, 0.5);
+}
+
 @utility waveform-loading-dots {
   background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
   background-size: 8px 8px;
