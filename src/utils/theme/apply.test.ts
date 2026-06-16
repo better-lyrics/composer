@@ -14,6 +14,7 @@ function clearTokenVars(): void {
   const root = document.documentElement;
   for (const t of TOKENS) root.style.removeProperty(t.varName);
   root.style.removeProperty("color-scheme");
+  delete root.dataset.scheme;
 }
 
 beforeEach(() => {
@@ -47,6 +48,14 @@ describe("applyResolvedTheme", () => {
     const { resolved } = resolvePreset("default");
     applyResolvedTheme(resolved, "light");
     expect(document.documentElement.style.colorScheme).toBe("light");
+  });
+
+  it("stamps data-scheme so CSS can branch on the active scheme", () => {
+    const { resolved } = resolvePreset("default");
+    applyResolvedTheme(resolved, "light");
+    expect(document.documentElement.dataset.scheme).toBe("light");
+    applyResolvedTheme(resolved, "dark");
+    expect(document.documentElement.dataset.scheme).toBe("dark");
   });
 
   it("overwrites a previously applied theme's vars", () => {
