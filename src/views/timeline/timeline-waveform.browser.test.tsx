@@ -1,9 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
+import { readToken } from "@/utils/theme/read-token";
+import { TOKEN_VAR } from "@/domain/theme/model";
 
 function setupWaveformAudio(duration = 30) {
   useAudioStore.setState({
@@ -93,6 +95,29 @@ describe("TimelineWaveform", () => {
     });
     clickLayer.dispatchEvent(new MouseEvent("click", { clientX: width, clientY: 40, bubbles: true }));
     expect(seeked).toBeCloseTo(20, 3);
+  });
+});
+
+describe("TimelineWaveform theme tokens", () => {
+  afterEach(() => {
+    document.documentElement.style.removeProperty(TOKEN_VAR.wave);
+    document.documentElement.style.removeProperty(TOKEN_VAR["wave-progress"]);
+  });
+
+  it("reads the wave and wave-progress tokens set on documentElement", async () => {
+    document.documentElement.style.setProperty(TOKEN_VAR.wave, "#abcdef");
+    document.documentElement.style.setProperty(TOKEN_VAR["wave-progress"], "#012345");
+    expect(readToken("wave")).toBe("#abcdef");
+    expect(readToken("wave-progress")).toBe("#012345");
+  });
+
+  it("renders without error when wave tokens are overridden", async () => {
+    document.documentElement.style.setProperty(TOKEN_VAR.wave, "#abcdef");
+    document.documentElement.style.setProperty(TOKEN_VAR["wave-progress"], "#012345");
+    setupWaveformAudio(30);
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(<TimelineWaveform />);
+    expect(screen.container.querySelector(".sticky")).not.toBeNull();
   });
 });
 

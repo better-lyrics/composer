@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { readToken } from "@/utils/theme/read-token";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
@@ -18,6 +19,10 @@ const TimelineWaveform: React.FC = () => {
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
+
+  // theme reactivity wired in Phase 2
+  const waveColor = readToken("wave");
+  const progressColor = readToken("wave-progress");
 
   useEffect(() => {
     if (!ws || !audioElement) return;
@@ -76,8 +81,8 @@ const TimelineWaveform: React.FC = () => {
           <WavesurferPlayer
             key={waveformKey}
             height={WAVEFORM_HEIGHT}
-            waveColor="#737476"
-            progressColor="#818cf8"
+            waveColor={waveColor}
+            progressColor={progressColor}
             cursorColor="transparent"
             barWidth={2}
             barGap={1}
