@@ -89,7 +89,7 @@ body {
   background: repeating-linear-gradient(180deg, var(--color-composer-onset) 0 5px, transparent 5px 11px);
   -webkit-mask: linear-gradient(180deg, transparent 0, #000 30%, #000 70%, transparent 100%);
   mask: linear-gradient(180deg, transparent 0, #000 30%, #000 70%, transparent 100%);
-  opacity: 0.5;
+  opacity: 0.75;
 }
 
 @utility snap-onset-covered {
