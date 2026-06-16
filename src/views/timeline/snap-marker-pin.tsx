@@ -126,7 +126,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
           >
             <span
               data-snap-marker-time-label
-              className="font-mono text-[10.5px] text-composer-text select-text cursor-text"
+              className="font-mono text-[10.5px] leading-none text-composer-text select-text cursor-text"
             >
               {formatTime(time)}
             </span>
