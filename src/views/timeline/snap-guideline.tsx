@@ -21,7 +21,7 @@ const SnapGuideline: React.FC = () => {
         style={{
           left: position,
           width: 0,
-          borderLeft: "1px dashed rgba(255, 214, 107, 0.7)",
+          borderLeft: "1px dashed color-mix(in srgb, var(--color-composer-snap) 70%, transparent)",
         }}
       />
     </div>
