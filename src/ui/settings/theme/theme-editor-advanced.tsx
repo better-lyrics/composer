@@ -1,5 +1,5 @@
 import { deriveTheme } from "@/domain/theme/derive";
-import { type Theme, TOKENS, type TokenKey } from "@/domain/theme/model";
+import { type Theme, type TokenMeta, TOKENS, type TokenKey } from "@/domain/theme/model";
 import { ThemeTokenInput } from "@/ui/settings/theme/theme-token-input";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -11,7 +11,14 @@ interface ThemeEditorAdvancedProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const GROUP_ORDER: string[] = [...new Set(TOKENS.map((token) => token.group))];
+const TOKENS_BY_GROUP = TOKENS.reduce((groups, token) => {
+  const bucket = groups.get(token.group);
+  if (bucket) bucket.push(token);
+  else groups.set(token.group, [token]);
+  return groups;
+}, new Map<string, TokenMeta[]>());
+
+const GROUP_ORDER: string[] = [...TOKENS_BY_GROUP.keys()];
 
 const GROUP_LABEL = "font-mono text-[10px] tracking-wider text-composer-text-faint select-none";
 
@@ -31,7 +38,7 @@ const ThemeEditorAdvanced: React.FC<ThemeEditorAdvancedProps> = ({ draft, onToke
         <div key={group} className="flex flex-col gap-1">
           <span className={GROUP_LABEL}>{group}</span>
           <div className="divide-y divide-composer-border">
-            {TOKENS.filter((token) => token.group === group).map((token) => {
+            {(TOKENS_BY_GROUP.get(group) ?? []).map((token) => {
               if (token.type === "alpha") {
                 return (
                   <div key={token.key} className="flex items-center gap-3 py-2 select-none">
