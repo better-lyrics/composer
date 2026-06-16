@@ -38,6 +38,7 @@
   --color-composer-error-text: #ffe5e5;
   --color-composer-warning: #f5a623;
   --color-composer-explicit: #ff7a85;
+  --color-composer-onset: #4fd6c0;
 
   /* Typography */
   --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
@@ -81,6 +82,14 @@ body {
 
 @utility overflow-anchor-none {
   overflow-anchor: none;
+}
+
+@utility snap-onset-line {
+  width: 2px;
+  background: repeating-linear-gradient(180deg, var(--color-composer-onset) 0 5px, transparent 5px 11px);
+  -webkit-mask: linear-gradient(180deg, #000 0, #000 20%, transparent 92%);
+  mask: linear-gradient(180deg, #000 0, #000 20%, transparent 92%);
+  opacity: 0.85;
 }
 
 @utility waveform-loading-dots {

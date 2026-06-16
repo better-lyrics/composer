@@ -21,6 +21,7 @@ import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
+import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
@@ -474,6 +475,8 @@ const TimelinePanel: React.FC = () => {
               <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
 
               <SnapGuideline />
+
+              <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} />
 
               {marqueeRect && <MarqueeSelection rect={marqueeRect} scrollContainerRef={scrollContainerRef} />}
 
