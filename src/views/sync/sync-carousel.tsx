@@ -77,13 +77,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
     const isLastWordOfPrevLine = !holdActive && isPrevLine && wordIndex === 0 && widx === lineWords.length - 1;
     const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
 
-    const color = isCurrentHeld
-      ? accentColor
-      : isLastSynced
-        ? accentColor
-        : isCurrent
-          ? secondaryColor
-          : disabledColor;
+    const color = isCurrentHeld ? accentColor : isLastSynced ? accentColor : isCurrent ? secondaryColor : disabledColor;
 
     const hasRipple = rippleTarget !== null && rippleTarget.lineId === line.id && rippleTarget.wordIndex === widx;
 

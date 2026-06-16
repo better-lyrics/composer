@@ -6,6 +6,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { readToken } from "@/utils/theme/read-token";
 import {
   shimmerTransition,
   shimmerVariants,
@@ -370,6 +371,10 @@ const SyncPanel: React.FC = () => {
     );
   }
 
+  const shimmerBase = readToken("accent-text");
+  const shimmerHighlight = readToken("text");
+  const completeGradient = `linear-gradient(45deg, ${shimmerBase} 0%, ${shimmerBase} 40%, ${shimmerHighlight} 50%, ${shimmerBase} 60%, ${shimmerBase} 100%)`;
+
   return (
     <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
       {/* Header */}
@@ -490,8 +495,7 @@ const SyncPanel: React.FC = () => {
                 animate="animate"
                 transition={shimmerTransition}
                 style={{
-                  background:
-                    "linear-gradient(45deg, rgb(165, 180, 252) 0%, rgb(165, 180, 252) 40%, rgb(237, 240, 255) 50%, rgb(165, 180, 252) 60%, rgb(165, 180, 252) 100%)",
+                  background: completeGradient,
                   backgroundSize: "200% 100%",
                   backgroundClip: "text",
                   WebkitBackgroundClip: "text",

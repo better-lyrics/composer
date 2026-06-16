@@ -68,8 +68,8 @@ body {
 
 /* Text selection */
 ::selection {
-  background-color: rgba(129, 140, 248, 0.4);
-  color: #fff;
+  background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
+  color: var(--color-composer-text);
 }
 
 /* Focus visible indicators - minimal for utility app */
@@ -98,7 +98,11 @@ body {
     content: "";
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(circle at center, rgba(129, 140, 248, 0.85) 1.2px, transparent 1.7px);
+    background-image: radial-gradient(
+      circle at center,
+      color-mix(in srgb, var(--color-composer-accent) 85%, transparent) 1.2px,
+      transparent 1.7px
+    );
     background-size: 8px 8px;
     background-position: 4px 4px;
     mask-image: linear-gradient(135deg, transparent 0%, transparent 35%, black 50%, transparent 65%, transparent 100%);
@@ -190,7 +194,7 @@ input[type="range"].settings-slider::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-composer-text);
   cursor: pointer;
   margin-top: -5px;
   border: none;
@@ -205,7 +209,7 @@ input[type="range"].settings-slider::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--color-composer-text);
   cursor: pointer;
   border: none;
 }
