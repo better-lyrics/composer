@@ -86,6 +86,62 @@ describe("SnapMarkersOverlay", () => {
       const screen = await render(<Harness />);
       expect(onsetMarkers(screen.container)).toHaveLength(0);
     });
+
+    it("renders null when there is nothing to show and marker mode is off", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false });
+      useTimelineStore.setState({
+        zoom: 100,
+        scrollLeft: 0,
+        vocalOnsetSnapPoints: [1, 2],
+        customSnapPoints: [],
+        markerMode: false,
+      });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+    });
+
+    it("stays mounted when marker mode is on even with nothing to show", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false });
+      useTimelineStore.setState({
+        zoom: 100,
+        scrollLeft: 0,
+        vocalOnsetSnapPoints: [],
+        customSnapPoints: [],
+        markerMode: true,
+      });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
+    });
+
+    it("stays mounted when custom points exist and marker mode is off", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false });
+      useTimelineStore.setState({
+        zoom: 100,
+        scrollLeft: 0,
+        vocalOnsetSnapPoints: [],
+        customSnapPoints: [2],
+        markerMode: false,
+      });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
+    });
+
+    it("stays mounted when onsets are visible and marker mode is off", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: true });
+      useTimelineStore.setState({
+        zoom: 100,
+        scrollLeft: 0,
+        vocalOnsetSnapPoints: [1],
+        customSnapPoints: [],
+        markerMode: false,
+      });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
+    });
   });
 
   describe("edge cases", () => {

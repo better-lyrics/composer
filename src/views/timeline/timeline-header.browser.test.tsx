@@ -2,6 +2,7 @@ import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
@@ -80,6 +81,46 @@ describe("TimelineHeader", () => {
     const screen = await render(<TimelineHeader />);
     const snapButton = screen.container.querySelector("button[title*='Snap']") as HTMLElement;
     expect(snapButton.className).toContain("opacity-50");
+  });
+
+  it("renders the Marker button", async () => {
+    const screen = await render(<TimelineHeader />);
+    await expect.element(screen.getByRole("button", { name: /Marker/ })).toBeInTheDocument();
+  });
+
+  it("toggles markerMode in the timeline store when the Marker button is clicked", async () => {
+    useTimelineStore.setState({ markerMode: false });
+    const screen = await render(<TimelineHeader />);
+    await screen.getByRole("button", { name: /Marker/ }).click();
+    expect(useTimelineStore.getState().markerMode).toBe(true);
+    await screen.getByRole("button", { name: /Marker/ }).click();
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+  });
+
+  it("renders the Marker button with the ghost variant when markerMode is off", async () => {
+    useTimelineStore.setState({ markerMode: false });
+    const screen = await render(<TimelineHeader />);
+    const markerButton = screen.container.querySelector("button[title*='Marker']") as HTMLElement;
+    expect(markerButton.className).toContain("opacity-60");
+    expect(markerButton.className).toContain("text-composer-text-muted");
+  });
+
+  it("renders the Marker button with the primary variant when markerMode is on", async () => {
+    useTimelineStore.setState({ markerMode: true });
+    const screen = await render(<TimelineHeader />);
+    const markerButton = screen.container.querySelector("button[title*='Marker']") as HTMLElement;
+    expect(markerButton.className).not.toContain("opacity-60");
+    expect(markerButton.className).toContain("bg-composer-accent-dark");
+  });
+
+  it("shows the marker-mode shortcut badge when hints are enabled", async () => {
+    useSettingsStore.setState({ showShortcutHints: true });
+    const screen = await render(<TimelineHeader />);
+    const markerButton = screen.container.querySelector("button[title*='Marker']") as HTMLElement;
+    const keys = getEffectiveKeysArray("timeline.toggleMarkerMode");
+    for (const key of keys) {
+      expect(markerButton.textContent ?? "").toContain(key);
+    }
   });
 
   describe("zoom without a scroll ref", () => {

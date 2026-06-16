@@ -22,6 +22,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const vocalOnsetSnapPoints = useTimelineStore((s) => s.vocalOnsetSnapPoints);
   const customSnapPoints = useTimelineStore((s) => s.customSnapPoints);
   const removeCustomSnapPoint = useTimelineStore((s) => s.removeCustomSnapPoint);
+  const markerMode = useTimelineStore((s) => s.markerMode);
   const showOnsets = useSettingsStore((s) => s.vocalOnsetSnap);
   const thresholdPx = useSettingsStore((s) => s.timelineSnapThreshold);
 
@@ -55,6 +56,9 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
   }, [scrollContainerRef]);
+
+  const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
+  if (visibleOnsetCount === 0 && customSnapPoints.length === 0 && !markerMode) return null;
 
   return (
     <div
