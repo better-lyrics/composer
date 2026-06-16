@@ -26,6 +26,9 @@ const flashes = (container: HTMLElement): NodeListOf<HTMLElement> =>
 const newPins = (container: HTMLElement): NodeListOf<HTMLElement> =>
   container.querySelectorAll<HTMLElement>("[data-snap-marker-new]");
 
+const onsetLines = (container: HTMLElement): NodeListOf<HTMLElement> =>
+  container.querySelectorAll<HTMLElement>("[data-snap-marker='onset']");
+
 const headOf = (marker: HTMLElement): HTMLElement => {
   const head = marker.querySelector<HTMLElement>("[data-snap-marker-head]");
   if (!head) throw new Error("pin head not found");
@@ -145,6 +148,37 @@ describe("SnapMarkersOverlay placement animation", () => {
     expect(flashes(screen.container)).toHaveLength(0);
 
     head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+  });
+});
+
+describe("SnapMarkersOverlay onset entry stagger", () => {
+  it("gives each onset line the entry class and an increasing staggered delay", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1, 2, 3] });
+    useProjectStore.setState({ customSnapPoints: [] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => onsetLines(screen.container)).toHaveLength(3);
+
+    const lines = onsetLines(screen.container);
+    for (const line of lines) expect(line.classList.contains("snap-onset-enter")).toBe(true);
+    expect(lines[0].style.animationDelay).toBe("0ms");
+    expect(lines[1].style.animationDelay).toBe("10ms");
+    expect(lines[2].style.animationDelay).toBe("20ms");
+  });
+
+  it("caps the stagger delay so a large onset count does not crawl in forever", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
+    const many = Array.from({ length: 120 }, (_, i) => i + 1);
+    useTimelineStore.setState({ zoom: 5, scrollLeft: 0, vocalOnsetSnapPoints: many });
+    useProjectStore.setState({ customSnapPoints: [] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => onsetLines(screen.container)).toHaveLength(120);
+
+    const lines = onsetLines(screen.container);
+    expect(lines[70].style.animationDelay).toBe("700ms");
+    expect(lines[119].style.animationDelay).toBe("700ms");
   });
 });
 

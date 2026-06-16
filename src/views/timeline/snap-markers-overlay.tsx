@@ -12,6 +12,11 @@ interface SnapMarkersOverlayProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+const ONSET_STAGGER_STEP_MS = 10;
+const ONSET_STAGGER_CAP_MS = 700;
+
 // -- Component -----------------------------------------------------------------
 
 const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef }) => {
@@ -77,10 +82,14 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 key={`${time}-${index}`}
                 data-snap-marker="onset"
                 data-covered={coveredOnsets.has(index) ? "" : undefined}
-                className={`snap-onset-line absolute top-0 -translate-x-1/2 pointer-events-none ${
+                className={`snap-onset-line snap-onset-enter absolute top-0 -translate-x-1/2 pointer-events-none ${
                   coveredOnsets.has(index) ? "snap-onset-covered" : ""
                 }`}
-                style={{ left: time * zoom, height: WAVEFORM_HEIGHT }}
+                style={{
+                  left: time * zoom,
+                  height: WAVEFORM_HEIGHT,
+                  animationDelay: `${Math.min(index * ONSET_STAGGER_STEP_MS, ONSET_STAGGER_CAP_MS)}ms`,
+                }}
               />
             ))}
           </div>
