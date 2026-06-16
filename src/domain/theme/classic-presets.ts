@@ -4,9 +4,7 @@
 // alpha + shade tokens.
 
 import { type Theme } from "./model";
-
-const DARK_SNAP = "#ffd66b";
-const LIGHT_SNAP = "#d99a2b";
+import { DARK_SNAP, LIGHT_SNAP } from "./snap-constants";
 
 const CLASSIC_PRESETS: Theme[] = [
   {

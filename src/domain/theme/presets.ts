@@ -1,6 +1,7 @@
 // -- Built-in presets ----------------------------------------------------------
 // Assembles the Composer + classic preset lists into the public registry. Raw
-// seed data lives in preset-data.ts; this module owns the lookup structures.
+// seed data lives in composer-presets.ts and classic-presets.ts; this module
+// owns the lookup structures.
 
 import { type Theme, type ThemeId } from "./model";
 import { CLASSIC_PRESETS } from "./classic-presets";

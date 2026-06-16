@@ -5,9 +5,7 @@
 // look (the rgb values in src/index.css do not equal the shade formula).
 
 import { type Theme } from "./model";
-
-const DARK_SNAP = "#ffd66b";
-const LIGHT_SNAP = "#d99a2b";
+import { DARK_SNAP, LIGHT_SNAP } from "./snap-constants";
 
 const COMPOSER_PRESETS: Theme[] = [
   {
