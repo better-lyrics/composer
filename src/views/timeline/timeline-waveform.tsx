@@ -7,13 +7,8 @@ import { readToken } from "@/utils/theme/read-token";
 import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
-
-// -- Constants -----------------------------------------------------------------
-
-const DOUBLE_CLICK_MS = 400;
-const DOUBLE_CLICK_PX = 6;
 
 // -- Component -----------------------------------------------------------------
 
@@ -28,7 +23,6 @@ const TimelineWaveform: React.FC = () => {
   const markerMode = useTimelineStore((s) => s.markerMode);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
-  const clickLayerRef = useRef<HTMLDivElement>(null);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
@@ -78,62 +72,19 @@ const TimelineWaveform: React.FC = () => {
     (e: React.MouseEvent<HTMLDivElement>) => {
       e.stopPropagation();
       if (!duration || totalWidth <= 0) return;
-      if (useTimelineStore.getState().markerMode && e.detail <= 1) {
-        addSnappedPoint(timeFromClick(e));
-      }
-    },
-    [duration, totalWidth, timeFromClick, addSnappedPoint],
-  );
-
-  // Marker-off clicks seek here, not on the layer's onClick. A single seek
-  // slides the playhead under the cursor, so the second click of a double-click
-  // lands on the playhead and the native dblclick never reaches the layer.
-  // Watching clicks at the document level catches the pair wherever they land. A
-  // single click seeks instantly; a double-click drops a snap point and restores
-  // the playhead, so placing a marker never leaves the cursor at that spot.
-  useEffect(() => {
-    if (duration <= 0 || totalWidth <= 0) return;
-    let lastClick: { t: number; x: number; y: number; timeBefore: number } | null = null;
-
-    const onDocumentClick = (e: MouseEvent) => {
-      const layer = clickLayerRef.current;
-      if (!layer) return;
-      // Snap-marker pins live in the overlay; their hover tooltip (time + delete
-      // button) is rendered in a FloatingPortal outside it, so guard both or a
-      // click on the delete control would fall through to a seek.
-      if ((e.target as HTMLElement | null)?.closest("[data-snap-markers-overlay], [data-snap-marker-tooltip]")) return;
-
-      const rect = layer.getBoundingClientRect();
-      const inStrip =
-        e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom;
-      if (!inStrip || useTimelineStore.getState().markerMode) {
-        lastClick = null;
+      const time = timeFromClick(e);
+      if (useTimelineStore.getState().markerMode) {
+        if (e.detail <= 1) addSnappedPoint(time);
         return;
       }
-
-      const time = ((e.clientX - rect.left) / totalWidth) * duration;
-      const prev = lastClick;
-      const isDoubleClick =
-        prev !== null &&
-        e.timeStamp - prev.t <= DOUBLE_CLICK_MS &&
-        Math.abs(e.clientX - prev.x) <= DOUBLE_CLICK_PX &&
-        Math.abs(e.clientY - prev.y) <= DOUBLE_CLICK_PX;
-
-      if (isDoubleClick && prev) {
+      if (e.altKey) {
         addSnappedPoint(time);
-        seekTo(prev.timeBefore);
-        lastClick = null;
-      } else {
-        const { audioElement: audio, currentTime } = useAudioStore.getState();
-        const timeBefore = audio?.currentTime ?? currentTime;
-        seekTo(time);
-        lastClick = { t: e.timeStamp, x: e.clientX, y: e.clientY, timeBefore };
+        return;
       }
-    };
-
-    document.addEventListener("click", onDocumentClick, true);
-    return () => document.removeEventListener("click", onDocumentClick, true);
-  }, [duration, totalWidth, addSnappedPoint, seekTo]);
+      seekTo(time);
+    },
+    [duration, totalWidth, timeFromClick, addSnappedPoint, seekTo],
+  );
 
   const onDestroy = useCallback(() => setWs(null), []);
 
@@ -182,7 +133,6 @@ const TimelineWaveform: React.FC = () => {
         </div>
       )}
       <div
-        ref={clickLayerRef}
         role="button"
         tabIndex={-1}
         aria-label={markerMode ? "Place snap point" : "Seek to position"}

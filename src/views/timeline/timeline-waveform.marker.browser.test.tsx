@@ -122,6 +122,22 @@ describe("TimelineWaveform marker placement", () => {
     expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
   });
 
+  it("marker mode ON takes precedence over Alt: an Alt double-click still nets exactly one point and never seeks", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50, markerMode: true, vocalOnsetSnapPoints: [] });
+    useProjectStore.setState({ customSnapPoints: [] });
+    const seek = trackSeek();
+    const screen = await render(<TimelineWaveform />);
+    const layer = getClickLayer(screen.container, 1500);
+
+    layer.dispatchEvent(new MouseEvent("click", { altKey: true, detail: 1, clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { altKey: true, detail: 2, clientX: 750, clientY: 40, bubbles: true }));
+
+    await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
+    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(seek.get()).toBe(-1);
+  });
+
   it("marker mode OFF: single click seeks and adds no point", async () => {
     setupWaveformAudio(30);
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
@@ -136,38 +152,22 @@ describe("TimelineWaveform marker placement", () => {
     expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
   });
 
-  it("marker mode OFF: a double-click adds exactly one custom point", async () => {
+  it("marker mode OFF: Alt+click drops a point and does not seek", async () => {
     setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    const screen = await render(<TimelineWaveform />);
-    const layer = getClickLayer(screen.container, 1500);
-
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
-
-    await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
-  });
-
-  it("marker mode OFF: a double-click leaves the playhead where it was, not at the clicked time", async () => {
-    setupWaveformAudio(30);
-    useAudioStore.setState({ currentTime: 5 });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
     useProjectStore.setState({ customSnapPoints: [] });
     const seek = trackSeek();
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
 
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { altKey: true, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
     expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
-    expect(seek.get()).toBeCloseTo(5, 3);
+    expect(seek.get()).toBe(-1);
   });
 
-  it("marker mode OFF: a double-click near an onset within threshold snaps onto the onset", async () => {
+  it("marker mode OFF: Alt+click snaps the dropped point to a nearby onset within threshold", async () => {
     setupWaveformAudio(30);
     useSettingsStore.setState({ vocalOnsetSnap: true, timelineSnapThreshold: 12 });
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [15.1] });
@@ -175,8 +175,7 @@ describe("TimelineWaveform marker placement", () => {
     const screen = await render(<TimelineWaveform />);
     const layer = getClickLayer(screen.container, 1500);
 
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
-    layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { altKey: true, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
     expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15.1, 6);
@@ -241,118 +240,14 @@ describe("TimelineWaveform marker-mode armed state", () => {
   });
 });
 
-describe("TimelineWaveform double-click marker placement is occlusion-proof", () => {
-  function stubLayerRect(width: number): void {
-    stubRect(document.querySelector('[role="button"]') as HTMLElement, width);
-  }
-
-  function clickAt(target: EventTarget, clientX: number, clientY: number): void {
-    target.dispatchEvent(new MouseEvent("click", { clientX, clientY, bubbles: true }));
-  }
-
-  it("regression: two clicks that land off the waveform layer (e.g. on the playhead) still add one point", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 750, 40);
-    clickAt(document.body, 750, 40);
-
-    await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
-  });
-
-  it("a lone in-strip click never places a point", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 750, 40);
-
-    expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
-  });
-
-  it("two clicks below the waveform strip place no point", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 750, 200);
-    clickAt(document.body, 750, 200);
-
-    expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
-  });
-
-  it("two clicks far apart horizontally are not a double-click", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 300, 40);
-    clickAt(document.body, 900, 40);
-
-    expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
-  });
-
-  it("three quick in-strip clicks add exactly one point", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 750, 40);
-    clickAt(document.body, 750, 40);
-    clickAt(document.body, 750, 40);
-
-    await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-  });
-
-  it("marker mode ON suppresses the document-level double-click detector", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: true, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    clickAt(document.body, 750, 40);
-    clickAt(document.body, 750, 40);
-
-    expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
-  });
-
-  it("double-clicking an existing snap-point pin does not stack a new point", async () => {
-    setupWaveformAudio(30);
-    useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [] });
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
-
-    const pin = document.createElement("div");
-    pin.setAttribute("data-snap-markers-overlay", "");
-    document.body.appendChild(pin);
-    clickAt(pin, 750, 40);
-    clickAt(pin, 750, 40);
-    pin.remove();
-
-    expect(useProjectStore.getState().customSnapPoints.length).toBe(0);
-  });
-
+describe("TimelineWaveform marker delete control", () => {
   it("regression: clicking a marker's portalled delete control does not seek or add a point", async () => {
     setupWaveformAudio(30);
     useTimelineStore.setState({ zoom: 50, markerMode: false, vocalOnsetSnapPoints: [] });
     useProjectStore.setState({ customSnapPoints: [] });
     const seek = trackSeek();
-    await render(<TimelineWaveform />);
-    stubLayerRect(1500);
+    const screen = await render(<TimelineWaveform />);
+    stubRect(screen.container.querySelector('[role="button"]') as HTMLElement, 1500);
 
     const tooltip = document.createElement("div");
     tooltip.setAttribute("data-snap-marker-tooltip", "");
@@ -361,8 +256,8 @@ describe("TimelineWaveform double-click marker placement is occlusion-proof", ()
     tooltip.appendChild(del);
     document.body.appendChild(tooltip);
 
-    clickAt(del, 750, 40);
-    clickAt(del, 750, 40);
+    del.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
+    del.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
     tooltip.remove();
 
     expect(seek.get()).toBe(-1);
