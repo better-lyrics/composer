@@ -12,6 +12,7 @@ import {
 } from "@/utils/composer-bridge-api";
 import { cn } from "@/utils/cn";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
+import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -123,22 +124,13 @@ const BridgeSection: React.FC = () => {
     };
   }, []);
 
-  const [draftUrl, setDraftUrl] = useState(bridgeUrl);
-  useEffect(() => {
-    setDraftUrl(bridgeUrl);
-  }, [bridgeUrl]);
-
   const toggleEnabled = () => {
     const current = useSettingsStore.getState().experiments;
     setSetting("experiments", { ...current, youtubeBridge: !current.youtubeBridge });
   };
 
-  const commitUrl = () => {
-    if (draftUrl !== bridgeUrl) setSetting("composerBridgeUrl", draftUrl);
-  };
-  const resetUrl = () => {
-    setDraftUrl(DEFAULT_BRIDGE_URL);
-    setSetting("composerBridgeUrl", DEFAULT_BRIDGE_URL);
+  const commitUrl = (url: string) => {
+    if (url !== bridgeUrl) setSetting("composerBridgeUrl", url);
   };
 
   const everDetectedAtMount = useMemo(() => hasBridgeEverBeenDetected(), []);
@@ -200,34 +192,12 @@ const BridgeSection: React.FC = () => {
             <StatusBadge state={state} data={health.data} errorMessage={errorMessage} />
           </div>
 
-          <label className="flex flex-col gap-1">
-            <span className="text-xs text-composer-text-muted">Bridge URL</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="url"
-                value={draftUrl}
-                onChange={(e) => setDraftUrl(e.target.value)}
-                onBlur={commitUrl}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                  }
-                }}
-                spellCheck={false}
-                className="flex-1 h-7 px-2 text-xs font-mono rounded bg-composer-bg text-composer-text border border-composer-border focus:outline-none focus:border-composer-accent select-text"
-                placeholder={DEFAULT_BRIDGE_URL}
-              />
-              {bridgeUrl !== DEFAULT_BRIDGE_URL && (
-                <button
-                  type="button"
-                  onClick={resetUrl}
-                  className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer"
-                >
-                  Reset
-                </button>
-              )}
-            </div>
-          </label>
+          <BridgeUrlField
+            key={bridgeUrl}
+            initialUrl={bridgeUrl}
+            onCommit={commitUrl}
+            onReset={() => setSetting("composerBridgeUrl", DEFAULT_BRIDGE_URL)}
+          />
 
           {state === "error" &&
             (everDetectedAtMount ? <BridgeStoppedHint /> : <BridgeInstallGuide onCheckNow={() => health.refetch()} />)}
