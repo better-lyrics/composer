@@ -59,6 +59,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     projectState.dismissedExplicitSuggestions,
     useSeparationStore.getState().currentStem,
     projectState.primingStripped,
+    projectState.customSnapPoints,
   ];
 }
 
@@ -123,6 +124,7 @@ function usePersistence(): void {
           state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
           state.setPrimingStripped(project.primingStripped ?? false);
+          state.setCustomSnapPoints(project.customSnapPoints ?? []);
           state.markClean();
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });

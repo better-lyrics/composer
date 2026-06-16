@@ -26,6 +26,7 @@ interface SavedProject {
   dismissedExplicitSuggestions?: string[];
   currentStem?: Stem;
   primingStripped?: boolean;
+  customSnapPoints?: number[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -47,6 +48,7 @@ async function saveCurrentProject(
   dismissedExplicitSuggestions: string[],
   currentStem: Stem,
   primingStripped: boolean,
+  customSnapPoints: number[],
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -64,6 +66,7 @@ async function saveCurrentProject(
     dismissedExplicitSuggestions,
     currentStem,
     primingStripped,
+    customSnapPoints,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }

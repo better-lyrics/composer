@@ -35,6 +35,7 @@ function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
     [],
     "original",
     opts.primingStripped,
+    [],
   );
 }
 
@@ -143,6 +144,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
       [],
       "original",
       false,
+      [],
     );
 
     await renderHook(() => usePersistence());
@@ -168,6 +170,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
       [],
       "original",
       false,
+      [],
     );
 
     await renderHook(() => usePersistence());
