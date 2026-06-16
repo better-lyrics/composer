@@ -43,13 +43,8 @@ const ExportPanel: React.FC = () => {
   const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const hasSyncedContent = useMemo(() => {
-    return lines.some((line) => effectiveBounds(line) !== null);
-  }, [lines]);
-
-  const syncedLineCount = useMemo(() => {
-    return lines.filter((line) => effectiveBounds(line) !== null).length;
-  }, [lines]);
+  const syncedLineCount = useMemo(() => lines.filter((line) => effectiveBounds(line) !== null).length, [lines]);
+  const hasSyncedContent = syncedLineCount > 0;
 
   const generatedTtml = useMemo(() => {
     if (!hasSyncedContent) return "";
@@ -101,7 +96,8 @@ const ExportPanel: React.FC = () => {
   const handleExportProject = useCallback(() => {
     const audioSource = useAudioStore.getState().source;
     const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults } = useProjectStore.getState();
+    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults, customSnapPoints } =
+      useProjectStore.getState();
     exportProjectToFile(
       metadata,
       agents,
@@ -111,6 +107,7 @@ const ExportPanel: React.FC = () => {
       syllableSplitDefaults,
       dismissedSuggestions,
       dismissedExplicitSuggestions,
+      customSnapPoints,
       audioFileName,
     );
   }, [metadata, agents, lines, groups, granularity]);
@@ -145,6 +142,7 @@ const ExportPanel: React.FC = () => {
       setGranularity(project.granularity);
       store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
       setAgents(project.agents);
+      store.setCustomSnapPoints(project.customSnapPoints ?? []);
       markClean();
 
       if (fileInputRef.current) {

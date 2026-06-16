@@ -120,6 +120,7 @@ function exportProjectToFile(
   syllableSplitDefaults: SyllableSplitDefaults,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
+  customSnapPoints: number[],
   audioFileName?: string,
 ): void {
   const project: SavedProject = {
@@ -134,6 +135,7 @@ function exportProjectToFile(
     audioFileName,
     dismissedSuggestions,
     dismissedExplicitSuggestions,
+    customSnapPoints,
   };
 
   const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });

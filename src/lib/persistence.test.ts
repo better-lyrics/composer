@@ -99,3 +99,42 @@ describe("persistence: primingStripped round-trip", () => {
     expect(parsed.primingStripped).toBe(false);
   });
 });
+
+describe("persistence: customSnapPoints round-trip", () => {
+  it("importProjectFromFile preserves customSnapPoints when present", async () => {
+    const metadata = { title: "Song", artist: "", album: "", duration: 0 };
+    const payload = {
+      version: 1 as const,
+      savedAt: Date.now(),
+      metadata,
+      agents: DEFAULT_AGENTS,
+      lines: [],
+      groups: [],
+      granularity: "word" as const,
+      customSnapPoints: [5, 12],
+    };
+    const file = new File([JSON.stringify(payload)], "song.ttml-project.json", { type: "application/json" });
+
+    const parsed = await importProjectFromFile(file);
+
+    expect(parsed.customSnapPoints).toEqual([5, 12]);
+  });
+
+  it("leaves customSnapPoints undefined when importing a legacy project without the field", async () => {
+    const metadata = { title: "Old", artist: "", album: "", duration: 0 };
+    const legacy = {
+      version: 1 as const,
+      savedAt: Date.now(),
+      metadata,
+      agents: DEFAULT_AGENTS,
+      lines: [],
+      groups: [],
+      granularity: "word" as const,
+    };
+    const file = new File([JSON.stringify(legacy)], "legacy.ttml-project.json", { type: "application/json" });
+
+    const parsed = await importProjectFromFile(file);
+
+    expect(parsed.customSnapPoints).toBeUndefined();
+  });
+});
