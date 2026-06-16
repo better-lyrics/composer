@@ -78,7 +78,7 @@ const COMPOSER_PRESETS: Theme[] = [
       text: "#ffffff",
       "text-tertiary": "#e6e6e6",
       "text-faint": "#b8b8b8",
-      accent: "#a6b0ff",
+      accent: "#818cf8",
       "accent-warm": "#ffc0c0",
       link: "#9aa6ff",
       error: "#ff8080",

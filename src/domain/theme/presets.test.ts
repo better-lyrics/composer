@@ -121,6 +121,15 @@ describe("regression: default preset reproduces the current look", () => {
   });
 });
 
+describe("high contrast accent", () => {
+  it("reuses the Default preset's accent", () => {
+    const highContrast = PRESET_BY_ID.get("high-contrast");
+    const def = PRESET_BY_ID.get("default");
+    if (!highContrast || !def) throw new Error("missing preset");
+    expect(highContrast.tokens.accent).toBe(def.tokens.accent);
+  });
+});
+
 describe("light preset accent", () => {
   it("derives a dark on-accent for the Light preset's light accent-dark", () => {
     const light = PRESET_BY_ID.get("light");
