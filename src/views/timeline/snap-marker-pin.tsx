@@ -85,10 +85,19 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   if (isOnOnset && !wasOnOnsetRef.current) setFlashKey((key) => key + 1);
   wasOnOnsetRef.current = isOnOnset;
 
+  // Pins are keyed by position, so an insert before an existing pin reuses this
+  // element instead of remounting it. Bump a key when the pin becomes newly
+  // placed so the drop-in wrapper remounts and the entry animation replays.
+  const wasNewRef = useRef(false);
+  const [dropInKey, setDropInKey] = useState(0);
+  if (isNew && !wasNewRef.current) setDropInKey((key) => key + 1);
+  wasNewRef.current = isNew;
+
   const showTooltip = isOpen && !isDragging;
 
   return (
     <m.div
+      key={dropInKey}
       data-snap-marker="custom"
       data-snap-marker-time={time}
       data-snap-marker-drop-in

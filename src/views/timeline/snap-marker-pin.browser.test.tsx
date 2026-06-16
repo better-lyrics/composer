@@ -243,6 +243,28 @@ describe("SnapMarkerPin", () => {
       expect(wrapper?.hasAttribute("data-snap-marker-new")).toBe(false);
     });
 
+    it("remounts the drop-in wrapper when an existing pin becomes newly placed so the entry replays", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isNew={false} />);
+      const before = screen.container.querySelector("[data-snap-marker-drop-in]");
+      expect(before).not.toBeNull();
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isNew />);
+      const after = screen.container.querySelector("[data-snap-marker-drop-in]");
+
+      expect(after).not.toBeNull();
+      expect(after).not.toBe(before);
+    });
+
+    it("keeps the same drop-in wrapper across an unrelated rerender", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isNew={false} time={2} />);
+      const before = screen.container.querySelector("[data-snap-marker-drop-in]");
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isNew={false} time={2.5} />);
+      const after = screen.container.querySelector("[data-snap-marker-drop-in]");
+
+      expect(after).toBe(before);
+    });
+
     it("renders no flash when the pin is not on an onset", async () => {
       const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
       expect(flash(screen.container)).toBeNull();
