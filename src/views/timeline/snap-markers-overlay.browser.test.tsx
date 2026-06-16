@@ -429,10 +429,11 @@ describe("SnapMarkersOverlay", () => {
       await userEvent.hover(headOf(secondPin));
 
       const deleteButton = await vi.waitFor(() => {
-        const button = secondPin.querySelector<HTMLButtonElement>("[data-snap-marker-delete]");
+        const button = document.body.querySelector<HTMLButtonElement>("[data-snap-marker-delete]");
         if (!button) throw new Error("delete button not yet rendered");
         return button;
       });
+      await userEvent.hover(deleteButton);
       await userEvent.click(deleteButton);
 
       await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([1, 3]);

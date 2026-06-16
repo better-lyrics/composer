@@ -1,6 +1,20 @@
+import {
+  FloatingPortal,
+  autoUpdate,
+  flip,
+  offset,
+  safePolygon,
+  shift,
+  useDismiss,
+  useFloating,
+  useHover,
+  useInteractions,
+  useRole,
+} from "@floating-ui/react";
 import { IconX } from "@tabler/icons-react";
 import { m, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
+import { cn } from "@/utils/cn";
 import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
 
@@ -32,13 +46,32 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   onDelete,
 }) => {
   const reduceMotion = useReducedMotion();
-  const [isHovered, setIsHovered] = useState(false);
-  const showTooltip = isHovered && !isDragging;
+  const [isOpen, setIsOpen] = useState(false);
+
+  const { refs, floatingStyles, context } = useFloating({
+    open: isOpen,
+    onOpenChange: setIsOpen,
+    placement: "bottom",
+    middleware: [offset(8), flip(), shift({ padding: 8 })],
+    whileElementsMounted: autoUpdate,
+  });
+
+  const hover = useHover(context, {
+    enabled: !isDragging,
+    handleClose: safePolygon(),
+    delay: { open: 0, close: 60 },
+  });
+  const role = useRole(context, { role: "tooltip" });
+  const dismiss = useDismiss(context);
+
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover, role, dismiss]);
 
   const wasOnOnsetRef = useRef(false);
   const [flashKey, setFlashKey] = useState(0);
   if (isOnOnset && !wasOnOnsetRef.current) setFlashKey((key) => key + 1);
   wasOnOnsetRef.current = isOnOnset;
+
+  const showTooltip = isOpen && !isDragging;
 
   return (
     <m.div
@@ -51,8 +84,6 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
       variants={pinDropInVariants}
       initial={isNew && !reduceMotion ? "initial" : false}
       animate="animate"
-      onPointerEnter={() => setIsHovered(true)}
-      onPointerLeave={() => setIsHovered(false)}
     >
       <div
         data-snap-marker-line
@@ -71,41 +102,45 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
           animate={reduceMotion ? "initial" : "animate"}
         />
       )}
-      <div
-        data-snap-marker-hit
-        className="absolute top-0 left-1/2 -translate-x-1/2 w-3 pointer-events-auto"
-        style={{ height: fadeExtent }}
-      />
       <button
+        ref={refs.setReference}
         type="button"
         data-snap-marker-head
         aria-label={`Custom snap point at ${formatTime(time)}`}
-        className={`snap-custom-head absolute top-0 left-1/2 pointer-events-auto select-none border-none p-0 ${
-          isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab"
-        }`}
-        onPointerDown={(event) => onHeadPointerDown(index, event)}
+        className={cn(
+          "snap-custom-head expanded-hit-sm absolute top-0 left-1/2 pointer-events-auto select-none border-none p-0",
+          isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab",
+        )}
+        {...getReferenceProps({
+          onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(index, event),
+        })}
       />
       {showTooltip && (
-        <div
-          data-snap-marker-tooltip
-          className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
-        >
-          <span
-            data-snap-marker-time-label
-            className="font-mono text-[10.5px] text-composer-text select-text cursor-text"
+        <FloatingPortal>
+          <div
+            ref={refs.setFloating}
+            data-snap-marker-tooltip
+            className="z-100 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
+            style={floatingStyles}
+            {...getFloatingProps()}
           >
-            {formatTime(time)}
-          </span>
-          <button
-            type="button"
-            data-snap-marker-delete
-            aria-label="Delete custom snap point"
-            className="flex items-center text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
-            onClick={() => onDelete(index)}
-          >
-            <IconX size={12} />
-          </button>
-        </div>
+            <span
+              data-snap-marker-time-label
+              className="font-mono text-[10.5px] text-composer-text select-text cursor-text"
+            >
+              {formatTime(time)}
+            </span>
+            <button
+              type="button"
+              data-snap-marker-delete
+              aria-label="Delete custom snap point"
+              className="flex items-center text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
+              onClick={() => onDelete(index)}
+            >
+              <IconX size={12} />
+            </button>
+          </div>
+        </FloatingPortal>
       )}
     </m.div>
   );

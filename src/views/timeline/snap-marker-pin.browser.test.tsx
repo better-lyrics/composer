@@ -26,8 +26,12 @@ const head = (container: HTMLElement): HTMLElement | null =>
 const line = (container: HTMLElement): HTMLElement | null =>
   container.querySelector<HTMLElement>("[data-snap-marker-line]");
 
-const tooltip = (container: HTMLElement): HTMLElement | null =>
-  container.querySelector<HTMLElement>("[data-snap-marker-tooltip]");
+const tooltip = (): HTMLElement | null => document.body.querySelector<HTMLElement>("[data-snap-marker-tooltip]");
+
+const deleteButton = (): HTMLButtonElement | null =>
+  document.body.querySelector<HTMLButtonElement>("[data-snap-marker-delete]");
+
+const timeLabel = (): HTMLElement | null => document.body.querySelector<HTMLElement>("[data-snap-marker-time-label]");
 
 // -- Tests ---------------------------------------------------------------------
 
@@ -72,22 +76,21 @@ describe("SnapMarkerPin", () => {
   describe("tooltip", () => {
     it("shows a tooltip with the formatted time on hover", async () => {
       const screen = await render(<SnapMarkerPin {...defaultProps} time={2} />);
-      expect(tooltip(screen.container)).toBeNull();
+      expect(tooltip()).toBeNull();
 
       const headEl = head(screen.container);
       if (headEl) await userEvent.hover(headEl);
 
-      await expect.poll(() => tooltip(screen.container)).not.toBeNull();
-      const label = screen.container.querySelector<HTMLElement>("[data-snap-marker-time-label]");
-      expect(label?.textContent).toBe("0:02.000");
-      expect(label?.classList.contains("select-text")).toBe(true);
+      await expect.poll(() => tooltip()).not.toBeNull();
+      await expect.poll(() => timeLabel()?.textContent).toBe("0:02.000");
+      expect(timeLabel()?.classList.contains("select-text")).toBe(true);
     });
 
     it("hides the tooltip while dragging", async () => {
       const screen = await render(<SnapMarkerPin {...defaultProps} isDragging />);
       const headEl = head(screen.container);
       if (headEl) await userEvent.hover(headEl);
-      await expect.poll(() => tooltip(screen.container)).toBeNull();
+      await expect.poll(() => tooltip()).toBeNull();
     });
 
     it("calls onDelete with the index when the delete button is clicked", async () => {
@@ -96,13 +99,34 @@ describe("SnapMarkerPin", () => {
       const headEl = head(screen.container);
       if (headEl) await userEvent.hover(headEl);
 
-      const deleteButton = await vi.waitFor(() => {
-        const button = screen.container.querySelector<HTMLButtonElement>("[data-snap-marker-delete]");
-        if (!button) throw new Error("delete button not yet rendered");
-        return button;
+      const button = await vi.waitFor(() => {
+        const el = deleteButton();
+        if (!el) throw new Error("delete button not yet rendered");
+        return el;
       });
-      await userEvent.click(deleteButton);
+      await userEvent.hover(button);
+      await userEvent.click(button);
       expect(onDelete).toHaveBeenCalledWith(2);
+    });
+
+    it("regression: tooltip stays open while moving from the head onto the delete button", async () => {
+      const onDelete = vi.fn();
+      const screen = await render(<SnapMarkerPin {...defaultProps} index={4} onDelete={onDelete} />);
+      const headEl = head(screen.container);
+      if (headEl) await userEvent.hover(headEl);
+
+      const button = await vi.waitFor(() => {
+        const el = deleteButton();
+        if (!el) throw new Error("delete button not yet rendered");
+        return el;
+      });
+
+      if (headEl) await userEvent.unhover(headEl);
+      await userEvent.hover(button);
+      await expect.poll(() => tooltip()).not.toBeNull();
+
+      await userEvent.click(button);
+      expect(onDelete).toHaveBeenCalledWith(4);
     });
   });
 
