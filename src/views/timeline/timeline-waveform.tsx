@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/utils/cn";
@@ -67,10 +68,10 @@ const TimelineWaveform: React.FC = () => {
   );
 
   const addSnappedPoint = useCallback((time: number) => {
-    const { zoom: currentZoom, vocalOnsetSnapPoints, addCustomSnapPoint } = useTimelineStore.getState();
+    const { zoom: currentZoom, vocalOnsetSnapPoints } = useTimelineStore.getState();
     const { vocalOnsetSnap, timelineSnapThreshold } = useSettingsStore.getState();
     const onsets = vocalOnsetSnap ? vocalOnsetSnapPoints : [];
-    addCustomSnapPoint(snapTimeToOnset(time, onsets, currentZoom, timelineSnapThreshold));
+    useProjectStore.getState().addCustomSnapPoint(snapTimeToOnset(time, onsets, currentZoom, timelineSnapThreshold));
   }, []);
 
   const handleClick = useCallback(

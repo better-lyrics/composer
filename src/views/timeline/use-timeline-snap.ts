@@ -49,7 +49,7 @@ function useTimelineSnap(): UseTimelineSnap {
   useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
   useTimelineStore((s) => s.vocalOnsetSnapPoints);
-  useTimelineStore((s) => s.customSnapPoints);
+  useProjectStore((s) => s.customSnapPoints);
 
   const ctxRef = useRef<SnapCtx>({
     anchors: [],
@@ -60,6 +60,7 @@ function useTimelineSnap(): UseTimelineSnap {
 
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
+    const projectSnapPoints = useProjectStore.getState().customSnapPoints;
     const audio = useAudioStore.getState();
     const settings = useSettingsStore.getState();
     const timeline = useTimelineStore.getState();
@@ -71,7 +72,7 @@ function useTimelineSnap(): UseTimelineSnap {
       playhead,
       vocalOnsets,
       settings.timelineSnap,
-      timeline.customSnapPoints,
+      projectSnapPoints,
     );
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
@@ -93,7 +94,7 @@ function useTimelineSnap(): UseTimelineSnap {
     const enabled =
       settings.timelineSnap ||
       (settings.vocalOnsetSnap && timeline.vocalOnsetSnapPoints.length > 0) ||
-      timeline.customSnapPoints.length > 0;
+      useProjectStore.getState().customSnapPoints.length > 0;
     const threshold = useSettingsStore.getState().timelineSnapThreshold;
     const bypassing = useTimelineStore.getState().isBypassing;
     const zoom = timeline.zoom;

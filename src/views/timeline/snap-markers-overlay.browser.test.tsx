@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { userEvent } from "vitest/browser";
 import { describe, expect, it, vi } from "vitest";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -70,7 +71,8 @@ describe("SnapMarkersOverlay", () => {
 
   it("contains both onset markers and custom pins to the waveform height", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
-    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1], customSnapPoints: [2] });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1] });
+    useProjectStore.setState({ customSnapPoints: [2] });
 
     const screen = await render(<Harness />);
     const [onset] = onsetMarkers(screen.container);
@@ -106,9 +108,9 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [1, 2],
-        customSnapPoints: [],
         markerMode: false,
       });
+      useProjectStore.setState({ customSnapPoints: [] });
 
       const screen = await render(<Harness />);
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
@@ -120,9 +122,9 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [],
         markerMode: false,
       });
+      useProjectStore.setState({ customSnapPoints: [] });
 
       const screen = await render(<Harness />);
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
@@ -134,9 +136,9 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [],
         markerMode: true,
       });
+      useProjectStore.setState({ customSnapPoints: [] });
 
       const screen = await render(<Harness />);
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
@@ -148,9 +150,9 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [2],
         markerMode: false,
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
@@ -162,9 +164,9 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [1],
-        customSnapPoints: [],
         markerMode: false,
       });
+      useProjectStore.setState({ customSnapPoints: [] });
 
       const screen = await render(<Harness />);
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).not.toBeNull();
@@ -224,8 +226,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [1, 3],
       });
+      useProjectStore.setState({ customSnapPoints: [1, 3] });
 
       const screen = await render(<Harness />);
       const pins = customMarkers(screen.container);
@@ -241,8 +243,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [5],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       const onsetLayer = screen.container.querySelector<HTMLElement>("[data-snap-marker='onset']")?.parentElement;
@@ -259,8 +261,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [2],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(1);
@@ -274,8 +276,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [2],
-        customSnapPoints: [5],
       });
+      useProjectStore.setState({ customSnapPoints: [5] });
 
       const screen = await render(<Harness />);
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(0);
@@ -287,13 +289,13 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [2],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(1);
 
-      useTimelineStore.getState().moveCustomSnapPoint(0, 8);
+      useProjectStore.getState().moveCustomSnapPoint(0, 8);
 
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(0);
     });
@@ -304,8 +306,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [1, 2, 3],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(1);
@@ -323,8 +325,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       const head = headOf(customMarkers(screen.container)[0]);
@@ -335,7 +337,7 @@ describe("SnapMarkersOverlay", () => {
       const targetClientX = rect.left + GUTTER_WIDTH + 5 * 100;
       head.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: targetClientX, pointerId: 1 }));
 
-      await expect.poll(() => useTimelineStore.getState().customSnapPoints[0]).toBeCloseTo(5, 5);
+      await expect.poll(() => useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(5, 5);
 
       head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     });
@@ -346,8 +348,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [5],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       const head = headOf(customMarkers(screen.container)[0]);
@@ -358,7 +360,7 @@ describe("SnapMarkersOverlay", () => {
       const nearOnsetClientX = rect.left + GUTTER_WIDTH + 5.08 * 100;
       head.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: nearOnsetClientX, pointerId: 1 }));
 
-      await expect.poll(() => useTimelineStore.getState().customSnapPoints[0]).toBe(5);
+      await expect.poll(() => useProjectStore.getState().customSnapPoints[0]).toBe(5);
 
       head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     });
@@ -369,8 +371,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [5],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       const head = headOf(customMarkers(screen.container)[0]);
@@ -383,7 +385,7 @@ describe("SnapMarkersOverlay", () => {
         new PointerEvent("pointermove", { bubbles: true, clientX: farFromOnsetClientX, pointerId: 1 }),
       );
 
-      await expect.poll(() => useTimelineStore.getState().customSnapPoints[0]).toBeCloseTo(5.3, 5);
+      await expect.poll(() => useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(5.3, 5);
 
       head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
     });
@@ -394,8 +396,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [5],
-        customSnapPoints: [2],
       });
+      useProjectStore.setState({ customSnapPoints: [2] });
 
       const screen = await render(<Harness />);
       await expect.poll(() => coveredOnsets(screen.container)).toHaveLength(0);
@@ -421,8 +423,8 @@ describe("SnapMarkersOverlay", () => {
         zoom: 100,
         scrollLeft: 0,
         vocalOnsetSnapPoints: [],
-        customSnapPoints: [1, 2, 3],
       });
+      useProjectStore.setState({ customSnapPoints: [1, 2, 3] });
 
       const screen = await render(<Harness />);
       const secondPin = customMarkers(screen.container)[1];
@@ -436,7 +438,7 @@ describe("SnapMarkersOverlay", () => {
       await userEvent.hover(deleteButton);
       await userEvent.click(deleteButton);
 
-      await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([1, 3]);
+      await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([1, 3]);
     });
   });
 });

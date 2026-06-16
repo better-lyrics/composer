@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
 import { computeCoveredOnsets, findInsertedValue, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
@@ -16,8 +17,8 @@ interface SnapMarkersOverlayProps {
 const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef }) => {
   const zoom = useTimelineStore((s) => s.zoom);
   const vocalOnsetSnapPoints = useTimelineStore((s) => s.vocalOnsetSnapPoints);
-  const customSnapPoints = useTimelineStore((s) => s.customSnapPoints);
-  const removeCustomSnapPoint = useTimelineStore((s) => s.removeCustomSnapPoint);
+  const customSnapPoints = useProjectStore((s) => s.customSnapPoints);
+  const removeCustomSnapPoint = useProjectStore((s) => s.removeCustomSnapPoint);
   const markerMode = useTimelineStore((s) => s.markerMode);
   const showOnsets = useSettingsStore((s) => s.vocalOnsetSnap);
   const thresholdPx = useSettingsStore((s) => s.timelineSnapThreshold);

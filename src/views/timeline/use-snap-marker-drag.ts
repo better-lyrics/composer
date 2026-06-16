@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -45,7 +46,7 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
       const head = event.currentTarget;
       head.setPointerCapture(event.pointerId);
 
-      const startPoints = useTimelineStore.getState().customSnapPoints;
+      const startPoints = useProjectStore.getState().customSnapPoints;
       lastWrittenRef.current = startPoints[index] ?? 0;
       setDraggingTime(lastWrittenRef.current);
 
@@ -64,7 +65,7 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
       };
 
       const handlePointerMove = (moveEvent: PointerEvent): void => {
-        const store = useTimelineStore.getState();
+        const store = useProjectStore.getState();
         const currentIndex = resolveIndexByTime(store.customSnapPoints, lastWrittenRef.current);
         if (currentIndex === -1) return;
         const time = computeTime(moveEvent.clientX);
@@ -78,6 +79,7 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
         head.removeEventListener("pointerup", handlePointerUp);
         head.removeEventListener("pointercancel", handlePointerUp);
         if (head.hasPointerCapture(event.pointerId)) head.releasePointerCapture(event.pointerId);
+        useProjectStore.getState().commitSnapPointDrag(startPoints);
         setDraggingTime(null);
       };
 
