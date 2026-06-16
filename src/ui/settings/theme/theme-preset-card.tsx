@@ -25,14 +25,20 @@ const CARD_ACTIVE = "border-composer-accent ring-2 ring-composer-accent";
 
 // Neutral chip in both schemes (composer-button is fg-at-10%, so it stays
 // visible on a light card too). The sun/moon icon carries the scheme meaning.
+// Icon stays an opaque color with opacity-* so overlapping glyph paths don't
+// double-darken (semi-transparent fills cause artifacts on stroke icons).
 const TAG_CHIP =
-  "inline-flex items-center justify-center rounded-[5px] px-1 py-0.5 bg-composer-button text-composer-text-muted";
+  "inline-flex items-center justify-center rounded-[5px] px-1 py-0.5 bg-composer-button text-composer-text";
+
+const TAG_ICON = "opacity-50";
 
 const ACTION_CLUSTER =
   "absolute right-1.5 top-1.5 z-10 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100";
 
 const ACTION_BUTTON =
-  "flex size-6 items-center justify-center rounded-md bg-composer-bg-elevated text-composer-text-muted shadow-sm cursor-pointer select-none hover:text-composer-text";
+  "group/action flex size-6 items-center justify-center rounded-md bg-composer-bg-elevated text-composer-text shadow-sm cursor-pointer select-none";
+
+const ACTION_ICON = "opacity-50 transition-opacity group-hover/action:opacity-100";
 
 // -- Components ----------------------------------------------------------------
 
@@ -88,7 +94,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
             aria-label={isLight ? "Light theme" : "Dark theme"}
             title={isLight ? "Light theme" : "Dark theme"}
           >
-            {isLight ? <IconSun size={12} /> : <IconMoonStars size={12} />}
+            {isLight ? <IconSun size={12} className={TAG_ICON} /> : <IconMoonStars size={12} className={TAG_ICON} />}
           </span>
         </span>
         <span className="mt-px block text-[11px] text-composer-text-muted">{description}</span>
@@ -106,7 +112,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
                 onEdit(theme.id);
               }}
             >
-              <IconPencil size={13} />
+              <IconPencil size={13} className={ACTION_ICON} />
             </button>
           )}
           {onDelete && (
@@ -120,7 +126,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({
                 onDelete(theme.id);
               }}
             >
-              <IconTrash size={13} />
+              <IconTrash size={13} className={ACTION_ICON} />
             </button>
           )}
         </span>

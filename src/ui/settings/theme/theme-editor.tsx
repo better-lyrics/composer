@@ -102,21 +102,21 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between gap-3">
-        <label className="flex flex-1 min-w-0 flex-col gap-1">
-          <span className="text-[10px] font-mono tracking-wider text-composer-text-faint select-none">Theme name</span>
+      <div className="flex flex-col gap-3">
+        <span className="text-[10px] font-mono tracking-wider text-composer-text-faint select-none">Theme name</span>
+        <div className="flex items-stretch gap-3">
           <input
             type="text"
             value={draft.name}
             onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
             aria-label="Theme name"
             spellCheck={false}
-            className="w-full rounded-lg border border-composer-border bg-composer-input px-3 py-1.5 text-sm text-composer-text outline-none cursor-text select-text focus:border-composer-border-hover"
+            className="flex-1 min-w-0 rounded-lg border border-composer-border bg-composer-input px-3 py-1.5 text-sm text-composer-text outline-none cursor-text select-text focus:border-composer-border-hover"
           />
-        </label>
-        <Button size="sm" variant="ghost" className="self-end" onClick={onClose}>
-          Close
-        </Button>
+          <Button size="sm" variant="ghost" className="h-auto" onClick={onClose}>
+            Close
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center gap-3">
