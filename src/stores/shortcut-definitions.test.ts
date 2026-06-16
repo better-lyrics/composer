@@ -31,6 +31,19 @@ describe("SHORTCUT_DEFINITIONS", () => {
     expect(markerMode?.defaultBinding.mod).toBeUndefined();
   });
 
+  it("registers the drop-marker-at-playhead shortcut with default Shift+I in the timeline scope", () => {
+    const dropMarker = SHORTCUT_DEFINITIONS.find((d) => d.id === "timeline.dropSnapMarkerAtPlayhead");
+
+    expect(dropMarker).toBeDefined();
+    expect(dropMarker?.scope).toBe("timeline");
+    expect(dropMarker?.defaultBinding.key).toBe("i");
+    expect(dropMarker?.defaultBinding.shift).toBe(true);
+    expect(dropMarker?.defaultBinding.alt).toBeUndefined();
+    expect(dropMarker?.defaultBinding.ctrl).toBeUndefined();
+    expect(dropMarker?.defaultBinding.meta).toBeUndefined();
+    expect(dropMarker?.defaultBinding.mod).toBeUndefined();
+  });
+
   describe("invariants", () => {
     it("has a unique id for every definition", () => {
       const ids = SHORTCUT_DEFINITIONS.map((d) => d.id);

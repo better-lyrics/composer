@@ -57,6 +57,47 @@ describe("useTimelineKeyboard", () => {
     input.remove();
   });
 
+  it("drops a snap marker at the playhead time when Shift+I is pressed", async () => {
+    useAudioStore.setState({ currentTime: 3.25, duration: 10 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [] });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i", shiftKey: true, bubbles: true }));
+
+    expect(useProjectStore.getState().customSnapPoints).toContain(3.25);
+  });
+
+  it("does not add a snap marker when plain 'i' toggles marker mode", async () => {
+    useAudioStore.setState({ currentTime: 3.25, duration: 10 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [] });
+    expect(useTimelineStore.getState().markerMode).toBe(false);
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "i", bubbles: true }));
+
+    expect(useTimelineStore.getState().markerMode).toBe(true);
+    expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+  });
+
+  it("does not drop a snap marker while a text input is focused", async () => {
+    useAudioStore.setState({ currentTime: 3.25, duration: 10 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [] });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    const input = document.createElement("input");
+    document.body.appendChild(input);
+    input.focus();
+    await expect.poll(() => document.activeElement).toBe(input);
+
+    input.dispatchEvent(new KeyboardEvent("keydown", { key: "i", shiftKey: true, bubbles: true }));
+    expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+
+    input.remove();
+  });
+
   it("merges two space-separated words into one when the merge shortcut is pressed", async () => {
     const line = createLine({
       text: "every day",

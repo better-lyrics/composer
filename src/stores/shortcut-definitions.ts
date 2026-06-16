@@ -303,6 +303,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Toggle marker mode",
     defaultBinding: { key: "i" },
   },
+  {
+    id: "timeline.dropSnapMarkerAtPlayhead",
+    scope: "timeline",
+    description: "Drop snap marker at playhead",
+    defaultBinding: { key: "i", shift: true },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------

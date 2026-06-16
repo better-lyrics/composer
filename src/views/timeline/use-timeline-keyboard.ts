@@ -348,6 +348,13 @@ function useTimelineKeyboard(
           e.preventDefault();
           useTimelineStore.getState().toggleMarkerMode();
           break;
+        case "timeline.dropSnapMarkerAtPlayhead": {
+          e.preventDefault();
+          const audioEl = useAudioStore.getState().audioElement;
+          const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          useProjectStore.getState().addCustomSnapPoint(playheadTime);
+          break;
+        }
         case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");
