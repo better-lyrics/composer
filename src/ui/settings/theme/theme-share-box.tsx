@@ -18,10 +18,11 @@ const ThemeShareBox: React.FC<ThemeShareBoxProps> = ({ draft }) => {
   const code = encodeThemeCode(draft);
 
   const handleCopy = async () => {
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1200);
     try {
       await navigator.clipboard?.writeText(code);
+      setError(null);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1200);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Clipboard unavailable");
     }
