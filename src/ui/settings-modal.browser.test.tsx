@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
+import { useUIStore } from "@/stores/ui";
 import { SettingsModal } from "@/ui/settings-modal";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
@@ -34,6 +35,21 @@ describe("SettingsModal", () => {
     await render(<SettingsModal isOpen onClose={() => closes++} onResetTour={() => {}} />);
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(closes).toBeGreaterThan(0);
+  });
+
+  describe("section seeding from settingsHighlight", () => {
+    it("opens on the Advanced section when settingsHighlight is bridge-section", async () => {
+      allowConsole(/cannot be a descendant of/);
+      allowConsole(/cannot contain a nested/);
+      useUIStore.setState({ settingsHighlight: "bridge-section" });
+      await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      expect(document.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
+    });
+
+    it("opens on the General section when there is no highlight", async () => {
+      await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      expect(document.querySelector('[data-testid="bridge-section"]')).toBeNull();
+    });
   });
 
   describe("Cobalt instance edit row", () => {

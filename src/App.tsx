@@ -94,6 +94,7 @@ const AppContent: React.FC = () => {
       />
       <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
       <SettingsModal
+        key={settingsOpen ? "settings-open" : "settings-closed"}
         isOpen={settingsOpen}
         onClose={closeSettings}
         onResetTour={() => {

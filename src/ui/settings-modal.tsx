@@ -21,7 +21,7 @@ import {
   IconPlugConnected,
   IconSettings,
 } from "@tabler/icons-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -62,14 +62,9 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
 // -- Settings Modal -----------------------------------------------------------
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetTour }) => {
-  const [activeSection, setActiveSection] = useState("general");
-  const settingsHighlight = useUIStore((s) => s.settingsHighlight);
-
-  useEffect(() => {
-    if (isOpen && settingsHighlight === "bridge-section") {
-      setActiveSection("advanced");
-    }
-  }, [isOpen, settingsHighlight]);
+  const [activeSection, setActiveSection] = useState(() =>
+    useUIStore.getState().settingsHighlight === "bridge-section" ? "advanced" : "general",
+  );
 
   const Content = SECTION_CONTENT[activeSection];
 
