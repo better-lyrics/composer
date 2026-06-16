@@ -3,8 +3,8 @@
 // tokens flip white-on-dark vs black-on-light; shade tokens lighten/darken
 // their already-resolved base. Explicit theme.tokens entries always win.
 
-import { contrastRatio, lighten } from "./color";
-import { type ResolvedTheme, type Theme, TOKENS } from "./model";
+import { contrastRatio, lighten } from "@/domain/theme/color";
+import { type ResolvedTheme, type Theme, TOKENS } from "@/domain/theme/model";
 
 const SEED_FALLBACK = "#ff00ff";
 

@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { contrastRatio, hexToRgb, lighten, relativeLuminance, rgbToHex } from "./color";
+import { contrastRatio, hexToRgb, isHexColor, lighten, relativeLuminance, rgbToHex } from "./color";
 
 describe("hexToRgb", () => {
   it("parses 6-digit hex with leading #", () => {
@@ -100,6 +100,47 @@ describe("contrastRatio", () => {
   it("is exactly 1 for identical colors", () => {
     expect(contrastRatio("#818cf8", "#818cf8")).toBeCloseTo(1, 5);
     expect(contrastRatio("#000000", "#000000")).toBeCloseTo(1, 5);
+  });
+});
+
+describe("isHexColor", () => {
+  it("accepts 6-digit hex with leading #", () => {
+    expect(isHexColor("#818cf8")).toBe(true);
+    expect(isHexColor("#000000")).toBe(true);
+    expect(isHexColor("#FFFFFF")).toBe(true);
+  });
+
+  it("accepts 3-digit shorthand hex with leading #", () => {
+    expect(isHexColor("#fff")).toBe(true);
+    expect(isHexColor("#0Ab")).toBe(true);
+  });
+
+  it("requires the leading #", () => {
+    expect(isHexColor("818cf8")).toBe(false);
+    expect(isHexColor("fff")).toBe(false);
+  });
+
+  it("rejects non-hex characters", () => {
+    expect(isHexColor("#zzzzzz")).toBe(false);
+    expect(isHexColor("#12345g")).toBe(false);
+  });
+
+  it("rejects wrong-length values", () => {
+    expect(isHexColor("#ffff")).toBe(false);
+    expect(isHexColor("#fffff")).toBe(false);
+    expect(isHexColor("#fffffff")).toBe(false);
+    expect(isHexColor("#")).toBe(false);
+  });
+
+  it("rejects empty and whitespace strings", () => {
+    expect(isHexColor("")).toBe(false);
+    expect(isHexColor("   ")).toBe(false);
+    expect(isHexColor("# fff")).toBe(false);
+  });
+
+  it("rejects CSS-injection-shaped payloads", () => {
+    expect(isHexColor("red;}body{display:none")).toBe(false);
+    expect(isHexColor("#fff;color:red")).toBe(false);
   });
 });
 

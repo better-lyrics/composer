@@ -3,7 +3,8 @@
 //   ctm1:<scheme>:<encodeURIComponent(name)>:<seedHex,seedHex,...>
 // Seed order follows SEED_TOKENS; hexes are stored without the leading #.
 
-import { SEED_TOKENS, type Theme } from "./model";
+import { isHexColor } from "@/domain/theme/color";
+import { SEED_TOKENS, type Theme } from "@/domain/theme/model";
 
 const CODE_PATTERN = /^ctm1:(dark|light):([^:]*):(.+)$/;
 const DEFAULT_IMPORT_NAME = "Imported theme";
@@ -24,8 +25,10 @@ function decodeThemeCode(code: string, makeId: () => string): Theme {
   const tokens: Theme["tokens"] = {};
   SEED_TOKENS.forEach((key, index) => {
     const hex = hexes[index];
-    if (hex) {
-      tokens[key] = `#${hex.replace("#", "")}`;
+    if (!hex) return;
+    const candidate = `#${hex.replace("#", "")}`;
+    if (isHexColor(candidate)) {
+      tokens[key] = candidate;
     }
   });
   return {

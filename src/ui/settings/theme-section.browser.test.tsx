@@ -32,6 +32,25 @@ describe("ThemeSection", () => {
     expect(name.value).toBe(`${PRESET_BY_ID.get("harbor")?.name} (copy)`);
   });
 
+  it("opens the editor in edit mode when a custom card's edit button is clicked", async () => {
+    useThemeStore.setState({
+      customThemes: [
+        {
+          id: "custom-section-1",
+          name: "Saved One",
+          kind: "custom",
+          scheme: "dark",
+          tokens: { bg: "#101010", text: "#ffffff", accent: "#ff8800" },
+        },
+      ],
+    });
+    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    await screen.getByRole("button", { name: "Edit Saved One" }).click();
+    const name = screen.getByLabelText("Theme name").element() as HTMLInputElement;
+    expect(name.value).toBe("Saved One");
+    await expect.element(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
+  });
+
   it("imports a valid code, growing customThemes and clearing the input", async () => {
     const preset = PRESET_BY_ID.get("nord");
     if (!preset) throw new Error("missing preset");

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Theme } from "@/domain/theme/model";
 import { useThemeStore } from "@/stores/theme";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
 import { render } from "@/test/render";
 
@@ -53,7 +54,42 @@ describe("ThemePresetGallery", () => {
     useThemeStore.setState({ customThemes: [makeCustomTheme()] });
     const screen = await render(<ThemePresetGallery />);
     await expect.element(screen.getByText("Your themes")).toBeInTheDocument();
-    await expect.element(screen.getByRole("button", { name: /My Theme/ })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: /^My Theme/ })).toBeInTheDocument();
+  });
+
+  it("invokes onEditCustom with the theme id when a custom card's edit button is clicked", async () => {
+    useThemeStore.setState({ customThemes: [makeCustomTheme()] });
+    const onEditCustom = vi.fn();
+    const screen = await render(<ThemePresetGallery onEditCustom={onEditCustom} />);
+    await screen.getByRole("button", { name: "Edit My Theme" }).click();
+    expect(onEditCustom).toHaveBeenCalledWith("custom-1");
+  });
+
+  it("removes a custom theme only after the delete is confirmed", async () => {
+    useThemeStore.setState({ customThemes: [makeCustomTheme()] });
+    const screen = await render(
+      <>
+        <ThemePresetGallery />
+        <ConfirmModalHost />
+      </>,
+    );
+    await screen.getByRole("button", { name: "Delete My Theme" }).click();
+    await expect.element(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Delete" }).click();
+    await expect.poll(() => useThemeStore.getState().customThemes.length).toBe(0);
+  });
+
+  it("keeps the custom theme when the delete confirmation is cancelled", async () => {
+    useThemeStore.setState({ customThemes: [makeCustomTheme()] });
+    const screen = await render(
+      <>
+        <ThemePresetGallery />
+        <ConfirmModalHost />
+      </>,
+    );
+    await screen.getByRole("button", { name: "Delete My Theme" }).click();
+    await screen.getByRole("button", { name: "Cancel" }).click();
+    await expect.poll(() => useThemeStore.getState().customThemes.length).toBe(1);
   });
 
   it("does not render the 'Your themes' group when there are no customs", async () => {

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
-import { ThemeEditor } from "@/ui/settings/theme/theme-editor";
+import { type EditorTarget, ThemeEditor } from "@/ui/settings/theme/theme-editor";
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
 import { IconDownload } from "@tabler/icons-react";
 
@@ -15,16 +15,20 @@ interface ThemeSectionProps {
 // -- Components ----------------------------------------------------------------
 
 const ThemeSection: React.FC<ThemeSectionProps> = () => {
-  const [editingBaseId, setEditingBaseId] = useState<string | null>(null);
+  const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [importValue, setImportValue] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
 
   const handleCustomize = () => {
-    setEditingBaseId(useThemeStore.getState().activeThemeId);
+    setEditor({ mode: "create", baseId: useThemeStore.getState().activeThemeId });
+  };
+
+  const handleEditCustom = (themeId: string) => {
+    setEditor({ mode: "edit", themeId });
   };
 
   const handleEditorClose = () => {
-    setEditingBaseId(null);
+    setEditor(null);
     const id = useThemeStore.getState().activeThemeId;
     useThemeStore.getState().setActiveTheme(id);
   };
@@ -39,10 +43,10 @@ const ThemeSection: React.FC<ThemeSectionProps> = () => {
     }
   };
 
-  if (editingBaseId) {
+  if (editor) {
     return (
       <div className="py-3">
-        <ThemeEditor baseThemeId={editingBaseId} onClose={handleEditorClose} />
+        <ThemeEditor target={editor} onClose={handleEditorClose} />
       </div>
     );
   }
@@ -50,7 +54,7 @@ const ThemeSection: React.FC<ThemeSectionProps> = () => {
   return (
     <div className="divide-y divide-composer-border">
       <div className="py-3">
-        <ThemePresetGallery onCustomize={handleCustomize} />
+        <ThemePresetGallery onCustomize={handleCustomize} onEditCustom={handleEditCustom} />
       </div>
       <div className="flex flex-col gap-2 py-3">
         <div className="flex flex-col gap-0.5 select-none">

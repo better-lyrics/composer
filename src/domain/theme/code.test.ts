@@ -148,3 +148,44 @@ describe("edge cases", () => {
     expect(decoded.tokens[SEED_TOKENS[2]]).toBeUndefined();
   });
 });
+
+describe("invalid hex seeds are skipped, not assigned", () => {
+  it("drops a non-hex seed value", () => {
+    const decoded = decodeThemeCode("ctm1:dark:Bad:zzzzzz", makeId);
+    expect(decoded.tokens[SEED_TOKENS[0]]).toBeUndefined();
+  });
+
+  it("keeps valid seeds and drops only the invalid ones", () => {
+    const decoded = decodeThemeCode("ctm1:dark:Mixed:280000,zzzzzz,1a1a1c", makeId);
+    expect(decoded.tokens[SEED_TOKENS[0]]).toBe("#280000");
+    expect(decoded.tokens[SEED_TOKENS[1]]).toBeUndefined();
+    expect(decoded.tokens[SEED_TOKENS[2]]).toBe("#1a1a1c");
+  });
+
+  it("skips empty inter-comma slots", () => {
+    const decoded = decodeThemeCode("ctm1:dark:Gaps:280000,,1a1a1c", makeId);
+    expect(decoded.tokens[SEED_TOKENS[0]]).toBe("#280000");
+    expect(decoded.tokens[SEED_TOKENS[1]]).toBeUndefined();
+    expect(decoded.tokens[SEED_TOKENS[2]]).toBe("#1a1a1c");
+  });
+
+  it("drops wrong-length hex values", () => {
+    const decoded = decodeThemeCode("ctm1:dark:Short:2800,1a1a1c", makeId);
+    expect(decoded.tokens[SEED_TOKENS[0]]).toBeUndefined();
+    expect(decoded.tokens[SEED_TOKENS[1]]).toBe("#1a1a1c");
+  });
+
+  it("does not let CSS-injection-shaped payloads through", () => {
+    const decoded = decodeThemeCode("ctm1:dark:Evil:red;}body{display:none", makeId);
+    for (const key of SEED_TOKENS) {
+      expect(decoded.tokens[key]).toBeUndefined();
+    }
+  });
+
+  it("regression: clean round-trip still preserves every seed", () => {
+    const decoded = decodeThemeCode(encodeThemeCode(PRESETS[0]), makeId);
+    for (const key of SEED_TOKENS) {
+      expect(decoded.tokens[key]?.toLowerCase()).toBe(PRESETS[0].tokens[key]?.toLowerCase());
+    }
+  });
+});

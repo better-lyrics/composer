@@ -2,6 +2,12 @@
 // Hand-rolled sRGB helpers. No dependencies. All math mirrors the themes mockup
 // and the WCAG 2.x relative-luminance / contrast formulae.
 
+const HEX_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
+function isHexColor(value: string): boolean {
+  return HEX_PATTERN.test(value);
+}
+
 function hexToRgb(hex: string): [number, number, number] {
   let h = hex.replace("#", "");
   if (h.length === 3) {
@@ -42,4 +48,4 @@ function contrastRatio(hexA: string, hexB: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-export { hexToRgb, rgbToHex, lighten, relativeLuminance, contrastRatio };
+export { isHexColor, hexToRgb, rgbToHex, lighten, relativeLuminance, contrastRatio };

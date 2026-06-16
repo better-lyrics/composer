@@ -14,8 +14,10 @@ import { IconAlertTriangle } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
+type EditorTarget = { mode: "create"; baseId: string } | { mode: "edit"; themeId: string };
+
 interface ThemeEditorProps {
-  baseThemeId: string;
+  target: EditorTarget;
   onClose: () => void;
 }
 
@@ -36,6 +38,16 @@ function forkTheme(baseThemeId: string): Theme {
     scheme: base.scheme,
     tokens: { ...base.tokens },
   };
+}
+
+function initialDraft(target: EditorTarget): Theme {
+  if (target.mode === "edit") {
+    const existing = useThemeStore.getState().getThemeById(target.themeId);
+    if (existing) {
+      return { ...existing, tokens: { ...existing.tokens } };
+    }
+  }
+  return forkTheme(target.mode === "create" ? target.baseId : DEFAULT_PRESET_ID);
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -61,9 +73,10 @@ const SEGMENT_BUTTON_ACTIVE = "bg-composer-bg-elevated text-composer-text hover:
 
 // -- Components ----------------------------------------------------------------
 
-const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
-  const [draft, setDraft] = useState<Theme>(() => forkTheme(baseThemeId));
+const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
+  const [draft, setDraft] = useState<Theme>(() => initialDraft(target));
   const [tab, setTab] = useState<EditorTab>("quick");
+  const isEdit = target.mode === "edit";
 
   useEffect(() => {
     applyResolvedTheme(deriveTheme(draft), draft.scheme);
@@ -78,7 +91,11 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
   };
 
   const handleSave = () => {
-    useThemeStore.getState().addCustomTheme(draft);
+    if (isEdit) {
+      useThemeStore.getState().updateCustomTheme(draft.id, draft);
+    } else {
+      useThemeStore.getState().addCustomTheme(draft);
+    }
     useThemeStore.getState().setActiveTheme(draft.id);
     onClose();
   };
@@ -157,7 +174,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
 
       <div className="flex items-center gap-2 border-t border-composer-border pt-4">
         <Button size="sm" variant="primary" onClick={handleSave}>
-          Save theme
+          {isEdit ? "Save changes" : "Save theme"}
         </Button>
         <Button size="sm" variant="ghost" onClick={onClose}>
           Discard
@@ -170,3 +187,4 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ baseThemeId, onClose }) => {
 // -- Exports -------------------------------------------------------------------
 
 export { ThemeEditor };
+export type { EditorTarget };

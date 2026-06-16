@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isHexColor } from "@/domain/theme/color";
 import type { TokenKey } from "@/domain/theme/model";
 import { cn } from "@/utils/cn";
 
@@ -11,14 +12,10 @@ interface ThemeTokenInputProps {
   onChange: (value: string) => void;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const HEX_PATTERN = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
-
 // -- Helpers -------------------------------------------------------------------
 
 function toColorInputValue(value: string): string {
-  return HEX_PATTERN.test(value) ? value : "#000000";
+  return isHexColor(value) ? value : "#000000";
 }
 
 // -- Components ----------------------------------------------------------------
@@ -33,7 +30,7 @@ const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, valu
 
   const commitHex = (raw: string) => {
     const trimmed = raw.trim();
-    if (HEX_PATTERN.test(trimmed)) {
+    if (isHexColor(trimmed)) {
       onChange(trimmed);
     } else {
       setDraft(value);

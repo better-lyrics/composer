@@ -49,27 +49,23 @@ const useThemeStore = create<ThemeState & ThemeActions>()(
       setActiveTheme: (id) => {
         const theme = get().getThemeById(id);
         if (theme) {
-          set({ activeThemeId: id });
           applyTheme(theme);
+          set({ activeThemeId: id });
           return;
         }
         const fallback = PRESET_BY_ID.get(DEFAULT_PRESET_ID);
-        set({ activeThemeId: DEFAULT_PRESET_ID });
         if (fallback) applyTheme(fallback);
+        set({ activeThemeId: DEFAULT_PRESET_ID });
       },
 
       addCustomTheme: (theme) => set((state) => ({ customThemes: [...state.customThemes, theme] })),
 
       updateCustomTheme: (id, patch) => {
-        let merged: Theme | undefined;
-        set((state) => ({
-          customThemes: state.customThemes.map((t) => {
-            if (t.id !== id) return t;
-            merged = { ...t, ...patch };
-            return merged;
-          }),
-        }));
-        if (merged && get().activeThemeId === id) applyTheme(merged);
+        const target = get().customThemes.find((t) => t.id === id);
+        if (!target) return;
+        const merged = { ...target, ...patch };
+        if (get().activeThemeId === id) applyTheme(merged);
+        set((state) => ({ customThemes: state.customThemes.map((t) => (t.id === id ? merged : t)) }));
       },
 
       deleteCustomTheme: (id) => {
