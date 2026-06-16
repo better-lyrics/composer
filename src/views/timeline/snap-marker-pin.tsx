@@ -12,6 +12,7 @@ interface SnapMarkerPinProps {
   zoom: number;
   fadeExtent: number;
   isDragging: boolean;
+  isNew: boolean;
   isOnOnset: boolean;
   onHeadPointerDown: (index: number, event: React.PointerEvent<HTMLElement>) => void;
   onDelete: (index: number) => void;
@@ -25,6 +26,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   zoom,
   fadeExtent,
   isDragging,
+  isNew,
   isOnOnset,
   onHeadPointerDown,
   onDelete,
@@ -43,10 +45,11 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
       data-snap-marker="custom"
       data-snap-marker-time={time}
       data-snap-marker-drop-in
+      data-snap-marker-new={isNew ? "" : undefined}
       className="absolute top-0"
       style={{ left: time * zoom }}
       variants={pinDropInVariants}
-      initial={reduceMotion ? false : "initial"}
+      initial={isNew && !reduceMotion ? "initial" : false}
       animate="animate"
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}

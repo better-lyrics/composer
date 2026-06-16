@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useSettingsStore } from "@/stores/settings";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
-import { computeCoveredOnsets, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
+import { computeCoveredOnsets, findInsertedValue, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
 import { useSnapMarkerDrag } from "@/views/timeline/use-snap-marker-drag";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -26,6 +26,10 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const thresholdPx = useSettingsStore((s) => s.timelineSnapThreshold);
 
   const { draggingTime, onHeadPointerDown } = useSnapMarkerDrag({ scrollContainerRef });
+
+  const prevCustomSnapPointsRef = useRef(customSnapPoints);
+  const insertedValue = findInsertedValue(prevCustomSnapPointsRef.current, customSnapPoints);
+  prevCustomSnapPointsRef.current = customSnapPoints;
 
   const coveredOnsets = useMemo(() => {
     if (!showOnsets) return new Set<number>();
@@ -90,6 +94,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
               zoom={zoom}
               fadeExtent={MARKER_FADE_EXTENT}
               isDragging={draggingTime !== null && time === draggingTime}
+              isNew={insertedValue !== null && time === insertedValue}
               isOnOnset={showOnsets && isTimeOnOnset(time, vocalOnsetSnapPoints, zoom, thresholdPx)}
               onHeadPointerDown={onHeadPointerDown}
               onDelete={removeCustomSnapPoint}

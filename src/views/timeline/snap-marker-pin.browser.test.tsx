@@ -11,6 +11,7 @@ const defaultProps = {
   zoom: 100,
   fadeExtent: 220,
   isDragging: false,
+  isNew: false,
   isOnOnset: false,
   onHeadPointerDown: () => {},
   onDelete: () => {},
@@ -111,6 +112,18 @@ describe("SnapMarkerPin", () => {
       const wrapper = screen.container.querySelector<HTMLElement>("[data-snap-marker-drop-in]");
       expect(wrapper).not.toBeNull();
       expect(wrapper?.getAttribute("data-snap-marker")).toBe("custom");
+    });
+
+    it("flags the drop-in only when the pin is newly placed", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isNew />);
+      const wrapper = screen.container.querySelector<HTMLElement>("[data-snap-marker-drop-in]");
+      expect(wrapper?.hasAttribute("data-snap-marker-new")).toBe(true);
+    });
+
+    it("does not flag the drop-in for an existing pin", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isNew={false} />);
+      const wrapper = screen.container.querySelector<HTMLElement>("[data-snap-marker-drop-in]");
+      expect(wrapper?.hasAttribute("data-snap-marker-new")).toBe(false);
     });
 
     it("renders no flash when the pin is not on an onset", async () => {

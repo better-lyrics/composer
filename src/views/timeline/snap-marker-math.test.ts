@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeCoveredOnsets, isTimeOnOnset, snapTimeToOnset } from "@/views/timeline/snap-marker-math";
+import {
+  computeCoveredOnsets,
+  findInsertedValue,
+  isTimeOnOnset,
+  snapTimeToOnset,
+} from "@/views/timeline/snap-marker-math";
 
 // -- Tests ---------------------------------------------------------------------
 
@@ -110,6 +115,62 @@ describe("computeCoveredOnsets", () => {
     it("scales coverage window by zoom", () => {
       expect(computeCoveredOnsets([2], [2.2], 50, 12)).toEqual(new Set([0]));
       expect(computeCoveredOnsets([2], [2.2], 100, 12)).toEqual(new Set());
+    });
+  });
+});
+
+describe("findInsertedValue", () => {
+  it("returns the appended value", () => {
+    expect(findInsertedValue([1, 3], [1, 3, 5])).toBe(5);
+  });
+
+  it("returns the middle-inserted value", () => {
+    expect(findInsertedValue([1, 3], [1, 2, 3])).toBe(2);
+  });
+
+  it("returns the prepended value", () => {
+    expect(findInsertedValue([2, 3], [1, 2, 3])).toBe(1);
+  });
+
+  it("returns null on a move (same length, one value changed)", () => {
+    expect(findInsertedValue([2, 4], [4, 6])).toBeNull();
+  });
+
+  it("returns null on a delete (shorter)", () => {
+    expect(findInsertedValue([1, 2, 3], [1, 3])).toBeNull();
+  });
+
+  it("returns null when nothing changed", () => {
+    expect(findInsertedValue([1, 2, 3], [1, 2, 3])).toBeNull();
+  });
+
+  describe("edge cases", () => {
+    it("returns null for empty to empty", () => {
+      expect(findInsertedValue([], [])).toBeNull();
+    });
+
+    it("returns the only value when adding the first point", () => {
+      expect(findInsertedValue([], [4])).toBe(4);
+    });
+
+    it("returns null when the array grows by more than one", () => {
+      expect(findInsertedValue([1], [1, 2, 3])).toBeNull();
+    });
+
+    it("returns null when count rises by one but no value is genuinely new", () => {
+      // A duplicate of an existing value: next-minus-prev is empty, so no fresh value.
+      expect(findInsertedValue([2, 2], [2, 2, 2])).toBeNull();
+    });
+
+    it("returns the inserted value at the timeline origin", () => {
+      expect(findInsertedValue([2], [0, 2])).toBe(0);
+    });
+
+    it("treats a non-trivial first render (prev seeded to current) as no insertion", () => {
+      // When the prev-ref is initialized to the initial array, the first diff is
+      // identical, so nothing is flagged new on mount.
+      const initial = [1, 4, 7];
+      expect(findInsertedValue(initial, initial)).toBeNull();
     });
   });
 });

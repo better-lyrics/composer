@@ -39,6 +39,18 @@ function computeCoveredOnsets(
   return covered;
 }
 
+function findInsertedValue(prev: number[], next: number[]): number | null {
+  if (next.length !== prev.length + 1) return null;
+  const prevSet = new Set(prev);
+  let inserted: number | null = null;
+  for (const value of next) {
+    if (prevSet.has(value)) continue;
+    if (inserted !== null) return null;
+    inserted = value;
+  }
+  return inserted;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets };
+export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets, findInsertedValue };

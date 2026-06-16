@@ -22,6 +22,9 @@ const customMarkers = (container: HTMLElement): NodeListOf<HTMLElement> =>
 const flashes = (container: HTMLElement): NodeListOf<HTMLElement> =>
   container.querySelectorAll<HTMLElement>("[data-snap-marker-flash]");
 
+const newPins = (container: HTMLElement): NodeListOf<HTMLElement> =>
+  container.querySelectorAll<HTMLElement>("[data-snap-marker-new]");
+
 const headOf = (marker: HTMLElement): HTMLElement => {
   const head = marker.querySelector<HTMLElement>("[data-snap-marker-head]");
   if (!head) throw new Error("pin head not found");
@@ -139,6 +142,94 @@ describe("SnapMarkersOverlay placement animation", () => {
 
     await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([4, 6]);
     expect(flashes(screen.container)).toHaveLength(0);
+
+    head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
+  });
+});
+
+describe("SnapMarkersOverlay drop-in freshness", () => {
+  it("does not flag any pin as new on first render of pre-existing points", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [1, 4, 7] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(3);
+    expect(newPins(screen.container)).toHaveLength(0);
+  });
+
+  it("drops in the appended pin", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [1, 3] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(2);
+
+    useTimelineStore.setState({ customSnapPoints: [1, 3, 5] });
+
+    await expect.poll(() => newPins(screen.container)).toHaveLength(1);
+    expect(newPins(screen.container)[0].getAttribute("data-snap-marker-time")).toBe("5");
+    expect(newPins(screen.container)[0].style.left).toBe("500px");
+  });
+
+  it("drops in the value-2 pin (not value-3) on a middle insert", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [1, 3] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(2);
+
+    useTimelineStore.setState({ customSnapPoints: [1, 2, 3] });
+
+    await expect.poll(() => newPins(screen.container)).toHaveLength(1);
+    // The genuinely-new value-2 pin (left = 2 * zoom) animates in, NOT the
+    // shifted value-3 pin that React reuses at the last positional key.
+    expect(newPins(screen.container)[0].getAttribute("data-snap-marker-time")).toBe("2");
+    expect(newPins(screen.container)[0].style.left).toBe("200px");
+  });
+
+  it("does not flag any pin on a move (same count, one value changed)", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [2, 4] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(2);
+
+    useTimelineStore.setState({ customSnapPoints: [4, 6] });
+
+    await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([4, 6]);
+    expect(newPins(screen.container)).toHaveLength(0);
+  });
+
+  it("does not flag any pin on a delete", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [1, 2, 3] });
+
+    const screen = await render(<Harness />);
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(3);
+
+    useTimelineStore.setState({ customSnapPoints: [1, 3] });
+
+    await expect.poll(() => customMarkers(screen.container)).toHaveLength(2);
+    expect(newPins(screen.container)).toHaveLength(0);
+  });
+
+  it("does not flag a dragged pin as new across pointermoves", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: false, timelineSnapThreshold: 12 });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [], customSnapPoints: [2] });
+
+    const screen = await render(<Harness />);
+    const head = headOf(customMarkers(screen.container)[0]);
+    const rect = screen.container.firstElementChild?.getBoundingClientRect();
+    if (!rect) throw new Error("scroll container rect missing");
+
+    head.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, pointerId: 1 }));
+    for (const targetTime of [3, 4, 5]) {
+      const clientX = rect.left + GUTTER_WIDTH + targetTime * 100;
+      head.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX, pointerId: 1 }));
+    }
+
+    await expect.poll(() => useTimelineStore.getState().customSnapPoints[0]).toBeCloseTo(5, 5);
+    expect(newPins(screen.container)).toHaveLength(0);
 
     head.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, pointerId: 1 }));
   });
