@@ -54,11 +54,11 @@ describe("ThemeEditorAdvanced", () => {
     expect(onTokenChange).toHaveBeenCalledWith("bg", "#101010");
   });
 
-  it("renders every non-alpha token as editable and every alpha token as read-only", async () => {
+  it("renders seed/shade tokens as editable and alpha/contrast tokens as read-only", async () => {
     await render(<ThemeEditorAdvanced draft={draftFrom("default")} onTokenChange={() => {}} />);
     for (const token of TOKENS) {
       const swatch = document.querySelector(`input[aria-label='${token.label} color']`);
-      if (token.type === "alpha") {
+      if (token.type === "alpha" || token.type === "contrast") {
         expect(swatch, `${token.label} should be read-only`).toBeNull();
       } else {
         expect(swatch, `${token.label} should be editable`).not.toBeNull();

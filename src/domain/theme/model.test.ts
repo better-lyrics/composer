@@ -25,6 +25,7 @@ const EXPECTED_KEYS: TokenKey[] = [
   "accent-dark",
   "accent-darker",
   "accent-text",
+  "on-accent",
   "accent-warm",
   "link",
   "error",
@@ -37,8 +38,20 @@ const EXPECTED_KEYS: TokenKey[] = [
 ];
 
 describe("TOKENS", () => {
-  it("defines exactly 29 tokens (28 from the plan table plus snap)", () => {
-    expect(TOKENS).toHaveLength(29);
+  it("defines exactly 30 tokens (29 from the plan table plus on-accent)", () => {
+    expect(TOKENS).toHaveLength(30);
+  });
+
+  it("defines on-accent as a contrast token derived from accent-dark", () => {
+    const onAccent = TOKENS.find((t) => t.key === "on-accent");
+    expect(onAccent?.type).toBe("contrast");
+    expect(onAccent?.from).toBe("accent-dark");
+  });
+
+  it("places accent-dark before on-accent", () => {
+    const accentDark = TOKENS.findIndex((t) => t.key === "accent-dark");
+    const onAccent = TOKENS.findIndex((t) => t.key === "on-accent");
+    expect(accentDark).toBeLessThan(onAccent);
   });
 
   it("covers every expected key", () => {
@@ -73,6 +86,9 @@ describe("TOKENS", () => {
       if (token.type === "shade") {
         expect(token.from).toBeDefined();
         expect(typeof token.lighten).toBe("number");
+      } else if (token.type === "contrast") {
+        expect(token.from).toBeDefined();
+        expect(token.lighten).toBeUndefined();
       } else {
         expect(token.from).toBeUndefined();
         expect(token.lighten).toBeUndefined();
@@ -157,7 +173,7 @@ describe("derived exports", () => {
   });
 
   it("TOKEN_VAR maps every key to its var", () => {
-    expect(Object.keys(TOKEN_VAR)).toHaveLength(29);
+    expect(Object.keys(TOKEN_VAR)).toHaveLength(30);
     for (const token of TOKENS) {
       expect(TOKEN_VAR[token.key]).toBe(token.varName);
     }

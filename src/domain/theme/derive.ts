@@ -3,7 +3,7 @@
 // tokens flip white-on-dark vs black-on-light; shade tokens lighten/darken
 // their already-resolved base. Explicit theme.tokens entries always win.
 
-import { lighten } from "./color";
+import { contrastRatio, lighten } from "./color";
 import { type ResolvedTheme, type Theme, TOKENS } from "./model";
 
 const SEED_FALLBACK = "#ff00ff";
@@ -22,6 +22,9 @@ function deriveTheme(theme: Theme): ResolvedTheme {
       out[token.key] = `rgba(${base}, ${token.alpha})`;
     } else if (token.type === "shade" && token.from) {
       out[token.key] = lighten(out[token.from], token.lighten ?? 0);
+    } else if (token.type === "contrast" && token.from) {
+      const base = out[token.from];
+      out[token.key] = contrastRatio("#ffffff", base) >= contrastRatio("#15161a", base) ? "#ffffff" : "#15161a";
     } else {
       out[token.key] = SEED_FALLBACK;
     }

@@ -106,6 +106,18 @@ describe("explicit overrides", () => {
   });
 });
 
+describe("contrast tokens", () => {
+  it("resolves on-accent to white when accent-dark is dark", () => {
+    const resolved = deriveTheme(darkTheme({ accent: "#3a3a8a", "accent-dark": "#3a3a8a" }));
+    expect(resolved["on-accent"]).toBe("#ffffff");
+  });
+
+  it("resolves on-accent to near-black when accent-dark is light", () => {
+    const resolved = deriveTheme(lightTheme({ accent: "#cfd4fb", "accent-dark": "#cfd4fb" }));
+    expect(resolved["on-accent"]).toBe("#15161a");
+  });
+});
+
 describe("edge cases", () => {
   it("missing seed resolves to the magenta sentinel", () => {
     const theme: Theme = { id: "x", name: "broken", kind: "custom", scheme: "dark", tokens: {} };

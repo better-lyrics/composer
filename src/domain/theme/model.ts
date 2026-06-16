@@ -1,5 +1,5 @@
 // -- Theme token model ---------------------------------------------------------
-// Single source of truth for the 29 --color-composer-* tokens, their derivation
+// Single source of truth for the 30 --color-composer-* tokens, their derivation
 // type, and the metadata the editor + deriver read. Mirrors src/index.css @theme.
 
 type Scheme = "dark" | "light";
@@ -25,6 +25,7 @@ type TokenKey =
   | "accent-dark"
   | "accent-darker"
   | "accent-text"
+  | "on-accent"
   | "accent-warm"
   | "link"
   | "error"
@@ -50,7 +51,7 @@ interface Theme {
 
 type ResolvedTheme = Record<TokenKey, string>;
 
-type TokenType = "seed" | "alpha" | "shade";
+type TokenType = "seed" | "alpha" | "shade" | "contrast";
 
 interface TokenMeta {
   key: TokenKey;
@@ -221,6 +222,14 @@ const TOKENS: TokenMeta[] = [
     from: "accent",
     lighten: 0.14,
     quick: "Accent text",
+  },
+  {
+    key: "on-accent",
+    varName: "--color-composer-on-accent",
+    label: "Text on accent",
+    group: "Accent",
+    type: "contrast",
+    from: "accent-dark",
   },
   {
     key: "accent-warm",

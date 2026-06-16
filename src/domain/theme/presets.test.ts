@@ -105,6 +105,7 @@ describe("regression: default preset reproduces the current look", () => {
       "accent-dark": "#6470dc",
       "accent-darker": "#505ac8",
       "accent-text": "#a5b4fc",
+      "on-accent": "#ffffff",
       "accent-warm": "#d4a5a5",
       link: "#5865f2",
       error: "#b45555",

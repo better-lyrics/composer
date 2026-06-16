@@ -18,7 +18,7 @@ const BASE_STYLES =
   "inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
-  primary: "bg-composer-accent-dark hover:bg-composer-accent text-white",
+  primary: "bg-composer-accent-dark hover:bg-composer-accent text-composer-on-accent",
   secondary: "bg-composer-button hover:bg-composer-button-hover text-composer-text",
   ghost: "text-composer-text-muted hover:text-composer-text hover:bg-composer-button",
 };
