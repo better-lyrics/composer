@@ -69,6 +69,11 @@ const TimelineExtras: React.FC = () => (
           ): a magnet for word edges and the playhead. Hold {MOD_KEY} mid-drag to bypass.
         </li>
         <li>
+          <strong>Marker</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} />
+          ): arms the waveform so a click drops a custom snap point. See <strong>Snap points and marker mode</strong> in
+          the Timeline section for the full rundown.
+        </li>
+        <li>
           <strong>Import</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} />
           ): imports lyrics directly into the Timeline without switching tabs.
         </li>

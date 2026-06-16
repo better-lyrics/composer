@@ -83,4 +83,16 @@ describe("TimelineSection", () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).toContain("playhead pinned in place");
   });
+
+  it("documents snap points and marker mode", async () => {
+    const screen = await render(<TimelineSection />);
+    await expect.element(screen.getByRole("heading", { name: "Snap points and marker mode" })).toBeInTheDocument();
+    expect(screen.container.textContent).toContain("vocal onsets");
+    expect(screen.container.textContent).toContain("custom snap points");
+  });
+
+  it("notes that snap points are session-only", async () => {
+    const screen = await render(<TimelineSection />);
+    expect(screen.container.textContent).toContain("clear on reload");
+  });
 });
