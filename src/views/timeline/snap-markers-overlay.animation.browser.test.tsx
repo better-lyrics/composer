@@ -163,8 +163,8 @@ describe("SnapMarkersOverlay onset entry stagger", () => {
     const lines = onsetLines(screen.container);
     for (const line of lines) expect(line.classList.contains("snap-onset-enter")).toBe(true);
     expect(lines[0].style.animationDelay).toBe("0ms");
-    expect(lines[1].style.animationDelay).toBe("10ms");
-    expect(lines[2].style.animationDelay).toBe("20ms");
+    expect(lines[1].style.animationDelay).toBe("24ms");
+    expect(lines[2].style.animationDelay).toBe("48ms");
   });
 
   it("caps the stagger delay so a large onset count does not crawl in forever", async () => {
@@ -177,8 +177,8 @@ describe("SnapMarkersOverlay onset entry stagger", () => {
     await expect.poll(() => onsetLines(screen.container)).toHaveLength(120);
 
     const lines = onsetLines(screen.container);
-    expect(lines[70].style.animationDelay).toBe("700ms");
-    expect(lines[119].style.animationDelay).toBe("700ms");
+    expect(lines[70].style.animationDelay).toBe("900ms");
+    expect(lines[119].style.animationDelay).toBe("900ms");
   });
 });
 

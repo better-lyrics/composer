@@ -14,8 +14,8 @@ interface SnapMarkersOverlayProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const ONSET_STAGGER_STEP_MS = 10;
-const ONSET_STAGGER_CAP_MS = 700;
+const ONSET_STAGGER_STEP_MS = 24;
+const ONSET_STAGGER_CAP_MS = 900;
 
 // -- Component -----------------------------------------------------------------
 
