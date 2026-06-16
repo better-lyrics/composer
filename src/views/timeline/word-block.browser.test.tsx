@@ -230,4 +230,22 @@ describe("WordBlock", () => {
     const leftEdge = screen.container.querySelector('[data-edge="left"]') as HTMLElement;
     expect(leftEdge.className).toContain("cursor-ew-resize");
   });
+
+  it("uses the theme-aware text color for the word label", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
+    const block = screen.container.querySelector("[data-word-block]") as HTMLElement;
+    expect(block.className).toContain("text-composer-text");
+    expect(block.className).not.toContain("text-white");
+  });
+
+  it("uses a theme-aware edge highlight tint", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} leftHighlighted rightHighlighted />, {
+      dndContext: true,
+    });
+    const leftEdge = screen.container.querySelector('[data-edge="left"]') as HTMLElement;
+    const rightEdge = screen.container.querySelector('[data-edge="right"]') as HTMLElement;
+    expect(leftEdge.className).toContain("bg-composer-text/10");
+    expect(rightEdge.className).toContain("bg-composer-text/10");
+    expect(leftEdge.className).not.toContain("bg-white/10");
+  });
 });

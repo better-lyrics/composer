@@ -78,7 +78,7 @@ const DragGhost: React.FC<{
         data-word-block
         data-syllable-position={cell.syllablePosition}
         className={cn(
-          "absolute flex items-center justify-center text-xs text-white truncate border pointer-events-none",
+          "absolute flex items-center justify-center text-xs text-composer-text truncate border pointer-events-none",
           GHOST_SYLLABLE_RADIUS[cell.syllablePosition],
           isSnapped && "is-snapped",
         )}

@@ -118,7 +118,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
       data-syllable-position={syllablePosition}
       className={cn(
         "absolute top-1 bottom-1 flex items-center justify-center",
-        "text-xs text-white truncate select-none cursor-grab",
+        "text-xs text-composer-text truncate select-none cursor-grab",
         "border transition-opacity duration-100",
         SYLLABLE_RADIUS[syllablePosition],
         isDimmed && "opacity-30",
@@ -160,11 +160,11 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
+          "absolute left-0 top-0 bottom-0 w-2 z-10 hover:bg-composer-text/10",
           syllablePosition === "middle" || syllablePosition === "last" || leftConjoined
             ? "cursor-col-resize"
             : "cursor-ew-resize",
-          leftHighlighted && "bg-white/10",
+          leftHighlighted && "bg-composer-text/10",
         )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
@@ -180,11 +180,11 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-2 z-10 hover:bg-white/10",
+          "absolute right-0 top-0 bottom-0 w-2 z-10 hover:bg-composer-text/10",
           syllablePosition === "first" || syllablePosition === "middle" || rightConjoined
             ? "cursor-col-resize"
             : "cursor-ew-resize",
-          rightHighlighted && "bg-white/10",
+          rightHighlighted && "bg-composer-text/10",
         )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}

@@ -240,7 +240,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         <div
           key={`${ghost.left}-${ghost.trackTop}-${ghost.text}-${ghost.isBg ? "bg" : "w"}`}
           className={cn(
-            "absolute flex items-center justify-center text-xs text-white truncate rounded-xl border pointer-events-none",
+            "absolute flex items-center justify-center text-xs text-composer-text truncate rounded-xl border pointer-events-none",
             ghost.overlaps || ghost.outOfBounds
               ? "bg-red-500/30 border-red-500/60"
               : "bg-composer-accent/30 border-composer-accent/60",
