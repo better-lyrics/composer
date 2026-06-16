@@ -115,6 +115,11 @@ body {
   box-shadow: 0 2px 9px rgba(0, 0, 0, 0.5);
 }
 
+@utility snap-marker-flash {
+  width: 2px;
+  background: #fff;
+}
+
 @utility waveform-loading-dots {
   background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 1px, transparent 1.5px);
   background-size: 8px 8px;

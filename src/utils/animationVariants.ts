@@ -70,6 +70,27 @@ const shimmerVariants: Variants = {
   animate: { backgroundPosition: "-100% 0" },
 };
 
+// -- Snap Markers -------------------------------------------------------------
+
+const pinDropInVariants: Variants = {
+  initial: { opacity: 0, y: -6, scale: 0.4 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring", stiffness: 700, damping: 18, mass: 0.6 },
+  },
+};
+
+const snapFlashVariants: Variants = {
+  initial: { opacity: 0, boxShadow: "0 0 0px rgba(255, 255, 255, 0)" },
+  animate: {
+    opacity: [0.9, 0],
+    boxShadow: ["0 0 18px rgba(255, 255, 255, 0.9)", "0 0 0px rgba(255, 255, 255, 0)"],
+    transition: { type: "spring", stiffness: 120, damping: 22, mass: 0.7 },
+  },
+};
+
 // -- Stagger Container --------------------------------------------------------
 
 // -- Exports ------------------------------------------------------------------
@@ -82,4 +103,6 @@ export {
   buildGroupPingVariants,
   shimmerTransition,
   shimmerVariants,
+  pinDropInVariants,
+  snapFlashVariants,
 };

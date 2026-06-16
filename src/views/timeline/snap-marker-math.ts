@@ -13,6 +13,13 @@ function snapTimeToOnset(time: number, onsets: number[], zoom: number, threshold
   return best;
 }
 
+function isTimeOnOnset(time: number, onsets: number[], zoom: number, thresholdPx: number): boolean {
+  for (const onset of onsets) {
+    if (Math.abs(onset - time) * zoom <= thresholdPx) return true;
+  }
+  return false;
+}
+
 function computeCoveredOnsets(
   onsets: number[],
   coveringTimes: number[],
@@ -34,4 +41,4 @@ function computeCoveredOnsets(
 
 // -- Exports -------------------------------------------------------------------
 
-export { snapTimeToOnset, computeCoveredOnsets };
+export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeCoveredOnsets, snapTimeToOnset } from "@/views/timeline/snap-marker-math";
+import { computeCoveredOnsets, isTimeOnOnset, snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 
 // -- Tests ---------------------------------------------------------------------
 
@@ -37,6 +37,39 @@ describe("snapTimeToOnset", () => {
 
     it("handles the timeline origin", () => {
       expect(snapTimeToOnset(0.05, [0], 100, 12)).toBe(0);
+    });
+  });
+});
+
+describe("isTimeOnOnset", () => {
+  it("is true when a time sits exactly on an onset", () => {
+    expect(isTimeOnOnset(2, [2], 100, 12)).toBe(true);
+  });
+
+  it("is true within the pixel threshold", () => {
+    expect(isTimeOnOnset(2.1, [2], 100, 12)).toBe(true);
+  });
+
+  it("is false outside the pixel threshold", () => {
+    expect(isTimeOnOnset(2.5, [2], 100, 12)).toBe(false);
+  });
+
+  it("is true if any onset is within threshold", () => {
+    expect(isTimeOnOnset(3, [1, 3, 5], 100, 12)).toBe(true);
+  });
+
+  it("scales the window by zoom (lower zoom = wider time window)", () => {
+    expect(isTimeOnOnset(2.2, [2], 50, 12)).toBe(true);
+    expect(isTimeOnOnset(2.2, [2], 100, 12)).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("is false when there are no onsets", () => {
+      expect(isTimeOnOnset(2, [], 100, 12)).toBe(false);
+    });
+
+    it("handles the timeline origin", () => {
+      expect(isTimeOnOnset(0.05, [0], 100, 12)).toBe(true);
     });
   });
 });

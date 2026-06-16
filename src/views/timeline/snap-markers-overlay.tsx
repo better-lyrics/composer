@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useSettingsStore } from "@/stores/settings";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
-import { computeCoveredOnsets } from "@/views/timeline/snap-marker-math";
+import { computeCoveredOnsets, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
 import { useSnapMarkerDrag } from "@/views/timeline/use-snap-marker-drag";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -83,13 +83,14 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
         <div className="absolute inset-0 pointer-events-none z-20">
           {customSnapPoints.map((time, index) => (
             <SnapMarkerPin
-              // biome-ignore lint/suspicious/noArrayIndexKey: index tiebreaks identical custom times
-              key={`${time}-${index}`}
+              // biome-ignore lint/suspicious/noArrayIndexKey: positional key keeps a dragged pin mounted while its time changes every frame
+              key={`custom-${index}`}
               index={index}
               time={time}
               zoom={zoom}
               fadeExtent={MARKER_FADE_EXTENT}
               isDragging={draggingTime !== null && time === draggingTime}
+              isOnOnset={showOnsets && isTimeOnOnset(time, vocalOnsetSnapPoints, zoom, thresholdPx)}
               onHeadPointerDown={onHeadPointerDown}
               onDelete={removeCustomSnapPoint}
             />

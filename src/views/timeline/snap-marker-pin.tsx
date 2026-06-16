@@ -1,5 +1,7 @@
 import { IconX } from "@tabler/icons-react";
-import { useState } from "react";
+import { m, useReducedMotion } from "motion/react";
+import { useRef, useState } from "react";
+import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
 
 // -- Types ---------------------------------------------------------------------
@@ -10,6 +12,7 @@ interface SnapMarkerPinProps {
   zoom: number;
   fadeExtent: number;
   isDragging: boolean;
+  isOnOnset: boolean;
   onHeadPointerDown: (index: number, event: React.PointerEvent<HTMLElement>) => void;
   onDelete: (index: number) => void;
 }
@@ -22,18 +25,29 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   zoom,
   fadeExtent,
   isDragging,
+  isOnOnset,
   onHeadPointerDown,
   onDelete,
 }) => {
+  const reduceMotion = useReducedMotion();
   const [isHovered, setIsHovered] = useState(false);
   const showTooltip = isHovered && !isDragging;
 
+  const wasOnOnsetRef = useRef(false);
+  const [flashKey, setFlashKey] = useState(0);
+  if (isOnOnset && !wasOnOnsetRef.current) setFlashKey((key) => key + 1);
+  wasOnOnsetRef.current = isOnOnset;
+
   return (
-    <div
+    <m.div
       data-snap-marker="custom"
       data-snap-marker-time={time}
+      data-snap-marker-drop-in
       className="absolute top-0"
       style={{ left: time * zoom }}
+      variants={pinDropInVariants}
+      initial={reduceMotion ? false : "initial"}
+      animate="animate"
       onPointerEnter={() => setIsHovered(true)}
       onPointerLeave={() => setIsHovered(false)}
     >
@@ -42,6 +56,18 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
         className="snap-custom-line absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
         style={{ height: fadeExtent }}
       />
+      {flashKey > 0 && (
+        <m.div
+          key={flashKey}
+          data-snap-marker-flash
+          data-flash-key={flashKey}
+          className="snap-marker-flash absolute top-0 left-1/2 -translate-x-1/2 pointer-events-none"
+          style={{ height: fadeExtent }}
+          variants={snapFlashVariants}
+          initial="initial"
+          animate={reduceMotion ? "initial" : "animate"}
+        />
+      )}
       <div
         data-snap-marker-hit
         className="absolute top-0 left-1/2 -translate-x-1/2 w-3 pointer-events-auto"
@@ -78,7 +104,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
           </button>
         </div>
       )}
-    </div>
+    </m.div>
   );
 };
 

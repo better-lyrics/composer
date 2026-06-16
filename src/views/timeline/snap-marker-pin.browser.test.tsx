@@ -11,9 +11,13 @@ const defaultProps = {
   zoom: 100,
   fadeExtent: 220,
   isDragging: false,
+  isOnOnset: false,
   onHeadPointerDown: () => {},
   onDelete: () => {},
 };
+
+const flash = (container: HTMLElement): HTMLElement | null =>
+  container.querySelector<HTMLElement>("[data-snap-marker-flash]");
 
 const head = (container: HTMLElement): HTMLElement | null =>
   container.querySelector<HTMLElement>("[data-snap-marker-head]");
@@ -98,6 +102,88 @@ describe("SnapMarkerPin", () => {
       });
       await userEvent.click(deleteButton);
       expect(onDelete).toHaveBeenCalledWith(2);
+    });
+  });
+
+  describe("placement animation", () => {
+    it("mounts the pin inside the drop-in motion wrapper", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} />);
+      const wrapper = screen.container.querySelector<HTMLElement>("[data-snap-marker-drop-in]");
+      expect(wrapper).not.toBeNull();
+      expect(wrapper?.getAttribute("data-snap-marker")).toBe("custom");
+    });
+
+    it("renders no flash when the pin is not on an onset", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
+      expect(flash(screen.container)).toBeNull();
+    });
+
+    it("renders a flash when the pin lands on an onset", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
+      expect(flash(screen.container)).toBeNull();
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset />);
+
+      await expect.poll(() => flash(screen.container)).not.toBeNull();
+    });
+
+    it("flashes once when a pin is placed directly on an onset", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset />);
+      await expect.poll(() => flash(screen.container)).not.toBeNull();
+    });
+
+    it("does not re-fire the flash while the pin stays on the same onset", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset />);
+      const firstFlash = await vi.waitFor(() => {
+        const el = flash(screen.container);
+        if (!el) throw new Error("flash not yet rendered");
+        return el;
+      });
+      const firstKey = firstFlash.getAttribute("data-flash-key");
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset time={2.001} />);
+
+      // Same on-onset state across re-render: the flash key must not advance.
+      expect(flash(screen.container)?.getAttribute("data-flash-key")).toBe(firstKey);
+    });
+
+    it("re-fires the flash when the pin leaves and lands on an onset again", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset />);
+      const firstFlash = await vi.waitFor(() => {
+        const el = flash(screen.container);
+        if (!el) throw new Error("flash not yet rendered");
+        return el;
+      });
+      const firstKey = firstFlash.getAttribute("data-flash-key");
+
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset />);
+
+      await expect.poll(() => flash(screen.container)).not.toBeNull();
+      // The flash element identity changes so the animation replays.
+      await expect.poll(() => flash(screen.container)?.getAttribute("data-flash-key")).not.toBe(firstKey);
+    });
+  });
+
+  describe("reduced motion", () => {
+    // The shared render wrapper forces MotionConfig reducedMotion="always",
+    // so useReducedMotion() is true here. This asserts the at-rest fallback:
+    // the pin mounts in place and the flash element still renders on snap.
+    // The animating (non-reduced) path is not reachable through this harness.
+    it("renders the pin at rest and stable under reduced motion", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} time={2} zoom={100} />);
+      const wrapper = screen.container.querySelector<HTMLElement>("[data-snap-marker-drop-in]");
+      expect(wrapper).not.toBeNull();
+      expect(wrapper?.style.left).toBe("200px");
+      await expect.poll(() => wrapper?.style.left).toBe("200px");
+    });
+
+    it("still surfaces a flash element on snap under reduced motion", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} isOnOnset={false} />);
+      await screen.rerender(<SnapMarkerPin {...defaultProps} isOnOnset />);
+      await expect.poll(() => flash(screen.container)).not.toBeNull();
     });
   });
 
