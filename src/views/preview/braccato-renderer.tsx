@@ -65,6 +65,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
           "--braccato-font-family": "'Satoshi', sans-serif",
           "--braccato-font-size": "2.5rem",
           "--braccato-inactive-opacity": "0.2",
+          "--braccato-text-color": "var(--color-composer-text)",
         } as React.CSSProperties
       }
     />

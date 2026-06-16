@@ -51,6 +51,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     el.ttml = latestTtmlRef.current;
     el.songDurationMs = latestDurationMsRef.current;
     el.className = "block flex-1 mx-auto w-full max-w-3xl px-6";
+    el.style.setProperty("--am-lyrics-highlight-color", "var(--color-composer-text)");
 
     const handleLineClick = (event: Event) => {
       const detail = (event as CustomEvent<{ timestamp: number }>).detail;

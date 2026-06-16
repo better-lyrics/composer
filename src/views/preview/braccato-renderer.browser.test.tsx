@@ -128,6 +128,12 @@ describe("BraccatoRenderer", () => {
     await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
   });
 
+  it("drives the lyric text color from the composer theme token", async () => {
+    const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
+    const el = getBraccatoElement(screen.container);
+    expect(el.style.getPropertyValue("--braccato-text-color")).toBe("var(--color-composer-text)");
+  });
+
   it("does not bind to #composer-audio before the audio element is registered", async () => {
     const screen = await render(<BraccatoRenderer ttmlString="<tt></tt>" />);
     const el = screen.container.querySelector("braccato-lyrics");

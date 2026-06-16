@@ -120,6 +120,19 @@ describe("AmLyricsRenderer", () => {
     await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
   });
 
+  it("drives the lyric highlight color from the composer theme token", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+
+    expect((el as HTMLElement).style.getPropertyValue("--am-lyrics-highlight-color")).toBe(
+      "var(--color-composer-text)",
+    );
+  });
+
   it("hides the am-lyrics built-in header", async () => {
     useAudioStore.setState({ audioElement: new Audio() });
 
