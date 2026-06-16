@@ -292,3 +292,22 @@ input[type="range"].settings-slider::-moz-range-progress {
     transition: none;
   }
 }
+
+@utility theme-swatch-input {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  background: none;
+
+  &::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  &::-webkit-color-swatch {
+    border: none;
+    border-radius: 6px;
+  }
+  &::-moz-color-swatch {
+    border: none;
+    border-radius: 6px;
+  }
+}
