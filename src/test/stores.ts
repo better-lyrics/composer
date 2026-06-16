@@ -65,6 +65,12 @@ async function resetAllStores(): Promise<void> {
     renamingGroupId: null,
     renamingInstanceIdx: null,
     draggedGroupShift: null,
+    isBypassing: false,
+    snappedBlockId: null,
+    snappedAnchorTime: null,
+    vocalOnsetSnapPoints: [],
+    vocalOnsetDetectionStatus: "idle",
+    vocalOnsetDetectionError: null,
   });
 
   if (hasLocalStorage()) globalThis.localStorage.clear();

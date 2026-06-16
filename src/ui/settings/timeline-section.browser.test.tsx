@@ -8,7 +8,7 @@ describe("TimelineSection", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(5);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(6);
   });
 
   it("flips the default rolling edit setting when its toggle is clicked", async () => {

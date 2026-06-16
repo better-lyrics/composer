@@ -48,6 +48,9 @@ interface TimelineState {
   isBypassing: boolean;
   snappedBlockId: string | null;
   snappedAnchorTime: number | null;
+  vocalOnsetSnapPoints: number[];
+  vocalOnsetDetectionStatus: "idle" | "processing" | "error";
+  vocalOnsetDetectionError: string | null;
 }
 
 interface TimelineActions {
@@ -79,6 +82,8 @@ interface TimelineActions {
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
   setSnappedAnchorTime: (t: number | null) => void;
+  setVocalOnsetSnapPoints: (points: number[]) => void;
+  setVocalOnsetDetectionStatus: (status: "idle" | "processing" | "error", error?: string | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -120,6 +125,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     isBypassing: false,
     snappedBlockId: null,
     snappedAnchorTime: null,
+    vocalOnsetSnapPoints: [],
+    vocalOnsetDetectionStatus: "idle",
+    vocalOnsetDetectionError: null,
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -158,6 +166,12 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set({ snappedBlockId: id }),
     setSnappedAnchorTime: (t) => set({ snappedAnchorTime: t }),
+    setVocalOnsetSnapPoints: (points) =>
+      set({
+        vocalOnsetSnapPoints: [...points].filter((point) => Number.isFinite(point) && point >= 0).sort((a, b) => a - b),
+      }),
+    setVocalOnsetDetectionStatus: (vocalOnsetDetectionStatus, error = null) =>
+      set({ vocalOnsetDetectionStatus, vocalOnsetDetectionError: error }),
   };
 });
 

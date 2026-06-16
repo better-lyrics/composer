@@ -91,6 +91,30 @@ describe("background vocal extraction settings", () => {
   });
 });
 
+describe("vocal onset snap settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults vocalOnsetSnap to true", () => {
+    expect(DEFAULTS.vocalOnsetSnap).toBe(true);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
+  });
+
+  it("allows toggling vocalOnsetSnap via set()", () => {
+    useSettingsStore.getState().set("vocalOnsetSnap", false);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(false);
+    useSettingsStore.getState().set("vocalOnsetSnap", true);
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
+  });
+
+  it("resetToDefaults restores vocalOnsetSnap to true", () => {
+    useSettingsStore.getState().set("vocalOnsetSnap", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().vocalOnsetSnap).toBe(true);
+  });
+});
+
 describe("cobalt instance helpers", () => {
   beforeEach(() => {
     useSettingsStore.setState({
@@ -189,6 +213,20 @@ describe("settings v2 -> v3 migration", () => {
     const { migrateSettingsForTest } = await import("@/stores/settings");
     const migrated = migrateSettingsForTest({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
     expect(migrated.vocalModelVariant).toBe("fp32");
+  });
+});
+
+describe("settings v3 -> v4 migration (vocalOnsetSnap)", () => {
+  it("fills missing vocalOnsetSnap with true", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
+    expect(migrated.vocalOnsetSnap).toBe(true);
+  });
+
+  it("preserves an explicitly disabled vocalOnsetSnap", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
+    expect(migrated.vocalOnsetSnap).toBe(false);
   });
 });
 

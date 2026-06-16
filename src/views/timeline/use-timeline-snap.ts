@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { collectSnapAnchors, findSnapShift, type SnapAnchor } from "@/views/timeline/snap";
+import { type SnapAnchor, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { Modifier } from "@dnd-kit/core";
 import { useCallback, useMemo, useRef } from "react";
@@ -45,8 +45,10 @@ function writeSnappedLeader(leaderKey: string, anchorTime: number | null): void 
 
 function useTimelineSnap(): UseTimelineSnap {
   useSettingsStore((s) => s.timelineSnap);
+  useSettingsStore((s) => s.vocalOnsetSnap);
   useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
+  useTimelineStore((s) => s.vocalOnsetSnapPoints);
 
   const ctxRef = useRef<SnapCtx>({
     anchors: [],
@@ -58,8 +60,11 @@ function useTimelineSnap(): UseTimelineSnap {
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
     const audio = useAudioStore.getState();
+    const settings = useSettingsStore.getState();
+    const timeline = useTimelineStore.getState();
     const playhead = audio.audioElement?.currentTime ?? audio.currentTime ?? null;
-    ctxRef.current.anchors = collectSnapAnchors(lines, args.selfIds, playhead);
+    const vocalOnsets = settings.vocalOnsetSnap ? timeline.vocalOnsetSnapPoints : [];
+    ctxRef.current.anchors = collectSnapAnchors(lines, args.selfIds, playhead, vocalOnsets, settings.timelineSnap);
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;
     ctxRef.current.overlapCheck = args.overlapCheck;
@@ -75,10 +80,12 @@ function useTimelineSnap(): UseTimelineSnap {
 
   const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
     const ctx = ctxRef.current;
-    const enabled = useSettingsStore.getState().timelineSnap;
+    const settings = useSettingsStore.getState();
+    const timeline = useTimelineStore.getState();
+    const enabled = settings.timelineSnap || (settings.vocalOnsetSnap && timeline.vocalOnsetSnapPoints.length > 0);
     const threshold = useSettingsStore.getState().timelineSnapThreshold;
     const bypassing = useTimelineStore.getState().isBypassing;
-    const zoom = useTimelineStore.getState().zoom;
+    const zoom = timeline.zoom;
     if (!enabled || bypassing || ctx.anchors.length === 0) {
       writeSnappedLeader(ctx.leaderKey, null);
       return 0;

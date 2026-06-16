@@ -105,6 +105,19 @@ describe("collectSnapAnchors", () => {
     expect(playhead?.t).toBe(0.42);
   });
 
+  it("includes vocal onset snap points when provided", () => {
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [0.12, 0.72]);
+    const onsets = anchors.filter((a) => a.kind === "vocal-onset");
+    expect(onsets.map((a) => a.t)).toEqual([0.12, 0.72]);
+    expect(onsets.every((a) => a.label === "vocal onset")).toBe(true);
+  });
+
+  it("can collect vocal onset snap points without timeline anchors", () => {
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), 0.42, [0.12, 0.72], false);
+    expect(anchors.map((a) => a.kind)).toEqual(["vocal-onset", "vocal-onset"]);
+    expect(anchors.map((a) => a.t)).toEqual([0.12, 0.72]);
+  });
+
   it("omits playhead when playheadTime is null", () => {
     const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null);
     expect(anchors.some((a) => a.kind === "playhead")).toBe(false);
