@@ -93,4 +93,26 @@ describe("ThemeTokenInput", () => {
       .dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     expect(onChange).toHaveBeenCalledWith("#abcdef");
   });
+
+  it("syncs the hex text field when the value prop changes externally (no remount)", async () => {
+    const screen = await render(
+      <ThemeTokenInput tokenKey="accent" label="Accent" value="#111111" onChange={() => {}} />,
+    );
+    const hex = screen.getByLabelText("Accent hex").element() as HTMLInputElement;
+    expect(hex.value).toBe("#111111");
+
+    await screen.rerender(<ThemeTokenInput tokenKey="accent" label="Accent" value="#222222" onChange={() => {}} />);
+    expect((screen.getByLabelText("Accent hex").element() as HTMLInputElement).value).toBe("#222222");
+  });
+
+  it("preserves in-progress typing while the value prop is unchanged", async () => {
+    const onChange = vi.fn();
+    const screen = await render(
+      <ThemeTokenInput tokenKey="accent" label="Accent" value="#111111" onChange={onChange} />,
+    );
+    const hex = screen.getByLabelText("Accent hex");
+    await hex.fill("#1234");
+    await screen.rerender(<ThemeTokenInput tokenKey="accent" label="Accent" value="#111111" onChange={onChange} />);
+    expect((hex.element() as HTMLInputElement).value).toBe("#1234");
+  });
 });

@@ -24,7 +24,12 @@ function toColorInputValue(value: string): string {
 // -- Components ----------------------------------------------------------------
 
 const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, value, onChange }) => {
+  const [prevValue, setPrevValue] = useState(value);
   const [draft, setDraft] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setDraft(value);
+  }
 
   const commitHex = (raw: string) => {
     const trimmed = raw.trim();
