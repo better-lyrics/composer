@@ -95,9 +95,7 @@ describe("shade tokens", () => {
 
 describe("explicit overrides", () => {
   it("an explicit token value beats derivation", () => {
-    const resolved = deriveTheme(
-      darkTheme({ accent: "#818cf8", "accent-dark": "#6470dc", "text-muted": "#777777" }),
-    );
+    const resolved = deriveTheme(darkTheme({ accent: "#818cf8", "accent-dark": "#6470dc", "text-muted": "#777777" }));
     expect(resolved["accent-dark"]).toBe("#6470dc");
     expect(resolved["text-muted"]).toBe("#777777");
   });

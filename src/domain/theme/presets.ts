@@ -3,7 +3,7 @@
 // seed data lives in composer-presets.ts and classic-presets.ts; this module
 // owns the lookup structures.
 
-import { type Theme, type ThemeId } from "./model";
+import type { Theme, ThemeId } from "./model";
 import { CLASSIC_PRESETS } from "./classic-presets";
 import { COMPOSER_PRESETS } from "./composer-presets";
 

@@ -3,7 +3,7 @@
 // names. Each preset specifies only its seed tokens; deriveTheme fills the
 // alpha + shade tokens.
 
-import { type Theme } from "./model";
+import type { Theme } from "./model";
 import { DARK_SNAP, LIGHT_SNAP } from "./snap-constants";
 
 const CLASSIC_PRESETS: Theme[] = [
