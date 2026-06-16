@@ -203,12 +203,32 @@ const TimelineSection: React.FC = () => (
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} /> to enter marker mode. The
           waveform cursor turns into a pin, and a single click drops a custom point where you click.
         </li>
-        <li>With marker mode off, double-click the waveform to drop a point without arming anything.</li>
+        <li>
+          With marker mode off, a plain click on the waveform just moves the playhead. Hold {ALT_KEY} and click to drop
+          a pin without arming marker mode.
+        </li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.dropSnapMarkerAtPlayhead")} /> to drop a pin at
+          the exact playhead position.
+        </li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevSnapPoint")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextSnapPoint")} /> to jump the playhead to the
+          previous or next snap point. These stop on your custom pins. Hold {ALT_KEY} for the finer pair{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevSnapPointFine")} /> /{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextSnapPointFine")} />, which also stop on every
+          detected vocal onset.
+        </li>
         <li>
           Drag a pin's head to move it. With onset snapping on, releasing near a vocal onset lands the pin right on it,
           and the onset tucks behind the pin so you do not see two markers stacked.
         </li>
-        <li>Hover a pin to see its time, with an x button to delete it.</li>
+        <li>Hover a pin to see its time. The x button to delete it sits under the head.</li>
+        <li>
+          Turn on "Snap playhead to points" in Settings, under Timeline (on by default), and clicking or dragging the
+          playhead snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture.
+          Scroll-wheel scrubbing over the waveform stays smooth and is never snapped.
+        </li>
         <li>
           Snap points are saved with your project and come back when you reopen it. Undo and redo treat placing, moving,
           or deleting a point like any other edit. They stay out of the exported TTML, so they never end up in the file
