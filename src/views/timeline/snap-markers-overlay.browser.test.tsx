@@ -68,7 +68,7 @@ describe("SnapMarkersOverlay", () => {
     expect(root?.style.clipPath).toBe(`inset(0px 0px 0px ${GUTTER_WIDTH}px)`);
   });
 
-  it("renders onset markers at full height and contains custom pins to the waveform", async () => {
+  it("contains both onset markers and custom pins to the waveform height", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
     useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1], customSnapPoints: [2] });
 
@@ -77,7 +77,7 @@ describe("SnapMarkersOverlay", () => {
     const [pin] = customMarkers(screen.container);
     const pinLine = pin.querySelector<HTMLElement>("[data-snap-marker-line]");
 
-    expect(onset.style.height).toBe("100%");
+    expect(onset.style.height).toBe(`${WAVEFORM_HEIGHT}px`);
     expect(pinLine?.style.height).toBe(`${WAVEFORM_HEIGHT}px`);
   });
 

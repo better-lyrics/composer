@@ -80,7 +80,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
         type="button"
         data-snap-marker-head
         aria-label={`Custom snap point at ${formatTime(time)}`}
-        className={`snap-custom-head absolute top-1 left-1/2 pointer-events-auto select-none border-none p-0 ${
+        className={`snap-custom-head absolute top-0 left-1/2 pointer-events-auto select-none border-none p-0 ${
           isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab"
         }`}
         onPointerDown={(event) => onHeadPointerDown(index, event)}

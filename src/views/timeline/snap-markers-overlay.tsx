@@ -11,10 +11,6 @@ interface SnapMarkersOverlayProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const ONSET_FULL_HEIGHT = "100%";
-
 // -- Component -----------------------------------------------------------------
 
 const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef }) => {
@@ -83,7 +79,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 className={`snap-onset-line absolute top-0 pointer-events-none ${
                   coveredOnsets.has(index) ? "snap-onset-covered" : ""
                 }`}
-                style={{ left: time * zoom, height: ONSET_FULL_HEIGHT }}
+                style={{ left: time * zoom, height: WAVEFORM_HEIGHT }}
               />
             ))}
           </div>

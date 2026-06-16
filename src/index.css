@@ -111,7 +111,7 @@ body {
   height: 14px;
   background: var(--color-composer-warning);
   border-radius: 50% 50% 50% 0;
-  transform: translateX(-50%) rotate(45deg);
+  transform: translateX(-50%) translateY(3px) rotate(45deg);
   box-shadow: 0 2px 9px rgba(0, 0, 0, 0.5);
 }
 
