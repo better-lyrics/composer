@@ -2,11 +2,13 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
+import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { clearCurrentProject, type SavedProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
+import { render } from "@/test/render";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -26,6 +28,12 @@ async function waitForCustomSnapPoints(expected: number[]): Promise<void> {
   }
   throw new Error(`customSnapPoints never became ${JSON.stringify(expected)}`);
 }
+
+const LoadHarness: React.FC = () => {
+  usePersistence();
+  useVocalOnsetSnapPoints();
+  return null;
+};
 
 // -- Tests --------------------------------------------------------------------
 
@@ -92,5 +100,30 @@ describe("usePersistence · customSnapPoints hydration", () => {
     await waitForCustomSnapPoints([]);
 
     expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+  });
+
+  it("regression: a saved project's markers survive the audio-source clear fired during load", async () => {
+    await saveAudioFile(createMp3File());
+    await saveCurrentProject(
+      { title: "survives-load", artist: "", album: "", duration: 0 },
+      DEFAULT_AGENTS,
+      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      [],
+      "word",
+      { applyToAll: false, caseInsensitive: false },
+      { kind: "file", name: "silence.mp3" },
+      [],
+      [],
+      "original",
+      false,
+      [5, 12],
+    );
+
+    useProjectStore.setState({ customSnapPoints: [] });
+
+    await render(<LoadHarness />);
+    await waitForProjectHydration();
+
+    await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([5, 12]);
   });
 });

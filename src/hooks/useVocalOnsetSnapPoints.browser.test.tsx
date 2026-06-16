@@ -1,5 +1,6 @@
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { resetAllStores } from "@/test/stores";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
@@ -58,12 +59,12 @@ describe("useVocalOnsetSnapPoints", () => {
     it("regression: clears user-placed custom snap points when the audio source changes", async () => {
       await render(<HookHarness />);
 
-      useTimelineStore.getState().setCustomSnapPoints([2, 4, 6]);
-      expect(useTimelineStore.getState().customSnapPoints).toEqual([2, 4, 6]);
+      useProjectStore.getState().setCustomSnapPoints([2, 4, 6]);
+      expect(useProjectStore.getState().customSnapPoints).toEqual([2, 4, 6]);
 
       useAudioStore.setState({ source: { type: "file", file: createAudioFile("another-song.wav") } });
 
-      await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([]);
+      await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([]);
     });
 
     it("regression: clears stale onset points when switching between file-less youtube sources", async () => {

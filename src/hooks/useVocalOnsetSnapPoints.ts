@@ -1,6 +1,7 @@
 import { detectVocalOnsetsFromUrl } from "@/audio/vocal-onset-snap-points";
 import { useAudioStore } from "@/stores/audio";
 import type { AudioSource } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -64,7 +65,7 @@ function useVocalOnsetSnapPoints(): void {
       lastVocalsUrl = null;
       const timeline = useTimelineStore.getState();
       timeline.setVocalOnsetSnapPoints([]);
-      timeline.clearCustomSnapPoints();
+      useProjectStore.getState().clearCustomSnapPoints();
       timeline.setVocalOnsetDetectionStatus("idle");
     });
 
