@@ -16,6 +16,7 @@ interface PlayheadDragConfig {
   setDraggingPlayhead: (dragging: boolean, time?: number) => void;
   setDragTime: (time: number) => void;
   seekTo: (time: number) => void;
+  snapTime: (time: number, bypass: boolean) => number;
 }
 
 interface PlayheadDrag {
@@ -51,6 +52,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     config.setDraggingPlayhead(true, config.getCurrentTime());
 
     let pointerX = e.clientX;
+    let metaHeld = e.metaKey;
     let edgeScrollRaf: number | null = null;
     let prevSample: ScrubSample | null = null;
     const controller = new AbortController();
@@ -79,17 +81,20 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
       container.scrollLeft = Math.max(0, Math.min(maxScroll, container.scrollLeft + velocity));
       const time = computeTimeFromPointer(pointerX);
       if (time !== null) {
-        config.setDragTime(time);
-        tickScrubPreview(time);
+        const snapped = config.snapTime(time, metaHeld);
+        config.setDragTime(snapped);
+        tickScrubPreview(snapped);
       }
     };
 
     const handleMouseMove = (moveEvent: MouseEvent): void => {
+      metaHeld = moveEvent.metaKey;
       pointerX = moveEvent.clientX;
       const time = computeTimeFromPointer(pointerX);
       if (time !== null) {
-        config.setDragTime(time);
-        tickScrubPreview(time);
+        const snapped = config.snapTime(time, metaHeld);
+        config.setDragTime(snapped);
+        tickScrubPreview(snapped);
       }
     };
 
@@ -105,7 +110,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 
     const handleMouseUp = (upEvent: MouseEvent): void => {
       const time = computeTimeFromPointer(upEvent.clientX);
-      if (time !== null) config.seekTo(time);
+      if (time !== null) config.seekTo(config.snapTime(time, upEvent.metaKey));
       config.setDraggingPlayhead(false);
       cleanup();
     };

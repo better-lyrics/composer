@@ -16,6 +16,7 @@ function makeConfig(overrides: Partial<PlayheadDragConfig> = {}): PlayheadDragCo
     setDraggingPlayhead: () => undefined,
     setDragTime: () => undefined,
     seekTo: () => undefined,
+    snapTime: (time) => time,
     ...overrides,
   };
 }

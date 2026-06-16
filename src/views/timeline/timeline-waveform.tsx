@@ -4,6 +4,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
 import { cn } from "@/utils/cn";
 import { readToken } from "@/utils/theme/read-token";
+import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
@@ -81,7 +82,7 @@ const TimelineWaveform: React.FC = () => {
         addSnappedPoint(time);
         return;
       }
-      seekTo(time);
+      seekTo(snapPlayheadTime(time, e.metaKey));
     },
     [duration, totalWidth, timeFromClick, addSnappedPoint, seekTo],
   );

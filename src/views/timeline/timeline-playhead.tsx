@@ -4,6 +4,7 @@ import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
+import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
@@ -227,6 +228,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
         setDraggingPlayhead,
         setDragTime,
         seekTo,
+        snapTime: (t, bypass) => snapPlayheadTime(t, bypass),
       }),
     [duration, seekTo, setIsPlaying, setDraggingPlayhead, setDragTime, scrollContainerRef],
   );
