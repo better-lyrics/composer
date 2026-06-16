@@ -77,6 +77,14 @@ function safeStringify(value: unknown): string {
   }
 }
 
+function handleReload(): void {
+  window.location.reload();
+}
+
+function handleGoHome(): void {
+  window.location.href = "/";
+}
+
 // -- Component -----------------------------------------------------------------
 
 const ErrorFallback: React.FC = () => {
@@ -87,14 +95,6 @@ const ErrorFallback: React.FC = () => {
   const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
 
   console.error(LOG_PREFIX, "route error", error);
-
-  const handleReload = () => {
-    window.location.reload();
-  };
-
-  const handleGoHome = () => {
-    window.location.href = "/";
-  };
 
   const handleRecover = async () => {
     setRecoveryStatus("downloading");
