@@ -98,12 +98,8 @@ body {
 
 @utility snap-custom-line {
   width: 2px;
-  background: linear-gradient(
-    180deg,
-    var(--color-composer-warning) 0%,
-    var(--color-composer-warning) 6%,
-    transparent 88%
-  );
+  background: var(--color-composer-warning);
+  mask: linear-gradient(rgba(0, 0, 0, 0) 0px, rgb(0, 0, 0) 30%, rgb(0, 0, 0) 70%, rgba(0, 0, 0, 0) 100%);
 }
 
 @utility snap-custom-head {
