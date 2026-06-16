@@ -147,7 +147,9 @@ describe("useTour skipGuideCard", () => {
     setLyrics();
 
     await expect.poll(() => screen.container.textContent).toContain("Done!");
-    await expect.poll(driverProgress).toBe("6 / 11");
+    // The advance is intentionally delayed by GATE_SUCCESS_DELAY (800ms) after "Done!",
+    // so this needs more than the default 1000ms poll budget under load.
+    await expect.poll(driverProgress, { timeout: 4000 }).toBe("6 / 11");
   });
 
   it("does not show the sync guide card when the sync gate already passes", async () => {
