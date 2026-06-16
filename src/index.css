@@ -39,6 +39,11 @@
   --color-composer-warning: #f5a623;
   --color-composer-explicit: #ff7a85;
 
+  /* Waveform */
+  --color-composer-wave: #737476;
+  --color-composer-wave-progress: rgb(129, 140, 248);
+  --color-composer-snap: #ffd66b;
+
   /* Typography */
   --font-family-sans: "Satoshi", "Avenir", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-family-mono: "Geist Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
