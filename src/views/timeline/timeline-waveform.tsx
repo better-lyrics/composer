@@ -59,6 +59,7 @@ const TimelineWaveform: React.FC = () => {
       if (!duration || totalWidth <= 0) return;
       const time = timeFromClick(e);
       if (useTimelineStore.getState().markerMode) {
+        if (e.detail > 1) return;
         addSnappedPoint(time);
         return;
       }

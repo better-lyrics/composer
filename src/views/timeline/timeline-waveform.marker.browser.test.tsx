@@ -87,6 +87,34 @@ describe("TimelineWaveform marker placement", () => {
     await expect.poll(() => useTimelineStore.getState().customSnapPoints.length).toBe(0);
   });
 
+  it("marker mode ON: a real physical double-click sequence adds exactly one point", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50, markerMode: true, customSnapPoints: [], vocalOnsetSnapPoints: [] });
+    const screen = await render(<TimelineWaveform />);
+    const layer = getClickLayer(screen.container, 1500);
+
+    layer.dispatchEvent(new MouseEvent("click", { detail: 1, clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { detail: 2, clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("dblclick", { detail: 2, clientX: 750, clientY: 40, bubbles: true }));
+
+    await expect.poll(() => useTimelineStore.getState().customSnapPoints.length).toBe(1);
+    expect(useTimelineStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+  });
+
+  it("marker mode ON: a triple-click sequence still adds exactly one point", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ zoom: 50, markerMode: true, customSnapPoints: [], vocalOnsetSnapPoints: [] });
+    const screen = await render(<TimelineWaveform />);
+    const layer = getClickLayer(screen.container, 1500);
+
+    layer.dispatchEvent(new MouseEvent("click", { detail: 1, clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { detail: 2, clientX: 750, clientY: 40, bubbles: true }));
+    layer.dispatchEvent(new MouseEvent("click", { detail: 3, clientX: 750, clientY: 40, bubbles: true }));
+
+    await expect.poll(() => useTimelineStore.getState().customSnapPoints.length).toBe(1);
+    expect(useTimelineStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+  });
+
   it("marker mode OFF: single click seeks and adds no point", async () => {
     setupWaveformAudio(30);
     useTimelineStore.setState({ zoom: 50, markerMode: false, customSnapPoints: [], vocalOnsetSnapPoints: [] });
