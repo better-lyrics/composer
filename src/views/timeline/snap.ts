@@ -3,14 +3,7 @@ import type { LyricLine } from "@/domain/line/model";
 
 // -- Types ---------------------------------------------------------------------
 
-type AnchorKind =
-  | "word-begin"
-  | "word-end"
-  | "line-begin"
-  | "line-end"
-  | "playhead"
-  | "vocal-onset"
-  | "custom";
+type AnchorKind = "word-begin" | "word-end" | "line-begin" | "line-end" | "playhead" | "vocal-onset" | "custom";
 
 interface SnapAnchor {
   t: number;

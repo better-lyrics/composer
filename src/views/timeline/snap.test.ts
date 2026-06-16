@@ -126,14 +126,13 @@ describe("collectSnapAnchors", () => {
   });
 
   it("filters out non-finite and negative custom times", () => {
-    const anchors = collectSnapAnchors(
-      [wordTimedLine()],
-      new Set(),
-      null,
-      [],
-      true,
-      [-1, 0, Number.NaN, Number.POSITIVE_INFINITY, 0.5],
-    );
+    const anchors = collectSnapAnchors([wordTimedLine()], new Set(), null, [], true, [
+      -1,
+      0,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      0.5,
+    ]);
     const customTimes = anchors.filter((a) => a.kind === "custom").map((a) => a.t);
     expect(customTimes).toEqual([0, 0.5]);
   });
