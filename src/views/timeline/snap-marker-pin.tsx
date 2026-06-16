@@ -88,7 +88,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
       {showTooltip && (
         <div
           data-snap-marker-tooltip
-          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
+          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
         >
           <span
             data-snap-marker-time-label

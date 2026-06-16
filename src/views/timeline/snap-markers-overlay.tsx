@@ -14,6 +14,7 @@ interface SnapMarkersOverlayProps {
 // -- Constants -----------------------------------------------------------------
 
 const MARKER_FADE_EXTENT = 220;
+const MARKER_HEAD_CLEARANCE = 16;
 
 // -- Component -----------------------------------------------------------------
 
@@ -46,7 +47,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
       const layer = layerRef.current;
       if (layer) {
         const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
-        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
+        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, ${MARKER_HEAD_CLEARANCE}px, 0)`;
       }
       rafRef.current = requestAnimationFrame(applyTransform);
     };
@@ -70,7 +71,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
         ref={layerRef}
         data-snap-markers-layer
         className="absolute inset-0 pointer-events-none"
-        style={{ transform: `translate3d(${GUTTER_WIDTH}px, 0, 0)` }}
+        style={{ transform: `translate3d(${GUTTER_WIDTH}px, ${MARKER_HEAD_CLEARANCE}px, 0)` }}
       >
         {showOnsets && (
           <div className="absolute inset-0 pointer-events-none z-10">
@@ -112,4 +113,4 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
 
 // -- Exports -------------------------------------------------------------------
 
-export { SnapMarkersOverlay, MARKER_FADE_EXTENT };
+export { SnapMarkersOverlay, MARKER_FADE_EXTENT, MARKER_HEAD_CLEARANCE };
