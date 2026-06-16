@@ -223,7 +223,7 @@ const TimelineSection: React.FC = () => (
           Drag a pin's head to move it. With onset snapping on, releasing near a vocal onset lands the pin right on it,
           and the onset tucks behind the pin so you do not see two markers stacked.
         </li>
-        <li>Hover a pin to see its time. The x button to delete it sits under the head.</li>
+        <li>Hover a pin to see its time. The trash icon to delete it sits under the head.</li>
         <li>
           Turn on "Snap playhead to points" in Settings, under Timeline (on by default), and clicking or dragging the
           playhead snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture.
