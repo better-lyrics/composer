@@ -89,6 +89,16 @@ describe("VocalOnsetSnapToggle", () => {
       const screen = await render(<VocalOnsetSnapToggle />);
       await expect.element(screen.getByText("Detecting onsets...")).toBeInTheDocument();
     });
+
+    it("surfaces an error over stale points from a prior successful run", async () => {
+      useTimelineStore.setState({
+        vocalOnsetDetectionStatus: "error",
+        vocalOnsetDetectionError: "decode failed",
+        vocalOnsetSnapPoints: [0.2, 0.4, 0.6],
+      });
+      const screen = await render(<VocalOnsetSnapToggle />);
+      await expect.element(screen.getByText("Detection failed: decode failed")).toBeInTheDocument();
+    });
   });
 
   // -- Invariants -------------------------------------------------------------

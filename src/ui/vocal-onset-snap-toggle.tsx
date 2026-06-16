@@ -11,8 +11,8 @@ function describeOnsetStatus(
   error: string | null,
 ): string {
   if (status === "processing") return "Detecting onsets...";
-  if (pointCount > 0) return `${pointCount} snap point${pointCount === 1 ? "" : "s"}`;
   if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
+  if (pointCount > 0) return `${pointCount} snap point${pointCount === 1 ? "" : "s"}`;
   return "Separate vocals to detect onsets";
 }
 
