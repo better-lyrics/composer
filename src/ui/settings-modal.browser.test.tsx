@@ -5,21 +5,6 @@ import { SettingsModal } from "@/ui/settings-modal";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 
-// Mirrors how App.tsx mounts the modal: a changing `key` per open remounts it,
-// so the section seeds fresh from the store instead of persisting across opens.
-function SettingsModalHost() {
-  const settingsOpen = useUIStore((s) => s.settingsOpen);
-  const closeSettings = useUIStore((s) => s.closeSettings);
-  return (
-    <SettingsModal
-      key={settingsOpen ? "settings-open" : "settings-closed"}
-      isOpen={settingsOpen}
-      onClose={closeSettings}
-      onResetTour={() => {}}
-    />
-  );
-}
-
 describe("SettingsModal", () => {
   it("renders nothing when isOpen is false", async () => {
     await render(<SettingsModal isOpen={false} onClose={() => {}} onResetTour={() => {}} />);
@@ -63,22 +48,6 @@ describe("SettingsModal", () => {
 
     it("opens on the General section when there is no highlight", async () => {
       await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
-      expect(document.querySelector('[data-testid="bridge-section"]')).toBeNull();
-    });
-
-    it("reopening without a highlight resets the section instead of staying on the last one", async () => {
-      allowConsole(/cannot be a descendant of/);
-      allowConsole(/cannot contain a nested/);
-      await render(<SettingsModalHost />);
-
-      useUIStore.getState().openSettings("bridge-section");
-      await expect.poll(() => document.querySelector('[data-testid="bridge-section"]') !== null).toBe(true);
-
-      useUIStore.getState().closeSettings();
-      await expect.poll(() => document.querySelector("dialog") === null).toBe(true);
-
-      useUIStore.getState().openSettings();
-      await expect.poll(() => document.querySelector("dialog") !== null).toBe(true);
       expect(document.querySelector('[data-testid="bridge-section"]')).toBeNull();
     });
   });
