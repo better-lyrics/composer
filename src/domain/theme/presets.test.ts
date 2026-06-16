@@ -121,6 +121,21 @@ describe("regression: default preset reproduces the current look", () => {
   });
 });
 
+describe("light preset accent", () => {
+  it("derives a dark on-accent for the Light preset's light accent-dark", () => {
+    const light = PRESET_BY_ID.get("light");
+    if (!light) throw new Error("missing Light preset");
+    expect(deriveTheme(light)["on-accent"]).toBe("#15161a");
+  });
+
+  it("keeps Light preset text/bg contrast at AA", () => {
+    const light = PRESET_BY_ID.get("light");
+    if (!light) throw new Error("missing Light preset");
+    const resolved = deriveTheme(light);
+    expect(contrastRatio(resolved.text, resolved.bg)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe("light presets", () => {
   it("light presets carry scheme light and a muted-amber snap", () => {
     const lightIds = PRESETS.filter((p) => p.scheme === "light").map((p) => p.id);
