@@ -121,6 +121,12 @@ describe("regression: default preset reproduces the current look", () => {
   });
 });
 
+describe("light preset description", () => {
+  it("uses the expected copy", () => {
+    expect(PRESET_BY_ID.get("light")?.desc).toBe("Seek help");
+  });
+});
+
 describe("high contrast accent", () => {
   it("reuses the Default preset's accent", () => {
     const highContrast = PRESET_BY_ID.get("high-contrast");

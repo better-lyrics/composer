@@ -42,7 +42,7 @@ const COMPOSER_PRESETS: Theme[] = [
     kind: "preset",
     group: "Composer",
     scheme: "light",
-    desc: "Clean daylight. Ink on paper.",
+    desc: "Seek help",
     tokens: {
       bg: "#f7f7f8",
       "bg-dark": "#ececef",
