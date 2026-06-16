@@ -18,6 +18,7 @@ function useCarouselColors(): { accentColor: string; secondaryColor: string; dis
       secondaryColor: readToken("text-secondary"),
       disabledColor: readToken("text-disabled"),
     }),
+    // react-doctor-disable-next-line react-doctor/exhaustive-deps -- activeThemeId is the intended cache key: readToken reads DOM CSS vars non-reactively, so the memo must recompute when the theme changes
     [activeThemeId],
   );
 }
