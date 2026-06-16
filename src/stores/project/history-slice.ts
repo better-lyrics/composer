@@ -30,6 +30,7 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
       return {
         lines: structuredClone(entry.lines),
         groups: structuredClone(entry.groups),
+        customSnapPoints: structuredClone(entry.customSnapPoints),
         historyIndex: state.historyIndex - 1,
         isDirty: true,
         isDirtySinceHistory: false,
@@ -43,6 +44,7 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
       return {
         lines: structuredClone(entry.lines),
         groups: structuredClone(entry.groups),
+        customSnapPoints: structuredClone(entry.customSnapPoints),
         historyIndex: state.historyIndex + 1,
         isDirty: true,
         isDirtySinceHistory: false,

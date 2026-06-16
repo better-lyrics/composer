@@ -12,7 +12,7 @@ const MAX_HISTORY_SIZE = 100;
 
 function commitHistory(
   state: ProjectState,
-  changes: { lines?: LyricLine[]; groups?: LinkGroup[] },
+  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; customSnapPoints?: number[] },
   options: { deriveText?: boolean } = {},
 ) {
   const splitChar = getSplitCharacter();
@@ -23,24 +23,28 @@ function commitHistory(
       : changes.lines
     : state.lines;
   const nextGroups = changes.groups ?? state.groups;
+  const nextCustomSnapPoints = changes.customSnapPoints ?? state.customSnapPoints;
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   if (newHistory.length === 0 || state.isDirtySinceHistory) {
     newHistory.push({
       lines: structuredClone(state.lines),
       groups: structuredClone(state.groups),
+      customSnapPoints: structuredClone(state.customSnapPoints),
       timestamp: Date.now(),
     });
   }
   newHistory.push({
     lines: structuredClone(nextLines),
     groups: structuredClone(nextGroups),
+    customSnapPoints: structuredClone(nextCustomSnapPoints),
     timestamp: Date.now(),
   });
   if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
   return {
     lines: nextLines,
     groups: nextGroups,
+    customSnapPoints: nextCustomSnapPoints,
     isDirty: true,
     isDirtySinceHistory: false,
     history: newHistory,
@@ -57,12 +61,14 @@ function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineW
     newHistory.push({
       lines: structuredClone(baseline),
       groups: structuredClone(state.groups),
+      customSnapPoints: structuredClone(state.customSnapPoints),
       timestamp: Date.now(),
     });
   }
   newHistory.push({
     lines: structuredClone(state.lines),
     groups: structuredClone(state.groups),
+    customSnapPoints: structuredClone(state.customSnapPoints),
     timestamp: Date.now(),
   });
   if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();

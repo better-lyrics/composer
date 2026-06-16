@@ -23,6 +23,7 @@ const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
+  customSnapPoints: number[];
   timestamp: number;
 }
 
