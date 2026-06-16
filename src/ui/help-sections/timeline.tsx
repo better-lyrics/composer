@@ -192,6 +192,33 @@ const TimelineSection: React.FC = () => (
     </div>
 
     <div>
+      <h4 className={HEADING}>Snap points and marker mode</h4>
+      <p className={PROSE}>
+        Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
+        from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
+        onsets" in the stem dropdown. Solid pins are custom snap points you place yourself. Both pull word edges in the
+        way the magnet does, and custom points keep snapping even when Snap and onset snapping are both off.
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
+          Click the pin button in the toolbar or press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleMarkerMode")} /> to enter marker mode. The
+          waveform cursor turns into a pin, and a single click drops a custom point where you click.
+        </li>
+        <li>With marker mode off, double-click the waveform to drop a point without arming anything.</li>
+        <li>
+          Drag a pin's head to move it. With onset snapping on, releasing near a vocal onset lands the pin right on it,
+          and the onset tucks behind the pin so you do not see two markers stacked.
+        </li>
+        <li>Hover a pin to see its time, with an x button to delete it.</li>
+        <li>
+          Snap points live in the current session. They clear on reload and are not part of the export, so treat them as
+          scratch guides while you work rather than something you save.
+        </li>
+      </ul>
+    </div>
+
+    <div>
       <h4 className={HEADING}>Splitting and merging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>

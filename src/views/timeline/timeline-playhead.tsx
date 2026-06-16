@@ -4,7 +4,8 @@ import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
+import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
@@ -125,7 +126,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       const displayTime = isDraggingPlayhead ? dragTime : currentTime;
       const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
-      const position = displayTime * zoom - actualScrollLeft + GUTTER_WIDTH - 1; // -1 to center the 2px wide playhead
+      const position = timeToX(displayTime, zoom, actualScrollLeft) - 1; // -1 to center the 2px wide playhead
       playheadRef.current.style.transform = `translate3d(${position}px, 0, 0)`;
 
       // Update height to match full scrollable content
@@ -135,7 +136,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       const containerRect = containerRef.current?.getBoundingClientRect();
       if (containerRect) {
-        const playheadCenterXLocal = displayTime * zoom - actualScrollLeft + GUTTER_WIDTH;
+        const playheadCenterXLocal = timeToX(displayTime, zoom, actualScrollLeft);
         const playheadCenterXViewport = playheadCenterXLocal + containerRect.left;
         playheadCenterXLocalRef.current = playheadCenterXLocal;
         containerLeftRef.current = containerRect.left;

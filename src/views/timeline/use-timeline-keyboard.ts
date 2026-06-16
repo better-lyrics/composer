@@ -344,6 +344,10 @@ function useTimelineKeyboard(
         case "timeline.toggleRollingEdit":
           useTimelineStore.getState().toggleRollingEditMode();
           break;
+        case "timeline.toggleMarkerMode":
+          e.preventDefault();
+          useTimelineStore.getState().toggleMarkerMode();
+          break;
         case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");

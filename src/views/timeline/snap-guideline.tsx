@@ -1,4 +1,5 @@
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Component ----------------------------------------------------------------
 
@@ -9,7 +10,7 @@ const SnapGuideline: React.FC = () => {
 
   if (snappedAnchorTime === null) return null;
 
-  const position = snappedAnchorTime * zoom - scrollLeft + GUTTER_WIDTH;
+  const position = timeToX(snappedAnchorTime, zoom, scrollLeft);
 
   return (
     <div

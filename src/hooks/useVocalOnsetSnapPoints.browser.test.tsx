@@ -55,6 +55,17 @@ describe("useVocalOnsetSnapPoints", () => {
       expect(useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("idle");
     });
 
+    it("regression: clears user-placed custom snap points when the audio source changes", async () => {
+      await render(<HookHarness />);
+
+      useTimelineStore.getState().setCustomSnapPoints([2, 4, 6]);
+      expect(useTimelineStore.getState().customSnapPoints).toEqual([2, 4, 6]);
+
+      useAudioStore.setState({ source: { type: "file", file: createAudioFile("another-song.wav") } });
+
+      await expect.poll(() => useTimelineStore.getState().customSnapPoints).toEqual([]);
+    });
+
     it("regression: clears stale onset points when switching between file-less youtube sources", async () => {
       await render(<HookHarness />);
 

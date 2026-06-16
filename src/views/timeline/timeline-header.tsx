@@ -19,6 +19,7 @@ import {
   IconFocusCentered,
   IconLayoutDistributeHorizontal,
   IconMagnet,
+  IconMapPin,
   IconMinus,
   IconPlus,
   IconTextPlus,
@@ -49,11 +50,14 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const togglePreviewSidebar = useTimelineStore((s) => s.togglePreviewSidebar);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
   const toggleRollingEditMode = useTimelineStore((s) => s.toggleRollingEditMode);
+  const markerMode = useTimelineStore((s) => s.markerMode);
+  const toggleMarkerMode = useTimelineStore((s) => s.toggleMarkerMode);
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   const snapEnabled = useSettingsStore((s) => s.timelineSnap);
   const setSetting = useSettingsStore((s) => s.set);
   const isBypassing = useTimelineStore((s) => s.isBypassing);
   const toggleSnapKeys = getEffectiveKeysArray("timeline.toggleSnap");
+  const toggleMarkerKeys = getEffectiveKeysArray("timeline.toggleMarkerMode");
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
@@ -191,6 +195,20 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
           <IconMagnet size={16} />
           <span>Snap</span>
           {showHints && <InlineKeyBadge keys={toggleSnapKeys} />}
+        </Button>
+
+        {/* Marker mode toggle */}
+        <Button
+          variant={markerMode ? "primary" : "ghost"}
+          size="sm"
+          onClick={toggleMarkerMode}
+          hasIcon
+          className={cn(!markerMode && "opacity-60")}
+          title={`Marker mode${toggleMarkerKeys.length ? ` (${toggleMarkerKeys.join(" ")})` : ""}`}
+        >
+          <IconMapPin size={16} />
+          <span>Marker</span>
+          {showHints && <InlineKeyBadge keys={toggleMarkerKeys} />}
         </Button>
 
         {/* Import lyrics */}

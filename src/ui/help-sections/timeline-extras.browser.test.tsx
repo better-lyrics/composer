@@ -28,4 +28,9 @@ describe("TimelineExtras", () => {
     const screen = await render(<TimelineExtras />);
     expect(screen.container.textContent).toContain("remember their state across reloads");
   });
+
+  it("documents the marker mode toolbar toggle", async () => {
+    const screen = await render(<TimelineExtras />);
+    expect(screen.container.textContent).toContain("drops a custom snap point");
+  });
 });
