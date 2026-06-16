@@ -152,12 +152,12 @@ describe("light preset accent", () => {
 });
 
 describe("light presets", () => {
-  it("light presets carry scheme light and a muted-amber snap", () => {
+  it("light presets carry scheme light and a clean-amber snap", () => {
     const lightIds = PRESETS.filter((p) => p.scheme === "light").map((p) => p.id);
     expect(lightIds).toContain("light");
     expect(lightIds).toContain("solarized-light");
     for (const id of lightIds) {
-      expect(PRESET_BY_ID.get(id)?.tokens.snap).toBe("#d99a2b");
+      expect(PRESET_BY_ID.get(id)?.tokens.snap).toBe("#f5a623");
     }
   });
 

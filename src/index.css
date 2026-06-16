@@ -280,11 +280,11 @@ input[type="range"].settings-slider::-moz-range-progress {
   transition: box-shadow 110ms cubic-bezier(0.25, 1.4, 0.5, 1);
 }
 
-/* On a light surface the amber halo washes out and a hard black shadow reads
-   heavy, so strengthen the ring and glow and soften the drop shadow. */
+/* On a light surface a near-solid ring reads as a heavy dark outline, so soften
+   the ring to a glow, lean on the halo for presence, and lighten the shadow. */
 [data-scheme="light"] .is-snapped {
-  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 95%, transparent), 0 0 12px 2px
-    color-mix(in srgb, var(--color-composer-snap) 50%, transparent), 0 1px 2px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 70%, transparent), 0 0 12px 2px
+    color-mix(in srgb, var(--color-composer-snap) 45%, transparent), 0 1px 2px rgba(0, 0, 0, 0.12);
 }
 
 /* Reduced motion */
