@@ -64,6 +64,7 @@ function useVocalOnsetSnapPoints(): void {
       lastVocalsUrl = null;
       const timeline = useTimelineStore.getState();
       timeline.setVocalOnsetSnapPoints([]);
+      timeline.clearCustomSnapPoints();
       timeline.setVocalOnsetDetectionStatus("idle");
     });
 
