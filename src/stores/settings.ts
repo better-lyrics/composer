@@ -41,6 +41,7 @@ interface SettingsState {
   timelineSnap: boolean;
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
+  snapPlayheadToPoints: boolean;
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
@@ -106,6 +107,7 @@ const DEFAULTS: SettingsState = {
   timelineSnap: true,
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
+  snapPlayheadToPoints: true,
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
@@ -151,7 +153,7 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 4;
+const SETTINGS_PERSIST_VERSION = 5;
 
 function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
@@ -163,6 +165,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.defaultRollingEdit === undefined) next.defaultRollingEdit = false;
   if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
+  if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   return next;
 }
 

@@ -1,5 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import { SliderSetting, ToggleSetting } from "@/ui/settings/setting-controls";
+import { MOD_KEY } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Timeline Section ---------------------------------------------------------
@@ -53,6 +54,11 @@ const TimelineSection: React.FC = () => {
         max={24}
         step={1}
         format={(v) => `${v}px`}
+      />
+      <ToggleSetting
+        label="Snap playhead to points"
+        description={`Clicking or dragging the playhead snaps it to nearby snap points and vocal onsets. Hold ${MOD_KEY} to bypass.`}
+        settingKey="snapPlayheadToPoints"
       />
       <ToggleSetting
         label="Follow playhead"

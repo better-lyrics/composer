@@ -8,7 +8,7 @@ describe("TimelineSection", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(6);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(7);
   });
 
   it("flips the default rolling edit setting when its toggle is clicked", async () => {
@@ -38,6 +38,16 @@ describe("TimelineSection", () => {
     const toggle = row?.querySelector('[role="switch"]') as HTMLElement;
     toggle.click();
     await expect.poll(() => useSettingsStore.getState().timelineSnap).toBe(false);
+  });
+
+  it("flips the snap playhead to points setting when its toggle is clicked", async () => {
+    useSettingsStore.setState({ snapPlayheadToPoints: true });
+    const screen = await render(<TimelineSection />);
+    const toggle = screen.getByRole("switch", { name: "Snap playhead to points" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+    await toggle.click();
+    await expect.poll(() => useSettingsStore.getState().snapPlayheadToPoints).toBe(false);
+    await expect.element(toggle).toHaveAttribute("aria-checked", "false");
   });
 
   it("adopts the live timeline zoom when its Use current action is clicked", async () => {

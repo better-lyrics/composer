@@ -115,6 +115,30 @@ describe("vocal onset snap settings", () => {
   });
 });
 
+describe("snap playhead to points settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults snapPlayheadToPoints to true", () => {
+    expect(DEFAULTS.snapPlayheadToPoints).toBe(true);
+    expect(useSettingsStore.getState().snapPlayheadToPoints).toBe(true);
+  });
+
+  it("allows toggling snapPlayheadToPoints via set()", () => {
+    useSettingsStore.getState().set("snapPlayheadToPoints", false);
+    expect(useSettingsStore.getState().snapPlayheadToPoints).toBe(false);
+    useSettingsStore.getState().set("snapPlayheadToPoints", true);
+    expect(useSettingsStore.getState().snapPlayheadToPoints).toBe(true);
+  });
+
+  it("resetToDefaults restores snapPlayheadToPoints to true", () => {
+    useSettingsStore.getState().set("snapPlayheadToPoints", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().snapPlayheadToPoints).toBe(true);
+  });
+});
+
 describe("cobalt instance helpers", () => {
   beforeEach(() => {
     useSettingsStore.setState({
@@ -227,6 +251,20 @@ describe("settings v3 -> v4 migration (vocalOnsetSnap)", () => {
     const { migrateSettingsForTest } = await import("@/stores/settings");
     const migrated = migrateSettingsForTest({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
     expect(migrated.vocalOnsetSnap).toBe(false);
+  });
+});
+
+describe("settings v4 -> v5 migration (snapPlayheadToPoints)", () => {
+  it("fills missing snapPlayheadToPoints with true", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 4) as { snapPlayheadToPoints: boolean };
+    expect(migrated.snapPlayheadToPoints).toBe(true);
+  });
+
+  it("preserves an explicitly disabled snapPlayheadToPoints", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
+    expect(migrated.snapPlayheadToPoints).toBe(false);
   });
 });
 
