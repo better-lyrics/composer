@@ -7,6 +7,7 @@ import { GeneralSection } from "@/ui/settings/general-section";
 import { PlaybackSection } from "@/ui/settings/playback-section";
 import { StorageSection } from "@/ui/settings/storage-section";
 import { SyncSection } from "@/ui/settings/sync-section";
+import { ThemeSection } from "@/ui/settings/theme-section";
 import { TimelineSection } from "@/ui/settings/timeline-section";
 import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
 import {
@@ -15,6 +16,7 @@ import {
   IconDeviceFloppy,
   IconKeyboard,
   IconLayoutRows,
+  IconPalette,
   IconPlayerPlay,
   IconPlugConnected,
   IconSettings,
@@ -33,6 +35,7 @@ interface SettingsModalProps {
 
 const SECTIONS: ModalNavSection[] = [
   { id: "general", label: "General", icon: IconSettings },
+  { id: "theme", label: "Theme", icon: IconPalette },
   { id: "playback", label: "Playback", icon: IconPlayerPlay },
   { id: "timeline", label: "Timeline", icon: IconLayoutRows },
   { id: "sync", label: "Sync & Timing", icon: IconClock },
@@ -53,6 +56,7 @@ const SECTION_CONTENT: Record<string, React.FC<{ onResetTour: () => void; onClos
   storage: StorageSection,
   advanced: AdvancedSection,
   general: GeneralSection,
+  theme: ThemeSection,
 };
 
 // -- Settings Modal -----------------------------------------------------------

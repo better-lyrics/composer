@@ -23,6 +23,12 @@ describe("SettingsModal", () => {
     expect(document.querySelector("dialog")?.textContent ?? "").toContain("Shortcut");
   });
 
+  it("shows the theme gallery when the Theme section is selected", async () => {
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await screen.getByRole("button", { name: /Theme/i }).click();
+    await expect.element(screen.getByRole("button", { name: /Default/ })).toBeInTheDocument();
+  });
+
   it("invokes onClose when Escape is pressed", async () => {
     let closes = 0;
     await render(<SettingsModal isOpen onClose={() => closes++} onResetTour={() => {}} />);
