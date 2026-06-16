@@ -45,16 +45,16 @@ describe("ThemePresetCard", () => {
     expect(button.className).not.toContain("ring-2");
   });
 
-  it("renders a LIGHT chip and the is-light pill treatment for a light-scheme theme", async () => {
-    await render(<ThemePresetCard theme={LIGHT} active={false} onSelect={() => {}} />);
-    expect(document.body.textContent).toContain("LIGHT");
+  it("renders a sun-icon pill and the is-light treatment for a light-scheme theme", async () => {
+    const screen = await render(<ThemePresetCard theme={LIGHT} active={false} onSelect={() => {}} />);
+    await expect.element(screen.getByLabelText("Light theme")).toBeInTheDocument();
     const pill = document.querySelector("[data-theme-pill]");
     expect(pill?.getAttribute("data-light")).toBe("true");
   });
 
-  it("renders a DARK chip and no is-light treatment for a dark-scheme theme", async () => {
-    await render(<ThemePresetCard theme={DEFAULT} active={false} onSelect={() => {}} />);
-    expect(document.body.textContent).toContain("DARK");
+  it("renders a moon-icon pill and no is-light treatment for a dark-scheme theme", async () => {
+    const screen = await render(<ThemePresetCard theme={DEFAULT} active={false} onSelect={() => {}} />);
+    await expect.element(screen.getByLabelText("Dark theme")).toBeInTheDocument();
     const pill = document.querySelector("[data-theme-pill]");
     expect(pill?.getAttribute("data-light")).toBe("false");
   });

@@ -1,6 +1,7 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import type { Theme } from "@/domain/theme/model";
 import { cn } from "@/utils/cn";
+import { IconMoonStars, IconSun } from "@tabler/icons-react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -20,7 +21,7 @@ const CARD_INACTIVE = "border-composer-border hover:border-composer-border-hover
 
 const CARD_ACTIVE = "border-composer-accent ring-2 ring-composer-accent";
 
-const TAG_BASE = "font-mono text-[9px] tracking-wide rounded-[5px] px-1.5 py-px";
+const TAG_BASE = "inline-flex items-center justify-center rounded-[5px] px-1 py-0.5";
 
 const TAG_DARK = "bg-composer-button text-composer-text-muted";
 
@@ -66,7 +67,13 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({ theme, active, onSele
       </span>
       <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-composer-text">
         {theme.name}
-        <span className={cn(TAG_BASE, isLight ? TAG_LIGHT : TAG_DARK)}>{isLight ? "LIGHT" : "DARK"}</span>
+        <span
+          className={cn(TAG_BASE, isLight ? TAG_LIGHT : TAG_DARK)}
+          aria-label={isLight ? "Light theme" : "Dark theme"}
+          title={isLight ? "Light theme" : "Dark theme"}
+        >
+          {isLight ? <IconSun size={12} /> : <IconMoonStars size={12} />}
+        </span>
       </span>
       <span className="mt-px block text-[11px] text-composer-text-muted">{description}</span>
     </button>
