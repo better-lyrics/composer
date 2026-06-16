@@ -57,9 +57,9 @@ describe("theme store · setActiveTheme", () => {
     expect(readAccent()).toBe("#bd93f9");
   });
 
-  it("falls back to default and applies it for an unknown id", () => {
+  it("falls back to default (id and tokens) for an unknown id so persisted state self-heals", () => {
     useThemeStore.getState().setActiveTheme("does-not-exist");
-    expect(useThemeStore.getState().activeThemeId).toBe("does-not-exist");
+    expect(useThemeStore.getState().activeThemeId).toBe("default");
     expect(readAccent()).toBe("#818cf8");
   });
 

@@ -47,9 +47,15 @@ const useThemeStore = create<ThemeState & ThemeActions>()(
       getThemeById: (id) => PRESET_BY_ID.get(id) ?? get().customThemes.find((t) => t.id === id),
 
       setActiveTheme: (id) => {
-        set({ activeThemeId: id });
-        const theme = get().getThemeById(id) ?? PRESET_BY_ID.get(DEFAULT_PRESET_ID);
-        if (theme) applyTheme(theme);
+        const theme = get().getThemeById(id);
+        if (theme) {
+          set({ activeThemeId: id });
+          applyTheme(theme);
+          return;
+        }
+        const fallback = PRESET_BY_ID.get(DEFAULT_PRESET_ID);
+        set({ activeThemeId: DEFAULT_PRESET_ID });
+        if (fallback) applyTheme(fallback);
       },
 
       addCustomTheme: (theme) => set((state) => ({ customThemes: [...state.customThemes, theme] })),
