@@ -48,14 +48,22 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   const reduceMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
 
-  const { refs, floatingStyles, context } = useFloating({
+  const { refs, floatingStyles, context, placement } = useFloating({
     open: isOpen,
     onOpenChange: setIsOpen,
     placement: "bottom-start",
-    // crossAxis centers the leading delete control under the rotated head; visually tuned.
-    middleware: [offset({ mainAxis: 8, crossAxis: -6 }), flip(), shift({ padding: 8 })],
+    // The delete control leads the row and sits directly under the rotated head. crossAxis
+    // centers it; the sign mirrors when flip() re-aligns to the end (no room on the right),
+    // and the row reverses so the delete control stays under the head. Values are visually tuned.
+    middleware: [
+      offset(({ placement: resolved }) => ({ mainAxis: 8, crossAxis: resolved.endsWith("-end") ? 6 : -6 })),
+      flip({ fallbackPlacements: ["bottom-end", "top-start", "top-end"] }),
+      shift({ padding: 8 }),
+    ],
     whileElementsMounted: autoUpdate,
   });
+
+  const tooltipAlignEnd = placement.endsWith("-end");
 
   const hover = useHover(context, {
     enabled: !isDragging,
@@ -121,7 +129,11 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
           <div
             ref={refs.setFloating}
             data-snap-marker-tooltip
-            className="z-100 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
+            data-snap-marker-tooltip-align={tooltipAlignEnd ? "end" : "start"}
+            className={cn(
+              "z-100 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto",
+              tooltipAlignEnd && "flex-row-reverse",
+            )}
             style={floatingStyles}
             {...getFloatingProps()}
           >

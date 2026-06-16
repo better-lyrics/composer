@@ -168,6 +168,48 @@ describe("SnapMarkerPin", () => {
       expect(tooltip()?.contains(button)).toBe(true);
       expect(timeLabel()).not.toBeNull();
     });
+
+    it("stays start-aligned with the delete control leading when there is room on the right", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} time={2} zoom={100} />);
+      const headEl = head(screen.container);
+      if (headEl) await userEvent.hover(headEl);
+
+      const tip = await vi.waitFor(() => {
+        const el = tooltip();
+        if (!el) throw new Error("tooltip not yet rendered");
+        return el;
+      });
+      expect(tip.getAttribute("data-snap-marker-tooltip-align")).toBe("start");
+      expect(tip.classList.contains("flex-row-reverse")).toBe(false);
+    });
+
+    it("flips to end alignment near the right edge so the delete control stays under the head", async () => {
+      const screen = await render(<SnapMarkerPin {...defaultProps} />);
+      const headEl = head(screen.container);
+      if (!headEl) throw new Error("head not rendered");
+      const nearRight = window.innerWidth - 12;
+      Object.defineProperty(headEl, "getBoundingClientRect", {
+        configurable: true,
+        value: () => ({
+          left: nearRight,
+          right: nearRight + 14,
+          top: 24,
+          bottom: 38,
+          width: 14,
+          height: 14,
+          x: nearRight,
+          y: 24,
+          toJSON: () => "",
+        }),
+      });
+
+      await userEvent.hover(headEl);
+
+      await expect.poll(() => tooltip()?.getAttribute("data-snap-marker-tooltip-align")).toBe("end");
+      expect(tooltip()?.classList.contains("flex-row-reverse")).toBe(true);
+      const firstButton = tooltip()?.querySelector("button");
+      expect(firstButton?.hasAttribute("data-snap-marker-delete")).toBe(true);
+    });
   });
 
   describe("placement animation", () => {
