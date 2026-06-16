@@ -15,7 +15,7 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys }) => {
     return (
       <span
         data-inline-key-badge
-        className="inline-flex items-center justify-center h-4 px-1.5 text-[10px] font-medium rounded bg-white/5 text-composer-text-muted leading-none italic ml-1.5"
+        className="inline-flex items-center justify-center h-4 px-1.5 text-[10px] font-medium rounded bg-current/5 leading-none italic ml-1.5 opacity-70"
       >
         Unbound
       </span>
@@ -26,7 +26,7 @@ const InlineKeyBadge: React.FC<InlineKeyBadgeProps> = ({ keys }) => {
       {keys.map((key) => (
         <span
           key={key}
-          className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-white/10 text-composer-text-muted leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
+          className="inline-flex items-center justify-center min-w-4 h-4 px-1 text-[10px] font-medium rounded bg-current/10 leading-none shadow-[0_2px_0_0_rgba(0,0,0,0.3)]"
         >
           {key === "Mod" && isMac ? <IconCommand className="size-2.5" /> : formatKey(key)}
         </span>
