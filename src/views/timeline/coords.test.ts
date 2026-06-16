@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { GUTTER_WIDTH, timeToX, xToTime } from "@/views/timeline/coords";
+import { GUTTER_WIDTH, REVEAL_MARGIN_PX, revealTimeScrollLeft, timeToX, xToTime } from "@/views/timeline/coords";
 
 describe("timeToX", () => {
   it("maps seconds to gutter-offset pixels", () => {
@@ -29,6 +29,45 @@ describe("xToTime", () => {
   it("accounts for scrollLeft", () => {
     const rect = { left: 0 } as DOMRect;
     expect(xToTime(GUTTER_WIDTH, rect, 100, 200)).toBeCloseTo(2);
+  });
+});
+
+describe("revealTimeScrollLeft", () => {
+  it("returns null when the time sits comfortably inside the viewport", () => {
+    expect(revealTimeScrollLeft(2, 100, 0, 500)).toBeNull();
+  });
+
+  it("centers the playhead when the time is off the right edge", () => {
+    expect(revealTimeScrollLeft(10, 100, 0, 500)).toBe(1000 + GUTTER_WIDTH - 250);
+  });
+
+  it("centers the playhead when the time is off the left edge", () => {
+    expect(revealTimeScrollLeft(1, 100, 2000, 500)).toBe(0);
+  });
+
+  it("re-centers before the playhead reaches the right edge (within the margin)", () => {
+    expect(revealTimeScrollLeft(4.2, 100, 0, 500)).toBe(420 + GUTTER_WIDTH - 250);
+  });
+
+  it("re-centers before the playhead reaches the left edge (within the margin)", () => {
+    expect(revealTimeScrollLeft(1.2, 100, 100, 500)).toBe(0);
+  });
+
+  describe("edge cases", () => {
+    it("clamps the centered scroll position to zero", () => {
+      expect(revealTimeScrollLeft(0, 100, 0, 500)).toBe(0);
+    });
+
+    it("honors a custom margin of zero, scrolling only when actually off-screen", () => {
+      expect(revealTimeScrollLeft(4.5, 100, 0, 500, 0)).toBeNull();
+      expect(revealTimeScrollLeft(4.53, 100, 0, 500, 0)).toBe(453 + GUTTER_WIDTH - 250);
+    });
+
+    it("defaults the margin to REVEAL_MARGIN_PX", () => {
+      const withDefault = revealTimeScrollLeft(4.2, 100, 0, 500);
+      const withExplicit = revealTimeScrollLeft(4.2, 100, 0, 500, REVEAL_MARGIN_PX);
+      expect(withDefault).toBe(withExplicit);
+    });
   });
 });
 

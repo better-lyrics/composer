@@ -237,6 +237,51 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
     expect(seek.get()).toBe(5);
   });
+
+  function buildScrollContainer(width: number, contentWidth: number): HTMLDivElement {
+    const container = document.createElement("div");
+    container.style.width = `${width}px`;
+    container.style.overflow = "auto";
+    const spacer = document.createElement("div");
+    spacer.style.width = `${contentWidth}px`;
+    spacer.style.height = "10px";
+    container.appendChild(spacer);
+    document.body.appendChild(container);
+    return container;
+  }
+
+  it("scrolls an off-screen jump target back into view", async () => {
+    const container = buildScrollContainer(300, 8000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 0, duration: 80 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [50] });
+    useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
+    const seek = trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 80));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
+
+    expect(seek.get()).toBe(50);
+    expect(container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+
+  it("leaves the scroll position alone when the jump target is already visible", async () => {
+    const container = buildScrollContainer(600, 8000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 0, duration: 80 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [2] });
+    useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
+    trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 80));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
+
+    expect(container.scrollLeft).toBe(0);
+    container.remove();
+  });
 });
 
 describe("useTimelineKeyboard · background provenance", () => {

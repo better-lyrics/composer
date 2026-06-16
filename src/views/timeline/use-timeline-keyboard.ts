@@ -27,6 +27,7 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import { revealTimeScrollLeft } from "@/views/timeline/coords";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
@@ -711,6 +712,16 @@ function useTimelineKeyboard(
             break;
           }
           useAudioStore.getState().seekTo(target);
+          const jumpScrollContainer = scrollContainerRef.current;
+          if (jumpScrollContainer) {
+            const nextScrollLeft = revealTimeScrollLeft(
+              target,
+              useTimelineStore.getState().zoom,
+              jumpScrollContainer.scrollLeft,
+              jumpScrollContainer.clientWidth,
+            );
+            if (nextScrollLeft !== null) jumpScrollContainer.scrollLeft = nextScrollLeft;
+          }
           break;
         }
       }
