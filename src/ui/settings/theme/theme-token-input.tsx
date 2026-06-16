@@ -21,7 +21,13 @@ function toColorInputValue(value: string): string {
 // -- Components ----------------------------------------------------------------
 
 const ThemeTokenInput: React.FC<ThemeTokenInputProps> = ({ tokenKey, label, value, onChange }) => {
+  // React's documented "adjust state while a prop changes during render" pattern:
+  // prevValue snapshots the prop to detect external edits; draft is the controlled
+  // input value, edited locally and committed on blur (so it is read in render, not
+  // handler-only). Neither is hoistable derived state.
+  // react-doctor-disable-next-line react-doctor/no-derived-useState, react-doctor/rerender-state-only-in-handlers -- intentional controlled-input draft, see note above
   const [prevValue, setPrevValue] = useState(value);
+  // react-doctor-disable-next-line react-doctor/no-derived-useState -- snapshot for the prop-change check below
   const [draft, setDraft] = useState(value);
   if (value !== prevValue) {
     setPrevValue(value);

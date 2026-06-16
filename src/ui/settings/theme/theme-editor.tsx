@@ -121,6 +121,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
 
       <div className="flex items-center gap-3">
         <span className="text-xs font-medium text-composer-text select-none">Base</span>
+        {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- no native element for a segmented control; role=group + aria-label is the standard pattern */}
         <div className={SEGMENT} role="group" aria-label="Color scheme">
           {SCHEMES.map((scheme) => (
             <button
