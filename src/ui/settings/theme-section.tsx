@@ -53,7 +53,7 @@ const ThemeSection: React.FC<ThemeSectionProps> = () => {
 
   return (
     <div className="divide-y divide-composer-border">
-      <div className="py-3">
+      <div className="pt-3 pb-4">
         <ThemePresetGallery onCustomize={handleCustomize} onEditCustom={handleEditCustom} />
       </div>
       <div className="flex flex-col gap-2 py-3">
