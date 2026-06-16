@@ -3,6 +3,7 @@ import { createDismissalsInitialState } from "@/stores/project/dismissals-slice"
 import { createGroupsInitialState } from "@/stores/project/groups-slice";
 import { createHistoryInitialState } from "@/stores/project/history-slice";
 import { createLinesInitialState } from "@/stores/project/lines-slice";
+import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice";
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";
 import type { StateCreator } from "zustand";
@@ -28,6 +29,7 @@ function createProjectInitialState(): ProjectState {
     ...createGroupsInitialState(),
     ...createUiInitialState(),
     ...createDismissalsInitialState(),
+    ...createSnapPointsInitialState(),
     ...createHistoryInitialState(),
   };
 }

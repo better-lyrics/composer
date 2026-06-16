@@ -57,6 +57,10 @@ interface DismissalsState {
   dismissedExplicitSuggestions: string[];
 }
 
+interface SnapPointsState {
+  customSnapPoints: number[];
+}
+
 interface HistoryState {
   isDirty: boolean;
   history: HistoryEntry[];
@@ -97,6 +101,15 @@ interface DismissalActions {
   dismissExplicitSuggestion: (fingerprint: string) => void;
   setDismissedExplicitSuggestions: (fingerprints: string[]) => void;
   clearDismissedExplicitSuggestions: () => void;
+}
+
+interface SnapPointActions {
+  setCustomSnapPoints: (points: number[]) => void;
+  addCustomSnapPoint: (time: number) => void;
+  removeCustomSnapPoint: (index: number) => void;
+  moveCustomSnapPoint: (index: number, time: number) => void;
+  commitSnapPointDrag: (baseline: number[]) => void;
+  clearCustomSnapPoints: () => void;
 }
 
 interface HistoryActions {
@@ -161,12 +174,20 @@ interface GroupActions {
 
 // -- Composed Store -----------------------------------------------------------
 
-type ProjectState = MetadataState & AgentsState & LinesState & GroupsState & UiState & DismissalsState & HistoryState;
+type ProjectState = MetadataState &
+  AgentsState &
+  LinesState &
+  GroupsState &
+  UiState &
+  DismissalsState &
+  SnapPointsState &
+  HistoryState;
 
 type ProjectActions = MetadataActions &
   AgentActions &
   UiActions &
   DismissalActions &
+  SnapPointActions &
   HistoryActions &
   LineActions &
   GroupActions;
@@ -185,11 +206,13 @@ export type {
   GroupsState,
   UiState,
   DismissalsState,
+  SnapPointsState,
   HistoryState,
   MetadataActions,
   AgentActions,
   UiActions,
   DismissalActions,
+  SnapPointActions,
   HistoryActions,
   LineActions,
   GroupActions,
