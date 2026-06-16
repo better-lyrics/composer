@@ -73,12 +73,12 @@ const shimmerVariants: Variants = {
 // -- Snap Markers -------------------------------------------------------------
 
 const pinDropInVariants: Variants = {
-  initial: { opacity: 0, y: -6, scale: 0.4 },
+  initial: { opacity: 0, y: -4, scale: 0.72 },
   animate: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 700, damping: 18, mass: 0.6 },
+    transition: { type: "spring", stiffness: 500, damping: 32, mass: 0.7 },
   },
 };
 

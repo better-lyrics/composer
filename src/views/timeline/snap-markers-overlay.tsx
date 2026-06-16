@@ -3,7 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
 import { computeCoveredOnsets, findInsertedValue, isTimeOnOnset } from "@/views/timeline/snap-marker-math";
 import { useSnapMarkerDrag } from "@/views/timeline/use-snap-marker-drag";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -13,8 +13,7 @@ interface SnapMarkersOverlayProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const MARKER_FADE_EXTENT = 220;
-const MARKER_HEAD_CLEARANCE = 16;
+const ONSET_FULL_HEIGHT = "100%";
 
 // -- Component -----------------------------------------------------------------
 
@@ -47,7 +46,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
       const layer = layerRef.current;
       if (layer) {
         const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
-        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, ${MARKER_HEAD_CLEARANCE}px, 0)`;
+        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
       }
       rafRef.current = requestAnimationFrame(applyTransform);
     };
@@ -71,7 +70,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
         ref={layerRef}
         data-snap-markers-layer
         className="absolute inset-0 pointer-events-none"
-        style={{ transform: `translate3d(${GUTTER_WIDTH}px, ${MARKER_HEAD_CLEARANCE}px, 0)` }}
+        style={{ transform: `translate3d(${GUTTER_WIDTH}px, 0, 0)` }}
       >
         {showOnsets && (
           <div className="absolute inset-0 pointer-events-none z-10">
@@ -84,7 +83,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 className={`snap-onset-line absolute top-0 pointer-events-none ${
                   coveredOnsets.has(index) ? "snap-onset-covered" : ""
                 }`}
-                style={{ left: time * zoom, height: MARKER_FADE_EXTENT }}
+                style={{ left: time * zoom, height: ONSET_FULL_HEIGHT }}
               />
             ))}
           </div>
@@ -97,7 +96,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
               index={index}
               time={time}
               zoom={zoom}
-              fadeExtent={MARKER_FADE_EXTENT}
+              fadeExtent={WAVEFORM_HEIGHT}
               isDragging={draggingTime !== null && time === draggingTime}
               isNew={insertedValue !== null && time === insertedValue}
               isOnOnset={showOnsets && isTimeOnOnset(time, vocalOnsetSnapPoints, zoom, thresholdPx)}
@@ -113,4 +112,4 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
 
 // -- Exports -------------------------------------------------------------------
 
-export { SnapMarkersOverlay, MARKER_FADE_EXTENT, MARKER_HEAD_CLEARANCE };
+export { SnapMarkersOverlay };

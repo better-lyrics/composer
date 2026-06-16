@@ -80,7 +80,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
         type="button"
         data-snap-marker-head
         aria-label={`Custom snap point at ${formatTime(time)}`}
-        className={`snap-custom-head absolute -top-2 left-1/2 pointer-events-auto select-none border-none p-0 ${
+        className={`snap-custom-head absolute top-1 left-1/2 pointer-events-auto select-none border-none p-0 ${
           isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab"
         }`}
         onPointerDown={(event) => onHeadPointerDown(index, event)}
@@ -88,7 +88,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
       {showTooltip && (
         <div
           data-snap-marker-tooltip
-          className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
+          className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto"
         >
           <span
             data-snap-marker-time-label

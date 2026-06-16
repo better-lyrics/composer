@@ -3,8 +3,8 @@ import { userEvent } from "vitest/browser";
 import { describe, expect, it, vi } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
-import { MARKER_HEAD_CLEARANCE, SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
+import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 
 // -- Harness -------------------------------------------------------------------
 
@@ -68,16 +68,27 @@ describe("SnapMarkersOverlay", () => {
     expect(root?.style.clipPath).toBe(`inset(0px 0px 0px ${GUTTER_WIDTH}px)`);
   });
 
-  it("translates the inner layer by GUTTER_WIDTH and head clearance when scrollLeft is 0", async () => {
+  it("renders onset markers at full height and contains custom pins to the waveform", async () => {
+    useSettingsStore.setState({ vocalOnsetSnap: true });
+    useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1], customSnapPoints: [2] });
+
+    const screen = await render(<Harness />);
+    const [onset] = onsetMarkers(screen.container);
+    const [pin] = customMarkers(screen.container);
+    const pinLine = pin.querySelector<HTMLElement>("[data-snap-marker-line]");
+
+    expect(onset.style.height).toBe("100%");
+    expect(pinLine?.style.height).toBe(`${WAVEFORM_HEIGHT}px`);
+  });
+
+  it("translates the inner layer by GUTTER_WIDTH when scrollLeft is 0", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
     useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [1] });
 
     const screen = await render(<Harness />);
     const layer = screen.container.querySelector<HTMLElement>("[data-snap-markers-layer]");
 
-    await expect
-      .poll(() => layer?.style.transform)
-      .toBe(`translate3d(${GUTTER_WIDTH}px, ${MARKER_HEAD_CLEARANCE}px, 0px)`);
+    await expect.poll(() => layer?.style.transform).toBe(`translate3d(${GUTTER_WIDTH}px, 0px, 0px)`);
   });
 
   describe("visibility", () => {
