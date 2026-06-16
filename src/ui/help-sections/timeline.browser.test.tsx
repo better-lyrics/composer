@@ -91,8 +91,8 @@ describe("TimelineSection", () => {
     expect(screen.container.textContent).toContain("custom snap points");
   });
 
-  it("notes that snap points are session-only", async () => {
+  it("notes that snap points persist with the project", async () => {
     const screen = await render(<TimelineSection />);
-    expect(screen.container.textContent).toContain("clear on reload");
+    expect(screen.container.textContent).toContain("saved with your project");
   });
 });

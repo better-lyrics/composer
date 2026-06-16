@@ -210,8 +210,9 @@ const TimelineSection: React.FC = () => (
         </li>
         <li>Hover a pin to see its time, with an x button to delete it.</li>
         <li>
-          Snap points live in the current session. They clear on reload and are not part of the export, so treat them as
-          scratch guides while you work rather than something you save.
+          Snap points are saved with your project and come back when you reopen it. Undo and redo treat placing, moving,
+          or deleting a point like any other edit. They stay out of the exported TTML, so they never end up in the file
+          you share.
         </li>
       </ul>
     </div>
