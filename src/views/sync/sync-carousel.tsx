@@ -2,6 +2,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { syncCarouselTransition } from "@/utils/animationVariants";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
+import { readToken } from "@/utils/theme/read-token";
 import { AnimatePresence, m } from "motion/react";
 
 // -- Constants ----------------------------------------------------------------
@@ -64,6 +65,9 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   rippleTarget,
   onRippleComplete,
 }) => {
+  const accentColor = readToken("accent");
+  const secondaryColor = readToken("text-secondary");
+  const disabledColor = readToken("text-disabled");
   const lineWords = splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
     const isPrevLine = idx === lineIndex - 1;
@@ -74,12 +78,12 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
     const isLastSynced = isLastSyncedOnCurrent || isLastWordOfPrevLine;
 
     const color = isCurrentHeld
-      ? "rgb(129, 140, 248)"
+      ? accentColor
       : isLastSynced
-        ? "rgb(129, 140, 248)"
+        ? accentColor
         : isCurrent
-          ? "rgba(255, 255, 255, 0.7)"
-          : "rgba(255, 255, 255, 0.4)";
+          ? secondaryColor
+          : disabledColor;
 
     const hasRipple = rippleTarget !== null && rippleTarget.lineId === line.id && rippleTarget.wordIndex === widx;
 
@@ -108,6 +112,10 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   rippleTarget = null,
   onRippleComplete,
 }) => {
+  const accentColor = readToken("accent");
+  const secondaryColor = readToken("text-secondary");
+  const disabledColor = readToken("text-disabled");
+
   const containerHeight = LINE_HEIGHT * 3;
   const translateY = LINE_HEIGHT - lineIndex * LINE_HEIGHT;
 
@@ -140,12 +148,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                 {granularity === "line" ? (
                   <m.span
                     animate={{
-                      color:
-                        idx === lineIndex - 1
-                          ? "rgb(129, 140, 248)"
-                          : isCurrent
-                            ? "rgba(255, 255, 255, 0.7)"
-                            : "rgba(255, 255, 255, 0.4)",
+                      color: idx === lineIndex - 1 ? accentColor : isCurrent ? secondaryColor : disabledColor,
                     }}
                     transition={syncCarouselTransition}
                   >
