@@ -1,9 +1,26 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { useThemeStore } from "@/stores/theme";
 import { syncCarouselTransition } from "@/utils/animationVariants";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
 import { AnimatePresence, m } from "motion/react";
+import { useMemo } from "react";
+
+// -- Hooks --------------------------------------------------------------------
+
+function useCarouselColors(): { accentColor: string; secondaryColor: string; disabledColor: string } {
+  const activeThemeId = useThemeStore((s) => s.activeThemeId);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-reads the DOM-resolved colors when the theme changes
+  return useMemo(
+    () => ({
+      accentColor: readToken("accent"),
+      secondaryColor: readToken("text-secondary"),
+      disabledColor: readToken("text-disabled"),
+    }),
+    [activeThemeId],
+  );
+}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -65,9 +82,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   rippleTarget,
   onRippleComplete,
 }) => {
-  const accentColor = readToken("accent");
-  const secondaryColor = readToken("text-secondary");
-  const disabledColor = readToken("text-disabled");
+  const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
   const lineWords = splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
     const isPrevLine = idx === lineIndex - 1;
@@ -106,9 +121,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   rippleTarget = null,
   onRippleComplete,
 }) => {
-  const accentColor = readToken("accent");
-  const secondaryColor = readToken("text-secondary");
-  const disabledColor = readToken("text-disabled");
+  const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
 
   const containerHeight = LINE_HEIGHT * 3;
   const translateY = LINE_HEIGHT - lineIndex * LINE_HEIGHT;

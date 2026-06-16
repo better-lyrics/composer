@@ -1,8 +1,9 @@
 import { useAudioStore } from "@/stores/audio";
+import { useThemeStore } from "@/stores/theme";
 import { readToken } from "@/utils/theme/read-token";
-import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 // -- Component -----------------------------------------------------------------
@@ -14,15 +15,18 @@ const TimelineWaveform: React.FC = () => {
   const seekTo = useAudioStore((s) => s.seekTo);
 
   const zoom = useTimelineStore((s) => s.zoom);
+  const activeThemeId = useThemeStore((s) => s.activeThemeId);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
 
-  // theme reactivity wired in Phase 2
-  const waveColor = readToken("wave");
-  const progressColor = readToken("wave-progress");
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-reads the DOM-resolved colors when the theme changes
+  const { wave: waveColor, progress: progressColor } = useMemo(
+    () => ({ wave: readToken("wave"), progress: readToken("wave-progress") }),
+    [activeThemeId],
+  );
 
   useEffect(() => {
     if (!ws || !audioElement) return;
