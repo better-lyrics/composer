@@ -77,7 +77,6 @@ interface TimelineActions {
   clearEditingWord: () => void;
   toggleRollingEditMode: () => void;
   toggleMarkerMode: () => void;
-  setMarkerMode: (v: boolean) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
   setPingingGroupId: (groupId: string | null) => void;
@@ -167,7 +166,6 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clearEditingWord: () => set({ editingWord: null }),
     toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
-    setMarkerMode: (v) => set({ markerMode: v }),
     setInstanceCollapsed: (key, isCollapsed) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
     toggleInstanceCollapsed: (key) =>

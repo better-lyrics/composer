@@ -101,6 +101,20 @@ describe("SnapMarkersOverlay", () => {
       expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
     });
 
+    it("renders null when onsets are enabled but there are no points and marker mode is off", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: true });
+      useTimelineStore.setState({
+        zoom: 100,
+        scrollLeft: 0,
+        vocalOnsetSnapPoints: [],
+        customSnapPoints: [],
+        markerMode: false,
+      });
+
+      const screen = await render(<Harness />);
+      expect(screen.container.querySelector("[data-snap-markers-overlay]")).toBeNull();
+    });
+
     it("stays mounted when marker mode is on even with nothing to show", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false });
       useTimelineStore.setState({

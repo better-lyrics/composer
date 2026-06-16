@@ -24,13 +24,6 @@ describe("markerMode", () => {
     expect(useTimelineStore.getState().markerMode).toBe(true);
   });
 
-  it("setMarkerMode sets the given boolean", () => {
-    useTimelineStore.getState().setMarkerMode(true);
-    expect(useTimelineStore.getState().markerMode).toBe(true);
-    useTimelineStore.getState().setMarkerMode(false);
-    expect(useTimelineStore.getState().markerMode).toBe(false);
-  });
-
   describe("invariants", () => {
     it("toggling twice returns to false", () => {
       const s = useTimelineStore.getState();
@@ -39,23 +32,16 @@ describe("markerMode", () => {
       expect(useTimelineStore.getState().markerMode).toBe(false);
     });
 
-    it("setMarkerMode(false) when already false is idempotent", () => {
-      useTimelineStore.getState().setMarkerMode(false);
-      expect(useTimelineStore.getState().markerMode).toBe(false);
-      useTimelineStore.getState().setMarkerMode(false);
-      expect(useTimelineStore.getState().markerMode).toBe(false);
-    });
-
     it("is independent of customSnapPoints", () => {
       const s = useTimelineStore.getState();
       useTimelineStore.setState({ customSnapPoints: [] });
-      s.setMarkerMode(true);
+      s.toggleMarkerMode();
       expect(useTimelineStore.getState().customSnapPoints).toEqual([]);
 
       s.addCustomSnapPoint(2);
       expect(useTimelineStore.getState().markerMode).toBe(true);
 
-      s.setMarkerMode(false);
+      s.toggleMarkerMode();
       expect(useTimelineStore.getState().customSnapPoints).toEqual([2]);
     });
   });
