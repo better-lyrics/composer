@@ -16,6 +16,20 @@ describe("project snap points: setCustomSnapPoints", () => {
   });
 });
 
+describe("project snap points: clearCustomSnapPoints", () => {
+  it("clearCustomSnapPoints empties a populated array", () => {
+    useProjectStore.setState({ customSnapPoints: [1, 2, 3] });
+    useProjectStore.getState().clearCustomSnapPoints();
+    expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+  });
+
+  it("clearCustomSnapPoints on an already-empty array stays empty", () => {
+    useProjectStore.setState({ customSnapPoints: [] });
+    useProjectStore.getState().clearCustomSnapPoints();
+    expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+  });
+});
+
 describe("project snap points: history-aware mutators", () => {
   beforeEach(() =>
     useProjectStore.setState({

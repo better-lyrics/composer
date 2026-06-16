@@ -52,7 +52,6 @@ interface TimelineState {
   vocalOnsetSnapPoints: number[];
   vocalOnsetDetectionStatus: "idle" | "processing" | "error";
   vocalOnsetDetectionError: string | null;
-  customSnapPoints: number[];
 }
 
 interface TimelineActions {
@@ -87,11 +86,6 @@ interface TimelineActions {
   setSnappedAnchorTime: (t: number | null) => void;
   setVocalOnsetSnapPoints: (points: number[]) => void;
   setVocalOnsetDetectionStatus: (status: "idle" | "processing" | "error", error?: string | null) => void;
-  setCustomSnapPoints: (points: number[]) => void;
-  addCustomSnapPoint: (time: number) => void;
-  removeCustomSnapPoint: (index: number) => void;
-  moveCustomSnapPoint: (index: number, time: number) => void;
-  clearCustomSnapPoints: () => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -137,7 +131,6 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     vocalOnsetSnapPoints: [],
     vocalOnsetDetectionStatus: "idle",
     vocalOnsetDetectionError: null,
-    customSnapPoints: [],
 
     setZoom: (zoom) => set({ zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) }),
     zoomIn: () => set((s) => ({ zoom: Math.min(MAX_ZOOM, s.zoom + ZOOM_STEP) })),
@@ -183,19 +176,6 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
       }),
     setVocalOnsetDetectionStatus: (vocalOnsetDetectionStatus, error = null) =>
       set({ vocalOnsetDetectionStatus, vocalOnsetDetectionError: error }),
-    setCustomSnapPoints: (points) =>
-      set({
-        customSnapPoints: points.filter((point) => Number.isFinite(point) && point >= 0).toSorted((a, b) => a - b),
-      }),
-    addCustomSnapPoint: (time) => get().setCustomSnapPoints([...get().customSnapPoints, time]),
-    removeCustomSnapPoint: (index) =>
-      get().setCustomSnapPoints(get().customSnapPoints.filter((_, idx) => idx !== index)),
-    moveCustomSnapPoint: (index, time) => {
-      const points = get().customSnapPoints;
-      if (index < 0 || index >= points.length) return;
-      get().setCustomSnapPoints(points.map((point, idx) => (idx === index ? time : point)));
-    },
-    clearCustomSnapPoints: () => get().setCustomSnapPoints([]),
   };
 });
 
