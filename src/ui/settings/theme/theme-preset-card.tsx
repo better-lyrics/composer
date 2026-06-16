@@ -14,7 +14,8 @@ interface ThemePresetCardProps {
 
 // -- Styles --------------------------------------------------------------------
 
-const CARD_BASE = "relative text-left rounded-xl border px-2 pt-2.5 pb-3 cursor-pointer transition-colors select-none";
+const CARD_BASE =
+  "relative flex flex-col items-start text-left rounded-xl border px-2 pt-2.5 pb-3 cursor-pointer transition-colors select-none";
 
 const CARD_INACTIVE = "border-composer-border hover:border-composer-border-hover hover:bg-composer-button/40";
 
