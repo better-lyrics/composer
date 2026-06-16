@@ -3,7 +3,7 @@ import { useThemeStore } from "@/stores/theme";
 import { readToken } from "@/utils/theme/read-token";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
 // -- Component -----------------------------------------------------------------
@@ -22,11 +22,16 @@ const TimelineWaveform: React.FC = () => {
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-reads the DOM-resolved colors when the theme changes
-  const { wave: waveColor, progress: progressColor } = useMemo(
-    () => ({ wave: readToken("wave"), progress: readToken("wave-progress") }),
-    [activeThemeId],
-  );
+  const [initialColors] = useState(() => ({
+    wave: readToken("wave"),
+    progress: readToken("wave-progress"),
+  }));
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activeThemeId re-applies DOM-resolved colors on theme change without remounting WaveSurfer
+  useEffect(() => {
+    if (!ws) return;
+    ws.setOptions({ waveColor: readToken("wave"), progressColor: readToken("wave-progress") });
+  }, [ws, activeThemeId]);
 
   useEffect(() => {
     if (!ws || !audioElement) return;
@@ -85,8 +90,8 @@ const TimelineWaveform: React.FC = () => {
           <WavesurferPlayer
             key={waveformKey}
             height={WAVEFORM_HEIGHT}
-            waveColor={waveColor}
-            progressColor={progressColor}
+            waveColor={initialColors.wave}
+            progressColor={initialColors.progress}
             cursorColor="transparent"
             barWidth={2}
             barGap={1}

@@ -1,5 +1,5 @@
 // -- Theme token model ---------------------------------------------------------
-// Single source of truth for the 28 --color-composer-* tokens, their derivation
+// Single source of truth for the 29 --color-composer-* tokens, their derivation
 // type, and the metadata the editor + deriver read. Mirrors src/index.css @theme.
 
 type Scheme = "dark" | "light";
