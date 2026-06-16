@@ -39,6 +39,19 @@ function computeCoveredOnsets(
   return covered;
 }
 
+const ADJACENT_EPSILON = 1e-4;
+
+function adjacentSnapPoint(points: number[], current: number, direction: 1 | -1): number | null {
+  if (direction > 0) {
+    for (const point of points) if (point > current + ADJACENT_EPSILON) return point;
+    return null;
+  }
+  for (let index = points.length - 1; index >= 0; index--) {
+    if (points[index] < current - ADJACENT_EPSILON) return points[index];
+  }
+  return null;
+}
+
 function findInsertedValue(prev: number[], next: number[]): number | null {
   if (next.length !== prev.length + 1) return null;
   const prevSet = new Set(prev);
@@ -53,4 +66,4 @@ function findInsertedValue(prev: number[], next: number[]): number | null {
 
 // -- Exports -------------------------------------------------------------------
 
-export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets, findInsertedValue };
+export { snapTimeToOnset, isTimeOnOnset, computeCoveredOnsets, findInsertedValue, adjacentSnapPoint };

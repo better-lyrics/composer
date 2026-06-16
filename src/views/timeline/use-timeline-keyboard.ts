@@ -14,6 +14,8 @@ import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-select
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
+import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
+import { normalizeSnapPoints } from "@/stores/project/snap-points-helpers";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
@@ -689,6 +691,26 @@ function useTimelineKeyboard(
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
           useProjectStore.getState().shiftInstance(inst.groupId, inst.instanceIdx, delta);
+          break;
+        }
+        case "timeline.jumpPrevSnapPoint":
+        case "timeline.jumpNextSnapPoint":
+        case "timeline.jumpPrevSnapPointFine":
+        case "timeline.jumpNextSnapPointFine": {
+          e.preventDefault();
+          const dir: 1 | -1 = matched.includes("Next") ? 1 : -1;
+          const fine = matched.includes("Fine");
+          const audioEl = useAudioStore.getState().audioElement;
+          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const pins = useProjectStore.getState().customSnapPoints;
+          const onsets = fine ? useTimelineStore.getState().vocalOnsetSnapPoints : [];
+          const points = normalizeSnapPoints([...pins, ...onsets]);
+          const target = adjacentSnapPoint(points, current, dir);
+          if (target === null) {
+            toast(fine ? "No snap point or onset that way" : "No snap point that way");
+            break;
+          }
+          useAudioStore.getState().seekTo(target);
           break;
         }
       }

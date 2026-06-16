@@ -123,6 +123,122 @@ describe("useTimelineKeyboard", () => {
   });
 });
 
+describe("useTimelineKeyboard · jump to snap point", () => {
+  function trackSeek(): { get: () => number } {
+    let seeked = -1;
+    useAudioStore.setState({
+      seekTo: (time: number) => {
+        seeked = time;
+      },
+    } as Parameters<typeof useAudioStore.setState>[0]);
+    return { get: () => seeked };
+  }
+
+  it("seeks to the next pin when Shift+ArrowRight is pressed", async () => {
+    useAudioStore.setState({ currentTime: 4, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
+
+    expect(seek.get()).toBe(5);
+  });
+
+  it("seeks to the previous pin when Shift+ArrowLeft is pressed", async () => {
+    useAudioStore.setState({ currentTime: 10, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", shiftKey: true, bubbles: true }));
+
+    expect(seek.get()).toBe(5);
+  });
+
+  it("does not seek for coarse next when no pin lies ahead", async () => {
+    useAudioStore.setState({ currentTime: 6, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
+
+    expect(seek.get()).toBe(-1);
+  });
+
+  it("coarse next does not stop on an onset, only on pins", async () => {
+    useAudioStore.setState({ currentTime: 4, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, bubbles: true }));
+
+    expect(seek.get()).toBe(5);
+  });
+
+  it("fine still includes onsets when the vocalOnsetSnap setting is off", async () => {
+    useSettingsStore.getState().set("vocalOnsetSnap", false);
+    useAudioStore.setState({ currentTime: 5, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, altKey: true, bubbles: true }),
+    );
+
+    expect(seek.get()).toBe(8);
+  });
+
+  it("fine next reaches a pin first, then an onset (Opt+Shift+ArrowRight)", async () => {
+    useAudioStore.setState({ currentTime: 4, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    const seekFromFour = trackSeek();
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, altKey: true, bubbles: true }),
+    );
+    expect(seekFromFour.get()).toBe(5);
+
+    useAudioStore.setState({ currentTime: 5 });
+    const seekFromFive = trackSeek();
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", shiftKey: true, altKey: true, bubbles: true }),
+    );
+    expect(seekFromFive.get()).toBe(8);
+  });
+
+  it("fine prev reaches the nearest pin or onset behind (Opt+Shift+ArrowLeft)", async () => {
+    useAudioStore.setState({ currentTime: 6, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowLeft", shiftKey: true, altKey: true, bubbles: true }),
+    );
+
+    expect(seek.get()).toBe(5);
+  });
+});
+
 describe("useTimelineKeyboard · background provenance", () => {
   it("stamps backgroundTextSource manual when a bg word's begin is set to the playhead", async () => {
     useAudioStore.setState({ currentTime: 1.2, duration: 10 });
