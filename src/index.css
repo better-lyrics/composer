@@ -116,7 +116,7 @@ body {
 
 .snap-onset-enter {
   transform-origin: center bottom;
-  animation: snap-onset-enter 320ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation: snap-onset-enter 300ms cubic-bezier(0.33, 1.2, 0.66, 1) backwards;
 }
 
 @utility snap-custom-line {
