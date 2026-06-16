@@ -169,6 +169,17 @@ describe("SnapMarkerPin", () => {
       expect(timeLabel()).not.toBeNull();
     });
 
+    it("reports hover open and close through onHoverChange", async () => {
+      const onHoverChange = vi.fn();
+      const screen = await render(<SnapMarkerPin {...defaultProps} onHoverChange={onHoverChange} />);
+      const headEl = head(screen.container);
+      if (headEl) await userEvent.hover(headEl);
+      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(true));
+
+      if (headEl) await userEvent.unhover(headEl);
+      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(false));
+    });
+
     it("stays start-aligned with the delete control leading when there is room on the right", async () => {
       const screen = await render(<SnapMarkerPin {...defaultProps} time={2} zoom={100} />);
       const headEl = head(screen.container);

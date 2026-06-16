@@ -96,6 +96,11 @@ describe("TimelineSection", () => {
     expect(screen.container.textContent).toContain("saved with your project");
   });
 
+  it("documents deleting a hovered pin with the keyboard", async () => {
+    const screen = await render(<TimelineSection />);
+    expect(screen.container.textContent).toContain("press Delete (or Backspace) while hovering");
+  });
+
   it("documents Alt+click pin placement with marker mode off", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).toContain("and click to drop");

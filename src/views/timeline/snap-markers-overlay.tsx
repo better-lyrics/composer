@@ -99,6 +99,11 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
               isOnOnset={showOnsets && isTimeOnOnset(time, vocalOnsetSnapPoints, zoom, thresholdPx)}
               onHeadPointerDown={onHeadPointerDown}
               onDelete={removeCustomSnapPoint}
+              onHoverChange={(hovering) => {
+                const store = useTimelineStore.getState();
+                if (hovering) store.setHoveredSnapPointIndex(index);
+                else if (store.hoveredSnapPointIndex === index) store.setHoveredSnapPointIndex(null);
+              }}
             />
           ))}
         </div>

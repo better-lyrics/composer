@@ -284,6 +284,76 @@ describe("useTimelineKeyboard · jump to snap point", () => {
   });
 });
 
+describe("useTimelineKeyboard · delete hovered snap point", () => {
+  it("removes the hovered snap point and clears the hover on Delete", async () => {
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useTimelineStore.setState({ hoveredSnapPointIndex: 1, selectedWords: [] });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+
+    expect(useProjectStore.getState().customSnapPoints).toEqual([5]);
+    expect(useTimelineStore.getState().hoveredSnapPointIndex).toBeNull();
+  });
+
+  it("also deletes the hovered snap point on Backspace", async () => {
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useTimelineStore.setState({ hoveredSnapPointIndex: 0, selectedWords: [] });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
+
+    expect(useProjectStore.getState().customSnapPoints).toEqual([12]);
+  });
+
+  it("prefers the hovered snap point over selected words", async () => {
+    const line = createLine({
+      text: "hi there",
+      words: [
+        { text: "hi ", begin: 0, end: 1 },
+        { text: "there", begin: 1, end: 2 },
+      ],
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: [5, 12] });
+    useTimelineStore.setState({
+      hoveredSnapPointIndex: 0,
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+
+    expect(useProjectStore.getState().customSnapPoints).toEqual([12]);
+    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
+    expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
+  });
+
+  it("falls back to deleting selected words when no snap point is hovered", async () => {
+    const line = createLine({
+      text: "hi there",
+      words: [
+        { text: "hi ", begin: 0, end: 1 },
+        { text: "there", begin: 1, end: 2 },
+      ],
+    });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: [5] });
+    useTimelineStore.setState({
+      hoveredSnapPointIndex: null,
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
+
+    expect(useProjectStore.getState().customSnapPoints).toEqual([5]);
+    expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
+  });
+});
+
 describe("useTimelineKeyboard · background provenance", () => {
   it("stamps backgroundTextSource manual when a bg word's begin is set to the playhead", async () => {
     useAudioStore.setState({ currentTime: 1.2, duration: 10 });

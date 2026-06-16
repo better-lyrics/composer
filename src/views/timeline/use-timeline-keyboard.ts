@@ -234,7 +234,13 @@ function useTimelineKeyboard(
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        const { selectedWords } = useTimelineStore.getState();
+        const { hoveredSnapPointIndex, selectedWords } = useTimelineStore.getState();
+        if (hoveredSnapPointIndex !== null) {
+          e.preventDefault();
+          useProjectStore.getState().removeCustomSnapPoint(hoveredSnapPointIndex);
+          useTimelineStore.getState().setHoveredSnapPointIndex(null);
+          return;
+        }
         if (selectedWords.length > 0) {
           e.preventDefault();
           handleDelete();

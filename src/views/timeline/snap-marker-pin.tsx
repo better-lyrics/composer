@@ -30,6 +30,7 @@ interface SnapMarkerPinProps {
   isOnOnset: boolean;
   onHeadPointerDown: (index: number, event: React.PointerEvent<HTMLElement>) => void;
   onDelete: (index: number) => void;
+  onHoverChange?: (hovering: boolean) => void;
 }
 
 // -- Component -----------------------------------------------------------------
@@ -44,13 +45,17 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   isOnOnset,
   onHeadPointerDown,
   onDelete,
+  onHoverChange,
 }) => {
   const reduceMotion = useReducedMotion();
   const [isOpen, setIsOpen] = useState(false);
 
   const { refs, floatingStyles, context, placement } = useFloating({
     open: isOpen,
-    onOpenChange: setIsOpen,
+    onOpenChange: (open) => {
+      setIsOpen(open);
+      onHoverChange?.(open);
+    },
     placement: "bottom-start",
     // The delete control leads the row and sits directly under the rotated head. crossAxis
     // centers it; the sign mirrors when flip() re-aligns to the end (no room on the right),
