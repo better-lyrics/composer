@@ -116,6 +116,11 @@ describe("contrast tokens", () => {
     const resolved = deriveTheme(lightTheme({ accent: "#cfd4fb", "accent-dark": "#cfd4fb" }));
     expect(resolved["on-accent"]).toBe("#15161a");
   });
+
+  it("regression: keeps white text on a saturated medium indigo (does not flip to black too early)", () => {
+    const resolved = deriveTheme(darkTheme({ accent: "#818cf8", "accent-dark": "#777ce4" }));
+    expect(resolved["on-accent"]).toBe("#ffffff");
+  });
 });
 
 describe("edge cases", () => {

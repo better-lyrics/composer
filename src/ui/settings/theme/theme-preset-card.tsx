@@ -21,11 +21,10 @@ const CARD_INACTIVE = "border-composer-border hover:border-composer-border-hover
 
 const CARD_ACTIVE = "border-composer-accent ring-2 ring-composer-accent";
 
-const TAG_BASE = "inline-flex items-center justify-center rounded-[5px] px-1 py-0.5";
-
-const TAG_DARK = "bg-composer-button text-composer-text-muted";
-
-const TAG_LIGHT = "bg-white text-composer-bg-dark";
+// Neutral chip in both schemes (composer-button is fg-at-10%, so it stays
+// visible on a light card too). The sun/moon icon carries the scheme meaning.
+const TAG_CHIP =
+  "inline-flex items-center justify-center rounded-[5px] px-1 py-0.5 bg-composer-button text-composer-text-muted";
 
 // -- Components ----------------------------------------------------------------
 
@@ -68,7 +67,7 @@ const ThemePresetCard: React.FC<ThemePresetCardProps> = ({ theme, active, onSele
       <span className="flex items-center gap-1.5 text-[12.5px] font-semibold text-composer-text">
         {theme.name}
         <span
-          className={cn(TAG_BASE, isLight ? TAG_LIGHT : TAG_DARK)}
+          className={TAG_CHIP}
           aria-label={isLight ? "Light theme" : "Dark theme"}
           title={isLight ? "Light theme" : "Dark theme"}
         >
