@@ -1,5 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
+import { cn } from "@/utils/cn";
 import { snapTimeToOnset } from "@/views/timeline/snap-marker-math";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import WavesurferPlayer from "@wavesurfer/react";
@@ -15,6 +16,7 @@ const TimelineWaveform: React.FC = () => {
   const seekTo = useAudioStore((s) => s.seekTo);
 
   const zoom = useTimelineStore((s) => s.zoom);
+  const markerMode = useTimelineStore((s) => s.markerMode);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
 
@@ -124,8 +126,8 @@ const TimelineWaveform: React.FC = () => {
       <div
         role="button"
         tabIndex={-1}
-        aria-label="Seek to position"
-        className="absolute top-0 left-0 z-10 cursor-pointer"
+        aria-label={markerMode ? "Place snap point" : "Seek to position"}
+        className={cn("absolute top-0 left-0 z-10", markerMode ? "waveform-armed" : "cursor-pointer")}
         key="waveform-click-layer"
         style={{
           width: totalWidth,
