@@ -8,6 +8,7 @@ import { INITIAL_STATE as PROJECT_INITIAL_STATE, useProjectStore } from "@/store
 import { useSeparationStore } from "@/stores/separation";
 import { DEFAULTS as SETTINGS_DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { INITIAL_STATE as THEME_INITIAL_STATE, useThemeStore } from "@/stores/theme";
 import { useUIStore } from "@/stores/ui";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -28,6 +29,9 @@ async function resetAllStores(): Promise<void> {
 
   await clearPersistedStorage(useShortcutBindingsStore);
   useShortcutBindingsStore.setState({ overrides: {} });
+
+  await clearPersistedStorage(useThemeStore);
+  useThemeStore.setState({ ...THEME_INITIAL_STATE });
 
   useAuthStore.getState().clear();
   useAudioStore.getState().reset();
