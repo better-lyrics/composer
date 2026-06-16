@@ -1,4 +1,4 @@
-import { formatKey } from "@/ui/shortcut-reference";
+import { formatKey } from "@/utils/format-key";
 import { isMac } from "@/utils/platform";
 import { IconCommand } from "@tabler/icons-react";
 

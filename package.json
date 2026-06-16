@@ -17,7 +17,8 @@
     "typecheck": "tsc -b",
     "knip": "knip",
     "knip:production": "knip --production",
-    "jscpd": "jscpd"
+    "jscpd": "jscpd",
+    "doctor": "npx --yes react-doctor@latest ."
   },
   "dependencies": {
     "@braccato/core": "^0.1.7",
