@@ -1,5 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
+import { reconcileLine } from "@/domain/line/model";
+import { lineText, mainWords } from "@/domain/line/voices";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
@@ -72,14 +74,14 @@ describe("ttml export · per-line group attrs", () => {
     id: string,
     extras: Partial<{ groupId: string; instanceIdx: number; templateLineIdx: number; detached: boolean }>,
   ) {
-    return {
+    return reconcileLine({
       id,
       text: "hello",
       agentId: "v1",
       begin: 0,
       end: 1,
       ...extras,
-    };
+    });
   }
 
   it("emits composer:groupId/instanceIdx/templateLineIdx on grouped lines", () => {
@@ -160,7 +162,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        reconcileLine({
           id: "a",
           text: "I love you",
           agentId: "v1",
@@ -169,7 +171,7 @@ describe("ttml import · per-line group attrs", () => {
           groupId: "g1",
           instanceIdx: 2,
           templateLineIdx: 0,
-        },
+        }),
       ],
       groups,
       granularity: "line",
@@ -187,7 +189,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        reconcileLine({
           id: "a",
           text: "yeah",
           agentId: "v1",
@@ -197,7 +199,7 @@ describe("ttml import · per-line group attrs", () => {
           instanceIdx: 0,
           templateLineIdx: 1,
           detached: true,
-        },
+        }),
       ],
       groups,
       granularity: "line",
@@ -211,7 +213,7 @@ describe("ttml import · per-line group attrs", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        reconcileLine({
           id: "a",
           text: "hi",
           agentId: "v1",
@@ -220,7 +222,7 @@ describe("ttml import · per-line group attrs", () => {
           groupId: "g1",
           instanceIdx: 0,
           templateLineIdx: 0,
-        },
+        }),
       ],
       groups: [],
       granularity: "line",
@@ -237,7 +239,7 @@ describe("ttml import · per-line group attrs", () => {
       </div></body>
     </tt>`;
     const result = parseLyricsFile("flat.ttml", flatTtml);
-    expect(result.lines[0].text).toBe("Hello");
+    expect(lineText(result.lines[0])).toBe("Hello");
     expect(result.lines[0].groupId).toBeUndefined();
     expect(result.groups).toBeUndefined();
   });
@@ -249,7 +251,7 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        reconcileLine({
           id: "a",
           text: "clean dirty",
           agentId: "v1",
@@ -257,7 +259,7 @@ describe("ttml export · explicit word attribute", () => {
             { text: "clean ", begin: 1, end: 1.5 },
             { text: "dirty", begin: 1.5, end: 2, explicit: true },
           ],
-        },
+        }),
       ],
       granularity: "word",
     });
@@ -271,7 +273,7 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: [
-        {
+        reconcileLine({
           id: "a",
           text: "main",
           agentId: "v1",
@@ -281,7 +283,7 @@ describe("ttml export · explicit word attribute", () => {
             { text: "oh ", begin: 2, end: 2.25 },
             { text: "shit", begin: 2.25, end: 2.5, explicit: true },
           ],
-        },
+        }),
       ],
       granularity: "word",
     });
@@ -294,7 +296,7 @@ describe("ttml export · explicit word attribute", () => {
   it("round-trip: AMLL amll:obscene import → export normalizes to composer:explicit", () => {
     const amll = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">clean</span> <span begin="00:01.500" end="00:02.000" amll:obscene="true">dirty</span></p></div></body></tt>`;
     const imported = parseLyricsFile("amll.ttml", amll);
-    expect(imported.lines[0].words![1].explicit).toBe(true);
+    expect(mainWords(imported.lines[0])![1].explicit).toBe(true);
 
     const exported = generateTTML({
       metadata: baseMetadata,
@@ -306,6 +308,6 @@ describe("ttml export · explicit word attribute", () => {
     expect(exported).not.toContain("amll:obscene");
 
     const reimported = parseLyricsFile("re.ttml", exported);
-    expect(reimported.lines[0].words![1].explicit).toBe(true);
+    expect(mainWords(reimported.lines[0])![1].explicit).toBe(true);
   });
 });
