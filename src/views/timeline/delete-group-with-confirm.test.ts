@@ -1,6 +1,8 @@
 /**
  * @vitest-environment node
  */
+import { reconcileLine } from "@/domain/line/model";
+import { lineText, mainWords } from "@/domain/line/voices";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -20,7 +22,7 @@ function seedChorusGroup() {
   useProjectStore.setState({
     groups: [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }],
     lines: [
-      {
+      reconcileLine({
         id: "a0",
         text: "I love you",
         agentId: "v1",
@@ -32,8 +34,8 @@ function seedChorusGroup() {
           { text: "love ", begin: 30.4, end: 30.8 },
           { text: "you", begin: 30.8, end: 31.2 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "a1",
         text: "I love you",
         agentId: "v1",
@@ -45,7 +47,7 @@ function seedChorusGroup() {
           { text: "love ", begin: 60.4, end: 60.8 },
           { text: "you", begin: 60.8, end: 61.2 },
         ],
-      },
+      }),
     ],
   });
 }
@@ -94,9 +96,9 @@ describe("deleteGroupWithConfirm · confirm accepted", () => {
     await done;
 
     const a0 = useProjectStore.getState().lines.find((l) => l.id === "a0");
-    expect(a0?.text).toBe("I love you");
-    expect(a0?.words?.[0].begin).toBe(30);
-    expect(a0?.words?.[2].end).toBe(31.2);
+    expect(a0 && lineText(a0)).toBe("I love you");
+    expect(a0 && mainWords(a0)?.[0].begin).toBe(30);
+    expect(a0 && mainWords(a0)?.[2].end).toBe(31.2);
   });
 
   it("closes the confirm modal once resolved", async () => {
