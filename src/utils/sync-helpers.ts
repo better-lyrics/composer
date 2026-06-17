@@ -1,6 +1,7 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { bgText } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -143,10 +144,11 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
 }
 
 function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
-  if (!line.backgroundText) return null;
+  const background = bgText(line);
+  if (!background) return null;
   const timing = effectiveBounds(line);
   if (!timing) return null;
-  return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
+  return createInitialBgWords(background, (timing.begin + timing.end) / 2, timing.end);
 }
 
 // -- Tap and hold commit ------------------------------------------------------
