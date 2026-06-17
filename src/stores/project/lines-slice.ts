@@ -1,8 +1,9 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { commitHistory } from "@/stores/project/history-helpers";
@@ -24,6 +25,13 @@ function createLinesInitialState(): LinesState {
   return {
     lines: [],
   };
+}
+
+// -- Helpers ------------------------------------------------------------------
+
+// Single-source routing of a field-targeted word read through the voice seam.
+function fieldWords(line: LyricLine, field: "words" | "backgroundWords"): WordTiming[] | undefined {
+  return field === "backgroundWords" ? bgWords(line) : mainWords(line);
 }
 
 // -- Slice --------------------------------------------------------------------
@@ -56,9 +64,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const target = state.lines.find((l) => l.id === id);
       const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
       const linkedUpdates = linkScope ? extractLinkedFields(updates) : null;
-      const sourceWordsBefore = target?.words;
+      const sourceWordsBefore = target ? mainWords(target) : undefined;
       const sourceWordsAfter = updates.words;
-      const sourceBgWordsBefore = target?.backgroundWords;
+      const sourceBgWordsBefore = target ? bgWords(target) : undefined;
       const sourceBgWordsAfter = updates.backgroundWords;
 
       const newLines = state.lines.map((line) => {
@@ -67,9 +75,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
         if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
-          const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
+          const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, mainWords(line));
           if (propagatedWords) siblingUpdates.words = propagatedWords;
-          const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, line.backgroundWords);
+          const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, bgWords(line));
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
           if (Object.keys(siblingUpdates).length > 0) {
             return reconcileLine({ ...line, ...siblingUpdates });
@@ -92,9 +100,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         const targetIdx = indexById.get(id);
         const target = targetIdx !== undefined ? newLines[targetIdx] : undefined;
         const linkScope = propagateToSiblings && target ? getLinkScope(target) : null;
-        const sourceWordsBefore = target?.words;
+        const sourceWordsBefore = target ? mainWords(target) : undefined;
         const sourceWordsAfter = lineUpdates.words;
-        const sourceBgBefore = target?.backgroundWords;
+        const sourceBgBefore = target ? bgWords(target) : undefined;
         const sourceBgAfter = lineUpdates.backgroundWords;
         const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
@@ -108,9 +116,9 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
             if (line.id === id) continue;
             if (!isLinkedSibling(line, linkScope)) continue;
             const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
-            const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, line.words);
+            const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, mainWords(line));
             if (propagatedWords) siblingUpdates.words = propagatedWords;
-            const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, line.backgroundWords);
+            const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, bgWords(line));
             if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
             if (Object.keys(siblingUpdates).length > 0) newLines[i] = reconcileLine({ ...line, ...siblingUpdates });
           }
@@ -123,16 +131,17 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => {
       const sourceLine = state.lines.find((l) => l.id === lineId);
-      if (!sourceLine?.words || wordIndices.length === 0) return state;
-      const sourceWordCount = sourceLine.words.length;
+      const sourceMain = sourceLine ? mainWords(sourceLine) : undefined;
+      if (!sourceLine || !sourceMain || wordIndices.length === 0) return state;
+      const sourceWordCount = sourceMain.length;
       const linkScope = getLinkScope(sourceLine);
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
         const isSource = line.id === lineId;
-        const isSibling = !isSource && isLinkedSibling(line, linkScope) && line.words?.length === sourceWordCount;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && mainWords(line)?.length === sourceWordCount;
         if (!isSource && !isSibling) return line;
-        const expanded = expandSelectionToGroupmates(line.words ?? [], wordIndices);
+        const expanded = expandSelectionToGroupmates(mainWords(line) ?? [], wordIndices);
         const updated = applyMoveToBg(line, expanded, timeDelta, duration);
         if (!updated) return line;
         mutated = true;
@@ -146,17 +155,17 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
   moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => {
       const sourceLine = state.lines.find((l) => l.id === lineId);
-      if (!sourceLine?.backgroundWords || wordIndices.length === 0) return state;
-      const sourceBgCount = sourceLine.backgroundWords.length;
+      const sourceBg = sourceLine ? bgWords(sourceLine) : undefined;
+      if (!sourceLine || !sourceBg || wordIndices.length === 0) return state;
+      const sourceBgCount = sourceBg.length;
       const linkScope = getLinkScope(sourceLine);
 
       let mutated = false;
       const newLines = state.lines.map((line) => {
         const isSource = line.id === lineId;
-        const isSibling =
-          !isSource && isLinkedSibling(line, linkScope) && line.backgroundWords?.length === sourceBgCount;
+        const isSibling = !isSource && isLinkedSibling(line, linkScope) && bgWords(line)?.length === sourceBgCount;
         if (!isSource && !isSibling) return line;
-        const expanded = expandSelectionToGroupmates(line.backgroundWords ?? [], wordIndices);
+        const expanded = expandSelectionToGroupmates(bgWords(line) ?? [], wordIndices);
         const updated = applyMoveFromBg(line, expanded, timeDelta, duration);
         if (!updated) return line;
         mutated = true;
@@ -173,7 +182,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const target = state.lines.find((l) => l.id === lineId);
       if (!target) return state;
 
-      const sourceBefore = target[field];
+      const sourceBefore = fieldWords(target, field);
       const linkScope = getLinkScope(target);
 
       if (resolution === "detach") {
@@ -200,7 +209,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
           return reconcileLine({ ...line, ...extraUpdates, [field]: newWords });
         }
         if (isLinkedSibling(line, linkScope)) {
-          const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
+          const propagated = applySiblingWords(newWords, sourceBefore, fieldWords(line, field));
           const siblingUpdates: Partial<LooseLine> = { ...(linkedExtras ?? {}) };
           if (propagated) siblingUpdates[field] = propagated;
           if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...line, ...siblingUpdates });
@@ -216,7 +225,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     const state = get();
     const target = state.lines.find((l) => l.id === lineId);
     if (!target) return;
-    const currentWords = target[field];
+    const currentWords = fieldWords(target, field);
     if (!currentWords || currentWords.length === 0) return;
 
     const filtered = wordIndices.filter((i) => i >= 0 && i < currentWords.length);
@@ -249,7 +258,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     set((state) => {
       const target = state.lines.find((l) => l.id === lineId);
       if (!target) return state;
-      const lineWords = target[field];
+      const lineWords = fieldWords(target, field);
       if (!lineWords) return state;
       const snapped = closeIntraGroupGaps(lineWords);
       if (snapped === lineWords) return state;
