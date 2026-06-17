@@ -19,6 +19,17 @@ interface SnapMarkersOverlayProps {
 const ONSET_STAGGER_STEP_MS = 24;
 const ONSET_STAGGER_CAP_MS = 900;
 
+// -- Helpers -------------------------------------------------------------------
+
+// Module-scope so its identity is stable across renders, otherwise a fresh
+// closure per pin would defeat SnapMarkerPin's memo and re-render every pin on
+// each drag frame.
+function handleSnapPinHoverChange(id: string, hovering: boolean): void {
+  const store = useTimelineStore.getState();
+  if (hovering) store.setHoveredSnapPointId(id);
+  else if (store.hoveredSnapPointId === id) store.setHoveredSnapPointId(null);
+}
+
 // -- Component -----------------------------------------------------------------
 
 const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainerRef }) => {
@@ -65,7 +76,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
     <div
       data-snap-markers-overlay
       className="absolute inset-0 pointer-events-none overflow-hidden select-none z-40"
-      style={{ clipPath: `inset(0 0 0 ${GUTTER_WIDTH}px)` }}
+      style={{ clipPath: `inset(0 0 calc(100% - ${WAVEFORM_HEIGHT - 1}px) ${GUTTER_WIDTH}px)` }}
     >
       <div
         ref={layerRef}
@@ -106,11 +117,7 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
                 isOnOnset={showOnsets && isTimeOnOnset(point.time, vocalOnsetSnapPoints, zoom, thresholdPx)}
                 onHeadPointerDown={onHeadPointerDown}
                 onDelete={removeCustomSnapPoint}
-                onHoverChange={(hovering) => {
-                  const store = useTimelineStore.getState();
-                  if (hovering) store.setHoveredSnapPointId(point.id);
-                  else if (store.hoveredSnapPointId === point.id) store.setHoveredSnapPointId(null);
-                }}
+                onHoverChange={handleSnapPinHoverChange}
               />
             ))}
           </AnimatePresence>
