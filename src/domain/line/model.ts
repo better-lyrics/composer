@@ -1,3 +1,4 @@
+import type { BackgroundVoice, Voice } from "@/domain/voice/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -43,6 +44,20 @@ type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
 // combination of timing fields may be present. Used for merge scratch objects.
 type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
+// The nested target shape the storage flip migrates toward. Identity stays flat;
+// timing lives inside Voice (main) and BackgroundVoice (background) rather than
+// being spread across sibling fields. A later phase makes this the stored model.
+type LineIdentity = {
+  id: string;
+  agentId: string;
+  groupId?: string;
+  instanceIdx?: number;
+  templateLineIdx?: number;
+  detached?: boolean;
+};
+
+type NestedLyricLine = LineIdentity & { main: Voice; background?: BackgroundVoice };
+
 // -- Functions ----------------------------------------------------------------
 
 // The store builds lines by spreading `...line` (a union member) together with
@@ -62,4 +77,4 @@ function reconcileLine(line: LooseLine): LyricLine {
 
 export { reconcileLine };
 
-export type { LineFields, LineSyncedLine, LyricLine, LooseLine };
+export type { LineFields, LineIdentity, LineSyncedLine, LyricLine, LooseLine, NestedLyricLine };
