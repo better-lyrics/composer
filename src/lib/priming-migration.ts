@@ -1,6 +1,7 @@
 import { parseLamePriming } from "@/audio/lame-priming";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { loadAudioFile, loadCurrentProject, replaceCurrentProject, type SavedProject } from "@/lib/persistence";
 
@@ -16,15 +17,17 @@ function shiftWord(word: WordTiming, shiftSec: number): WordTiming {
 
 function shiftLine(line: LyricLine, shiftSec: number): LyricLine {
   const next = { ...line } as LyricLine;
-  if (isWordSynced(next)) {
-    (next as { words: WordTiming[] }).words = next.words!.map((w) => shiftWord(w, shiftSec));
+  const nextWords = mainWords(next);
+  if (isWordSynced(next) && nextWords) {
+    (next as { words: WordTiming[] }).words = nextWords.map((w) => shiftWord(w, shiftSec));
   }
   if (isLineSynced(next)) {
     (next as { begin: number; end: number }).begin = Math.max(0, next.begin - shiftSec);
     (next as { begin: number; end: number }).end = Math.max(0, next.end - shiftSec);
   }
-  if (next.backgroundWords) {
-    next.backgroundWords = next.backgroundWords.map((w) => shiftWord(w, shiftSec));
+  const nextBgWords = bgWords(next);
+  if (nextBgWords) {
+    next.backgroundWords = nextBgWords.map((w) => shiftWord(w, shiftSec));
   }
   return next;
 }
