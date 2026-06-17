@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { bgText, lineText, mainWords } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import {
@@ -11,7 +13,7 @@ import {
 // -- Helpers ------------------------------------------------------------------
 
 function lineFactory(id: string, text: string, agentId = "v1"): LyricLine {
-  return { id, text, agentId };
+  return reconcileLine({ id, text, agentId });
 }
 
 function emptyParseResult(): ParseResult {
@@ -85,7 +87,7 @@ describe("importParsedLyrics confirm flow", () => {
     expect(result).toBe(false);
     expect(promptCount).toBe(1);
     expect(useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].text).toBe("Old");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Old");
   });
 
   it("replaces lines when the user confirms", async () => {
@@ -93,7 +95,7 @@ describe("importParsedLyrics confirm flow", () => {
     const result = await importParsedLyrics(parseResult(), buildContext({ confirm: async () => true }));
     expect(result).toBe(true);
     expect(useProjectStore.getState().lines.length).toBe(2);
-    expect(useProjectStore.getState().lines.map((l) => l.text)).toEqual(["Hello", "World"]);
+    expect(useProjectStore.getState().lines.map((l) => lineText(l))).toEqual(["Hello", "World"]);
   });
 });
 
@@ -103,37 +105,38 @@ describe("importParsedLyrics timing distribution", () => {
   it("does not distribute timing when audioDuration is zero and there is no timing data", async () => {
     await importParsedLyrics(parseResult({ hasTimingData: false }), buildContext({ audioDuration: 0 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeUndefined();
-    expect(lines[0].begin).toBeUndefined();
-    expect(lines[0].end).toBeUndefined();
+    expect(mainWords(lines[0])).toBeUndefined();
+    expect(mainBounds(lines[0])?.begin).toBeUndefined();
+    expect(mainBounds(lines[0])?.end).toBeUndefined();
   });
 
   it("distributes timing across the audio when parsed lacks timing data", async () => {
     await importParsedLyrics(parseResult({ hasTimingData: false }), buildContext({ audioDuration: 120 }));
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words).toBeDefined();
-    expect(lines[0].words?.length).toBeGreaterThan(0);
-    const firstWord = lines[0].words?.[0];
+    expect(mainWords(lines[0])).toBeDefined();
+    expect(mainWords(lines[0])?.length).toBeGreaterThan(0);
+    const firstWord = mainWords(lines[0])?.[0];
     const lastLine = lines[lines.length - 1];
-    const lastWord = lastLine.words?.[lastLine.words.length - 1];
+    const lastWords = mainWords(lastLine);
+    const lastWord = lastWords?.[lastWords.length - 1];
     expect(firstWord?.begin).toBe(0);
     expect(lastWord?.end).toBeCloseTo(120, 3);
   });
 
   it("does not distribute when parsed already has timing data", async () => {
-    const timed: LyricLine = {
+    const timed: LyricLine = reconcileLine({
       id: "t",
       text: "Hi",
       agentId: "v1",
       words: [{ text: "Hi", begin: 1, end: 2 }],
-    };
+    });
     await importParsedLyrics(
       { lines: [timed], metadata: {}, hasTimingData: true },
       buildContext({ audioDuration: 60 }),
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].words).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
+    expect(mainWords(stored[0])).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
   });
 });
 
@@ -141,27 +144,27 @@ describe("importParsedLyrics timing distribution", () => {
 
 describe("importParsedLyrics background extraction", () => {
   it("applies background extraction when the flag is set", async () => {
-    const inline: LyricLine = { id: "x", text: "Hello (world)", agentId: "v1" };
+    const inline: LyricLine = reconcileLine({ id: "x", text: "Hello (world)", agentId: "v1" });
     await importParsedLyrics(
       { lines: [inline], metadata: {}, hasTimingData: false },
       buildContext({ applyBackgroundExtraction: true }),
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].text).toBe("Hello");
-    expect(stored[0].backgroundText).toBe("world");
+    expect(lineText(stored[0])).toBe("Hello");
+    expect(bgText(stored[0])).toBe("world");
   });
 
   it("passes original lines through when the flag is unset", async () => {
-    const inline: LyricLine = { id: "x", text: "Hello (world)", agentId: "v1" };
+    const inline: LyricLine = reconcileLine({ id: "x", text: "Hello (world)", agentId: "v1" });
     await importParsedLyrics(
       { lines: [inline], metadata: {}, hasTimingData: false },
       buildContext({ applyBackgroundExtraction: false }),
     );
     const stored = useProjectStore.getState().lines;
     expect(stored.length).toBe(1);
-    expect(stored[0].text).toBe("Hello (world)");
-    expect(stored[0].backgroundText).toBeUndefined();
+    expect(lineText(stored[0])).toBe("Hello (world)");
+    expect(bgText(stored[0])).toBeUndefined();
   });
 });
 
