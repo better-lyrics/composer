@@ -100,6 +100,7 @@ const TimelineWaveform: React.FC = () => {
 
   if (!source) return null;
 
+  // A bunch of heights here are -1 to account for the 1px border at the bottom of the waveform container.
   return (
     <div className="sticky ml-12 top-0 z-40 bg-composer-bg w-max">
       <div
@@ -111,7 +112,7 @@ const TimelineWaveform: React.FC = () => {
         data-waveform-loading-dots
         aria-hidden="true"
         className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
-        style={{ width: totalWidth, height: WAVEFORM_HEIGHT, opacity: ws ? 0 : 1 }}
+        style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws ? 0 : 1 }}
       />
       {audioElement && (
         <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
@@ -145,7 +146,7 @@ const TimelineWaveform: React.FC = () => {
         key="waveform-click-layer"
         style={{
           width: totalWidth,
-          height: WAVEFORM_HEIGHT,
+          height: WAVEFORM_HEIGHT - 1,
         }}
         onClick={handleClick}
         onPointerMove={(e) => setAltHeld(e.altKey)}

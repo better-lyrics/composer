@@ -258,12 +258,13 @@ describe("TimelineWaveform loading dots", () => {
     expect(getDots()?.className).toContain("waveform-loading-dots");
   });
 
-  it("matches the waveform width and height so it covers the entire redraw area", async () => {
+  it("spans the waveform width and insets 1px from the bottom border", async () => {
     setupWaveformAudio(30);
     useTimelineStore.setState({ zoom: 50 });
     await render(<TimelineWaveform />);
     expect(getDots()?.style.width).toBe("1500px");
-    expect(getDots()?.style.height).toBe("80px");
+    // 1px shorter than the redraw bg (WAVEFORM_HEIGHT) so it stops above the 1px bottom border.
+    expect(getDots()?.style.height).toBe("79px");
   });
 
   it("is non-interactive so it never intercepts seek clicks", async () => {

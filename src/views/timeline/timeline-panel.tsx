@@ -458,7 +458,7 @@ const TimelinePanel: React.FC = () => {
                   }
                 }}
               >
-                <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20.25 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
+                <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
                   <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24">
                     <title>Music Icon</title>
                     <path

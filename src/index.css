@@ -189,8 +189,7 @@ body {
 
 @utility waveform-armed {
   cursor: crosshair;
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-composer-warning) 18%, transparent), inset 0 0 20px -2px
-    color-mix(in srgb, var(--color-composer-warning) 18%, transparent);
+  box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-warning) 18%, transparent);
 }
 
 /* Timeline panning mode */
