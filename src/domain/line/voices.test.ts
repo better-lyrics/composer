@@ -1,7 +1,7 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
-import { bgVoice, lineText, mainVoice } from "@/domain/line/voices";
+import { bgSource, bgText, bgVoice, bgWords, lineText, mainVoice, mainWords } from "@/domain/line/voices";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -209,5 +209,70 @@ describe("lineText", () => {
     for (const l of cases) {
       expect(lineText(l)).toBe(mainVoice(l).text);
     }
+  });
+});
+
+// -- mainWords ----------------------------------------------------------------
+
+describe("mainWords", () => {
+  it("returns the word array of a word-synced line by reference", () => {
+    const words: WordTiming[] = [{ text: "Hello", begin: 1, end: 2 }];
+    expect(mainWords(line({ words }))).toBe(words);
+  });
+
+  it("returns undefined for a line-synced line", () => {
+    expect(mainWords(line({ begin: 1, end: 2 }))).toBeUndefined();
+  });
+
+  it("returns undefined for an untimed line", () => {
+    expect(mainWords(line())).toBeUndefined();
+  });
+});
+
+// -- bgWords ------------------------------------------------------------------
+
+describe("bgWords", () => {
+  it("returns the background word array by reference", () => {
+    const backgroundWords: WordTiming[] = [{ text: "ah", begin: 1, end: 2 }];
+    expect(bgWords(line({ backgroundText: "ah", backgroundWords }))).toBe(backgroundWords);
+  });
+
+  it("returns undefined when there is no background", () => {
+    expect(bgWords(line())).toBeUndefined();
+  });
+
+  it("returns undefined for a text-only background", () => {
+    expect(bgWords(line({ backgroundText: "ah" }))).toBeUndefined();
+  });
+});
+
+// -- bgText -------------------------------------------------------------------
+
+describe("bgText", () => {
+  it("returns the authored background text", () => {
+    expect(bgText(line({ backgroundText: "ah" }))).toBe("ah");
+  });
+
+  it("returns undefined when there is no background text", () => {
+    expect(bgText(line())).toBeUndefined();
+  });
+
+  it("returns undefined for a word-only background (unlike bgVoice which normalises to empty string)", () => {
+    const backgroundWords: WordTiming[] = [{ text: "ah", begin: 1, end: 2 }];
+    expect(bgText(line({ backgroundWords }))).toBeUndefined();
+    expect(bgVoice(line({ backgroundWords }))?.text).toBe("");
+  });
+});
+
+// -- bgSource -----------------------------------------------------------------
+
+describe("bgSource", () => {
+  it("returns the provenance flag", () => {
+    expect(bgSource(line({ backgroundText: "ah", backgroundTextSource: "manual" }))).toBe("manual");
+    expect(bgSource(line({ backgroundText: "ah", backgroundTextSource: "extraction" }))).toBe("extraction");
+  });
+
+  it("returns undefined when there is no background", () => {
+    expect(bgSource(line())).toBeUndefined();
   });
 });

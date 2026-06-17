@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { BackgroundVoice, Voice } from "@/domain/voice/model";
+import type { BackgroundSource, BackgroundVoice, Voice } from "@/domain/voice/model";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -28,6 +29,33 @@ function lineText(line: LyricLine): string {
   return line.text;
 }
 
+// Raw word-synced word array of the main voice, or undefined when the main
+// voice is not word-synced. Mirrors the old `line.words` read exactly. Use this
+// for call sites that need the actual word array (filter, map, length), not the
+// synthesized single word of `effectiveWords`.
+function mainWords(line: LyricLine): WordTiming[] | undefined {
+  return line.words;
+}
+
+// Raw word-synced word array of the background voice, or undefined. Mirrors the
+// old `line.backgroundWords` read exactly.
+function bgWords(line: LyricLine): WordTiming[] | undefined {
+  return line.backgroundWords;
+}
+
+// Raw background text, or undefined when there is no background. Mirrors the old
+// `line.backgroundText` read exactly. This is the authored text and is undefined
+// for a word-only background, unlike `bgVoice(line)?.text` which normalises to "".
+function bgText(line: LyricLine): string | undefined {
+  return line.backgroundText;
+}
+
+// Background provenance flag, or undefined. Mirrors the old
+// `line.backgroundTextSource` read exactly.
+function bgSource(line: LyricLine): BackgroundSource | undefined {
+  return line.backgroundTextSource;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { mainVoice, bgVoice, lineText };
+export { mainVoice, bgVoice, lineText, mainWords, bgWords, bgText, bgSource };
