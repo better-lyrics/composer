@@ -1,7 +1,7 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -12,6 +12,7 @@ import {
   applyMergeSyllableGroup,
   applyMoveFromBg,
   applyMoveToBg,
+  fieldWords,
 } from "@/stores/project/lines-slice-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
@@ -25,13 +26,6 @@ function createLinesInitialState(): LinesState {
   return {
     lines: [],
   };
-}
-
-// -- Helpers ------------------------------------------------------------------
-
-// Single-source routing of a field-targeted word read through the voice seam.
-function fieldWords(line: LyricLine, field: "words" | "backgroundWords"): WordTiming[] | undefined {
-  return field === "backgroundWords" ? bgWords(line) : mainWords(line);
 }
 
 // -- Slice --------------------------------------------------------------------
