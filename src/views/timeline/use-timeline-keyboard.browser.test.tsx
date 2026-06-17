@@ -1,7 +1,7 @@
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { createLine } from "@/test/factories";
+import { createLine, snapPoints } from "@/test/factories";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -65,7 +65,7 @@ describe("useTimelineKeyboard", () => {
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "i", shiftKey: true, bubbles: true }));
 
-    expect(useProjectStore.getState().customSnapPoints).toContain(3.25);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toContain(3.25);
   });
 
   it("does not add a snap marker when plain 'i' toggles marker mode", async () => {
@@ -136,7 +136,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("seeks to the next pin when Shift+ArrowRight is pressed", async () => {
     useAudioStore.setState({ currentTime: 4, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5, 12]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -149,7 +149,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("seeks to the previous pin when Shift+ArrowLeft is pressed", async () => {
     useAudioStore.setState({ currentTime: 10, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5, 12]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -162,7 +162,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("does not seek for coarse next when no pin lies ahead", async () => {
     useAudioStore.setState({ currentTime: 6, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -175,7 +175,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("coarse next does not stop on an onset, only on pins", async () => {
     useAudioStore.setState({ currentTime: 4, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -189,7 +189,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
   it("fine still includes onsets when the vocalOnsetSnap setting is off", async () => {
     useSettingsStore.getState().set("vocalOnsetSnap", false);
     useAudioStore.setState({ currentTime: 5, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -204,7 +204,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("fine next reaches a pin first, then an onset (Opt+Shift+ArrowRight)", async () => {
     useAudioStore.setState({ currentTime: 4, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
@@ -225,7 +225,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
   it("fine prev reaches the nearest pin or onset behind (Opt+Shift+ArrowLeft)", async () => {
     useAudioStore.setState({ currentTime: 6, duration: 30 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [3, 8] });
     const seek = trackSeek();
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -255,7 +255,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
     const ref = createRef<HTMLDivElement | null>();
     ref.current = container;
     useAudioStore.setState({ currentTime: 0, duration: 80 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [50] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([50]) });
     useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
     const seek = trackSeek();
     await renderHook(() => useTimelineKeyboard(ref, [], 80));
@@ -272,7 +272,7 @@ describe("useTimelineKeyboard · jump to snap point", () => {
     const ref = createRef<HTMLDivElement | null>();
     ref.current = container;
     useAudioStore.setState({ currentTime: 0, duration: 80 });
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [2] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([2]) });
     useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
     trackSeek();
     await renderHook(() => useTimelineKeyboard(ref, [], 80));
@@ -285,27 +285,29 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 });
 
 describe("useTimelineKeyboard · delete hovered snap point", () => {
-  it("removes the hovered snap point and clears the hover on Delete", async () => {
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
-    useTimelineStore.setState({ hoveredSnapPointIndex: 1, selectedWords: [] });
+  it("removes the hovered snap point by id and clears the hover on Delete", async () => {
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5, 12]) });
+    const hoveredId = useProjectStore.getState().customSnapPoints[1].id; // the 12 pin
+    useTimelineStore.setState({ hoveredSnapPointId: hoveredId, selectedWords: [] });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
-    expect(useProjectStore.getState().customSnapPoints).toEqual([5]);
-    expect(useTimelineStore.getState().hoveredSnapPointIndex).toBeNull();
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([5]);
+    expect(useTimelineStore.getState().hoveredSnapPointId).toBeNull();
   });
 
   it("also deletes the hovered snap point on Backspace", async () => {
-    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: [5, 12] });
-    useTimelineStore.setState({ hoveredSnapPointIndex: 0, selectedWords: [] });
+    useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5, 12]) });
+    const hoveredId = useProjectStore.getState().customSnapPoints[0].id; // the 5 pin
+    useTimelineStore.setState({ hoveredSnapPointId: hoveredId, selectedWords: [] });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
     await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Backspace", bubbles: true }));
 
-    expect(useProjectStore.getState().customSnapPoints).toEqual([12]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([12]);
   });
 
   it("prefers the hovered snap point over selected words", async () => {
@@ -316,9 +318,10 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
         { text: "there", begin: 1, end: 2 },
       ],
     });
-    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: [5, 12] });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: snapPoints([5, 12]) });
+    const hoveredId = useProjectStore.getState().customSnapPoints[0].id; // the 5 pin
     useTimelineStore.setState({
-      hoveredSnapPointIndex: 0,
+      hoveredSnapPointId: hoveredId,
       selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -326,7 +329,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
-    expect(useProjectStore.getState().customSnapPoints).toEqual([12]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([12]);
     expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
   });
@@ -339,9 +342,9 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
         { text: "there", begin: 1, end: 2 },
       ],
     });
-    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: [5] });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line], customSnapPoints: snapPoints([5]) });
     useTimelineStore.setState({
-      hoveredSnapPointIndex: null,
+      hoveredSnapPointId: null,
       selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
     });
     const scrollContainerRef = createRef<HTMLDivElement | null>();
@@ -349,7 +352,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
-    expect(useProjectStore.getState().customSnapPoints).toEqual([5]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([5]);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
   });
 });

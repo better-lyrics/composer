@@ -41,7 +41,7 @@ interface TimelineState {
   editingWord: EditingWord | null;
   rollingEditMode: boolean;
   markerMode: boolean;
-  hoveredSnapPointIndex: number | null;
+  hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
   pingingGroupId: string | null;
   renamingGroupId: string | null;
@@ -77,7 +77,7 @@ interface TimelineActions {
   clearEditingWord: () => void;
   toggleRollingEditMode: () => void;
   toggleMarkerMode: () => void;
-  setHoveredSnapPointIndex: (index: number | null) => void;
+  setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
   setPingingGroupId: (groupId: string | null) => void;
@@ -122,7 +122,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     editingWord: null,
     rollingEditMode: settings.defaultRollingEdit,
     markerMode: false,
-    hoveredSnapPointIndex: null,
+    hoveredSnapPointId: null,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,
@@ -162,7 +162,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clearEditingWord: () => set({ editingWord: null }),
     toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
-    setHoveredSnapPointIndex: (hoveredSnapPointIndex) => set({ hoveredSnapPointIndex }),
+    setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
     setInstanceCollapsed: (key, isCollapsed) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
     toggleInstanceCollapsed: (key) =>

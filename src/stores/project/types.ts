@@ -2,6 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { SnapPoint } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Store-local Types --------------------------------------------------------
@@ -23,7 +24,7 @@ const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
-  customSnapPoints: number[];
+  customSnapPoints: SnapPoint[];
   timestamp: number;
 }
 
@@ -59,7 +60,7 @@ interface DismissalsState {
 }
 
 interface SnapPointsState {
-  customSnapPoints: number[];
+  customSnapPoints: SnapPoint[];
 }
 
 interface HistoryState {
@@ -105,11 +106,11 @@ interface DismissalActions {
 }
 
 interface SnapPointActions {
-  setCustomSnapPoints: (points: number[]) => void;
+  setCustomSnapPoints: (points: (SnapPoint | number)[]) => void;
   addCustomSnapPoint: (time: number) => void;
-  removeCustomSnapPoint: (index: number) => void;
-  moveCustomSnapPoint: (index: number, time: number) => void;
-  commitSnapPointDrag: (baseline: number[]) => void;
+  removeCustomSnapPoint: (id: string) => void;
+  moveCustomSnapPoint: (id: string, time: number) => void;
+  commitSnapPointDrag: (baseline: SnapPoint[]) => void;
   clearCustomSnapPoints: () => void;
 }
 

@@ -1,5 +1,6 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 interface FactoryLineOptions {
@@ -63,6 +64,10 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
   });
 }
 
+function snapPoints(times: number[]): SnapPoint[] {
+  return toSnapPoints(times);
+}
+
 function createGroup(opts: FactoryGroupOptions = {}) {
   const id = opts.id ?? `group-${++groupCounter}`;
   return {
@@ -73,4 +78,4 @@ function createGroup(opts: FactoryGroupOptions = {}) {
   };
 }
 
-export { createLine, createWord, createGroup };
+export { createLine, createWord, createGroup, snapPoints };

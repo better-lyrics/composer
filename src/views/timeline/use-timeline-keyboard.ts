@@ -15,7 +15,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
-import { normalizeSnapPoints } from "@/stores/project/snap-points-helpers";
+import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
@@ -234,11 +234,11 @@ function useTimelineKeyboard(
       }
 
       if (e.key === "Delete" || e.key === "Backspace") {
-        const { hoveredSnapPointIndex, selectedWords } = useTimelineStore.getState();
-        if (hoveredSnapPointIndex !== null) {
+        const { hoveredSnapPointId, selectedWords } = useTimelineStore.getState();
+        if (hoveredSnapPointId !== null) {
           e.preventDefault();
-          useProjectStore.getState().removeCustomSnapPoint(hoveredSnapPointIndex);
-          useTimelineStore.getState().setHoveredSnapPointIndex(null);
+          useProjectStore.getState().removeCustomSnapPoint(hoveredSnapPointId);
+          useTimelineStore.getState().setHoveredSnapPointId(null);
           return;
         }
         if (selectedWords.length > 0) {
@@ -710,7 +710,7 @@ function useTimelineKeyboard(
           const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
           const pins = useProjectStore.getState().customSnapPoints;
           const onsets = fine ? useTimelineStore.getState().vocalOnsetSnapPoints : [];
-          const points = normalizeSnapPoints([...pins, ...onsets]);
+          const points = normalizeTimes([...snapPointTimes(pins), ...onsets]);
           const target = adjacentSnapPoint(points, current, dir);
           if (target === null) {
             toast(fine ? "No snap point or onset that way" : "No snap point that way");

@@ -1,3 +1,4 @@
+import { snapPointTimes } from "@/domain/snap-point/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -72,7 +73,7 @@ function useTimelineSnap(): UseTimelineSnap {
       playhead,
       vocalOnsets,
       settings.timelineSnap,
-      projectSnapPoints,
+      snapPointTimes(projectSnapPoints),
     );
     ctxRef.current.selfIds = args.selfIds;
     ctxRef.current.leaderKey = args.leaderKey;

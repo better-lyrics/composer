@@ -21,9 +21,9 @@ describe("project history snapshots snap points", () => {
     useProjectStore.getState().setLinesWithHistory([createLine({ text: "a3" })]); // entry captures [9]
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().customSnapPoints).toEqual([]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([]);
 
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().customSnapPoints).toEqual([9]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([9]);
   });
 });

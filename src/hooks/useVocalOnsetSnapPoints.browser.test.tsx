@@ -60,7 +60,7 @@ describe("useVocalOnsetSnapPoints", () => {
       await render(<HookHarness />);
 
       useProjectStore.getState().setCustomSnapPoints([2, 4, 6]);
-      expect(useProjectStore.getState().customSnapPoints).toEqual([2, 4, 6]);
+      expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([2, 4, 6]);
 
       useAudioStore.setState({ source: { type: "file", file: createAudioFile("another-song.wav") } });
 

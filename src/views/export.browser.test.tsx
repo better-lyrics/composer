@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { ExportPanel } from "@/views/export";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 
 // -- Helpers ------------------------------------------------------------------
@@ -51,7 +51,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
   it("writes customSnapPoints into the exported project JSON", async () => {
     useProjectStore.setState({
       lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
-      customSnapPoints: [3, 9],
+      customSnapPoints: snapPoints([3, 9]),
     });
     const screen = await render(<ExportPanel />);
 
@@ -67,7 +67,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
       await screen.getByRole("button", { name: "Export Project" }).click();
       expect(capturedBlob).not.toBeNull();
       const text = await (capturedBlob as unknown as Blob).text();
-      expect(JSON.parse(text).customSnapPoints).toEqual([3, 9]);
+      expect(JSON.parse(text).customSnapPoints.map((p: { time: number }) => p.time)).toEqual([3, 9]);
     } finally {
       URL.createObjectURL = originalCreate;
       URL.revokeObjectURL = originalRevoke;
@@ -75,7 +75,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
   });
 
   it("applies customSnapPoints from an imported project file to the store", async () => {
-    useProjectStore.setState({ lines: [], customSnapPoints: [1, 2] });
+    useProjectStore.setState({ lines: [], customSnapPoints: snapPoints([1, 2]) });
     await render(<ExportPanel />);
 
     const payload = {
@@ -92,6 +92,6 @@ describe("ExportPanel · project file customSnapPoints", () => {
 
     dispatchFileChange(getProjectImportInput(), file);
 
-    await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([7, 8]);
+    await expect.poll(() => useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([7, 8]);
   });
 });

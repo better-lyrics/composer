@@ -6,6 +6,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { SnapPoint } from "@/domain/snap-point/model";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,7 +27,7 @@ interface SavedProject {
   dismissedExplicitSuggestions?: string[];
   currentStem?: Stem;
   primingStripped?: boolean;
-  customSnapPoints?: number[];
+  customSnapPoints?: (SnapPoint | number)[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -48,7 +49,7 @@ async function saveCurrentProject(
   dismissedExplicitSuggestions: string[],
   currentStem: Stem,
   primingStripped: boolean,
-  customSnapPoints: number[],
+  customSnapPoints: SnapPoint[],
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -120,7 +121,7 @@ function exportProjectToFile(
   syllableSplitDefaults: SyllableSplitDefaults,
   dismissedSuggestions: string[],
   dismissedExplicitSuggestions: string[],
-  customSnapPoints: number[],
+  customSnapPoints: SnapPoint[],
   audioFileName?: string,
 ): void {
   const project: SavedProject = {

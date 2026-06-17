@@ -8,6 +8,7 @@ import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
+import { snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 
 // -- Helpers ------------------------------------------------------------------
@@ -23,7 +24,7 @@ async function waitForProjectHydration(): Promise<void> {
 async function waitForCustomSnapPoints(expected: number[]): Promise<void> {
   for (let i = 0; i < 200; i++) {
     const current = useProjectStore.getState().customSnapPoints;
-    if (current.length === expected.length && current.every((v, idx) => v === expected[idx])) return;
+    if (current.length === expected.length && current.every((point, idx) => point.time === expected[idx])) return;
     await new Promise((r) => setTimeout(r, 10));
   }
   throw new Error(`customSnapPoints never became ${JSON.stringify(expected)}`);
@@ -63,18 +64,18 @@ describe("usePersistence · customSnapPoints hydration", () => {
       [],
       "original",
       false,
-      [4, 9],
+      snapPoints([4, 9]),
     );
 
     await renderHook(() => usePersistence());
     await waitForProjectHydration();
     await waitForCustomSnapPoints([4, 9]);
 
-    expect(useProjectStore.getState().customSnapPoints).toEqual([4, 9]);
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([4, 9]);
   });
 
   it("a legacy saved project (no customSnapPoints) hydrates the store to []", async () => {
-    useProjectStore.setState({ customSnapPoints: [1, 2] });
+    useProjectStore.setState({ customSnapPoints: snapPoints([1, 2]) });
 
     const legacyRecord: SavedProject = {
       version: 1,
@@ -116,7 +117,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
       [],
       "original",
       false,
-      [5, 12],
+      snapPoints([5, 12]),
     );
 
     useProjectStore.setState({ customSnapPoints: [] });
@@ -124,6 +125,6 @@ describe("usePersistence · customSnapPoints hydration", () => {
     await render(<LoadHarness />);
     await waitForProjectHydration();
 
-    await expect.poll(() => useProjectStore.getState().customSnapPoints).toEqual([5, 12]);
+    await expect.poll(() => useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([5, 12]);
   });
 });

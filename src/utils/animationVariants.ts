@@ -80,6 +80,12 @@ const pinDropInVariants: Variants = {
     scale: 1,
     transition: { type: "spring", stiffness: 500, damping: 20, mass: 0.7 },
   },
+  exit: {
+    opacity: 0,
+    y: -5,
+    scale: 0.6,
+    transition: { type: "spring", stiffness: 500, damping: 28, mass: 0.7 },
+  },
 };
 
 const snapFlashVariants: Variants = {

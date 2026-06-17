@@ -12,33 +12,20 @@ interface SnapMarkerDragConfig {
 }
 
 interface SnapMarkerDrag {
+  draggingId: string | null;
   draggingTime: number | null;
-  onHeadPointerDown: (index: number, event: React.PointerEvent<HTMLElement>) => void;
-}
-
-// -- Helpers -------------------------------------------------------------------
-
-function resolveIndexByTime(points: number[], target: number): number {
-  let bestIndex = -1;
-  let bestDelta = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < points.length; index++) {
-    const delta = Math.abs(points[index] - target);
-    if (delta < bestDelta) {
-      bestDelta = delta;
-      bestIndex = index;
-    }
-  }
-  return bestIndex;
+  onHeadPointerDown: (id: string, event: React.PointerEvent<HTMLElement>) => void;
 }
 
 // -- Hook ----------------------------------------------------------------------
 
 function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMarkerDrag {
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const [draggingTime, setDraggingTime] = useState<number | null>(null);
   const lastWrittenRef = useRef<number>(0);
 
   const onHeadPointerDown = useCallback(
-    (index: number, event: React.PointerEvent<HTMLElement>) => {
+    (id: string, event: React.PointerEvent<HTMLElement>) => {
       if (event.button !== 0) return;
       event.preventDefault();
       event.stopPropagation();
@@ -47,7 +34,9 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
       head.setPointerCapture(event.pointerId);
 
       const startPoints = useProjectStore.getState().customSnapPoints;
-      lastWrittenRef.current = startPoints[index] ?? 0;
+      const startPoint = startPoints.find((point) => point.id === id);
+      lastWrittenRef.current = startPoint?.time ?? 0;
+      setDraggingId(id);
       setDraggingTime(lastWrittenRef.current);
 
       const computeTime = (clientX: number): number => {
@@ -66,11 +55,10 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
 
       const handlePointerMove = (moveEvent: PointerEvent): void => {
         const store = useProjectStore.getState();
-        const currentIndex = resolveIndexByTime(store.customSnapPoints, lastWrittenRef.current);
-        if (currentIndex === -1) return;
+        if (!store.customSnapPoints.some((point) => point.id === id)) return;
         const time = computeTime(moveEvent.clientX);
         lastWrittenRef.current = time;
-        store.moveCustomSnapPoint(currentIndex, time);
+        store.moveCustomSnapPoint(id, time);
         setDraggingTime(time);
       };
 
@@ -80,6 +68,7 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
         head.removeEventListener("pointercancel", handlePointerUp);
         if (head.hasPointerCapture(event.pointerId)) head.releasePointerCapture(event.pointerId);
         useProjectStore.getState().commitSnapPointDrag(startPoints);
+        setDraggingId(null);
         setDraggingTime(null);
       };
 
@@ -90,7 +79,7 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
     [scrollContainerRef],
   );
 
-  return { draggingTime, onHeadPointerDown };
+  return { draggingId, draggingTime, onHeadPointerDown };
 }
 
 // -- Exports -------------------------------------------------------------------

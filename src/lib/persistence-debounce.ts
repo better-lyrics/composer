@@ -3,6 +3,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { SnapPoint } from "@/domain/snap-point/model";
 import { type SavedAudioSource, saveCurrentProject } from "@/lib/persistence";
 import type { GranularityMode } from "@/stores/project";
 import type { SyllableSplitDefaults } from "@/stores/project/types";
@@ -26,7 +27,7 @@ type SaveArgs = [
   string[],
   Stem,
   boolean,
-  number[],
+  SnapPoint[],
 ];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -46,7 +47,7 @@ function debouncedSave(
   dismissedExplicitSuggestions: string[],
   currentStem: Stem,
   primingStripped: boolean,
-  customSnapPoints: number[],
+  customSnapPoints: SnapPoint[],
 ): void {
   pendingSaveArgs = [
     metadata,

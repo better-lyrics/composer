@@ -1,5 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { snapPoints } from "@/test/factories";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -8,7 +9,7 @@ describe("snapPlayheadTime", () => {
   beforeEach(() => {
     useSettingsStore.setState({ snapPlayheadToPoints: true, vocalOnsetSnap: true, timelineSnapThreshold: 12 });
     useTimelineStore.setState({ zoom: 100, vocalOnsetSnapPoints: [] });
-    useProjectStore.setState({ customSnapPoints: [5] });
+    useProjectStore.setState({ customSnapPoints: snapPoints([5]) });
   });
 
   it("snaps to a pin when the time is within the pixel threshold", () => {
@@ -49,13 +50,13 @@ describe("snapPlayheadTime", () => {
     });
 
     it("snaps to the nearer of a pin and an onset when both are within range", () => {
-      useProjectStore.setState({ customSnapPoints: [5] });
+      useProjectStore.setState({ customSnapPoints: snapPoints([5]) });
       useTimelineStore.setState({ vocalOnsetSnapPoints: [5.1] });
       expect(snapPlayheadTime(5.06, false)).toBe(5.1);
     });
 
     it("snaps to the timeline origin", () => {
-      useProjectStore.setState({ customSnapPoints: [0] });
+      useProjectStore.setState({ customSnapPoints: snapPoints([0]) });
       useTimelineStore.setState({ vocalOnsetSnapPoints: [] });
       expect(snapPlayheadTime(0.05, false)).toBe(0);
     });

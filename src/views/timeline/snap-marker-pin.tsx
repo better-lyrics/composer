@@ -21,27 +21,25 @@ import { formatTime } from "@/utils/format-time";
 // -- Types ---------------------------------------------------------------------
 
 interface SnapMarkerPinProps {
-  index: number;
+  id: string;
   time: number;
   zoom: number;
   fadeExtent: number;
   isDragging: boolean;
-  isNew: boolean;
   isOnOnset: boolean;
-  onHeadPointerDown: (index: number, event: React.PointerEvent<HTMLElement>) => void;
-  onDelete: (index: number) => void;
+  onHeadPointerDown: (id: string, event: React.PointerEvent<HTMLElement>) => void;
+  onDelete: (id: string) => void;
   onHoverChange?: (hovering: boolean) => void;
 }
 
 // -- Component -----------------------------------------------------------------
 
 const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
-  index,
+  id,
   time,
   zoom,
   fadeExtent,
   isDragging,
-  isNew,
   isOnOnset,
   onHeadPointerDown,
   onDelete,
@@ -85,28 +83,19 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   if (isOnOnset && !wasOnOnsetRef.current) setFlashKey((key) => key + 1);
   wasOnOnsetRef.current = isOnOnset;
 
-  // Pins are keyed by position, so an insert before an existing pin reuses this
-  // element instead of remounting it. Bump a key when the pin becomes newly
-  // placed so the drop-in wrapper remounts and the entry animation replays.
-  const wasNewRef = useRef(false);
-  const [dropInKey, setDropInKey] = useState(0);
-  if (isNew && !wasNewRef.current) setDropInKey((key) => key + 1);
-  wasNewRef.current = isNew;
-
   const showTooltip = isOpen && !isDragging;
 
   return (
     <m.div
-      key={dropInKey}
       data-snap-marker="custom"
       data-snap-marker-time={time}
       data-snap-marker-drop-in
-      data-snap-marker-new={isNew ? "" : undefined}
       className="absolute top-0"
       style={{ left: time * zoom }}
       variants={pinDropInVariants}
-      initial={isNew && !reduceMotion ? "initial" : false}
+      initial={reduceMotion ? false : "initial"}
       animate="animate"
+      exit={reduceMotion ? undefined : "exit"}
     >
       <div
         data-snap-marker-line
@@ -135,7 +124,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
           isDragging ? "cursor-grabbing ring-4 ring-composer-warning/20" : "cursor-grab",
         )}
         {...getReferenceProps({
-          onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(index, event),
+          onPointerDown: (event: React.PointerEvent<HTMLElement>) => onHeadPointerDown(id, event),
         })}
       />
       {showTooltip && (
@@ -156,7 +145,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
               data-snap-marker-delete
               aria-label="Delete custom snap point"
               className="relative expanded-hit-sm flex items-center justify-center size-4 text-composer-text-faint hover:text-composer-warning select-none cursor-pointer"
-              onClick={() => onDelete(index)}
+              onClick={() => onDelete(id)}
             >
               <IconTrash size={13} />
             </button>

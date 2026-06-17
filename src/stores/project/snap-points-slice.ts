@@ -1,5 +1,5 @@
+import { createSnapPoint, normalizeSnapPoints } from "@/domain/snap-point/model";
 import { commitHistory, commitSnapPointEdit } from "@/stores/project/history-helpers";
-import { normalizeSnapPoints } from "@/stores/project/snap-points-helpers";
 import type { ProjectStore, SnapPointActions, SnapPointsState } from "@/stores/project/types";
 import type { StateCreator } from "zustand";
 
@@ -16,17 +16,23 @@ const createSnapPointsSlice: StateCreator<ProjectStore, [], [], SnapPointsState 
 
   setCustomSnapPoints: (points) => set({ customSnapPoints: normalizeSnapPoints(points) }),
   addCustomSnapPoint: (time) =>
-    set((state) => commitHistory(state, { customSnapPoints: normalizeSnapPoints([...state.customSnapPoints, time]) })),
-  removeCustomSnapPoint: (index) =>
+    set((state) =>
+      commitHistory(state, {
+        customSnapPoints: normalizeSnapPoints([...state.customSnapPoints, createSnapPoint(time)]),
+      }),
+    ),
+  removeCustomSnapPoint: (id) =>
     set((state) => {
-      if (index < 0 || index >= state.customSnapPoints.length) return state;
-      return commitHistory(state, { customSnapPoints: state.customSnapPoints.filter((_, i) => i !== index) });
+      if (!state.customSnapPoints.some((point) => point.id === id)) return state;
+      return commitHistory(state, { customSnapPoints: state.customSnapPoints.filter((point) => point.id !== id) });
     }),
-  moveCustomSnapPoint: (index, time) =>
+  moveCustomSnapPoint: (id, time) =>
     set((state) => {
-      if (index < 0 || index >= state.customSnapPoints.length) return state;
+      if (!state.customSnapPoints.some((point) => point.id === id)) return state;
       return {
-        customSnapPoints: normalizeSnapPoints(state.customSnapPoints.map((point, i) => (i === index ? time : point))),
+        customSnapPoints: normalizeSnapPoints(
+          state.customSnapPoints.map((point) => (point.id === id ? { ...point, time } : point)),
+        ),
       };
     }),
   commitSnapPointDrag: (baseline) => set((state) => commitSnapPointEdit(state, normalizeSnapPoints(baseline))),

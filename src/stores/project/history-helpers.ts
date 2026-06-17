@@ -1,6 +1,7 @@
 import type { LyricLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { LinkGroup } from "@/domain/group/template";
+import type { SnapPoint } from "@/domain/snap-point/model";
 import type { ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -12,7 +13,7 @@ const MAX_HISTORY_SIZE = 100;
 
 function commitHistory(
   state: ProjectState,
-  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; customSnapPoints?: number[] },
+  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; customSnapPoints?: SnapPoint[] },
   options: { deriveText?: boolean } = {},
 ) {
   const splitChar = getSplitCharacter();
@@ -80,11 +81,11 @@ function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineW
   };
 }
 
-function snapPointsEqual(a: number[], b: number[]): boolean {
-  return a.length === b.length && a.every((value, index) => value === b[index]);
+function snapPointsEqual(a: SnapPoint[], b: SnapPoint[]): boolean {
+  return a.length === b.length && a.every((point, index) => point.id === b[index].id && point.time === b[index].time);
 }
 
-function commitSnapPointEdit(state: ProjectState, baseline: number[]) {
+function commitSnapPointEdit(state: ProjectState, baseline: SnapPoint[]) {
   if (snapPointsEqual(baseline, state.customSnapPoints)) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   const top = newHistory[newHistory.length - 1];

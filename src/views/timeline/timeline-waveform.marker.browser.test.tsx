@@ -48,7 +48,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
     expect(seek.get()).toBe(-1);
   });
 
@@ -63,7 +63,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15.1, 6);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15.1, 6);
   });
 
   it("marker mode ON: clicking with no onsets nearby adds the raw clicked time", async () => {
@@ -77,7 +77,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
   });
 
   it("marker mode ON: a double-click does not add a second point on top of the single-click adds", async () => {
@@ -104,7 +104,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("dblclick", { detail: 2, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
   });
 
   it("marker mode ON: a triple-click sequence still adds exactly one point", async () => {
@@ -119,7 +119,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { detail: 3, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
   });
 
   it("marker mode ON takes precedence over Alt: an Alt double-click still nets exactly one point and never seeks", async () => {
@@ -134,7 +134,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { altKey: true, detail: 2, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
     expect(seek.get()).toBe(-1);
   });
 
@@ -163,7 +163,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { altKey: true, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
     expect(seek.get()).toBe(-1);
   });
 
@@ -178,7 +178,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { altKey: true, clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15.1, 6);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15.1, 6);
   });
 
   it("onset snapping is suppressed when the vocalOnsetSnap setting is off, mirroring the drag", async () => {
@@ -192,7 +192,7 @@ describe("TimelineWaveform marker placement", () => {
     layer.dispatchEvent(new MouseEvent("click", { clientX: 750, clientY: 40, bubbles: true }));
 
     await expect.poll(() => useProjectStore.getState().customSnapPoints.length).toBe(1);
-    expect(useProjectStore.getState().customSnapPoints[0]).toBeCloseTo(15, 3);
+    expect(useProjectStore.getState().customSnapPoints[0].time).toBeCloseTo(15, 3);
   });
 });
 

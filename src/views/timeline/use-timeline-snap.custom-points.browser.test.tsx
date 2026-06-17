@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { snapPoints } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -38,7 +39,7 @@ describe("useTimelineSnap · custom snap points", () => {
   });
 
   it("snaps a block to a custom point when both timelineSnap and vocalOnsetSnap are OFF", async () => {
-    useProjectStore.setState({ customSnapPoints: [1] });
+    useProjectStore.setState({ customSnapPoints: snapPoints([1]) });
     const { result } = await renderHook(() => useTimelineSnap());
 
     beginAt(result);
@@ -66,7 +67,7 @@ describe("useTimelineSnap · custom snap points", () => {
   it("snaps to the nearest of a custom point and a vocal onset when both are active (additive)", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: true });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
-    useProjectStore.setState({ customSnapPoints: [1] });
+    useProjectStore.setState({ customSnapPoints: snapPoints([1]) });
     const { result } = await renderHook(() => useTimelineSnap());
 
     beginAt(result);
@@ -83,7 +84,7 @@ describe("useTimelineSnap · custom snap points", () => {
   it("keeps vocal onsets gated by vocalOnsetSnap even when a custom point enables snapping", async () => {
     useSettingsStore.setState({ vocalOnsetSnap: false });
     useTimelineStore.setState({ vocalOnsetSnapPoints: [2] });
-    useProjectStore.setState({ customSnapPoints: [1] });
+    useProjectStore.setState({ customSnapPoints: snapPoints([1]) });
     const { result } = await renderHook(() => useTimelineSnap());
 
     beginAt(result);
@@ -97,7 +98,7 @@ describe("useTimelineSnap · custom snap points", () => {
   it("does not emit timeline grid anchors when timelineSnap is OFF but a custom point exists", async () => {
     useProjectStore.setState({
       lines: [{ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }],
-      customSnapPoints: [1],
+      customSnapPoints: snapPoints([1]),
     });
     const { result } = await renderHook(() => useTimelineSnap());
 
