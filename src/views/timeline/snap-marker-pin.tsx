@@ -12,7 +12,7 @@ import {
   useRole,
 } from "@floating-ui/react";
 import { IconTrash } from "@tabler/icons-react";
-import { m, useReducedMotion } from "motion/react";
+import { m, useIsPresent, useReducedMotion } from "motion/react";
 import { useRef, useState } from "react";
 import { cn } from "@/utils/cn";
 import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
@@ -46,6 +46,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   onHoverChange,
 }) => {
   const reduceMotion = useReducedMotion();
+  const isPresent = useIsPresent();
   const [isOpen, setIsOpen] = useState(false);
 
   const { refs, floatingStyles, context, placement } = useFloating({
@@ -83,7 +84,10 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   if (isOnOnset && !wasOnOnsetRef.current) setFlashKey((key) => key + 1);
   wasOnOnsetRef.current = isOnOnset;
 
-  const showTooltip = isOpen && !isDragging;
+  // Drop the tooltip the instant the pin starts exiting. Without this it keeps
+  // tracking the head as the exit transform shrinks and lifts it, so the
+  // floating tooltip drifts up and to the side before the pin unmounts.
+  const showTooltip = isOpen && !isDragging && isPresent;
 
   return (
     <m.div
