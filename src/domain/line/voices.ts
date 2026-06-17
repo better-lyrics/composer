@@ -20,6 +20,14 @@ function bgVoice(line: LyricLine): BackgroundVoice | null {
   return { text, source };
 }
 
+// The main voice's text. Every voice variant carries text, so this never
+// returns undefined. Prefer this over reading the flat field at call sites: it
+// reads `line.main.text` once storage is nested, and avoids allocating a Voice
+// just to read its text.
+function lineText(line: LyricLine): string {
+  return line.text;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { mainVoice, bgVoice };
+export { mainVoice, bgVoice, lineText };

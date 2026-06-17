@@ -1,7 +1,7 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
-import { bgVoice, mainVoice } from "@/domain/line/voices";
+import { bgVoice, lineText, mainVoice } from "@/domain/line/voices";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -173,5 +173,41 @@ describe("bgVoice", () => {
       const voice = bgVoice(line({ backgroundText: "안녕 🎵" }));
       expect(voice).toEqual({ text: "안녕 🎵", source: undefined });
     });
+  });
+});
+
+// -- lineText -----------------------------------------------------------------
+
+describe("lineText", () => {
+  it("returns the text of a word-synced line", () => {
+    expect(lineText(line({ words: [{ text: "Hello", begin: 1, end: 2 }] }))).toBe("Hello");
+  });
+
+  it("returns the text of a line-synced line", () => {
+    expect(lineText(line({ begin: 3, end: 7 }))).toBe("Hello");
+  });
+
+  it("returns the text of an untimed line", () => {
+    expect(lineText(line())).toBe("Hello");
+  });
+
+  it("returns empty string for an empty-text line", () => {
+    expect(lineText(line({ text: "" }))).toBe("");
+  });
+
+  it("preserves unicode text verbatim", () => {
+    expect(lineText(line({ text: "안녕 🎵" }))).toBe("안녕 🎵");
+  });
+
+  it("agrees with mainVoice(line).text across variants", () => {
+    const cases: LyricLine[] = [
+      line(),
+      line({ begin: 1, end: 2 }),
+      line({ words: [{ text: "Hello", begin: 1, end: 2 }] }),
+      line({ text: "" }),
+    ];
+    for (const l of cases) {
+      expect(lineText(l)).toBe(mainVoice(l).text);
+    }
   });
 });
