@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
@@ -100,7 +101,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = targetWord.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = targetWord.type === "word" ? mainWords(line) : bgWords(line);
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -224,9 +225,9 @@ function useTimelineKeyboard(
         const allSelections: WordSelection[] = [];
         for (let li = 0; li < lines.length; li++) {
           const line = lines[li];
-          for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
+          for (let wi = 0; wi < (mainWords(line)?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-          for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
+          for (let wi = 0; wi < (bgWords(line)?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
         }
         useTimelineStore.getState().setSelectedWords(allSelections);
@@ -419,7 +420,7 @@ function useTimelineKeyboard(
           if (!run) break;
           const mLine = lines.find((l) => l.id === run.lineId);
           if (!mLine) break;
-          const mWords = run.type === "word" ? mLine.words : mLine.backgroundWords;
+          const mWords = run.type === "word" ? mainWords(mLine) : bgWords(mLine);
           if (!mWords) break;
           e.preventDefault();
           const firstIdx = run.indices[0];
