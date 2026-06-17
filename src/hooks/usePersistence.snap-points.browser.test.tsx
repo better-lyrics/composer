@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { reconcileLine } from "@/domain/line/model";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { clearCurrentProject, type SavedProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
@@ -55,7 +56,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
     await saveCurrentProject(
       { title: "with-markers", artist: "", album: "", duration: 0 },
       DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      [reconcileLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
       [],
       "word",
       { applyToAll: false, caseInsensitive: false },
@@ -82,7 +83,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
       savedAt: Date.now(),
       metadata: { title: "legacy", artist: "", album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
-      lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      lines: [reconcileLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
       groups: [],
       granularity: "word",
       syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },
@@ -108,7 +109,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
     await saveCurrentProject(
       { title: "survives-load", artist: "", album: "", duration: 0 },
       DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+      [reconcileLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
       [],
       "word",
       { applyToAll: false, caseInsensitive: false },

@@ -1,6 +1,7 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { effectiveWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { mainWords } from "@/domain/line/voices";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -45,18 +46,18 @@ describe("effectiveWords", () => {
 describe("getEffectiveLines", () => {
   it("injects synthetic single-word array for line-synced lines", () => {
     const lines: LyricLine[] = [line({ id: "a", text: "Hi", begin: 1, end: 2 })];
-    expect(getEffectiveLines(lines)[0].words).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
+    expect(mainWords(getEffectiveLines(lines)[0])).toEqual([{ text: "Hi", begin: 1, end: 2 }]);
   });
 
   it("leaves word-synced lines untouched", () => {
     const words = [{ text: "Hi ", begin: 0, end: 1 }];
     const lines: LyricLine[] = [line({ words })];
-    expect(getEffectiveLines(lines)[0].words).toBe(words);
+    expect(mainWords(getEffectiveLines(lines)[0])).toBe(words);
   });
 
   it("leaves untimed lines untouched (no synthetic words)", () => {
     const lines: LyricLine[] = [line({ id: "a", text: "Hi" })];
-    expect(getEffectiveLines(lines)[0].words).toBeUndefined();
+    expect(mainWords(getEffectiveLines(lines)[0])).toBeUndefined();
   });
 
   it("preserves other line properties", () => {
