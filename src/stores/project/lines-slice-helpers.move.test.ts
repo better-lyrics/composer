@@ -3,6 +3,8 @@
  */
 import { describe, expect, it } from "vitest";
 import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
+import { isLineSynced } from "@/domain/line/predicates";
 import { applyMoveFromBg, applyMoveToBg } from "@/stores/project/lines-slice-helpers";
 
 // -- Helpers -------------------------------------------------------------------
@@ -28,9 +30,9 @@ function mainLine(overrides: Partial<LooseLine> = {}): LyricLine {
 describe("applyMoveToBg", () => {
   it("stamps a manual provenance when creating a fresh background", () => {
     const result = applyMoveToBg(mainLine(), [2], 0, DURATION);
-    expect(result?.backgroundTextSource).toBe("manual");
-    expect(result?.backgroundWords?.map((w) => w.text)).toEqual(["goodbye"]);
-    expect(result?.backgroundText).toBe("goodbye");
+    expect(result && bgSource(result)).toBe("manual");
+    expect(result && bgWords(result)?.map((w) => w.text)).toEqual(["goodbye"]);
+    expect(result && bgText(result)).toBe("goodbye");
   });
 
   it("flips an extraction-sourced background to manual when merging words in", () => {
@@ -40,7 +42,7 @@ describe("applyMoveToBg", () => {
       backgroundTextSource: "extraction",
     });
     const result = applyMoveToBg(line, [2], 0, DURATION);
-    expect(result?.backgroundTextSource).toBe("manual");
+    expect(result && bgSource(result)).toBe("manual");
   });
 
   it("moves words into an existing background, keeping main timing intact", () => {
@@ -50,8 +52,8 @@ describe("applyMoveToBg", () => {
       backgroundTextSource: "manual",
     });
     const result = applyMoveToBg(line, [2], 0, DURATION);
-    expect(result?.words?.map((w) => w.text)).toEqual(["hello ", "world"]);
-    expect(result?.backgroundWords?.length).toBe(2);
+    expect(result && mainWords(result)?.map((w) => w.text)).toEqual(["hello ", "world"]);
+    expect(result && bgWords(result)?.length).toBe(2);
   });
 
   it("returns null when no indices match", () => {
@@ -87,9 +89,9 @@ describe("applyMoveFromBg", () => {
       backgroundTextSource: "extraction",
     });
     const result = applyMoveFromBg(line, [0], 0, DURATION);
-    expect(result?.backgroundWords).toBeUndefined();
-    expect(result?.backgroundText).toBeUndefined();
-    expect(result?.backgroundTextSource).toBeUndefined();
+    expect(result && bgWords(result)).toBeUndefined();
+    expect(result && bgText(result)).toBeUndefined();
+    expect(result && bgSource(result)).toBeUndefined();
   });
 
   it("stamps a manual provenance on the surviving background", () => {
@@ -102,9 +104,9 @@ describe("applyMoveFromBg", () => {
       backgroundTextSource: "extraction",
     });
     const result = applyMoveFromBg(line, [1], 0, DURATION);
-    expect(result?.backgroundWords?.map((w) => w.text)).toEqual(["ah"]);
-    expect(result?.backgroundText).toBe("ah");
-    expect(result?.backgroundTextSource).toBe("manual");
+    expect(result && bgWords(result)?.map((w) => w.text)).toEqual(["ah"]);
+    expect(result && bgText(result)).toBe("ah");
+    expect(result && bgSource(result)).toBe("manual");
   });
 
   it("returns null when no indices match", () => {
@@ -142,8 +144,7 @@ describe("applyMoveFromBg", () => {
       backgroundText: "ooh",
     });
     const result = applyMoveFromBg(line, [0], 0, DURATION);
-    expect(result?.words?.length).toBe(1);
-    expect(result?.begin).toBeUndefined();
-    expect(result?.end).toBeUndefined();
+    expect(result && mainWords(result)?.length).toBe(1);
+    expect(result && isLineSynced(result)).toBe(false);
   });
 });
