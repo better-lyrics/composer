@@ -85,6 +85,10 @@ describe("hasAnyTiming", () => {
     expect(hasAnyTiming(line({ backgroundWords: [{ text: "ah", begin: 1, end: 2 }] }))).toBe(true);
   });
 
+  it("returns false when background is text only with no words", () => {
+    expect(hasAnyTiming(line({ backgroundText: "ah" }))).toBe(false);
+  });
+
   it("returns false when only begin is set (incomplete line-sync)", () => {
     expect(hasAnyTiming(line({ begin: 1 }))).toBe(false);
   });

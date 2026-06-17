@@ -11,7 +11,7 @@ function mainBounds(line: LyricLine): Bounds | null {
 
 function bgBounds(line: LyricLine): Bounds | null {
   const bg = bgVoice(line);
-  return bg ? voiceBounds(bg) : null;
+  return bg !== null ? voiceBounds(bg) : null;
 }
 
 function effectiveBounds(line: LyricLine): Bounds | null {
