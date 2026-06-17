@@ -173,10 +173,10 @@ describe("SnapMarkerPin", () => {
       const screen = await render(<SnapMarkerPin {...defaultProps} onHoverChange={onHoverChange} />);
       const headEl = head(screen.container);
       if (headEl) await userEvent.hover(headEl);
-      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(true));
+      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(defaultProps.id, true));
 
       if (headEl) await userEvent.unhover(headEl);
-      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(false));
+      await vi.waitFor(() => expect(onHoverChange).toHaveBeenCalledWith(defaultProps.id, false));
     });
 
     it("stays start-aligned with the delete control leading when there is room on the right", async () => {

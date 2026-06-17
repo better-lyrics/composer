@@ -50,7 +50,10 @@ function useTimelineSnap(): UseTimelineSnap {
   useTimelineStore((s) => s.zoom);
   useTimelineStore((s) => s.isBypassing);
   useTimelineStore((s) => s.vocalOnsetSnapPoints);
-  useProjectStore((s) => s.customSnapPoints);
+  // Deliberately NOT subscribing to customSnapPoints. This hook runs in every
+  // word-track, and customSnapPoints changes on every frame of a snap-marker
+  // drag, so a reactive subscription here would re-render every word block 60+
+  // times a second. The gesture reads it via getState() in beginGesture.
 
   const ctxRef = useRef<SnapCtx>({
     anchors: [],

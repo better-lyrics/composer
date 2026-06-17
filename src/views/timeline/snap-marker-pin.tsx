@@ -13,7 +13,7 @@ import {
 } from "@floating-ui/react";
 import { IconTrash } from "@tabler/icons-react";
 import { m, useIsPresent, useReducedMotion } from "motion/react";
-import { useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 import { cn } from "@/utils/cn";
 import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
@@ -29,12 +29,12 @@ interface SnapMarkerPinProps {
   isOnOnset: boolean;
   onHeadPointerDown: (id: string, event: React.PointerEvent<HTMLElement>) => void;
   onDelete: (id: string) => void;
-  onHoverChange?: (hovering: boolean) => void;
+  onHoverChange?: (id: string, hovering: boolean) => void;
 }
 
 // -- Component -----------------------------------------------------------------
 
-const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
+const SnapMarkerPin = memo(function SnapMarkerPin({
   id,
   time,
   zoom,
@@ -44,7 +44,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
   onHeadPointerDown,
   onDelete,
   onHoverChange,
-}) => {
+}: SnapMarkerPinProps) {
   const reduceMotion = useReducedMotion();
   const isPresent = useIsPresent();
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +53,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
     open: isOpen,
     onOpenChange: (open) => {
       setIsOpen(open);
-      onHoverChange?.(open);
+      onHoverChange?.(id, open);
     },
     placement: "bottom-start",
     // The delete control leads the row and sits directly under the rotated head. crossAxis
@@ -164,7 +164,7 @@ const SnapMarkerPin: React.FC<SnapMarkerPinProps> = ({
       )}
     </m.div>
   );
-};
+});
 
 // -- Exports -------------------------------------------------------------------
 

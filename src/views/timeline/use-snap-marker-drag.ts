@@ -39,13 +39,19 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
       setDraggingId(id);
       setDraggingTime(lastWrittenRef.current);
 
+      // Cache the container rect once. Reading getBoundingClientRect (or
+      // scrollLeft) on every pointermove forces a synchronous layout, and since
+      // the dragged pin's left changes each move, that reflow is what pins the
+      // CPU. The rect is stable for the duration of a drag; scrollLeft comes
+      // from the store (kept in sync by the scroll handler), so the move path
+      // never touches layout.
+      const container = scrollContainerRef.current;
+      const containerRect = container ? container.getBoundingClientRect() : null;
+
       const computeTime = (clientX: number): number => {
-        const container = scrollContainerRef.current;
-        if (!container) return lastWrittenRef.current;
-        const { zoom, scrollLeft: storeScrollLeft } = useTimelineStore.getState();
-        const scrollLeft = container.scrollLeft ?? storeScrollLeft;
-        const rect = container.getBoundingClientRect();
-        const raw = xToTime(clientX, rect, zoom, scrollLeft);
+        if (!containerRect) return lastWrittenRef.current;
+        const { zoom, scrollLeft } = useTimelineStore.getState();
+        const raw = xToTime(clientX, containerRect, zoom, scrollLeft);
         const onsets = useSettingsStore.getState().vocalOnsetSnap
           ? useTimelineStore.getState().vocalOnsetSnapPoints
           : [];
