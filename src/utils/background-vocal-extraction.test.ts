@@ -1087,8 +1087,8 @@ describe("re-paste doubling", () => {
   it("does not double background text when a standalone line is re-merged", () => {
     const first = extractBackgroundVocals(
       [
-        { id: "a", text: "hello", agentId: "v1" },
-        { id: "b", text: "(ooh)", agentId: "v1" },
+        reconcileLine({ id: "a", text: "hello", agentId: "v1" }),
+        reconcileLine({ id: "b", text: "(ooh)", agentId: "v1" }),
       ],
       { mergeStandaloneLines: true, preserveBrackets: false },
     );
@@ -1096,7 +1096,7 @@ describe("re-paste doubling", () => {
     expect(bgText(first[0])).toBe("ooh");
     expect(bgSource(first[0])).toBe("extraction");
 
-    const second = extractBackgroundVocals([first[0], { id: "b", text: "(ooh)", agentId: "v1" }], {
+    const second = extractBackgroundVocals([first[0], reconcileLine({ id: "b", text: "(ooh)", agentId: "v1" })], {
       mergeStandaloneLines: true,
       preserveBrackets: false,
     });
@@ -1107,8 +1107,14 @@ describe("re-paste doubling", () => {
   it("keeps manually entered background when a standalone line merges in", () => {
     const merged = extractBackgroundVocals(
       [
-        { id: "a", text: "hello", agentId: "v1", backgroundText: "clap", backgroundTextSource: "manual" },
-        { id: "b", text: "(ooh)", agentId: "v1" },
+        reconcileLine({
+          id: "a",
+          text: "hello",
+          agentId: "v1",
+          backgroundText: "clap",
+          backgroundTextSource: "manual",
+        }),
+        reconcileLine({ id: "b", text: "(ooh)", agentId: "v1" }),
       ],
       { mergeStandaloneLines: true, preserveBrackets: false },
     );
