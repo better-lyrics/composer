@@ -24,6 +24,7 @@ const TimelineWaveform: React.FC = () => {
   const markerMode = useTimelineStore((s) => s.markerMode);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
+  const [altHeld, setAltHeld] = useState(false);
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
@@ -139,7 +140,7 @@ const TimelineWaveform: React.FC = () => {
         aria-label={markerMode ? "Place snap point" : "Seek to position"}
         className={cn(
           "absolute top-0 left-0 z-10 transition-shadow duration-200 ease-out",
-          markerMode ? "waveform-armed" : "cursor-pointer",
+          markerMode ? "waveform-armed" : altHeld ? "cursor-crosshair" : "cursor-pointer",
         )}
         key="waveform-click-layer"
         style={{
@@ -147,6 +148,7 @@ const TimelineWaveform: React.FC = () => {
           height: WAVEFORM_HEIGHT,
         }}
         onClick={handleClick}
+        onPointerMove={(e) => setAltHeld(e.altKey)}
         onKeyDown={() => {}}
       />
     </div>

@@ -240,6 +240,41 @@ describe("TimelineWaveform marker-mode armed state", () => {
   });
 });
 
+describe("TimelineWaveform Alt cursor", () => {
+  const layerOf = (container: HTMLElement) => container.querySelector<HTMLElement>('[role="button"][aria-label]');
+
+  const movePointer = (layer: HTMLElement | null, altKey: boolean) =>
+    layer?.dispatchEvent(new PointerEvent("pointermove", { altKey, bubbles: true, clientX: 200, clientY: 40 }));
+
+  it("marker mode OFF: moving over the waveform with Alt down swaps the pointer for the crosshair", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ markerMode: false });
+    const screen = await render(<TimelineWaveform />);
+    const layer = () => layerOf(screen.container);
+    expect(layer()?.className).toContain("cursor-pointer");
+    expect(layer()?.className).not.toContain("cursor-crosshair");
+
+    movePointer(layer(), true);
+    await expect.poll(() => layer()?.className).toContain("cursor-crosshair");
+    expect(layer()?.className).not.toContain("cursor-pointer");
+
+    movePointer(layer(), false);
+    await expect.poll(() => layer()?.className).toContain("cursor-pointer");
+    expect(layer()?.className).not.toContain("cursor-crosshair");
+  });
+
+  it("marker mode ON keeps the armed state even when Alt is held over the waveform", async () => {
+    setupWaveformAudio(30);
+    useTimelineStore.setState({ markerMode: true });
+    const screen = await render(<TimelineWaveform />);
+    const layer = () => layerOf(screen.container);
+
+    movePointer(layer(), true);
+    await expect.poll(() => layer()?.className).toContain("waveform-armed");
+    expect(layer()?.className).not.toContain("cursor-crosshair");
+  });
+});
+
 describe("TimelineWaveform marker delete control", () => {
   it("regression: clicking a marker's portalled delete control does not seek or add a point", async () => {
     setupWaveformAudio(30);
