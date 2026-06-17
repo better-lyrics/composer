@@ -414,7 +414,12 @@ describe("moveWordToBg · linked propagation", () => {
       lines: state.lines.map((l) =>
         l.id === "a1"
           ? reconcileLine({
-              ...l,
+              id: "a1",
+              text: "hello world goodbye",
+              agentId: "v1",
+              groupId: "g1",
+              instanceIdx: 1,
+              templateLineIdx: 0,
               words: [
                 { text: "hello ", begin: 10, end: 11 },
                 { text: "goodbye", begin: 12, end: 13 },

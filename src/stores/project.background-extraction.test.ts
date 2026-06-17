@@ -33,9 +33,9 @@ describe("project store · background extraction on linked lines", () => {
     if (!target) throw new Error(`line ${lineId} not found`);
     const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
     useProjectStore.getState().updateLineWithHistory(target.id, {
-      text: extracted.text,
-      words: extracted.words,
-      backgroundText: extracted.backgroundText,
+      text: lineText(extracted),
+      words: mainWords(extracted),
+      backgroundText: bgText(extracted),
     });
   }
 
