@@ -1,23 +1,24 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { findMatchingTemplate, linesStructurallyEqual, structurallyEqualLineSequences } from "./structural-match";
 
-const baseLine: LyricLine = reconcileLine({ id: "x", text: "I love you", agentId: "v1" });
+const baseFields: LooseLine = { id: "x", text: "I love you", agentId: "v1" };
+const baseLine: LyricLine = reconcileLine(baseFields);
 
 describe("linesStructurallyEqual", () => {
   it("equal when text/agentId/words/bg match", () => {
     const a: LyricLine = reconcileLine({
-      ...baseLine,
+      ...baseFields,
       words: [
         { text: "I ", begin: 0, end: 1 },
         { text: "love", begin: 1, end: 2 },
       ],
     });
     const b: LyricLine = reconcileLine({
-      ...baseLine,
+      ...baseFields,
       id: "y",
       words: [
         { text: "I ", begin: 30, end: 31 },
@@ -28,31 +29,31 @@ describe("linesStructurallyEqual", () => {
   });
 
   it("unequal when text differs", () => {
-    expect(linesStructurallyEqual(baseLine, reconcileLine({ ...baseLine, text: "different" }))).toBe(false);
+    expect(linesStructurallyEqual(baseLine, reconcileLine({ ...baseFields, text: "different" }))).toBe(false);
   });
 
   it("unequal when agent differs", () => {
-    expect(linesStructurallyEqual(baseLine, reconcileLine({ ...baseLine, agentId: "v2" }))).toBe(false);
+    expect(linesStructurallyEqual(baseLine, reconcileLine({ ...baseFields, agentId: "v2" }))).toBe(false);
   });
 
   it("unequal when word count differs", () => {
     const a: LyricLine = reconcileLine({
-      ...baseLine,
+      ...baseFields,
       words: [
         { text: "I ", begin: 0, end: 1 },
         { text: "love", begin: 1, end: 2 },
       ],
     });
     const b: LyricLine = reconcileLine({
-      ...baseLine,
+      ...baseFields,
       words: [{ text: "I ", begin: 0, end: 1 }],
     });
     expect(linesStructurallyEqual(a, b)).toBe(false);
   });
 
   it("unequal when background differs", () => {
-    const a: LyricLine = reconcileLine({ ...baseLine, backgroundText: "yeah" });
-    const b: LyricLine = reconcileLine({ ...baseLine, backgroundText: "yeah yeah" });
+    const a: LyricLine = reconcileLine({ ...baseFields, backgroundText: "yeah" });
+    const b: LyricLine = reconcileLine({ ...baseFields, backgroundText: "yeah yeah" });
     expect(linesStructurallyEqual(a, b)).toBe(false);
   });
 });

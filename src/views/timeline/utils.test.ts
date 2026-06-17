@@ -112,7 +112,7 @@ describe("distributeLinesTiming", () => {
 
 describe("effectiveBounds (legacy call site coverage)", () => {
   it("returns timing from words when available", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -120,7 +120,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
         { text: "Hello", begin: 2, end: 5 },
         { text: "World", begin: 5, end: 8 },
       ],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -128,13 +128,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns direct timing when no words", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       begin: 3,
       end: 7,
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -142,13 +142,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when no timing available", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       begin: undefined,
       end: undefined,
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -156,12 +156,12 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("prefers words timing over direct timing", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ text: "Hello", begin: 2, end: 5 }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -169,12 +169,12 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null for a word-synced line with an empty words array", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [] as WordTiming[],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -182,7 +182,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends end past main words when bg words end later", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -195,7 +195,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
         { text: "ech", begin: 6, end: 9 },
         { text: "o", begin: 9, end: 12 },
       ],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -203,14 +203,14 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("pulls begin earlier when bg words begin before main words", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ text: "Hello", begin: 5, end: 8 }],
       backgroundText: "ooh",
       backgroundWords: [{ text: "ooh", begin: 3, end: 6 }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -218,7 +218,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("extends line-synced end when bg words extend past it", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
@@ -226,7 +226,7 @@ describe("effectiveBounds (legacy call site coverage)", () => {
       end: 7,
       backgroundText: "ahh",
       backgroundWords: [{ text: "ahh", begin: 6, end: 10 }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -234,14 +234,14 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("leaves timing unchanged when bg words sit fully inside main range", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ text: "Hello", begin: 2, end: 10 }],
       backgroundText: "yeah",
       backgroundWords: [{ text: "yeah", begin: 4, end: 7 }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -249,13 +249,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("ignores empty bg words array", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       words: [{ text: "Hello", begin: 2, end: 5 }],
       backgroundWords: [],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -263,13 +263,13 @@ describe("effectiveBounds (legacy call site coverage)", () => {
   });
 
   it("returns null when bg words exist but no main timing is set", () => {
-    const line = {
+    const line = reconcileLine({
       id: "1",
       text: "Hello",
       agentId: "v1",
       backgroundText: "ooh",
       backgroundWords: [{ text: "ooh", begin: 3, end: 6 }],
-    };
+    });
 
     const timing = effectiveBounds(line);
 
@@ -777,7 +777,9 @@ describe("nudgeSelectedWords as instance shift", () => {
   });
 
   it("clamps shift to song duration when selection touches the end", () => {
-    const lines: LyricLine[] = [reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 59.7, end: 60 }] })];
+    const lines: LyricLine[] = [
+      reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 59.7, end: 60 }] }),
+    ];
     const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, 60);
     expect(result.appliedDelta).toBe(0);
   });
@@ -981,7 +983,9 @@ describe("shiftSelectionsTogether", () => {
   });
 
   it("works when only the word-synced partition has selections", () => {
-    const lines: LyricLine[] = [reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] })];
+    const lines: LyricLine[] = [
+      reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] }),
+    ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
     expect(result.appliedDelta).toBeCloseTo(0.1);
@@ -1010,7 +1014,9 @@ describe("shiftSelectionsTogether", () => {
   });
 
   it("preserves direction when clamping (negative requestedDelta yields negative applied)", () => {
-    const lines: LyricLine[] = [reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 0.05, end: 1 }] })];
+    const lines: LyricLine[] = [
+      reconcileLine({ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 0.05, end: 1 }] }),
+    ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
     const result = shiftSelectionsTogether(lines, partitioned, -0.5, 60);
     expect(result.appliedDelta).toBeLessThan(0);

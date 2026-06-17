@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { reconcileLine } from "@/domain/line/model";
 import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -86,11 +85,10 @@ describe("BackgroundTextEditor provenance", () => {
       text: "hello",
       words: [createWord({ text: "hello", begin: 0, end: 1 })],
       backgroundText: "ooh",
+      backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })],
       backgroundTextSource: "extraction",
     });
-    useProjectStore.setState({
-      lines: [reconcileLine({ ...line, backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] })],
-    });
+    useProjectStore.setState({ lines: [line] });
     selectFirstWordOf("l1");
     const screen = await render(<TimelineInfoPanel />);
 
