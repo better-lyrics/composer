@@ -3,6 +3,7 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineTemplate, LinkGroup, WordTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 
 // -- Types ---------------------------------------------------------------------
@@ -112,12 +113,12 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
   const templates: LineTemplate[] = [];
 
   for (const line of matched) {
-    const tplWords: WordTemplate[] | undefined = line.words?.map((w) => ({
+    const tplWords: WordTemplate[] | undefined = mainWords(line)?.map((w) => ({
       text: w.text,
       relativeBegin: w.begin - startTime,
       relativeEnd: w.end - startTime,
     }));
-    const tplBgWords: WordTemplate[] | undefined = line.backgroundWords?.map((w) => ({
+    const tplBgWords: WordTemplate[] | undefined = bgWords(line)?.map((w) => ({
       text: w.text,
       relativeBegin: w.begin - startTime,
       relativeEnd: w.end - startTime,
@@ -125,14 +126,14 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
 
     const lineBounds = mainBounds(line);
     templates.push({
-      text: line.text,
+      text: lineText(line),
       agentId: line.agentId,
       relativeBegin: lineBounds ? lineBounds.begin - startTime : undefined,
       relativeEnd: lineBounds ? lineBounds.end - startTime : undefined,
       words: tplWords,
-      backgroundText: line.backgroundText,
+      backgroundText: bgText(line),
       backgroundWords: tplBgWords,
-      backgroundTextSource: line.backgroundTextSource,
+      backgroundTextSource: bgSource(line),
     });
   }
   return templates;
