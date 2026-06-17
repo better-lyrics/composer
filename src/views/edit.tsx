@@ -10,6 +10,8 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { backgroundFields } from "@/domain/line/background";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
@@ -57,8 +59,8 @@ const ImportSuccessBanner: React.FC<{
   onDismiss: () => void;
 }> = ({ result, filename, onDismiss }) => {
   const lineCount = result.lines.length;
-  const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
-  const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
+  const timedLineCount = result.lines.filter((l) => isLineSynced(l)).length;
+  const wordTimedCount = result.lines.filter((l) => isWordSynced(l)).length;
 
   return (
     <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg bg-composer-accent/10 text-composer-accent-text">
@@ -299,7 +301,7 @@ const EditPanel: React.FC = () => {
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
-  const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => l.text).join("\n") : ""));
+  const [rawText, setRawText] = useState(() => (lines.length > 0 ? lines.map((l) => lineText(l)).join("\n") : ""));
   const rawTextRef = useRef(rawText);
   rawTextRef.current = rawText;
   const linesSetByUs = useRef<LyricLine[] | null>(null);
@@ -318,7 +320,7 @@ const EditPanel: React.FC = () => {
       linesSetByUs.current = null;
       return;
     }
-    setRawText(lines.length > 0 ? lines.map((l) => l.text).join("\n") : "");
+    setRawText(lines.length > 0 ? lines.map((l) => lineText(l)).join("\n") : "");
   }, [lines]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
@@ -358,7 +360,7 @@ const EditPanel: React.FC = () => {
     useProjectStore.getState().setLinesWithHistory(nextLines, nextGroups);
     const committed = useProjectStore.getState().lines;
     linesSetByUs.current = committed;
-    setRawText(committed.map((line) => line.text).join("\n"));
+    setRawText(committed.map((line) => lineText(line)).join("\n"));
   }, []);
 
   const handleExtractBackgroundVocals = useCallback(() => {
@@ -376,9 +378,10 @@ const EditPanel: React.FC = () => {
     const newBgText = text || undefined;
     const target = useProjectStore.getState().lines.find((l) => l.id === lineId);
 
+    const targetBgWords = target ? bgWords(target) : undefined;
     let words: WordTiming[] | undefined;
-    if (newBgText && target?.backgroundWords?.length) {
-      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText) ?? undefined;
+    if (newBgText && targetBgWords?.length) {
+      words = remapWordTextsPreservingTiming(targetBgWords, newBgText) ?? undefined;
     }
 
     useProjectStore
@@ -395,12 +398,12 @@ const EditPanel: React.FC = () => {
     });
     if (extracted === target) return;
     useProjectStore.getState().updateLineWithHistory(lineId, {
-      text: extracted.text,
-      words: extracted.words,
+      text: lineText(extracted),
+      words: mainWords(extracted),
       ...backgroundFields({
-        text: extracted.backgroundText,
-        words: extracted.backgroundWords,
-        source: extracted.backgroundTextSource ?? "manual",
+        text: bgText(extracted),
+        words: bgWords(extracted),
+        source: bgSource(extracted) ?? "manual",
       }),
     });
   }, []);
