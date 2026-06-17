@@ -4,6 +4,8 @@
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -141,17 +143,17 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "" })]);
 
     useProjectStore.getState().setLines([seedLine("a", { text: "our favorite song is on" })]);
-    expect(useProjectStore.getState().lines[0].text).toBe("our favorite song is on");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("our favorite song is on");
 
     useProjectStore.getState().updateLineWithHistory("a", { begin: 5, end: 7 });
     const placed = useProjectStore.getState().lines[0];
-    expect(placed.text).toBe("our favorite song is on");
-    expect(placed.begin).toBe(5);
+    expect(lineText(placed)).toBe("our favorite song is on");
+    expect(mainBounds(placed)?.begin).toBe(5);
 
     useProjectStore.getState().undo();
     const afterUndo = useProjectStore.getState().lines[0];
-    expect(afterUndo.text).toBe("our favorite song is on");
-    expect(afterUndo.begin).toBeUndefined();
+    expect(lineText(afterUndo)).toBe("our favorite song is on");
+    expect(mainBounds(afterUndo)?.begin).toBeUndefined();
   });
 
   it("snapshots pending edit before updateLinesWithHistory too", () => {
@@ -159,8 +161,8 @@ describe("updateLinesWithHistory", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "alpha edited" })]);
     useProjectStore.getState().updateLinesWithHistory([{ id: "a", updates: { begin: 1, end: 2 } }]);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("alpha edited");
-    expect(useProjectStore.getState().lines[0].begin).toBeUndefined();
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("alpha edited");
+    expect(mainBounds(useProjectStore.getState().lines[0])?.begin).toBeUndefined();
   });
 
   it("clears words and background words via undefined updates and is undoable", () => {
@@ -180,13 +182,13 @@ describe("updateLinesWithHistory", () => {
     ]);
 
     const cleared = useProjectStore.getState().lines[0];
-    expect(cleared.words).toBeUndefined();
-    expect(cleared.backgroundWords).toBeUndefined();
+    expect(mainWords(cleared)).toBeUndefined();
+    expect(bgWords(cleared)).toBeUndefined();
 
     useProjectStore.getState().undo();
     const restored = useProjectStore.getState().lines[0];
-    expect(restored.words).toEqual([{ text: "hi", begin: 0, end: 1 }]);
-    expect(restored.backgroundWords).toEqual([{ text: "ah", begin: 0, end: 0.5 }]);
+    expect(mainWords(restored)).toEqual([{ text: "hi", begin: 0, end: 1 }]);
+    expect(bgWords(restored)).toEqual([{ text: "ah", begin: 0, end: 0.5 }]);
   });
 });
 
@@ -203,10 +205,10 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("hello");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello");
 
     useProjectStore.getState().redo();
-    expect(useProjectStore.getState().lines[0].text).toBe("hello world");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello world");
   });
 
   it("is a no-op when nothing changed since the last history entry", () => {
@@ -223,18 +225,18 @@ describe("commitPendingLineEdit", () => {
 
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
 
     const baseline = useProjectStore.getState().lines;
     useProjectStore.getState().setLines([seedLine("a", { text: "one edited" })]);
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
-    expect(useProjectStore.getState().lines[0].text).toBe("one edited");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one edited");
     expect(useProjectStore.getState().canRedo()).toBe(false);
     expect(useProjectStore.getState().historyIndex).toBe(useProjectStore.getState().history.length - 1);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
   });
 
   it("seeds the baseline entry when history is empty so undo can return to it", () => {
@@ -247,10 +249,10 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
     expect(useProjectStore.getState().canUndo()).toBe(true);
-    expect(useProjectStore.getState().lines[0].text).toBe("start typed");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("start typed");
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("start");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("start");
   });
 
   it("does not mutate the baseline array passed in", () => {
@@ -274,7 +276,7 @@ describe("commitPendingLineEdit", () => {
     const committedIndex = useProjectStore.getState().historyIndex;
     useProjectStore.getState().lines[0].text = "live mutation";
 
-    expect(useProjectStore.getState().history[committedIndex].lines[0].text).toBe("clone me edited");
+    expect(lineText(useProjectStore.getState().history[committedIndex].lines[0])).toBe("clone me edited");
   });
 
   it("never lets history exceed MAX_HISTORY_SIZE", () => {
@@ -337,9 +339,9 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline, baselineWasDirty);
 
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("does not seed a duplicate baseline when the store was clean before the run", () => {
@@ -354,7 +356,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history.length).toBe(lengthBefore + 1);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("treats an omitted baselineWasDirty as clean", () => {
@@ -378,7 +380,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
 
     expect(useProjectStore.getState().history).toHaveLength(2);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("A");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("A");
   });
 
   it("truncates the redo branch when the dirty path commits mid-history", () => {
@@ -387,7 +389,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "three" })]);
     useProjectStore.getState().undo();
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
 
     useProjectStore.getState().setLines([seedLine("a", { text: "one cross-view" })]);
     const baseline = useProjectStore.getState().lines;
@@ -395,11 +397,11 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline, true);
 
     expect(useProjectStore.getState().canRedo()).toBe(false);
-    expect(useProjectStore.getState().lines[0].text).toBe("one typed");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one typed");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one cross-view");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one cross-view");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("one");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("one");
   });
 
   it("does not mutate the baseline array on the dirty path", () => {
@@ -424,7 +426,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
 
     baseline[0].text = "live mutation";
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].text).toBe("B");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
   });
 
   it("no-ops when isDirtySinceHistory is false even if baselineWasDirty is true", () => {
