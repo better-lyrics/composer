@@ -419,6 +419,31 @@ describe("SnapMarkersOverlay", () => {
     });
   });
 
+  describe("hover lifecycle", () => {
+    it("clears hoveredSnapPointId when the hovered pin is removed (undo / load / audio change)", async () => {
+      useSettingsStore.setState({ vocalOnsetSnap: false });
+      useTimelineStore.setState({ zoom: 100, scrollLeft: 0, vocalOnsetSnapPoints: [] });
+      useProjectStore.setState({ customSnapPoints: snapPoints([2]) });
+
+      const screen = await render(<Harness />);
+      const head = headOf(customMarkers(screen.container)[0]);
+      const hoveredId = useProjectStore.getState().customSnapPoints[0].id;
+
+      // Open the hover the way floating-ui listens for it (React synthesizes
+      // onPointerEnter / onMouseEnter from native pointerover / mouseover).
+      head.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
+      head.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+      head.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+      await expect.poll(() => useTimelineStore.getState().hoveredSnapPointId).toBe(hoveredId);
+
+      // Remove the hovered pin without mousing off it; the pin unmounts.
+      useProjectStore.setState({ customSnapPoints: [] });
+
+      // Without the unmount cleanup the id stays stale and a later word Delete is swallowed.
+      await expect.poll(() => useTimelineStore.getState().hoveredSnapPointId).toBeNull();
+    });
+  });
+
   describe("delete", () => {
     it("removes the correct pin when several exist", async () => {
       useSettingsStore.setState({ vocalOnsetSnap: false });

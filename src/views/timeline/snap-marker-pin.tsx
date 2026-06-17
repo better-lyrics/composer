@@ -13,7 +13,7 @@ import {
 } from "@floating-ui/react";
 import { IconTrash } from "@tabler/icons-react";
 import { m, useIsPresent, useReducedMotion } from "motion/react";
-import { memo, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { cn } from "@/utils/cn";
 import { pinDropInVariants, snapFlashVariants } from "@/utils/animationVariants";
 import { formatTime } from "@/utils/format-time";
@@ -78,6 +78,11 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
   const dismiss = useDismiss(context);
 
   const { getReferenceProps, getFloatingProps } = useInteractions([hover, role, dismiss]);
+
+  // floating-ui does not fire onOpenChange when the reference unmounts, so a pin
+  // removed while hovered (undo, project load, audio change) would leave the
+  // overlay's hovered id pointing at a gone pin. Clear it through the same callback.
+  useEffect(() => () => onHoverChange?.(id, false), [id, onHoverChange]);
 
   const wasOnOnsetRef = useRef(false);
   const [flashKey, setFlashKey] = useState(0);
