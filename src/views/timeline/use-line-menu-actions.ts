@@ -1,3 +1,4 @@
+import { lineText } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
@@ -28,7 +29,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
+    const wordCount = splitIntoWordsWithMeta(lineText(line)).parts.length;
     const lineDuration = Math.max(wordCount, 1) * wordDuration;
     updateLineWithHistory(lineId, {
       begin: time,

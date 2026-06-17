@@ -1,8 +1,11 @@
+import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced } from "@/domain/line/predicates";
+import { bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { fieldWords } from "@/stores/project/lines-slice-helpers";
 import { useProjectStore } from "@/stores/project";
 import { createGroupFromSelection, fillSelectionGaps } from "@/views/timeline/group-ops";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -23,7 +26,7 @@ function useContextMenuTargets() {
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
     const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const wordsArray = line[field];
+    const wordsArray = fieldWords(line, field);
     if (!wordsArray || wordsArray.length === 0) return null;
 
     const selectedWords = useTimelineStore.getState().selectedWords;
@@ -82,7 +85,7 @@ function useContextMenuTargets() {
 
     const line = lines.find((l) => l.id === run.lineId);
     if (!line) return null;
-    const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = run.type === "word" ? mainWords(line) : bgWords(line);
     if (!wordsArray) return null;
 
     return { indices: run.indices, lineId: run.lineId, type: run.type };
@@ -94,7 +97,7 @@ function useContextMenuTargets() {
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
     const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const word = line[field]?.[wordIndex];
+    const word = fieldWords(line, field)?.[wordIndex];
     if (!word || word.syllableGroupId === undefined) return null;
     return { lineId, field, wordIndex };
   }, [contextMenu, rawLines]);
@@ -102,7 +105,7 @@ function useContextMenuTargets() {
   const snapNeededInfo = useMemo(() => {
     if (!groupedWordInfo) return null;
     const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
-    const words = line?.[groupedWordInfo.field];
+    const words = line ? fieldWords(line, groupedWordInfo.field) : undefined;
     if (!words) return null;
     return hasIntraGroupGap(words) ? groupedWordInfo : null;
   }, [groupedWordInfo, rawLines]);
@@ -112,7 +115,7 @@ function useContextMenuTargets() {
     const trackTarget = contextMenu.target;
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
-    const canPlace = targetLine.text.trim() !== "" && !targetLine.words?.length && targetLine.begin === undefined;
+    const canPlace = lineText(targetLine).trim() !== "" && !mainWords(targetLine)?.length && mainBounds(targetLine) === null;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 

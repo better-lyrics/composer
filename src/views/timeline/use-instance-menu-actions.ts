@@ -1,5 +1,6 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -106,10 +107,10 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       for (let li = 0; li < projectLines.length; li++) {
         const line = projectLines[li];
         if (line.groupId !== groupId || line.instanceIdx !== next) continue;
-        for (let wi = 0; wi < (line.words?.length ?? 0); wi++) {
+        for (let wi = 0; wi < (mainWords(line)?.length ?? 0); wi++) {
           wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
         }
-        for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++) {
+        for (let wi = 0; wi < (bgWords(line)?.length ?? 0); wi++) {
           wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
         }
       }
