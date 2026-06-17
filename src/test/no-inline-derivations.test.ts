@@ -83,6 +83,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\.syllableGroupId (?:===|!==) (?!undefined)/,
     use: "computeByGroupId / hasIntraGroupGap from @/domain/word/syllable-groups",
   },
+  {
+    name: "inline snap-point time projection",
+    regex: /\.map\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*\1\.time\b/,
+    use: "snapPointTimes from @/domain/snap-point/model",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {
