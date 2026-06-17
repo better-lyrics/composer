@@ -103,7 +103,7 @@ describe("TimelineSection", () => {
 
   it("documents Alt+click pin placement with marker mode off", async () => {
     const screen = await render(<TimelineSection />);
-    expect(screen.container.textContent).toContain("and click to drop");
+    expect(screen.container.textContent).toContain("place one without arming the mode");
     expect(screen.container.textContent).toContain("a plain click on the waveform just moves the playhead");
   });
 

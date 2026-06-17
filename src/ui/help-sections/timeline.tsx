@@ -204,8 +204,9 @@ const TimelineSection: React.FC = () => (
           waveform cursor turns into a pin, and a single click drops a custom point where you click.
         </li>
         <li>
-          With marker mode off, a plain click on the waveform just moves the playhead. Hold {ALT_KEY} and click to drop
-          a pin without arming marker mode.
+          With marker mode off, a plain click on the waveform just moves the playhead. Hold {ALT_KEY} and the cursor
+          turns into the same pin you get in marker mode, so you can tell a click will drop a point; click while it is
+          held to place one without arming the mode.
         </li>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.dropSnapMarkerAtPlayhead")} /> to drop a pin at
