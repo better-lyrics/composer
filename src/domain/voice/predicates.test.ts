@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Voice } from "@/domain/voice/model";
-import { isLineSynced, isUntimed, isWordSynced } from "@/domain/voice/predicates";
+import { isBackgroundVoice, isLineSynced, isUntimed, isVoice, isWordSynced } from "@/domain/voice/predicates";
 
 // -- Tests --------------------------------------------------------------------
 
@@ -95,6 +95,124 @@ describe("voice predicates", () => {
         const trueCount = [isUntimed(voice), isLineSynced(voice), isWordSynced(voice)].filter(Boolean).length;
         expect(trueCount).toBe(1);
       }
+    });
+  });
+});
+
+// -- isVoice ------------------------------------------------------------------
+
+describe("isVoice", () => {
+  describe("happy paths", () => {
+    it("accepts an untimed voice", () => {
+      expect(isVoice({ text: "a" })).toBe(true);
+    });
+
+    it("accepts a line-synced voice", () => {
+      expect(isVoice({ text: "a", begin: 1, end: 2 })).toBe(true);
+    });
+
+    it("accepts a word-synced voice", () => {
+      expect(isVoice({ text: "a", words: [{ text: "a", begin: 1, end: 2 }] })).toBe(true);
+    });
+
+    it("accepts a voice with an empty words array", () => {
+      expect(isVoice({ text: "a", words: [] })).toBe(true);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("accepts begin: 0 / end: 0 (guards against falsy-number rejection)", () => {
+      expect(isVoice({ text: "a", begin: 0, end: 0 })).toBe(true);
+    });
+
+    it("accepts an empty-string text", () => {
+      expect(isVoice({ text: "" })).toBe(true);
+    });
+
+    it("accepts a voice carrying an extra source key (structural superset)", () => {
+      expect(isVoice({ text: "a", source: "manual" })).toBe(true);
+    });
+  });
+
+  describe("rejections", () => {
+    it("rejects null", () => {
+      expect(isVoice(null)).toBe(false);
+    });
+
+    it("rejects undefined", () => {
+      expect(isVoice(undefined)).toBe(false);
+    });
+
+    it("rejects a non-object", () => {
+      expect(isVoice("a")).toBe(false);
+      expect(isVoice(5)).toBe(false);
+    });
+
+    it("rejects an object with no text", () => {
+      expect(isVoice({})).toBe(false);
+    });
+
+    it("rejects a non-string text", () => {
+      expect(isVoice({ text: 5 })).toBe(false);
+    });
+
+    it("rejects begin without end", () => {
+      expect(isVoice({ text: "a", begin: 1 })).toBe(false);
+    });
+
+    it("rejects end without begin", () => {
+      expect(isVoice({ text: "a", end: 2 })).toBe(false);
+    });
+
+    it("rejects a non-number begin", () => {
+      expect(isVoice({ text: "a", begin: "1", end: 2 })).toBe(false);
+    });
+
+    it("rejects a non-number end", () => {
+      expect(isVoice({ text: "a", begin: 1, end: "2" })).toBe(false);
+    });
+
+    it("rejects words that are not an array", () => {
+      expect(isVoice({ text: "a", words: "x" })).toBe(false);
+    });
+  });
+});
+
+// -- isBackgroundVoice --------------------------------------------------------
+
+describe("isBackgroundVoice", () => {
+  describe("happy paths", () => {
+    it("accepts a voice with no source", () => {
+      expect(isBackgroundVoice({ text: "a" })).toBe(true);
+    });
+
+    it("accepts a voice with source extraction", () => {
+      expect(isBackgroundVoice({ text: "a", source: "extraction" })).toBe(true);
+    });
+
+    it("accepts a voice with source manual", () => {
+      expect(isBackgroundVoice({ text: "a", source: "manual" })).toBe(true);
+    });
+
+    it("accepts a word-synced voice with source", () => {
+      expect(isBackgroundVoice({ text: "a", words: [{ text: "a", begin: 1, end: 2 }], source: "extraction" })).toBe(
+        true,
+      );
+    });
+  });
+
+  describe("rejections", () => {
+    it("rejects a non-voice", () => {
+      expect(isBackgroundVoice({ text: 5 })).toBe(false);
+      expect(isBackgroundVoice(null)).toBe(false);
+    });
+
+    it("rejects an unknown source string", () => {
+      expect(isBackgroundVoice({ text: "a", source: "auto" })).toBe(false);
+    });
+
+    it("rejects a non-string source", () => {
+      expect(isBackgroundVoice({ text: "a", source: 1 })).toBe(false);
     });
   });
 });

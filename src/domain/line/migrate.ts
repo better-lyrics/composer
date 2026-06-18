@@ -1,9 +1,18 @@
 import { reconcileLine, type LineIdentity, type LooseLine, type NestedLyricLine } from "@/domain/line/model";
-import type { BackgroundVoice, Voice } from "@/domain/voice/model";
-import { bgVoice, mainVoice } from "@/domain/line/voices";
+import { isBackgroundVoice, isVoice } from "@/domain/voice/predicates";
+import type { Voice } from "@/domain/voice/model";
 import type { WordTiming } from "@/domain/word/timing";
+import { bgVoice, mainVoice } from "@/domain/line/voices";
 
 // -- Helpers ------------------------------------------------------------------
+
+// Collapse a validated voice to exactly one timing arm, mirroring reconcileLine:
+// words wins over a stale begin/end pair so the flat and nested paths agree.
+function normalizeVoiceArm(v: Voice): Voice {
+  if ("words" in v) return { text: v.text, words: v.words };
+  if ("begin" in v) return { text: v.text, begin: v.begin, end: v.end };
+  return { text: v.text };
+}
 
 function pickIdentity(source: Record<string, unknown>): LineIdentity {
   const identity: LineIdentity = { id: source.id as string, agentId: source.agentId as string };
@@ -37,9 +46,14 @@ function migrateFlat(source: Record<string, unknown>): NestedLyricLine {
 }
 
 function migrateNested(source: Record<string, unknown>, main: Record<string, unknown>): NestedLyricLine {
-  if (typeof main.text !== "string") throw new Error("migrateLine: nested line `main` is missing a string `text`");
-  const result: NestedLyricLine = { ...pickIdentity(source), main: main as Voice };
-  if (source.background !== undefined) result.background = source.background as BackgroundVoice;
+  if (!isVoice(main)) throw new Error("migrateLine: nested line `main` is not a valid voice");
+  const result: NestedLyricLine = { ...pickIdentity(source), main: normalizeVoiceArm(main) };
+  if (source.background != null) {
+    if (!isBackgroundVoice(source.background)) {
+      throw new Error("migrateLine: nested line `background` is not a valid background voice");
+    }
+    result.background = source.background;
+  }
   return result;
 }
 

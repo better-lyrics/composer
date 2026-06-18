@@ -317,4 +317,75 @@ describe("migrateLine", () => {
       expect("detached" in result).toBe(false);
     });
   });
+
+  // -- migrateLine: nested validation -----------------------------------------
+
+  describe("nested validation", () => {
+    it("treats background: null as no background (omits the key)", () => {
+      const result = migrateLine({ id: "n4", agentId: "v1", main: { text: "x" }, background: null });
+      expect("background" in result).toBe(false);
+    });
+
+    it("is idempotent for an already-nested line with a valid background", () => {
+      const nested: NestedLyricLine = {
+        id: "n5",
+        agentId: "v1",
+        main: { text: "Hello world", words: helloWords },
+        background: { text: "ah oh", words: ahWords, source: "extraction" },
+      };
+      const result = migrateLine(nested);
+      expect(result).toEqual(nested);
+    });
+
+    it("throws when a nested main is invalid (no text)", () => {
+      expect(() => migrateLine({ id: "n6", agentId: "v1", main: { begin: 1, end: 2 } })).toThrow();
+    });
+
+    it("throws when a nested main has a begin but no end", () => {
+      expect(() => migrateLine({ id: "n7", agentId: "v1", main: { text: "x", begin: 1 } })).toThrow();
+    });
+
+    it("throws when a nested background has an invalid shape (non-string text)", () => {
+      expect(() => migrateLine({ id: "n8", agentId: "v1", main: { text: "x" }, background: { text: 5 } })).toThrow();
+    });
+
+    it("throws when a nested background has an unknown source", () => {
+      expect(() =>
+        migrateLine({ id: "n9", agentId: "v1", main: { text: "x" }, background: { text: "ah", source: "auto" } }),
+      ).toThrow();
+    });
+
+    it("prefers words over stale begin/end on a nested main (matches the flat path)", () => {
+      const result = migrateLine({
+        id: "n10",
+        agentId: "v1",
+        main: { text: "hello", words: helloWords, begin: 1, end: 2 },
+      });
+      expect(result.main).toEqual({ text: "hello", words: helloWords });
+      expect("begin" in result.main).toBe(false);
+      expect("end" in result.main).toBe(false);
+      if (!("words" in result.main)) throw new Error("expected a word voice");
+      expect(result.main.words).toBe(helloWords);
+    });
+
+    it("keeps a valid line-synced nested main unchanged (begin/end survive)", () => {
+      const result = migrateLine({
+        id: "n11",
+        agentId: "v1",
+        main: { text: "hello", begin: 3, end: 7.5 },
+      });
+      expect(result.main).toEqual({ text: "hello", begin: 3, end: 7.5 });
+    });
+
+    it("keeps a valid word-synced nested main unchanged", () => {
+      const result = migrateLine({
+        id: "n12",
+        agentId: "v1",
+        main: { text: "hello", words: helloWords },
+      });
+      expect(result.main).toEqual({ text: "hello", words: helloWords });
+      if (!("words" in result.main)) throw new Error("expected a word voice");
+      expect(result.main.words).toBe(helloWords);
+    });
+  });
 });
