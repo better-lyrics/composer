@@ -1,5 +1,5 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
 import { lineText } from "@/domain/line/voices";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
@@ -46,16 +46,18 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
       }
     }
 
-    return {
+    return reconcileLine({
       id: crypto.randomUUID(),
       text: cleanedText,
       agentId: defaultAgentId,
-    };
+    });
   });
 
   // Raw parentheses in `text` are the source of truth for background vocals;
   // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) => (/\([^)]*\)/.test(lineText(line)) ? { ...line, ...CLEARED_BACKGROUND } : line));
+  return mapped.map((line) =>
+    /\([^)]*\)/.test(lineText(line)) ? reconcileLine({ ...toFlat(line), ...CLEARED_BACKGROUND }) : line,
+  );
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -1,6 +1,6 @@
 import { useAudioStore } from "@/stores/audio";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
@@ -88,7 +88,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!realLine) return;
 
       if (isLineSynced(realLine)) {
-        const lineUpdates: Partial<LyricLine> = {};
+        const lineUpdates: Partial<LooseLine> = {};
         if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
         if (updates.end !== undefined) lineUpdates.end = updates.end;
         updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });

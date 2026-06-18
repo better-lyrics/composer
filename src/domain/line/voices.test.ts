@@ -1,5 +1,6 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
+import { isUntimed } from "@/domain/voice/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { bgSource, bgText, bgVoice, bgWords, lineText, mainVoice, mainWords } from "@/domain/line/voices";
 
@@ -58,10 +59,10 @@ describe("mainVoice", () => {
       expect(voice).toEqual({ text: "Hello", begin: 0, end: 1 });
     });
 
-    it("treats an empty words array as untimed, matching ?.length falsiness", () => {
+    it("stores an empty words array verbatim and classifies it untimed", () => {
       const voice = mainVoice(line({ words: [] }));
-      expect(voice).toEqual({ text: "Hello" });
-      expect("words" in voice).toBe(false);
+      expect(voice).toEqual({ text: "Hello", words: [] });
+      expect(isUntimed(voice)).toBe(true);
     });
 
     it("prefers words over stale begin/end (regression: TTML import populates both)", () => {
@@ -257,9 +258,9 @@ describe("bgText", () => {
     expect(bgText(line())).toBeUndefined();
   });
 
-  it("returns undefined for a word-only background (unlike bgVoice which normalises to empty string)", () => {
+  it("returns the stored empty string for a word-only background with no authored text", () => {
     const backgroundWords: WordTiming[] = [{ text: "ah", begin: 1, end: 2 }];
-    expect(bgText(line({ backgroundWords }))).toBeUndefined();
+    expect(bgText(line({ backgroundWords }))).toBe("");
     expect(bgVoice(line({ backgroundWords }))?.text).toBe("");
   });
 });

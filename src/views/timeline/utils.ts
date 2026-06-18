@@ -4,7 +4,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordSelection } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -202,7 +202,7 @@ interface NudgeSelection {
 
 interface NudgeUpdate {
   id: string;
-  updates: Partial<LyricLine>;
+  updates: Partial<LooseLine>;
 }
 
 interface NudgeResult {

@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { toFlat } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { lineText, mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
@@ -100,7 +101,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
       if (!lineText(line).trim()) continue;
 
       if (isLineSynced(line)) {
-        const converted = convertLineToWord(line);
+        const converted = convertLineToWord(toFlat(line));
         if (converted.words) {
           updates.push({ id: line.id, updates: { words: converted.words, begin: undefined, end: undefined } });
         }

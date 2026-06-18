@@ -1,7 +1,7 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { type LooseLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -44,7 +44,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       return {
         lines: state.lines.map((line) => {
           if (line.id !== id) return line;
-          const reconciled = reconcileLine({ ...line, ...updates });
+          const reconciled = reconcileLine({ ...toFlat(line), ...updates });
           return deriveText ? withDerivedText(reconciled, splitChar) : reconciled;
         }),
         isDirty: true,
@@ -65,7 +65,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
-          return reconcileLine({ ...line, ...updates });
+          return reconcileLine({ ...toFlat(line), ...updates });
         }
         if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
@@ -74,7 +74,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
           const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, bgWords(line));
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
           if (Object.keys(siblingUpdates).length > 0) {
-            return reconcileLine({ ...line, ...siblingUpdates });
+            return reconcileLine({ ...toFlat(line), ...siblingUpdates });
           }
         }
         return line;
@@ -101,7 +101,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
         if (targetIdx !== undefined && target) {
-          newLines[targetIdx] = reconcileLine({ ...target, ...lineUpdates });
+          newLines[targetIdx] = reconcileLine({ ...toFlat(target), ...lineUpdates });
         }
 
         if (linkScope) {
@@ -114,7 +114,8 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
             if (propagatedWords) siblingUpdates.words = propagatedWords;
             const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, bgWords(line));
             if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-            if (Object.keys(siblingUpdates).length > 0) newLines[i] = reconcileLine({ ...line, ...siblingUpdates });
+            if (Object.keys(siblingUpdates).length > 0)
+              newLines[i] = reconcileLine({ ...toFlat(line), ...siblingUpdates });
           }
         }
       }
@@ -184,7 +185,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
           lines: state.lines.map((line) => {
             if (line.id !== lineId) return line;
             return reconcileLine({
-              ...line,
+              ...toFlat(line),
               ...extraUpdates,
               [field]: newWords,
               groupId: undefined,
@@ -200,13 +201,13 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
       const newLines = state.lines.map((line) => {
         if (line.id === lineId) {
-          return reconcileLine({ ...line, ...extraUpdates, [field]: newWords });
+          return reconcileLine({ ...toFlat(line), ...extraUpdates, [field]: newWords });
         }
         if (isLinkedSibling(line, linkScope)) {
           const propagated = applySiblingWords(newWords, sourceBefore, fieldWords(line, field));
           const siblingUpdates: Partial<LooseLine> = { ...(linkedExtras ?? {}) };
           if (propagated) siblingUpdates[field] = propagated;
-          if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...line, ...siblingUpdates });
+          if (Object.keys(siblingUpdates).length > 0) return reconcileLine({ ...toFlat(line), ...siblingUpdates });
         }
         return line;
       });
@@ -257,7 +258,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const snapped = closeIntraGroupGaps(lineWords);
       if (snapped === lineWords) return state;
       const lineUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(snapped) : { [field]: snapped };
-      const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...l, ...lineUpdate }) : l));
+      const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...toFlat(l), ...lineUpdate }) : l));
       return commitHistory(state, { lines: newLines });
     }),
 

@@ -1,7 +1,7 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -26,8 +26,8 @@ function fieldWords(line: LyricLine, field: "words" | "backgroundWords"): WordTi
 // the backgroundWords track is a user edit, so it routes through the funnel and
 // stamps source "manual". A main-words write carries no provenance.
 function writeFieldWords(line: LyricLine, field: "words" | "backgroundWords", words: WordTiming[]): LyricLine {
-  if (field === "backgroundWords") return reconcileLine({ ...line, ...manualBackgroundWordEdit(words) });
-  return reconcileLine({ ...line, words });
+  if (field === "backgroundWords") return reconcileLine({ ...toFlat(line), ...manualBackgroundWordEdit(words) });
+  return reconcileLine({ ...toFlat(line), words });
 }
 
 function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
@@ -87,7 +87,7 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
   const remainingMain = trimTrailingSpaceFromLast(main.filter((_, i) => !indexSet.has(i)));
   const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(bgWords(line) ?? [], movedWords), duration);
 
-  return applyBackground(reconcileLine({ ...line, words: remainingMain }), {
+  return applyBackground(reconcileLine({ ...toFlat(line), words: remainingMain }), {
     words: mergedBg,
     text: reconstructLineText(mergedBg, getSplitCharacter()),
     source: "manual",
@@ -117,7 +117,7 @@ function applyMoveFromBg(
 
   const withMain = applyMainWordEdit(line, mergedMain);
   if (remainingBg.length === 0) {
-    return reconcileLine({ ...withMain, ...CLEARED_BACKGROUND });
+    return reconcileLine({ ...toFlat(withMain), ...CLEARED_BACKGROUND });
   }
   return applyBackground(withMain, {
     words: remainingBg,

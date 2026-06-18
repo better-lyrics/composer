@@ -1,12 +1,11 @@
 import type { LineFields, LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
+import { reconcileLine, toFlat } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import type { BackgroundSource } from "@/domain/voice/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
-
-type BackgroundSource = "extraction" | "manual";
 
 interface BackgroundParams {
   text?: string;
@@ -33,7 +32,7 @@ function backgroundFields(params: BackgroundParams): BackgroundFields {
 }
 
 function applyBackground(line: LyricLine, params: BackgroundParams): LyricLine {
-  return reconcileLine({ ...line, ...backgroundFields(params) });
+  return reconcileLine({ ...toFlat(line), ...backgroundFields(params) });
 }
 
 // The coherent all-undefined triple, for clear sites where there is no
@@ -59,4 +58,3 @@ function manualBackgroundWordEdit(words: WordTiming[]): BackgroundFields {
 // -- Exports ------------------------------------------------------------------
 
 export { applyBackground, backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit };
-export type { BackgroundSource };

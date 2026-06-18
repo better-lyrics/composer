@@ -1,6 +1,6 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { mainBounds } from "@/domain/line/bounds";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import type { LinkGroup } from "@/domain/group/template";
@@ -195,7 +195,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
           if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
           const lineBounds = isLineSynced(line) ? mainBounds(line) : null;
           return reconcileLine({
-            ...line,
+            ...toFlat(line),
             begin: lineBounds ? lineBounds.begin + deltaSeconds : undefined,
             end: lineBounds ? lineBounds.end + deltaSeconds : undefined,
             words: mainWords(line)?.map((w) => ({

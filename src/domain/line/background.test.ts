@@ -9,7 +9,7 @@ import { mainBounds } from "@/domain/line/bounds";
 import { reconcileLine } from "@/domain/line/model";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 
 const line: LyricLine = reconcileLine({ id: "a", text: "hello", agentId: "v1" });
@@ -124,13 +124,13 @@ describe("applyBackground immutability and field preservation", () => {
     const result = applyBackground(source, { text: "ooh", source: "extraction" });
     expect(result).toMatchObject({
       id: "u1",
-      text: "verse one",
       agentId: "v2",
       groupId: "g1",
       instanceIdx: 0,
       templateLineIdx: 3,
       detached: true,
     });
+    expect(lineText(result)).toBe("verse one");
   });
 
   it("preserves the word-synced timing variant", () => {

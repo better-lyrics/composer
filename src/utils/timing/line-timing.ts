@@ -1,10 +1,10 @@
 import { mainBounds } from "@/domain/line/bounds";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 
 type UpdateLineWithHistory = (
   id: string,
-  updates: Partial<LyricLine>,
+  updates: Partial<LooseLine>,
   options?: { propagateToSiblings?: boolean },
 ) => void;
 

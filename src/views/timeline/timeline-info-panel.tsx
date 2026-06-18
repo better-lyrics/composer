@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import { backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { reconcileLine, toFlat } from "@/domain/line/model";
 import { Button } from "@/ui/button";
 import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -26,7 +27,9 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
     const trimmed = value.trim() || undefined;
     if (trimmed) {
       const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      const derivedBgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
+      const derivedBgWords = line
+        ? createBgWordsFromLine(reconcileLine({ ...toFlat(line), backgroundText: trimmed }))
+        : null;
       updateLineWithHistory(
         lineId,
         backgroundFields({ text: trimmed, words: derivedBgWords ?? undefined, source: "manual" }),

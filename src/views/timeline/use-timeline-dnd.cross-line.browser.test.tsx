@@ -236,7 +236,11 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       ],
     });
     const lines = useProjectStore.getState().lines;
-    const before = lines.map((l) => mainWords(l)?.map((w) => w.text).join("|"));
+    const before = lines.map((l) =>
+      mainWords(l)
+        ?.map((w) => w.text)
+        .join("|"),
+    );
     const baseline = toast.getHistory().length;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
@@ -254,7 +258,11 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       deltaY: 0,
     });
 
-    const after = useProjectStore.getState().lines.map((l) => mainWords(l)?.map((w) => w.text).join("|"));
+    const after = useProjectStore.getState().lines.map((l) =>
+      mainWords(l)
+        ?.map((w) => w.text)
+        .join("|"),
+    );
     expect(after).toEqual(before);
     const fired = toast.getHistory().slice(baseline);
     expect(fired.some((t) => "title" in t && /Detach the line first/.test(String(t.title)))).toBe(true);

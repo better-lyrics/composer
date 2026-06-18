@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { mainBounds } from "@/domain/line/bounds";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { bgSource, bgText, lineText, mainWords } from "@/domain/line/voices";
 import { describe, expect, it } from "vitest";
 import {
@@ -277,7 +277,7 @@ describe("propagateContentUpdates", () => {
     ];
     const newLines: LyricLine[] = [
       reconcileLine({
-        ...oldLines[0],
+        ...toFlat(oldLines[0]),
         text: "I luv you",
         words: [
           { text: "I ", begin: 10, end: 10.4 },

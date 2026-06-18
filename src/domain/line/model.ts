@@ -1,4 +1,4 @@
-import type { BackgroundVoice, Voice } from "@/domain/voice/model";
+import type { BackgroundSource, BackgroundVoice, Voice } from "@/domain/voice/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -9,44 +9,20 @@ interface LineFields {
   agentId: string;
   backgroundText?: string;
   backgroundWords?: WordTiming[];
-  backgroundTextSource?: "extraction" | "manual";
+  backgroundTextSource?: BackgroundSource;
   groupId?: string;
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
 }
 
-// LyricLine is a discriminated union over its timing shape. The discriminant is
-// structural (presence of `words` vs `begin`/`end`), not a literal `kind` tag,
-// so saved projects need no migration. The `never` constraints make a both-state
-// line (`words` + `begin`) a compile error at every constructor and write.
-interface WordSyncedLine extends LineFields {
-  words: WordTiming[];
-  begin?: never;
-  end?: never;
-}
-
-interface LineSyncedLine extends LineFields {
-  begin: number;
-  end: number;
-  words?: never;
-}
-
-interface UntimedLine extends LineFields {
-  words?: never;
-  begin?: never;
-  end?: never;
-}
-
-type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
-
-// A line shape before reconcileLine narrows it to a concrete variant: any
-// combination of timing fields may be present. Used for merge scratch objects.
+// A line shape before reconcileLine lifts it to the nested model: any
+// combination of flat timing fields may be present. This is the input type for
+// reconcileLine and for every store update payload (callers stay flat).
 type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
-// The nested target shape the storage flip migrates toward. Identity stays flat;
-// timing lives inside Voice (main) and BackgroundVoice (background) rather than
-// being spread across sibling fields. A later phase makes this the stored model.
+// Identity fields stay flat on the stored line; timing lives nested inside the
+// main Voice and optional background BackgroundVoice.
 type LineIdentity = {
   id: string;
   agentId: string;
@@ -58,23 +34,58 @@ type LineIdentity = {
 
 type NestedLyricLine = LineIdentity & { main: Voice; background?: BackgroundVoice };
 
+// The stored line shape: nested timing, flat identity. Reads go through the
+// voice seam (`@/domain/line/voices`); writes go through reconcileLine (which
+// takes flat input and lifts to nested) or toFlat + reconcileLine for merges.
+type LyricLine = NestedLyricLine;
+
 // -- Functions ----------------------------------------------------------------
 
-// The store builds lines by spreading `...line` (a union member) together with
-// Partial<LyricLine> updates or fresh timing fields. A generic spread widens
-// past the LyricLine union, so reconcileLine re-narrows a freshly merged line
-// into exactly one variant by its runtime shape. It enforces the core
-// invariant: a line is never both word-synced and line-synced. A `words` array
-// (even empty) wins and drops begin/end.
+// Lifts a flat LooseLine to the nested stored model. A `words` array (even
+// empty) makes the main voice word-synced and drops begin/end; otherwise a
+// begin/end pair makes it line-synced; otherwise it is untimed. A background
+// voice is present when there is background text or a non-empty background word
+// array, carrying the provenance source. This is the single write chokepoint:
+// every store update merges flat fields then calls reconcileLine.
 function reconcileLine(line: LooseLine): LyricLine {
-  const { words, begin, end, ...rest } = line;
-  if (words !== undefined) return { ...rest, words };
-  if (begin !== undefined && end !== undefined) return { ...rest, begin, end };
-  return rest;
+  const { words, begin, end, backgroundText, backgroundWords, backgroundTextSource, text, ...identity } = line;
+  const main: Voice =
+    words !== undefined ? { text, words } : begin !== undefined && end !== undefined ? { text, begin, end } : { text };
+  let background: BackgroundVoice | undefined;
+  if (backgroundWords !== undefined && backgroundWords.length > 0) {
+    background = { text: backgroundText ?? "", words: backgroundWords, source: backgroundTextSource };
+  } else if (backgroundText !== undefined) {
+    background = { text: backgroundText, source: backgroundTextSource };
+  }
+  return background !== undefined ? { ...identity, main, background } : { ...identity, main };
+}
+
+// Flattens a stored nested line back to a LooseLine. The inverse of
+// reconcileLine: spreads identity, derives the flat timing fields from the main
+// voice variant, and the flat background fields from the background voice. Used
+// to merge a flat update payload onto an existing stored line:
+// reconcileLine({ ...toFlat(line), ...updates }).
+function toFlat(line: LyricLine): LooseLine {
+  const { main, background, ...identity } = line;
+  const flat: LooseLine = { ...identity, text: main.text };
+  if ("words" in main) flat.words = main.words;
+  else if ("begin" in main) {
+    flat.begin = main.begin;
+    flat.end = main.end;
+  }
+  // No line-synced-background branch: LooseLine has no backgroundBegin/end field
+  // to emit one, and reconcileLine never builds one. A later phase that adds
+  // line-synced backgrounds must extend both LooseLine and this block.
+  if (background !== undefined) {
+    flat.backgroundText = background.text;
+    if ("words" in background) flat.backgroundWords = background.words;
+    flat.backgroundTextSource = background.source;
+  }
+  return flat;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { reconcileLine };
+export { reconcileLine, toFlat };
 
-export type { LineFields, LineIdentity, LineSyncedLine, LyricLine, LooseLine, NestedLyricLine };
+export type { LineFields, LineIdentity, LyricLine, LooseLine, NestedLyricLine };

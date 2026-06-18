@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 
@@ -46,13 +46,15 @@ function parseSrt(content: string, _fallbackDuration?: number): ParseResult {
       .trim();
 
     if (text) {
-      lines.push({
-        id: generateLineId(),
-        text,
-        agentId: "v1",
-        begin,
-        end,
-      });
+      lines.push(
+        reconcileLine({
+          id: generateLineId(),
+          text,
+          agentId: "v1",
+          begin,
+          end,
+        }),
+      );
     }
   }
 

@@ -1,7 +1,7 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { mainWordEditFields } from "@/domain/line/main-words";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -96,7 +96,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   const wordsToDuplicate = expandSelectionsAcrossLines(lines, resolveWordsToOperate(activeData, selectedWords));
 
   const timeDelta = delta.x / zoom;
-  const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
+  const updates: Array<{ id: string; updates: Partial<LooseLine> }> = [];
 
   const grouped = groupSelectionsByLine(wordsToDuplicate);
   const linesById = new Map<string, LyricLine>();
@@ -123,7 +123,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
       else bgDups.push(dup);
     }
 
-    const lineUpdates: Partial<LyricLine> = {};
+    const lineUpdates: Partial<LooseLine> = {};
 
     if (wordDups.length > 0) {
       const existing = mainWords(line) ?? [];
@@ -159,7 +159,7 @@ function applySameLineReorder(
 ) {
   if (wordsToMove.length > 1) {
     const grouped = groupSelectionsByLine(wordsToMove);
-    const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
+    const updates: Array<{ id: string; updates: Partial<LooseLine> }> = [];
     const linesById = new Map<string, LyricLine>();
     for (const l of lines) linesById.set(l.id, l);
 
@@ -167,7 +167,7 @@ function applySameLineReorder(
       const line = linesById.get(lineId);
       if (!line) continue;
 
-      const lineUpdates: Partial<LyricLine> = {};
+      const lineUpdates: Partial<LooseLine> = {};
       const wordIndices = new Set(selections.flatMap((s) => (s.type === "word" ? [s.wordIndex] : [])));
       const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 

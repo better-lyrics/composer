@@ -274,7 +274,7 @@ describe("commitPendingLineEdit", () => {
     useProjectStore.getState().commitPendingLineEdit(baseline);
 
     const committedIndex = useProjectStore.getState().historyIndex;
-    useProjectStore.getState().lines[0].text = "live mutation";
+    useProjectStore.getState().lines[0].main.text = "live mutation";
 
     expect(lineText(useProjectStore.getState().history[committedIndex].lines[0])).toBe("clone me edited");
   });
@@ -424,7 +424,7 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     useProjectStore.getState().setLines([seedLine("a", { text: "C" })]);
     useProjectStore.getState().commitPendingLineEdit(baseline, true);
 
-    baseline[0].text = "live mutation";
+    baseline[0].main.text = "live mutation";
     useProjectStore.getState().undo();
     expect(lineText(useProjectStore.getState().lines[0])).toBe("B");
   });

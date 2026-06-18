@@ -1,6 +1,6 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { mainWordEditFields } from "@/domain/line/main-words";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import type { WordTiming } from "@/domain/word/timing";
@@ -18,7 +18,7 @@ interface PasteInput {
 
 interface LineUpdate {
   id: string;
-  updates: Partial<LyricLine>;
+  updates: Partial<LooseLine>;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -54,7 +54,7 @@ function applyPasteToLines({
       else newBgWords.push(newWord);
     }
 
-    const lineUpdates: Partial<LyricLine> = {};
+    const lineUpdates: Partial<LooseLine> = {};
     if (newWords.length > 0) {
       Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(mainWords(line) ?? [], newWords)));
     }

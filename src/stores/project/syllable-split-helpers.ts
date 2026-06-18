@@ -1,5 +1,5 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
@@ -44,7 +44,7 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
   }
 
   return reconcileLine({
-    ...line,
+    ...toFlat(line),
     ...(mainTrack !== originalMain ? { words: mainTrack } : {}),
     ...(bgTrack && bgTrack !== originalBg ? manualBackgroundWordEdit(bgTrack) : {}),
   });

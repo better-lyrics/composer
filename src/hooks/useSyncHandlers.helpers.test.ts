@@ -4,7 +4,7 @@ import {
   prepareSyncWord,
   withBgSeedIfNeeded,
 } from "@/hooks/useSyncHandlers.helpers";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
 import type { SyncState } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
@@ -50,7 +50,7 @@ describe("prepareSyncWord", () => {
 describe("withBgSeedIfNeeded", () => {
   it("returns updates unchanged when line has no backgroundText", () => {
     const line = createLine({ text: "Hello" });
-    const updates: Partial<LyricLine> = { begin: 0, end: 1 };
+    const updates: Partial<LooseLine> = { begin: 0, end: 1 };
     const result = withBgSeedIfNeeded(updates, line, 0);
     expect(result.backgroundWords).toBeUndefined();
     expect(result).toBe(updates);
@@ -58,7 +58,7 @@ describe("withBgSeedIfNeeded", () => {
 
   it("seeds backgroundWords when backgroundText exists and backgroundWords empty", () => {
     const line = createLine({ text: "Hello", backgroundText: "ooh ahh" });
-    const result = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: 0, end: 1 }, line, 0.5);
+    const result = withBgSeedIfNeeded<Partial<LooseLine>>({ begin: 0, end: 1 }, line, 0.5);
     expect(result.backgroundWords).toBeDefined();
     expect((result.backgroundWords ?? []).length).toBeGreaterThan(0);
   });
@@ -69,7 +69,7 @@ describe("withBgSeedIfNeeded", () => {
       backgroundText: "ooh ahh",
       backgroundWords: [{ text: "ooh", begin: 0, end: 1 }],
     });
-    const result = withBgSeedIfNeeded<Partial<LyricLine>>({}, line, 0);
+    const result = withBgSeedIfNeeded<Partial<LooseLine>>({}, line, 0);
     expect(result.backgroundWords).toBeUndefined();
   });
 });

@@ -129,7 +129,11 @@ describe("parseLyricsFile - enhanced LRC (eLRC)", () => {
     const result = parseLyricsFile("song.lrc", content);
 
     expect(lineText(result.lines[0])).toBe("Hello beautiful world");
-    expect(mainWords(result.lines[0])?.map((w) => w.text).join("")).toBe("Hello beautiful world");
+    expect(
+      mainWords(result.lines[0])
+        ?.map((w) => w.text)
+        .join(""),
+    ).toBe("Hello beautiful world");
   });
 
   it("falls back to line-level timing and strips inline tags when a line has multiple line timestamps", () => {

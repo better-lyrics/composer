@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 
-const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
-  ({
+const baseLine = (overrides: Partial<LooseLine> = {}): LyricLine =>
+  reconcileLine({
     id: "l1",
     agentId: "a1",
     text: "hello world",
@@ -14,7 +14,7 @@ const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
       { text: "world", begin: 0.5, end: 1 },
     ],
     ...overrides,
-  }) as LyricLine;
+  });
 
 describe("applyMainWordEdit", () => {
   describe("happy paths", () => {

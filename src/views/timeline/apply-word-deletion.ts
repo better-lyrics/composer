@@ -3,7 +3,7 @@ import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/back
 import { mainBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { getSplitCharacter } from "@/utils/split-character";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
@@ -15,11 +15,7 @@ interface DeletionSelection {
 }
 
 function isLineFullyEmpty(line: LyricLine): boolean {
-  return (
-    (mainWords(line)?.length ?? 0) === 0 &&
-    (bgWords(line)?.length ?? 0) === 0 &&
-    mainBounds(line) === null
-  );
+  return (mainWords(line)?.length ?? 0) === 0 && (bgWords(line)?.length ?? 0) === 0 && mainBounds(line) === null;
 }
 
 function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<DeletionSelection>): LyricLine[] {
@@ -64,7 +60,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
 
     const bgWordsArr = bgWords(line);
     const bgEdited = (bgWordsArr?.length ?? 0) > 0 && bgIdxs.size > 0 && bgWordsArr !== undefined;
-    let bgFields: Partial<LyricLine> = {};
+    let bgFields: Partial<LooseLine> = {};
     if (bgEdited && bgWordsArr) {
       const absorbed = absorbDeletedSyllablesIntoNeighbors(bgWordsArr, bgIdxs);
       const remaining = absorbed.filter((_, i) => !bgIdxs.has(i));
@@ -72,7 +68,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     }
 
     const updatedLine = reconcileLine({
-      ...line,
+      ...toFlat(line),
       words: nextMain,
       text: nextMain && nextMain.length > 0 ? reconstructLineText(nextMain, splitChar) : lineText(line),
       ...bgFields,

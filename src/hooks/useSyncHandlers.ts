@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { isLineSynced, hasAnyTiming } from "@/domain/line/predicates";
 import { lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
@@ -112,7 +112,7 @@ function useSyncHandlers({
       updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
-    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
+    const updates = withBgSeedIfNeeded<Partial<LooseLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
     updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);

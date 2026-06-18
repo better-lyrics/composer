@@ -115,7 +115,8 @@ function useContextMenuTargets() {
     const trackTarget = contextMenu.target;
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
-    const canPlace = lineText(targetLine).trim() !== "" && !mainWords(targetLine)?.length && mainBounds(targetLine) === null;
+    const canPlace =
+      lineText(targetLine).trim() !== "" && !mainWords(targetLine)?.length && mainBounds(targetLine) === null;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 

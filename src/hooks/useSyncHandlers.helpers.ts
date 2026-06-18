@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { bgText, bgWords, lineText } from "@/domain/line/voices";
 import { createInitialBgWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
 
@@ -31,7 +31,7 @@ function prepareSyncWord(
   return { line, lineWords, trailingSpace, textWithSpace };
 }
 
-function withBgSeedIfNeeded<T extends Partial<LyricLine>>(updates: T, line: LyricLine, bgBegin: number): T {
+function withBgSeedIfNeeded<T extends Partial<LooseLine>>(updates: T, line: LyricLine, bgBegin: number): T {
   const bgTextValue = bgText(line);
   if (bgTextValue && !bgWords(line)?.length) {
     updates.backgroundWords = createInitialBgWords(bgTextValue, bgBegin);
@@ -44,7 +44,7 @@ function buildInitialWordUpdates(
   textWithSpace: string,
   begin: number,
   end: number,
-): Partial<LyricLine> {
+): Partial<LooseLine> {
   return withBgSeedIfNeeded({ words: [{ text: textWithSpace, begin, end }] }, line, begin);
 }
 

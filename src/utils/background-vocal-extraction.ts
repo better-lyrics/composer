@@ -1,8 +1,8 @@
 import { applyBackground } from "@/domain/line/background";
-import type { BackgroundSource } from "@/domain/line/background";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
+import { reconcileLine, toFlat } from "@/domain/line/model";
+import type { BackgroundSource } from "@/domain/voice/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { mainBounds } from "@/domain/line/bounds";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
@@ -136,7 +136,7 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   const base = bgSource(line) === "extraction" ? undefined : bgTextField(line);
   return applyBackground(
     reconcileLine({
-      ...line,
+      ...toFlat(line),
       words: trimmedSurvivors,
       text: reconstructLineText(trimmedSurvivors, splitChar),
     }),
@@ -154,13 +154,10 @@ function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricL
   const existingBgWords = bgWords(line);
   if (existingBgWords && existingBgWords.length > 0) return line;
   const base = bgSource(line) === "extraction" ? undefined : bgTextField(line);
-  return applyBackground(
-    { ...line, text: classified.mainText },
-    {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-      source: base ? "manual" : "extraction",
-    },
-  );
+  return applyBackground(reconcileLine({ ...toFlat(line), text: classified.mainText }), {
+    text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+    source: base ? "manual" : "extraction",
+  });
 }
 
 // -- Whole-list transform -----------------------------------------------------

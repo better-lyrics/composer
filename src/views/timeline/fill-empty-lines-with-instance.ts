@@ -1,5 +1,5 @@
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
 import { mainWords } from "@/domain/line/voices";
 
 interface FillResult {
@@ -47,7 +47,7 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
     if (idx < startIndex || idx >= startIndex + template.length) return line;
     const tplLine = template[idx - startIndex];
     return reconcileLine({
-      ...line,
+      ...toFlat(line),
       text: tplLine.text,
       agentId: tplLine.agentId,
       groupId,

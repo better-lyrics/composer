@@ -1,6 +1,6 @@
 import { useDivergenceStore } from "@/stores/divergence-store";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { showGroupActionToast } from "@/utils/group-toast";
@@ -22,7 +22,7 @@ async function handleWordChangeWithDivergenceCheck(
   lineId: string,
   newWords: WordTiming[],
   field: "words" | "backgroundWords" = "words",
-  extraUpdates: Partial<LyricLine> = {},
+  extraUpdates: Partial<LooseLine> = {},
 ): Promise<void> {
   const lines = useProjectStore.getState().lines;
   const target = lines.find((l) => l.id === lineId);

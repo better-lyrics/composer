@@ -2,7 +2,7 @@ import { extractLinkedFields } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { isLinked } from "@/domain/instance/predicates";
 import { mainBounds } from "@/domain/line/bounds";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
@@ -11,7 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 
 interface ContentUpdate {
   id: string;
-  updates: Partial<LyricLine>;
+  updates: Partial<LooseLine>;
 }
 
 interface DiffResult {
@@ -25,7 +25,12 @@ type TimingField = "words" | "begin" | "end" | "backgroundWords";
 type ContentField = "text" | "agentId" | "backgroundText" | "backgroundTextSource";
 
 const TIMING_CLEAR_FIELDS = ["words", "begin", "end", "backgroundWords"] as const satisfies readonly TimingField[];
-const CONTENT_FIELDS = ["text", "agentId", "backgroundText", "backgroundTextSource"] as const satisfies readonly ContentField[];
+const CONTENT_FIELDS = [
+  "text",
+  "agentId",
+  "backgroundText",
+  "backgroundTextSource",
+] as const satisfies readonly ContentField[];
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -70,7 +75,7 @@ function diffEditTextChange(oldLines: LyricLine[], newLines: LyricLine[]): DiffR
   for (let i = 0; i < oldLines.length; i++) {
     const oldLine = oldLines[i];
     const newLine = newLines[i];
-    const updates: Partial<LyricLine> = {};
+    const updates: Partial<LooseLine> = {};
 
     for (const field of CONTENT_FIELDS) {
       const newValue = readContentField(newLine, field);
@@ -183,7 +188,7 @@ function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstanc
 interface LinkedScope {
   groupId: string;
   templateLineIdx: number;
-  linkedUpdate: Partial<LyricLine>;
+  linkedUpdate: Partial<LooseLine>;
   sourceWordsBefore: WordTiming[] | undefined;
   sourceWordsAfter: WordTiming[] | undefined;
   sourceBgWordsBefore: WordTiming[] | undefined;
@@ -242,15 +247,11 @@ function propagateContentUpdates(
       Object.assign(merged, scope.linkedUpdate);
       const propagatedWords = propagateWordChanges(scope.sourceWordsAfter, scope.sourceWordsBefore, mainWords(line));
       if (propagatedWords) merged.words = propagatedWords;
-      const propagatedBg = propagateWordChanges(
-        scope.sourceBgWordsAfter,
-        scope.sourceBgWordsBefore,
-        bgWords(line),
-      );
+      const propagatedBg = propagateWordChanges(scope.sourceBgWordsAfter, scope.sourceBgWordsBefore, bgWords(line));
       if (propagatedBg) merged.backgroundWords = propagatedBg;
     }
     if (Object.keys(merged).length === 0) return line;
-    return reconcileLine({ ...line, ...merged });
+    return reconcileLine({ ...toFlat(line), ...merged });
   });
 }
 

@@ -1,7 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
@@ -379,7 +379,7 @@ function useTimelineKeyboard(
           const lineIndex = nSel[0].lineIndex;
           const agents = useProjectStore.getState().agents;
           const defaultAgentId = agents?.[0]?.id ?? "v1";
-          const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
+          const newLine = reconcileLine({ id: crypto.randomUUID(), text: "", agentId: defaultAgentId });
           const newLines = [...lines];
           const insertIndex = matched === "timeline.insertLineAbove" ? lineIndex : lineIndex + 1;
           newLines.splice(insertIndex, 0, newLine);

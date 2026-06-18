@@ -15,6 +15,7 @@ import {
 } from "@/utils/animationVariants";
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
+import { reconcileLine, toFlat } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import {
@@ -194,8 +195,9 @@ const SyncPanel: React.FC = () => {
     };
   }, [editMode]);
 
-  const totalWords = useMemo(() => getTotalWords(lines), [lines]);
-  const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
+  const flatLines = useMemo(() => lines.map(toFlat), [lines]);
+  const totalWords = useMemo(() => getTotalWords(flatLines), [flatLines]);
+  const syncedWords = useMemo(() => getSyncedWordCount(flatLines), [flatLines]);
   const syncedLines = useMemo(() => getSyncedLineCount(lines), [lines]);
 
   const progressText = granularity === "word" ? `${syncedWords}/${totalWords}` : `${syncedLines}/${lines.length}`;
@@ -205,7 +207,7 @@ const SyncPanel: React.FC = () => {
       if (newGranularity === granularity) return;
 
       if (newGranularity === "word" && hasLineTiming(lines)) {
-        const convertedLines = lines.map((line) => convertLineToWord(line));
+        const convertedLines = lines.map((line) => reconcileLine(convertLineToWord(toFlat(line))));
         setLinesWithHistory(convertedLines);
       }
 
@@ -514,7 +516,7 @@ const SyncPanel: React.FC = () => {
             </div>
           ) : (
             <SyncCarousel
-              lines={lines}
+              lines={flatLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}

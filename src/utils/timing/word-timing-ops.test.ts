@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine } from "@/domain/line/model";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { createLine } from "@/test/factories";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 
 interface CapturedUpdate {
   id: string;
-  updates: Partial<LyricLine>;
+  updates: Partial<LooseLine>;
   options?: { propagateToSiblings?: boolean };
 }
 
@@ -14,7 +14,7 @@ function captureUpdates() {
   const calls: CapturedUpdate[] = [];
   const updateLineWithHistory = (
     id: string,
-    updates: Partial<LyricLine>,
+    updates: Partial<LooseLine>,
     options?: { propagateToSiblings?: boolean },
   ) => {
     calls.push({ id, updates, options });

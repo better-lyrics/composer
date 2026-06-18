@@ -1,11 +1,11 @@
-import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { bgVoice, mainVoice } from "@/domain/line/voices";
 import { voiceBounds } from "@/domain/voice/bounds";
 import { isLineSynced as isLineSyncedVoice, isWordSynced as isWordSyncedVoice } from "@/domain/voice/predicates";
 
 // -- Predicates ---------------------------------------------------------------
 
-function isLineSynced(line: LyricLine): line is LineSyncedLine {
+function isLineSynced(line: LyricLine): boolean {
   return isLineSyncedVoice(mainVoice(line));
 }
 

@@ -1,3 +1,4 @@
+import { reconcileLine } from "@/domain/line/model";
 import { lineText } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -49,7 +50,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       const targetIndex = rawLines.findIndex((l) => l.id === lineId);
       if (targetIndex === -1) return;
       const defaultAgentId = agents?.[0]?.id ?? "v1";
-      const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
+      const newLine = reconcileLine({ id: crypto.randomUUID(), text: "", agentId: defaultAgentId });
       const newLines = [...rawLines];
       const insertIndex = position === "above" ? targetIndex : targetIndex + 1;
       newLines.splice(insertIndex, 0, newLine);

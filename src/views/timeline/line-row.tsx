@@ -301,9 +301,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               });
             }}
           >
-            {bgTextValue
-              ? `${bgTextValue.slice(0, 40)}${bgTextValue.length > 40 ? "..." : ""}`
-              : "BG"}
+            {bgTextValue ? `${bgTextValue.slice(0, 40)}${bgTextValue.length > 40 ? "..." : ""}` : "BG"}
           </div>
         )}
       </div>

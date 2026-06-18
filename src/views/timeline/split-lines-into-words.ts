@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import { toFlat, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordSelection } from "@/domain/selection/model";
 import { useProjectStore } from "@/stores/project";
@@ -9,7 +9,7 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 interface LineWordsUpdate {
   id: string;
-  updates: Partial<LyricLine>;
+  updates: Partial<LooseLine>;
 }
 
 // -- Pure computation ----------------------------------------------------------
@@ -22,7 +22,7 @@ function computeSplitIntoWordsUpdates(targetLineIds: Iterable<string>, rawLines:
   for (const id of targetLineIds) {
     const realLine = rawLinesById.get(id);
     if (!realLine || !isLineSynced(realLine)) continue;
-    const converted = convertLineToWord(realLine);
+    const converted = convertLineToWord(toFlat(realLine));
     if (converted.words) {
       updates.push({ id, updates: { words: converted.words, begin: undefined, end: undefined } });
     }

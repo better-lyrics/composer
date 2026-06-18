@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { selfKey } from "@/views/timeline/snap";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -187,7 +187,7 @@ const TimelinePanel: React.FC = () => {
     const hasAnyTiming = lines.some((l) => mainBounds(l) !== null);
 
     if (!hasAnyTiming) {
-      const distributed = distributeLinesTiming(lines, duration);
+      const distributed = distributeLinesTiming(lines.map(toFlat), duration).map(reconcileLine);
       setLines(distributed);
     }
     lastDistributedDurationRef.current = duration;

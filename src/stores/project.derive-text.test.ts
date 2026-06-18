@@ -72,7 +72,9 @@ describe("updateLineWithHistory derives text from words", () => {
   });
 
   it("leaves text untouched for a line with no words", () => {
-    useProjectStore.getState().setLines([reconcileLine({ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 })]);
+    useProjectStore
+      .getState()
+      .setLines([reconcileLine({ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 })]);
 
     useProjectStore.getState().updateLineWithHistory("l1", { begin: 1 });
 

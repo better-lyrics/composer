@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, toFlat } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { isLineSynced } from "@/domain/line/predicates";
 import { mainVoice } from "@/domain/line/voices";
@@ -13,8 +14,7 @@ function effectiveWords(line: LyricLine): WordTiming[] {
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
     if (!isLineSynced(line)) return line;
-    const { begin, end, ...rest } = line;
-    return { ...rest, words: effectiveWords(line) };
+    return reconcileLine({ ...toFlat(line), words: effectiveWords(line) });
   });
 }
 

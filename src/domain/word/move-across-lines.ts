@@ -1,7 +1,7 @@
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -113,8 +113,8 @@ function applyRemovals(line: LyricLine, removals: SourceRemovals): LyricLine {
     const remaining = trimTrailingSpaceFromLast(bg.filter((_, i) => !removals.bg.has(i)));
     updated =
       remaining.length > 0
-        ? reconcileLine({ ...updated, ...manualBackgroundWordEdit(remaining) })
-        : reconcileLine({ ...updated, ...CLEARED_BACKGROUND });
+        ? reconcileLine({ ...toFlat(updated), ...manualBackgroundWordEdit(remaining) })
+        : reconcileLine({ ...toFlat(updated), ...CLEARED_BACKGROUND });
   }
   return updated;
 }
@@ -127,7 +127,7 @@ function applyInserts(line: LyricLine, inserts: TargetInserts, duration: number)
   }
   if (inserts.bg.length > 0) {
     const merged = resolveOverlapsForward(mergeWordsIntoTrack(bgWords(updated) ?? [], inserts.bg), duration);
-    updated = reconcileLine({ ...updated, ...manualBackgroundWordEdit(merged) });
+    updated = reconcileLine({ ...toFlat(updated), ...manualBackgroundWordEdit(merged) });
   }
   return updated;
 }
