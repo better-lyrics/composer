@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { LineRow } from "@/views/timeline/line-row";
 import { mainBounds } from "@/domain/line/bounds";
-import { bgSource, bgWords } from "@/domain/line/voices";
+import { reconcileLine } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/voice/predicates";
+import { bgSource, bgVoice, bgWords, lineText } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 
 describe("LineRow", () => {
   it("renders one word block per word on a synced line", async () => {
@@ -131,5 +135,70 @@ describe("LineRow", () => {
 
     await expect.poll(() => bgWords(useProjectStore.getState().lines[0])?.length).toBe(1);
     expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+  });
+});
+
+// End-to-end lock for the Task 8.1 fix at its real UI call site. The store-level
+// regression hardcodes { propagateToSiblings: false }; this test drives the
+// actual "Place" button in SyncLineButton, so it fails if anyone drops that
+// option from the call site (which would clobber a linked sibling's background).
+describe("LineRow · place line keeps linked sibling background", () => {
+  function getLine(id: string) {
+    const line = useProjectStore.getState().lines.find((l) => l.id === id);
+    if (!line) throw new Error(`line ${id} not found`);
+    return line;
+  }
+
+  it("placing an untimed line via the Place button leaves a linked sibling's background untouched", async () => {
+    const placeTime = 5;
+    const group = createGroup({ id: "g1" });
+    const target = reconcileLine({
+      id: "target",
+      text: "I love you",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 0,
+    });
+    const sibling = reconcileLine({
+      id: "sibling",
+      text: "I love you",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 0,
+      backgroundText: "ooh ooh",
+      backgroundWords: [
+        { text: "ooh ", begin: 20, end: 20.5 },
+        { text: "ooh", begin: 20.5, end: 21 },
+      ],
+      backgroundTextSource: "manual",
+    });
+    useProjectStore.setState({ groups: [group], lines: [target, sibling] });
+    useAudioStore.setState({ currentTime: placeTime });
+    const siblingBgBefore = bgVoice(getLine("sibling"));
+    expect(siblingBgBefore).not.toBeNull();
+
+    const screen = await render(
+      <LineRow line={target} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+      { dndContext: true },
+    );
+    const placeButton = Array.from(screen.container.querySelectorAll("button")).find((b) => b.textContent === "Place");
+    expect(placeButton).toBeDefined();
+    placeButton?.click();
+
+    const wordDuration = useSettingsStore.getState().defaultWordDuration;
+    const wordCount = splitIntoWordsWithMeta(lineText(getLine("target"))).parts.length;
+    await expect.poll(() => isLineSynced(getLine("target").main)).toBe(true);
+    expect(mainBounds(getLine("target"))).toEqual({
+      begin: placeTime,
+      end: placeTime + Math.max(wordCount, 1) * wordDuration,
+    });
+
+    expect(bgVoice(getLine("sibling"))).toEqual(siblingBgBefore);
+    expect(bgWords(getLine("sibling"))).toEqual([
+      { text: "ooh ", begin: 20, end: 20.5 },
+      { text: "ooh", begin: 20.5, end: 21 },
+    ]);
   });
 });
