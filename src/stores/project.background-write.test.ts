@@ -6,7 +6,7 @@ import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { applyBackground } from "@/domain/line/background";
 import { placeVoice } from "@/domain/line/place-voice";
-import { bgVoice, bgWords, lineText, mainWords } from "@/domain/line/voices";
+import { bgText, bgVoice, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { isLineSynced, isWordSynced } from "@/domain/voice/predicates";
 import { useProjectStore } from "@/stores/project";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -951,6 +951,95 @@ describe("project store · placeVoice main · leaves linked siblings untouched",
     useProjectStore
       .getState()
       .setLineWithHistory("a0", placeVoice(target, "main", PLACE_TIME, PLACE_DUR), { propagateToSiblings: false });
+
+    expect(getLine("a1")).toBe(a1Before);
+  });
+});
+
+// Mirror of the main-place lock, for the "place background here" timeline item.
+// Placing one instance's BACKGROUND voice is a per-instance timing write that
+// must NOT propagate: a linked sibling that has its own untimed bg must keep it
+// untimed. Both arms place through setLineWithHistory with
+// { propagateToSiblings: false }, reproducing the production call convention.
+describe("project store · placeVoice background · leaves linked siblings untouched", () => {
+  const PLACE_TIME = 5;
+  const PLACE_DUR = 0.4;
+
+  // Two linked instances of the same line, each with an UNTIMED background
+  // (text only, no words). The main is untimed too so both sit in the
+  // placeable state the bg-track menu item gates on.
+  function seedLinkedPair() {
+    seed(
+      [
+        {
+          id: "a0",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          backgroundText: "ooh ooh",
+          backgroundTextSource: "manual",
+        },
+        {
+          id: "a1",
+          text: "I love you",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          backgroundText: "ooh ooh",
+          backgroundTextSource: "manual",
+        },
+      ],
+      [seedGroup("g1")],
+    );
+  }
+
+  it("regression: placing one instance's bg does not clobber a linked sibling's background", () => {
+    seedLinkedPair();
+    const siblingBgBefore = bgVoice(getLine("a1"));
+    expect(siblingBgBefore).not.toBeNull();
+    expect(bgBounds(getLine("a1"))).toBeNull();
+
+    const target = getLine("a0");
+    useProjectStore.getState().setLineWithHistory("a0", placeVoice(target, "background", PLACE_TIME, PLACE_DUR), {
+      propagateToSiblings: false,
+    });
+
+    expect(bgVoice(getLine("a1"))).toEqual(siblingBgBefore);
+    expect(bgBounds(getLine("a1"))).toBeNull();
+    expect(bgWords(getLine("a1"))).toBeUndefined();
+  });
+
+  it("places the target's bg line-synced at [time, time + max(bgWordCount,1)*dur]", () => {
+    seedLinkedPair();
+    const target = getLine("a0");
+    const text = bgText(target);
+    if (text === undefined) throw new Error("expected bg text");
+    const bgWordCount = splitIntoWordsWithMeta(text).parts.length;
+
+    useProjectStore.getState().setLineWithHistory("a0", placeVoice(target, "background", PLACE_TIME, PLACE_DUR), {
+      propagateToSiblings: false,
+    });
+
+    const placed = getLine("a0");
+    expect(bgWords(placed)).toBeUndefined();
+    expect(bgBounds(placed)).toEqual({
+      begin: PLACE_TIME,
+      end: PLACE_TIME + Math.max(bgWordCount, 1) * PLACE_DUR,
+    });
+    expect(mainBounds(placed)).toBeNull();
+  });
+
+  it("leaves the sibling reference-equal (no rewrite at all)", () => {
+    seedLinkedPair();
+    const a1Before = getLine("a1");
+
+    const target = getLine("a0");
+    useProjectStore.getState().setLineWithHistory("a0", placeVoice(target, "background", PLACE_TIME, PLACE_DUR), {
+      propagateToSiblings: false,
+    });
 
     expect(getLine("a1")).toBe(a1Before);
   });

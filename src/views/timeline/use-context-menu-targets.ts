@@ -1,8 +1,8 @@
-import { mainBounds } from "@/domain/line/bounds";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced } from "@/domain/line/predicates";
-import { bgWords, lineText, mainWords } from "@/domain/line/voices";
+import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { fieldWords } from "@/stores/project/lines-slice-helpers";
@@ -113,10 +113,22 @@ function useContextMenuTargets() {
   const placeLineHereInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return null;
     const trackTarget = contextMenu.target;
+    if (trackTarget.type !== "word") return null;
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
     const canPlace =
       lineText(targetLine).trim() !== "" && !mainWords(targetLine)?.length && mainBounds(targetLine) === null;
+    return canPlace ? targetLine : null;
+  }, [contextMenu, rawLines]);
+
+  const placeBackgroundHereInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "track") return null;
+    const trackTarget = contextMenu.target;
+    if (trackTarget.type !== "bg") return null;
+    const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
+    if (!targetLine) return null;
+    const canPlace =
+      (bgText(targetLine)?.trim() ?? "") !== "" && !bgWords(targetLine)?.length && bgBounds(targetLine) === null;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
@@ -147,6 +159,7 @@ function useContextMenuTargets() {
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeBackgroundHereInfo,
     splitIntoWordsInfo,
   };
 }

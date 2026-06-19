@@ -72,6 +72,7 @@ const TimelineContextMenu: React.FC = () => {
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeBackgroundHereInfo,
     splitIntoWordsInfo,
   } = targets;
 
@@ -89,6 +90,7 @@ const TimelineContextMenu: React.FC = () => {
 
   const {
     handlePlaceLineHere,
+    handlePlaceBackgroundHere,
     handleAddLine,
     handleDeleteLine,
     handleDetachLine,
@@ -253,6 +255,7 @@ const TimelineContextMenu: React.FC = () => {
           <>
             <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
             {placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
+            {placeBackgroundHereInfo && <MenuItem label="Place background here" onClick={handlePlaceBackgroundHere} />}
             {groupableSelection && (
               <>
                 <MenuDivider />

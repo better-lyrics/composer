@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -299,5 +300,97 @@ describe("TimelineContextMenu background provenance", () => {
     findButton(/Delete word/i)?.click();
 
     expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+  });
+});
+
+// -- Voice-aware placement ----------------------------------------------------
+
+function openTrackContextMenu(lineId: string, type: "word" | "bg", time: number) {
+  useTimelineStore.setState({
+    contextMenu: { x: 100, y: 100, target: { kind: "track", lineId, lineIndex: 0, time, type } },
+    selectedWords: [],
+  });
+}
+
+describe("TimelineContextMenu · Place line here (main track only)", () => {
+  it("shows 'Place line here' on the main track for an untimed line", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse" })] });
+    openTrackContextMenu("l1", "word", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place line here/i)).toBeDefined();
+  });
+
+  it("hides 'Place line here' on the bg track even when the main is placeable", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse" })] });
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place line here/i)).toBeUndefined();
+  });
+});
+
+describe("TimelineContextMenu · Place background here (bg track only)", () => {
+  it("shows 'Place background here' on the bg track for an untimed bg", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse", backgroundText: "ooh ooh" })] });
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place background here/i)).toBeDefined();
+  });
+
+  it("hides 'Place background here' on the main track", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse", backgroundText: "ooh ooh" })] });
+    openTrackContextMenu("l1", "word", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place background here/i)).toBeUndefined();
+  });
+
+  it("hides 'Place background here' when the line has no bg text", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse" })] });
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place background here/i)).toBeUndefined();
+  });
+
+  it("hides 'Place background here' when the bg is already word-synced", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "verse",
+          backgroundText: "ooh aah",
+          backgroundWords: [
+            createWord({ text: "ooh ", begin: 1, end: 1.5 }),
+            createWord({ text: "aah", begin: 1.5, end: 2 }),
+          ],
+          backgroundTextSource: "extraction",
+        }),
+      ],
+    });
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place background here/i)).toBeUndefined();
+  });
+
+  it("hides 'Place background here' when the bg is already line-synced", async () => {
+    const line = createLine({ id: "l1", text: "verse", begin: 0, end: 4 });
+    useProjectStore.setState({ lines: [line] });
+    useProjectStore.getState().applyLineBackground("l1", { text: "ooh", source: "manual" });
+    expect(bgBounds(useProjectStore.getState().lines[0])).not.toBeNull();
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Place background here/i)).toBeUndefined();
+  });
+
+  it("line-syncs the bg at the clicked time and leaves the main untouched when clicked", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse line", backgroundText: "ooh ooh" })] });
+    openTrackContextMenu("l1", "bg", 5);
+    await render(<TimelineContextMenu />);
+
+    findButton(/Place background here/i)?.click();
+
+    const updated = useProjectStore.getState().lines[0];
+    expect(bgWords(updated)).toBeUndefined();
+    expect(bgBounds(updated)).toEqual({ begin: 5, end: 5 + 2 * 0.3 });
+    expect(mainBounds(updated)).toBeNull();
+    expect(mainWords(updated)).toBeUndefined();
   });
 });
