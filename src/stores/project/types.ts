@@ -141,6 +141,7 @@ interface LineActions {
   ) => void;
   setLineWithHistory: (lineId: string, nextLine: LyricLine, options?: { propagateToSiblings?: boolean }) => void;
   applyLineBackground: (lineId: string, params: BackgroundParams, options?: { propagateToSiblings?: boolean }) => void;
+  removeLineBackground: (lineId: string, options?: { propagateToSiblings?: boolean }) => void;
   moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   applyWordCountChange: (

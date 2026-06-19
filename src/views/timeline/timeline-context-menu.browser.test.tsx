@@ -466,3 +466,44 @@ describe("TimelineContextMenu · Split into words (voice-aware)", () => {
     expect(mainWords(updated)?.length).toBe(3);
   });
 });
+
+// -- Remove background (gutter only) ------------------------------------------
+
+function openGutterContextMenu(lineId: string) {
+  useTimelineStore.setState({
+    contextMenu: { x: 100, y: 100, target: { kind: "gutter", lineId, lineIndex: 0 } },
+    selectedWords: [],
+  });
+}
+
+describe("TimelineContextMenu · Remove background (gutter only)", () => {
+  it("shows 'Remove background' on the gutter for a line with a bg", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse", backgroundText: "ooh" })] });
+    openGutterContextMenu("l1");
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Remove background/i)).toBeDefined();
+  });
+
+  it("hides 'Remove background' on the gutter for a line with no bg", async () => {
+    useProjectStore.setState({ lines: [createLine({ id: "l1", text: "verse" })] });
+    openGutterContextMenu("l1");
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Remove background/i)).toBeUndefined();
+  });
+
+  it("hides 'Remove background' on a word target even when the line has a bg", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "verse",
+          words: [createWord({ text: "verse", begin: 0, end: 1 })],
+          backgroundText: "ooh",
+        }),
+      ],
+    });
+    openWordContextMenu("l1");
+    await render(<TimelineContextMenu />);
+    expect(findButton(/Remove background/i)).toBeUndefined();
+  });
+});

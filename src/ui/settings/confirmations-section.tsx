@@ -48,6 +48,11 @@ const ConfirmationsSection: React.FC = () => {
           description="Show a warning when a syllable split would also apply to other identical words across the project."
           settingKey="confirmApplyToAllSyllableSplit"
         />
+        <ToggleSetting
+          label="Confirm removing background vocals"
+          description="Show a warning before removing a line's background vocals."
+          settingKey="confirmRemoveBackground"
+        />
       </div>
     </div>
   );

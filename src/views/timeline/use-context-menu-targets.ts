@@ -52,6 +52,14 @@ function useContextMenuTargets() {
     return { lineId, groupId: realLine.groupId };
   }, [contextMenu, rawLines]);
 
+  const gutterBackgroundInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "gutter") return null;
+    const { lineId } = contextMenu.target;
+    const realLine = rawLines.find((l) => l.id === lineId);
+    if (!realLine || bgVoice(realLine) === null) return null;
+    return { lineId };
+  }, [contextMenu, rawLines]);
+
   const groupableSelection = useMemo(() => {
     if (!contextMenu) return null;
     const target = contextMenu.target;
@@ -158,6 +166,7 @@ function useContextMenuTargets() {
     lines,
     explicitToggleContext,
     gutterLineGroupInfo,
+    gutterBackgroundInfo,
     groupableSelection,
     mergeInfo,
     groupedWordInfo,

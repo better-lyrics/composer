@@ -75,6 +75,7 @@ const TimelineContextMenu: React.FC = () => {
     lines,
     explicitToggleContext,
     gutterLineGroupInfo,
+    gutterBackgroundInfo,
     groupableSelection,
     mergeInfo,
     groupedWordInfo,
@@ -101,6 +102,7 @@ const TimelineContextMenu: React.FC = () => {
     handlePlaceBackgroundHere,
     handleAddLine,
     handleDeleteLine,
+    handleRemoveBackground,
     handleDetachLine,
     handleAssignAgent,
     handleSplitIntoWords,
@@ -330,6 +332,7 @@ const TimelineContextMenu: React.FC = () => {
                 <MenuDivider />
               </>
             )}
+            {gutterBackgroundInfo && <MenuItem label="Remove background" onClick={handleRemoveBackground} danger />}
             <MenuItem label="Delete line" onClick={handleDeleteLine} danger />
           </>
         )}

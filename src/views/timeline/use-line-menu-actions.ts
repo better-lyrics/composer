@@ -3,6 +3,7 @@ import { placeVoice } from "@/domain/line/place-voice";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { removeBackgroundWithConfirm } from "@/views/timeline/remove-background-with-confirm";
 import { splitTargetLineIds, splitVoiceIntoWords } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -77,6 +78,13 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     clearContextMenu();
   }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
 
+  const handleRemoveBackground = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "gutter") return;
+    const { lineId } = contextMenu.target;
+    void removeBackgroundWithConfirm(lineId);
+    clearContextMenu();
+  }, [contextMenu, clearContextMenu]);
+
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
     useProjectStore.getState().detachLine(gutterLineGroupInfo.lineId);
@@ -110,6 +118,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     handlePlaceBackgroundHere,
     handleAddLine,
     handleDeleteLine,
+    handleRemoveBackground,
     handleDetachLine,
     handleAssignAgent,
     handleSplitIntoWords,

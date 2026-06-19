@@ -1,12 +1,12 @@
 import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
-import { applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
+import { applyBackground, manualBackgroundWordEdit, setBackground } from "@/domain/line/background";
 import { type LooseLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { reconcileUpdate } from "@/domain/line/reconcile-update";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import { bgVoice, bgWords, mainWords } from "@/domain/line/voices";
+import { computeExplicitToggle } from "@/domain/word/explicit-toggle";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
-import type { WordTiming } from "@/domain/word/timing";
 import { commitHistory } from "@/stores/project/history-helpers";
 import {
   applyMarkWordsExplicit,
@@ -139,6 +139,15 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       return commitNestedLineReplace(state, lineId, nextLine, propagateToSiblings);
     }),
 
+  removeLineBackground: (lineId, options = {}) =>
+    set((state) => {
+      const { propagateToSiblings = true } = options;
+      const target = state.lines.find((l) => l.id === lineId);
+      if (!target || bgVoice(target) === null) return state;
+      const nextLine = setBackground(target, null);
+      return commitNestedLineReplace(state, lineId, nextLine, propagateToSiblings);
+    }),
+
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
     set((state) => {
       const sourceLine = state.lines.find((l) => l.id === lineId);
@@ -233,29 +242,13 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   toggleWordExplicit: (lineId, field, wordIndices) => {
     if (wordIndices.length === 0) return;
-    const state = get();
-    const target = state.lines.find((l) => l.id === lineId);
+    const target = get().lines.find((l) => l.id === lineId);
     if (!target) return;
     const currentWords = fieldWords(target, field);
-    if (!currentWords || currentWords.length === 0) return;
-
-    const filtered = wordIndices.filter((i) => i >= 0 && i < currentWords.length);
-    const expanded = expandSelectionToGroupmates(currentWords, filtered).filter((i) => i < currentWords.length);
-    const indexSet = new Set(expanded);
-    if (indexSet.size === 0) return;
-
-    const allMarked = Array.from(indexSet).every((i) => currentWords[i].explicit === true);
-    const nextExplicit = !allMarked;
-
-    const newWords: WordTiming[] = currentWords.map((word, i) => {
-      if (!indexSet.has(i)) return word;
-      if (nextExplicit) return { ...word, explicit: true };
-      const { explicit: _explicit, ...rest } = word;
-      return rest;
-    });
-
-    const extraUpdates = field === "backgroundWords" ? manualBackgroundWordEdit(newWords) : {};
-    get().applyWordCountChange(lineId, newWords, field, "apply", extraUpdates);
+    if (!currentWords) return;
+    const computed = computeExplicitToggle(currentWords, field, wordIndices);
+    if (!computed) return;
+    get().applyWordCountChange(lineId, computed.newWords, field, "apply", computed.extraUpdates);
   },
 
   mergeSyllableGroupIntoWord: (lineId, field, wordIndices) =>

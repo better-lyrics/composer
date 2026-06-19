@@ -32,6 +32,14 @@ function setLineAndTarget(rawLine: ReturnType<typeof reconcileLine>, type: "word
   });
 }
 
+function setGutterTarget(rawLine: ReturnType<typeof reconcileLine>) {
+  useProjectStore.setState({ lines: [rawLine] });
+  useTimelineStore.setState({
+    contextMenu: { x: 0, y: 0, target: { kind: "gutter", lineId: rawLine.id, lineIndex: 0 } },
+    selectedWords: [],
+  });
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("useContextMenuTargets · splitIntoWordsInfo voice", () => {
@@ -86,5 +94,31 @@ describe("useContextMenuTargets · splitIntoWordsInfo voice", () => {
     });
     const { result } = await renderHook(() => useContextMenuTargets());
     expect(result.current.splitIntoWordsInfo).toEqual({ count: 2, voice: "bg" });
+  });
+});
+
+describe("useContextMenuTargets · gutterBackgroundInfo", () => {
+  it("is non-null for a gutter target on a line with an untimed bg", async () => {
+    setGutterTarget(reconcileLine({ id: "G1", text: "verse", agentId: "v1", backgroundText: "ooh" }));
+    const { result } = await renderHook(() => useContextMenuTargets());
+    expect(result.current.gutterBackgroundInfo).toEqual({ lineId: "G1" });
+  });
+
+  it("is non-null for a gutter target on a line with a line-synced bg", async () => {
+    setGutterTarget(lineSyncedBg("G2"));
+    const { result } = await renderHook(() => useContextMenuTargets());
+    expect(result.current.gutterBackgroundInfo).toEqual({ lineId: "G2" });
+  });
+
+  it("is null for a gutter target on a line with no bg", async () => {
+    setGutterTarget(reconcileLine({ id: "G3", text: "verse", agentId: "v1" }));
+    const { result } = await renderHook(() => useContextMenuTargets());
+    expect(result.current.gutterBackgroundInfo).toBeNull();
+  });
+
+  it("is null for a non-gutter (word) target even when the line has a bg", async () => {
+    setLineAndTarget(lineSyncedBg("G4"), "bg");
+    const { result } = await renderHook(() => useContextMenuTargets());
+    expect(result.current.gutterBackgroundInfo).toBeNull();
   });
 });
