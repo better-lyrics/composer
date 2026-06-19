@@ -719,6 +719,108 @@ describe("project store · main-to-word transition follows background", () => {
 
     expect(bgWords(getLine("a1"))).toEqual(a1BgBefore);
   });
+
+  it("undo restores the line-synced bg and redo restores the followed word-synced bg", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.getState().applyLineBackground("L1", { text: "ooh ahh", source: "manual" });
+    useProjectStore.getState().clearHistory();
+    useProjectStore.setState({ isDirtySinceHistory: true });
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+    const followed = bgWords(getLine("L1"));
+    expect(followed).toBeDefined();
+
+    useProjectStore.getState().undo();
+    const undone = getLine("L1");
+    expect(bgWords(undone)).toBeUndefined();
+    expect(bgBounds(undone)).toEqual({ begin: 6, end: 10 });
+
+    useProjectStore.getState().redo();
+    expect(bgWords(getLine("L1"))).toEqual(followed);
+  });
+
+  it("distributes a line-synced bg over its OWN bounds, not the main fallback, on transition", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((l) =>
+        l.id === "L1" ? { ...l, background: { text: "ooh ahh", begin: 3, end: 7, source: "manual" as const } } : l,
+      ),
+    }));
+    expect(bgBounds(getLine("L1"))).toEqual({ begin: 3, end: 7 });
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const words = bgWords(getLine("L1"));
+    expect(words).toBeDefined();
+    if (!words) throw new Error("expected bg words");
+    expect(words[0].begin).toBe(3);
+    expect(words[words.length - 1].end).toBe(7);
+  });
+
+  it("keeps a line-synced background line-synced through a non-background update", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.getState().applyLineBackground("L1", { text: "ooh", source: "manual" });
+    const bgBefore = bgBounds(getLine("L1"));
+    expect(bgBefore).not.toBeNull();
+
+    useProjectStore.getState().updateLineWithHistory("L1", { agentId: "v2" }, { deriveText: false });
+
+    const after = getLine("L1");
+    expect(after.agentId).toBe("v2");
+    expect(bgBounds(after)).toEqual(bgBefore);
+    expect(bgWords(after)).toBeUndefined();
+    const bg = bgVoice(after);
+    expect(bg).not.toBeNull();
+    if (bg) expect(isLineSynced(bg)).toBe(true);
+  });
+
+  it("distributes a degenerate zero-duration line-synced bg into zero-width words", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((l) =>
+        l.id === "L1" ? { ...l, background: { text: "ooh ahh", begin: 5, end: 5, source: "manual" as const } } : l,
+      ),
+    }));
+    expect(bgBounds(getLine("L1"))).toEqual({ begin: 5, end: 5 });
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const words = bgWords(getLine("L1"));
+    expect(words).toBeDefined();
+    if (!words) throw new Error("expected bg words");
+    expect(words.length).toBe(2);
+    for (const word of words) {
+      expect(word.begin).toBe(5);
+      expect(word.end).toBe(5);
+    }
+  });
 });
 
 describe("project store · applyLineBackground · invariants", () => {

@@ -2,6 +2,7 @@ import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/gro
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine, toFlat } from "@/domain/line/model";
+import { reconcileUpdate } from "@/domain/line/reconcile-update";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -14,7 +15,6 @@ import {
   applyMoveToBg,
   commitNestedLineReplace,
   fieldWords,
-  reconcileUpdate,
 } from "@/stores/project/lines-slice-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";

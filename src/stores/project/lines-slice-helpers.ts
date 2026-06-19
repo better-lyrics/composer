@@ -1,9 +1,8 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit, setBackground } from "@/domain/line/background";
-import { followMainGranularity } from "@/domain/line/follow-main-granularity";
 import { applyMainWordEdit } from "@/domain/line/main-words";
-import { type LooseLine, type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -24,16 +23,6 @@ type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; word
 // Single-source routing of a field-targeted word read through the voice seam.
 function fieldWords(line: LyricLine, field: "words" | "backgroundWords"): WordTiming[] | undefined {
   return field === "backgroundWords" ? bgWords(line) : mainWords(line);
-}
-
-// The reconcile chokepoint for the generic per-line update mutators. Merges the
-// flat update onto the existing line and lifts it to nested, then lets the
-// background follow main into word-synced granularity when this write is the
-// main-to-word transition. followMainGranularity is a no-op for every other
-// write (main already word-synced, after main not word-synced, or no
-// background), so this is safe to apply on every generic reconcile.
-function reconcileUpdate(prev: LyricLine, updates: Partial<LooseLine>): LyricLine {
-  return followMainGranularity(prev, reconcileLine({ ...toFlat(prev), ...updates }));
 }
 
 // A field-targeted word write that keeps background provenance coherent: writing
@@ -294,5 +283,4 @@ export {
   applyMoveToBg,
   commitNestedLineReplace,
   fieldWords,
-  reconcileUpdate,
 };
