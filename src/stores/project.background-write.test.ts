@@ -414,6 +414,313 @@ describe("project store · setLineWithHistory", () => {
   });
 });
 
+describe("project store · main-to-word transition follows background", () => {
+  it("transition: line-synced main + line-synced bg becomes word-synced bg over its own bounds", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.getState().applyLineBackground("L1", { text: "ooh ahh", source: "manual" });
+
+    const before = getLine("L1");
+    expect(bgBounds(before)).toEqual({ begin: 6, end: 10 });
+    expect(bgWords(before)).toBeUndefined();
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = getLine("L1");
+    expect(isWordSynced(after.main)).toBe(true);
+    const words = bgWords(after);
+    expect(words).toBeDefined();
+    if (!words) throw new Error("expected bg words");
+    expect(words.length).toBe(2);
+    expect(words[0].begin).toBe(6);
+    expect(words[words.length - 1].end).toBe(10);
+  });
+
+  it("leaves a word-synced background's words unchanged when main becomes word-synced", () => {
+    const bgWordsInput = [
+      { text: "ooh ", begin: 3, end: 4 },
+      { text: "ahh", begin: 4, end: 5 },
+    ];
+    seed([
+      {
+        id: "L1",
+        text: "Real line",
+        agentId: "v1",
+        begin: 2,
+        end: 10,
+        backgroundText: "ooh ahh",
+        backgroundWords: bgWordsInput,
+        backgroundTextSource: "extraction",
+      },
+    ]);
+    const bgBefore = bgVoice(getLine("L1"));
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = getLine("L1");
+    expect(isWordSynced(after.main)).toBe(true);
+    expect(bgVoice(after)).toEqual(bgBefore);
+    expect(bgWords(after)).toEqual(bgWordsInput);
+  });
+
+  it("transition: untimed bg distributes over the new main's second half", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1" }]);
+    useProjectStore.getState().applyLineBackground("L1", { text: "ooh ahh", source: "manual" });
+
+    const before = getLine("L1");
+    expect(bgWords(before)).toBeUndefined();
+    expect(bgBounds(before)).toBeNull();
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 4, end: 8 },
+          { text: "line", begin: 8, end: 12 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = getLine("L1");
+    expect(isWordSynced(after.main)).toBe(true);
+    const words = bgWords(after);
+    expect(words).toBeDefined();
+    if (!words) throw new Error("expected bg words");
+    expect(words[0].begin).toBe(8);
+    expect(words[words.length - 1].end).toBe(12);
+  });
+
+  it("does not re-resolve a bg when main was ALREADY word-synced before the write", () => {
+    const bgWordsInput = [
+      { text: "ooh ", begin: 0, end: 1 },
+      { text: "ahh", begin: 1, end: 2 },
+    ];
+    seed([
+      {
+        id: "L1",
+        text: "Real line",
+        agentId: "v1",
+        words: [
+          { text: "Real ", begin: 0, end: 1 },
+          { text: "line", begin: 1, end: 2 },
+        ],
+        backgroundText: "ooh ahh",
+        backgroundWords: bgWordsInput,
+        backgroundTextSource: "manual",
+      },
+    ]);
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 0, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = bgWords(getLine("L1"));
+    expect(after).toEqual(bgWordsInput);
+  });
+
+  it("is a no-op for the background when the line has none", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+
+    useProjectStore.getState().updateLineWithHistory(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = getLine("L1");
+    expect(isWordSynced(after.main)).toBe(true);
+    expect(bgVoice(after)).toBeNull();
+    expect("background" in after).toBe(false);
+  });
+
+  it("updateLine (no-history) also follows the background into word-synced", () => {
+    seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 10 }]);
+    useProjectStore.getState().applyLineBackground("L1", { text: "ooh ahh", source: "manual" });
+
+    useProjectStore.getState().updateLine(
+      "L1",
+      {
+        words: [
+          { text: "Real ", begin: 2, end: 5 },
+          { text: "line", begin: 5, end: 10 },
+        ],
+      },
+      { deriveText: false },
+    );
+
+    const after = getLine("L1");
+    expect(isWordSynced(after.main)).toBe(true);
+    const words = bgWords(after);
+    expect(words).toBeDefined();
+    if (!words) throw new Error("expected bg words");
+    expect(words[0].begin).toBe(6);
+    expect(words[words.length - 1].end).toBe(10);
+  });
+
+  // No generic-mutator path propagates a FRESH `words` array to a line-synced
+  // sibling: propagateWordChanges returns undefined when the sibling has no
+  // main words (`!siblingWords`), so a line-synced sibling never transitions to
+  // word-synced via propagation. The propagated-transition scenario is therefore
+  // unreachable in practice. updateLinesWithHistory does treat each entry as its
+  // own target, so a batch that transitions two linked line-synced lines follows
+  // each of their backgrounds (each via the target reconcile, not propagation).
+  it("updateLinesWithHistory transitions and follows the background of every targeted line", () => {
+    seed(
+      [
+        {
+          id: "a0",
+          text: "Real line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 0,
+          end: 4,
+        },
+        {
+          id: "a1",
+          text: "Real line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 20,
+        },
+      ],
+      [seedGroup("g1")],
+    );
+    useProjectStore.getState().applyLineBackground("a0", { text: "ooh ahh", source: "manual" });
+    useProjectStore.getState().applyLineBackground("a1", { text: "ooh ahh", source: "manual" });
+
+    const a0BgBefore = bgBounds(getLine("a0"));
+    const a1BgBefore = bgBounds(getLine("a1"));
+    if (!a0BgBefore || !a1BgBefore) throw new Error("expected line-synced backgrounds");
+
+    useProjectStore.getState().updateLinesWithHistory(
+      [
+        {
+          id: "a0",
+          updates: {
+            words: [
+              { text: "Real ", begin: 0, end: 2 },
+              { text: "line", begin: 2, end: 4 },
+            ],
+          },
+        },
+        {
+          id: "a1",
+          updates: {
+            words: [
+              { text: "Real ", begin: 10, end: 15 },
+              { text: "line", begin: 15, end: 20 },
+            ],
+          },
+        },
+      ],
+      { propagateToSiblings: false },
+    );
+
+    const a0 = getLine("a0");
+    const a1 = getLine("a1");
+    expect(isWordSynced(a0.main)).toBe(true);
+    expect(isWordSynced(a1.main)).toBe(true);
+    const a0Bg = bgWords(a0);
+    const a1Bg = bgWords(a1);
+    expect(a0Bg).toBeDefined();
+    expect(a1Bg).toBeDefined();
+    if (!a0Bg || !a1Bg) throw new Error("expected bg words on both");
+    expect(a0Bg[0].begin).toBe(a0BgBefore.begin);
+    expect(a0Bg[a0Bg.length - 1].end).toBe(a0BgBefore.end);
+    expect(a1Bg[0].begin).toBe(a1BgBefore.begin);
+    expect(a1Bg[a1Bg.length - 1].end).toBe(a1BgBefore.end);
+  });
+
+  it("leaves a linked word-synced sibling's word-synced bg untouched on a propagated rename", () => {
+    seed(
+      [
+        {
+          id: "a0",
+          text: "Real line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [
+            { text: "Real ", begin: 0, end: 1 },
+            { text: "line", begin: 1, end: 2 },
+          ],
+          backgroundText: "ooh ahh",
+          backgroundWords: [
+            { text: "ooh ", begin: 0, end: 1 },
+            { text: "ahh", begin: 1, end: 2 },
+          ],
+          backgroundTextSource: "manual",
+        },
+        {
+          id: "a1",
+          text: "Real line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [
+            { text: "Real ", begin: 10, end: 11 },
+            { text: "line", begin: 11, end: 12 },
+          ],
+          backgroundText: "ooh ahh",
+          backgroundWords: [
+            { text: "ooh ", begin: 10, end: 11 },
+            { text: "ahh", begin: 11, end: 12 },
+          ],
+          backgroundTextSource: "manual",
+        },
+      ],
+      [seedGroup("g1")],
+    );
+    const a1BgBefore = bgWords(getLine("a1"));
+
+    useProjectStore.getState().updateLineWithHistory("a0", {
+      words: [
+        { text: "Real ", begin: 0, end: 1 },
+        { text: "song", begin: 1, end: 2 },
+      ],
+    });
+
+    expect(bgWords(getLine("a1"))).toEqual(a1BgBefore);
+  });
+});
+
 describe("project store · applyLineBackground · invariants", () => {
   it("does not mutate the input params", () => {
     seed([{ id: "L1", text: "Real line", agentId: "v1", begin: 2, end: 6 }]);

@@ -14,6 +14,7 @@ import {
   applyMoveToBg,
   commitNestedLineReplace,
   fieldWords,
+  reconcileUpdate,
 } from "@/stores/project/lines-slice-helpers";
 import { applySyllableSplitToLines } from "@/stores/project/syllable-split-helpers";
 import type { LineActions, LinesState, ProjectStore } from "@/stores/project/types";
@@ -45,7 +46,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       return {
         lines: state.lines.map((line) => {
           if (line.id !== id) return line;
-          const reconciled = reconcileLine({ ...toFlat(line), ...updates });
+          const reconciled = reconcileUpdate(line, updates);
           return deriveText ? withDerivedText(reconciled, splitChar) : reconciled;
         }),
         isDirty: true,
@@ -66,7 +67,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
       const newLines = state.lines.map((line) => {
         if (line.id === id) {
-          return reconcileLine({ ...toFlat(line), ...updates });
+          return reconcileUpdate(line, updates);
         }
         if (isLinkedSibling(line, linkScope)) {
           const siblingUpdates: Partial<LooseLine> = { ...(linkedUpdates ?? {}) };
@@ -75,7 +76,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
           const propagatedBg = propagateWordChanges(sourceBgWordsAfter, sourceBgWordsBefore, bgWords(line));
           if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
           if (Object.keys(siblingUpdates).length > 0) {
-            return reconcileLine({ ...toFlat(line), ...siblingUpdates });
+            return reconcileUpdate(line, siblingUpdates);
           }
         }
         return line;
@@ -102,7 +103,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         const linkedUpdates = linkScope ? extractLinkedFields(lineUpdates) : null;
 
         if (targetIdx !== undefined && target) {
-          newLines[targetIdx] = reconcileLine({ ...toFlat(target), ...lineUpdates });
+          newLines[targetIdx] = reconcileUpdate(target, lineUpdates);
         }
 
         if (linkScope) {
@@ -115,8 +116,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
             if (propagatedWords) siblingUpdates.words = propagatedWords;
             const propagatedBg = propagateWordChanges(sourceBgAfter, sourceBgBefore, bgWords(line));
             if (propagatedBg) siblingUpdates.backgroundWords = propagatedBg;
-            if (Object.keys(siblingUpdates).length > 0)
-              newLines[i] = reconcileLine({ ...toFlat(line), ...siblingUpdates });
+            if (Object.keys(siblingUpdates).length > 0) newLines[i] = reconcileUpdate(line, siblingUpdates);
           }
         }
       }
