@@ -4,9 +4,10 @@ import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import { isWordSynced } from "@/domain/line/predicates";
-import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
+import { bgText, bgVoice, bgWords, lineText, mainWords } from "@/domain/line/voices";
+import { isWordSynced as isWordSyncedVoice } from "@/domain/voice/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -35,7 +36,12 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
-  const effectiveGranularity = lines.some((l) => isWordSynced(l)) ? "word" : "line";
+  const hasWordTiming = (l: LyricLine) => {
+    if (isWordSynced(l)) return true;
+    const bg = bgVoice(l);
+    return bg !== null && isWordSyncedVoice(bg);
+  };
+  const effectiveGranularity = lines.some(hasWordTiming) ? "word" : "line";
 
   const parts: string[] = [];
 
@@ -112,7 +118,11 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
       }
       content += `<span ttm:role="x-bg">${bgContent}</span>`;
     } else if (background) {
-      content += `<span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(background)}</span></span>`;
+      // A line-synced background carries its own window, which can differ from
+      // the main line's. Fall back to the line timing only when the background
+      // is genuinely untimed (no own bounds).
+      const bgB = bgBounds(line) ?? timing;
+      content += `<span ttm:role="x-bg"><span begin="${formatTime(bgB.begin)}" end="${formatTime(bgB.end)}">${escapeXml(background)}</span></span>`;
     }
 
     parts.push(
