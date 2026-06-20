@@ -2,8 +2,7 @@
  * @vitest-environment node
  */
 import type { LineTemplate } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { decideAddInstancePlacement, templateDuration } from "./decide-add-instance-placement";
 
@@ -19,28 +18,26 @@ const template: LineTemplate[] = [
   },
 ];
 
-const wordSyncedLine = (id: string, begin: number, end: number): LyricLine =>
-  reconcileLine({
-    id,
-    text: "x",
-    agentId: "v1",
-    words: [{ text: "x", begin, end }],
-  });
+const wordSyncedLine = (id: string, begin: number, end: number): LyricLine => ({
+  id,
+  text: "x",
+  agentId: "v1",
+  words: [{ text: "x", begin, end }],
+});
 
 // A grouped + word-timed line (a "real" group instance line): never fillable
-const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: number, end: number): LyricLine =>
-  reconcileLine({
-    id,
-    text: "x",
-    agentId: "v1",
-    groupId: gid,
-    instanceIdx: instIdx,
-    templateLineIdx: 0,
-    words: [{ text: "x", begin, end }],
-  });
+const groupedTimedLine = (id: string, gid: string, instIdx: number, begin: number, end: number): LyricLine => ({
+  id,
+  text: "x",
+  agentId: "v1",
+  groupId: gid,
+  instanceIdx: instIdx,
+  templateLineIdx: 0,
+  words: [{ text: "x", begin, end }],
+});
 
 // A standalone untimed empty placeholder (no groupId, no words, no begin/end): fillable
-const emptyPlaceholderLine = (id: string, text = ""): LyricLine => reconcileLine({ id, text, agentId: "v1" });
+const emptyPlaceholderLine = (id: string, text = ""): LyricLine => ({ id, text, agentId: "v1" });
 
 describe("templateDuration", () => {
   it("returns the span between earliest begin and latest end across all template words", () => {
@@ -87,7 +84,7 @@ describe("decideAddInstancePlacement · fill path (matches paste-as-instance)", 
       const filled = result.updatedLines[1];
       expect(filled.groupId).toBe("cannon");
       expect(filled.instanceIdx).toBe(1);
-      expect(mainWords(filled)?.[0].begin).toBeCloseTo(20);
+      expect(filled.words?.[0].begin).toBeCloseTo(20);
     }
   });
 

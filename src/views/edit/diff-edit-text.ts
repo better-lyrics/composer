@@ -1,17 +1,13 @@
 import { extractLinkedFields } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { isLinked } from "@/domain/instance/predicates";
-import { mainBounds } from "@/domain/line/bounds";
-import { reconcileLine, toFlat, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
-import type { WordTiming } from "@/domain/word/timing";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
 interface ContentUpdate {
   id: string;
-  updates: Partial<LooseLine>;
+  updates: Partial<LyricLine>;
 }
 
 interface DiffResult {
@@ -21,44 +17,10 @@ interface DiffResult {
 
 // -- Constants ----------------------------------------------------------------
 
-type TimingField = "words" | "begin" | "end" | "backgroundWords";
-type ContentField = "text" | "agentId" | "backgroundText" | "backgroundTextSource";
-
-const TIMING_CLEAR_FIELDS = ["words", "begin", "end", "backgroundWords"] as const satisfies readonly TimingField[];
-const CONTENT_FIELDS = [
-  "text",
-  "agentId",
-  "backgroundText",
-  "backgroundTextSource",
-] as const satisfies readonly ContentField[];
+const TIMING_CLEAR_FIELDS = ["words", "begin", "end", "backgroundWords"] as const;
+const CONTENT_FIELDS = ["text", "agentId", "backgroundText", "backgroundTextSource"] as const;
 
 // -- Helpers ------------------------------------------------------------------
-
-function readContentField(line: LyricLine, field: ContentField): string | undefined {
-  switch (field) {
-    case "text":
-      return lineText(line);
-    case "agentId":
-      return line.agentId;
-    case "backgroundText":
-      return bgText(line);
-    case "backgroundTextSource":
-      return bgSource(line);
-  }
-}
-
-function readTimingField(line: LyricLine, field: TimingField): unknown {
-  switch (field) {
-    case "words":
-      return mainWords(line);
-    case "begin":
-      return isLineSynced(line) ? mainBounds(line)?.begin : undefined;
-    case "end":
-      return isLineSynced(line) ? mainBounds(line)?.end : undefined;
-    case "backgroundWords":
-      return bgWords(line);
-  }
-}
 
 function diffEditTextChange(oldLines: LyricLine[], newLines: LyricLine[]): DiffResult {
   if (oldLines.length !== newLines.length) {
@@ -75,17 +37,16 @@ function diffEditTextChange(oldLines: LyricLine[], newLines: LyricLine[]): DiffR
   for (let i = 0; i < oldLines.length; i++) {
     const oldLine = oldLines[i];
     const newLine = newLines[i];
-    const updates: Partial<LooseLine> = {};
+    const updates: Partial<LyricLine> = {};
 
     for (const field of CONTENT_FIELDS) {
-      const newValue = readContentField(newLine, field);
-      if (readContentField(oldLine, field) !== newValue) {
-        (updates as Record<string, unknown>)[field] = newValue;
+      if (oldLine[field] !== newLine[field]) {
+        (updates as Record<string, unknown>)[field] = newLine[field];
       }
     }
 
     for (const field of TIMING_CLEAR_FIELDS) {
-      if (readTimingField(oldLine, field) !== undefined && readTimingField(newLine, field) === undefined) {
+      if (oldLine[field] !== undefined && newLine[field] === undefined) {
         (updates as Record<string, unknown>)[field] = undefined;
       }
     }
@@ -188,11 +149,11 @@ function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstanc
 interface LinkedScope {
   groupId: string;
   templateLineIdx: number;
-  linkedUpdate: Partial<LooseLine>;
-  sourceWordsBefore: WordTiming[] | undefined;
-  sourceWordsAfter: WordTiming[] | undefined;
-  sourceBgWordsBefore: WordTiming[] | undefined;
-  sourceBgWordsAfter: WordTiming[] | undefined;
+  linkedUpdate: Partial<LyricLine>;
+  sourceWordsBefore: LyricLine["words"];
+  sourceWordsAfter: LyricLine["words"];
+  sourceBgWordsBefore: LyricLine["backgroundWords"];
+  sourceBgWordsAfter: LyricLine["backgroundWords"];
 }
 
 function propagateContentUpdates(
@@ -227,10 +188,10 @@ function propagateContentUpdates(
       groupId: sourceNew.groupId,
       templateLineIdx: sourceNew.templateLineIdx,
       linkedUpdate,
-      sourceWordsBefore: mainWords(sourceOld),
-      sourceWordsAfter: mainWords(sourceNew),
-      sourceBgWordsBefore: bgWords(sourceOld),
-      sourceBgWordsAfter: bgWords(sourceNew),
+      sourceWordsBefore: sourceOld.words,
+      sourceWordsAfter: sourceNew.words,
+      sourceBgWordsBefore: sourceOld.backgroundWords,
+      sourceBgWordsAfter: sourceNew.backgroundWords,
     });
   }
 
@@ -245,13 +206,17 @@ function propagateContentUpdates(
       if (line.groupId !== scope.groupId) continue;
       if (line.templateLineIdx !== scope.templateLineIdx) continue;
       Object.assign(merged, scope.linkedUpdate);
-      const propagatedWords = propagateWordChanges(scope.sourceWordsAfter, scope.sourceWordsBefore, mainWords(line));
+      const propagatedWords = propagateWordChanges(scope.sourceWordsAfter, scope.sourceWordsBefore, line.words);
       if (propagatedWords) merged.words = propagatedWords;
-      const propagatedBg = propagateWordChanges(scope.sourceBgWordsAfter, scope.sourceBgWordsBefore, bgWords(line));
+      const propagatedBg = propagateWordChanges(
+        scope.sourceBgWordsAfter,
+        scope.sourceBgWordsBefore,
+        line.backgroundWords,
+      );
       if (propagatedBg) merged.backgroundWords = propagatedBg;
     }
     if (Object.keys(merged).length === 0) return line;
-    return reconcileLine({ ...toFlat(line), ...merged });
+    return reconcileLine({ ...line, ...merged });
   });
 }
 

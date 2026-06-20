@@ -1,7 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
-import type { WordTiming } from "@/domain/word/timing";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 
@@ -158,7 +156,7 @@ function scanField(
   }
 }
 
-function alreadyMarkedSet(words: WordTiming[] | undefined): Set<number> {
+function alreadyMarkedSet(words: LyricLine["words"] | undefined): Set<number> {
   const set = new Set<number>();
   if (!words) return set;
   for (let i = 0; i < words.length; i++) {
@@ -177,13 +175,11 @@ function findExplicitWords(lines: LyricLine[], groups: LinkGroup[] = []): Explic
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const main = lineText(line);
-    if (main && main.trim().length > 0) {
-      scanField(line, i, "words", main, matcher, alreadyMarkedSet(mainWords(line)), raw);
+    if (line.text && line.text.trim().length > 0) {
+      scanField(line, i, "words", line.text, matcher, alreadyMarkedSet(line.words), raw);
     }
-    const background = bgText(line);
-    if (background && background.trim().length > 0) {
-      scanField(line, i, "backgroundWords", background, matcher, alreadyMarkedSet(bgWords(line)), raw);
+    if (line.backgroundText && line.backgroundText.trim().length > 0) {
+      scanField(line, i, "backgroundWords", line.backgroundText, matcher, alreadyMarkedSet(line.backgroundWords), raw);
     }
   }
 

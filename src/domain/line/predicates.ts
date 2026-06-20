@@ -1,22 +1,17 @@
-import type { LyricLine } from "@/domain/line/model";
-import { bgVoice, mainVoice } from "@/domain/line/voices";
-import { voiceBounds } from "@/domain/voice/bounds";
-import { isLineSynced as isLineSyncedVoice, isWordSynced as isWordSyncedVoice } from "@/domain/voice/predicates";
+import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
 
 // -- Predicates ---------------------------------------------------------------
 
-function isLineSynced(line: LyricLine): boolean {
-  return isLineSyncedVoice(mainVoice(line));
+function isLineSynced(line: LyricLine): line is LineSyncedLine {
+  return !line.words?.length && line.begin !== undefined && line.end !== undefined;
 }
 
 function isWordSynced(line: LyricLine): boolean {
-  return isWordSyncedVoice(mainVoice(line));
+  return !!line.words?.length;
 }
 
 function hasAnyTiming(line: LyricLine): boolean {
-  if (voiceBounds(mainVoice(line)) !== null) return true;
-  const bg = bgVoice(line);
-  return bg !== null && voiceBounds(bg) !== null;
+  return isWordSynced(line) || isLineSynced(line) || !!line.backgroundWords?.length;
 }
 
 // -- Exports ------------------------------------------------------------------

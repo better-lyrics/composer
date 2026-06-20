@@ -3,7 +3,6 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordSelections } from "@/domain/selection/set-ops";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
@@ -80,15 +79,13 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       if (!pos) continue;
 
       const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-      const main = mainWords(line);
-      const bg = bgWords(line);
-      const hasBg = bg && bg.length > 0;
+      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
       const mainTop = pos.top;
       const mainBottom = mainTop + mainHeight;
 
-      if (mainTop < rectBottom && mainBottom > rect.y && main) {
-        for (let wordIndex = 0; wordIndex < main.length; wordIndex++) {
-          const word = main[wordIndex];
+      if (mainTop < rectBottom && mainBottom > rect.y && line.words) {
+        for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
+          const word = line.words[wordIndex];
           const wordLeft = GUTTER_WIDTH + word.begin * zoom;
           const wordRight = GUTTER_WIDTH + word.end * zoom;
           if (wordLeft < rectRight && wordRight > rect.x) {
@@ -97,13 +94,13 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
         }
       }
 
-      if (hasBg && bg) {
+      if (hasBg && line.backgroundWords) {
         const bgHeight = mainHeight;
         const bgTop = mainBottom;
         const bgBottom = bgTop + bgHeight;
         if (bgTop < rectBottom && bgBottom > rect.y) {
-          for (let wordIndex = 0; wordIndex < bg.length; wordIndex++) {
-            const word = bg[wordIndex];
+          for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
+            const word = line.backgroundWords[wordIndex];
             const wordLeft = GUTTER_WIDTH + word.begin * zoom;
             const wordRight = GUTTER_WIDTH + word.end * zoom;
             if (wordLeft < rectRight && wordRight > rect.x) {

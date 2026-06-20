@@ -1,6 +1,4 @@
 import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine, toFlat } from "@/domain/line/model";
-import { bgText as bgTextField, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Text reconstruction ------------------------------------------------------
@@ -49,15 +47,13 @@ function wordContentSpans(words: WordTiming[], splitChar: string): WordContentSp
 // words keeps text as its primary, editable field. Returns the same reference
 // when nothing changes, so untouched lines stay reference-stable.
 function withDerivedText(line: LyricLine, splitChar: string): LyricLine {
-  const mainText = lineText(line);
-  const words = mainWords(line);
-  const text = words && words.length > 0 ? reconstructLineText(words, splitChar) : mainText;
-  const currentBgText = bgTextField(line);
-  const backgroundWords = bgWords(line);
+  const text = line.words && line.words.length > 0 ? reconstructLineText(line.words, splitChar) : line.text;
   const backgroundText =
-    backgroundWords && backgroundWords.length > 0 ? reconstructLineText(backgroundWords, splitChar) : currentBgText;
-  if (text === mainText && backgroundText === currentBgText) return line;
-  return reconcileLine({ ...toFlat(line), text, backgroundText });
+    line.backgroundWords && line.backgroundWords.length > 0
+      ? reconstructLineText(line.backgroundWords, splitChar)
+      : line.backgroundText;
+  if (text === line.text && backgroundText === line.backgroundText) return line;
+  return { ...line, text, backgroundText };
 }
 
 // -- Exports ------------------------------------------------------------------

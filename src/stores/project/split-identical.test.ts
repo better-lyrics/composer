@@ -1,6 +1,5 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { useProjectStore } from "@/stores/project";
-import { bgSource, bgWords, mainWords } from "@/domain/line/voices";
 import { createLine } from "@/test/factories";
 
 describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
@@ -22,13 +21,13 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
     });
 
     const after = useProjectStore.getState().lines;
-    expect(mainWords(after[0])).toHaveLength(2);
-    expect(mainWords(after[1])).toHaveLength(2);
+    expect(after[0].words).toHaveLength(2);
+    expect(after[1].words).toHaveLength(2);
 
     useProjectStore.getState().undo();
     const reverted = useProjectStore.getState().lines;
-    expect(mainWords(reverted[0])).toHaveLength(1);
-    expect(mainWords(reverted[1])).toHaveLength(1);
+    expect(reverted[0].words).toHaveLength(1);
+    expect(reverted[1].words).toHaveLength(1);
   });
 
   it("source word splits even when there are no other matches", () => {
@@ -41,7 +40,7 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
       caseInsensitive: false,
     });
 
-    expect(mainWords(useProjectStore.getState().lines[0])).toHaveLength(2);
+    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
   });
 
   it("case-insensitive flag splits Capitalized siblings via the action", () => {
@@ -56,8 +55,8 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory", () => {
       caseInsensitive: true,
     });
     const after = useProjectStore.getState().lines;
-    expect(mainWords(after[1])).toHaveLength(2);
-    expect(mainWords(after[1])?.[0].text).toBe("Run");
+    expect(after[1].words).toHaveLength(2);
+    expect(after[1].words?.[0].text).toBe("Run");
   });
 
   it("is a no-op when splitPoints is empty", () => {
@@ -95,8 +94,8 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
       caseInsensitive: false,
     });
     const line = useProjectStore.getState().lines[0];
-    expect(bgWords(line)).toHaveLength(2);
-    expect(bgSource(line)).toBe("manual");
+    expect(line.backgroundWords).toHaveLength(2);
+    expect(line.backgroundTextSource).toBe("manual");
   });
 
   it("leaves backgroundTextSource untouched when only the main track is split", () => {
@@ -115,7 +114,7 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
       splitPoints: [3],
       caseInsensitive: false,
     });
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
   it("undo restores the prior extraction provenance", () => {
@@ -134,8 +133,8 @@ describe("project.splitSyllablesAcrossIdenticalWordsWithHistory · background pr
       splitPoints: [3],
       caseInsensitive: false,
     });
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
     useProjectStore.getState().undo();
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

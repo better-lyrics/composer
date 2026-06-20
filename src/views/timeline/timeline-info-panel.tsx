@@ -1,11 +1,11 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { Button } from "@/ui/button";
+import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLineSynced } from "@/domain/line/predicates";
-import { bgText, bgWords, mainWords } from "@/domain/line/voices";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
@@ -19,11 +19,19 @@ const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }
   const focusOnMount = useCallback((el: HTMLInputElement | null) => {
     el?.focus();
   }, []);
+  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+
   const handleCommit = useCallback(() => {
-    const trimmed = value.trim();
-    useProjectStore.getState().applyLineBackground(lineId, { text: trimmed, source: "manual" });
+    const trimmed = value.trim() || undefined;
+    if (trimmed) {
+      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
+      const bgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
+      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords ?? undefined, source: "manual" }));
+    } else {
+      updateLineWithHistory(lineId, CLEARED_BACKGROUND);
+    }
     setIsEditing(false);
-  }, [lineId, value]);
+  }, [lineId, value, updateLineWithHistory]);
 
   if (!isEditing) {
     return (
@@ -118,7 +126,7 @@ const TimelineInfoPanel: React.FC = () => {
     const line = lines[selectedWord.lineIndex];
     if (!line) return null;
 
-    const wordsArray = selectedWord.type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return null;
 
     const word = wordsArray[selectedWord.wordIndex];
@@ -137,7 +145,7 @@ const TimelineInfoPanel: React.FC = () => {
     for (const sel of selectedWords) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
-      const wordsArray = sel.type === "word" ? mainWords(line) : bgWords(line);
+      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
       if (!word) continue;
       minBegin = Math.min(minBegin, word.begin);
@@ -159,7 +167,7 @@ const TimelineInfoPanel: React.FC = () => {
     const line = lines[selectedWord.lineIndex];
     if (!line) return;
 
-    const wordsArray = selectedWord.type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
     const audioEl = useAudioStore.getState().audioElement;
@@ -188,7 +196,7 @@ const TimelineInfoPanel: React.FC = () => {
     const line = lines[selectedWord.lineIndex];
     if (!line) return;
 
-    const wordsArray = selectedWord.type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
     const audioEl = useAudioStore.getState().audioElement;
@@ -301,7 +309,7 @@ const TimelineInfoPanel: React.FC = () => {
         </div>
       </div>
 
-      <BackgroundTextEditor lineId={line.id} backgroundText={bgText(line)} />
+      <BackgroundTextEditor lineId={line.id} backgroundText={line.backgroundText} />
 
       <div className="flex items-center gap-2 ml-auto">
         <Button variant="secondary" size="sm" hasIcon onClick={handleSetBeginToCursor} title="Set begin to cursor ([)">

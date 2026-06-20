@@ -1,13 +1,12 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { describe, expect, it } from "vitest";
 import { buildCandidateLines } from "./build-candidate-lines";
 
-const lineA: LyricLine = reconcileLine({
+const lineA: LyricLine = {
   id: "a",
   text: "I love you",
   agentId: "v1",
@@ -16,9 +15,9 @@ const lineA: LyricLine = reconcileLine({
     { text: "love ", begin: 1, end: 2 },
     { text: "you", begin: 2, end: 3 },
   ],
-});
+};
 
-const lineB: LyricLine = reconcileLine({
+const lineB: LyricLine = {
   id: "b",
   text: "and so do I",
   agentId: "v1",
@@ -28,21 +27,21 @@ const lineB: LyricLine = reconcileLine({
     { text: "do ", begin: 5, end: 6 },
     { text: "I", begin: 6, end: 7 },
   ],
-});
+};
 
-const lineWithBg: LyricLine = reconcileLine({
+const lineWithBg: LyricLine = {
   id: "c",
   text: "main",
   agentId: "v1",
   words: [{ text: "main", begin: 0, end: 1 }],
   backgroundText: "bg",
   backgroundWords: [{ text: "bg", begin: 0.5, end: 1 }],
-});
+};
 
 function selectAll(line: LyricLine, lineIndex: number): WordSelection[] {
   const sels: WordSelection[] = [];
-  (mainWords(line) ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "word" }));
-  (bgWords(line) ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "bg" }));
+  (line.words ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "word" }));
+  (line.backgroundWords ?? []).forEach((_, i) => sels.push({ lineId: line.id, lineIndex, wordIndex: i, type: "bg" }));
   return sels;
 }
 

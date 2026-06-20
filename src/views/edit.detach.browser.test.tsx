@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
-import { lineText } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
@@ -47,7 +46,7 @@ describe("editor detach-confirm undo", () => {
     await confirmButton.click();
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
+      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Verse one", "Verse two", "Verse one"]);
     expect(useProjectStore.getState().lines.some((l) => l.instanceIdx === 1)).toBe(false);
 

@@ -2,9 +2,6 @@
  * @vitest-environment node
  */
 import type { LinkGroup } from "@/domain/group/template";
-import { mainBounds } from "@/domain/line/bounds";
-import { reconcileLine } from "@/domain/line/model";
-import { bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { commitTappedWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -44,7 +41,7 @@ function seedTwoWordSyncedInstances() {
   useProjectStore.setState({
     groups: [seedGroup("g1")],
     lines: [
-      reconcileLine({
+      {
         id: "a0",
         text: "I love you",
         agentId: "v1",
@@ -52,8 +49,8 @@ function seedTwoWordSyncedInstances() {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-      }),
-      reconcileLine({
+      },
+      {
         id: "a1",
         text: "I love you",
         agentId: "v1",
@@ -61,7 +58,7 @@ function seedTwoWordSyncedInstances() {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-      }),
+      },
     ],
     isDirtySinceHistory: true,
   });
@@ -86,7 +83,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       .getState()
       .updateLineWithHistory("a0", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not retime a sibling when the source word count grows", () => {
@@ -95,7 +92,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     const grown: WordTiming[] = [...INSTANCE_A_WORDS, { text: "you", begin: 1.2, end: 1.6 }];
     useProjectStore.getState().updateLineWithHistory("a0", { words: grown }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not reorder a sibling's word texts when the source word order changes", () => {
@@ -108,7 +105,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     ];
     useProjectStore.getState().updateLineWithHistory("a0", { words: reordered }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not retime a sibling's background words", () => {
@@ -117,7 +114,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
     const bgB: WordTiming[] = [{ text: "ah", begin: 20, end: 20.5 }];
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "a0",
           text: "lead",
           agentId: "v1",
@@ -126,8 +123,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
           templateLineIdx: 0,
           backgroundText: "ah",
           backgroundWords: bgA.map((w) => ({ ...w })),
-        }),
-        reconcileLine({
+        },
+        {
           id: "a1",
           text: "lead",
           agentId: "v1",
@@ -136,7 +133,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
           templateLineIdx: 0,
           backgroundText: "ah",
           backgroundWords: bgB.map((w) => ({ ...w })),
-        }),
+        },
       ],
     });
 
@@ -151,7 +148,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       { propagateToSiblings: false },
     );
 
-    expect(bgWords(getLine("a1"))).toEqual(bgB);
+    expect(getLine("a1").backgroundWords).toEqual(bgB);
   });
 
   it("still writes the source line", () => {
@@ -160,7 +157,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", { words: sourceWords }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a0"))).toEqual(sourceWords);
+    expect(getLine("a0").words).toEqual(sourceWords);
   });
 
   it("still propagates structural word changes by default (option defaults to true)", () => {
@@ -168,11 +165,11 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore.getState().updateLineWithHistory("a0", { words: MERGED_WORDS });
 
-    expect(mainWords(getLine("a1"))).toHaveLength(2);
+    expect(getLine("a1").words).toHaveLength(2);
   });
 
   it("works for a non-grouped line (regression)", () => {
-    useProjectStore.setState({ lines: [reconcileLine({ id: "s", text: "standalone", agentId: "v1" })] });
+    useProjectStore.setState({ lines: [{ id: "s", text: "standalone", agentId: "v1" }] });
 
     useProjectStore
       .getState()
@@ -182,7 +179,7 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
         { propagateToSiblings: false },
       );
 
-    expect(mainWords(getLine("s"))).toEqual([{ text: "standalone", begin: 1, end: 2 }]);
+    expect(getLine("s").words).toEqual([{ text: "standalone", begin: 1, end: 2 }]);
   });
 
   it("commits a single history entry that undo reverts", () => {
@@ -193,8 +190,8 @@ describe("updateLineWithHistory · propagateToSiblings: false", () => {
       .updateLineWithHistory("a0", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false });
     useProjectStore.getState().undo();
 
-    expect(mainWords(getLine("a0"))).toEqual(INSTANCE_A_WORDS);
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a0").words).toEqual(INSTANCE_A_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -208,7 +205,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
         propagateToSiblings: false,
       });
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("still propagates structural word changes by default", () => {
@@ -216,7 +213,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 
     useProjectStore.getState().updateLinesWithHistory([{ id: "a0", updates: { words: MERGED_WORDS } }]);
 
-    expect(mainWords(getLine("a1"))).toHaveLength(2);
+    expect(getLine("a1").words).toHaveLength(2);
   });
 });
 
@@ -225,9 +222,9 @@ describe("instance resync · issue #96 reproduction", () => {
   // performs, using the real commitTappedWord helper.
   function tapResync(lineId: string, wordIndex: number, begin: number, end: number) {
     const line = getLine(lineId);
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
     const text = trailingSpace[wordIndex] ? `${parts[wordIndex]} ` : parts[wordIndex];
-    const updated = commitTappedWord(mainWords(line) ?? [], wordIndex, text, begin, end);
+    const updated = commitTappedWord(line.words ?? [], wordIndex, text, begin, end);
     useProjectStore
       .getState()
       .updateLineWithHistory(lineId, { words: updated }, { deriveText: false, propagateToSiblings: false });
@@ -240,7 +237,7 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0, 1.3);
     tapResync("a0", 2, 1.5, 1.8);
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("the resynced instance A keeps its full word set with the new timing", () => {
@@ -250,7 +247,7 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0, 1.3);
     tapResync("a0", 2, 1.5, 1.8);
 
-    expect(mainWords(getLine("a0"))).toEqual([
+    expect(getLine("a0").words).toEqual([
       { text: "I ", begin: 0.5, end: 1.0 },
       { text: "love ", begin: 1.0, end: 1.5 },
       { text: "you", begin: 1.5, end: 1.8 },
@@ -266,7 +263,7 @@ describe("instance resync · issue #96 reproduction", () => {
     ];
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -274,8 +271,8 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
-        reconcileLine({
+        },
+        {
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -283,8 +280,8 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: INSTANCE_B_WORDS.map((w) => ({ ...w })),
-        }),
-        reconcileLine({
+        },
+        {
           id: "a2",
           text: "I love you",
           agentId: "v1",
@@ -292,7 +289,7 @@ describe("instance resync · issue #96 reproduction", () => {
           instanceIdx: 2,
           templateLineIdx: 0,
           words: cWords.map((w) => ({ ...w })),
-        }),
+        },
       ],
     });
 
@@ -300,8 +297,8 @@ describe("instance resync · issue #96 reproduction", () => {
     tapResync("a0", 1, 1.0, 1.3);
     tapResync("a0", 2, 1.5, 1.8);
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
-    expect(mainWords(getLine("a2"))).toEqual(cWords);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a2").words).toEqual(cWords);
   });
 
   it("a single partial tap (the worst-case squash state) leaves the sibling intact", () => {
@@ -311,9 +308,9 @@ describe("instance resync · issue #96 reproduction", () => {
     // holds one word: this is the state that previously collapsed the sibling.
     tapResync("a0", 0, 0.5, 0.8);
 
-    expect(mainWords(getLine("a0"))).toHaveLength(1);
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
-    expect(mainWords(getLine("a1"))).toHaveLength(3);
+    expect(getLine("a0").words).toHaveLength(1);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toHaveLength(3);
   });
 
   it("characterizes the bug: a resync left to propagate DOES squash the sibling", () => {
@@ -323,13 +320,13 @@ describe("instance resync · issue #96 reproduction", () => {
     // with no opt-out, so propagation fired on the transient one-word array and
     // collapsed the sibling. This is the behavior the opt-out must prevent.
     const line = getLine("a0");
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
+    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
     const text = trailingSpace[0] ? `${parts[0]} ` : parts[0];
-    const updated = commitTappedWord(mainWords(line) ?? [], 0, text, 0.5, 0.8);
+    const updated = commitTappedWord(line.words ?? [], 0, text, 0.5, 0.8);
     useProjectStore.getState().updateLineWithHistory("a0", { words: updated }, { deriveText: false });
 
-    expect(mainWords(getLine("a1"))).toHaveLength(1);
-    expect(mainWords(getLine("a1"))).not.toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toHaveLength(1);
+    expect(getLine("a1").words).not.toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -344,7 +341,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory("a0", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("does not throw and changes nothing for an unknown line id", () => {
@@ -353,15 +350,15 @@ describe("propagateToSiblings: false · edge cases", () => {
     expect(() =>
       useProjectStore.getState().updateLineWithHistory("nope", { words: [] }, { propagateToSiblings: false }),
     ).not.toThrow();
-    expect(mainWords(getLine("a0"))).toEqual(INSTANCE_A_WORDS);
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a0").words).toEqual(INSTANCE_A_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("handles a single-instance group with no siblings", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "solo",
           text: "I love you",
           agentId: "v1",
@@ -369,7 +366,7 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
+        },
       ],
     });
 
@@ -378,7 +375,7 @@ describe("propagateToSiblings: false · edge cases", () => {
         .getState()
         .updateLineWithHistory("solo", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false }),
     ).not.toThrow();
-    expect(mainWords(getLine("solo"))).toEqual([{ text: "I ", begin: 5, end: 5.4 }]);
+    expect(getLine("solo").words).toEqual([{ text: "I ", begin: 5, end: 5.4 }]);
   });
 
   it("does not touch lines belonging to a different group", () => {
@@ -387,7 +384,7 @@ describe("propagateToSiblings: false · edge cases", () => {
     useProjectStore.setState((s) => ({
       lines: [
         ...s.lines,
-        reconcileLine({
+        {
           id: "x",
           text: "other",
           agentId: "v1",
@@ -395,7 +392,7 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: otherWords.map((w) => ({ ...w })),
-        }),
+        },
       ],
     }));
 
@@ -403,7 +400,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory("a0", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("x"))).toEqual(otherWords);
+    expect(getLine("x").words).toEqual(otherWords);
   });
 
   it("leaves the sibling intact even when the sibling already diverged in word count", () => {
@@ -414,7 +411,7 @@ describe("propagateToSiblings: false · edge cases", () => {
     ];
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -422,8 +419,8 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
-        reconcileLine({
+        },
+        {
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -431,7 +428,7 @@ describe("propagateToSiblings: false · edge cases", () => {
           instanceIdx: 1,
           templateLineIdx: 0,
           words: divergedB.map((w) => ({ ...w })),
-        }),
+        },
       ],
     });
 
@@ -439,7 +436,7 @@ describe("propagateToSiblings: false · edge cases", () => {
       .getState()
       .updateLineWithHistory("a0", { words: [{ text: "I ", begin: 5, end: 5.4 }] }, { propagateToSiblings: false });
 
-    expect(mainWords(getLine("a1"))).toEqual(divergedB);
+    expect(getLine("a1").words).toEqual(divergedB);
   });
 
   it("updateLinesWithHistory opt-out does not throw on an empty batch", () => {
@@ -449,16 +446,15 @@ describe("propagateToSiblings: false · edge cases", () => {
 
   it("updateLinesWithHistory opt-out spares the siblings of every batched line", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
-    const mk = (id: string, templateLineIdx: number, instanceIdx: number, words: WordTiming[]) =>
-      reconcileLine({
-        id,
-        text: "I love you",
-        agentId: "v1",
-        groupId: "g1",
-        instanceIdx,
-        templateLineIdx,
-        words: words.map((w) => ({ ...w })),
-      });
+    const mk = (id: string, templateLineIdx: number, instanceIdx: number, words: WordTiming[]) => ({
+      id,
+      text: "I love you",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx,
+      words: words.map((w) => ({ ...w })),
+    });
     useProjectStore.setState({
       lines: [
         mk("t0i0", 0, 0, INSTANCE_A_WORDS),
@@ -476,8 +472,8 @@ describe("propagateToSiblings: false · edge cases", () => {
       { propagateToSiblings: false },
     );
 
-    expect(mainWords(getLine("t0i1"))).toEqual(INSTANCE_B_WORDS);
-    expect(mainWords(getLine("t1i1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("t0i1").words).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("t1i1").words).toEqual(INSTANCE_B_WORDS);
   });
 });
 
@@ -487,7 +483,7 @@ describe("timing nudges · do not propagate to siblings", () => {
 
     nudgeWordBegin(useProjectStore.getState().lines, 0, 1, 0.1, useProjectStore.getState().updateLineWithHistory);
 
-    expect(mainWords(getLine("a1"))).toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 
   it("setWordBegin does not overwrite a sibling word whose text has diverged", () => {
@@ -497,7 +493,7 @@ describe("timing nudges · do not propagate to siblings", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        reconcileLine({
+        {
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -505,8 +501,8 @@ describe("timing nudges · do not propagate to siblings", () => {
           instanceIdx: 0,
           templateLineIdx: 0,
           words: INSTANCE_A_WORDS.map((w) => ({ ...w })),
-        }),
-        reconcileLine({
+        },
+        {
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -518,21 +514,21 @@ describe("timing nudges · do not propagate to siblings", () => {
             { text: "LOVE ", begin: 10.5, end: 11.0 },
             { text: "you", begin: 11.0, end: 11.5 },
           ],
-        }),
+        },
       ],
       isDirtySinceHistory: true,
     });
 
     setWordBegin(useProjectStore.getState().lines, 0, 0, 0.2, useProjectStore.getState().updateLineWithHistory);
 
-    expect(mainWords(getLine("a1"))?.[1].text).toBe("LOVE ");
+    expect(getLine("a1").words?.[1].text).toBe("LOVE ");
   });
 
   it("nudgeLineBegin on one line-synced instance leaves the sibling's bounds untouched", () => {
     useProjectStore.setState({
       groups: [seedGroup("g1")],
       lines: [
-        reconcileLine({
+        {
           id: "a0",
           text: "I love you",
           agentId: "v1",
@@ -541,8 +537,8 @@ describe("timing nudges · do not propagate to siblings", () => {
           templateLineIdx: 0,
           begin: 30,
           end: 32,
-        }),
-        reconcileLine({
+        },
+        {
           id: "a1",
           text: "I love you",
           agentId: "v1",
@@ -551,14 +547,14 @@ describe("timing nudges · do not propagate to siblings", () => {
           templateLineIdx: 0,
           begin: 60,
           end: 62,
-        }),
+        },
       ],
       isDirtySinceHistory: true,
     });
 
     nudgeLineBegin(useProjectStore.getState().lines, 0, 0.5, useProjectStore.getState().updateLineWithHistory);
 
-    expect(mainBounds(getLine("a1"))?.begin).toBe(60);
-    expect(mainBounds(getLine("a1"))?.end).toBe(62);
+    expect(getLine("a1").begin).toBe(60);
+    expect(getLine("a1").end).toBe(62);
   });
 });

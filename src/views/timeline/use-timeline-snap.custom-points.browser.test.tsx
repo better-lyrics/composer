@@ -1,4 +1,3 @@
-import { reconcileLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -98,7 +97,7 @@ describe("useTimelineSnap · custom snap points", () => {
 
   it("does not emit timeline grid anchors when timelineSnap is OFF but a custom point exists", async () => {
     useProjectStore.setState({
-      lines: [reconcileLine({ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 })],
+      lines: [{ id: "g1", text: "grid", agentId: "v1", begin: 2, end: 3 }],
       customSnapPoints: snapPoints([1]),
     });
     const { result } = await renderHook(() => useTimelineSnap());

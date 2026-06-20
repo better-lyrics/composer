@@ -1,21 +1,19 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine } from "@/domain/line/model";
 import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { wouldDropCrossInstance } from "./cross-instance";
 
-const grouped = (id: string, gid: string, inst: number): LyricLine =>
-  reconcileLine({
-    id,
-    text: "x",
-    agentId: "v1",
-    groupId: gid,
-    instanceIdx: inst,
-    templateLineIdx: 0,
-  });
-const plain = (id: string): LyricLine => reconcileLine({ id, text: "x", agentId: "v1" });
+const grouped = (id: string, gid: string, inst: number): LyricLine => ({
+  id,
+  text: "x",
+  agentId: "v1",
+  groupId: gid,
+  instanceIdx: inst,
+  templateLineIdx: 0,
+});
+const plain = (id: string): LyricLine => ({ id, text: "x", agentId: "v1" });
 
 describe("wouldDropCrossInstance", () => {
   it("refuses move between two instances of the same group", () => {
@@ -44,7 +42,7 @@ describe("wouldDropCrossInstance", () => {
 
   it("treats a line with groupId but no instanceIdx as different from one with both", () => {
     // Edge case: a line that lost instanceIdx mid-edit shouldn't merge with a properly-grouped one
-    const partial: LyricLine = reconcileLine({ id: "a", text: "x", agentId: "v1", groupId: "g1" });
+    const partial: LyricLine = { id: "a", text: "x", agentId: "v1", groupId: "g1" };
     expect(wouldDropCrossInstance(partial, grouped("b", "g1", 0))).toBe(true);
   });
 });

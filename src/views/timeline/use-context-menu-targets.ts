@@ -1,15 +1,10 @@
-import { bgBounds, mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced } from "@/domain/line/predicates";
-import { bgText, bgVoice, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import { isLineSynced as isVoiceLineSynced } from "@/domain/voice/predicates";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
-import { fieldWords } from "@/stores/project/lines-slice-helpers";
 import { useProjectStore } from "@/stores/project";
 import { createGroupFromSelection, fillSelectionGaps } from "@/views/timeline/group-ops";
-import { splitTargetLineIds, type SplitVoice } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
 
@@ -28,7 +23,7 @@ function useContextMenuTargets() {
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
     const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const wordsArray = fieldWords(line, field);
+    const wordsArray = line[field];
     if (!wordsArray || wordsArray.length === 0) return null;
 
     const selectedWords = useTimelineStore.getState().selectedWords;
@@ -50,14 +45,6 @@ function useContextMenuTargets() {
     const realLine = rawLines.find((l) => l.id === lineId);
     if (!realLine?.groupId) return null;
     return { lineId, groupId: realLine.groupId };
-  }, [contextMenu, rawLines]);
-
-  const gutterBackgroundInfo = useMemo(() => {
-    if (!contextMenu || contextMenu.target.kind !== "gutter") return null;
-    const { lineId } = contextMenu.target;
-    const realLine = rawLines.find((l) => l.id === lineId);
-    if (!realLine || bgVoice(realLine) === null) return null;
-    return { lineId };
   }, [contextMenu, rawLines]);
 
   const groupableSelection = useMemo(() => {
@@ -95,7 +82,7 @@ function useContextMenuTargets() {
 
     const line = lines.find((l) => l.id === run.lineId);
     if (!line) return null;
-    const wordsArray = run.type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return null;
 
     return { indices: run.indices, lineId: run.lineId, type: run.type };
@@ -107,7 +94,7 @@ function useContextMenuTargets() {
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return null;
     const field: "words" | "backgroundWords" = type === "word" ? "words" : "backgroundWords";
-    const word = fieldWords(line, field)?.[wordIndex];
+    const word = line[field]?.[wordIndex];
     if (!word || word.syllableGroupId === undefined) return null;
     return { lineId, field, wordIndex };
   }, [contextMenu, rawLines]);
@@ -115,7 +102,7 @@ function useContextMenuTargets() {
   const snapNeededInfo = useMemo(() => {
     if (!groupedWordInfo) return null;
     const line = rawLines.find((l) => l.id === groupedWordInfo.lineId);
-    const words = line ? fieldWords(line, groupedWordInfo.field) : undefined;
+    const words = line?.[groupedWordInfo.field];
     if (!words) return null;
     return hasIntraGroupGap(words) ? groupedWordInfo : null;
   }, [groupedWordInfo, rawLines]);
@@ -123,56 +110,39 @@ function useContextMenuTargets() {
   const placeLineHereInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "track") return null;
     const trackTarget = contextMenu.target;
-    if (trackTarget.type !== "word") return null;
     const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
     if (!targetLine) return null;
-    const canPlace =
-      lineText(targetLine).trim() !== "" && !mainWords(targetLine)?.length && mainBounds(targetLine) === null;
-    return canPlace ? targetLine : null;
-  }, [contextMenu, rawLines]);
-
-  const placeBackgroundHereInfo = useMemo(() => {
-    if (!contextMenu || contextMenu.target.kind !== "track") return null;
-    const trackTarget = contextMenu.target;
-    if (trackTarget.type !== "bg") return null;
-    const targetLine = rawLines.find((l) => l.id === trackTarget.lineId);
-    if (!targetLine) return null;
-    const canPlace =
-      (bgText(targetLine)?.trim() ?? "") !== "" && !bgWords(targetLine)?.length && bgBounds(targetLine) === null;
+    const canPlace = targetLine.text.trim() !== "" && !targetLine.words?.length && targetLine.begin === undefined;
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const target = contextMenu.target;
-    const voice: SplitVoice = target.type === "word" ? "main" : "bg";
 
-    const targetIds = splitTargetLineIds(selectedWords, target.type, target.lineId);
+    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
+    const targetIds =
+      selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
 
     const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
     const lineSyncedIds = targetIds.filter((id) => {
       const realLine = rawLinesById.get(id);
-      if (!realLine) return false;
-      if (voice === "main") return isLineSynced(realLine);
-      const bg = bgVoice(realLine);
-      return bg !== null && isVoiceLineSynced(bg);
+      return realLine && isLineSynced(realLine);
     });
 
     if (lineSyncedIds.length === 0) return null;
-    return { count: lineSyncedIds.length, voice };
+    return { count: lineSyncedIds.length };
   }, [contextMenu, selectedWords, rawLines]);
 
   return {
     lines,
     explicitToggleContext,
     gutterLineGroupInfo,
-    gutterBackgroundInfo,
     groupableSelection,
     mergeInfo,
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
-    placeBackgroundHereInfo,
     splitIntoWordsInfo,
   };
 }

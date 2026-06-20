@@ -1,6 +1,5 @@
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
-import { mainWords } from "@/domain/line/voices";
 import { Button } from "@/ui/button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -155,9 +154,8 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     const ticks: Array<{ idx: number; leftPct: number; widthPct: number }> = [];
     for (const line of allLines) {
       if (line.groupId !== group.id || line.instanceIdx !== instanceIdx) continue;
-      const words = mainWords(line);
-      if (!words?.length) continue;
-      for (const w of words) {
+      if (!line.words?.length) continue;
+      for (const w of line.words) {
         const startPct = ((w.begin - instanceStart) / span) * 100;
         const endPct = ((w.end - instanceStart) / span) * 100;
         const widthPct = Math.max(0.4, endPct - startPct);

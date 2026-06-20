@@ -1,4 +1,3 @@
-import { reconcileLine } from "@/domain/line/model";
 import { cleanSplitCharacters, getSplitCharacter } from "@/utils/split-character";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 
@@ -10,11 +9,11 @@ function parseTxt(content: string, _fallbackDuration?: number): ParseResult {
     if (text.length === 0) return [];
     const displayText = text.includes(getSplitCharacter()) ? cleanSplitCharacters(text) : text;
     return [
-      reconcileLine({
+      {
         id: generateLineId(),
         text: displayText,
         agentId: "v1",
-      }),
+      },
     ];
   });
 

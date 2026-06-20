@@ -1,9 +1,7 @@
-import { mainBounds } from "@/domain/line/bounds";
-import { lineText, mainWords } from "@/domain/line/voices";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
-import type { SyncState } from "@/utils/sync-helpers";
+import { createBgWordsFromLine, type SyncState } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
@@ -59,12 +57,12 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
+      expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
-    expect(mainWords(useProjectStore.getState().lines[0])?.length).toBe(5);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
+    expect(useProjectStore.getState().lines[0].words?.length).toBe(5);
+    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
   });
 
   it("preserves both lines' text across a cross-line tap transition", async () => {
@@ -79,15 +77,15 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       await act(() => {
         result.current.handleTap();
       });
-      expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-      expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
+      expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
+      expect(useProjectStore.getState().lines[1].text).toBe("Foo bar");
       await rerender({ syncState: getSyncState(), currentTime: currentTime + 0.5 });
     }
 
-    expect(mainWords(useProjectStore.getState().lines[0])?.length).toBe(2);
-    expect(mainWords(useProjectStore.getState().lines[1])?.length).toBe(2);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Foo bar");
+    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+    expect(useProjectStore.getState().lines[1].words?.length).toBe(2);
+    expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
+    expect(useProjectStore.getState().lines[1].text).toBe("Foo bar");
   });
 
   it("preserves text when re-syncing mid-line over an existing word array", async () => {
@@ -113,8 +111,8 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
       result.current.handleTap();
     });
 
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(ORIGINAL_TEXT);
-    expect(mainWords(useProjectStore.getState().lines[0])?.length).toBe(2);
+    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
   });
 
   it("preserves prev-line text when patching a partially synced previous line on cross-line tap", async () => {
@@ -138,11 +136,11 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     });
 
     const lines = useProjectStore.getState().lines;
-    expect(lineText(lines[0])).toBe(ORIGINAL_TEXT);
-    expect(mainWords(lines[0])).toHaveLength(1);
-    expect(mainWords(lines[0])?.[0].end).toBe(TAP_TIME);
-    expect(lineText(lines[1])).toBe("Next line");
-    expect(mainWords(lines[1])).toHaveLength(1);
+    expect(lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(lines[0].words).toHaveLength(1);
+    expect(lines[0].words?.[0].end).toBe(TAP_TIME);
+    expect(lines[1].text).toBe("Next line");
+    expect(lines[1].words).toHaveLength(1);
   });
 });
 
@@ -157,17 +155,17 @@ describe("useSyncHandlers.handleTap (line granularity)", () => {
     await act(() => {
       result.current.handleTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
-    expect(mainBounds(useProjectStore.getState().lines[0])?.begin).toBe(0);
+    expect(useProjectStore.getState().lines[0].text).toBe("Verse start");
+    expect(useProjectStore.getState().lines[1].text).toBe("Verse two");
+    expect(useProjectStore.getState().lines[0].begin).toBe(0);
     await rerender({ syncState: getSyncState(), currentTime: 1.0 });
 
     await act(() => {
       result.current.handleTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Verse start");
-    expect(lineText(useProjectStore.getState().lines[1])).toBe("Verse two");
-    expect(mainBounds(useProjectStore.getState().lines[1])?.begin).toBe(1.0);
+    expect(useProjectStore.getState().lines[0].text).toBe("Verse start");
+    expect(useProjectStore.getState().lines[1].text).toBe("Verse two");
+    expect(useProjectStore.getState().lines[1].begin).toBe(1.0);
   });
 });
 
@@ -181,14 +179,14 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
+    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.5 });
 
     await act(() => {
       result.current.handleHoldEnd();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TEXT);
-    expect(mainWords(useProjectStore.getState().lines[0])?.length).toBe(1);
+    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TEXT);
+    expect(useProjectStore.getState().lines[0].words?.length).toBe(1);
   });
 
   it("preserves text across a handleHoldTap sequence", async () => {
@@ -200,19 +198,19 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     await act(() => {
       result.current.handleHoldStart();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.4 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
     await rerender({ syncState: getSyncState(), currentTime: 0.8 });
 
     await act(() => {
       result.current.handleHoldTap();
     });
-    expect(lineText(useProjectStore.getState().lines[0])).toBe(HOLD_TAP_TEXT);
+    expect(useProjectStore.getState().lines[0].text).toBe(HOLD_TAP_TEXT);
   });
 
   it("preserves text when handleHoldStart re-enters a line that already has words", async () => {
@@ -235,8 +233,8 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe(TEXT);
-    expect(mainWords(line)).toHaveLength(2);
+    expect(line.text).toBe(TEXT);
+    expect(line.words).toHaveLength(2);
   });
 
   it("preserves text when handleHoldEnd closes an open trailing word", async () => {
@@ -260,7 +258,33 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
     });
 
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe(TEXT);
-    expect(mainWords(line)?.[1].end).toBe(END_TIME);
+    expect(line.text).toBe(TEXT);
+    expect(line.words?.[1].end).toBe(END_TIME);
+  });
+});
+
+describe("sync-panel bg-init contract", () => {
+  it("preserves backgroundText and text when seeding backgroundWords on a synced line", async () => {
+    const BG_TEXT = "ooh ahh";
+    const ORIGINAL_LINE_TEXT = "Lead vocal melody line";
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: ORIGINAL_LINE_TEXT,
+        backgroundText: BG_TEXT,
+        words: [createWord({ text: "Lead ", begin: 0, end: 0.5 }), createWord({ text: "vocal", begin: 0.5, end: 1.0 })],
+      }),
+    ]);
+
+    const line = useProjectStore.getState().lines[0];
+    const bgWords = createBgWordsFromLine(line);
+    expect(bgWords).not.toBeNull();
+    if (!bgWords) return;
+
+    useProjectStore.getState().updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
+
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
+    expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);
+    expect(useProjectStore.getState().lines[0].backgroundWords?.length).toBeGreaterThan(0);
   });
 });

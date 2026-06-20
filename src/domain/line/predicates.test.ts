@@ -1,4 +1,3 @@
-import { mainBounds } from "@/domain/line/bounds";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { hasAnyTiming, isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -36,12 +35,14 @@ describe("isLineSynced", () => {
     expect(isLineSynced(line({ end: 2 }))).toBe(false);
   });
 
-  it("a line it reports true for carries readable begin and end bounds", () => {
+  it("narrows type so begin and end are non-optional inside the guard", () => {
     const l = line({ begin: 1, end: 2 });
-    expect(isLineSynced(l)).toBe(true);
-    const bounds = mainBounds(l);
-    expect(bounds?.begin).toBe(1);
-    expect(bounds?.end).toBe(2);
+    if (isLineSynced(l)) {
+      const begin: number = l.begin;
+      const end: number = l.end;
+      expect(begin).toBe(1);
+      expect(end).toBe(2);
+    }
   });
 });
 
@@ -82,10 +83,6 @@ describe("hasAnyTiming", () => {
 
   it("returns true when only background words", () => {
     expect(hasAnyTiming(line({ backgroundWords: [{ text: "ah", begin: 1, end: 2 }] }))).toBe(true);
-  });
-
-  it("returns false when background is text only with no words", () => {
-    expect(hasAnyTiming(line({ backgroundText: "ah" }))).toBe(false);
   });
 
   it("returns false when only begin is set (incomplete line-sync)", () => {

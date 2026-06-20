@@ -105,10 +105,10 @@ describe("findRepeatingStandaloneSections", () => {
 
   it("matches by structural equality including word splits", () => {
     const a: LyricLine[] = [
-      reconcileLine({ id: "1", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 0, end: 1 }] }),
-      reconcileLine({ id: "2", text: "you", agentId: "v1", words: [{ text: "you", begin: 1, end: 2 }] }),
-      reconcileLine({ id: "3", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 10, end: 11 }] }),
-      reconcileLine({ id: "4", text: "you", agentId: "v1", words: [{ text: "you", begin: 11, end: 12 }] }),
+      { id: "1", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 0, end: 1 }] },
+      { id: "2", text: "you", agentId: "v1", words: [{ text: "you", begin: 1, end: 2 }] },
+      { id: "3", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 10, end: 11 }] },
+      { id: "4", text: "you", agentId: "v1", words: [{ text: "you", begin: 11, end: 12 }] },
     ];
     const result = findRepeatingStandaloneSections(a);
     expect(result).toHaveLength(1);
@@ -117,7 +117,7 @@ describe("findRepeatingStandaloneSections", () => {
 
   it("rejects pseudo-repeats whose word splits differ", () => {
     const a: LyricLine[] = [
-      reconcileLine({
+      {
         id: "1",
         text: "I love",
         agentId: "v1",
@@ -125,10 +125,10 @@ describe("findRepeatingStandaloneSections", () => {
           { text: "I", begin: 0, end: 1 },
           { text: " love", begin: 1, end: 2 },
         ],
-      }),
-      reconcileLine({ id: "2", text: "you", agentId: "v1" }),
-      reconcileLine({ id: "3", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 10, end: 11 }] }),
-      reconcileLine({ id: "4", text: "you", agentId: "v1" }),
+      },
+      { id: "2", text: "you", agentId: "v1" },
+      { id: "3", text: "I love", agentId: "v1", words: [{ text: "I love", begin: 10, end: 11 }] },
+      { id: "4", text: "you", agentId: "v1" },
     ];
     expect(findRepeatingStandaloneSections(a)).toEqual([]);
   });

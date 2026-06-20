@@ -1,12 +1,11 @@
-import type { LooseLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 import { describe, expect, it } from "vitest";
 
 interface CapturedUpdate {
   id: string;
-  updates: Partial<LooseLine>;
+  updates: Partial<LyricLine>;
   options?: { propagateToSiblings?: boolean };
 }
 
@@ -14,7 +13,7 @@ function captureUpdates() {
   const calls: CapturedUpdate[] = [];
   const updateLineWithHistory = (
     id: string,
-    updates: Partial<LooseLine>,
+    updates: Partial<LyricLine>,
     options?: { propagateToSiblings?: boolean },
   ) => {
     calls.push({ id, updates, options });
@@ -22,8 +21,8 @@ function captureUpdates() {
   return { calls, updateLineWithHistory };
 }
 
-const wordsOps = createWordTimingOps({ getWords: (line) => mainWords(line), updateKey: "words" });
-const bgOps = createWordTimingOps({ getWords: (line) => bgWords(line), updateKey: "backgroundWords" });
+const wordsOps = createWordTimingOps({ getWords: (line) => line.words, updateKey: "words" });
+const bgOps = createWordTimingOps({ getWords: (line) => line.backgroundWords, updateKey: "backgroundWords" });
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {
@@ -165,7 +164,7 @@ describe("createWordTimingOps: write contract", () => {
       ],
     });
     wordsOps.setBegin([original], 0, 1, 1.5, updateLineWithHistory);
-    expect(calls[0].updates.words).not.toBe(mainWords(original));
+    expect(calls[0].updates.words).not.toBe(original.words);
   });
 
   it("does not mutate untouched words in the resulting array", () => {

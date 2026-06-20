@@ -2,8 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 import { parseLamePriming } from "@/audio/lame-priming";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine } from "@/domain/line/model";
-import { mainWords } from "@/domain/line/voices";
+import type { WordTiming } from "@/domain/word/timing";
 import { usePersistence } from "@/hooks/usePersistence";
 import { clearCurrentProject, loadCurrentProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
@@ -18,7 +17,7 @@ function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
     { title: "t", artist: "", album: "", duration: 0 },
     DEFAULT_AGENTS,
     [
-      reconcileLine({
+      {
         id: "L1",
         text: "hello world",
         agentId: DEFAULT_AGENTS[0].id,
@@ -26,7 +25,7 @@ function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
           { text: "hello", begin: 1.0, end: 1.5 },
           { text: "world", begin: 1.5, end: 2.0 },
         ],
-      }),
+      },
     ],
     [],
     "word",
@@ -61,7 +60,7 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
     const migrated = await loadCurrentProjectWithPrimingMigration();
     expect(migrated).toBeDefined();
     const shiftSec = samples / sampleRate;
-    const words = mainWords(migrated!.lines[0]) ?? [];
+    const words = (migrated!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0 - shiftSec);
     expect(words[0].end).toBeCloseTo(1.5 - shiftSec);
     expect(words[1].begin).toBeCloseTo(1.5 - shiftSec);
@@ -75,7 +74,7 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
     await seedSavedProject({ primingStripped: true });
 
     const loaded = await loadCurrentProjectWithPrimingMigration();
-    const words = mainWords(loaded!.lines[0]) ?? [];
+    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
     expect(words[1].end).toBeCloseTo(2.0);
     expect(loaded!.primingStripped).toBe(true);
@@ -86,7 +85,7 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
 
     const loaded = await loadCurrentProjectWithPrimingMigration();
     expect(loaded!.primingStripped).toBe(false);
-    const words = mainWords(loaded!.lines[0]) ?? [];
+    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
     expect(words[1].end).toBeCloseTo(2.0);
   });
@@ -104,7 +103,7 @@ describe("loadCurrentProjectWithPrimingMigration", () => {
 
     const loaded = await loadCurrentProjectWithPrimingMigration();
     expect(loaded!.primingStripped).toBe(true);
-    const words = mainWords(loaded!.lines[0]) ?? [];
+    const words = (loaded!.lines[0] as { words: WordTiming[] }).words;
     expect(words[0].begin).toBeCloseTo(1.0);
   });
 });
@@ -136,7 +135,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     await saveCurrentProject(
       { title: "race", artist: "", album: "", duration: 0 },
       DEFAULT_AGENTS,
-      [reconcileLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
+      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],
       "word",
       { applyToAll: false, caseInsensitive: false },
@@ -162,7 +161,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     await saveCurrentProject(
       { title: "race-zero", artist: "", album: "", duration: 0 },
       DEFAULT_AGENTS,
-      [reconcileLine({ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id })],
+      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],
       "word",
       { applyToAll: false, caseInsensitive: false },

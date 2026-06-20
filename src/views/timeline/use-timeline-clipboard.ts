@@ -1,6 +1,5 @@
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
@@ -22,7 +21,7 @@ function useTimelineClipboard(lines: LyricLine[]) {
     for (const sel of selectedWords) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
-      const wordsArray = sel.type === "word" ? mainWords(line) : bgWords(line);
+      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
       if (!word) continue;
 

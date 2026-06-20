@@ -1,5 +1,4 @@
 import type { Agent } from "@/domain/agent/model";
-import { reconcileLine, toFlat } from "@/domain/line/model";
 import type { ConfirmOptions } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
@@ -69,7 +68,7 @@ async function importParsedLyrics(parsed: ParseResult, ctx: ImportParsedLyricsCo
     : parsed.lines;
 
   if (!parsed.hasTimingData && ctx.audioDuration > 0) {
-    workingLines = distributeLinesTiming(workingLines.map(toFlat), ctx.audioDuration).map(reconcileLine);
+    workingLines = distributeLinesTiming(workingLines, ctx.audioDuration);
   }
 
   const store = useProjectStore.getState();

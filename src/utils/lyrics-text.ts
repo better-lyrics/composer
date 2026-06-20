@@ -1,7 +1,6 @@
 import { CLEARED_BACKGROUND } from "@/domain/line/background";
-import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { reconcileMatchedTiming } from "@/domain/line/reconcile-text";
-import { lineText } from "@/domain/line/voices";
 import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
@@ -9,7 +8,7 @@ import { cleanSplitCharacters, stripSplitCharacter } from "@/utils/split-charact
 function textToLyricLines(text: string, defaultAgentId: string, existingLines: LyricLine[] = []): LyricLine[] {
   const textToCandidates = new Map<string, LyricLine[]>();
   for (const line of existingLines) {
-    const key = stripSplitCharacter(lineText(line));
+    const key = stripSplitCharacter(line.text);
     let bucket = textToCandidates.get(key);
     if (!bucket) {
       bucket = [];
@@ -26,8 +25,8 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
   // wrong existing line, so we generate a fresh id for any unmatched typed line.
   const allowPositionMatch = newLines.length === existingLines.length;
 
-  const mapped = newLines.map((typedLine, index) => {
-    const trimmed = typedLine.trim();
+  const mapped = newLines.map((lineText, index) => {
+    const trimmed = lineText.trim();
     const cleanedText = cleanSplitCharacters(trimmed);
     const matchText = stripSplitCharacter(cleanedText);
 
@@ -46,18 +45,16 @@ function textToLyricLines(text: string, defaultAgentId: string, existingLines: L
       }
     }
 
-    return reconcileLine({
+    return {
       id: crypto.randomUUID(),
       text: cleanedText,
       agentId: defaultAgentId,
-    });
+    };
   });
 
   // Raw parentheses in `text` are the source of truth for background vocals;
   // a carried-over extracted backgroundText would double on re-extraction.
-  return mapped.map((line) =>
-    /\([^)]*\)/.test(lineText(line)) ? reconcileLine({ ...toFlat(line), ...CLEARED_BACKGROUND }) : line,
-  );
+  return mapped.map((line) => (/\([^)]*\)/.test(line.text) ? { ...line, ...CLEARED_BACKGROUND } : line));
 }
 
 // -- Exports ------------------------------------------------------------------

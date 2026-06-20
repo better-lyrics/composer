@@ -4,7 +4,7 @@ import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { selfKey } from "@/views/timeline/snap";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -39,7 +39,6 @@ import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { IconMusic } from "@tabler/icons-react";
@@ -109,7 +108,7 @@ function makeDragOverlapCheck(
 ) {
   const line = lines.find((l) => l.id === data.lineId);
   if (!line) return () => true;
-  const wordsArr = data.trackType === "word" ? (mainWords(line) ?? []) : (bgWords(line) ?? []);
+  const wordsArr = data.trackType === "word" ? (line.words ?? []) : (line.backgroundWords ?? []);
   return (shift: number) => {
     const newBegin = data.begin + shift;
     const newEnd = data.end + shift;
@@ -187,7 +186,7 @@ const TimelinePanel: React.FC = () => {
     const hasAnyTiming = lines.some((l) => mainBounds(l) !== null);
 
     if (!hasAnyTiming) {
-      const distributed = distributeLinesTiming(lines.map(toFlat), duration).map(reconcileLine);
+      const distributed = distributeLinesTiming(lines, duration);
       setLines(distributed);
     }
     lastDistributedDurationRef.current = duration;
@@ -199,7 +198,7 @@ const TimelinePanel: React.FC = () => {
     const valid = selectedWords.filter((sel) => {
       const line = effectiveLines[sel.lineIndex];
       if (!line || line.id !== sel.lineId) return false;
-      const words = sel.type === "word" ? mainWords(line) : bgWords(line);
+      const words = sel.type === "word" ? line.words : line.backgroundWords;
       return !!words?.[sel.wordIndex];
     });
     if (valid.length < selectedWords.length) {
@@ -267,8 +266,7 @@ const TimelinePanel: React.FC = () => {
       const pos = layout.lineTops.get(line.id);
       if (!pos) continue;
       const mainH = rowHeights[line.id] ?? defaultRowHeight;
-      const lineBgWords = bgWords(line);
-      const hasBg = lineBgWords && lineBgWords.length > 0;
+      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
       const bgH = hasBg ? mainH : BG_DROP_ZONE_HEIGHT;
       rowTops[line.id] = pos.top;
       rowMainHeights[line.id] = mainH;
@@ -299,7 +297,7 @@ const TimelinePanel: React.FC = () => {
     const seen = new Set<string>();
     for (const sel of baseSelections) {
       const line = lineById.get(sel.lineId);
-      const wordsArray = line ? (sel.type === "word" ? mainWords(line) : bgWords(line)) : undefined;
+      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       if (!line || !wordsArray) continue;
       const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
       for (const idx of indices) {
@@ -334,7 +332,7 @@ const TimelinePanel: React.FC = () => {
       let positions = positionsByLineTrack.get(key);
       if (!positions) {
         const line = lineById.get(lineId);
-        const wordsArray = line ? (type === "word" ? mainWords(line) : bgWords(line)) : undefined;
+        const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
         positions = wordsArray ? getSyllablePositions(wordsArray) : [];
         positionsByLineTrack.set(key, positions);
       }
@@ -343,7 +341,7 @@ const TimelinePanel: React.FC = () => {
 
     const cells = wordsToShow.map((sel) => {
       const line = lineById.get(sel.lineId);
-      const wordsArray = line ? (sel.type === "word" ? mainWords(line) : bgWords(line)) : undefined;
+      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
       const word = wordsArray?.[sel.wordIndex];
       if (!word || !line)
         return { text: "", left: 0, top: 0, width: 0, height: 0, syllablePosition: "none" as SyllablePosition };

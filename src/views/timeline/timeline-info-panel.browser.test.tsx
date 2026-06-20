@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { bgBounds } from "@/domain/line/bounds";
-import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
@@ -56,29 +54,8 @@ describe("BackgroundTextEditor provenance", () => {
     await screen.getByPlaceholder("Background vocals").fill("ooh");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBe("ooh");
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
-  });
-
-  it("regression: line-synced line keeps line-synced background (#122)", async () => {
-    const line = createLine({
-      id: "l1",
-      text: "lead",
-      begin: 0,
-      end: 4,
-    });
-    useProjectStore.setState({ lines: [line] });
-    selectFirstWordOf("l1");
-    const screen = await render(<TimelineInfoPanel />);
-
-    await screen.getByRole("button", { name: "Add BG" }).click();
-    await screen.getByPlaceholder("Background vocals").fill("ooh");
-    await userEvent.keyboard("{Enter}");
-
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBe("ooh");
-    expect(bgBounds(useProjectStore.getState().lines[0])).not.toBeNull();
-    expect(bgWords(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("flips an extraction-sourced background to manual when edited", async () => {
@@ -97,8 +74,8 @@ describe("BackgroundTextEditor provenance", () => {
     await screen.getByPlaceholder("Background vocals").fill("aah");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBe("aah");
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("aah");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("clears all three background fields when the editor is emptied", async () => {
@@ -107,10 +84,11 @@ describe("BackgroundTextEditor provenance", () => {
       text: "hello",
       words: [createWord({ text: "hello", begin: 0, end: 1 })],
       backgroundText: "ooh",
-      backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })],
       backgroundTextSource: "extraction",
     });
-    useProjectStore.setState({ lines: [line] });
+    useProjectStore.setState({
+      lines: [{ ...line, backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] }],
+    });
     selectFirstWordOf("l1");
     const screen = await render(<TimelineInfoPanel />);
 
@@ -118,9 +96,9 @@ describe("BackgroundTextEditor provenance", () => {
     await screen.getByPlaceholder("Background vocals").fill("");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(bgWords(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(bgSource(useProjectStore.getState().lines[0])).toBeUndefined();
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
   });
 });
 
@@ -144,8 +122,8 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => bgWords(useProjectStore.getState().lines[0])?.[0].begin).toBeCloseTo(1.3);
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].begin).toBeCloseTo(1.3);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("stamps backgroundTextSource manual when a bg word's end is set to the cursor", async () => {
@@ -156,8 +134,8 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set End/ }).click();
 
-    await expect.poll(() => bgWords(useProjectStore.getState().lines[0])?.[0].end).toBeCloseTo(1.7);
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.[0].end).toBeCloseTo(1.7);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's begin is retimed", async () => {
@@ -168,7 +146,7 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await screen.getByRole("button", { name: /Set Begin/ }).click();
 
-    await expect.poll(() => mainWords(useProjectStore.getState().lines[0])?.[0].begin).toBeCloseTo(0.4);
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

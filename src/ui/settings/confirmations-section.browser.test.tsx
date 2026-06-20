@@ -41,12 +41,4 @@ describe("ConfirmationsSection", () => {
     toggle.click();
     expect(useSettingsStore.getState().confirmApplyToAllSyllableSplit).toBe(false);
   });
-
-  it("flips confirmRemoveBackground when its toggle is clicked", async () => {
-    await render(<ConfirmationsSection />);
-    expect(useSettingsStore.getState().confirmRemoveBackground).toBe(true);
-    const toggle = toggleForLabel("Confirm removing background vocals");
-    toggle.click();
-    expect(useSettingsStore.getState().confirmRemoveBackground).toBe(false);
-  });
 });

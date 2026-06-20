@@ -1,9 +1,9 @@
 import { loadCurrentProject } from "@/lib/persistence";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
-import { migrateLine } from "@/domain/line/migrate";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import type { Agent } from "@/domain/agent/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -13,7 +13,7 @@ const IMPORT_HASH_PREFIX = "#import=";
 interface ImportPayload {
   metadata: ProjectMetadata;
   agents: Agent[];
-  lines: unknown[];
+  lines: LyricLine[];
   granularity: "line" | "word";
 }
 
@@ -84,13 +84,10 @@ function useImportFromHash(): void {
           }
         }
 
-        // Migrate before reset() so a malformed line aborts the import without mutating the store.
-        const migratedLines = payload.lines.map(migrateLine);
-
         const state = useProjectStore.getState();
         state.reset();
         state.setMetadata(payload.metadata);
-        state.setLines(migratedLines);
+        state.setLines(payload.lines);
         state.setGranularity(payload.granularity);
         for (const agent of payload.agents) {
           if (!state.agents.some((existing) => existing.id === agent.id)) {

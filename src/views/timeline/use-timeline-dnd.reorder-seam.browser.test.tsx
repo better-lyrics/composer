@@ -1,5 +1,3 @@
-import { reconcileLine } from "@/domain/line/model";
-import { mainWords } from "@/domain/line/voices";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -22,7 +20,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     useTimelineStore.setState({ zoom: 100, rowHeights: {}, defaultRowHeight: 44, collapsedInstances: {} });
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "l1",
           text: "word1 word2 word3",
           agentId: "v1",
@@ -31,7 +29,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
             { text: "word2 ", begin: 1, end: 1.5 },
             { text: "word3", begin: 2, end: 2.5 },
           ],
-        }),
+        },
       ],
     });
     scrollHost = installScrollHost();
@@ -49,7 +47,7 @@ describe("useTimelineDnd · within-track reorder seam", () => {
     window.dispatchEvent(new PointerEvent("pointermove", { clientX: 250, clientY: POINTER_Y_MAIN }));
     result.current.handleDragEnd(makeReorderDragEndEvent());
 
-    const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
+    const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words.length).toBe(3);
 
     expect(computeSyllableGroups(words)).toEqual([]);

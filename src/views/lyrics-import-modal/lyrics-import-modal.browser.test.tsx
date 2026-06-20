@@ -1,8 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { reconcileLine } from "@/domain/line/model";
-import { bgText, lineText, mainWords } from "@/domain/line/voices";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -220,7 +218,7 @@ describe("LyricsImportModal search section commit", () => {
   it("confirm-replace runs when project already has lines (cancel keeps existing)", async () => {
     useSettingsStore.setState({ confirmReplaceLyrics: true });
     useProjectStore.setState({
-      lines: [reconcileLine({ id: "existing", text: "Old line", agentId: "v1" })],
+      lines: [{ id: "existing", text: "Old line", agentId: "v1" }],
     });
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ prefill: { track: "Bohemian" } });
@@ -232,7 +230,7 @@ describe("LyricsImportModal search section commit", () => {
     await expect.element(screen.getByText(/Replace existing lyrics/i)).toBeInTheDocument();
     await screen.getByRole("button", { name: /Cancel/i }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Old line");
+    expect(useProjectStore.getState().lines[0].text).toBe("Old line");
   });
 });
 
@@ -331,8 +329,8 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
     const lines = useProjectStore.getState().lines;
-    expect(mainWords(lines[0])).toBeDefined();
-    expect(mainWords(lines[0])?.length ?? 0).toBeGreaterThan(0);
+    expect(lines[0].words).toBeDefined();
+    expect(lines[0].words?.length ?? 0).toBeGreaterThan(0);
   });
 
   it("extracts inline parenthetical background when the setting is on", async () => {
@@ -345,7 +343,7 @@ describe("LyricsImportModal settings integration", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const line = useProjectStore.getState().lines[0];
-    expect(lineText(line)).toBe("Hello");
-    expect(bgText(line)).toBe("world");
+    expect(line.text).toBe("Hello");
+    expect(line.backgroundText).toBe("world");
   });
 });

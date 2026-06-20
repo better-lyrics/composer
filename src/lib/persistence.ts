@@ -4,7 +4,6 @@ import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/s
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { migrateLine } from "@/domain/line/migrate";
 import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -35,17 +34,6 @@ interface SavedProject {
 
 const CURRENT_PROJECT_KEY = "current";
 const AUDIO_FILE_KEY = "current-audio";
-
-// -- Helpers ------------------------------------------------------------------
-
-// Lifts persisted lines (which may still be the legacy flat shape) to the
-// nested voice model. A record whose `lines` is missing or not an array is
-// passed through untouched: record-level malformed-field handling and its warn
-// live in usePersistence, which falls back to an empty array.
-function migrateLines(lines: SavedProject["lines"]): LyricLine[] {
-  if (!Array.isArray(lines)) return lines;
-  return (lines as unknown[]).map(migrateLine);
-}
 
 // -- Public API ---------------------------------------------------------------
 
@@ -85,9 +73,7 @@ async function saveCurrentProject(
 }
 
 async function loadCurrentProject(): Promise<SavedProject | undefined> {
-  const project = await getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
-  if (project) project.lines = migrateLines(project.lines);
-  return project;
+  return getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
 }
 
 async function replaceCurrentProject(project: SavedProject): Promise<void> {
@@ -175,8 +161,6 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
   if (!project.syllableSplitDefaults) {
     project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
   }
-
-  project.lines = migrateLines(project.lines);
 
   return project;
 }
