@@ -336,7 +336,11 @@ describe("LyricsImportModal settings integration", () => {
   });
 
   it("extracts inline parenthetical background when the setting is on", async () => {
-    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: false });
+    useSettingsStore.setState({
+      autoExtractBackgroundVocals: true,
+      mergeStandaloneBackgroundLines: false,
+      preserveBracketsOnExtraction: false,
+    });
     const screen = await render(withQueryClient(<LyricsImportModalHost />));
     openModal({ section: "paste" });
     const textarea = await waitForTextarea();

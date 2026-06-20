@@ -30,7 +30,11 @@ function previewBackgroundTexts(container: HTMLElement): string[] {
 describe("auto-extract background vocals on blur", () => {
   beforeEach(() => {
     useProjectStore.setState({ activeTab: "edit" });
-    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+    useSettingsStore.setState({
+      autoExtractBackgroundVocals: true,
+      mergeStandaloneBackgroundLines: true,
+      preserveBracketsOnExtraction: false,
+    });
   });
 
   it("extracts inline parentheses when the textarea is blurred", async () => {
@@ -47,6 +51,20 @@ describe("auto-extract background vocals on blur", () => {
 
     await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
     expect(bgText(useProjectStore.getState().lines[0])).toBe("country roads");
+    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+  });
+
+  it("keeps the parentheses in the extracted bg text when preserveBrackets is on", async () => {
+    useSettingsStore.setState({ preserveBracketsOnExtraction: true });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(<EditPanel />);
+    const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
+
+    setTextareaValue(textarea, "Take me home (country roads)");
+    blurTextarea(textarea);
+
+    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Take me home");
+    expect(bgText(useProjectStore.getState().lines[0])).toBe("(country roads)");
     expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
   });
 
@@ -110,7 +128,11 @@ describe("auto-extract background vocals on blur", () => {
 describe("auto-extract on blur leaves history untouched when nothing changes", () => {
   beforeEach(() => {
     useProjectStore.setState({ activeTab: "edit" });
-    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+    useSettingsStore.setState({
+      autoExtractBackgroundVocals: true,
+      mergeStandaloneBackgroundLines: true,
+      preserveBracketsOnExtraction: false,
+    });
   });
 
   it("adds no history entry when blurring with no parentheses to extract", async () => {
@@ -147,7 +169,11 @@ describe("auto-extract on blur leaves history untouched when nothing changes", (
 describe("undo after auto-extract on blur", () => {
   beforeEach(() => {
     useProjectStore.setState({ activeTab: "edit" });
-    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+    useSettingsStore.setState({
+      autoExtractBackgroundVocals: true,
+      mergeStandaloneBackgroundLines: true,
+      preserveBracketsOnExtraction: false,
+    });
   });
 
   it("reverts the extraction on the first undo and the typing on the second", async () => {
@@ -190,7 +216,11 @@ describe("undo after auto-extract on blur", () => {
 describe("auto-extract on blur preserves existing blur behavior", () => {
   beforeEach(() => {
     useProjectStore.setState({ activeTab: "edit" });
-    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+    useSettingsStore.setState({
+      autoExtractBackgroundVocals: true,
+      mergeStandaloneBackgroundLines: true,
+      preserveBracketsOnExtraction: false,
+    });
   });
 
   it("still finalizes a pending typing run as its own undo step", async () => {

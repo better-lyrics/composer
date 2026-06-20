@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { bgSource, bgText, bgWords, lineText } from "@/domain/line/voices";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
@@ -47,6 +47,10 @@ describe("EditPanel", () => {
 });
 
 describe("background vocal extraction", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ preserveBracketsOnExtraction: false });
+  });
+
   it("disables the header button when no line has parentheses", async () => {
     useProjectStore.setState({
       lines: [createLine({ text: "Hello world" }), createLine({ text: "No parens here" })],
@@ -70,6 +74,22 @@ describe("background vocal extraction", () => {
     await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh");
     expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
     expect(bgText(useProjectStore.getState().lines[0])).toBe("ooh");
+  });
+
+  it("keeps the parentheses in the bg text on click when preserveBrackets is on", async () => {
+    useSettingsStore.setState({ preserveBracketsOnExtraction: true });
+    useProjectStore.setState({ lines: [createLine({ text: "Hello (ooh) world" })] });
+    const screen = await render(<EditPanel />);
+
+    const button = screen.getByRole("button", { name: "Extract background vocals" });
+    await expect.element(button).toBeEnabled();
+
+    await button.click();
+
+    await expect.poll(() => previewMainTexts(screen.container)).toContain("Hello world");
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh)");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
+    expect(bgText(useProjectStore.getState().lines[0])).toBe("(ooh)");
   });
 
   it("merges a standalone parenthesis line into the line above on bulk extract", async () => {
