@@ -120,4 +120,3 @@ const SearchResults: React.FC<SearchResultsProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { SearchResults };
-export type { SearchResultsProps };

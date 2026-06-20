@@ -47,4 +47,3 @@ function normalizeWheelDelta(delta: number, deltaMode: number): number {
 // -- Exports -------------------------------------------------------------------
 
 export { decideWheelAction, computeScrubTime, normalizeWheelDelta };
-export type { WheelAction };

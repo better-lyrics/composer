@@ -27,4 +27,4 @@ const DEFAULT_SCRUB_OPTS: ComputeScrubVelocityOpts = {
 };
 
 export { computeScrubVelocity, DEFAULT_SCRUB_OPTS };
-export type { ScrubSample, ComputeScrubVelocityOpts };
+export type { ScrubSample };

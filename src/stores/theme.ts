@@ -98,4 +98,3 @@ function initTheme(): void {
 // -- Exports ------------------------------------------------------------------
 
 export { useThemeStore, initTheme, INITIAL_STATE };
-export type { ThemeState };

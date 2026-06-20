@@ -174,4 +174,3 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
 // -- Exports -------------------------------------------------------------------
 
 export { SnapMarkerPin };
-export type { SnapMarkerPinProps };

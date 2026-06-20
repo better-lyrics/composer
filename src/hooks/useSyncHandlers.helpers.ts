@@ -68,4 +68,3 @@ function triggerPulse(setShowPulse: (show: boolean) => void): void {
 // -- Exports ------------------------------------------------------------------
 
 export { prepareSyncWord, withBgSeedIfNeeded, buildInitialWordUpdates, advanceSyncPosition, triggerPulse };
-export type { PreparedSyncWord, SetSyncState };

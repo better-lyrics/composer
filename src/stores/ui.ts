@@ -29,4 +29,3 @@ const useUIStore = create<UIState & UIActions>((set) => ({
 // -- Exports ------------------------------------------------------------------
 
 export { useUIStore };
-export type { SettingsHighlight };

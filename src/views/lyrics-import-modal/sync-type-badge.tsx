@@ -98,4 +98,3 @@ const SyncTypeBadge: React.FC<SyncTypeBadgeProps> = ({ syncType, sourceLabel }) 
 // -- Exports ------------------------------------------------------------------
 
 export { SyncTypeBadge };
-export type { SyncTypeBadgeProps };

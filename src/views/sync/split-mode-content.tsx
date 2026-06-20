@@ -144,4 +144,3 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { SplitModeContent };
-export type { SplitModeContentProps };

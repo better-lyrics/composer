@@ -89,4 +89,4 @@ async function importParsedLyrics(parsed: ParseResult, ctx: ImportParsedLyricsCo
 // -- Exports ------------------------------------------------------------------
 
 export { importParsedLyrics };
-export type { ConfirmFn, ImportParsedLyricsContext, ImportSourceInfo };
+export type { ImportParsedLyricsContext, ImportSourceInfo };

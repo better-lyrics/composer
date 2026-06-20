@@ -83,4 +83,3 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
 // -- Exports ------------------------------------------------------------------
 
 export { PasteSection };
-export type { PasteSectionProps };

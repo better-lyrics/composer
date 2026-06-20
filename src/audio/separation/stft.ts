@@ -175,5 +175,5 @@ function istft(spec: Spectrogram, outputLength: number, opts: IstftOptions = {})
   return result;
 }
 
-export { N_FFT, HOP_LENGTH, WIN_LENGTH, hannWindow, fftRadix2, ifftRadix2, reflectPad, stft, istft };
-export type { Spectrogram, StftOptions, IstftOptions };
+export { N_FFT, HOP_LENGTH, reflectPad, stft, istft };
+export type { Spectrogram };

@@ -75,4 +75,3 @@ async function fetchAndCacheModel(
 }
 
 export { hasCachedModel, readCachedModel, fetchAndCacheModel };
-export type { DownloadProgress };

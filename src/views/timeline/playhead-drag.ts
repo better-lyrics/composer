@@ -131,4 +131,4 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 // -- Exports -------------------------------------------------------------------
 
 export { createPlayheadDrag };
-export type { PlayheadDragConfig, PlayheadDrag };
+export type { PlayheadDragConfig };

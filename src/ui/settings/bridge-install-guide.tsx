@@ -104,4 +104,3 @@ const BridgeInstallGuide: React.FC<BridgeInstallGuideProps> = ({ onCheckNow }) =
 // -- Exports ------------------------------------------------------------------
 
 export { BridgeInstallGuide };
-export type { BridgeInstallGuideProps };

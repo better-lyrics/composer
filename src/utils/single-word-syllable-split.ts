@@ -29,4 +29,3 @@ function splitWordIntoSyllables({ word, splitPoints, reuseGroupId = false }: Spl
 // -- Exports ------------------------------------------------------------------
 
 export { splitWordIntoSyllables };
-export type { SplitOneWordParams };

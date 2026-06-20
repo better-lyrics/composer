@@ -275,5 +275,5 @@ const TOKEN_VAR: Record<TokenKey, string> = Object.fromEntries(TOKENS.map((t) =>
   string
 >;
 
-export type { Scheme, TokenKey, ThemeId, Theme, ResolvedTheme, TokenType, TokenMeta };
+export type { Scheme, TokenKey, ThemeId, Theme, ResolvedTheme, TokenMeta };
 export { TOKENS, SEED_TOKENS, QUICK_TOKENS, TOKEN_VAR };

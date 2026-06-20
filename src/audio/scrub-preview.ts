@@ -118,4 +118,3 @@ function getActiveSnippet(): ActiveSnippet | null {
 const scrubPreview = { decode, useBuffer, play, stop, getActiveSnippet };
 
 export { scrubPreview };
-export type { ActiveSnippet };

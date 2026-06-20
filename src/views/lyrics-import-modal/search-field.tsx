@@ -63,4 +63,3 @@ const SearchField: React.FC<SearchFieldProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { SearchField };
-export type { SearchFieldProps };

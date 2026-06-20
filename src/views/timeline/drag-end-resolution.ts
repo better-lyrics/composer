@@ -60,4 +60,3 @@ function resolveDropTarget({ clientX, clientY, lines }: ResolveDropTargetInput):
 // -- Exports -------------------------------------------------------------------
 
 export { resolveDropTarget };
-export type { DropTarget };

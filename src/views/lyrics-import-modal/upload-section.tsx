@@ -128,4 +128,3 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 // -- Exports ------------------------------------------------------------------
 
 export { ACCEPTED_EXTENSIONS, UNSUPPORTED_TYPE_MESSAGE, UploadSection };
-export type { UploadSectionProps };

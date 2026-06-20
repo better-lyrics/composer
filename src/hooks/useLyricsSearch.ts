@@ -124,5 +124,5 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
 
 // -- Exports ------------------------------------------------------------------
 
-export { DEFAULT_DEBOUNCE_MS, useLyricsSearch };
+export { useLyricsSearch };
 export type { UseLyricsSearchOptions, UseLyricsSearchResult };

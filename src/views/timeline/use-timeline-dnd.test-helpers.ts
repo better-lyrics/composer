@@ -224,4 +224,3 @@ export {
   makeReorderDragEndEvent,
   makeReorderDragStartEvent,
 };
-export type { CursorTargetingOptions, CursorTargetingStartOptions, DragEndOptions };

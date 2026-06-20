@@ -160,4 +160,4 @@ function applyWordMoveAcrossLines(lines: LyricLine[], moves: WordMove[], duratio
 // -- Exports ------------------------------------------------------------------
 
 export { applyWordMoveAcrossLines };
-export type { MoveRejectReason, MoveResult, WordMove, WordTrackKind };
+export type { WordMove };

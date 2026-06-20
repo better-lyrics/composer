@@ -275,4 +275,3 @@ function lineHasInlineParens(line: LyricLine): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export { classifyLine, extractBackgroundVocals, extractInlineFromLine, lineHasInlineParens, scanParenGroups };
-export type { ExtractOptions, LineClassification, LineClassKind, ParenGroup, ParenScan, ParenScanStatus };

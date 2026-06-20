@@ -127,5 +127,4 @@ async function hashFile(file: File | Blob): Promise<string> {
   return sha256Hex(buf);
 }
 
-export { TARGET_SAMPLE_RATE, TARGET_CHANNELS, decodeFileToFloat32, floatChannelsToWavBlob, sha256Hex, hashFile };
-export type { DecodedAudio };
+export { TARGET_SAMPLE_RATE, decodeFileToFloat32, floatChannelsToWavBlob, hashFile };

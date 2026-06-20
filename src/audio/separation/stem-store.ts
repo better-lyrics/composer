@@ -105,4 +105,4 @@ async function evictIfOverCapacity(): Promise<void> {
   });
 }
 
-export { getStem, hasStems, putStem, makeKey, makeJobKey };
+export { getStem, hasStems, putStem };

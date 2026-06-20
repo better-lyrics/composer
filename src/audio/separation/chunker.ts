@@ -86,5 +86,5 @@ function stitchChunks(chunks: Chunk[], totalFrames: number, numChannels: number)
   return output;
 }
 
-export { SEGMENT_SECONDS, SEGMENT_SAMPLES, OVERLAP_SAMPLES, STRIDE_SAMPLES, iterateChunks, chunkCount, stitchChunks };
+export { SEGMENT_SAMPLES, STRIDE_SAMPLES, iterateChunks, chunkCount, stitchChunks };
 export type { Chunk };

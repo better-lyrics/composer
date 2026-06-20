@@ -27,4 +27,3 @@ function applyMainWordEdit(line: LyricLine, words: WordTiming[]): LyricLine {
 // -- Exports ------------------------------------------------------------------
 
 export { applyMainWordEdit, mainWordEditFields };
-export type { MainWordFields };

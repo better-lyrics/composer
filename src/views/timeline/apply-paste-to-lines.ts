@@ -70,4 +70,3 @@ function applyPasteToLines({
 // -- Exports ------------------------------------------------------------------
 
 export { applyPasteToLines };
-export type { LineUpdate, PasteInput };

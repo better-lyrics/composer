@@ -59,4 +59,3 @@ function withDerivedText(line: LyricLine, splitChar: string): LyricLine {
 // -- Exports ------------------------------------------------------------------
 
 export { reconstructLineText, withDerivedText, wordContentSpans };
-export type { WordContentSpan };

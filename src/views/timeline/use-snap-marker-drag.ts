@@ -91,4 +91,3 @@ function useSnapMarkerDrag({ scrollContainerRef }: SnapMarkerDragConfig): SnapMa
 // -- Exports -------------------------------------------------------------------
 
 export { useSnapMarkerDrag };
-export type { SnapMarkerDrag };

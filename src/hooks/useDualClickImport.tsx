@@ -92,4 +92,3 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
 // -- Exports ------------------------------------------------------------------
 
 export { useDualClickImport };
-export type { DualClickImportHandlers };

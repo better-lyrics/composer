@@ -82,4 +82,4 @@ function findIdenticalWords(lines: LyricLine[], source: IdenticalMatchSource, op
 
 export { findIdenticalWords };
 
-export type { IdenticalMatch, IdenticalMatchSource, MatchOptions };
+export type { IdenticalMatchSource };

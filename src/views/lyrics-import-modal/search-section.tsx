@@ -278,4 +278,3 @@ const SearchSection: React.FC<SearchSectionProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { SearchSection };
-export type { SearchSectionProps };

@@ -124,4 +124,3 @@ class SeparationWorker {
 }
 
 export { SeparationWorker };
-export type { ProcessResult };

@@ -145,4 +145,3 @@ const ResultRow: React.FC<ResultRowProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { ResultRow };
-export type { ResultRowProps };

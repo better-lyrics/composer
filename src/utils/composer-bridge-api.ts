@@ -179,4 +179,4 @@ export {
   extensionForBridgeMime,
   buildBridgeAudioFile,
 };
-export type { BridgeHealth, BridgeAudio };
+export type { BridgeHealth };
