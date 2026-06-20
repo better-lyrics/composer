@@ -3,6 +3,7 @@
  */
 import { useProjectStore } from "@/stores/project";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { bgText, lineText } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -39,7 +40,7 @@ describe("updateLineWithHistory derives text from words", () => {
       words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
     });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 
   it("re-derives text on a plain word-text rename", () => {
@@ -49,38 +50,40 @@ describe("updateLineWithHistory derives text from words", () => {
       words: [w("hi ", 0, 1), w("world", 1, 2)],
     });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hi world");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hi world");
   });
 
   it("re-derives backgroundText from backgroundWords", () => {
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "l1",
         text: "main",
         agentId: "v1",
         backgroundText: "oh yeah",
         backgroundWords: [w("oh ", 0, 1), w("yeah", 1, 2)],
-      },
+      }),
     ]);
 
     useProjectStore.getState().updateLineWithHistory("l1", {
       backgroundWords: [w("oh ", 0, 1), w("ye", 1, 1.5), w("ah", 1.5, 2)],
     });
 
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("oh ye|ah");
+    expect(bgText(useProjectStore.getState().lines[0])).toBe("oh ye|ah");
   });
 
   it("leaves text untouched for a line with no words", () => {
-    useProjectStore.getState().setLines([{ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 }]);
+    useProjectStore
+      .getState()
+      .setLines([reconcileLine({ id: "l1", text: "chorus line", agentId: "v1", begin: 0, end: 5 })]);
 
     useProjectStore.getState().updateLineWithHistory("l1", { begin: 1 });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("chorus line");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("chorus line");
   });
 
   it("propagates derived text to linked siblings", () => {
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "a",
         text: "hello world",
         agentId: "v1",
@@ -88,8 +91,8 @@ describe("updateLineWithHistory derives text from words", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [w("hello ", 0, 1), w("world", 1, 2)],
-      },
-      {
+      }),
+      reconcileLine({
         id: "b",
         text: "hello world",
         agentId: "v1",
@@ -97,7 +100,7 @@ describe("updateLineWithHistory derives text from words", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [w("hello ", 10, 11), w("world", 11, 12)],
-      },
+      }),
     ]);
 
     useProjectStore.getState().updateLineWithHistory("a", {
@@ -105,7 +108,7 @@ describe("updateLineWithHistory derives text from words", () => {
     });
 
     const sibling = useProjectStore.getState().lines.find((l) => l.id === "b");
-    expect(sibling?.text).toBe("hi world");
+    expect(sibling && lineText(sibling)).toBe("hi world");
   });
 });
 
@@ -119,7 +122,7 @@ describe("updateLine derives text from words", () => {
       words: [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)],
     });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 });
 
@@ -133,7 +136,7 @@ describe("applyWordCountChange derives text from words", () => {
       .getState()
       .applyWordCountChange("l1", [w("hello ", 0, 1), w("wor", 1, 1.5), w("ld", 1.5, 2)], "words", "apply");
 
-    expect(useProjectStore.getState().lines[0].text).toBe("hello wor|ld");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("hello wor|ld");
   });
 });
 
@@ -142,18 +145,18 @@ describe("applyWordCountChange derives text from words", () => {
 describe("moveWordToBg derives text from both tracks", () => {
   it("re-derives main text and backgroundText after a move", () => {
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "l1",
         text: "hello world goodbye",
         agentId: "v1",
         words: [w("hello ", 0, 1), w("world ", 1, 2), w("goodbye", 2, 3)],
-      },
+      }),
     ]);
 
     useProjectStore.getState().moveWordToBg("l1", [2], 5, 30);
 
     const line = useProjectStore.getState().lines[0];
-    expect(line.text).toBe("hello world");
-    expect(line.backgroundText).toBe("goodbye");
+    expect(lineText(line)).toBe("hello world");
+    expect(bgText(line)).toBe("goodbye");
   });
 });

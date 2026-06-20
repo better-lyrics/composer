@@ -1,3 +1,5 @@
+import { reconcileLine } from "@/domain/line/model";
+import { mainWords } from "@/domain/line/voices";
 import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -13,7 +15,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
     useTimelineStore.setState({ zoom: 100 });
     useProjectStore.setState({
       lines: [
-        {
+        reconcileLine({
           id: "l1",
           text: "Hello world",
           agentId: "v1",
@@ -21,7 +23,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
             { text: "Hello ", begin: 0, end: 0.5 },
             { text: "world", begin: 2, end: 2.5 },
           ],
-        },
+        }),
       ],
     });
   });
@@ -32,7 +34,7 @@ describe("useTimelineDnd · alt-drag duplicate", () => {
 
     result.current.handleDragEnd(makeAltDuplicateEvent(1, -100));
 
-    const words = useProjectStore.getState().lines[0].words ?? [];
+    const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
     expect(words.map((w) => w.text)).toEqual(["Hello ", "world ", "world"]);
     const groups = computeSyllableGroups(words);
     expect(groups.some((g) => g.startIndex <= 1 && g.endIndex >= 2)).toBe(false);

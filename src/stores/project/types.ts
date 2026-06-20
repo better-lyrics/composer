@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import type { BackgroundParams } from "@/domain/line/background";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -128,16 +129,19 @@ interface HistoryActions {
 interface LineActions {
   setLines: (lines: LyricLine[]) => void;
   setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
-  updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
+  updateLine: (id: string, updates: Partial<LooseLine>, options?: { deriveText?: boolean }) => void;
   updateLineWithHistory: (
     id: string,
-    updates: Partial<LyricLine>,
+    updates: Partial<LooseLine>,
     options?: { deriveText?: boolean; propagateToSiblings?: boolean },
   ) => void;
   updateLinesWithHistory: (
-    updates: Array<{ id: string; updates: Partial<LyricLine> }>,
+    updates: Array<{ id: string; updates: Partial<LooseLine> }>,
     options?: { deriveText?: boolean; propagateToSiblings?: boolean },
   ) => void;
+  setLineWithHistory: (lineId: string, nextLine: LyricLine, options?: { propagateToSiblings?: boolean }) => void;
+  applyLineBackground: (lineId: string, params: BackgroundParams, options?: { propagateToSiblings?: boolean }) => void;
+  removeLineBackground: (lineId: string, options?: { propagateToSiblings?: boolean }) => void;
   moveWordToBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   moveWordFromBg: (lineId: string, wordIndices: number[], timeDelta: number, duration: number) => void;
   applyWordCountChange: (
@@ -145,7 +149,7 @@ interface LineActions {
     newWords: WordTiming[],
     field: "words" | "backgroundWords",
     resolution: "apply" | "detach" | "cancel",
-    extraUpdates?: Partial<LyricLine>,
+    extraUpdates?: Partial<LooseLine>,
   ) => void;
   toggleWordExplicit: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;
   mergeSyllableGroupIntoWord: (lineId: string, field: "words" | "backgroundWords", wordIndices: number[]) => void;

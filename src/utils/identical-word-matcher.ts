@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -30,7 +31,7 @@ function normalizeText(text: string, caseInsensitive: boolean): string {
 function findSourceWord(lines: LyricLine[], source: IdenticalMatchSource): WordTiming | undefined {
   const sourceLine = lines.find((line) => line.id === source.lineId);
   if (!sourceLine) return undefined;
-  const track = source.type === "word" ? sourceLine.words : sourceLine.backgroundWords;
+  const track = source.type === "word" ? mainWords(sourceLine) : bgWords(sourceLine);
   return track?.[source.wordIndex];
 }
 
@@ -72,8 +73,8 @@ function findIdenticalWords(lines: LyricLine[], source: IdenticalMatchSource, op
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (!line) continue;
-    collectTrackMatches(line, lineIndex, line.words, "word", source, options, targetText, minLength, matches);
-    collectTrackMatches(line, lineIndex, line.backgroundWords, "bg", source, options, targetText, minLength, matches);
+    collectTrackMatches(line, lineIndex, mainWords(line), "word", source, options, targetText, minLength, matches);
+    collectTrackMatches(line, lineIndex, bgWords(line), "bg", source, options, targetText, minLength, matches);
   }
   return matches;
 }

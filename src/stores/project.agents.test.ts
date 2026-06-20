@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { INITIAL_STATE, useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 
 describe("setAgents", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
@@ -33,7 +33,7 @@ describe("groupRepeatingSections", () => {
   beforeEach(() => useProjectStore.setState(INITIAL_STATE));
 
   function plain(id: string, text: string): LyricLine {
-    return { id, text, agentId: "v1" };
+    return reconcileLine({ id, text, agentId: "v1" });
   }
 
   it("creates one group with one instance per start", () => {
@@ -88,7 +88,7 @@ describe("groupRepeatingSections", () => {
 
   it("does nothing if any covered line is already grouped", () => {
     const lines: LyricLine[] = [
-      { id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 },
+      reconcileLine({ id: "a", text: "x", agentId: "v1", groupId: "gExisting", instanceIdx: 0, templateLineIdx: 0 }),
       plain("b", "y"),
       plain("c", "x"),
       plain("d", "y"),

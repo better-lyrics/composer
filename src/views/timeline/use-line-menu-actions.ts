@@ -1,8 +1,10 @@
+import { reconcileLine } from "@/domain/line/model";
+import { placeVoice } from "@/domain/line/place-voice";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
+import { removeBackgroundWithConfirm } from "@/views/timeline/remove-background-with-confirm";
+import { splitTargetLineIds, splitVoiceIntoWords } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -14,12 +16,13 @@ type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 // -- Hook ---------------------------------------------------------------------
 
 function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
-  const { lines, gutterLineGroupInfo } = targets;
+  const { lines, gutterLineGroupInfo, splitIntoWordsInfo } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
   const agents = useProjectStore((s) => s.agents);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+  const setLineWithHistory = useProjectStore((s) => s.setLineWithHistory);
   const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
 
   const handlePlaceLineHere = useCallback(() => {
@@ -28,14 +31,23 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = rawLines.find((l) => l.id === lineId);
     if (!line) return;
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const wordCount = splitIntoWordsWithMeta(line.text).parts.length;
-    const lineDuration = Math.max(wordCount, 1) * wordDuration;
-    updateLineWithHistory(lineId, {
-      begin: time,
-      end: time + lineDuration,
-    });
+    // Placing one instance is a per-instance timing write; propagating would
+    // clear or re-resolve linked siblings' backgrounds (regression vs the old path).
+    setLineWithHistory(lineId, placeVoice(line, "main", time, wordDuration), { propagateToSiblings: false });
     clearContextMenu();
-  }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
+  }, [contextMenu, rawLines, setLineWithHistory, clearContextMenu]);
+
+  const handlePlaceBackgroundHere = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "track") return;
+    const { lineId, time } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    if (!line) return;
+    const wordDuration = useSettingsStore.getState().defaultWordDuration;
+    // Placing one instance is a per-instance timing write; propagating would
+    // clear or re-resolve linked siblings' backgrounds (regression vs the old path).
+    setLineWithHistory(lineId, placeVoice(line, "background", time, wordDuration), { propagateToSiblings: false });
+    clearContextMenu();
+  }, [contextMenu, rawLines, setLineWithHistory, clearContextMenu]);
 
   const handleAddLine = useCallback(
     (position: "above" | "below") => {
@@ -48,7 +60,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
       const targetIndex = rawLines.findIndex((l) => l.id === lineId);
       if (targetIndex === -1) return;
       const defaultAgentId = agents?.[0]?.id ?? "v1";
-      const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
+      const newLine = reconcileLine({ id: crypto.randomUUID(), text: "", agentId: defaultAgentId });
       const newLines = [...rawLines];
       const insertIndex = position === "above" ? targetIndex : targetIndex + 1;
       newLines.splice(insertIndex, 0, newLine);
@@ -65,6 +77,13 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     setLinesWithHistory(newLines);
     clearContextMenu();
   }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
+
+  const handleRemoveBackground = useCallback(() => {
+    if (!contextMenu || contextMenu.target.kind !== "gutter") return;
+    const { lineId } = contextMenu.target;
+    void removeBackgroundWithConfirm(lineId);
+    clearContextMenu();
+  }, [contextMenu, clearContextMenu]);
 
   const handleDetachLine = useCallback(() => {
     if (!gutterLineGroupInfo) return;
@@ -84,20 +103,22 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   );
 
   const handleSplitIntoWords = useCallback(() => {
-    if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId } = contextMenu.target;
+    if (!contextMenu || contextMenu.target.kind !== "word" || !splitIntoWordsInfo) return;
+    const { lineId, type } = contextMenu.target;
+    const { voice } = splitIntoWordsInfo;
 
-    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
+    const targetIds = splitTargetLineIds(selectedWords, type, lineId);
 
-    splitLinesIntoWords(targetIds, lines);
+    splitVoiceIntoWords(targetIds, lines, voice);
     clearContextMenu();
-  }, [contextMenu, selectedWords, lines, clearContextMenu]);
+  }, [contextMenu, selectedWords, lines, splitIntoWordsInfo, clearContextMenu]);
 
   return {
     handlePlaceLineHere,
+    handlePlaceBackgroundHere,
     handleAddLine,
     handleDeleteLine,
+    handleRemoveBackground,
     handleDetachLine,
     handleAssignAgent,
     handleSplitIntoWords,

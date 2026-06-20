@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { describe, expect, it } from "vitest";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { textToLyricLines } from "./lyrics-text";
@@ -9,7 +11,7 @@ import { textToLyricLines } from "./lyrics-text";
 describe("textToLyricLines · group attrs preservation", () => {
   it("keeps groupId/instanceIdx/templateLineIdx on exact-text match", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -21,7 +23,7 @@ describe("textToLyricLines · group attrs preservation", () => {
           { text: "love ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
+      }),
     ];
     const result = textToLyricLines("I love you", "v1", existing);
     expect(result).toHaveLength(1);
@@ -33,7 +35,7 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("keeps the same id and group attrs on a position-based typo fix", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -45,12 +47,12 @@ describe("textToLyricLines · group attrs preservation", () => {
           { text: "love ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
+      }),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("I luv you");
+    expect(lineText(result[0])).toBe("I luv you");
     expect(result[0].groupId).toBe("g1");
     expect(result[0].instanceIdx).toBe(0);
     expect(result[0].templateLineIdx).toBe(0);
@@ -58,7 +60,7 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves the detached flag on a position-based typo fix", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -66,7 +68,7 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         detached: true,
-      },
+      }),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
     expect(result[0].detached).toBe(true);
@@ -74,28 +76,28 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("clears words/begin/end on position-based typo fix (timing is invalid for new text)", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love",
         agentId: "v1",
         words: [{ text: "I love", begin: 0, end: 1 }],
-      },
+      }),
     ];
     const result = textToLyricLines("I luv", "v1", existing);
-    expect(result[0].words).toBeUndefined();
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(mainWords(result[0])).toBeUndefined();
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
   });
 
   it("keeps backgroundText on a position-based typo fix", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "main", agentId: "v1", backgroundText: "ah ah" }];
+    const existing: LyricLine[] = [reconcileLine({ id: "L1", text: "main", agentId: "v1", backgroundText: "ah ah" })];
     const result = textToLyricLines("main edit", "v1", existing);
-    expect(result[0].backgroundText).toBe("ah ah");
+    expect(bgText(result[0])).toBe("ah ah");
   });
 
   it("returns brand-new lines (new ids, no group attrs) for genuinely new text", () => {
     const existing: LyricLine[] = [
-      { id: "L1", text: "first", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      reconcileLine({ id: "L1", text: "first", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
     ];
     const result = textToLyricLines("first\nsecond", "v1", existing);
     expect(result).toHaveLength(2);
@@ -106,8 +108,8 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("does not steal an exact-match line that's already used by an earlier position", () => {
     const existing: LyricLine[] = [
-      { id: "L1", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L2", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      reconcileLine({ id: "L1", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      reconcileLine({ id: "L2", text: "chorus", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
     expect(result[0].id).toBe("L1");
@@ -116,7 +118,7 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves words on every instance of repeated text (not just the first)", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "chorus",
         agentId: "v1",
@@ -124,8 +126,8 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ text: "chorus", begin: 10, end: 11 }],
-      },
-      {
+      }),
+      reconcileLine({
         id: "L2",
         text: "chorus",
         agentId: "v1",
@@ -133,18 +135,18 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "chorus", begin: 30, end: 31 }],
-      },
+      }),
     ];
     const result = textToLyricLines("chorus\nchorus", "v1", existing);
-    expect(result[0].words).toEqual(existing[0].words);
-    expect(result[0].words?.[0].begin).toBe(10);
-    expect(result[1].words).toEqual(existing[1].words);
-    expect(result[1].words?.[0].begin).toBe(30);
+    expect(mainWords(result[0])).toEqual(mainWords(existing[0]));
+    expect(mainWords(result[0])?.[0].begin).toBe(10);
+    expect(mainWords(result[1])).toEqual(mainWords(existing[1]));
+    expect(mainWords(result[1])?.[0].begin).toBe(30);
   });
 
   it("preserves word timings on the edited line when word count matches (single-word swap)", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -153,22 +155,22 @@ describe("textToLyricLines · group attrs preservation", () => {
           { text: "love ", begin: 0.4, end: 0.8 },
           { text: "you", begin: 0.8, end: 1.2 },
         ],
-      },
+      }),
     ];
     const result = textToLyricLines("I luv you", "v1", existing);
-    expect(result[0].text).toBe("I luv you");
-    expect(result[0].words).toBeDefined();
-    expect(result[0].words?.length).toBe(3);
-    expect(result[0].words?.[1].text).toBe("luv ");
-    expect(result[0].words?.[1].begin).toBe(0.4);
-    expect(result[0].words?.[1].end).toBe(0.8);
-    expect(result[0].words?.[0].begin).toBe(0);
-    expect(result[0].words?.[2].end).toBe(1.2);
+    expect(lineText(result[0])).toBe("I luv you");
+    expect(mainWords(result[0])).toBeDefined();
+    expect(mainWords(result[0])?.length).toBe(3);
+    expect(mainWords(result[0])?.[1].text).toBe("luv ");
+    expect(mainWords(result[0])?.[1].begin).toBe(0.4);
+    expect(mainWords(result[0])?.[1].end).toBe(0.8);
+    expect(mainWords(result[0])?.[0].begin).toBe(0);
+    expect(mainWords(result[0])?.[2].end).toBe(1.2);
   });
 
   it("clears words when the edited word count differs", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -177,25 +179,25 @@ describe("textToLyricLines · group attrs preservation", () => {
           { text: "love ", begin: 0.4, end: 0.8 },
           { text: "you", begin: 0.8, end: 1.2 },
         ],
-      },
+      }),
     ];
     const result = textToLyricLines("I really love you", "v1", existing);
-    expect(result[0].text).toBe("I really love you");
-    expect(result[0].words).toBeUndefined();
+    expect(lineText(result[0])).toBe("I really love you");
+    expect(mainWords(result[0])).toBeUndefined();
   });
 
   it("does NOT position-match across an insertion (typed line count > existing)", () => {
     const existing: LyricLine[] = [
-      { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "L2", text: "verse", agentId: "v1" },
+      reconcileLine({ id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      reconcileLine({ id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
+      reconcileLine({ id: "L2", text: "verse", agentId: "v1" }),
     ];
     // User adds a new line "x" between A and B
     const result = textToLyricLines("A\nx\nB\nverse", "v1", existing);
     expect(result).toHaveLength(4);
     expect(result[0].id).toBe("L0");
     expect(result[1].id).not.toBe("L1");
-    expect(result[1].text).toBe("x");
+    expect(lineText(result[1])).toBe("x");
     expect(result[1].groupId).toBeUndefined();
     expect(result[2].id).toBe("L1");
     expect(result[3].id).toBe("L2");
@@ -203,9 +205,9 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("does NOT position-match across a deletion (typed line count < existing)", () => {
     const existing: LyricLine[] = [
-      { id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-      { id: "L2", text: "verse", agentId: "v1" },
+      reconcileLine({ id: "L0", text: "A", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      reconcileLine({ id: "L1", text: "B", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
+      reconcileLine({ id: "L2", text: "verse", agentId: "v1" }),
     ];
     // User deletes B
     const result = textToLyricLines("A\nverse", "v1", existing);
@@ -216,126 +218,134 @@ describe("textToLyricLines · group attrs preservation", () => {
 
   it("preserves an empty draft line when the user edits a sibling line", () => {
     const existing: LyricLine[] = [
-      { id: "A", text: "verse one", agentId: "v1" },
-      { id: "EMPTY", text: "", agentId: "v1" },
-      { id: "C", text: "verse three", agentId: "v1" },
+      reconcileLine({ id: "A", text: "verse one", agentId: "v1" }),
+      reconcileLine({ id: "EMPTY", text: "", agentId: "v1" }),
+      reconcileLine({ id: "C", text: "verse three", agentId: "v1" }),
     ];
     const result = textToLyricLines("verse one edited\n\nverse three", "v1", existing);
     expect(result).toHaveLength(3);
     expect(result[0].id).toBe("A");
-    expect(result[0].text).toBe("verse one edited");
+    expect(lineText(result[0])).toBe("verse one edited");
     expect(result[1].id).toBe("EMPTY");
-    expect(result[1].text).toBe("");
+    expect(lineText(result[1])).toBe("");
     expect(result[2].id).toBe("C");
-    expect(result[2].text).toBe("verse three");
+    expect(lineText(result[2])).toBe("verse three");
   });
 
   it("fills an empty draft line when user types into its position", () => {
     const existing: LyricLine[] = [
-      { id: "A", text: "first", agentId: "v1" },
-      { id: "DRAFT", text: "", agentId: "v1" },
+      reconcileLine({ id: "A", text: "first", agentId: "v1" }),
+      reconcileLine({ id: "DRAFT", text: "", agentId: "v1" }),
     ];
     const result = textToLyricLines("first\nfilled in", "v1", existing);
     expect(result).toHaveLength(2);
     expect(result[1].id).toBe("DRAFT");
-    expect(result[1].text).toBe("filled in");
+    expect(lineText(result[1])).toBe("filled in");
   });
 
   it("explicit blank line in textarea round-trips as text: ''", () => {
     const result = textToLyricLines("a\n\nb", "v1", []);
-    expect(result.map((l) => l.text)).toEqual(["a", "", "b"]);
+    expect(result.map((l) => lineText(l))).toEqual(["a", "", "b"]);
   });
 
   it("drops carried backgroundText when re-pasted text reintroduces parentheses (position match)", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      reconcileLine({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }),
+    ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0])).toBe("Hello (ooh) world");
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
   });
 
   it("keeps carried backgroundText when re-pasted text has no parentheses", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      reconcileLine({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }),
+    ];
     const result = textToLyricLines("Hello there", "v1", existing);
-    expect(result[0].backgroundText).toBe("ooh");
+    expect(bgText(result[0])).toBe("ooh");
   });
 
   it("drops carried backgroundText on an exact-text match whose text contains parentheses", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      reconcileLine({ id: "L1", text: "Hello (ooh) world", agentId: "v1", backgroundText: "ooh" }),
+    ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0])).toBe("Hello (ooh) world");
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
   });
 
   it("drops carried backgroundWords when re-pasted text reintroduces parentheses", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
-      },
+      }),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
   });
 
   it("clears the backgroundTextSource flag when a re-paste reintroduces parentheses", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 0, end: 0.5 }],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
+    expect(bgSource(result[0])).toBeUndefined();
   });
 
   it("clears a manual-sourced background flag too on re-paste with parentheses", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "Hello world",
         agentId: "v1",
         backgroundText: "ooh",
         backgroundTextSource: "manual",
-      },
+      }),
     ];
     const result = textToLyricLines("Hello (ooh) world", "v1", existing);
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(bgSource(result[0])).toBeUndefined();
   });
 
   it("produces a fresh unmatched line with parentheses without crashing or inventing backgroundText", () => {
     const result = textToLyricLines("Hello (ooh) world\nSecond line", "v1", []);
     expect(result).toHaveLength(2);
-    expect(result[0].text).toBe("Hello (ooh) world");
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(lineText(result[0])).toBe("Hello (ooh) world");
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
   });
 
   it("re-pasting parenthesised lyrics over an already-extracted line does not double the background text", () => {
-    const existing: LyricLine[] = [{ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }];
+    const existing: LyricLine[] = [
+      reconcileLine({ id: "L1", text: "Hello world", agentId: "v1", backgroundText: "ooh" }),
+    ];
     const reparsed = textToLyricLines("Hello (ooh) world", "v1", existing);
     const extracted = extractBackgroundVocals(reparsed, { mergeStandaloneLines: false, preserveBrackets: false });
     expect(extracted).toHaveLength(1);
-    expect(extracted[0].text).toBe("Hello world");
-    expect(extracted[0].backgroundText).toBe("ooh");
+    expect(lineText(extracted[0])).toBe("Hello world");
+    expect(bgText(extracted[0])).toBe("ooh");
   });
 
   it("typo on first instance preserves the second instance's words", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "chorus",
         agentId: "v1",
@@ -343,8 +353,8 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ text: "chorus", begin: 10, end: 11 }],
-      },
-      {
+      }),
+      reconcileLine({
         id: "L2",
         text: "chorus",
         agentId: "v1",
@@ -352,24 +362,24 @@ describe("textToLyricLines · group attrs preservation", () => {
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "chorus", begin: 30, end: 31 }],
-      },
+      }),
     ];
     const result = textToLyricLines("choru\nchorus", "v1", existing);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("choru");
-    expect(result[0].words?.length).toBe(1);
-    expect(result[0].words?.[0].text).toBe("choru");
-    expect(result[0].words?.[0].begin).toBe(10);
+    expect(lineText(result[0])).toBe("choru");
+    expect(mainWords(result[0])?.length).toBe(1);
+    expect(mainWords(result[0])?.[0].text).toBe("choru");
+    expect(mainWords(result[0])?.[0].begin).toBe(10);
     expect(result[1].id).toBe("L2");
-    expect(result[1].text).toBe("chorus");
-    expect(result[1].words).toEqual(existing[1].words);
+    expect(lineText(result[1])).toBe("chorus");
+    expect(mainWords(result[1])).toEqual(mainWords(existing[1]));
   });
 });
 
 describe("textToLyricLines · split-character timing preservation", () => {
   it("preserves word timing on untouched split-character lines when a blank line is appended", () => {
     const existing: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L0",
         text: "Suara hujan",
         agentId: "v1",
@@ -377,8 +387,8 @@ describe("textToLyricLines · split-character timing preservation", () => {
           { text: "Suara ", begin: 0, end: 0.5 },
           { text: "hujan", begin: 0.5, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "L1",
         text: "Dengar|lah rindu yang menyik|sa i|ni",
         agentId: "v1",
@@ -392,12 +402,12 @@ describe("textToLyricLines · split-character timing preservation", () => {
           { text: "i", begin: 2.2, end: 2.4 },
           { text: "ni", begin: 2.4, end: 2.6 },
         ],
-      },
+      }),
     ];
     const result = textToLyricLines("Suara hujan\nDengar|lah rindu yang menyik|sa i|ni\n", "v1", existing);
     expect(result).toHaveLength(3);
     expect(result[1].id).toBe("L1");
-    expect(result[1].text).toBe("Dengar|lah rindu yang menyik|sa i|ni");
-    expect(result[1].words).toEqual(existing[1].words);
+    expect(lineText(result[1])).toBe("Dengar|lah rindu yang menyik|sa i|ni");
+    expect(mainWords(result[1])).toEqual(mainWords(existing[1]));
   });
 });

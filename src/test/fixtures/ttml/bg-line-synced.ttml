@@ -1,0 +1,17 @@
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    itunes:timing="Line"
+    xml:lang="en">
+  <head>
+    <metadata>
+      <ttm:agent type="person" xml:id="v1"/>
+    </metadata>
+  </head>
+  <body dur="00:25.400">
+    <div>
+      <p begin="00:18.234" end="00:21.891" itunes:key="L1" ttm:agent="v1">The club isn't the best place to find a lover<span ttm:role="x-bg"><span begin="00:19.000" end="00:21.000">(ooh ooh)</span></span></p>
+      <p begin="00:22.100" end="00:25.400" itunes:key="L2" ttm:agent="v1">So the bar is where I go<span ttm:role="x-bg"><span begin="00:23.000" end="00:24.500">(yeah yeah)</span></span></p>
+    </div>
+  </body>
+</tt>

@@ -1,4 +1,5 @@
 import { useProjectStore } from "@/stores/project";
+import { lineText, mainWords } from "@/domain/line/voices";
 import { createLine } from "@/test/factories";
 import { commitTappedWord } from "@/utils/sync-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -21,7 +22,7 @@ describe("sync incremental tap preserves line.text", () => {
     const words = commitTappedWord([], 0, "Hello ", 0, 1);
     useProjectStore.getState().updateLineWithHistory("l0", { words }, { deriveText: false });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("Hello world how are you");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
   });
 
   it("preserves text across a full word-by-word tap sequence", () => {
@@ -32,7 +33,7 @@ describe("sync incremental tap preserves line.text", () => {
     for (let i = 0; i < taps.length; i++) {
       words = commitTappedWord(words, i, taps[i], i * 0.5, i * 0.5 + 0.4);
       useProjectStore.getState().updateLineWithHistory("l0", { words }, { deriveText: false });
-      expect(useProjectStore.getState().lines[0].text).toBe("Hello world how are you");
+      expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world how are you");
     }
   });
 
@@ -45,10 +46,10 @@ describe("sync incremental tap preserves line.text", () => {
     words = commitTappedWord(words, 0, "Hello ", 0, 1);
     useProjectStore.getState().updateLineWithHistory("l0", { words }, { deriveText: false });
 
-    const partialPrev = [...(useProjectStore.getState().lines[0].words ?? [])];
+    const partialPrev = [...(mainWords(useProjectStore.getState().lines[0]) ?? [])];
     partialPrev[partialPrev.length - 1] = { ...partialPrev[partialPrev.length - 1], end: 2 };
     useProjectStore.getState().updateLine("l0", { words: partialPrev }, { deriveText: false });
 
-    expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
+    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
   });
 });

@@ -1,14 +1,14 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { type SnapAnchor, collectSnapAnchors, findSnapShift, selfKey } from "./snap";
 
 // -- Fixtures ------------------------------------------------------------------
 
 function wordTimedLine(): LyricLine {
-  return {
+  return reconcileLine({
     id: "l1",
     text: "I love you",
     agentId: "v1",
@@ -22,17 +22,17 @@ function wordTimedLine(): LyricLine {
       { text: "oh ", begin: 0.4, end: 0.55 },
       { text: "yeah", begin: 0.55, end: 0.8 },
     ],
-  };
+  });
 }
 
 function lineSyncedLine(): LyricLine {
-  return {
+  return reconcileLine({
     id: "l2",
     text: "another line",
     agentId: "v1",
     begin: 2,
     end: 3,
-  };
+  });
 }
 
 // -- collectSnapAnchors --------------------------------------------------------
@@ -178,7 +178,7 @@ describe("collectSnapAnchors", () => {
   });
 
   it("contributes nothing for a line with neither words nor begin/end", () => {
-    const empty: LyricLine = { id: "lx", text: "no timing", agentId: "v1" };
+    const empty: LyricLine = reconcileLine({ id: "lx", text: "no timing", agentId: "v1" });
     const anchors = collectSnapAnchors([empty], new Set(), null);
     expect(anchors).toEqual([]);
   });

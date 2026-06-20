@@ -1,4 +1,5 @@
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -67,7 +68,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = type === "word" ? mainWords(line) : bgWords(line);
     if (!wordsArray) return;
 
     const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
@@ -87,7 +88,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const existingWords = type === "word" ? line.words : line.backgroundWords;
+    const existingWords = type === "word" ? mainWords(line) : bgWords(line);
     const slot = findInsertionSlot(existingWords ?? [], time, wordDuration, duration);
     if (!slot) {
       clearContextMenu();
@@ -127,7 +128,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = type === "word" ? mainWords(line) : bgWords(line);
     if (!wordsArray) return;
 
     const firstIdx = indices[0];

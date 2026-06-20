@@ -1,7 +1,8 @@
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
@@ -16,7 +17,7 @@ import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from 
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
-import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
+import { splitTargetLineIds, splitVoiceIntoWords } from "@/views/timeline/split-lines-into-words";
 import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
@@ -72,10 +73,6 @@ function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
   return Array.from(set).sort((a, b) => a - b);
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(
@@ -100,7 +97,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = targetWord.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = targetWord.type === "word" ? mainWords(line) : bgWords(line);
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -117,7 +114,6 @@ function useTimelineKeyboard(
           defaultRowHeight,
           collapsedInstances,
           waveformHeight: WAVEFORM_HEIGHT,
-          bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
         const pos = layout.lineTops.get(line.id);
@@ -224,9 +220,9 @@ function useTimelineKeyboard(
         const allSelections: WordSelection[] = [];
         for (let li = 0; li < lines.length; li++) {
           const line = lines[li];
-          for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
+          for (let wi = 0; wi < (mainWords(line)?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-          for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
+          for (let wi = 0; wi < (bgWords(line)?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
         }
         useTimelineStore.getState().setSelectedWords(allSelections);
@@ -304,7 +300,6 @@ function useTimelineKeyboard(
               defaultRowHeight,
               collapsedInstances,
               waveformHeight: WAVEFORM_HEIGHT,
-              bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
             const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
@@ -378,7 +373,7 @@ function useTimelineKeyboard(
           const lineIndex = nSel[0].lineIndex;
           const agents = useProjectStore.getState().agents;
           const defaultAgentId = agents?.[0]?.id ?? "v1";
-          const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
+          const newLine = reconcileLine({ id: crypto.randomUUID(), text: "", agentId: defaultAgentId });
           const newLines = [...lines];
           const insertIndex = matched === "timeline.insertLineAbove" ? lineIndex : lineIndex + 1;
           newLines.splice(insertIndex, 0, newLine);
@@ -419,7 +414,7 @@ function useTimelineKeyboard(
           if (!run) break;
           const mLine = lines.find((l) => l.id === run.lineId);
           if (!mLine) break;
-          const mWords = run.type === "word" ? mLine.words : mLine.backgroundWords;
+          const mWords = run.type === "word" ? mainWords(mLine) : bgWords(mLine);
           if (!mWords) break;
           e.preventDefault();
           const firstIdx = run.indices[0];
@@ -458,8 +453,9 @@ function useTimelineKeyboard(
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
           e.preventDefault();
-          const lineIds = new Set(wSel.map((w) => w.lineId));
-          splitLinesIntoWords(lineIds, lines);
+          const splitVoice = wSel[0].type === "word" ? "main" : "bg";
+          const lineIds = splitTargetLineIds(wSel, wSel[0].type, wSel[0].lineId);
+          splitVoiceIntoWords(lineIds, lines, splitVoice);
           break;
         }
         case "timeline.expandAll": {

@@ -1,5 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { toFlat } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { lineText, mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
@@ -62,7 +64,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
 
-  const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
+  const hasUnexpandedLines = useMemo(
+    () => lines.some((l) => !mainWords(l)?.length && lineText(l).trim().length > 0),
+    [lines],
+  );
 
   const instanceKeys = useMemo(() => {
     const keys = new Set<string>();
@@ -92,16 +97,16 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     const updates: Array<{ id: string; updates: { words?: WordTiming[]; begin?: undefined; end?: undefined } }> = [];
 
     for (const line of lines) {
-      if (line.words?.length) continue;
-      if (!line.text.trim()) continue;
+      if (mainWords(line)?.length) continue;
+      if (!lineText(line).trim()) continue;
 
       if (isLineSynced(line)) {
-        const converted = convertLineToWord(line);
+        const converted = convertLineToWord(toFlat(line));
         if (converted.words) {
           updates.push({ id: line.id, updates: { words: converted.words, begin: undefined, end: undefined } });
         }
       } else {
-        const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
+        const { parts, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
         if (parts.length === 0) continue;
         const words: WordTiming[] = parts.map((part, i) => ({
           text: trailingSpace[i] ? `${part} ` : part,

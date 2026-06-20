@@ -1,11 +1,15 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
-import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { propagateWordChanges } from "@/domain/group/smart-sync";
+import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit, setBackground } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
+import { commitHistory } from "@/stores/project/history-helpers";
+import type { ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applySiblingWords } from "@/utils/word-diff";
@@ -16,12 +20,17 @@ type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; word
 
 // -- Helpers ------------------------------------------------------------------
 
+// Single-source routing of a field-targeted word read through the voice seam.
+function fieldWords(line: LyricLine, field: "words" | "backgroundWords"): WordTiming[] | undefined {
+  return field === "backgroundWords" ? bgWords(line) : mainWords(line);
+}
+
 // A field-targeted word write that keeps background provenance coherent: writing
 // the backgroundWords track is a user edit, so it routes through the funnel and
 // stamps source "manual". A main-words write carries no provenance.
 function writeFieldWords(line: LyricLine, field: "words" | "backgroundWords", words: WordTiming[]): LyricLine {
-  if (field === "backgroundWords") return reconcileLine({ ...line, ...manualBackgroundWordEdit(words) });
-  return reconcileLine({ ...line, words });
+  if (field === "backgroundWords") return reconcileLine({ ...toFlat(line), ...manualBackgroundWordEdit(words) });
+  return reconcileLine({ ...toFlat(line), words });
 }
 
 function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
@@ -35,7 +44,7 @@ function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map
   const out: ExplicitTarget[] = [];
   for (const group of byLineField.values()) {
     const line = linesById.get(group.lineId);
-    const currentWords = line?.[group.field];
+    const currentWords = line ? fieldWords(line, group.field) : undefined;
     const expanded = currentWords ? expandSelectionToGroupmates(currentWords, group.indices) : group.indices;
     for (const idx of expanded) out.push({ lineId: group.lineId, field: group.field, wordIndex: idx });
   }
@@ -50,7 +59,7 @@ function applyExplicitTargetToLines(
 ): LyricLine[] {
   const target = lines.find((l) => l.id === lineId);
   if (!target) return lines;
-  const sourceBefore = target[field];
+  const sourceBefore = fieldWords(target, field);
   const linkScope = getLinkScope(target);
 
   return lines.map((line) => {
@@ -58,7 +67,7 @@ function applyExplicitTargetToLines(
       return writeFieldWords(line, field, newWords);
     }
     if (isLinkedSibling(line, linkScope)) {
-      const propagated = applySiblingWords(newWords, sourceBefore, line[field]);
+      const propagated = applySiblingWords(newWords, sourceBefore, fieldWords(line, field));
       if (propagated) return writeFieldWords(line, field, propagated);
     }
     return line;
@@ -66,9 +75,10 @@ function applyExplicitTargetToLines(
 }
 
 function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number, duration: number): LyricLine | null {
-  if (!line.words) return null;
+  const main = mainWords(line);
+  if (!main) return null;
   const indexSet = new Set(wordIndices);
-  const movedWords = line.words.flatMap((word, index) => {
+  const movedWords = main.flatMap((word, index) => {
     if (!indexSet.has(index)) return [];
     const dur = word.end - word.begin;
     const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
@@ -77,10 +87,10 @@ function applyMoveToBg(line: LyricLine, wordIndices: number[], timeDelta: number
 
   if (movedWords.length === 0) return null;
 
-  const remainingMain = trimTrailingSpaceFromLast(line.words.filter((_, i) => !indexSet.has(i)));
-  const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(line.backgroundWords ?? [], movedWords), duration);
+  const remainingMain = trimTrailingSpaceFromLast(main.filter((_, i) => !indexSet.has(i)));
+  const mergedBg = resolveOverlapsForward(mergeWordsIntoTrack(bgWords(line) ?? [], movedWords), duration);
 
-  return applyBackground(reconcileLine({ ...line, words: remainingMain }), {
+  return applyBackground(reconcileLine({ ...toFlat(line), words: remainingMain }), {
     words: mergedBg,
     text: reconstructLineText(mergedBg, getSplitCharacter()),
     source: "manual",
@@ -93,9 +103,10 @@ function applyMoveFromBg(
   timeDelta: number,
   duration: number,
 ): LyricLine | null {
-  if (!line.backgroundWords) return null;
+  const bg = bgWords(line);
+  if (!bg) return null;
   const indexSet = new Set(wordIndices);
-  const movedWords = line.backgroundWords.flatMap((word, index) => {
+  const movedWords = bg.flatMap((word, index) => {
     if (!indexSet.has(index)) return [];
     const dur = word.end - word.begin;
     const newBegin = Math.max(0, Math.min(duration - dur, word.begin + timeDelta));
@@ -104,12 +115,12 @@ function applyMoveFromBg(
 
   if (movedWords.length === 0) return null;
 
-  const remainingBg = trimTrailingSpaceFromLast(line.backgroundWords.filter((_, i) => !indexSet.has(i)));
-  const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(line.words ?? [], movedWords), duration);
+  const remainingBg = trimTrailingSpaceFromLast(bg.filter((_, i) => !indexSet.has(i)));
+  const mergedMain = resolveOverlapsForward(mergeWordsIntoTrack(mainWords(line) ?? [], movedWords), duration);
 
   const withMain = applyMainWordEdit(line, mergedMain);
   if (remainingBg.length === 0) {
-    return reconcileLine({ ...withMain, ...CLEARED_BACKGROUND });
+    return reconcileLine({ ...toFlat(withMain), ...CLEARED_BACKGROUND });
   }
   return applyBackground(withMain, {
     words: remainingBg,
@@ -126,7 +137,7 @@ function applyMergeSyllableGroup(
 ): LyricLine[] | null {
   const target = lines.find((l) => l.id === lineId);
   if (!target) return null;
-  const sourceWords = target[field];
+  const sourceWords = fieldWords(target, field);
   if (!sourceWords || sourceWords.length === 0) return null;
   const sourceCount = sourceWords.length;
   const selected = new Set(wordIndices.filter((i) => i >= 0 && i < sourceCount));
@@ -136,9 +147,9 @@ function applyMergeSyllableGroup(
   let mutated = false;
   const newLines = lines.map((line) => {
     const isSource = line.id === lineId;
-    const isSibling = !isSource && isLinkedSibling(line, linkScope) && line[field]?.length === sourceCount;
+    const isSibling = !isSource && isLinkedSibling(line, linkScope) && fieldWords(line, field)?.length === sourceCount;
     if (!isSource && !isSibling) return line;
-    const lineWords = line[field];
+    const lineWords = fieldWords(line, field);
     if (!lineWords) return line;
 
     const runs = computeByGroupId(lineWords);
@@ -194,7 +205,7 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
   for (const target of expandedTargets) {
     const line = linesById.get(target.lineId);
     if (!line) continue;
-    const currentWords = line[target.field];
+    const currentWords = fieldWords(line, target.field);
     if (!currentWords || target.wordIndex < 0 || target.wordIndex >= currentWords.length) continue;
     if ((currentWords[target.wordIndex].explicit === true) === value) continue;
 
@@ -216,6 +227,60 @@ function applyMarkWordsExplicit(lines: LyricLine[], targets: ExplicitTarget[], v
   return current;
 }
 
+// -- Nested-aware background write --------------------------------------------
+
+// The single chokepoint for the nested full-line replace + linked-sibling
+// propagation. Replaces the target with nextLine, then (when propagating and
+// linked) for each sibling: propagates a main-word structural change via
+// smart-sync, mirrors the shared text + agentId, and re-resolves the sibling's
+// background from nextLine's shared bg text + source against the SIBLING's own
+// main. Each sibling gets instance-specific timing: word-level timings are never
+// copied across instances, only the shared content (text) and word structure.
+function commitNestedLineReplace(
+  state: ProjectState,
+  lineId: string,
+  nextLine: LyricLine,
+  propagateToSiblings: boolean,
+) {
+  const target = state.lines.find((l) => l.id === lineId);
+  if (!target) return state;
+  const linkScope = propagateToSiblings ? getLinkScope(target) : null;
+  const sourceWordsBefore = mainWords(target);
+  const sourceWordsAfter = mainWords(nextLine);
+  const sharedText = bgText(nextLine);
+  const sharedSource = bgSource(nextLine);
+
+  const newLines = state.lines.map((line) => {
+    if (line.id === lineId) return nextLine;
+    if (!isLinkedSibling(line, linkScope)) return line;
+
+    const propagatedWords = propagateWordChanges(sourceWordsAfter, sourceWordsBefore, mainWords(line));
+    const contentMatches =
+      propagatedWords === undefined && lineText(line) === lineText(nextLine) && line.agentId === nextLine.agentId;
+    const mirrored = contentMatches
+      ? line
+      : reconcileLine({
+          ...toFlat(line),
+          text: lineText(nextLine),
+          agentId: nextLine.agentId,
+          ...(propagatedWords !== undefined ? { words: propagatedWords } : {}),
+        });
+
+    return sharedText === undefined
+      ? setBackground(mirrored, null)
+      : applyBackground(mirrored, { text: sharedText, source: sharedSource ?? "manual" });
+  });
+
+  return commitHistory(state, { lines: newLines });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { applyMarkWordsExplicit, applyMergeSyllableGroup, applyMoveFromBg, applyMoveToBg };
+export {
+  applyMarkWordsExplicit,
+  applyMergeSyllableGroup,
+  applyMoveFromBg,
+  applyMoveToBg,
+  commitNestedLineReplace,
+  fieldWords,
+};

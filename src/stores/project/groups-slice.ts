@@ -1,5 +1,8 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { LinkGroup } from "@/domain/group/template";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
@@ -190,16 +193,17 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       commitHistory(state, {
         lines: state.lines.map((line) => {
           if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
+          const lineBounds = isLineSynced(line) ? mainBounds(line) : null;
           return reconcileLine({
-            ...line,
-            begin: line.begin !== undefined ? line.begin + deltaSeconds : undefined,
-            end: line.end !== undefined ? line.end + deltaSeconds : undefined,
-            words: line.words?.map((w) => ({
+            ...toFlat(line),
+            begin: lineBounds ? lineBounds.begin + deltaSeconds : undefined,
+            end: lineBounds ? lineBounds.end + deltaSeconds : undefined,
+            words: mainWords(line)?.map((w) => ({
               ...w,
               begin: w.begin + deltaSeconds,
               end: w.end + deltaSeconds,
             })),
-            backgroundWords: line.backgroundWords?.map((w) => ({
+            backgroundWords: bgWords(line)?.map((w) => ({
               ...w,
               begin: w.begin + deltaSeconds,
               end: w.end + deltaSeconds,

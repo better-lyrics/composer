@@ -1,9 +1,14 @@
 import { useDivergenceStore } from "@/stores/divergence-store";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { wouldDivergenceCauseRetiming } from "@/utils/word-diff";
+
+function wordsOfField(line: LyricLine, field: "words" | "backgroundWords"): WordTiming[] | undefined {
+  return field === "words" ? mainWords(line) : bgWords(line);
+}
 
 // Wraps a word-array write so that linked-line word-count changes prompt the
 // user (Apply / Detach / Cancel) when at least one sibling would have its
@@ -17,13 +22,13 @@ async function handleWordChangeWithDivergenceCheck(
   lineId: string,
   newWords: WordTiming[],
   field: "words" | "backgroundWords" = "words",
-  extraUpdates: Partial<LyricLine> = {},
+  extraUpdates: Partial<LooseLine> = {},
 ): Promise<void> {
   const lines = useProjectStore.getState().lines;
   const target = lines.find((l) => l.id === lineId);
   if (!target) return;
 
-  const sourceBefore = target[field];
+  const sourceBefore = wordsOfField(target, field);
   const oldCount = sourceBefore?.length ?? 0;
   const isLinked = target.groupId !== undefined && target.templateLineIdx !== undefined && !target.detached;
   const countChanged = isLinked && newWords.length !== oldCount;
@@ -41,7 +46,12 @@ async function handleWordChangeWithDivergenceCheck(
   const groupId = target.groupId as string;
   const templateLineIdx = target.templateLineIdx as number;
   const affectedSiblingCount = lines.filter(
-    (l) => l.id !== lineId && l.groupId === groupId && l.templateLineIdx === templateLineIdx && !l.detached && l[field],
+    (l) =>
+      l.id !== lineId &&
+      l.groupId === groupId &&
+      l.templateLineIdx === templateLineIdx &&
+      !l.detached &&
+      wordsOfField(l, field),
   ).length;
   const groupLabel = useProjectStore.getState().groups.find((g) => g.id === groupId)?.label;
 

@@ -87,7 +87,12 @@ describe("instanceBounds", () => {
     expect(instanceBounds(lines)).toEqual({ begin: 2, end: 5 });
   });
 
-  it("ignores stale line.begin/end when bg words present (no main timing)", () => {
+  // A line with begin/end and no main words is line-synced main, not stale
+  // timing. Under the voice model a line-synced main is first-class, so its
+  // bounds count alongside the background, exactly as a word-synced main does
+  // (see "includes background words in the bounds" above). Previously the
+  // line-synced main was dropped whenever a background was present.
+  it("counts line-synced main bounds alongside background words", () => {
     const lines: LyricLine[] = [
       line({
         id: "a",
@@ -96,7 +101,19 @@ describe("instanceBounds", () => {
         backgroundWords: [{ text: "b", begin: 4, end: 5 }],
       }),
     ];
-    expect(instanceBounds(lines)).toEqual({ begin: 4, end: 5 });
+    expect(instanceBounds(lines)).toEqual({ begin: 0, end: 999 });
+  });
+
+  it("takes the union of line-synced main and a background that extends past it", () => {
+    const lines: LyricLine[] = [
+      line({
+        id: "a",
+        begin: 2,
+        end: 5,
+        backgroundWords: [{ text: "b", begin: 1, end: 8 }],
+      }),
+    ];
+    expect(instanceBounds(lines)).toEqual({ begin: 1, end: 8 });
   });
 
   it("skips untimed lines when others are timed", () => {

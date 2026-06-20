@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WordTrack } from "@/views/timeline/word-track";
+import { bgSource, bgWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -15,7 +16,7 @@ async function renderBgTrack(lineId: string) {
     <WordTrack
       lineId={lineId}
       lineIndex={0}
-      words={useProjectStore.getState().lines[0].backgroundWords ?? []}
+      words={bgWords(useProjectStore.getState().lines[0]) ?? []}
       color="#a3c9ff"
       trackType="bg"
       duration={3}
@@ -46,8 +47,8 @@ describe("WordTrack background provenance", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(2);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    await expect.poll(() => bgWords(useProjectStore.getState().lines[0])?.length).toBe(2);
+    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
   });
 
   it("keeps the existing background words intact apart from the added one", async () => {
@@ -69,8 +70,8 @@ describe("WordTrack background provenance", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(2);
-    const bg = useProjectStore.getState().lines[0].backgroundWords;
+    await expect.poll(() => bgWords(useProjectStore.getState().lines[0])?.length).toBe(2);
+    const bg = bgWords(useProjectStore.getState().lines[0]);
     expect(bg?.some((w) => w.text.trim() === "ooh")).toBe(true);
   });
 });

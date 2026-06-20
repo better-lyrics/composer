@@ -3,6 +3,8 @@
  */
 import { beforeEach, describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
+import { reconcileLine } from "@/domain/line/model";
+import { mainWords } from "@/domain/line/voices";
 
 // Pins the contract that history snapshots round-trip cleanly through whatever
 // deep-clone primitive project.ts uses. Pre-Task-3.3 the codebase used
@@ -20,37 +22,37 @@ describe("history snapshot deep-clone integrity", () => {
   it("undo restores nested word arrays without aliasing the post-state", () => {
     const store = useProjectStore.getState();
     store.setLinesWithHistory([
-      {
+      reconcileLine({
         id: "L1",
         text: "hello",
         agentId: "v1",
         words: [{ text: "hello", begin: 0, end: 1 }],
-      },
+      }),
     ]);
     store.updateLineWithHistory("L1", { words: [{ text: "hello!", begin: 0, end: 1 }] });
-    const beforeUndo = useProjectStore.getState().lines[0].words?.[0].text;
+    const beforeUndo = mainWords(useProjectStore.getState().lines[0])?.[0].text;
     expect(beforeUndo).toBe("hello!");
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello");
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].text).toBe("hello");
     // Mutate the restored state object and confirm the next undo entry is
     // still independent (the clone wasn't a shallow alias).
-    const restored = useProjectStore.getState().lines[0].words;
+    const restored = mainWords(useProjectStore.getState().lines[0]);
     if (restored) restored[0].text = "MUTATED";
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("hello!");
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].text).toBe("hello!");
   });
 
   it("undo restores groups[] alongside lines[]", () => {
     const store = useProjectStore.getState();
     store.addGroupWithLines({ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }, [
-      {
+      reconcileLine({
         id: "L1",
         text: "x",
         agentId: "v1",
         groupId: "g1",
         instanceIdx: 0,
         templateLineIdx: 0,
-      },
+      }),
     ]);
     expect(useProjectStore.getState().groups).toHaveLength(1);
     store.removeGroup("g1");
@@ -63,7 +65,7 @@ describe("history snapshot deep-clone integrity", () => {
   it("undo and redo preserve identity of nested structures across multiple steps", () => {
     const store = useProjectStore.getState();
     store.setLinesWithHistory([
-      {
+      reconcileLine({
         id: "A",
         text: "a",
         agentId: "v1",
@@ -71,17 +73,17 @@ describe("history snapshot deep-clone integrity", () => {
           { text: "a ", begin: 0, end: 0.5 },
           { text: "b", begin: 0.5, end: 1 },
         ],
-      },
+      }),
     ]);
     store.updateLineWithHistory("A", { words: [{ text: "ab", begin: 0, end: 1 }] });
     store.updateLineWithHistory("A", { words: [{ text: "ABC", begin: 0, end: 1 }] });
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].text).toBe("ab");
     store.undo();
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+    expect(mainWords(useProjectStore.getState().lines[0])?.length).toBe(2);
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ab");
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].text).toBe("ab");
     store.redo();
-    expect(useProjectStore.getState().lines[0].words?.[0].text).toBe("ABC");
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].text).toBe("ABC");
   });
 });

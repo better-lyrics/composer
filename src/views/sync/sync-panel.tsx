@@ -14,12 +14,14 @@ import {
   syncPulseVariants,
 } from "@/utils/animationVariants";
 import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { effectiveBounds, mainBounds } from "@/domain/line/bounds";
+import { reconcileLine, toFlat } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
+import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import {
   getNudgeAmount,
   type SyncState,
   convertLineToWord,
-  createBgWordsFromLine,
   getSyncedLineCount,
   getSyncedWordCount,
   getTotalWords,
@@ -133,19 +135,6 @@ const SyncPanel: React.FC = () => {
     handleHoldEndRaw();
   }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
-  const updateLine = useProjectStore((s) => s.updateLine);
-
-  useEffect(() => {
-    for (const line of lines) {
-      if (line.backgroundText && !line.backgroundWords?.length) {
-        const bgWords = createBgWordsFromLine(line);
-        if (bgWords) {
-          updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
-        }
-      }
-    }
-  }, [lines, updateLine]);
-
   // RAF animation loop for smooth word progress updates (reads audioElement.currentTime directly)
   useEffect(() => {
     if (!editMode) {
@@ -192,8 +181,9 @@ const SyncPanel: React.FC = () => {
     };
   }, [editMode]);
 
-  const totalWords = useMemo(() => getTotalWords(lines), [lines]);
-  const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
+  const flatLines = useMemo(() => lines.map(toFlat), [lines]);
+  const totalWords = useMemo(() => getTotalWords(flatLines), [flatLines]);
+  const syncedWords = useMemo(() => getSyncedWordCount(flatLines), [flatLines]);
   const syncedLines = useMemo(() => getSyncedLineCount(lines), [lines]);
 
   const progressText = granularity === "word" ? `${syncedWords}/${totalWords}` : `${syncedLines}/${lines.length}`;
@@ -203,7 +193,7 @@ const SyncPanel: React.FC = () => {
       if (newGranularity === granularity) return;
 
       if (newGranularity === "word" && hasLineTiming(lines)) {
-        const convertedLines = lines.map((line) => convertLineToWord(line));
+        const convertedLines = lines.map((line) => reconcileLine(convertLineToWord(toFlat(line))));
         setLinesWithHistory(convertedLines);
       }
 
@@ -238,19 +228,21 @@ const SyncPanel: React.FC = () => {
   const currentLine = lines[lineIndex];
   const prevLine = lines[lineIndex - 1];
 
+  const currentMainWords = currentLine ? mainWords(currentLine) : undefined;
+  const prevMainWords = prevLine ? mainWords(prevLine) : undefined;
   const lastSyncedTime = useMemo(() => {
     if (granularity === "line") {
-      if (prevLine?.begin !== undefined) return prevLine.begin;
+      if (prevLine && isLineSynced(prevLine)) return mainBounds(prevLine)?.begin;
       return undefined;
     }
-    if (!currentLine?.words?.length) {
-      if (prevLine?.words?.length) {
-        return prevLine.words[prevLine.words.length - 1]?.begin;
+    if (!currentMainWords?.length) {
+      if (prevMainWords?.length) {
+        return prevMainWords[prevMainWords.length - 1]?.begin;
       }
       return undefined;
     }
-    return currentLine.words[currentLine.words.length - 1]?.begin;
-  }, [granularity, currentLine?.words, prevLine?.words, prevLine?.begin]);
+    return currentMainWords[currentMainWords.length - 1]?.begin;
+  }, [granularity, currentMainWords, prevMainWords, prevLine]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -439,6 +431,8 @@ const SyncPanel: React.FC = () => {
             {lines.map((line, index) => {
               const timing = effectiveBounds(line);
               const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
+              const lineWords = mainWords(line);
+              const lineBgWords = bgWords(line);
               const totalInstances = linkedGroup ? (instanceCountByGroup.get(linkedGroup.id) ?? 0) : 0;
               const linkInfo =
                 linkedGroup && line.instanceIdx !== undefined
@@ -454,12 +448,12 @@ const SyncPanel: React.FC = () => {
                   key={line.id}
                   lineId={line.id}
                   lineNumber={index + 1}
-                  text={line.text}
+                  text={lineText(line)}
                   isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
                   agentId={line.agentId}
-                  backgroundText={line.backgroundText}
-                  backgroundWords={line.backgroundWords}
-                  words={line.words}
+                  backgroundText={bgText(line)}
+                  backgroundWords={lineBgWords}
+                  words={lineWords}
                   lineBegin={timing?.begin}
                   lineEnd={timing?.end}
                   granularity={granularity}
@@ -508,7 +502,7 @@ const SyncPanel: React.FC = () => {
             </div>
           ) : (
             <SyncCarousel
-              lines={lines}
+              lines={flatLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}

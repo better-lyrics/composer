@@ -1,8 +1,11 @@
 /**
  * @vitest-environment node
  */
+import { applyBackground } from "@/domain/line/background";
+import { bgBounds } from "@/domain/line/bounds";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { describe, expect, it } from "vitest";
 import { decideEditTextAction } from "./decide-edit-text-action";
 
@@ -10,15 +13,29 @@ const groupChorus: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", te
 
 function chorusLines(): LyricLine[] {
   return [
-    { id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-    { id: "c1b", text: "more than words", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
-    { id: "v1", text: "verse line", agentId: "v1" },
-    { id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
-    { id: "c2b", text: "more than words", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 },
+    reconcileLine({ id: "c1a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+    reconcileLine({
+      id: "c1b",
+      text: "more than words",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 0,
+      templateLineIdx: 1,
+    }),
+    reconcileLine({ id: "v1", text: "verse line", agentId: "v1" }),
+    reconcileLine({ id: "c2a", text: "I love you", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    reconcileLine({
+      id: "c2b",
+      text: "more than words",
+      agentId: "v1",
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 1,
+    }),
   ];
 }
 
-const baseText = (lines: LyricLine[]) => lines.map((l) => l.text).join("\n");
+const baseText = (lines: LyricLine[]) => lines.map((l) => lineText(l)).join("\n");
 
 describe("decideEditTextAction", () => {
   it("returns ignore-modal-pending when modal already open and skips all computation", () => {
@@ -57,8 +74,10 @@ describe("decideEditTextAction", () => {
     });
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
-    expect(action.finalLines.find((l) => l.id === "c1a")?.text).toBe("I luv you");
-    expect(action.finalLines.find((l) => l.id === "c2a")?.text).toBe("I luv you");
+    const c1a = action.finalLines.find((l) => l.id === "c1a");
+    const c2a = action.finalLines.find((l) => l.id === "c2a");
+    expect(c1a && lineText(c1a)).toBe("I luv you");
+    expect(c2a && lineText(c2a)).toBe("I luv you");
   });
 
   it("returns apply for structural changes outside any group (no confirm)", () => {
@@ -74,7 +93,7 @@ describe("decideEditTextAction", () => {
     expect(action.kind).toBe("apply");
     if (action.kind !== "apply") return;
     expect(action.finalLines.length).toBe(lines.length + 1);
-    expect(action.finalLines[action.finalLines.length - 1].text).toBe("brand new outro");
+    expect(lineText(action.finalLines[action.finalLines.length - 1])).toBe("brand new outro");
   });
 
   it("returns needs-confirm when a chorus instance loses a row", () => {
@@ -111,8 +130,8 @@ describe("decideEditTextAction", () => {
 
   it("dedups labels when multiple impacted instances share a group", () => {
     const lines: LyricLine[] = [
-      { id: "a", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
-      { id: "b", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 },
+      reconcileLine({ id: "a", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+      reconcileLine({ id: "b", text: "foo", agentId: "v1", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
     ];
     const action = decideEditTextAction({
       text: "",
@@ -129,7 +148,7 @@ describe("decideEditTextAction", () => {
 
   it("propagates a content edit to a sibling instance via apply", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "a",
         text: "I love you",
         agentId: "v1",
@@ -141,8 +160,8 @@ describe("decideEditTextAction", () => {
           { text: "love ", begin: 0.4, end: 0.8 },
           { text: "you", begin: 0.8, end: 1.2 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "b",
         text: "I love you",
         agentId: "v1",
@@ -154,7 +173,7 @@ describe("decideEditTextAction", () => {
           { text: "love ", begin: 30.5, end: 31.0 },
           { text: "you", begin: 31.0, end: 31.5 },
         ],
-      },
+      }),
     ];
     const action = decideEditTextAction({
       text: "I luv you\nI love you",
@@ -167,16 +186,16 @@ describe("decideEditTextAction", () => {
     if (action.kind !== "apply") return;
     const a = action.finalLines.find((l) => l.id === "a");
     const b = action.finalLines.find((l) => l.id === "b");
-    expect(a?.text).toBe("I luv you");
-    expect(a?.words?.[1].text).toBe("luv ");
-    expect(a?.words?.[1].begin).toBe(0.4);
-    expect(b?.text).toBe("I luv you");
-    expect(b?.words?.[1].text).toBe("luv ");
-    expect(b?.words?.[1].begin).toBe(30.5);
+    expect(a && lineText(a)).toBe("I luv you");
+    expect(a && mainWords(a)?.[1].text).toBe("luv ");
+    expect(a && mainWords(a)?.[1].begin).toBe(0.4);
+    expect(b && lineText(b)).toBe("I luv you");
+    expect(b && mainWords(b)?.[1].text).toBe("luv ");
+    expect(b && mainWords(b)?.[1].begin).toBe(30.5);
   });
 
   it("returns apply (with empty group cleanup unrelated) when impacted is empty even on length change outside group", () => {
-    const lines: LyricLine[] = [{ id: "a", text: "first", agentId: "v1" }];
+    const lines: LyricLine[] = [reconcileLine({ id: "a", text: "first", agentId: "v1" })];
     const action = decideEditTextAction({
       text: "first\nsecond",
       defaultAgentId: "v1",
@@ -185,5 +204,57 @@ describe("decideEditTextAction", () => {
       modalPending: false,
     });
     expect(action.kind).toBe("apply");
+  });
+});
+
+describe("#122 audit: editing main text never resurrects a word-split background", () => {
+  it("keeps a line-synced background line-synced when its main text is edited", () => {
+    const lineSynced = applyBackground(
+      reconcileLine({ id: "L1", text: "lead vocal", agentId: "v1", begin: 0, end: 4 }),
+      {
+        text: "ooh",
+        source: "manual",
+      },
+    );
+    expect(bgBounds(lineSynced)).not.toBeNull();
+    expect(bgWords(lineSynced)).toBeUndefined();
+
+    const action = decideEditTextAction({
+      text: "lead vocals",
+      defaultAgentId: "v1",
+      lines: [lineSynced],
+      groups: [],
+      modalPending: false,
+    });
+
+    expect(action.kind).toBe("apply");
+    if (action.kind !== "apply") return;
+    const edited = action.finalLines[0];
+    expect(bgText(edited)).toBe("ooh");
+    expect(bgWords(edited)).toBeUndefined();
+  });
+
+  it("does not auto-split an untimed background when the main text is edited", () => {
+    const untimedBg = reconcileLine({
+      id: "L1",
+      text: "lead vocal",
+      agentId: "v1",
+      begin: 0,
+      end: 4,
+      backgroundText: "ooh",
+      backgroundTextSource: "manual",
+    });
+    const action = decideEditTextAction({
+      text: "lead vocals",
+      defaultAgentId: "v1",
+      lines: [untimedBg],
+      groups: [],
+      modalPending: false,
+    });
+    expect(action.kind).toBe("apply");
+    if (action.kind !== "apply") return;
+    const edited = action.finalLines[0];
+    expect(bgText(edited)).toBe("ooh");
+    expect(bgWords(edited)).toBeUndefined();
   });
 });

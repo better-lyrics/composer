@@ -1,15 +1,15 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { describe, expect, it } from "vitest";
 
 describe("parseLyrics", () => {
   it("matches non-empty input lines to non-empty stored lines in order", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "verse one", agentId: "v1" },
-      { id: "B", text: "verse two", agentId: "v2" },
+      reconcileLine({ id: "A", text: "verse one", agentId: "v1" }),
+      reconcileLine({ id: "B", text: "verse two", agentId: "v2" }),
     ];
     const result = parseLyrics("verse one\nverse two", lines, "v1");
     expect(result).toHaveLength(2);
@@ -21,8 +21,8 @@ describe("parseLyrics", () => {
 
   it("renders blank input lines as isEmpty=true placeholders without consuming a stored line", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "verse one", agentId: "v1" },
-      { id: "B", text: "verse two", agentId: "v2" },
+      reconcileLine({ id: "A", text: "verse one", agentId: "v1" }),
+      reconcileLine({ id: "B", text: "verse two", agentId: "v2" }),
     ];
     const result = parseLyrics("verse one\n\nverse two", lines, "v1");
     expect(result).toHaveLength(3);
@@ -37,11 +37,11 @@ describe("parseLyrics", () => {
     // store made parseLyrics index off by one, causing every line after the
     // empty to render its predecessor's text.
     const lines: LyricLine[] = [
-      { id: "A", text: "Whoa", agentId: "v1" },
-      { id: "B", text: "Yeah", agentId: "v1" },
-      { id: "EMPTY", text: "", agentId: "v1" },
-      { id: "C", text: "Lit City", agentId: "v1" },
-      { id: "D", text: "Wave again", agentId: "v1" },
+      reconcileLine({ id: "A", text: "Whoa", agentId: "v1" }),
+      reconcileLine({ id: "B", text: "Yeah", agentId: "v1" }),
+      reconcileLine({ id: "EMPTY", text: "", agentId: "v1" }),
+      reconcileLine({ id: "C", text: "Lit City", agentId: "v1" }),
+      reconcileLine({ id: "D", text: "Wave again", agentId: "v1" }),
     ];
     const text = "Whoa\nYeah\n\nLit City\nWave again";
     const result = parseLyrics(text, lines, "v1");
@@ -64,7 +64,7 @@ describe("parseLyrics", () => {
 
   it("propagates groupId/instanceIdx/templateLineIdx from matched stored lines", () => {
     const lines: LyricLine[] = [
-      { id: "A", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 2 },
+      reconcileLine({ id: "A", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 2 }),
     ];
     const result = parseLyrics("x", lines, "v1");
     expect(result[0].groupId).toBe("g1");

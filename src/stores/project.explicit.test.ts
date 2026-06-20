@@ -3,7 +3,8 @@
  */
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
+import { type LooseLine, reconcileLine } from "@/domain/line/model";
+import { bgSource, bgText, bgWords, mainWords } from "@/domain/line/voices";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
@@ -11,8 +12,8 @@ beforeEach(() => {
   useProjectStore.getState().clearHistory();
 });
 
-function seedSingleLine(line: LyricLine) {
-  useProjectStore.getState().setLines([line]);
+function seedSingleLine(line: LooseLine) {
+  useProjectStore.getState().setLines([reconcileLine(line)]);
 }
 
 describe("toggleWordExplicit · single line", () => {
@@ -29,9 +30,9 @@ describe("toggleWordExplicit · single line", () => {
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [1]);
     const updated = useProjectStore.getState().lines[0];
-    expect(updated.words![0].explicit).toBeUndefined();
-    expect(updated.words![1].explicit).toBe(true);
-    expect(updated.words![2].explicit).toBeUndefined();
+    expect(mainWords(updated)![0].explicit).toBeUndefined();
+    expect(mainWords(updated)![1].explicit).toBe(true);
+    expect(mainWords(updated)![2].explicit).toBeUndefined();
   });
 
   it("removes the explicit key (does not store false) when toggling a marked word", () => {
@@ -42,7 +43,7 @@ describe("toggleWordExplicit · single line", () => {
       words: [{ text: "fuck", begin: 0, end: 1, explicit: true }],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [0]);
-    const word = useProjectStore.getState().lines[0].words![0];
+    const word = mainWords(useProjectStore.getState().lines[0])![0];
     expect("explicit" in word).toBe(false);
   });
 
@@ -58,7 +59,7 @@ describe("toggleWordExplicit · single line", () => {
       ],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [0, 1, 2]);
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[0].explicit).toBe(true);
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBe(true);
@@ -76,7 +77,7 @@ describe("toggleWordExplicit · single line", () => {
       ],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [0, 1]);
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });
@@ -95,9 +96,9 @@ describe("toggleWordExplicit · single line", () => {
     });
     useProjectStore.getState().toggleWordExplicit("L1", "backgroundWords", [1]);
     const line = useProjectStore.getState().lines[0];
-    expect(line.words![0].explicit).toBeUndefined();
-    expect(line.backgroundWords![0].explicit).toBeUndefined();
-    expect(line.backgroundWords![1].explicit).toBe(true);
+    expect(mainWords(line)![0].explicit).toBeUndefined();
+    expect(bgWords(line)![0].explicit).toBeUndefined();
+    expect(bgWords(line)![1].explicit).toBe(true);
   });
 });
 
@@ -106,7 +107,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "I fuck you",
         agentId: "v1",
@@ -118,8 +119,8 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           { text: "fuck ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "I fuck you",
         agentId: "v1",
@@ -131,7 +132,7 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           { text: "fuck ", begin: 30.4, end: 30.7 },
           { text: "you", begin: 30.7, end: 31.2 },
         ],
-      },
+      }),
     ]);
   }
 
@@ -139,10 +140,10 @@ describe("toggleWordExplicit · linked-line propagation", () => {
     seedLinkedGroup();
     useProjectStore.getState().toggleWordExplicit("A", "words", [1]);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].begin).toBeCloseTo(30.4);
-    expect(lines[1].words![1].end).toBeCloseTo(30.7);
+    expect(mainWords(lines[0])![1].explicit).toBe(true);
+    expect(mainWords(lines[1])![1].explicit).toBe(true);
+    expect(mainWords(lines[1])![1].begin).toBeCloseTo(30.4);
+    expect(mainWords(lines[1])![1].end).toBeCloseTo(30.7);
   });
 
   it("does not propagate to detached siblings", () => {
@@ -152,15 +153,15 @@ describe("toggleWordExplicit · linked-line propagation", () => {
       .setLines(useProjectStore.getState().lines.map((l) => (l.id === "B" ? { ...l, detached: true } : l)));
     useProjectStore.getState().toggleWordExplicit("A", "words", [1]);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBeUndefined();
+    expect(mainWords(lines[0])![1].explicit).toBe(true);
+    expect(mainWords(lines[1])![1].explicit).toBeUndefined();
   });
 
   it("clears the flag on siblings when source unmarks", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "I fuck you",
         agentId: "v1",
@@ -172,8 +173,8 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           { text: "fuck ", begin: 0.3, end: 0.6, explicit: true },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "I fuck you",
         agentId: "v1",
@@ -185,12 +186,12 @@ describe("toggleWordExplicit · linked-line propagation", () => {
           { text: "fuck ", begin: 30.4, end: 30.7, explicit: true },
           { text: "you", begin: 30.7, end: 31.2 },
         ],
-      },
+      }),
     ]);
     useProjectStore.getState().toggleWordExplicit("A", "words", [1]);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBeUndefined();
-    expect(lines[1].words![1].explicit).toBeUndefined();
+    expect(mainWords(lines[0])![1].explicit).toBeUndefined();
+    expect(mainWords(lines[1])![1].explicit).toBeUndefined();
   });
 });
 
@@ -214,10 +215,10 @@ describe("addInstance · template materialization carries explicit", () => {
     useProjectStore.getState().addInstance("g1", structure, 30);
     const line = useProjectStore.getState().lines.find((l) => l.groupId === "g1");
     expect(line).toBeDefined();
-    expect(line!.words![0].explicit).toBeUndefined();
-    expect(line!.words![1].explicit).toBe(true);
-    expect(line!.words![1].begin).toBeCloseTo(30.3);
-    expect(line!.words![2].explicit).toBeUndefined();
+    expect(mainWords(line!)![0].explicit).toBeUndefined();
+    expect(mainWords(line!)![1].explicit).toBe(true);
+    expect(mainWords(line!)![1].begin).toBeCloseTo(30.3);
+    expect(mainWords(line!)![2].explicit).toBeUndefined();
   });
 
   it("carries explicit from WordTemplate onto backgroundWords", () => {
@@ -239,9 +240,9 @@ describe("addInstance · template materialization carries explicit", () => {
     ];
     useProjectStore.getState().addInstance("g1", structure, 10);
     const line = useProjectStore.getState().lines.find((l) => l.groupId === "g1");
-    expect(line!.backgroundWords![0].explicit).toBeUndefined();
-    expect(line!.backgroundWords![1].explicit).toBe(true);
-    expect(line!.backgroundWords![1].begin).toBeCloseTo(10.5);
+    expect(bgWords(line!)![0].explicit).toBeUndefined();
+    expect(bgWords(line!)![1].explicit).toBe(true);
+    expect(bgWords(line!)![1].begin).toBeCloseTo(10.5);
   });
 });
 
@@ -254,9 +255,9 @@ describe("toggleWordExplicit · history", () => {
       words: [{ text: "fuck", begin: 0, end: 1 }],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [0]);
-    expect(useProjectStore.getState().lines[0].words![0].explicit).toBe(true);
+    expect(mainWords(useProjectStore.getState().lines[0])![0].explicit).toBe(true);
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].words![0].explicit).toBeUndefined();
+    expect(mainWords(useProjectStore.getState().lines[0])![0].explicit).toBeUndefined();
   });
 });
 
@@ -275,7 +276,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       ],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [1]);
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBe(true);
     expect(words[0].explicit).toBeUndefined();
@@ -293,7 +294,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
       ],
     });
     useProjectStore.getState().toggleWordExplicit("L1", "words", [1]);
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });
@@ -302,7 +303,7 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "fu|cking yeah",
         agentId: "v1",
@@ -314,8 +315,8 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
           { text: "cking ", begin: 0.2, end: 0.5 },
           { text: "yeah", begin: 0.5, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "fu|cking yeah",
         agentId: "v1",
@@ -327,14 +328,14 @@ describe("toggleWordExplicit · syllable expansion (issue #62)", () => {
           { text: "cking ", begin: 30.2, end: 30.5 },
           { text: "yeah", begin: 30.5, end: 31 },
         ],
-      },
+      }),
     ]);
     useProjectStore.getState().toggleWordExplicit("A", "words", [0]);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![0].explicit).toBe(true);
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![0].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
+    expect(mainWords(lines[0])![0].explicit).toBe(true);
+    expect(mainWords(lines[0])![1].explicit).toBe(true);
+    expect(mainWords(lines[1])![0].explicit).toBe(true);
+    expect(mainWords(lines[1])![1].explicit).toBe(true);
   });
 });
 
@@ -351,7 +352,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
       ],
     });
     useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true);
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[0].explicit).toBe(true);
     expect(words[1].explicit).toBe(true);
     expect(words[2].explicit).toBeUndefined();
@@ -361,7 +362,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "fuck this shit",
         agentId: "v1",
@@ -373,8 +374,8 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
           { text: "this ", begin: 0.3, end: 0.6 },
           { text: "shit", begin: 0.6, end: 1, explicit: true },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "fuck this shit",
         agentId: "v1",
@@ -386,7 +387,7 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
           { text: "this ", begin: 30.3, end: 30.6 },
           { text: "shit", begin: 30.6, end: 31, explicit: true },
         ],
-      },
+      }),
     ]);
     useProjectStore.getState().markWordsExplicit(
       [
@@ -396,10 +397,10 @@ describe("markWordsExplicit · syllable + batch (issue #62)", () => {
       true,
     );
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![0].explicit).toBe(true);
-    expect(lines[0].words![2].explicit).toBe(true);
-    expect(lines[1].words![0].explicit).toBe(true);
-    expect(lines[1].words![2].explicit).toBe(true);
+    expect(mainWords(lines[0])![0].explicit).toBe(true);
+    expect(mainWords(lines[0])![2].explicit).toBe(true);
+    expect(mainWords(lines[1])![0].explicit).toBe(true);
+    expect(mainWords(lines[1])![2].explicit).toBe(true);
   });
 });
 
@@ -423,25 +424,25 @@ describe("toggleWordExplicit · background provenance", () => {
     seedExtractionBgLine();
     useProjectStore.getState().toggleWordExplicit("L1", "backgroundWords", [1]);
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect(line.backgroundWords![1].explicit).toBe(true);
-    expect(line.backgroundWords![0].explicit).toBeUndefined();
-    expect(line.backgroundText).toBe("oh shit");
+    expect(bgSource(line)).toBe("manual");
+    expect(bgWords(line)![1].explicit).toBe(true);
+    expect(bgWords(line)![0].explicit).toBeUndefined();
+    expect(bgText(line)).toBe("oh shit");
   });
 
   it("leaves backgroundTextSource untouched when editing the main words field", () => {
     seedExtractionBgLine();
     useProjectStore.getState().toggleWordExplicit("L1", "words", [0]);
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("extraction");
-    expect(line.words![0].explicit).toBe(true);
+    expect(bgSource(line)).toBe("extraction");
+    expect(mainWords(line)![0].explicit).toBe(true);
   });
 
   it("flips linked siblings to manual when a background-word edit propagates", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -455,8 +456,8 @@ describe("toggleWordExplicit · background provenance", () => {
           { text: "oh ", begin: 1, end: 1.25 },
           { text: "shit", begin: 1.25, end: 1.5 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "main",
         agentId: "v1",
@@ -470,23 +471,23 @@ describe("toggleWordExplicit · background provenance", () => {
           { text: "oh ", begin: 31, end: 31.25 },
           { text: "shit", begin: 31.25, end: 31.5 },
         ],
-      },
+      }),
     ]);
     useProjectStore.getState().toggleWordExplicit("A", "backgroundWords", [1]);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].backgroundTextSource).toBe("manual");
-    expect(lines[1].backgroundTextSource).toBe("manual");
-    expect(lines[0].backgroundWords![1].explicit).toBe(true);
-    expect(lines[1].backgroundWords![1].explicit).toBe(true);
-    expect(lines[1].backgroundWords![1].begin).toBeCloseTo(31.25);
+    expect(bgSource(lines[0])).toBe("manual");
+    expect(bgSource(lines[1])).toBe("manual");
+    expect(bgWords(lines[0])![1].explicit).toBe(true);
+    expect(bgWords(lines[1])![1].explicit).toBe(true);
+    expect(bgWords(lines[1])![1].begin).toBeCloseTo(31.25);
   });
 
   it("undo restores the prior extraction provenance", () => {
     seedExtractionBgLine();
     useProjectStore.getState().toggleWordExplicit("L1", "backgroundWords", [1]);
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
     useProjectStore.getState().undo();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
   });
 });
 
@@ -506,9 +507,9 @@ describe("markWordsExplicit · background provenance", () => {
     });
     useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "backgroundWords", wordIndex: 0 }], true);
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("manual");
-    expect(line.backgroundWords![0].explicit).toBe(true);
-    expect(line.backgroundText).toBe("oh shit");
+    expect(bgSource(line)).toBe("manual");
+    expect(bgWords(line)![0].explicit).toBe(true);
+    expect(bgText(line)).toBe("oh shit");
   });
 
   it("leaves backgroundTextSource untouched when marking the main words field", () => {
@@ -526,15 +527,15 @@ describe("markWordsExplicit · background provenance", () => {
     });
     useProjectStore.getState().markWordsExplicit([{ lineId: "L1", field: "words", wordIndex: 0 }], true);
     const line = useProjectStore.getState().lines[0];
-    expect(line.backgroundTextSource).toBe("extraction");
-    expect(line.words![0].explicit).toBe(true);
+    expect(bgSource(line)).toBe("extraction");
+    expect(mainWords(line)![0].explicit).toBe(true);
   });
 
   it("flips linked siblings to manual when a background-word edit propagates", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "main",
         agentId: "v1",
@@ -548,8 +549,8 @@ describe("markWordsExplicit · background provenance", () => {
           { text: "oh ", begin: 1, end: 1.25 },
           { text: "shit", begin: 1.25, end: 1.5 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "main",
         agentId: "v1",
@@ -563,21 +564,21 @@ describe("markWordsExplicit · background provenance", () => {
           { text: "oh ", begin: 31, end: 31.25 },
           { text: "shit", begin: 31.25, end: 31.5 },
         ],
-      },
+      }),
     ]);
     useProjectStore.getState().markWordsExplicit([{ lineId: "A", field: "backgroundWords", wordIndex: 0 }], true);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].backgroundTextSource).toBe("manual");
-    expect(lines[1].backgroundTextSource).toBe("manual");
-    expect(lines[0].backgroundWords![0].explicit).toBe(true);
-    expect(lines[1].backgroundWords![0].explicit).toBe(true);
+    expect(bgSource(lines[0])).toBe("manual");
+    expect(bgSource(lines[1])).toBe("manual");
+    expect(bgWords(lines[0])![0].explicit).toBe(true);
+    expect(bgWords(lines[1])![0].explicit).toBe(true);
   });
 });
 
 describe("markWordsExplicit · batch action", () => {
   it("applies multiple targets in a single history entry so one undo reverts them all", () => {
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "L1",
         text: "fuck this",
         agentId: "v1",
@@ -585,8 +586,8 @@ describe("markWordsExplicit · batch action", () => {
           { text: "fuck ", begin: 0, end: 0.5 },
           { text: "this", begin: 0.5, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "L2",
         text: "shit happens",
         agentId: "v1",
@@ -594,8 +595,8 @@ describe("markWordsExplicit · batch action", () => {
           { text: "shit ", begin: 1, end: 1.5 },
           { text: "happens", begin: 1.5, end: 2 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "L3",
         text: "damn cool",
         agentId: "v1",
@@ -603,7 +604,7 @@ describe("markWordsExplicit · batch action", () => {
           { text: "damn ", begin: 2, end: 2.5 },
           { text: "cool", begin: 2.5, end: 3 },
         ],
-      },
+      }),
     ]);
 
     useProjectStore.getState().markWordsExplicit(
@@ -616,22 +617,22 @@ describe("markWordsExplicit · batch action", () => {
     );
 
     const after = useProjectStore.getState().lines;
-    expect(after[0].words![0].explicit).toBe(true);
-    expect(after[1].words![0].explicit).toBe(true);
-    expect(after[2].words![0].explicit).toBe(true);
+    expect(mainWords(after[0])![0].explicit).toBe(true);
+    expect(mainWords(after[1])![0].explicit).toBe(true);
+    expect(mainWords(after[2])![0].explicit).toBe(true);
 
     useProjectStore.getState().undo();
     const undone = useProjectStore.getState().lines;
-    expect(undone[0].words![0].explicit).toBeUndefined();
-    expect(undone[1].words![0].explicit).toBeUndefined();
-    expect(undone[2].words![0].explicit).toBeUndefined();
+    expect(mainWords(undone[0])![0].explicit).toBeUndefined();
+    expect(mainWords(undone[1])![0].explicit).toBeUndefined();
+    expect(mainWords(undone[2])![0].explicit).toBeUndefined();
   });
 
   it("propagates to linked siblings for each target", () => {
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines([
-      {
+      reconcileLine({
         id: "A",
         text: "I fuck you",
         agentId: "v1",
@@ -643,8 +644,8 @@ describe("markWordsExplicit · batch action", () => {
           { text: "fuck ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B",
         text: "I fuck you",
         agentId: "v1",
@@ -656,13 +657,13 @@ describe("markWordsExplicit · batch action", () => {
           { text: "fuck ", begin: 30.4, end: 30.7 },
           { text: "you", begin: 30.7, end: 31.2 },
         ],
-      },
+      }),
     ]);
 
     useProjectStore.getState().markWordsExplicit([{ lineId: "A", field: "words", wordIndex: 1 }], true);
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words![1].explicit).toBe(true);
-    expect(lines[1].words![1].explicit).toBe(true);
+    expect(mainWords(lines[0])![1].explicit).toBe(true);
+    expect(mainWords(lines[1])![1].explicit).toBe(true);
   });
 
   it("is a no-op when targets is empty", () => {
@@ -694,7 +695,7 @@ describe("markWordsExplicit · batch action", () => {
       ],
       false,
     );
-    const words = useProjectStore.getState().lines[0].words!;
+    const words = mainWords(useProjectStore.getState().lines[0])!;
     expect(words[0].explicit).toBeUndefined();
     expect(words[1].explicit).toBeUndefined();
   });

@@ -1,10 +1,12 @@
 import { applyBackground } from "@/domain/line/background";
-import type { BackgroundSource } from "@/domain/line/background";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { reconcileLine } from "@/domain/line/model";
+import { reconcileLine, toFlat } from "@/domain/line/model";
+import type { BackgroundSource } from "@/domain/voice/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { mainBounds } from "@/domain/line/bounds";
 import { reconstructLineText, wordContentSpans } from "@/domain/line/reconstruct-text";
+import { bgSource, bgText as bgTextField, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { bracketWordList, joinBracketedCarriedWords } from "@/utils/background-vocal-brackets";
@@ -105,11 +107,12 @@ function classifyLine(text: string): LineClassification {
 // -- Extraction ---------------------------------------------------------------
 
 function extractInlineWordSynced(line: LyricLine, classified: LineClassification, options: ExtractOptions): LyricLine {
-  const words = line.words;
+  const words = mainWords(line);
   if (!words || words.length === 0) return line;
-  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
+  const existingBgWords = bgWords(line);
+  if (existingBgWords && existingBgWords.length > 0) return line;
   const splitChar = getSplitCharacter();
-  if (reconstructLineText(words, splitChar) !== line.text) return line;
+  if (reconstructLineText(words, splitChar) !== lineText(line)) return line;
   const spans = wordContentSpans(words, splitChar);
   const survivors: WordTiming[] = [];
   for (let i = 0; i < words.length; i++) {
@@ -130,10 +133,10 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
   const trimmedSurvivors = survivors.map((word, i) =>
     i === survivors.length - 1 ? { ...word, text: word.text.replace(/ +$/, "") } : word,
   );
-  const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
+  const base = bgSource(line) === "extraction" ? undefined : bgTextField(line);
   return applyBackground(
     reconcileLine({
-      ...line,
+      ...toFlat(line),
       words: trimmedSurvivors,
       text: reconstructLineText(trimmedSurvivors, splitChar),
     }),
@@ -145,29 +148,28 @@ function extractInlineWordSynced(line: LyricLine, classified: LineClassification
 }
 
 function extractInlineFromLine(line: LyricLine, options: ExtractOptions): LyricLine {
-  const classified = classifyLine(line.text);
+  const classified = classifyLine(lineText(line));
   if (classified.kind !== "inline") return line;
   if (isWordSynced(line)) return extractInlineWordSynced(line, classified, options);
-  if (line.backgroundWords && line.backgroundWords.length > 0) return line;
-  const base = line.backgroundTextSource === "extraction" ? undefined : line.backgroundText;
-  return applyBackground(
-    { ...line, text: classified.mainText },
-    {
-      text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
-      source: base ? "manual" : "extraction",
-    },
-  );
+  const existingBgWords = bgWords(line);
+  if (existingBgWords && existingBgWords.length > 0) return line;
+  const base = bgSource(line) === "extraction" ? undefined : bgTextField(line);
+  return applyBackground(reconcileLine({ ...toFlat(line), text: classified.mainText }), {
+    text: joinBackgroundText(base, classified.bgText, options.preserveBrackets, false),
+    source: base ? "manual" : "extraction",
+  });
 }
 
 // -- Whole-list transform -----------------------------------------------------
 
 function carriedBackgroundWords(standalone: LyricLine, bgText: string, preserveBrackets: boolean): WordTiming[] | null {
-  const words = standalone.words;
+  const words = mainWords(standalone);
   let carry: WordTiming[] | null;
+  const standaloneBounds = mainBounds(standalone);
   if (words && words.length > 0) {
     carry = remapWordTextsPreservingTiming(words, bgText);
-  } else if (isLineSynced(standalone)) {
-    carry = createInitialBgWords(bgText, standalone.begin, standalone.end);
+  } else if (isLineSynced(standalone) && standaloneBounds) {
+    carry = createInitialBgWords(bgText, standaloneBounds.begin, standaloneBounds.end);
   } else {
     carry = null;
   }
@@ -187,10 +189,10 @@ function mergeStandaloneInto(
   // prior pass, so the standalone line replaces it. Manual background is kept.
   // Extraction-sourced background produced earlier in this same pass (an
   // already-merged standalone) is fresh, so further standalones append to it.
-  const prevIsExtraction = prev.backgroundTextSource === "extraction";
+  const prevIsExtraction = bgSource(prev) === "extraction";
   const prevIsStaleExtraction = prevIsExtraction && !prevTrailingBracketFromSamePass;
-  const baseText = prevIsStaleExtraction ? undefined : prev.backgroundText;
-  const baseWords = prevIsStaleExtraction ? undefined : prev.backgroundWords;
+  const baseText = prevIsStaleExtraction ? undefined : bgTextField(prev);
+  const baseWords = prevIsStaleExtraction ? undefined : bgWords(prev);
   const carried = carriedBackgroundWords(standalone, bgText, options.preserveBrackets);
 
   // Source for a result that keeps the prev base: a surviving extraction base
@@ -232,7 +234,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
   const result: LyricLine[] = [];
   const sameSessionWriteIndices = new Set<number>();
   for (const line of lines) {
-    const classified = classifyLine(line.text);
+    const classified = classifyLine(lineText(line));
     if (classified.kind === "inline") {
       const extracted = extractInlineFromLine(line, options);
       result.push(extracted);
@@ -244,8 +246,8 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
       const prev = result[prevIndex];
       if (
         prev &&
-        prev.text.trim().length > 0 &&
-        classifyLine(prev.text).kind === "none" &&
+        lineText(prev).trim().length > 0 &&
+        classifyLine(lineText(prev)).kind === "none" &&
         !isLinked(prev) &&
         !isLinked(line)
       ) {
@@ -269,7 +271,7 @@ function extractBackgroundVocals(lines: LyricLine[], options: ExtractOptions): L
 }
 
 function lineHasInlineParens(line: LyricLine): boolean {
-  return classifyLine(line.text).kind === "inline";
+  return classifyLine(lineText(line)).kind === "inline";
 }
 
 // -- Exports ------------------------------------------------------------------

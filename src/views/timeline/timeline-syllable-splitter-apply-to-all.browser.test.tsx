@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -89,7 +90,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split all" }).click();
     await screen.getByRole("button", { name: "Split" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => mainWords(useProjectStore.getState().lines[1])?.length).toBe(2);
     await expect.poll(() => document.querySelector("dialog")).toBeNull();
   });
 
@@ -124,7 +125,7 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByLabelText("Apply to all identical words").click();
     await screen.getByRole("button", { name: "Split all" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[1].words?.length).toBe(2);
+    await expect.poll(() => mainWords(useProjectStore.getState().lines[1])?.length).toBe(2);
   });
 
   it("single-word path (apply-to-all off) writes via the divergence-aware flow", async () => {
@@ -138,8 +139,8 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
-    expect(useProjectStore.getState().lines[1].words?.length).toBe(1);
+    await expect.poll(() => mainWords(useProjectStore.getState().lines[0])?.length).toBe(2);
+    expect(mainWords(useProjectStore.getState().lines[1])?.length).toBe(1);
   });
 
   it("persists checkbox state to syllableSplitDefaults after a successful split", async () => {
@@ -178,8 +179,8 @@ describe("TimelineSyllableSplitter apply-to-all wiring", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
-    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
+    await expect.poll(() => mainWords(useProjectStore.getState().lines[0])?.length).toBe(2);
+    const wordsAfter = mainWords(useProjectStore.getState().lines[0]) ?? [];
     expect(wordsAfter[0].end).toBeCloseTo(0.42, 5);
     expect(wordsAfter[1].begin).toBeCloseTo(0.42, 5);
     expect(wordsAfter[0].syllableGroupId).toBeDefined();

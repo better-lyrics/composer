@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { mainWords } from "@/domain/line/voices";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
@@ -28,7 +29,7 @@ describe("ExplicitSuggestionsBanner", () => {
     expect(screen.container.textContent ?? "").toContain("Possibly explicit word");
 
     await screen.getByRole("button", { name: /mark explicit/i }).click();
-    expect(useProjectStore.getState().lines[0].words?.[0].explicit).toBe(true);
+    expect(mainWords(useProjectStore.getState().lines[0])?.[0].explicit).toBe(true);
   });
 
   it("opens the review modal for multiple suggestions", async () => {
@@ -69,8 +70,8 @@ describe("ExplicitSuggestionsBanner", () => {
     await screen.getByRole("button", { name: /mark all/i }).click();
 
     const lines = useProjectStore.getState().lines;
-    expect(lines[0].words?.[0].explicit).toBe(true);
-    expect(lines[1].words?.[1].explicit).toBe(true);
+    expect(mainWords(lines[0])?.[0].explicit).toBe(true);
+    expect(mainWords(lines[1])?.[1].explicit).toBe(true);
   });
 
   it("dismissing the single suggestion hides the banner", async () => {

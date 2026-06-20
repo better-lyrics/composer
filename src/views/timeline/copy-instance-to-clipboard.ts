@@ -1,5 +1,6 @@
 import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -24,13 +25,15 @@ function copyInstanceToClipboardAndPreview(lines: LyricLine[], groupId: string, 
 
   for (const lineIdx of instanceLineIndices) {
     const line = lines[lineIdx];
-    if (line.words?.length) {
-      for (const word of line.words) {
+    const main = mainWords(line);
+    if (main?.length) {
+      for (const word of main) {
         entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "word" });
       }
     }
-    if (line.backgroundWords?.length) {
-      for (const word of line.backgroundWords) {
+    const bg = bgWords(line);
+    if (bg?.length) {
+      for (const word of bg) {
         entries.push({ word: { ...word }, lineOffset: lineIdx - minLineIndex, trackType: "bg" });
       }
     }

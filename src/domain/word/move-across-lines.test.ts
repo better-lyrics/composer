@@ -1,7 +1,9 @@
 /**
  * @vitest-environment node
  */
+import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { bgSource, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -55,8 +57,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
+    expect(mainWords(a)?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(mainWords(b)?.map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
   });
 
   it("moves a main word into the background track (main -> bg)", () => {
@@ -94,9 +96,9 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
-    expect(b.backgroundTextSource).toBe("manual");
+    expect(mainWords(a)?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
+    expect(bgWords(b)?.map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
+    expect(bgSource(b)).toBe("manual");
   });
 
   it("moves a background word from line A to line B (bg -> bg)", () => {
@@ -137,8 +139,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
+    expect(bgWords(a)?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(bgWords(b)?.map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
   });
 
   it("moves a background word into the main track (bg -> main)", () => {
@@ -176,8 +178,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
-    expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
+    expect(bgWords(a)?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
+    expect(mainWords(b)?.map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
   });
 
   it("moves two main words from one source into one target", () => {
@@ -222,8 +224,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["three"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
+    expect(mainWords(a)?.map((w) => w.text.trimEnd())).toEqual(["three"]);
+    expect(mainWords(b)?.map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
   });
 
   it("moves words from two different source lines into one target line", () => {
@@ -275,9 +277,9 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
     const a = findById(result.lines, "A");
     const b = findById(result.lines, "B");
     const c = findById(result.lines, "C");
-    expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["a1"]);
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["b2"]);
-    expect(c.words?.map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
+    expect(mainWords(a)?.map((w) => w.text.trimEnd())).toEqual(["a1"]);
+    expect(mainWords(b)?.map((w) => w.text.trimEnd())).toEqual(["b2"]);
+    expect(mainWords(c)?.map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
   });
 });
 
@@ -460,7 +462,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
-    expect(a.text).toBe("alpha gamma");
+    expect(lineText(a)).toBe("alpha gamma");
   });
 
   it("re-derives target-line text after merge", () => {
@@ -493,7 +495,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(result.lines, "B");
-    expect(b.text).toBe("foo world");
+    expect(lineText(b)).toBe("foo world");
   });
 
   it("regenerates syllable group ids on inserted words", () => {
@@ -536,7 +538,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(result.lines, "B");
-    const inserted = b.words?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
+    const inserted = mainWords(b)?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
     expect(inserted).toHaveLength(2);
     for (const w of inserted) expect(w.syllableGroupId).not.toBe("shared");
     expect(inserted[0].syllableGroupId).toBeDefined();
@@ -633,9 +635,9 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const a = findById(result.lines, "A");
-    expect(a.words).toEqual([]);
-    expect(a.begin).toBeUndefined();
-    expect(a.end).toBeUndefined();
+    expect(mainWords(a)).toEqual([]);
+    expect(mainBounds(a)?.begin).toBeUndefined();
+    expect(mainBounds(a)?.end).toBeUndefined();
   });
 });
 
@@ -669,7 +671,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     const b = findById(result.lines, "B");
-    expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["world"]);
+    expect(mainWords(b)?.map((w) => w.text.trimEnd())).toEqual(["world"]);
   });
 
   it("rejects when target line is line-synced and target track is word", () => {

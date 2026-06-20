@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
-const line = (id: string, words?: LyricLine["words"]): LyricLine =>
-  ({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] }) as LyricLine;
+const line = (id: string, words?: WordTiming[]): LyricLine =>
+  reconcileLine({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] });
 
 describe("getLineAndTrackAtY", () => {
   const layout = computeRowLayout({
@@ -12,7 +13,6 @@ describe("getLineAndTrackAtY", () => {
     defaultRowHeight: 40,
     collapsedInstances: {},
     waveformHeight: 100,
-    bgDropZoneHeight: 24,
     groupHeaderHeight: 20,
   });
   const lines = [line("l1"), line("l2")];

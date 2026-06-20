@@ -2,6 +2,8 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, lineText, mainWords } from "@/domain/line/voices";
+import type { WordTiming } from "@/domain/word/timing";
 import { Scroll } from "@/ui/scroll";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
@@ -42,7 +44,7 @@ const WordWithProgress: React.FC<{
 );
 
 const BgWordsRow: React.FC<{
-  backgroundWords: NonNullable<LyricLine["backgroundWords"]>;
+  backgroundWords: WordTiming[];
   lineIndex: number;
   alignmentClass: string;
 }> = ({ backgroundWords, lineIndex, alignmentClass }) => (
@@ -84,9 +86,10 @@ const MiniPreviewLine: React.FC<{
     />
   );
 
-  const words = line.words ?? [];
-  const bgWords = line.backgroundWords?.length ? (
-    <BgWordsRow backgroundWords={line.backgroundWords} lineIndex={lineIndex} alignmentClass={alignmentClass} />
+  const words = mainWords(line) ?? [];
+  const lineBgWords = bgWords(line);
+  const bgWordsRow = lineBgWords?.length ? (
+    <BgWordsRow backgroundWords={lineBgWords} lineIndex={lineIndex} alignmentClass={alignmentClass} />
   ) : null;
 
   if (granularity === "line") {
@@ -101,7 +104,7 @@ const MiniPreviewLine: React.FC<{
         <div className="flex items-center gap-2 text-sm font-medium">
           {alignment === "left" && AgentDotLeft}
           <span className="relative block truncate">
-            <span className="text-composer-text-muted">{stripSplitCharacter(line.text)}</span>
+            <span className="text-composer-text-muted">{stripSplitCharacter(lineText(line))}</span>
             <span
               className="absolute inset-0 text-composer-accent-text truncate"
               data-word-begin={timing?.begin ?? 0}
@@ -109,12 +112,12 @@ const MiniPreviewLine: React.FC<{
               data-line-idx={lineIndex}
               style={{ clipPath: "inset(0 100% 0 0)" }}
             >
-              {stripSplitCharacter(line.text)}
+              {stripSplitCharacter(lineText(line))}
             </span>
           </span>
           {alignment === "right" && AgentDotRight}
         </div>
-        {bgWords}
+        {bgWordsRow}
       </div>
     );
   }
@@ -139,14 +142,14 @@ const MiniPreviewLine: React.FC<{
                 lineIndex={lineIndex}
               />
             ))
-          : splitIntoWords(line.text).map((word, idx) => (
+          : splitIntoWords(lineText(line)).map((word, idx) => (
               <span key={`${idx}-${word}`} className="text-composer-text-muted">
                 {word}{" "}
               </span>
             ))}
         {alignment === "right" && AgentDotRight}
       </div>
-      {bgWords}
+      {bgWordsRow}
     </div>
   );
 };

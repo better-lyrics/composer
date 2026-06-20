@@ -1,24 +1,17 @@
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { type Bounds, firstBegin, lastEnd } from "@/domain/word/bounds";
+import { bgVoice, mainVoice } from "@/domain/line/voices";
+import type { Bounds } from "@/domain/word/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { voiceBounds } from "@/domain/voice/bounds";
 
 // -- Functions ----------------------------------------------------------------
 
 function mainBounds(line: LyricLine): Bounds | null {
-  if (isWordSynced(line)) {
-    const words = line.words!;
-    return { begin: firstBegin(words), end: lastEnd(words) };
-  }
-  if (isLineSynced(line)) {
-    return { begin: line.begin, end: line.end };
-  }
-  return null;
+  return voiceBounds(mainVoice(line));
 }
 
 function bgBounds(line: LyricLine): Bounds | null {
-  if (!line.backgroundWords?.length) return null;
-  const bg = line.backgroundWords;
-  return { begin: firstBegin(bg), end: lastEnd(bg) };
+  const bg = bgVoice(line);
+  return bg !== null ? voiceBounds(bg) : null;
 }
 
 function effectiveBounds(line: LyricLine): Bounds | null {

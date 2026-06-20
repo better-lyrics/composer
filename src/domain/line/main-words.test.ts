@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { applyMainWordEdit, mainWordEditFields } from "@/domain/line/main-words";
-import type { LyricLine } from "@/domain/line/model";
+import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { lineText, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 
-const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
-  ({
+const baseLine = (overrides: Partial<LooseLine> = {}): LyricLine =>
+  reconcileLine({
     id: "l1",
     agentId: "a1",
     text: "hello world",
@@ -13,14 +14,14 @@ const baseLine = (overrides: Partial<LyricLine> = {}): LyricLine =>
       { text: "world", begin: 0.5, end: 1 },
     ],
     ...overrides,
-  }) as LyricLine;
+  });
 
 describe("applyMainWordEdit", () => {
   describe("happy paths", () => {
     it("sets the new words", () => {
       const words: WordTiming[] = [{ text: "hey", begin: 0, end: 0.5 }];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.words).toEqual(words);
+      expect(mainWords(result)).toEqual(words);
     });
     it("re-derives text from the new words", () => {
       const words: WordTiming[] = [
@@ -28,7 +29,7 @@ describe("applyMainWordEdit", () => {
         { text: "hello", begin: 0.5, end: 1 },
       ];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.text).toBe("world hello");
+      expect(lineText(result)).toBe("world hello");
     });
   });
 
@@ -36,7 +37,7 @@ describe("applyMainWordEdit", () => {
     it("clears words and begin/end when given an empty array (reconcileLine semantics)", () => {
       const line = baseLine();
       const result = applyMainWordEdit(line, []);
-      expect(result.words).toEqual([]);
+      expect(mainWords(result)).toEqual([]);
     });
     it("preserves agentId, groupId, instanceIdx, and other non-timing fields", () => {
       const line = baseLine({ groupId: "g1", instanceIdx: 2, templateLineIdx: 0 });
@@ -61,7 +62,7 @@ describe("applyMainWordEdit", () => {
         { text: "b", begin: 0.5, end: 1 },
       ];
       const result = applyMainWordEdit(baseLine(), words);
-      expect(result.text).toBe(reconstructLineText(words, getSplitCharacter()));
+      expect(lineText(result)).toBe(reconstructLineText(words, getSplitCharacter()));
     });
   });
 });
@@ -97,8 +98,8 @@ describe("mainWordEditFields", () => {
       ];
       const direct = applyMainWordEdit(baseLine(), words);
       const fields = mainWordEditFields(words);
-      expect(direct.text).toBe(fields.text);
-      expect(direct.words).toEqual(fields.words);
+      expect(lineText(direct)).toBe(fields.text);
+      expect(mainWords(direct)).toEqual(fields.words);
     });
 
     it("does not mutate the input words array", () => {

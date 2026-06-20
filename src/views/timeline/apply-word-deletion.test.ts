@@ -1,14 +1,16 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { describe, expect, it } from "vitest";
 import { applyWordDeletion, type DeletionSelection } from "./apply-word-deletion";
 
 describe("applyWordDeletion", () => {
   it("removes selected words from a word-timed line, leaving the line in place", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "I love you",
         agentId: "v1",
@@ -17,17 +19,17 @@ describe("applyWordDeletion", () => {
           { text: "love ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 1 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words?.map((w) => w.text)).toEqual(["I ", "you"]);
+    expect(mainWords(result[0])?.map((w) => w.text)).toEqual(["I ", "you"]);
   });
 
   it("leaves a word-timed line in place with empty words AND clears begin/end when ALL words are deleted", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "I love",
         agentId: "v1",
@@ -35,7 +37,7 @@ describe("applyWordDeletion", () => {
           { text: "I ", begin: 0, end: 0.3 },
           { text: "love", begin: 0.3, end: 0.6 },
         ],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [
       { lineId: "l1", type: "word", wordIndex: 0 },
@@ -43,44 +45,44 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
-    expect(result[0].text).toBe("I love");
+    expect(mainWords(result[0])).toEqual([]);
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
+    expect(lineText(result[0])).toBe("I love");
   });
 
   it("clears begin/end on a word-timed line with no line-level timing too", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "I",
         agentId: "v1",
         words: [{ text: "I", begin: 0, end: 1 }],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
-    expect(result[0].begin).toBeUndefined();
+    expect(mainWords(result[0])).toEqual([]);
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
   });
 
   it("clears a line-synced line's timing (no longer renders as line-synced) when synthetic word is deleted", () => {
-    const lines: LyricLine[] = [{ id: "l1", text: "I love you", agentId: "v1", begin: 1, end: 2 }];
+    const lines: LyricLine[] = [reconcileLine({ id: "l1", text: "I love you", agentId: "v1", begin: 1, end: 2 })];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "word", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].text).toBe("I love you");
-    expect(result[0].words).toBeUndefined();
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(lineText(result[0])).toBe("I love you");
+    expect(mainWords(result[0])).toBeUndefined();
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
   });
 
   it("clears multiple line-synced lines' timing when marquee-deleted (lines stay in project)", () => {
     const lines: LyricLine[] = [
-      { id: "l1", text: "first", agentId: "v1", begin: 0, end: 1 },
-      { id: "l2", text: "second", agentId: "v1", begin: 1, end: 2 },
-      { id: "l3", text: "third", agentId: "v1", begin: 2, end: 3 },
+      reconcileLine({ id: "l1", text: "first", agentId: "v1", begin: 0, end: 1 }),
+      reconcileLine({ id: "l2", text: "second", agentId: "v1", begin: 1, end: 2 }),
+      reconcileLine({ id: "l3", text: "third", agentId: "v1", begin: 2, end: 3 }),
     ];
     const sel: DeletionSelection[] = [
       { lineId: "l1", type: "word", wordIndex: 0 },
@@ -90,16 +92,16 @@ describe("applyWordDeletion", () => {
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(3);
     for (const line of result) {
-      expect(line.begin).toBeUndefined();
-      expect(line.end).toBeUndefined();
-      expect(line.words).toBeUndefined();
+      expect(mainBounds(line)?.begin).toBeUndefined();
+      expect(mainBounds(line)?.end).toBeUndefined();
+      expect(mainWords(line)).toBeUndefined();
     }
   });
 
   it("preserves line ordering and edits multiple lines without removing any", () => {
     const lines: LyricLine[] = [
-      { id: "keep1", text: "intact", agentId: "v1", begin: 0, end: 1 },
-      {
+      reconcileLine({ id: "keep1", text: "intact", agentId: "v1", begin: 0, end: 1 }),
+      reconcileLine({
         id: "edit",
         text: "I love",
         agentId: "v1",
@@ -107,9 +109,9 @@ describe("applyWordDeletion", () => {
           { text: "I ", begin: 1, end: 1.3 },
           { text: "love", begin: 1.3, end: 1.6 },
         ],
-      },
-      { id: "drop", text: "to clear", agentId: "v1", begin: 2, end: 3 },
-      { id: "keep2", text: "intact 2", agentId: "v1", begin: 3, end: 4 },
+      }),
+      reconcileLine({ id: "drop", text: "to clear", agentId: "v1", begin: 2, end: 3 }),
+      reconcileLine({ id: "keep2", text: "intact 2", agentId: "v1", begin: 3, end: 4 }),
     ];
     const sel: DeletionSelection[] = [
       { lineId: "edit", type: "word", wordIndex: 0 },
@@ -117,35 +119,35 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel);
     expect(result.map((l) => l.id)).toEqual(["keep1", "edit", "drop", "keep2"]);
-    expect(result[1].words?.map((w) => w.text)).toEqual(["love"]);
-    expect(result[2].begin).toBeUndefined();
-    expect(result[2].end).toBeUndefined();
-    expect(result[2].words).toBeUndefined();
-    expect(result[2].text).toBe("to clear");
+    expect(mainWords(result[1])?.map((w) => w.text)).toEqual(["love"]);
+    expect(mainBounds(result[2])?.begin).toBeUndefined();
+    expect(mainBounds(result[2])?.end).toBeUndefined();
+    expect(mainWords(result[2])).toBeUndefined();
+    expect(lineText(result[2])).toBe("to clear");
   });
 
   it("removes selected bg words and clears the bg fields when none remain", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "main",
         agentId: "v1",
         words: [{ text: "main", begin: 0, end: 1 }],
         backgroundText: "bg",
         backgroundWords: [{ text: "bg", begin: 0, end: 1 }],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].words?.length).toBe(1);
+    expect(bgWords(result[0])).toBeUndefined();
+    expect(bgText(result[0])).toBeUndefined();
+    expect(mainWords(result[0])?.length).toBe(1);
   });
 
   it("does not remove the line when only some bg words are removed", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "main",
         agentId: "v1",
@@ -155,18 +157,18 @@ describe("applyWordDeletion", () => {
           { text: "oh", begin: 0, end: 0.5 },
           { text: "oh", begin: 0.5, end: 1 },
         ],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [{ lineId: "l1", type: "bg", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
-    expect(result[0].backgroundText).toBe("oh");
+    expect(bgWords(result[0])?.map((w) => w.text)).toEqual(["oh"]);
+    expect(bgText(result[0])).toBe("oh");
   });
 
   it("clears backgroundTextSource when the deletion empties the background", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "main",
         agentId: "v1",
@@ -174,17 +176,17 @@ describe("applyWordDeletion", () => {
         backgroundText: "bg",
         backgroundWords: [{ text: "bg", begin: 0, end: 1 }],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
-    expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].backgroundText).toBeUndefined();
-    expect(result[0].backgroundTextSource).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
+    expect(bgText(result[0])).toBeUndefined();
+    expect(bgSource(result[0])).toBeUndefined();
   });
 
   it("stamps backgroundTextSource manual when a partial bg deletion leaves words behind", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "main",
         agentId: "v1",
@@ -195,16 +197,16 @@ describe("applyWordDeletion", () => {
           { text: "oh", begin: 0.5, end: 1 },
         ],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "bg", wordIndex: 0 }]);
-    expect(result[0].backgroundWords?.map((w) => w.text)).toEqual(["oh"]);
-    expect(result[0].backgroundTextSource).toBe("manual");
+    expect(bgWords(result[0])?.map((w) => w.text)).toEqual(["oh"]);
+    expect(bgSource(result[0])).toBe("manual");
   });
 
   it("leaves backgroundTextSource untouched when only main words are deleted", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "I love",
         agentId: "v1",
@@ -218,24 +220,24 @@ describe("applyWordDeletion", () => {
           { text: "oh", begin: 0.5, end: 1 },
         ],
         backgroundTextSource: "extraction",
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 0 }]);
-    expect(result[0].words?.map((w) => w.text)).toEqual(["love"]);
-    expect(result[0].backgroundWords?.length).toBe(2);
-    expect(result[0].backgroundTextSource).toBe("extraction");
+    expect(mainWords(result[0])?.map((w) => w.text)).toEqual(["love"]);
+    expect(bgWords(result[0])?.length).toBe(2);
+    expect(bgSource(result[0])).toBe("extraction");
   });
 
   it("leaves a word-timed line empty (not removed) when all main + bg words are deleted in one pass", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "I",
         agentId: "v1",
         words: [{ text: "I", begin: 0, end: 1 }],
         backgroundText: "ah",
         backgroundWords: [{ text: "ah", begin: 0, end: 1 }],
-      },
+      }),
     ];
     const sel: DeletionSelection[] = [
       { lineId: "l1", type: "word", wordIndex: 0 },
@@ -243,19 +245,19 @@ describe("applyWordDeletion", () => {
     ];
     const result = applyWordDeletion(lines, sel);
     expect(result).toHaveLength(1);
-    expect(result[0].words).toEqual([]);
-    expect(result[0].backgroundWords).toBeUndefined();
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(mainWords(result[0])).toEqual([]);
+    expect(bgWords(result[0])).toBeUndefined();
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
   });
 
   it("returns the original array when there are no selections", () => {
-    const lines: LyricLine[] = [{ id: "l1", text: "x", agentId: "v1" }];
+    const lines: LyricLine[] = [reconcileLine({ id: "l1", text: "x", agentId: "v1" })];
     expect(applyWordDeletion(lines, [])).toBe(lines);
   });
 
   it("ignores selections referencing missing lines", () => {
-    const lines: LyricLine[] = [{ id: "l1", text: "x", agentId: "v1", begin: 0, end: 1 }];
+    const lines: LyricLine[] = [reconcileLine({ id: "l1", text: "x", agentId: "v1", begin: 0, end: 1 })];
     const sel: DeletionSelection[] = [{ lineId: "ghost", type: "word", wordIndex: 0 }];
     const result = applyWordDeletion(lines, sel);
     expect(result).toEqual(lines);
@@ -263,7 +265,7 @@ describe("applyWordDeletion", () => {
 
   it("preserves pre-existing intra-group gaps after deleting a non-group word", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "l1",
         text: "every world",
         agentId: "v1",
@@ -273,11 +275,11 @@ describe("applyWordDeletion", () => {
           { text: "y", begin: 0.5, end: 0.7, syllableGroupId: "g1" },
           { text: "world", begin: 0.7, end: 1 },
         ],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "l1", type: "word", wordIndex: 3 }]);
-    expect(result[0].words?.[0].end).toBe(0.2);
-    expect(result[0].words?.[1].begin).toBe(0.3);
+    expect(mainWords(result[0])?.[0].end).toBe(0.2);
+    expect(mainWords(result[0])?.[1].begin).toBe(0.3);
   });
 });
 
@@ -292,7 +294,7 @@ describe("applyWordDeletion", () => {
 describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", () => {
   it("strips group attrs when a single-line instance has its only word deleted", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "x",
         agentId: "v1",
@@ -300,7 +302,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "x", begin: 5, end: 6 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     expect(result[0].groupId).toBeUndefined();
@@ -308,16 +310,16 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
     expect(result[0].templateLineIdx).toBeUndefined();
     // Row remains as an empty placeholder (text and id preserved)
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("x");
+    expect(lineText(result[0])).toBe("x");
     // Existing applyWordDeletion contract: words becomes [] after deleting all words
-    expect(result[0].words).toEqual([]);
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(mainWords(result[0])).toEqual([]);
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
   });
 
   it("strips group attrs from ALL lines of a multi-line instance when every line is emptied", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "A1",
         text: "I love",
         agentId: "v1",
@@ -328,8 +330,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
           { text: "I ", begin: 5, end: 5.5 },
           { text: "love", begin: 5.5, end: 6 },
         ],
-      },
-      {
+      }),
+      reconcileLine({
         id: "A2",
         text: "you",
         agentId: "v1",
@@ -337,7 +339,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 1,
         words: [{ text: "you", begin: 6, end: 7 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [
       { lineId: "A1", type: "word", wordIndex: 0 },
@@ -352,7 +354,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
   it("keeps group attrs intact when only SOME lines of a multi-line instance are emptied", () => {
     // A1 gets emptied, A2 still has words. Instance is not fully empty → keep linked.
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "A1",
         text: "I love",
         agentId: "v1",
@@ -360,8 +362,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "I love", begin: 5, end: 6 }],
-      },
-      {
+      }),
+      reconcileLine({
         id: "A2",
         text: "you",
         agentId: "v1",
@@ -369,19 +371,21 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 1,
         words: [{ text: "you", begin: 6, end: 7 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }]);
     // A1 is now empty but A2 still has words → instance stays alive
     expect(result.find((l) => l.id === "A1")?.groupId).toBe("cannon");
     expect(result.find((l) => l.id === "A2")?.groupId).toBe("cannon");
-    expect(result.find((l) => l.id === "A1")?.words).toEqual([]);
-    expect(result.find((l) => l.id === "A2")?.words).toEqual([{ text: "you", begin: 6, end: 7 }]);
+    const a1 = result.find((l) => l.id === "A1");
+    const a2 = result.find((l) => l.id === "A2");
+    expect(a1 && mainWords(a1)).toEqual([]);
+    expect(a2 && mainWords(a2)).toEqual([{ text: "you", begin: 6, end: 7 }]);
   });
 
   it("strips group attrs when a single-line instance has only BG words and they all get deleted", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "main",
         agentId: "v1",
@@ -393,19 +397,19 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
           { text: "ah ", begin: 5, end: 5.5 },
           { text: "ah", begin: 5.5, end: 6 },
         ],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [
       { lineId: "L1", type: "bg", wordIndex: 0 },
       { lineId: "L1", type: "bg", wordIndex: 1 },
     ]);
     expect(result[0].groupId).toBeUndefined();
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(bgWords(result[0])).toBeUndefined();
   });
 
   it("keeps group attrs when a line has main + bg and only one track is emptied (other still has content)", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "main",
         agentId: "v1",
@@ -415,18 +419,18 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         words: [{ text: "main", begin: 5, end: 6 }],
         backgroundText: "ah",
         backgroundWords: [{ text: "ah", begin: 5, end: 5.5 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     // Main words gone but bg still present → not fully empty → instance stays
     expect(result[0].groupId).toBe("cannon");
-    expect(result[0].words).toEqual([]);
-    expect(result[0].backgroundWords?.length).toBe(1);
+    expect(mainWords(result[0])).toEqual([]);
+    expect(bgWords(result[0])?.length).toBe(1);
   });
 
   it("strips group attrs from a line-synced (no words, has begin/end) instance when its single line is deleted", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "verse",
         agentId: "v1",
@@ -435,18 +439,18 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         templateLineIdx: 0,
         begin: 5,
         end: 7,
-      },
+      }),
     ];
     // Selecting wordIndex 0 on a line-synced row deletes the synthetic word AND clears begin/end
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     expect(result[0].groupId).toBeUndefined();
-    expect(result[0].begin).toBeUndefined();
-    expect(result[0].end).toBeUndefined();
+    expect(mainBounds(result[0])?.begin).toBeUndefined();
+    expect(mainBounds(result[0])?.end).toBeUndefined();
   });
 
   it("handles two separate instances both becoming empty in one deletion call", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "A1",
         text: "x",
         agentId: "v1",
@@ -454,8 +458,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ text: "x", begin: 5, end: 6 }],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B1",
         text: "y",
         agentId: "v1",
@@ -463,7 +467,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "y", begin: 10, end: 11 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [
       { lineId: "A1", type: "word", wordIndex: 0 },
@@ -474,7 +478,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
 
   it("does NOT touch instances that weren't part of the deletion selection", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "A1",
         text: "x",
         agentId: "v1",
@@ -482,8 +486,8 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ text: "x", begin: 5, end: 6 }],
-      },
-      {
+      }),
+      reconcileLine({
         id: "B1",
         text: "y",
         agentId: "v1",
@@ -491,7 +495,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         instanceIdx: 1,
         templateLineIdx: 0,
         words: [{ text: "y", begin: 10, end: 11 }],
-      },
+      }),
     ];
     // Only delete A1's word, not B1's
     const result = applyWordDeletion(lines, [{ lineId: "A1", type: "word", wordIndex: 0 }]);
@@ -500,17 +504,19 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
   });
 
   it("non-grouped lines that get fully emptied: nothing to strip, just left as empty rows", () => {
-    const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] }];
+    const lines: LyricLine[] = [
+      reconcileLine({ id: "L1", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] }),
+    ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     expect(result[0].groupId).toBeUndefined();
-    expect(result[0].words).toEqual([]);
+    expect(mainWords(result[0])).toEqual([]);
     expect(result[0].id).toBe("L1");
-    expect(result[0].text).toBe("x");
+    expect(lineText(result[0])).toBe("x");
   });
 
   it("preserves the detached flag's semantics when stripping (detached lines also clear it)", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "x",
         agentId: "v1",
@@ -519,7 +525,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
         templateLineIdx: 0,
         detached: true,
         words: [{ text: "x", begin: 5, end: 6 }],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }]);
     expect(result[0].groupId).toBeUndefined();
@@ -528,7 +534,7 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
 
   it("partial deletion (some words remain): instance stays linked", () => {
     const lines: LyricLine[] = [
-      {
+      reconcileLine({
         id: "L1",
         text: "I love you",
         agentId: "v1",
@@ -540,10 +546,10 @@ describe("applyWordDeletion · auto-cleanup of fully-empty grouped instances", (
           { text: "love ", begin: 5.3, end: 5.6 },
           { text: "you", begin: 5.6, end: 6 },
         ],
-      },
+      }),
     ];
     const result = applyWordDeletion(lines, [{ lineId: "L1", type: "word", wordIndex: 1 }]);
     expect(result[0].groupId).toBe("cannon");
-    expect(result[0].words?.length).toBe(2);
+    expect(mainWords(result[0])?.length).toBe(2);
   });
 });

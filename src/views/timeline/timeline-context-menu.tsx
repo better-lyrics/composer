@@ -8,6 +8,7 @@ import { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
 import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
+import type { SplitVoice } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
@@ -49,6 +50,13 @@ function MenuDivider() {
   return <div className="my-1 border-t border-composer-border" />;
 }
 
+function splitIntoWordsLabel(voice: SplitVoice, count: number): string {
+  if (voice === "bg") {
+    return count > 1 ? `Split ${count} backgrounds into words` : "Split background into words";
+  }
+  return count > 1 ? `Split ${count} lines into words` : "Split into words";
+}
+
 // -- Component ----------------------------------------------------------------
 
 const TimelineContextMenu: React.FC = () => {
@@ -67,11 +75,13 @@ const TimelineContextMenu: React.FC = () => {
     lines,
     explicitToggleContext,
     gutterLineGroupInfo,
+    gutterBackgroundInfo,
     groupableSelection,
     mergeInfo,
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeBackgroundHereInfo,
     splitIntoWordsInfo,
   } = targets;
 
@@ -89,8 +99,10 @@ const TimelineContextMenu: React.FC = () => {
 
   const {
     handlePlaceLineHere,
+    handlePlaceBackgroundHere,
     handleAddLine,
     handleDeleteLine,
+    handleRemoveBackground,
     handleDetachLine,
     handleAssignAgent,
     handleSplitIntoWords,
@@ -197,11 +209,7 @@ const TimelineContextMenu: React.FC = () => {
               <>
                 <MenuDivider />
                 <MenuItem
-                  label={
-                    splitIntoWordsInfo.count > 1
-                      ? `Split ${splitIntoWordsInfo.count} lines into words`
-                      : "Split into words"
-                  }
+                  label={splitIntoWordsLabel(splitIntoWordsInfo.voice, splitIntoWordsInfo.count)}
                   shortcut={getEffectiveKeysArray("timeline.splitIntoWords")}
                   onClick={handleSplitIntoWords}
                 />
@@ -253,6 +261,7 @@ const TimelineContextMenu: React.FC = () => {
           <>
             <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
             {placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
+            {placeBackgroundHereInfo && <MenuItem label="Place background here" onClick={handlePlaceBackgroundHere} />}
             {groupableSelection && (
               <>
                 <MenuDivider />
@@ -323,6 +332,7 @@ const TimelineContextMenu: React.FC = () => {
                 <MenuDivider />
               </>
             )}
+            {gutterBackgroundInfo && <MenuItem label="Remove background" onClick={handleRemoveBackground} danger />}
             <MenuItem label="Delete line" onClick={handleDeleteLine} danger />
           </>
         )}

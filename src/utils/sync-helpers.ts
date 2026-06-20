@@ -142,13 +142,6 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
-function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
-  if (!line.backgroundText) return null;
-  const timing = effectiveBounds(line);
-  if (!timing) return null;
-  return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
-}
-
 // -- Tap and hold commit ------------------------------------------------------
 
 function commitTappedWord(
@@ -182,7 +175,6 @@ function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: st
 export {
   commitHeldWord,
   commitTappedWord,
-  createBgWordsFromLine,
   createInitialBgWords,
   distributeWordsInLine,
   getNudgeAmount,

@@ -51,7 +51,17 @@ const FORBIDDEN: ForbiddenPattern[] = [
   {
     name: "inline line-synced check",
     regex: /\.begin !== undefined &&\s*[\w.]+\.end !== undefined/,
-    use: "isLineSynced from @/domain/line/predicates",
+    use: "isLineSynced from @/domain/line/predicates (or isLineSyncedVoice / mainBounds / bgBounds for the voice form)",
+  },
+  {
+    name: "inline nested main-voice access",
+    regex: /\.main(?=[.?[])/,
+    use: "the voice seam (mainVoice / mainWords / lineText) from @/domain/line/voices",
+  },
+  {
+    name: "inline nested background-voice access",
+    regex: /\.background(?=[.?[])/,
+    use: "the voice seam (bgVoice / bgWords / bgText / bgSource) from @/domain/line/voices",
   },
   {
     name: "inline first-word-begin access",
@@ -62,6 +72,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     name: "inline last-word-end access",
     regex: /words\[words\.length - 1\]\.end\b/,
     use: "lastEnd from @/domain/word/bounds",
+  },
+  {
+    name: "inline background word-bounds access",
+    regex: /\.background(?:\?\.|\.)words\[[^\]]*\]\.(begin|end)\b/,
+    use: "voiceBounds / firstBegin / lastEnd from @/domain/voice and @/domain/word/bounds",
   },
   {
     name: "inline standalone check",

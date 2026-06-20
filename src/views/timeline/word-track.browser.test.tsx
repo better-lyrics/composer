@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { WordTrack } from "@/views/timeline/word-track";
+import { mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -332,7 +333,7 @@ describe("WordTrack", () => {
       new MouseEvent("dblclick", { bubbles: true, clientX: rect.left + 250, clientY: rect.top + 10 }),
     );
 
-    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
-    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["hello ", "world ", "..."]);
+    await expect.poll(() => mainWords(useProjectStore.getState().lines[0])?.length).toBe(3);
+    expect(mainWords(useProjectStore.getState().lines[0])?.map((w) => w.text)).toEqual(["hello ", "world ", "..."]);
   });
 });

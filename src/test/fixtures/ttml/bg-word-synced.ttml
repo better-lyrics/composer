@@ -1,0 +1,27 @@
+<tt xmlns="http://www.w3.org/ns/ttml"
+    xmlns:ttm="http://www.w3.org/ns/ttml#metadata"
+    xmlns:itunes="http://music.apple.com/lyric-ttml-internal"
+    itunes:timing="Word"
+    xml:lang="en">
+  <head>
+    <metadata>
+      <ttm:agent type="person" xml:id="v1"/>
+    </metadata>
+  </head>
+  <body dur="00:42.000">
+    <div begin="00:30.000" end="00:42.000">
+      <p begin="00:30.000" end="00:34.500" itunes:key="L1" ttm:agent="v1">
+        <span begin="00:30.000" end="00:31.000">Take </span><span begin="00:31.000" end="00:32.000">me </span><span begin="00:32.000" end="00:33.500">higher</span>
+        <span ttm:role="x-bg" begin="00:33.500" end="00:34.500">
+          <span begin="00:33.500" end="00:34.000">(ooh </span><span begin="00:34.000" end="00:34.500">yeah)</span>
+        </span>
+      </p>
+      <p begin="00:35.000" end="00:40.000" itunes:key="L2" ttm:agent="v1">
+        <span begin="00:35.000" end="00:37.000">Light </span><span begin="00:37.000" end="00:40.000">'em</span>
+        <span ttm:role="x-bg">
+          <span begin="00:38.000" end="00:39.000">(burn </span><span begin="00:39.000" end="00:40.000">it)</span>
+        </span>
+      </p>
+    </div>
+  </body>
+</tt>

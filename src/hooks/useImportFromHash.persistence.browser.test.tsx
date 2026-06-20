@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { bgVoice, mainWords } from "@/domain/line/voices";
+import { mainBounds } from "@/domain/line/bounds";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getHashImportSettled, getPersistenceSettled } from "@/lib/persistence-settled";
@@ -7,6 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { allowConsole } from "@/test/console-guard";
 import { seedProject } from "@/test/idb";
 import { render } from "@/test/render";
+import type { WordTiming } from "@/domain/word/timing";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -156,5 +159,81 @@ describe("usePersistence + useImportFromHash — hash overrides persistence", ()
     await waitForBootSettled();
 
     expect(useProjectStore.getState().granularity).toBe("word");
+  });
+});
+
+// -- Legacy flat-line migration on hash import --------------------------------
+
+const FLAT_WORDS: WordTiming[] = [
+  { text: "Hel", begin: 1.2, end: 1.6 },
+  { text: "lo", begin: 1.6, end: 2.1 },
+];
+
+const FLAT_BG_WORDS: WordTiming[] = [
+  { text: "ah ", begin: 6.0, end: 7.2 },
+  { text: "oh", begin: 7.2, end: 8.5 },
+];
+
+function flatLinesPayload() {
+  return {
+    metadata: { title: IMPORTED_TITLE, artist: "", album: "", duration: 0 },
+    agents: [IMPORTED_AGENT],
+    lines: [
+      { id: "fl1", agentId: "v1", text: "Hello", words: FLAT_WORDS },
+      { id: "fl2", agentId: "v1", text: "Line synced", begin: 3.0, end: 7.5 },
+      { id: "fl3", agentId: "v1", text: "Main", begin: 3.0, end: 7.5, backgroundWords: FLAT_BG_WORDS },
+    ],
+    granularity: "word" as const,
+  };
+}
+
+describe("useImportFromHash · converter payloads may be flat", () => {
+  beforeEach(() => {
+    setQuery("");
+    setHash("");
+  });
+
+  afterEach(() => {
+    setQuery("");
+    setHash("");
+  });
+
+  it("migrates old flat converter lines into nested voices with timing intact", async () => {
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload(flatLinesPayload()));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    const lines = useProjectStore.getState().lines;
+    expect(lines.map((l) => l.id)).toEqual(["fl1", "fl2", "fl3"]);
+
+    const [wordLine, lineLine, bgWordsLine] = lines;
+    expect(mainWords(wordLine)).toEqual(FLAT_WORDS);
+    expect(mainBounds(lineLine)).toEqual({ begin: 3.0, end: 7.5 });
+    const bg = bgVoice(bgWordsLine);
+    if (bg === null || !("words" in bg)) throw new Error("expected a word-synced background");
+    expect(bg.words).toEqual(FLAT_BG_WORDS);
+  });
+
+  it("aborts the import and keeps the saved project when a line is malformed", async () => {
+    allowConsole(/Failed to import from hash/);
+    await seedProject(savedSnapshot());
+    autoAcceptHashConfirm();
+    setHash(
+      encodeHashPayload({
+        metadata: { title: IMPORTED_TITLE, artist: "", album: "", duration: 0 },
+        agents: [IMPORTED_AGENT],
+        lines: [{ id: "bad", agentId: "v1" }],
+        granularity: "word" as const,
+      }),
+    );
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    const state = useProjectStore.getState();
+    expect(state.metadata.title).toBe(SAVED_TITLE);
+    expect(state.lines.map((l) => l.id)).toEqual([SAVED_LINE.id]);
   });
 });

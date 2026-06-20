@@ -1,8 +1,10 @@
-import type { LyricLine } from "@/domain/line/model";
+import { mainBounds } from "@/domain/line/bounds";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
 
 type UpdateLineWithHistory = (
   id: string,
-  updates: Partial<LyricLine>,
+  updates: Partial<LooseLine>,
   options?: { propagateToSiblings?: boolean },
 ) => void;
 
@@ -13,10 +15,12 @@ function nudgeLineBegin(
   updateLineWithHistory: UpdateLineWithHistory,
 ) {
   const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  if (!line || !isLineSynced(line)) return;
+  const mb = mainBounds(line);
+  if (!mb) return;
 
-  const newBegin = Math.max(0, line.begin + delta);
-  const duration = line.end - line.begin;
+  const newBegin = Math.max(0, mb.begin + delta);
+  const duration = mb.end - mb.begin;
   updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
 }
 
@@ -27,9 +31,11 @@ function setLineBegin(
   updateLineWithHistory: UpdateLineWithHistory,
 ) {
   const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  if (!line || !isLineSynced(line)) return;
+  const mb = mainBounds(line);
+  if (!mb) return;
 
-  const duration = line.end - line.begin;
+  const duration = mb.end - mb.begin;
   updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
 }
 

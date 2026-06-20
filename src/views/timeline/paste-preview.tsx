@@ -4,6 +4,7 @@ import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { cn } from "@/utils/cn";
 import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
@@ -12,6 +13,7 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
+import { ROW_BORDER } from "@/views/timeline/row-geometry";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineIndexAtY, type RowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
@@ -39,8 +41,6 @@ interface GhostWord {
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
-const BG_DROP_ZONE_HEIGHT = 24;
-const BG_BORDER = 1;
 
 // -- Component -----------------------------------------------------------------
 
@@ -73,7 +73,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       });
 
@@ -198,7 +197,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       }),
     [lines, rowHeights, defaultRowHeight, collapsedInstances],
@@ -286,7 +284,7 @@ function checkOverlaps(
     if (newEnd <= newBegin) return true;
 
     const line = lines[lineIdx];
-    const wordsArray = entry.trackType === "word" ? line.words : line.backgroundWords;
+    const wordsArray = entry.trackType === "word" ? mainWords(line) : bgWords(line);
     if (!wordsArray) continue;
 
     for (const existing of wordsArray) {
@@ -328,7 +326,7 @@ function computeGhosts(
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
-      const wordsArray = isBg ? targetLine.backgroundWords : targetLine.words;
+      const wordsArray = isBg ? bgWords(targetLine) : mainWords(targetLine);
       if (wordsArray) {
         for (const existing of wordsArray) {
           if (boundsOverlap({ begin: newBegin, end: newEnd }, existing)) {
@@ -346,11 +344,10 @@ function computeGhosts(
       trackTop = layoutEnd;
       trackHeight = defaultRowHeight;
     } else {
-      const hasBg = !!(targetLine.backgroundWords && targetLine.backgroundWords.length > 0);
-      const bgHeight = hasBg ? (targetPos.height - 1) / 2 : BG_DROP_ZONE_HEIGHT;
-      const mainHeight = targetPos.height - 1 - bgHeight;
+      const mainHeight = targetPos.mainBottom - targetPos.top;
+      const bgHeight = targetPos.top + targetPos.height - targetPos.mainBottom - ROW_BORDER;
       if (isBg) {
-        trackTop = targetPos.top + mainHeight + BG_BORDER;
+        trackTop = targetPos.mainBottom + ROW_BORDER;
         trackHeight = bgHeight;
       } else {
         trackTop = targetPos.top;

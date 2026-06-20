@@ -1,11 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine } from "@/domain/line/model";
+import { bgWords, mainWords } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
+import { BG_DROP_ZONE_HEIGHT, rowHeightOf } from "@/views/timeline/row-geometry";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -18,10 +20,6 @@ import { Virtuoso } from "react-virtuoso";
 interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 }
-
-// -- Constants -----------------------------------------------------------------
-
-const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Component -----------------------------------------------------------------
 
@@ -87,16 +85,17 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!realLine) return;
 
       if (isLineSynced(realLine)) {
-        const lineUpdates: Partial<LyricLine> = {};
+        const lineUpdates: Partial<LooseLine> = {};
         if (updates.begin !== undefined) lineUpdates.begin = updates.begin;
         if (updates.end !== undefined) lineUpdates.end = updates.end;
         updateLineWithHistory(lineId, lineUpdates, { propagateToSiblings: false });
         return;
       }
 
-      if (!realLine.words) return;
+      const realMainWords = mainWords(realLine);
+      if (!realMainWords) return;
       const updatedWords = applyWordPatch(
-        realLine.words,
+        realMainWords,
         wordIndex,
         updates,
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
@@ -116,10 +115,11 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       adjacentUpdates?: Partial<WordTiming>,
     ) => {
       const line = lines.find((l) => l.id === lineId);
-      if (!line?.backgroundWords) return;
+      const lineBgWords = line ? bgWords(line) : undefined;
+      if (!lineBgWords) return;
 
       const updatedWords = applyWordPatch(
-        line.backgroundWords,
+        lineBgWords,
         wordIndex,
         updates,
         adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
@@ -138,8 +138,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!row) return DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT;
       if (row.kind === "group-header") return GROUP_HEADER_HEIGHT;
       const mainHeight = rowHeights[row.line.id] ?? DEFAULT_ROW_HEIGHT;
-      const hasBgWords = row.line.backgroundWords && row.line.backgroundWords.length > 0;
-      return mainHeight + (hasBgWords ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+      return rowHeightOf(row.line, mainHeight);
     },
     [visibleRows, rowHeights],
   );

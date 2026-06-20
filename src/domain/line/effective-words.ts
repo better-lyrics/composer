@@ -1,26 +1,31 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
-import { isLineSynced } from "@/domain/line/predicates";
-import { stripSplitCharacter } from "@/utils/split-character";
+import { reconcileLine, toFlat } from "@/domain/line/model";
+import { bgVoice, mainVoice } from "@/domain/line/voices";
+import { effectiveVoiceWords } from "@/domain/voice/effective-words";
+import { isLineSynced as isLineSyncedVoice } from "@/domain/voice/predicates";
 
 // -- Functions ----------------------------------------------------------------
 
-function effectiveWords(line: LyricLine): WordTiming[] {
-  if (line.words?.length) return line.words;
-  if (isLineSynced(line)) {
-    return [{ text: stripSplitCharacter(line.text), begin: line.begin, end: line.end }];
-  }
-  return [];
-}
-
+// Render-only transform: converts each voice's line-synced timing into a single
+// effective word so the timeline renders both the main and the background as a
+// WordTrack block (symmetric, no bespoke bar). The raw store lines keep their
+// true line-synced timing; only the rendered view changes. The two voices
+// convert independently, so a word-synced-main + line-synced-bg line still gets
+// its background converted.
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
-    if (!isLineSynced(line)) return line;
-    const { begin, end, ...rest } = line;
-    return { ...rest, words: effectiveWords(line) };
+    const main = mainVoice(line);
+    const bg = bgVoice(line);
+    const convertMain = isLineSyncedVoice(main);
+    const convertBg = bg !== null && isLineSyncedVoice(bg);
+    if (!convertMain && !convertBg) return line;
+    const flat = { ...toFlat(line) };
+    if (convertMain) flat.words = effectiveVoiceWords(main);
+    if (convertBg) flat.backgroundWords = effectiveVoiceWords(bg);
+    return reconcileLine(flat);
   });
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { effectiveWords, getEffectiveLines };
+export { getEffectiveLines };

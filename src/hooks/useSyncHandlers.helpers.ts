@@ -1,4 +1,5 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
+import { bgText, bgWords, lineText } from "@/domain/line/voices";
 import { createInitialBgWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
@@ -23,16 +24,17 @@ function prepareSyncWord(
   if (lines.length === 0 || isComplete) return null;
   const line = lines[lineIndex];
   if (!line) return null;
-  const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
+  const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
   const wordText = lineWords[wordIndex];
   if (!wordText) return null;
   const textWithSpace = trailingSpace[wordIndex] ? `${wordText} ` : wordText;
   return { line, lineWords, trailingSpace, textWithSpace };
 }
 
-function withBgSeedIfNeeded<T extends Partial<LyricLine>>(updates: T, line: LyricLine, bgBegin: number): T {
-  if (line.backgroundText && !line.backgroundWords?.length) {
-    updates.backgroundWords = createInitialBgWords(line.backgroundText, bgBegin);
+function withBgSeedIfNeeded<T extends Partial<LooseLine>>(updates: T, line: LyricLine, bgBegin: number): T {
+  const bgTextValue = bgText(line);
+  if (bgTextValue && !bgWords(line)?.length) {
+    updates.backgroundWords = createInitialBgWords(bgTextValue, bgBegin);
   }
   return updates;
 }
@@ -42,7 +44,7 @@ function buildInitialWordUpdates(
   textWithSpace: string,
   begin: number,
   end: number,
-): Partial<LyricLine> {
+): Partial<LooseLine> {
   return withBgSeedIfNeeded({ words: [{ text: textWithSpace, begin, end }] }, line, begin);
 }
 

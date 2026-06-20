@@ -1,4 +1,4 @@
-import { type LineFields, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LineFields, type LyricLine, reconcileLine, toFlat } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -10,7 +10,7 @@ type MainWordFields = Pick<LineFields, "text"> & { words: WordTiming[] };
 // -- Functions ----------------------------------------------------------------
 
 // Spread-friendly partial for the main-word funnel: returns the reconciled
-// `{ words, text }` pair so callers building Partial<LyricLine> updates can
+// `{ words, text }` pair so callers building Partial<LooseLine> updates can
 // Object.assign without first constructing a full line.
 function mainWordEditFields(words: WordTiming[]): MainWordFields {
   return { words, text: reconstructLineText(words, getSplitCharacter()) };
@@ -21,7 +21,7 @@ function mainWordEditFields(words: WordTiming[]): MainWordFields {
 // with the new word order. Edit-view text writes funnel through
 // reconcileMatchedTiming in the opposite direction and do not call this.
 function applyMainWordEdit(line: LyricLine, words: WordTiming[]): LyricLine {
-  return reconcileLine({ ...line, ...mainWordEditFields(words) });
+  return reconcileLine({ ...toFlat(line), ...mainWordEditFields(words) });
 }
 
 // -- Exports ------------------------------------------------------------------

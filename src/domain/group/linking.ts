@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import type { LooseLine, LyricLine } from "@/domain/line/model";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,8 +26,8 @@ function isLinkedSibling(line: LyricLine, scope: LinkScope | null): boolean {
 // The subset of a line update that mirrors onto linked siblings: shared content
 // fields, plus explicit clears of timing arrays (a defined timing value is
 // instance-specific and never propagates).
-function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
-  const linked: Partial<LyricLine> = {};
+function extractLinkedFields(updates: Partial<LooseLine>): Partial<LooseLine> {
+  const linked: Partial<LooseLine> = {};
   if ("text" in updates) linked.text = updates.text;
   if ("agentId" in updates) linked.agentId = updates.agentId;
   if ("backgroundText" in updates) linked.backgroundText = updates.backgroundText;
