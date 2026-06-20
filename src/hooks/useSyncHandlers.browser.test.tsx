@@ -115,6 +115,35 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
   });
 
+  it("regression: skips an empty line and still patches the word before it (issue #114)", async () => {
+    useProjectStore
+      .getState()
+      .setLines([
+        createLine({ id: "l0", text: "Hello world" }),
+        createLine({ id: "lblank", text: "" }),
+        createLine({ id: "l2", text: "Foo bar" }),
+      ]);
+
+    const { result, rerender, act, getSyncState } = await mountSyncHandlers();
+
+    await act(() => result.current.handleTap());
+    await rerender({ syncState: getSyncState(), currentTime: 0.5 });
+    await act(() => result.current.handleTap());
+
+    expect(getSyncState().position.lineIndex).toBe(2);
+
+    await rerender({ syncState: getSyncState(), currentTime: 1.25 });
+    await act(() => result.current.handleTap());
+
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].words).toHaveLength(2);
+    expect(lines[0].words?.[1].end).toBe(1.25);
+    expect(lines[1].text).toBe("");
+    expect(lines[1].words).toBeUndefined();
+    expect(lines[2].text).toBe("Foo bar");
+    expect(lines[2].words).toHaveLength(1);
+  });
+
   it("preserves prev-line text when patching a partially synced previous line on cross-line tap", async () => {
     useProjectStore.getState().setLines([
       createLine({

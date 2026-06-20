@@ -15,7 +15,9 @@ import {
 import {
   advanceSyncPosition,
   buildInitialWordUpdates,
+  nextSyncableLineIndex,
   prepareSyncWord,
+  prevSyncableLine,
   triggerPulse,
   withBgSeedIfNeeded,
 } from "@/hooks/useSyncHandlers.helpers";
@@ -56,7 +58,7 @@ function useSyncHandlers({
 
   const { lineIndex, wordIndex } = syncState.position;
   const currentLine = lines[lineIndex];
-  const prevLine = lines[lineIndex - 1];
+  const prevLine = prevSyncableLine(lines, lineIndex);
   const isComplete = lineIndex >= lines.length && lines.length > 0;
 
   const handleTapWord = useCallback(() => {
@@ -85,7 +87,7 @@ function useSyncHandlers({
     }
 
     triggerPulse(setShowPulse);
-    advanceSyncPosition(setSyncState, lineIndex, wordIndex, lineWords.length);
+    advanceSyncPosition(setSyncState, lines, lineIndex, wordIndex, lineWords.length);
   }, [
     lines,
     lineIndex,
@@ -115,7 +117,7 @@ function useSyncHandlers({
     triggerPulse(setShowPulse);
     setSyncState((prev) => ({
       ...prev,
-      position: { lineIndex: lineIndex + 1, wordIndex: 0 },
+      position: { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 },
     }));
   }, [
     lines,
@@ -168,7 +170,7 @@ function useSyncHandlers({
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
-    advanceSyncPosition(setSyncState, lineIndex, wordIndex, lineWords.length);
+    advanceSyncPosition(setSyncState, lines, lineIndex, wordIndex, lineWords.length);
   }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
 
   const handleHoldTap = useCallback(() => {
@@ -189,7 +191,8 @@ function useSyncHandlers({
     if (advancesToNextLine) {
       updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
-      const nextLine = lines[lineIndex + 1];
+      const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
+      const nextLine = lines[nextLineIndex];
       if (nextLine) {
         const { parts: nextLineWords, trailingSpace: nextTrailingSpace } = splitIntoWordsWithMeta(nextLine.text);
         const nextWordText = nextLineWords[0];
@@ -202,7 +205,7 @@ function useSyncHandlers({
 
       setSyncState((prev) => ({
         ...prev,
-        position: { lineIndex: lineIndex + 1, wordIndex: 0 },
+        position: { lineIndex: nextLineIndex, wordIndex: 0 },
       }));
     } else {
       const nextWordText = lineWords[nextWordIndex];
@@ -254,9 +257,9 @@ function useSyncHandlers({
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
-    setSyncState({ position: { lineIndex: 0, wordIndex: 0 }, isActive: true });
+    setSyncState({ position: { lineIndex: nextSyncableLineIndex(lines, -1), wordIndex: 0 }, isActive: true });
     setIsPlaying(true);
-  }, [setIsPlaying, setSyncState]);
+  }, [lines, setIsPlaying, setSyncState]);
 
   const handleJumpToLine = useCallback(
     (index: number) => {
