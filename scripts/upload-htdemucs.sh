@@ -43,6 +43,7 @@ cat > "${CORS_FILE}" <<'JSON'
       "allowed": {
         "origins": [
           "https://composer.betterlyrics.org",
+          "https://composer.boidu.dev",
           "http://localhost:5173",
           "http://127.0.0.1:5173",
           "http://localhost:4173",
