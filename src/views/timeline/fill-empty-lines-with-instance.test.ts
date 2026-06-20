@@ -2,8 +2,7 @@
  * @vitest-environment node
  */
 import type { LineTemplate } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
 import { fillEmptyLinesWithInstance, isEmptyFillable } from "./fill-empty-lines-with-instance";
 
@@ -26,31 +25,29 @@ const template: LineTemplate[] = [
 
 describe("isEmptyFillable", () => {
   it("returns true for a line with no words and no group", () => {
-    expect(isEmptyFillable(reconcileLine({ id: "1", text: "anything", agentId: "v1" }))).toBe(true);
+    expect(isEmptyFillable({ id: "1", text: "anything", agentId: "v1" })).toBe(true);
   });
 
   it("returns true for a line with empty words array and no group", () => {
-    expect(isEmptyFillable(reconcileLine({ id: "1", text: "x", agentId: "v1", words: [] }))).toBe(true);
+    expect(isEmptyFillable({ id: "1", text: "x", agentId: "v1", words: [] })).toBe(true);
   });
 
   it("returns false for a line that has words", () => {
-    expect(
-      isEmptyFillable(reconcileLine({ id: "1", text: "x", agentId: "v1", words: [{ text: "x", begin: 0, end: 1 }] })),
-    ).toBe(false);
+    expect(isEmptyFillable({ id: "1", text: "x", agentId: "v1", words: [{ text: "x", begin: 0, end: 1 }] })).toBe(
+      false,
+    );
   });
 
   it("returns false for a line that belongs to a group", () => {
     expect(
-      isEmptyFillable(
-        reconcileLine({
-          id: "1",
-          text: "x",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: 0,
-          templateLineIdx: 0,
-        }),
-      ),
+      isEmptyFillable({
+        id: "1",
+        text: "x",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+      }),
     ).toBe(false);
   });
 });
@@ -58,10 +55,10 @@ describe("isEmptyFillable", () => {
 describe("fillEmptyLinesWithInstance · happy path", () => {
   it("fills exactly N consecutive empty lines and assigns group attrs", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "intro", text: "intro", agentId: "v1", words: [{ text: "intro", begin: 0, end: 5 }] }),
-      reconcileLine({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
-      reconcileLine({ id: "empty2", text: "Chorus line 2", agentId: "v1" }),
-      reconcileLine({ id: "outro", text: "outro", agentId: "v1", words: [{ text: "outro", begin: 30, end: 35 }] }),
+      { id: "intro", text: "intro", agentId: "v1", words: [{ text: "intro", begin: 0, end: 5 }] },
+      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
+      { id: "empty2", text: "Chorus line 2", agentId: "v1" },
+      { id: "outro", text: "outro", agentId: "v1", words: [{ text: "outro", begin: 30, end: 35 }] },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -75,17 +72,17 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
     expect(result.updatedLines?.[1].groupId).toBe("g1");
     expect(result.updatedLines?.[1].instanceIdx).toBe(0);
     expect(result.updatedLines?.[1].templateLineIdx).toBe(0);
-    expect(result.updatedLines && mainWords(result.updatedLines[1])?.[0].begin).toBe(10);
+    expect(result.updatedLines?.[1].words?.[0].begin).toBe(10);
     expect(result.updatedLines?.[2].templateLineIdx).toBe(1);
-    expect(result.updatedLines && mainWords(result.updatedLines[2])?.[0].begin).toBe(11);
+    expect(result.updatedLines?.[2].words?.[0].begin).toBe(11);
     expect(result.updatedLines?.[0].id).toBe("intro");
     expect(result.updatedLines?.[3].id).toBe("outro");
   });
 
   it("preserves the original line ids (in-place fill, not replacement)", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "L_a", text: "anything", agentId: "v1" }),
-      reconcileLine({ id: "L_b", text: "anything else", agentId: "v1" }),
+      { id: "L_a", text: "anything", agentId: "v1" },
+      { id: "L_b", text: "anything else", agentId: "v1" },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -101,8 +98,8 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
 
   it("overwrites the line text to match the template (linked instances must match)", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "L_a", text: "user typed something else", agentId: "v1" }),
-      reconcileLine({ id: "L_b", text: "and something different", agentId: "v1" }),
+      { id: "L_a", text: "user typed something else", agentId: "v1" },
+      { id: "L_b", text: "and something different", agentId: "v1" },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -112,16 +109,16 @@ describe("fillEmptyLinesWithInstance · happy path", () => {
       instanceStart: 0,
     });
     expect(result.ok).toBe(true);
-    expect(result.updatedLines && lineText(result.updatedLines[0])).toBe("Chorus line 1");
-    expect(result.updatedLines && lineText(result.updatedLines[1])).toBe("Chorus line 2");
+    expect(result.updatedLines?.[0].text).toBe("Chorus line 1");
+    expect(result.updatedLines?.[1].text).toBe("Chorus line 2");
   });
 
   it("picks the next available instanceIdx for the group", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "existing1", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-      reconcileLine({ id: "existing2", text: "y", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 }),
-      reconcileLine({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
-      reconcileLine({ id: "empty2", text: "Chorus line 2", agentId: "v1" }),
+      { id: "existing1", text: "x", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 },
+      { id: "existing2", text: "y", agentId: "v1", groupId: "g1", instanceIdx: 0, templateLineIdx: 1 },
+      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
+      { id: "empty2", text: "Chorus line 2", agentId: "v1" },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -151,7 +148,7 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
   ];
 
   it("carries backgroundTextSource from the template onto the filled line", () => {
-    const lines: LyricLine[] = [reconcileLine({ id: "empty1", text: "anything", agentId: "v1" })];
+    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -160,9 +157,9 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       instanceStart: 10,
     });
     expect(result.ok).toBe(true);
-    expect(result.updatedLines && bgText(result.updatedLines[0])).toBe("ooh");
-    expect(result.updatedLines && bgWords(result.updatedLines[0])?.[0].begin).toBe(10);
-    expect(result.updatedLines && bgSource(result.updatedLines[0])).toBe("extraction");
+    expect(result.updatedLines?.[0].backgroundText).toBe("ooh");
+    expect(result.updatedLines?.[0].backgroundWords?.[0].begin).toBe(10);
+    expect(result.updatedLines?.[0].backgroundTextSource).toBe("extraction");
   });
 
   it("carries a manual-sourced flag from the template", () => {
@@ -174,7 +171,7 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
         backgroundTextSource: "manual",
       },
     ];
-    const lines: LyricLine[] = [reconcileLine({ id: "empty1", text: "anything", agentId: "v1" })];
+    const lines: LyricLine[] = [{ id: "empty1", text: "anything", agentId: "v1" }];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -182,13 +179,13 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       startIndex: 0,
       instanceStart: 0,
     });
-    expect(result.updatedLines && bgSource(result.updatedLines[0])).toBe("manual");
+    expect(result.updatedLines?.[0].backgroundTextSource).toBe("manual");
   });
 
   it("leaves backgroundTextSource undefined when the template has no background", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "empty1", text: "a", agentId: "v1" }),
-      reconcileLine({ id: "empty2", text: "b", agentId: "v1" }),
+      { id: "empty1", text: "a", agentId: "v1" },
+      { id: "empty2", text: "b", agentId: "v1" },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -197,20 +194,15 @@ describe("fillEmptyLinesWithInstance · background provenance", () => {
       startIndex: 0,
       instanceStart: 0,
     });
-    expect(result.updatedLines && bgSource(result.updatedLines[0])).toBeUndefined();
+    expect(result.updatedLines?.[0].backgroundTextSource).toBeUndefined();
   });
 });
 
 describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", () => {
   it("refuses when one of the target rows already has words", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
-      reconcileLine({
-        id: "synced",
-        text: "Chorus line 2",
-        agentId: "v1",
-        words: [{ text: "Chorus line 2", begin: 0, end: 1 }],
-      }),
+      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
+      { id: "synced", text: "Chorus line 2", agentId: "v1", words: [{ text: "Chorus line 2", begin: 0, end: 1 }] },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -226,15 +218,15 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
 
   it("refuses when one of the target rows already belongs to a group", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "empty1", text: "Chorus line 1", agentId: "v1" }),
-      reconcileLine({
+      { id: "empty1", text: "Chorus line 1", agentId: "v1" },
+      {
         id: "grouped",
         text: "Chorus line 2",
         agentId: "v1",
         groupId: "other",
         instanceIdx: 0,
         templateLineIdx: 0,
-      }),
+      },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,
@@ -248,7 +240,7 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
   });
 
   it("refuses when the destination range extends past the end of the project", () => {
-    const lines: LyricLine[] = [reconcileLine({ id: "empty1", text: "Chorus line 1", agentId: "v1" })];
+    const lines: LyricLine[] = [{ id: "empty1", text: "Chorus line 1", agentId: "v1" }];
     const result = fillEmptyLinesWithInstance({
       lines,
       groupId: "g1",
@@ -262,8 +254,8 @@ describe("fillEmptyLinesWithInstance · refusal cases (no destructive insert)", 
 
   it("refuses when startIndex is negative", () => {
     const lines: LyricLine[] = [
-      reconcileLine({ id: "empty1", text: "x", agentId: "v1" }),
-      reconcileLine({ id: "empty2", text: "y", agentId: "v1" }),
+      { id: "empty1", text: "x", agentId: "v1" },
+      { id: "empty2", text: "y", agentId: "v1" },
     ];
     const result = fillEmptyLinesWithInstance({
       lines,

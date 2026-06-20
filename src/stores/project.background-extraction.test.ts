@@ -3,7 +3,6 @@
  */
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
-import { bgSource, bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -33,9 +32,9 @@ describe("project store · background extraction on linked lines", () => {
     if (!target) throw new Error(`line ${lineId} not found`);
     const extracted = extractInlineFromLine(target, { mergeStandaloneLines: false, preserveBrackets: false });
     useProjectStore.getState().updateLineWithHistory(target.id, {
-      text: lineText(extracted),
-      words: mainWords(extracted),
-      backgroundText: bgText(extracted),
+      text: extracted.text,
+      words: extracted.words,
+      backgroundText: extracted.backgroundText,
     });
   }
 
@@ -51,12 +50,12 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && lineText(a0)).toBe("Hello");
-    expect(a0 && bgText(a0)).toBe("ooh");
-    expect(a1 && lineText(a1)).toBe("Hello");
-    expect(a1 && bgText(a1)).toBe("ooh");
-    expect(a0 && lineText(a0)).not.toContain("(");
-    expect(a1 && lineText(a1)).not.toContain("(");
+    expect(a0?.text).toBe("Hello");
+    expect(a0?.backgroundText).toBe("ooh");
+    expect(a1?.text).toBe("Hello");
+    expect(a1?.backgroundText).toBe("ooh");
+    expect(a0?.text).not.toContain("(");
+    expect(a1?.text).not.toContain("(");
   });
 
   it("keeps link metadata on both siblings after an untimed extraction", () => {
@@ -111,18 +110,18 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && lineText(a0)).toBe("Hello");
-    expect(a1 && lineText(a1)).toBe("Hello");
-    expect(a0 && bgText(a0)).toBe("ooh");
-    expect(a1 && bgText(a1)).toBe("ooh");
+    expect(a0?.text).toBe("Hello");
+    expect(a1?.text).toBe("Hello");
+    expect(a0?.backgroundText).toBe("ooh");
+    expect(a1?.backgroundText).toBe("ooh");
 
-    expect(a0 && mainWords(a0)?.map((w) => w.text)).toEqual(["Hello"]);
-    expect(a1 && mainWords(a1)?.map((w) => w.text)).toEqual(["Hello"]);
+    expect(a0?.words?.map((w) => w.text)).toEqual(["Hello"]);
+    expect(a1?.words?.map((w) => w.text)).toEqual(["Hello"]);
 
-    expect(a0 && mainWords(a0)?.[0].begin).toBe(0);
-    expect(a0 && mainWords(a0)?.[0].end).toBe(1);
-    expect(a1 && mainWords(a1)?.[0].begin).toBe(30);
-    expect(a1 && mainWords(a1)?.[0].end).toBe(31.5);
+    expect(a0?.words?.[0].begin).toBe(0);
+    expect(a0?.words?.[0].end).toBe(1);
+    expect(a1?.words?.[0].begin).toBe(30);
+    expect(a1?.words?.[0].end).toBe(31.5);
   });
 
   it("leaves a detached sibling untouched when extracting on the source", () => {
@@ -142,10 +141,8 @@ describe("project store · background extraction on linked lines", () => {
     applyPullFromParens("a0");
 
     const lines = useProjectStore.getState().lines;
-    const a0 = lines.find((l) => l.id === "a0");
-    const a1 = lines.find((l) => l.id === "a1");
-    expect(a0 && lineText(a0)).toBe("Hello");
-    expect(a1 && lineText(a1)).toBe("Hello (ooh)");
+    expect(lines.find((l) => l.id === "a0")?.text).toBe("Hello");
+    expect(lines.find((l) => l.id === "a1")?.text).toBe("Hello (ooh)");
   });
 
   it("propagates the background provenance flag to the linked sibling", () => {
@@ -164,10 +161,10 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && bgText(a0)).toBe("ooh");
-    expect(a0 && bgSource(a0)).toBe("extraction");
-    expect(a1 && bgText(a1)).toBe("ooh");
-    expect(a1 && bgSource(a1)).toBe("extraction");
+    expect(a0?.backgroundText).toBe("ooh");
+    expect(a0?.backgroundTextSource).toBe("extraction");
+    expect(a1?.backgroundText).toBe("ooh");
+    expect(a1?.backgroundTextSource).toBe("extraction");
   });
 
   it("propagates a cleared background provenance flag to the linked sibling", () => {
@@ -203,10 +200,10 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && bgText(a0)).toBeUndefined();
-    expect(a0 && bgSource(a0)).toBeUndefined();
-    expect(a1 && bgText(a1)).toBeUndefined();
-    expect(a1 && bgSource(a1)).toBeUndefined();
+    expect(a0?.backgroundText).toBeUndefined();
+    expect(a0?.backgroundTextSource).toBeUndefined();
+    expect(a1?.backgroundText).toBeUndefined();
+    expect(a1?.backgroundTextSource).toBeUndefined();
   });
 
   it("flips the linked sibling's provenance to manual when bg words are edited in the timeline", () => {
@@ -253,12 +250,12 @@ describe("project store · background extraction on linked lines", () => {
     const a0 = lines.find((l) => l.id === "a0");
     const a1 = lines.find((l) => l.id === "a1");
 
-    expect(a0 && bgSource(a0)).toBe("manual");
-    expect(a1 && bgSource(a1)).toBe("manual");
-    expect(a0 && bgWords(a0)?.[1].end).toBe(1.8);
+    expect(a0?.backgroundTextSource).toBe("manual");
+    expect(a1?.backgroundTextSource).toBe("manual");
+    expect(a0?.backgroundWords?.[1].end).toBe(1.8);
     // Sibling keeps its own instance-local timing, only the word structure mirrors.
-    expect(a1 && bgWords(a1)?.[0].begin).toBe(31);
-    expect(a1 && bgWords(a1)?.map((w) => w.text)).toEqual(["ooh ", "aah"]);
+    expect(a1?.backgroundWords?.[0].begin).toBe(31);
+    expect(a1?.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "aah"]);
   });
 
   it("produces a single undoable history entry covering source + sibling", () => {
@@ -272,9 +269,7 @@ describe("project store · background extraction on linked lines", () => {
 
     useProjectStore.getState().undo();
     const lines = useProjectStore.getState().lines;
-    const a0 = lines.find((l) => l.id === "a0");
-    const a1 = lines.find((l) => l.id === "a1");
-    expect(a0 && lineText(a0)).toBe("Hello (ooh)");
-    expect(a1 && lineText(a1)).toBe("Hello (ooh)");
+    expect(lines.find((l) => l.id === "a0")?.text).toBe("Hello (ooh)");
+    expect(lines.find((l) => l.id === "a1")?.text).toBe("Hello (ooh)");
   });
 });

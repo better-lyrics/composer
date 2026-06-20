@@ -1,6 +1,5 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
@@ -22,10 +21,8 @@ function replaceWordsAt(track: WordTiming[], wordIndex: number, replacement: Wor
 }
 
 function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints: number[]): LyricLine {
-  const originalMain = mainWords(line);
-  const originalBg = bgWords(line);
-  let mainTrack = originalMain;
-  let bgTrack = originalBg;
+  let mainTrack = line.words;
+  let bgTrack = line.backgroundWords;
 
   // Single descending sort across all targets is safe: projecting onto each
   // track preserves descending order, so per-track splice indices don't drift.
@@ -44,16 +41,16 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
   }
 
   return reconcileLine({
-    ...toFlat(line),
-    ...(mainTrack !== originalMain ? { words: mainTrack } : {}),
-    ...(bgTrack && bgTrack !== originalBg ? manualBackgroundWordEdit(bgTrack) : {}),
+    ...line,
+    ...(mainTrack !== line.words ? { words: mainTrack } : {}),
+    ...(bgTrack && bgTrack !== line.backgroundWords ? manualBackgroundWordEdit(bgTrack) : {}),
   });
 }
 
 function findSourceTarget(lines: LyricLine[], source: IdenticalMatchSource): SplitTarget | null {
   const sourceLine = lines.find((line) => line.id === source.lineId);
   if (!sourceLine) return null;
-  const track = source.type === "word" ? mainWords(sourceLine) : bgWords(sourceLine);
+  const track = source.type === "word" ? sourceLine.words : sourceLine.backgroundWords;
   const word = track?.[source.wordIndex];
   if (!word) return null;
   return { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type, word, reuseGroupId: true };

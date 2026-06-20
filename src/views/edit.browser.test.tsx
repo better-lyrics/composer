@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { bgSource, bgText, bgWords, lineText } from "@/domain/line/voices";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -68,8 +67,8 @@ describe("background vocal extraction", () => {
 
     await expect.poll(() => previewMainTexts(screen.container)).toContain("Hello world");
     await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh");
-    expect(lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-    expect(bgText(useProjectStore.getState().lines[0])).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
   });
 
   it("merges a standalone parenthesis line into the line above on bulk extract", async () => {
@@ -84,7 +83,7 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(bgText(useProjectStore.getState().lines[0])).toBe("ooh yeah");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Real lyric line"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh yeah");
   });
@@ -100,9 +99,9 @@ describe("background vocal extraction", () => {
     await expect.element(pullButton).toBeInTheDocument();
     await pullButton.click();
 
-    await expect.poll(() => lineText(useProjectStore.getState().lines[0])).toBe("Hello world");
-    expect(bgText(useProjectStore.getState().lines[0])).toBe("ooh");
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
   it("hides the per-line pull action when the line has no parentheses", async () => {
@@ -130,9 +129,9 @@ describe("background vocal extraction", () => {
     pasteIntoTextarea(textarea, "Hello (ooh) world\nSecond (ah) line");
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
+      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Hello world", "Second line"]);
-    expect(useProjectStore.getState().lines.map((l) => bgText(l))).toEqual(["ooh", "ah"]);
+    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["ooh", "ah"]);
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world", "Second line"]);
     await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["ooh", "ah"]);
   });
@@ -148,9 +147,9 @@ describe("background vocal extraction", () => {
     pasteIntoTextarea(textarea, "Hello (ooh) world\nSecond (ah) line");
 
     await expect
-      .poll(() => useProjectStore.getState().lines.map((l) => lineText(l)))
+      .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Hello (ooh) world", "Second (ah) line"]);
-    expect(useProjectStore.getState().lines.every((l) => bgText(l) === undefined)).toBe(true);
+    expect(useProjectStore.getState().lines.every((l) => l.backgroundText === undefined)).toBe(true);
   });
 });
 
@@ -189,8 +188,8 @@ describe("manual background vocal editing", () => {
     await input.fill("ooh");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBe("ooh");
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("flips an extraction-sourced background to manual when edited in the popover", async () => {
@@ -206,8 +205,8 @@ describe("manual background vocal editing", () => {
     await input.fill("aah");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBe("aah");
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("manual");
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("aah");
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
   });
 
   it("clears all three background fields when the popover text is emptied", async () => {
@@ -223,9 +222,9 @@ describe("manual background vocal editing", () => {
     await input.fill("");
     await userEvent.keyboard("{Enter}");
 
-    await expect.poll(() => bgText(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(bgWords(useProjectStore.getState().lines[0])).toBeUndefined();
-    expect(bgSource(useProjectStore.getState().lines[0])).toBeUndefined();
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
   });
 });
 

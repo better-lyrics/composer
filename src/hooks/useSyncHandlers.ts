@@ -1,9 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import type { LooseLine, LyricLine } from "@/domain/line/model";
-import { isLineSynced, hasAnyTiming } from "@/domain/line/predicates";
-import { lineText, mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -67,7 +65,7 @@ function useSyncHandlers({
     const { line, lineWords, textWithSpace } = prepared;
 
     const fallbackEnd = currentTime + useSettingsStore.getState().defaultWordDuration;
-    const existingWords = mainWords(line) ?? [];
+    const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
       const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, currentTime, fallbackEnd);
@@ -77,9 +75,8 @@ function useSyncHandlers({
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
-    const prevWordsForTap = prevLine ? mainWords(prevLine) : undefined;
-    if (wordIndex === 0 && prevLine && prevWordsForTap?.length) {
-      const prevWords = [...prevWordsForTap];
+    if (wordIndex === 0 && prevLine?.words?.length) {
+      const prevWords = [...prevLine.words];
       prevWords[prevWords.length - 1] = {
         ...prevWords[prevWords.length - 1],
         end: currentTime,
@@ -108,11 +105,11 @@ function useSyncHandlers({
     const line = lines[lineIndex];
     if (!line) return;
 
-    if (prevLine && isLineSynced(prevLine)) {
+    if (prevLine?.begin !== undefined) {
       updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
-    const updates = withBgSeedIfNeeded<Partial<LooseLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
+    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
     updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
@@ -137,7 +134,7 @@ function useSyncHandlers({
     if (!prepared) return;
     const { line, textWithSpace } = prepared;
 
-    const existingWords = mainWords(line) ?? [];
+    const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
       const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, currentTime);
@@ -147,9 +144,8 @@ function useSyncHandlers({
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
-    const prevWordsForHold = prevLine ? mainWords(prevLine) : undefined;
-    if (wordIndex === 0 && prevLine && prevWordsForHold?.length) {
-      const prevWords = [...prevWordsForHold];
+    if (wordIndex === 0 && prevLine?.words?.length) {
+      const prevWords = [...prevLine.words];
       const lastPrevWord = prevWords[prevWords.length - 1];
       if (lastPrevWord.end === lastPrevWord.begin) {
         prevWords[prevWords.length - 1] = { ...lastPrevWord, end: currentTime };
@@ -162,12 +158,11 @@ function useSyncHandlers({
     if (lines.length === 0 || isComplete) return;
 
     const line = lines[lineIndex];
-    const holdEndWords = line ? mainWords(line) : undefined;
-    if (!line || !holdEndWords?.length) return;
+    if (!line?.words?.length) return;
 
-    const { parts: lineWords } = splitIntoWordsWithMeta(lineText(line));
+    const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...holdEndWords];
+    const updatedWords = [...line.words];
     const currentWordEntry = updatedWords[updatedWords.length - 1];
     updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
@@ -180,12 +175,11 @@ function useSyncHandlers({
     if (lines.length === 0 || isComplete) return;
 
     const line = lines[lineIndex];
-    const holdTapWords = line ? mainWords(line) : undefined;
-    if (!line || !holdTapWords?.length) return;
+    if (!line?.words?.length) return;
 
-    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(lineText(line));
+    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...holdTapWords];
+    const updatedWords = [...line.words];
     const currentWordEntry = updatedWords[updatedWords.length - 1];
     updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
 
@@ -197,7 +191,7 @@ function useSyncHandlers({
 
       const nextLine = lines[lineIndex + 1];
       if (nextLine) {
-        const { parts: nextLineWords, trailingSpace: nextTrailingSpace } = splitIntoWordsWithMeta(lineText(nextLine));
+        const { parts: nextLineWords, trailingSpace: nextTrailingSpace } = splitIntoWordsWithMeta(nextLine.text);
         const nextWordText = nextLineWords[0];
         if (nextWordText) {
           const textWithSpace = nextTrailingSpace[0] ? `${nextWordText} ` : nextWordText;
@@ -230,8 +224,11 @@ function useSyncHandlers({
   const handleTap = granularity === "word" ? handleTapWord : handleTapLine;
 
   const handleReset = useCallback(async () => {
-    const anyLineTimed = lines.some((line) => hasAnyTiming(line));
-    if (anyLineTimed) {
+    const hasAnyTiming = lines.some(
+      (line) =>
+        line.words?.length || line.begin !== undefined || line.end !== undefined || line.backgroundWords?.length,
+    );
+    if (hasAnyTiming) {
       const ok = await confirm({
         title: "Reset all sync timing?",
         description: "Clear every word and line timing in this project.",
@@ -316,7 +313,7 @@ function useSyncHandlers({
     (delta: number) => {
       if (granularity === "line") {
         for (let i = lines.length - 1; i >= 0; i--) {
-          if (isLineSynced(lines[i])) {
+          if (lines[i].begin !== undefined) {
             handleNudgeLine(i, delta);
             return;
           }
@@ -324,9 +321,8 @@ function useSyncHandlers({
       } else {
         for (let i = lines.length - 1; i >= 0; i--) {
           const line = lines[i];
-          const lineWords = mainWords(line);
-          if (lineWords?.length) {
-            const lastWordIdx = lineWords.length - 1;
+          if (line.words?.length) {
+            const lastWordIdx = line.words.length - 1;
             handleNudgeWord(i, lastWordIdx, delta);
             return;
           }
@@ -339,10 +335,9 @@ function useSyncHandlers({
   const handleSplitWord = useCallback(
     (lineIdx: number, wordIdx: number, newWords: WordTiming[]) => {
       const line = lines[lineIdx];
-      const splitWords = line ? mainWords(line) : undefined;
-      if (!line || !splitWords) return;
+      if (!line?.words) return;
 
-      const updatedWords = [...splitWords];
+      const updatedWords = [...line.words];
       updatedWords.splice(wordIdx, 1, ...newWords);
       const newLineText = updatedWords
         .map((w) => w.text)
@@ -399,7 +394,7 @@ function useSyncHandlers({
     handleSetBgWordEndTime,
     isComplete,
     currentLine,
-    currentWord: currentLine && lineText(currentLine) ? splitIntoWords(lineText(currentLine))[wordIndex] : undefined,
+    currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
   };
 }
 

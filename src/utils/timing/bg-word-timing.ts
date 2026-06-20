@@ -1,8 +1,7 @@
-import { bgWords } from "@/domain/line/voices";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
 const { nudgeBegin, setBegin, nudgeEnd, setEnd } = createWordTimingOps({
-  getWords: (line) => bgWords(line),
+  getWords: (line) => line.backgroundWords,
   updateKey: "backgroundWords",
 });
 

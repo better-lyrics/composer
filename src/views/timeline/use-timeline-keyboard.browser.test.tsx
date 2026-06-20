@@ -1,12 +1,6 @@
 import { createRef } from "react";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
-import { setBackground } from "@/domain/line/background";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { reconcileLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
-import { bgSource, bgVoice, bgWords, mainWords } from "@/domain/line/voices";
-import { isWordSynced as isVoiceWordSynced } from "@/domain/voice/predicates";
 import { createLine, snapPoints } from "@/test/factories";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -125,7 +119,7 @@ describe("useTimelineKeyboard", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const mergedLine = useProjectStore.getState().lines[0];
-    expect(mainWords(mergedLine)).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
+    expect(mergedLine.words).toEqual([{ text: "everyday", begin: 1, end: 2 }]);
   });
 });
 
@@ -336,7 +330,7 @@ describe("useTimelineKeyboard · delete hovered snap point", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "Delete", bubbles: true }));
 
     expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([12]);
-    expect(mainWords(useProjectStore.getState().lines[0])).toHaveLength(2);
+    expect(useProjectStore.getState().lines[0].words).toHaveLength(2);
     expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
   });
 
@@ -383,8 +377,8 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(bgSource(updated)).toBe("manual");
-    expect(bgWords(updated)?.[0].begin).toBeCloseTo(1.2);
+    expect(updated.backgroundTextSource).toBe("manual");
+    expect(updated.backgroundWords?.[0].begin).toBeCloseTo(1.2);
   });
 
   it("stamps backgroundTextSource manual when bg words are merged", async () => {
@@ -411,8 +405,8 @@ describe("useTimelineKeyboard · background provenance", () => {
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "m", bubbles: true }));
 
     const updated = useProjectStore.getState().lines[0];
-    expect(bgWords(updated)).toEqual([{ text: "oohaah", begin: 1, end: 2 }]);
-    expect(bgSource(updated)).toBe("manual");
+    expect(updated.backgroundWords).toEqual([{ text: "oohaah", begin: 1, end: 2 }]);
+    expect(updated.backgroundTextSource).toBe("manual");
   });
 
   it("leaves background provenance untouched when a main word's timing is set", async () => {
@@ -433,45 +427,6 @@ describe("useTimelineKeyboard · background provenance", () => {
 
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "[", bubbles: true }));
 
-    expect(bgSource(useProjectStore.getState().lines[0])).toBe("extraction");
-  });
-});
-
-describe("useTimelineKeyboard · split into words (w)", () => {
-  it("splits the main voice when a main word selection is active", async () => {
-    const raw = reconcileLine({ id: "L1", text: "one two three", agentId: "v1", begin: 1, end: 4 });
-    useProjectStore.setState({ activeTab: "timeline", lines: [raw] });
-    const effective = getEffectiveLines([raw]);
-    useTimelineStore.setState({ selectedWords: [{ lineId: "L1", lineIndex: 0, wordIndex: 0, type: "word" }] });
-    const scrollContainerRef = createRef<HTMLDivElement | null>();
-    await renderHook(() => useTimelineKeyboard(scrollContainerRef, effective, 10));
-
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", bubbles: true }));
-
-    const after = useProjectStore.getState().lines[0];
-    expect(isLineSynced(after)).toBe(false);
-    expect(mainWords(after)?.length).toBe(3);
-    expect(useTimelineStore.getState().selectedWords.every((s) => s.type === "word")).toBe(true);
-  });
-
-  it("splits the background voice when a bg word selection is active", async () => {
-    const main = reconcileLine({ id: "B1", text: "lead", agentId: "v1", words: [{ text: "lead", begin: 0, end: 2 }] });
-    const raw = setBackground(main, { text: "ooh ooh ooh", begin: 3, end: 6, source: "manual" });
-    useProjectStore.setState({ activeTab: "timeline", lines: [raw] });
-    const effective = getEffectiveLines([raw]);
-    useTimelineStore.setState({ selectedWords: [{ lineId: "B1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
-    const scrollContainerRef = createRef<HTMLDivElement | null>();
-    await renderHook(() => useTimelineKeyboard(scrollContainerRef, effective, 10));
-
-    window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", bubbles: true }));
-
-    const after = useProjectStore.getState().lines[0];
-    const bg = bgVoice(after);
-    expect(bg).not.toBeNull();
-    expect(isVoiceWordSynced(bg!)).toBe(true);
-    expect(bgWords(after)?.length).toBe(3);
-    // Main untouched.
-    expect(mainWords(after)).toEqual([{ text: "lead", begin: 0, end: 2 }]);
-    expect(useTimelineStore.getState().selectedWords.every((s) => s.type === "bg")).toBe(true);
+    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });

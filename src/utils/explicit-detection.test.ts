@@ -41,12 +41,12 @@ describe("findExplicitWords", () => {
   });
 
   it("detects a profanity in backgroundText with field='backgroundWords'", () => {
-    const line: LyricLine = reconcileLine({
+    const line: LyricLine = {
       id: "L1",
       text: "clean main",
       agentId: "v1",
       backgroundText: "oh shit",
-    });
+    };
     const result = findExplicitWords([line]);
     expect(result).toHaveLength(1);
     expect(result[0].field).toBe("backgroundWords");
@@ -164,7 +164,7 @@ describe("findExplicitWords · syllable-split words", () => {
 describe("findExplicitWords · linked instances", () => {
   function linkedChorusLines(): LyricLine[] {
     return [
-      reconcileLine({
+      {
         id: "C1",
         text: "I fuck you",
         agentId: "v1",
@@ -176,8 +176,8 @@ describe("findExplicitWords · linked instances", () => {
           { text: "fuck ", begin: 0.3, end: 0.6 },
           { text: "you", begin: 0.6, end: 1 },
         ],
-      }),
-      reconcileLine({
+      },
+      {
         id: "C2",
         text: "I fuck you",
         agentId: "v1",
@@ -189,8 +189,8 @@ describe("findExplicitWords · linked instances", () => {
           { text: "fuck ", begin: 30.4, end: 30.7 },
           { text: "you", begin: 30.7, end: 31.2 },
         ],
-      }),
-      reconcileLine({
+      },
+      {
         id: "C3",
         text: "I fuck you",
         agentId: "v1",
@@ -202,7 +202,7 @@ describe("findExplicitWords · linked instances", () => {
           { text: "fuck ", begin: 60.4, end: 60.7 },
           { text: "you", begin: 60.7, end: 61.2 },
         ],
-      }),
+      },
     ];
   }
 

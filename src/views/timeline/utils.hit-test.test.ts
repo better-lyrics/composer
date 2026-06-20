@@ -1,10 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "@/domain/line/model";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
-const line = (id: string, words?: WordTiming[]): LyricLine =>
-  reconcileLine({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] });
+const line = (id: string, words?: LyricLine["words"]): LyricLine =>
+  ({ id, agentId: "a", text: id, words: words ?? [{ text: id, begin: 0, end: 1 }] }) as LyricLine;
 
 describe("getLineAndTrackAtY", () => {
   const layout = computeRowLayout({

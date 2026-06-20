@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { lineText } from "@/domain/line/voices";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -108,7 +107,7 @@ describe("useDualClickImport · file pick wiring", () => {
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBeGreaterThan(0);
     const lines = useProjectStore.getState().lines;
-    expect(lines.map((l) => lineText(l))).toEqual(["Hello world", "Second line"]);
+    expect(lines.map((l) => l.text)).toEqual(["Hello world", "Second line"]);
 
     const recorded = useImportModalStore.getState().lastImportResult;
     expect(recorded?.source.label).toBe("File");

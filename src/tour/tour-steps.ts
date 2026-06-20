@@ -1,5 +1,4 @@
 import type { DriveStep } from "driver.js";
-import { isLineSynced } from "@/domain/line/predicates";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { MOD_KEY } from "@/utils/platform";
@@ -27,8 +26,7 @@ const gateAudioLoaded = () => useAudioStore.getState().source !== null;
 const gateLyricsExist = () => useProjectStore.getState().lines.length > 0;
 const gateFirstLineSynced = () => {
   const lines = useProjectStore.getState().lines;
-  const firstLine = lines[0];
-  return firstLine !== undefined && isLineSynced(firstLine);
+  return lines.length > 0 && lines[0]?.begin !== undefined;
 };
 
 // -- Tour Steps ---------------------------------------------------------------

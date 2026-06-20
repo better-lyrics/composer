@@ -1,5 +1,3 @@
-import { reconcileLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
@@ -49,7 +47,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
   it("drops a main word into the same line's empty bg zone reliably even when cursor x stays put", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "l1",
           text: "hello world",
           agentId: "v1",
@@ -57,7 +55,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "hello ", begin: 0.1, end: 0.5 },
             { text: "world", begin: 0.5, end: 0.9 },
           ],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -78,15 +76,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     });
 
     const after = useProjectStore.getState().lines[0];
-    expect(mainWords(after)?.length).toBe(1);
-    expect(bgWords(after)?.length).toBe(1);
-    expect(bgWords(after)?.[0].text.trim()).toBe("world");
+    expect(after.words?.length).toBe(1);
+    expect(after.backgroundWords?.length).toBe(1);
+    expect(after.backgroundWords?.[0].text.trim()).toBe("world");
   });
 
   it("drops a bg word back into the same line's main zone reliably", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "l1",
           text: "hello",
           agentId: "v1",
@@ -97,7 +95,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "aah", begin: 1.5, end: 1.9 },
           ],
           backgroundTextSource: "manual",
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -118,15 +116,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     });
 
     const after = useProjectStore.getState().lines[0];
-    expect(mainWords(after)?.length).toBe(2);
-    expect(bgWords(after)?.length).toBe(1);
-    expect(mainWords(after)?.some((w) => w.text.trim() === "aah")).toBe(true);
+    expect(after.words?.length).toBe(2);
+    expect(after.backgroundWords?.length).toBe(1);
+    expect(after.words?.some((w) => w.text.trim() === "aah")).toBe(true);
   });
 
   it("drops a main word from line A into line B's main track", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -134,13 +132,13 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           words: [{ text: "delta", begin: 5.0, end: 5.4 }],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -163,14 +161,14 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "lA");
     const b = after.find((l) => l.id === "lB");
-    expect(a && mainWords(a)?.length).toBe(1);
-    expect(b && mainWords(b)?.some((w) => w.text.trim() === "alpha")).toBe(true);
+    expect(a?.words?.length).toBe(1);
+    expect(b?.words?.some((w) => w.text.trim() === "alpha")).toBe(true);
   });
 
   it("drops a main word from line A into line B's bg track", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -178,13 +176,13 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           words: [{ text: "delta", begin: 5.0, end: 5.4 }],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -207,14 +205,14 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     const after = useProjectStore.getState().lines;
     const a = after.find((l) => l.id === "lA");
     const b = after.find((l) => l.id === "lB");
-    expect(a && mainWords(a)?.length).toBe(1);
-    expect(b && bgWords(b)?.some((w) => w.text.trim() === "alpha")).toBe(true);
+    expect(a?.words?.length).toBe(1);
+    expect(b?.backgroundWords?.some((w) => w.text.trim() === "alpha")).toBe(true);
   });
 
   it("rejects with a toast on cross-instance attempts and leaves both lines untouched", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -224,23 +222,19 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           groupId: "g1",
           instanceIdx: 1,
           words: [{ text: "delta", begin: 5.0, end: 5.4 }],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
-    const before = lines.map((l) =>
-      mainWords(l)
-        ?.map((w) => w.text)
-        .join("|"),
-    );
+    const before = lines.map((l) => l.words?.map((w) => w.text).join("|"));
     const baseline = toast.getHistory().length;
     const { result } = await renderHook(() => useTimelineDnd(lines));
 
@@ -258,11 +252,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       deltaY: 0,
     });
 
-    const after = useProjectStore.getState().lines.map((l) =>
-      mainWords(l)
-        ?.map((w) => w.text)
-        .join("|"),
-    );
+    const after = useProjectStore.getState().lines.map((l) => l.words?.map((w) => w.text).join("|"));
     expect(after).toEqual(before);
     const fired = toast.getHistory().slice(baseline);
     expect(fired.some((t) => "title" in t && /Detach the line first/.test(String(t.title)))).toBe(true);
@@ -271,7 +261,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
   it("rejects with a toast when target line is line-synced and leaves data untouched", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -279,14 +269,14 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           begin: 5.0,
           end: 5.4,
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -308,10 +298,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     });
 
     const after = useProjectStore.getState().lines;
-    const lineA = after.find((l) => l.id === "lA");
-    const lineB = after.find((l) => l.id === "lB");
-    expect(lineA && mainWords(lineA)?.length).toBe(2);
-    expect(lineB && mainWords(lineB)).toBeUndefined();
+    expect(after.find((l) => l.id === "lA")?.words?.length).toBe(2);
+    expect(after.find((l) => l.id === "lB")?.words).toBeUndefined();
     const fired = toast.getHistory().slice(baseline);
     expect(fired.some((t) => "title" in t && /Sync this line into words first/.test(String(t.title)))).toBe(true);
   });
@@ -319,7 +307,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
   it("silently rejects an overlap and leaves both lines untouched", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -327,13 +315,13 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           words: [{ text: "delta", begin: 6.0, end: 6.6 }],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -363,7 +351,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
   it("no-ops when cursor falls outside any row on drop", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "l1",
           text: "hello world",
           agentId: "v1",
@@ -371,7 +359,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "hello ", begin: 0.1, end: 0.5 },
             { text: "world", begin: 0.5, end: 0.9 },
           ],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -399,7 +387,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
   it("switches track when the cursor lands in the bg zone even with only a few pixels of delta.y", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "l1",
           text: "hello",
           agentId: "v1",
@@ -407,7 +395,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
           backgroundText: "ooh",
           backgroundWords: [{ text: "ooh", begin: 1.0, end: 1.4 }],
           backgroundTextSource: "manual",
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -428,14 +416,14 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
     });
 
     const after = useProjectStore.getState().lines[0];
-    expect(mainWords(after)?.length ?? 0).toBe(0);
-    expect(bgWords(after)?.length).toBe(2);
+    expect(after.words?.length ?? 0).toBe(0);
+    expect(after.backgroundWords?.length).toBe(2);
   });
 
   it("uses live cursor position over container scrollTop, so auto-scroll during drag doesn't shift the drop target", async () => {
     useProjectStore.setState({
       lines: [
-        reconcileLine({
+        {
           id: "lA",
           text: "alpha beta",
           agentId: "v1",
@@ -443,13 +431,13 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
             { text: "alpha ", begin: 0.1, end: 0.4 },
             { text: "beta", begin: 0.4, end: 0.7 },
           ],
-        }),
-        reconcileLine({
+        },
+        {
           id: "lB",
           text: "delta",
           agentId: "v1",
           words: [{ text: "delta", begin: 5.0, end: 5.4 }],
-        }),
+        },
       ],
     });
     const lines = useProjectStore.getState().lines;
@@ -496,14 +484,14 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
 
     const after = useProjectStore.getState().lines;
     const b = after.find((l) => l.id === "lB");
-    expect(b && mainWords(b)?.some((w) => w.text.trim() === "alpha")).toBe(true);
+    expect(b?.words?.some((w) => w.text.trim() === "alpha")).toBe(true);
   });
 
   describe("sibling propagation parity for cross-track moves", () => {
     it("does not propagate to linked sibling when toggling main to bg same-line on a linked instance", async () => {
       useProjectStore.setState({
         lines: [
-          reconcileLine({
+          {
             id: "a0",
             text: "alpha beta",
             agentId: "v1",
@@ -513,8 +501,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "alpha ", begin: 0.1, end: 0.4 },
               { text: "beta", begin: 0.4, end: 0.7 },
             ],
-          }),
-          reconcileLine({
+          },
+          {
             id: "a1",
             text: "alpha beta",
             agentId: "v1",
@@ -524,7 +512,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "alpha ", begin: 5.1, end: 5.4 },
               { text: "beta", begin: 5.4, end: 5.7 },
             ],
-          }),
+          },
         ],
       });
       const lines = useProjectStore.getState().lines;
@@ -548,15 +536,15 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       const after = useProjectStore.getState().lines;
       const source = after.find((l) => l.id === "a0");
       const sibling = after.find((l) => l.id === "a1");
-      expect(source && mainWords(source)?.length).toBe(1);
-      expect(source && bgWords(source)?.length).toBe(1);
+      expect(source?.words?.length).toBe(1);
+      expect(source?.backgroundWords?.length).toBe(1);
       expect(JSON.stringify(sibling)).toBe(siblingBefore);
     });
 
     it("does not propagate to linked sibling when moving across lines in a linked instance", async () => {
       useProjectStore.setState({
         lines: [
-          reconcileLine({
+          {
             id: "a0",
             text: "alpha beta",
             agentId: "v1",
@@ -566,8 +554,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "alpha ", begin: 0.1, end: 0.4 },
               { text: "beta", begin: 0.4, end: 0.7 },
             ],
-          }),
-          reconcileLine({
+          },
+          {
             id: "a1",
             text: "gamma delta",
             agentId: "v1",
@@ -577,8 +565,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "gamma ", begin: 1.0, end: 1.4 },
               { text: "delta", begin: 1.4, end: 1.7 },
             ],
-          }),
-          reconcileLine({
+          },
+          {
             id: "b0",
             text: "alpha beta",
             agentId: "v1",
@@ -588,8 +576,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "alpha ", begin: 10.1, end: 10.4 },
               { text: "beta", begin: 10.4, end: 10.7 },
             ],
-          }),
-          reconcileLine({
+          },
+          {
             id: "b1",
             text: "gamma delta",
             agentId: "v1",
@@ -599,7 +587,7 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
               { text: "gamma ", begin: 11.0, end: 11.4 },
               { text: "delta", begin: 11.4, end: 11.7 },
             ],
-          }),
+          },
         ],
       });
       const lines = useProjectStore.getState().lines;
@@ -624,8 +612,8 @@ describe("useTimelineDnd · cross-line and reliable track switch", () => {
       const after = useProjectStore.getState().lines;
       const a0After = after.find((l) => l.id === "a0");
       const a1After = after.find((l) => l.id === "a1");
-      expect(a0After && mainWords(a0After)?.length).toBe(1);
-      expect(a1After && mainWords(a1After)?.some((w) => w.text.trim() === "alpha")).toBe(true);
+      expect(a0After?.words?.length).toBe(1);
+      expect(a1After?.words?.some((w) => w.text.trim() === "alpha")).toBe(true);
 
       const b0After = JSON.stringify(after.find((l) => l.id === "b0"));
       const b1After = JSON.stringify(after.find((l) => l.id === "b1"));

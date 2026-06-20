@@ -1,5 +1,4 @@
-import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
-import { lineText, mainWords } from "@/domain/line/voices";
+import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 
 // The single chokepoint for re-deciding timing-staleness after a text edit:
@@ -7,17 +6,16 @@ import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 // through here so they cannot drift apart and clear timing on lines the user
 // never touched.
 function reconcileMatchedTiming(line: LyricLine, cleanedText: string): LyricLine {
-  if (lineText(line) === cleanedText) return line;
+  if (line.text === cleanedText) return line;
 
-  const words = mainWords(line);
-  if (words && words.length > 0) {
-    const remapped = remapWordTextsPreservingTiming(words, cleanedText);
+  if (line.words && line.words.length > 0) {
+    const remapped = remapWordTextsPreservingTiming(line.words, cleanedText);
     if (remapped) {
-      return reconcileLine({ ...toFlat(line), text: cleanedText, words: remapped });
+      return reconcileLine({ ...line, text: cleanedText, words: remapped });
     }
   }
 
-  return reconcileLine({ ...toFlat(line), text: cleanedText, words: undefined, begin: undefined, end: undefined });
+  return reconcileLine({ ...line, text: cleanedText, words: undefined, begin: undefined, end: undefined });
 }
 
 export { reconcileMatchedTiming };

@@ -1,4 +1,3 @@
-import { bgText, lineText } from "@/domain/line/voices";
 import { useProjectStore } from "@/stores/project";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
@@ -60,7 +59,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
       )}
       renderRow={(s) => {
         const line = lineMap.get(s.lineId);
-        const source = (line ? (s.field === "words" ? lineText(line) : bgText(line)) : undefined) ?? "";
+        const source = (s.field === "words" ? line?.text : line?.backgroundText) ?? "";
         return (
           <>
             <span className="text-sm text-composer-text">

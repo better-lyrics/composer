@@ -2,7 +2,6 @@ import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import { FloatingPortal } from "@floating-ui/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
@@ -25,7 +24,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
 
   const effectiveLines = useMemo(() => getEffectiveLines(rawLines), [rawLines]);
   const line = effectiveLines.find((l) => l.id === lineId);
-  const wordsArray = line ? (type === "word" ? mainWords(line) : bgWords(line)) : undefined;
+  const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
   const word = wordsArray?.[wordIndex];
 
   const [pos, setPos] = useState<{ top: number; left: number; width: number } | null>(null);

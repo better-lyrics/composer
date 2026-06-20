@@ -1,11 +1,9 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import type { LooseLine, LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
@@ -115,15 +113,13 @@ function getWordsInInstance(lines: LyricLine[], groupId: string, instanceIdx: nu
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) continue;
-    const main = mainWords(line);
-    if (main?.length) {
-      for (let wordIndex = 0; wordIndex < main.length; wordIndex++) {
+    if (line.words?.length) {
+      for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
         out.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
       }
     }
-    const bg = bgWords(line);
-    if (bg?.length) {
-      for (let wordIndex = 0; wordIndex < bg.length; wordIndex++) {
+    if (line.backgroundWords?.length) {
+      for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {
         out.push({ lineId: line.id, lineIndex, wordIndex, type: "bg" });
       }
     }
@@ -182,8 +178,7 @@ function computeRowLayout({
     if (isCollapsed) continue;
 
     const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-    const bg = bgWords(line);
-    const hasBg = bg && bg.length > 0;
+    const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
     const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
     lineTops.set(line.id, { top: rowTop, height: rowHeight, mainBottom: rowTop + mainHeight });
     rowTop += rowHeight;
@@ -202,7 +197,7 @@ interface NudgeSelection {
 
 interface NudgeUpdate {
   id: string;
-  updates: Partial<LooseLine>;
+  updates: Partial<LyricLine>;
 }
 
 interface NudgeResult {
@@ -227,7 +222,7 @@ function partitionNudgeSelections(
   const seenLineSyncedIds = new Set<string>();
 
   const pushWordSynced = (sel: NudgeSelection, line: LyricLine) => {
-    const wordsArray = sel.type === "bg" ? bgWords(line) : mainWords(line);
+    const wordsArray = sel.type === "bg" ? line.backgroundWords : line.words;
     if (!wordsArray) return;
     const expanded = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -305,24 +300,22 @@ function shiftLineSyncedRows(
   }
   const direction = requestedDelta < 0 ? -1 : 1;
   let allowedMagnitude = Math.abs(requestedDelta);
-  const targets: { id: string; begin: number; end: number }[] = [];
+  const targets: LyricLine[] = [];
   const linesById = new Map<string, LyricLine>();
   for (const l of rawLines) linesById.set(l.id, l);
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
-    if (!line) continue;
-    const mb = mainBounds(line);
-    if (!isLineSynced(line) || !mb) continue;
-    targets.push({ id: line.id, begin: mb.begin, end: mb.end });
-    const headroom = direction < 0 ? mb.begin : duration - mb.end;
+    if (!line || line.begin === undefined || line.end === undefined) continue;
+    targets.push(line);
+    const headroom = direction < 0 ? line.begin : duration - line.end;
     if (headroom < allowedMagnitude) allowedMagnitude = headroom;
     if (allowedMagnitude <= 0) return { appliedDelta: 0, updates: [] };
   }
   if (targets.length === 0) return { appliedDelta: 0, updates: [] };
   const appliedDelta = direction * allowedMagnitude;
-  const updates: NudgeUpdate[] = targets.map((target) => ({
-    id: target.id,
-    updates: { begin: target.begin + appliedDelta, end: target.end + appliedDelta },
+  const updates: NudgeUpdate[] = targets.map((line) => ({
+    id: line.id,
+    updates: { begin: (line.begin as number) + appliedDelta, end: (line.end as number) + appliedDelta },
   }));
   return { appliedDelta, updates };
 }
@@ -344,7 +337,7 @@ function nudgeSelectedWords(
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const wordsArray = sel.type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray || wordsArray[sel.wordIndex] === undefined) continue;
     const key = `${sel.lineId}:${sel.type}`;
     let group = groups.get(key);
@@ -361,7 +354,7 @@ function nudgeSelectedWords(
   let allowedMagnitude = Math.abs(requestedDelta);
 
   for (const group of groups.values()) {
-    const wordsArray = (group.type === "word" ? mainWords(group.line) : bgWords(group.line)) as WordTiming[];
+    const wordsArray = (group.type === "word" ? group.line.words : group.line.backgroundWords) as WordTiming[];
     for (const idx of group.indices) {
       const word = wordsArray[idx];
       let headroom: number;
@@ -392,7 +385,7 @@ function nudgeSelectedWords(
   const appliedDelta = direction * allowedMagnitude;
   const updates: NudgeUpdate[] = [];
   for (const group of groups.values()) {
-    const wordsArray = (group.type === "word" ? mainWords(group.line) : bgWords(group.line)) as WordTiming[];
+    const wordsArray = (group.type === "word" ? group.line.words : group.line.backgroundWords) as WordTiming[];
     const updatedWords = wordsArray.map((w, i) =>
       group.indices.has(i) ? { ...w, begin: w.begin + appliedDelta, end: w.end + appliedDelta } : w,
     );

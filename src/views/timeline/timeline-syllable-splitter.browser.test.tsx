@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { lineText, mainWords } from "@/domain/line/voices";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -62,10 +61,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
+      const words = useProjectStore.getState().lines[0].words ?? [];
       expect(words.map((w) => w.text)).toEqual(["ev", "er", "y"]);
     });
-    const wordsAfter = mainWords(useProjectStore.getState().lines[0]) ?? [];
+    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
     const ids = wordsAfter.map((w) => w.syllableGroupId);
     expect(ids[0]).toBeDefined();
     expect(ids[0]).toBe(ids[1]);
@@ -99,10 +98,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
+      const words = useProjectStore.getState().lines[0].words ?? [];
       expect(words.length).toBe(4);
     });
-    const wordsAfter = mainWords(useProjectStore.getState().lines[0]) ?? [];
+    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
     expect(wordsAfter.every((w) => w.syllableGroupId === "g_source")).toBe(true);
   });
 
@@ -127,10 +126,10 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
+      const words = useProjectStore.getState().lines[0].words ?? [];
       expect(words.length).toBe(2);
     });
-    const wordsAfter = mainWords(useProjectStore.getState().lines[0]) ?? [];
+    const wordsAfter = useProjectStore.getState().lines[0].words ?? [];
     expect(wordsAfter.map((w) => w.text)).toEqual(["hel ", "lo"]);
     expect(wordsAfter.every((w) => w.syllableGroupId === undefined)).toBe(true);
   });
@@ -183,12 +182,12 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Split Word" }).click();
 
     await vi.waitFor(() => {
-      const words = mainWords(useProjectStore.getState().lines[0]) ?? [];
+      const words = useProjectStore.getState().lines[0].words ?? [];
       expect(words.length).toBe(3);
     });
     const lineAfter = useProjectStore.getState().lines[0];
     // text is reconciled via reconstructLineText: the split char marks the
     // syllable joints so line.text tokenizes 1:1 back to line.words.
-    expect(lineText(lineAfter)).toBe("ev|er|y");
+    expect(lineAfter.text).toBe("ev|er|y");
   });
 });

@@ -1,8 +1,6 @@
 import { parseLamePriming } from "@/audio/lame-priming";
-import { mainBounds } from "@/domain/line/bounds";
-import { isLineSynced } from "@/domain/line/predicates";
-import { reconcileLine, toFlat, type LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
+import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { loadAudioFile, loadCurrentProject, replaceCurrentProject, type SavedProject } from "@/lib/persistence";
 
@@ -17,19 +15,18 @@ function shiftWord(word: WordTiming, shiftSec: number): WordTiming {
 }
 
 function shiftLine(line: LyricLine, shiftSec: number): LyricLine {
-  const flat = toFlat(line);
-  const words = mainWords(line);
-  if (words) flat.words = words.map((w) => shiftWord(w, shiftSec));
-  if (isLineSynced(line)) {
-    const mb = mainBounds(line);
-    if (mb) {
-      flat.begin = Math.max(0, mb.begin - shiftSec);
-      flat.end = Math.max(0, mb.end - shiftSec);
-    }
+  const next = { ...line } as LyricLine;
+  if (isWordSynced(next)) {
+    (next as { words: WordTiming[] }).words = next.words!.map((w) => shiftWord(w, shiftSec));
   }
-  const lineBgWords = bgWords(line);
-  if (lineBgWords) flat.backgroundWords = lineBgWords.map((w) => shiftWord(w, shiftSec));
-  return reconcileLine(flat);
+  if (isLineSynced(next)) {
+    (next as { begin: number; end: number }).begin = Math.max(0, next.begin - shiftSec);
+    (next as { begin: number; end: number }).end = Math.max(0, next.end - shiftSec);
+  }
+  if (next.backgroundWords) {
+    next.backgroundWords = next.backgroundWords.map((w) => shiftWord(w, shiftSec));
+  }
+  return next;
 }
 
 // -- Public API ---------------------------------------------------------------

@@ -1,7 +1,6 @@
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { bgText, bgWords, lineText, mainWords } from "@/domain/line/voices";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -19,11 +18,11 @@ function wordTextsEqual(a: { text: string }[] | undefined, b: { text: string }[]
 // -- Public --------------------------------------------------------------------
 
 function linesStructurallyEqual(a: LyricLine, b: LyricLine): boolean {
-  if (lineText(a) !== lineText(b)) return false;
+  if (a.text !== b.text) return false;
   if (a.agentId !== b.agentId) return false;
-  if ((bgText(a) ?? "") !== (bgText(b) ?? "")) return false;
-  if (!wordTextsEqual(mainWords(a), mainWords(b))) return false;
-  if (!wordTextsEqual(bgWords(a), bgWords(b))) return false;
+  if ((a.backgroundText ?? "") !== (b.backgroundText ?? "")) return false;
+  if (!wordTextsEqual(a.words, b.words)) return false;
+  if (!wordTextsEqual(a.backgroundWords, b.backgroundWords)) return false;
   return true;
 }
 

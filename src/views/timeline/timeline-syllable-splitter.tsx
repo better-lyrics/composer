@@ -1,4 +1,3 @@
-import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
@@ -31,7 +30,7 @@ const TimelineSyllableSplitter: React.FC = () => {
       const line = lines.find((l) => l.id === sel.lineId);
       if (!line) return;
 
-      const wordsArray = sel.type === "word" ? mainWords(line) : bgWords(line);
+      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
       const word: WordTiming | undefined = wordsArray?.[sel.wordIndex];
       if (!word || word.text.trimEnd().length < 2) return;
 

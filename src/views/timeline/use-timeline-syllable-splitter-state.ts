@@ -1,5 +1,4 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -112,7 +111,7 @@ function useTimelineSyllableSplitterState({
     const line = currentLines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? mainWords(line) : bgWords(line);
+    const wordsArray = type === "word" ? line.words : line.backgroundWords;
     if (!wordsArray) return;
 
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];

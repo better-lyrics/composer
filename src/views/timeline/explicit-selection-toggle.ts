@@ -1,5 +1,4 @@
 import type { LyricLine } from "@/domain/line/model";
-import { fieldWords } from "@/stores/project/lines-slice-helpers";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordSelection } from "@/domain/selection/model";
 
@@ -24,8 +23,7 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
 
   for (const w of selection) {
     const field: "words" | "backgroundWords" = w.type === "word" ? "words" : "backgroundWords";
-    const line = linesById.get(w.lineId);
-    const wordsArr = line ? fieldWords(line, field) : undefined;
+    const wordsArr = linesById.get(w.lineId)?.[field];
     if (!wordsArr || w.wordIndex < 0 || w.wordIndex >= wordsArr.length) continue;
     const key = `${w.lineId}:${field}`;
     const existing = groups.get(key);
@@ -37,8 +35,7 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
   let allMarked = true;
 
   for (const group of groups.values()) {
-    const line = linesById.get(group.lineId);
-    const wordsArr = line ? fieldWords(line, group.field) : undefined;
+    const wordsArr = linesById.get(group.lineId)?.[group.field];
     if (!wordsArr) continue;
     const expanded = expandSelectionToGroupmates(wordsArr, group.indices).filter((i) => i >= 0 && i < wordsArr.length);
     for (const idx of expanded) {

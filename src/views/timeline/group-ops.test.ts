@@ -57,7 +57,7 @@ describe("createGroupFromSelection", () => {
 describe("instanceToTemplate", () => {
   it("converts an instance's lines into relative-offset templates", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "a",
         text: "I love you",
         agentId: "v1",
@@ -69,8 +69,8 @@ describe("instanceToTemplate", () => {
           { text: "love ", begin: 30.4, end: 30.9 },
           { text: "you", begin: 30.9, end: 32 },
         ],
-      }),
-      reconcileLine({
+      },
+      {
         id: "b",
         text: "yeah",
         agentId: "v1",
@@ -78,7 +78,7 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 1,
         words: [{ text: "yeah", begin: 32, end: 33 }],
-      }),
+      },
     ];
 
     const tpl = instanceToTemplate(ls, "g1", 0);
@@ -92,7 +92,7 @@ describe("instanceToTemplate", () => {
 
   it("uses earliest bg-word begin as the start anchor when bg precedes main", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "a",
         text: "hi",
         agentId: "v1",
@@ -101,7 +101,7 @@ describe("instanceToTemplate", () => {
         templateLineIdx: 0,
         backgroundWords: [{ text: "yeah", begin: 28, end: 29 }],
         words: [{ text: "hi", begin: 30, end: 31 }],
-      }),
+      },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].words?.[0].relativeBegin).toBeCloseTo(2);
@@ -110,7 +110,7 @@ describe("instanceToTemplate", () => {
 
   it("carries backgroundTextSource from a real line into the template", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "a",
         text: "main",
         agentId: "v1",
@@ -121,7 +121,7 @@ describe("instanceToTemplate", () => {
         backgroundText: "ooh",
         backgroundWords: [{ text: "ooh", begin: 30, end: 30.5 }],
         backgroundTextSource: "extraction",
-      }),
+      },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("extraction");
@@ -129,7 +129,7 @@ describe("instanceToTemplate", () => {
 
   it("carries a manual-sourced background flag into the template", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "a",
         text: "main",
         agentId: "v1",
@@ -139,7 +139,7 @@ describe("instanceToTemplate", () => {
         words: [{ text: "main", begin: 30, end: 31 }],
         backgroundText: "ooh",
         backgroundTextSource: "manual",
-      }),
+      },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBe("manual");
@@ -147,7 +147,7 @@ describe("instanceToTemplate", () => {
 
   it("leaves backgroundTextSource undefined for a line with no background", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "a",
         text: "main",
         agentId: "v1",
@@ -155,7 +155,7 @@ describe("instanceToTemplate", () => {
         instanceIdx: 0,
         templateLineIdx: 0,
         words: [{ text: "main", begin: 30, end: 31 }],
-      }),
+      },
     ];
     const tpl = instanceToTemplate(ls, "g1", 0);
     expect(tpl[0].backgroundTextSource).toBeUndefined();
@@ -163,7 +163,7 @@ describe("instanceToTemplate", () => {
 
   it("uses word-derived start anchor even when line.begin/end is stale (regression)", () => {
     const ls: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "x",
         agentId: "v1",
@@ -174,7 +174,7 @@ describe("instanceToTemplate", () => {
           { text: "hello ", begin: 5, end: 6 },
           { text: "world", begin: 6, end: 7 },
         ],
-      }),
+      },
     ];
     const template = instanceToTemplate(ls, "g1", 0);
     expect(template).toHaveLength(1);

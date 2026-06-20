@@ -1,11 +1,10 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
-import { applyBackground, setBackground } from "@/domain/line/background";
 import type { LinkGroup } from "@/domain/group/template";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
+import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
@@ -13,62 +12,6 @@ import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared"
 // -- Constants ----------------------------------------------------------------
 
 const COMPOSER_NS = "https://composer.boidu.dev/ttml";
-const TTM_METADATA_NS = "http://www.w3.org/ns/ttml#metadata";
-
-// -- Background -----------------------------------------------------------------
-
-function roleOf(el: Element): string | null {
-  return el.getAttribute("ttm:role") || el.getAttributeNS(TTM_METADATA_NS, "role");
-}
-
-function findBackgroundContainer(p: Element): Element | null {
-  for (const span of p.getElementsByTagName("span")) {
-    if (roleOf(span) === "x-bg") return span;
-  }
-  return null;
-}
-
-function extractMainText(p: Element): string {
-  let text = "";
-  for (const node of p.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent ?? "";
-    } else if (node.nodeType === Node.ELEMENT_NODE && roleOf(node as Element) !== "x-bg") {
-      text += (node as Element).textContent ?? "";
-    }
-  }
-  return text.trim();
-}
-
-// Imported x-bg is authored content, so the granularity it was authored at is
-// preserved verbatim rather than "corrected" against the main voice:
-//   2+ timed spans -> word-synced (applyBackground returns words verbatim)
-//   1 timed span   -> line-synced, carrying that span's begin/end and text
-//                     directly (setBackground bypasses the resolver, which
-//                     would wrongly distribute it over a word-synced main)
-//   no timed spans -> untimed raw text, resolved against the main voice
-// Source is stamped "manual" so a later re-paste of parenthesised lyrics does
-// not double it and the provenance stays coherent.
-function attachBackground(line: LyricLine, bgContainer: Element): LyricLine {
-  const bgWords = inferSyllableGroupIds(extractTimedWords(bgContainer, null));
-
-  if (bgWords.length >= 2) {
-    return applyBackground(line, {
-      words: bgWords,
-      text: reconstructLineText(bgWords, getSplitCharacter()),
-      source: "manual",
-    });
-  }
-
-  if (bgWords.length === 1) {
-    const span = bgWords[0];
-    return setBackground(line, { text: span.text, begin: span.begin, end: span.end, source: "manual" });
-  }
-
-  const rawText = bgContainer.textContent?.trim();
-  if (!rawText) return line;
-  return applyBackground(line, { text: rawText, source: "manual" });
-}
 
 // -- TTML Parser --------------------------------------------------------------
 
@@ -160,43 +103,90 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         }
       : {};
 
-    const bgContainer = findBackgroundContainer(p);
+    // Find background vocal container (x-bg role)
+    // Note: use getElementsByTagName for namespace compatibility
+    const allSpansInP = p.getElementsByTagName("span");
+    let bgContainer: Element | null = null;
+    for (const span of allSpansInP) {
+      const role = span.getAttribute("ttm:role") || span.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+      if (role === "x-bg") {
+        bgContainer = span;
+        break;
+      }
+    }
+
+    let backgroundText: string | undefined;
+    let backgroundWords: WordTiming[] | undefined;
+
+    if (bgContainer) {
+      backgroundWords = inferSyllableGroupIds(extractTimedWords(bgContainer, null));
+      if (backgroundWords.length > 0) {
+        backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
+      } else {
+        backgroundText = bgContainer.textContent || undefined;
+      }
+    }
+
+    // Imported background is authored content (not auto-extracted by this app);
+    // stamp it manual so a later re-paste of parenthesised lyrics does not
+    // double it, and so the provenance triple stays coherent.
+    const backgroundTextSource: "manual" | undefined =
+      backgroundText || (backgroundWords && backgroundWords.length > 0) ? "manual" : undefined;
 
     // Check for word-level timing (span elements NOT inside x-bg)
     const words = inferSyllableGroupIds(extractTimedWords(p, bgContainer));
 
-    let baseLine: LyricLine | null = null;
     if (words.length > 0) {
-      baseLine = reconcileLine({
-        id: generateLineId(),
-        text: reconstructLineText(words, getSplitCharacter()),
-        agentId,
-        words,
-        ...groupFields,
-      });
-    } else {
-      const text = extractMainText(p);
-      if (text) {
-        baseLine = reconcileLine({
+      lines.push(
+        reconcileLine({
           id: generateLineId(),
-          text,
+          text: reconstructLineText(words, getSplitCharacter()),
           agentId,
-          begin: begin || undefined,
-          end: end || undefined,
+          words,
+          backgroundText,
+          backgroundWords,
+          backgroundTextSource,
           ...groupFields,
-        });
+        }),
+      );
+    } else {
+      // Line-level timing only - extract text without bg content
+      let text = "";
+      for (const node of p.childNodes) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          text += node.textContent ?? "";
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element;
+          const role = el.getAttribute("ttm:role") || el.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+          if (role !== "x-bg") {
+            text += el.textContent ?? "";
+          }
+        }
       }
-    }
+      text = text.trim();
 
-    if (baseLine) {
-      lines.push(bgContainer ? attachBackground(baseLine, bgContainer) : baseLine);
+      if (text) {
+        lines.push(
+          reconcileLine({
+            id: generateLineId(),
+            text,
+            agentId,
+            begin: begin || undefined,
+            end: end || undefined,
+            backgroundText,
+            backgroundWords,
+            backgroundTextSource,
+            ...groupFields,
+          }),
+        );
+      }
     }
   }
 
   return {
     lines,
     metadata,
-    hasTimingData: lines.some((l) => isLineSynced(l) || isWordSynced(l)),
+    hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
   };

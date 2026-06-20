@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import type { LyricLine } from "@/domain/line/model";
 import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 
 // -- Helpers ------------------------------------------------------------------
 
-const line = (id: string, words: WordTiming[], text: string): LyricLine =>
-  reconcileLine({ id, agentId: "a", text, words });
+const line = (id: string, words: LyricLine["words"], text: string): LyricLine =>
+  ({ id, agentId: "a", text, words }) as LyricLine;
 
 // -- Tests --------------------------------------------------------------------
 

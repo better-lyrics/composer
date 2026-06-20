@@ -1,11 +1,11 @@
-import type { LooseLine, LyricLine } from "@/domain/line/model";
+import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
 type UpdateLineWithHistory = (
   id: string,
-  updates: Partial<LooseLine>,
+  updates: Partial<LyricLine>,
   options?: { propagateToSiblings?: boolean },
 ) => void;
 
@@ -43,7 +43,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     const word = updatedWords[wordIdx];
     updatedWords[wordIdx] = mutator({ word, prevWord: updatedWords[wordIdx - 1], nextWord: updatedWords[wordIdx + 1] });
 
-    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LooseLine>, {
+    updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
       propagateToSiblings: false,
     });
   }

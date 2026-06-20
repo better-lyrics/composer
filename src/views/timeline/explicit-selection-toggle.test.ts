@@ -3,8 +3,7 @@
  */
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { mainWords } from "@/domain/line/voices";
+import type { LyricLine } from "@/domain/line/model";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import type { WordSelection } from "@/domain/selection/model";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -16,7 +15,7 @@ function sel(lineId: string, wordIndex: number, type: "word" | "bg" = "word"): W
 describe("resolveExplicitSelectionToggle", () => {
   it("marks the whole word when a partially-marked syllable group is selected via one syllable", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "fu|cking yeah",
         agentId: "v1",
@@ -25,7 +24,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "cking ", begin: 0.2, end: 0.5 },
           { text: "yeah", begin: 0.5, end: 1 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("L1", 0)]);
     expect(result.value).toBe(true);
@@ -34,7 +33,7 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("unmarks when every syllable of the selected word is already marked", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "fu|cking yeah",
         agentId: "v1",
@@ -43,7 +42,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "cking ", begin: 0.2, end: 0.5, explicit: true },
           { text: "yeah", begin: 0.5, end: 1 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("L1", 1)]);
     expect(result.value).toBe(false);
@@ -52,7 +51,7 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("marks when the selected word is fully unmarked", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "fuck this",
         agentId: "v1",
@@ -60,7 +59,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "fuck ", begin: 0, end: 0.5 },
           { text: "this", begin: 0.5, end: 1 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("L1", 0)]);
     expect(result.value).toBe(true);
@@ -69,7 +68,7 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("treats a multi-line selection as marked-only-if every expanded index is marked", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "A",
         text: "fuck this",
         agentId: "v1",
@@ -77,8 +76,8 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "fuck ", begin: 0, end: 0.5, explicit: true },
           { text: "this", begin: 0.5, end: 1 },
         ],
-      }),
-      reconcileLine({
+      },
+      {
         id: "B",
         text: "shit happens",
         agentId: "v1",
@@ -86,7 +85,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "shit ", begin: 1, end: 1.5 },
           { text: "happens", begin: 1.5, end: 2 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("A", 0), sel("B", 0)]);
     expect(result.value).toBe(true);
@@ -98,7 +97,7 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("maps a bg-type selection to the backgroundWords field", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "main",
         agentId: "v1",
@@ -108,7 +107,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "oh ", begin: 1, end: 1.25 },
           { text: "shit", begin: 1.25, end: 1.5 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("L1", 1, "bg")]);
     expect(result.value).toBe(true);
@@ -117,7 +116,7 @@ describe("resolveExplicitSelectionToggle", () => {
 
   it("drops out-of-range and unknown-line selections", () => {
     const lines: LyricLine[] = [
-      reconcileLine({
+      {
         id: "L1",
         text: "fuck this",
         agentId: "v1",
@@ -125,7 +124,7 @@ describe("resolveExplicitSelectionToggle", () => {
           { text: "fuck ", begin: 0, end: 0.5 },
           { text: "this", begin: 0.5, end: 1 },
         ],
-      }),
+      },
     ];
     const result = resolveExplicitSelectionToggle(lines, [sel("L1", 9), sel("ghost", 0), sel("L1", 0)]);
     expect(result.targets).toEqual([{ lineId: "L1", field: "words", wordIndex: 0 }]);
@@ -147,20 +146,18 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     const group: LinkGroup = { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 };
     useProjectStore.getState().setGroups([group]);
     useProjectStore.getState().setLines(
-      [0, 1, 2].map((idx) =>
-        reconcileLine({
-          id: `inst-${idx}`,
-          text: "fuck this",
-          agentId: "v1",
-          groupId: "g1",
-          instanceIdx: idx,
-          templateLineIdx: 0,
-          words: [
-            { text: "fuck ", begin: idx * 30, end: idx * 30 + 0.5, ...(explicit ? { explicit: true as const } : {}) },
-            { text: "this", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
-          ],
-        }),
-      ),
+      [0, 1, 2].map((idx) => ({
+        id: `inst-${idx}`,
+        text: "fuck this",
+        agentId: "v1",
+        groupId: "g1",
+        instanceIdx: idx,
+        templateLineIdx: 0,
+        words: [
+          { text: "fuck ", begin: idx * 30, end: idx * 30 + 0.5, ...(explicit ? { explicit: true as const } : {}) },
+          { text: "this", begin: idx * 30 + 0.5, end: idx * 30 + 1 },
+        ],
+      })),
     );
   }
 
@@ -174,7 +171,7 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     seedLinkedChorus();
     runToggle();
     const lines = useProjectStore.getState().lines;
-    expect(lines.every((l) => mainWords(l)?.[0].explicit === true)).toBe(true);
+    expect(lines.every((l) => l.words?.[0].explicit === true)).toBe(true);
   });
 
   it("reverts the whole batch with a single undo", () => {
@@ -182,13 +179,13 @@ describe("resolveExplicitSelectionToggle → markWordsExplicit (keyboard flow, i
     runToggle();
     useProjectStore.getState().undo();
     const lines = useProjectStore.getState().lines;
-    expect(lines.every((l) => mainWords(l)?.[0].explicit === undefined)).toBe(true);
+    expect(lines.every((l) => l.words?.[0].explicit === undefined)).toBe(true);
   });
 
   it("unmarks the batch when every selected word is already explicit", () => {
     seedLinkedChorus(true);
     runToggle();
     const lines = useProjectStore.getState().lines;
-    expect(lines.every((l) => mainWords(l)?.[0].explicit === undefined)).toBe(true);
+    expect(lines.every((l) => l.words?.[0].explicit === undefined)).toBe(true);
   });
 });

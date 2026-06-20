@@ -5,7 +5,6 @@ import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-vi
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
 import type { Agent } from "@/domain/agent/model";
-import { isWordSynced } from "@/domain/line/predicates";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
@@ -71,7 +70,7 @@ function convertLrc({ input, filename }: ConvertArgs): { ttml: string; projectPa
       language: result.metadata.language,
     };
     const agents: Agent[] = result.agents ?? [{ id: "v1", type: "person", name: "Voice 1" }];
-    const granularity = result.lines.some((line) => isWordSynced(line)) ? "word" : "line";
+    const granularity = result.lines.some((line) => line.words?.length) ? "word" : "line";
     const ttml = generateTTML({ metadata, agents, lines: result.lines, granularity });
     const projectPayload = JSON.stringify({ metadata, agents, lines: result.lines, granularity });
     return { ttml, projectPayload };

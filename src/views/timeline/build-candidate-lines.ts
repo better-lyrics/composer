@@ -1,5 +1,4 @@
 import type { LyricLine } from "@/domain/line/model";
-import { bgWords, mainWords } from "@/domain/line/voices";
 import type { WordSelection } from "@/domain/selection/model";
 
 function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<WordSelection>): LyricLine[] | undefined {
@@ -23,8 +22,8 @@ function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<Wo
   for (const [lineId, { mainIdxs, bgIdxs, lineIndex }] of byLine) {
     const line = linesById.get(lineId);
     if (!line) return undefined;
-    const totalMain = mainWords(line)?.length ?? 0;
-    const totalBg = bgWords(line)?.length ?? 0;
+    const totalMain = line.words?.length ?? 0;
+    const totalBg = line.backgroundWords?.length ?? 0;
     if (mainIdxs.size !== totalMain) return undefined;
     if (bgIdxs.size !== totalBg) return undefined;
     candidates.push({ line, lineIndex });

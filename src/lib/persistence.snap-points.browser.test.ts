@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { reconcileLine } from "@/domain/line/model";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { clearCurrentProject, loadCurrentProject, type SavedProject, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
@@ -16,7 +15,7 @@ function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
     { title: "snap", artist: "", album: "", duration: 0 },
     DEFAULT_AGENTS,
-    [reconcileLine({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
+    [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
     [],
     "word",
     { applyToAll: false, caseInsensitive: false },
@@ -74,7 +73,7 @@ describe("persistence · customSnapPoints", () => {
       savedAt: Date.now(),
       metadata: { title: "legacy", artist: "", album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
-      lines: [reconcileLine({ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id })],
+      lines: [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
       groups: [],
       granularity: "word",
       syllableSplitDefaults: { applyToAll: false, caseInsensitive: false },

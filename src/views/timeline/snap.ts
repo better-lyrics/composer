@@ -1,7 +1,5 @@
-import { mainBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { bgWords as bgWordsOf, lineText, mainWords } from "@/domain/line/voices";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -58,7 +56,7 @@ function collectSnapAnchors(
 
   if (includeTimelineAnchors) {
     for (const line of lines) {
-      const words = mainWords(line);
+      const words = line.words;
       const wordCount = words?.length ?? 0;
       const wordTimed = wordCount > 0;
 
@@ -86,11 +84,11 @@ function collectSnapAnchors(
         }
       }
 
-      const bgWordArr = bgWordsOf(line);
-      const bgCount = bgWordArr?.length ?? 0;
-      if (bgWordArr && bgCount > 0) {
+      const bgWords = line.backgroundWords;
+      const bgCount = bgWords?.length ?? 0;
+      if (bgWords && bgCount > 0) {
         for (let i = 0; i < bgCount; i++) {
-          const word = bgWordArr[i];
+          const word = bgWords[i];
           if (!selfIds.has(selfKey(line.id, i, "bg"))) {
             anchors.push({
               t: word.begin,
@@ -112,10 +110,9 @@ function collectSnapAnchors(
         }
       }
 
-      const mb = mainBounds(line);
-      if (!wordTimed && isLineSynced(line) && mb) {
-        anchors.push({ t: mb.begin, kind: "line-begin", label: lineText(line), lineId: line.id });
-        anchors.push({ t: mb.end, kind: "line-end", label: lineText(line), lineId: line.id });
+      if (!wordTimed && isLineSynced(line)) {
+        anchors.push({ t: line.begin, kind: "line-begin", label: line.text, lineId: line.id });
+        anchors.push({ t: line.end, kind: "line-end", label: line.text, lineId: line.id });
       }
     }
 
