@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://composer.boidu.dev/sitemap.xml
+Sitemap: https://composer.betterlyrics.org/sitemap.xml

@@ -8,10 +8,19 @@ import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
+import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 
-// -- Constants ----------------------------------------------------------------
+// -- Helpers ------------------------------------------------------------------
 
-const COMPOSER_NS = "https://composer.boidu.dev/ttml";
+function getComposerAttribute(el: Element, name: string): string | null {
+  const prefixed = el.getAttribute(`composer:${name}`);
+  if (prefixed !== null) return prefixed;
+  for (const ns of COMPOSER_NAMESPACES) {
+    const value = el.getAttributeNS(ns, name);
+    if (value !== null) return value;
+  }
+  return null;
+}
 
 // -- TTML Parser --------------------------------------------------------------
 
@@ -60,7 +69,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   // Parse composer:groups registry
   const groups: LinkGroup[] = [];
   const groupEls = Array.from(doc.getElementsByTagName("composer:group")).concat(
-    Array.from(doc.getElementsByTagNameNS(COMPOSER_NS, "group")),
+    COMPOSER_NAMESPACES.flatMap((ns) => Array.from(doc.getElementsByTagNameNS(ns, "group"))),
   );
   const seenGroupIds = new Set<string>();
   for (const el of groupEls) {
@@ -82,17 +91,14 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const end = parseTtmlTimestamp(p.getAttribute("end") ?? "");
     const agentId = p.getAttribute("ttm:agent")?.replace("#", "") ?? "v1";
 
-    // Extract composer: group attrs (try plain attribute first, then namespaced lookup)
-    const rawGroupId = p.getAttribute("composer:groupId") ?? p.getAttributeNS(COMPOSER_NS, "groupId") ?? null;
+    const rawGroupId = getComposerAttribute(p, "groupId");
     const knownGroupId = rawGroupId && seenGroupIds.has(rawGroupId) ? rawGroupId : null;
     if (rawGroupId && !knownGroupId) {
       console.warn(`[Composer] TTML <p> references unknown groupId="${rawGroupId}"; treating line as standalone.`);
     }
-    const instanceIdxStr =
-      p.getAttribute("composer:instanceIdx") ?? p.getAttributeNS(COMPOSER_NS, "instanceIdx") ?? null;
-    const templateLineIdxStr =
-      p.getAttribute("composer:templateLineIdx") ?? p.getAttributeNS(COMPOSER_NS, "templateLineIdx") ?? null;
-    const detachedStr = p.getAttribute("composer:detached") ?? p.getAttributeNS(COMPOSER_NS, "detached") ?? null;
+    const instanceIdxStr = getComposerAttribute(p, "instanceIdx");
+    const templateLineIdxStr = getComposerAttribute(p, "templateLineIdx");
+    const detachedStr = getComposerAttribute(p, "detached");
 
     const groupFields = knownGroupId
       ? {

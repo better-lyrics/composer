@@ -6,7 +6,7 @@ import "vite-react-ssg";
 import { writeSeoAssets } from "./scripts/build-seo-assets";
 import pkg from "./package.json";
 
-const SITE_ORIGIN = "https://composer.boidu.dev";
+const SITE_ORIGIN = "https://composer.betterlyrics.org";
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

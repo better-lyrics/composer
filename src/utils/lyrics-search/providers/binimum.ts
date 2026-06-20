@@ -6,7 +6,7 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 
 const BINIMUM_BASE_URL = "https://lyrics-api.binimum.org/";
 const ID_PREFIX = "binimum-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.boidu.dev)";
+const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 const ISRC_REGEX = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 const VALID_TIMING_TYPES: ReadonlySet<SyncType> = new Set<SyncType>(["syllable", "word", "line"]);
 

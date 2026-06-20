@@ -42,7 +42,7 @@ cat > "${CORS_FILE}" <<'JSON'
     {
       "allowed": {
         "origins": [
-          "https://composer.boidu.dev",
+          "https://composer.betterlyrics.org",
           "http://localhost:5173",
           "http://127.0.0.1:5173",
           "http://localhost:4173",
@@ -75,4 +75,4 @@ done
 
 echo ""
 echo "Done. Verify the files are reachable via your bound custom domain, e.g.:"
-echo "  curl -I https://models.composer.boidu.dev/htdemucs_fp16.onnx"
+echo "  curl -I https://models.composer.betterlyrics.org/htdemucs_fp16.onnx"

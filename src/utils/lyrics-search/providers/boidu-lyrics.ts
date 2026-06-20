@@ -6,7 +6,7 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 
 const BOIDU_BASE_URL = "https://lyrics-api.boidu.dev/getLyrics";
 const ID_PREFIX = "boidu-lyrics-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.boidu.dev)";
+const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 
 // -- Types --------------------------------------------------------------------
 

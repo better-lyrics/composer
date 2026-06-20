@@ -45,7 +45,7 @@ const TtmlStandardsSection: React.FC = () => (
       vocabulary. That's the W3C-sanctioned way to add application-specific data while keeping the document conformant.
     </p>
     <p className={PROSE}>
-      Composer's namespace URI is <span className={INLINE_CODE}>https://composer.boidu.dev/ttml</span>. Custom
+      Composer's namespace URI is <span className={INLINE_CODE}>https://composer.betterlyrics.org/ttml</span>. Custom
       attributes show up as <span className={INLINE_CODE}>composer:groupId</span>,{" "}
       <span className={INLINE_CODE}>composer:instanceIdx</span>, and so on, on the root{" "}
       <span className={INLINE_CODE}>&lt;tt&gt;</span> element and on <span className={INLINE_CODE}>&lt;p&gt;</span>{" "}

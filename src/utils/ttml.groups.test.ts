@@ -243,6 +243,40 @@ describe("ttml import · per-line group attrs", () => {
   });
 });
 
+describe("ttml namespace · betterlyrics rebrand + legacy compat", () => {
+  const NEW_NS = "https://composer.betterlyrics.org/ttml";
+  const OLD_NS = "https://composer.boidu.dev/ttml";
+  const groups: LinkGroup[] = [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }];
+
+  it("declares the new betterlyrics.org namespace on export, never the old one", () => {
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups, granularity: "word" });
+    expect(ttml).toContain(`xmlns:composer="${NEW_NS}"`);
+    expect(ttml).not.toContain(OLD_NS);
+  });
+
+  it("parses a legacy file that declares the old namespace on the composer prefix", () => {
+    const legacy = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:composer="${OLD_NS}"><head><metadata><ttm:agent type="person" xml:id="v1"/><composer:groups><composer:group id="g1" label="Chorus" color="#f472b6" templateVersion="2"/></composer:groups></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1" composer:groupId="g1" composer:instanceIdx="1" composer:templateLineIdx="0">hi</p></div></body></tt>`;
+    const result = parseLyricsFile("legacy.ttml", legacy);
+
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups?.[0].label).toBe("Chorus");
+    expect(result.groups?.[0].templateVersion).toBe(2);
+    expect(result.lines[0].groupId).toBe("g1");
+    expect(result.lines[0].instanceIdx).toBe(1);
+  });
+
+  it("parses a legacy file that binds the old namespace to a non-composer prefix", () => {
+    const legacy = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:c="${OLD_NS}"><head><metadata><ttm:agent type="person" xml:id="v1"/><c:groups><c:group id="g1" label="Chorus" color="#f472b6" templateVersion="3"/></c:groups></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1" c:groupId="g1" c:instanceIdx="2" c:templateLineIdx="0" c:detached="true">hi</p></div></body></tt>`;
+    const result = parseLyricsFile("legacy-prefix.ttml", legacy);
+
+    expect(result.groups).toHaveLength(1);
+    expect(result.groups?.[0].templateVersion).toBe(3);
+    expect(result.lines[0].groupId).toBe("g1");
+    expect(result.lines[0].instanceIdx).toBe(2);
+    expect(result.lines[0].detached).toBe(true);
+  });
+});
+
 describe("ttml export · explicit word attribute", () => {
   it('emits composer:explicit="true" only on flagged words', () => {
     const ttml = generateTTML({

@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://composer.boidu.dev"><img src="https://img.shields.io/badge/Open-composer.boidu.dev-F50032?style=flat-square" alt="Open Composer" /></a>
+  <a href="https://composer.betterlyrics.org"><img src="https://img.shields.io/badge/Open-composer.betterlyrics.org-F50032?style=flat-square" alt="Open Composer" /></a>
   <a href="https://www.w3.org/TR/2018/REC-ttml1-20181108/"><img src="https://img.shields.io/badge/TTML%201-W3C%20Compliant-4caf50?style=flat-square" alt="TTML 1 W3C Compliant" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%203.0-2196f3?style=flat-square" alt="AGPL 3.0 License" /></a>
   <a href="https://betterlyrics.org"><img src="https://img.shields.io/badge/Built%20for-Better%20Lyrics-F50032?style=flat-square" alt="Built for Better Lyrics" /></a>
@@ -121,10 +121,10 @@ Two scripts in `scripts/` do the work:
 ### One-time R2 setup
 
 1. Create a public R2 bucket (e.g. `composer-vocal-models`).
-2. Bind a custom domain to the bucket (e.g. `models.composer.boidu.dev`). **Avoid `r2.dev`** — it's rate-limited and intended for development.
+2. Bind a custom domain to the bucket (e.g. `models.composer.betterlyrics.org`). **Avoid `r2.dev`** — it's rate-limited and intended for development.
 3. Add a Cloudflare page rule `Cache Everything` for that hostname so binary files are edge-cached.
 4. Add a CORS rule allowing your site origin(s).
-5. Set `VITE_VOCAL_MODEL_BASE_URL=https://models.composer.boidu.dev` at build time.
+5. Set `VITE_VOCAL_MODEL_BASE_URL=https://models.composer.betterlyrics.org` at build time.
 
 Cost: free egress; ~$0.0015/month storage for the fp16 model.
 

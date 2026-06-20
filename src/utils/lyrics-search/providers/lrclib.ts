@@ -8,7 +8,7 @@ const LRCLIB_BASE_URL = "https://lrclib.net";
 const SEARCH_PATH = "/api/search";
 const GET_PATH = "/api/get";
 const ID_PREFIX = "lrclib-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.boidu.dev)";
+const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 
 // -- Types --------------------------------------------------------------------
 

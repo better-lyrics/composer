@@ -1,4 +1,4 @@
-const SITE_ORIGIN = "https://composer.boidu.dev";
+const SITE_ORIGIN = "https://composer.betterlyrics.org";
 const SITE_NAME = "Composer";
 const ORG_NAME = "Better Lyrics";
 const ORG_URL = "https://better-lyrics.boidu.dev";
