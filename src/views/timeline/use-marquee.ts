@@ -5,6 +5,7 @@ import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timelin
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { bgWords, mainWords } from "@/domain/line/voices";
 import { mergeWordSelections } from "@/domain/selection/set-ops";
+import { bgTrackHeightOf } from "@/views/timeline/row-geometry";
 import { computeRowLayout } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useRef, useState } from "react";
 
@@ -22,7 +23,6 @@ type MarqueeState = "idle" | "pending" | "active";
 // -- Constants -----------------------------------------------------------------
 
 const ACTIVATION_THRESHOLD = 5;
-const BG_DROP_ZONE_HEIGHT = 24;
 const AUTO_SCROLL_ZONE = 40;
 const AUTO_SCROLL_SPEED = 8;
 
@@ -66,7 +66,6 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       defaultRowHeight,
       collapsedInstances,
       waveformHeight: WAVEFORM_HEIGHT,
-      bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
@@ -98,7 +97,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       }
 
       if (hasBg && bg) {
-        const bgHeight = mainHeight;
+        const bgHeight = bgTrackHeightOf(line, mainHeight);
         const bgTop = mainBottom;
         const bgBottom = bgTop + bgHeight;
         if (bgTop < rectBottom && bgBottom > rect.y) {

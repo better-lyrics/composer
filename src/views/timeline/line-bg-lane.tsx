@@ -8,6 +8,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { placeVoiceAtPlayhead } from "@/views/timeline/place-voice-at-playhead";
+import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
 import { useDroppable } from "@dnd-kit/core";
@@ -33,7 +34,6 @@ interface LineBgLaneProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
 const BG_BAR_TEXT_LIMIT = 40;
 
 // -- PlaceBgButton -------------------------------------------------------------

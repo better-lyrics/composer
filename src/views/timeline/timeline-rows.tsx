@@ -7,6 +7,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
+import { BG_DROP_ZONE_HEIGHT, rowHeightOf } from "@/views/timeline/row-geometry";
 import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -19,10 +20,6 @@ import { Virtuoso } from "react-virtuoso";
 interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 }
-
-// -- Constants -----------------------------------------------------------------
-
-const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Component -----------------------------------------------------------------
 
@@ -141,9 +138,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
       if (!row) return DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT;
       if (row.kind === "group-header") return GROUP_HEADER_HEIGHT;
       const mainHeight = rowHeights[row.line.id] ?? DEFAULT_ROW_HEIGHT;
-      const rowBgWords = bgWords(row.line);
-      const hasBgWords = rowBgWords && rowBgWords.length > 0;
-      return mainHeight + (hasBgWords ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+      return rowHeightOf(row.line, mainHeight);
     },
     [visibleRows, rowHeights],
   );

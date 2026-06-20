@@ -11,6 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
+import { rowHeightOf } from "@/views/timeline/row-geometry";
 import { findWordsAtTime } from "@/views/timeline/word-at-playhead";
 
 // -- Functions -----------------------------------------------------------------
@@ -137,7 +138,6 @@ interface RowLayoutInput {
   defaultRowHeight: number;
   collapsedInstances: Record<string, boolean>;
   waveformHeight: number;
-  bgDropZoneHeight: number;
   groupHeaderHeight: number;
 }
 
@@ -155,13 +155,17 @@ interface RowLayout {
   headerTops: Map<string, HeaderPosition>;
 }
 
+// Operates on EFFECTIVE lines so a line-synced main or background is sized as the
+// full WordTrack the renderer draws, not the bare drop zone its raw voice would
+// imply. getEffectiveLines is 1:1 with the raw lines (same ids and order), so
+// callers may pass either and the by-id lineTops stay valid. Sharing rowHeightOf
+// with the renderer's getRowHeight is what keeps overlays from drifting.
 function computeRowLayout({
   lines,
   rowHeights,
   defaultRowHeight,
   collapsedInstances,
   waveformHeight,
-  bgDropZoneHeight,
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
   const lineTops = new Map<string, RowPosition>();
@@ -169,7 +173,7 @@ function computeRowLayout({
   let rowTop = waveformHeight;
   let lastInstanceKey: string | null = null;
 
-  for (const line of lines) {
+  for (const line of getEffectiveLines(lines)) {
     const inst = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
 
     if (inst !== lastInstanceKey && inst !== null) {
@@ -182,9 +186,7 @@ function computeRowLayout({
     if (isCollapsed) continue;
 
     const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-    const bg = bgWords(line);
-    const hasBg = bg && bg.length > 0;
-    const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
+    const rowHeight = rowHeightOf(line, mainHeight);
     lineTops.set(line.id, { top: rowTop, height: rowHeight, mainBottom: rowTop + mainHeight });
     rowTop += rowHeight;
   }

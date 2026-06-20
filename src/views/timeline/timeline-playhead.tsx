@@ -76,7 +76,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
         if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
           lastFollowedLineRef.current = activeLineIndex;
-          const BG_DROP_ZONE_HEIGHT = 24;
           const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
 
           const layout = computeRowLayout({
@@ -85,7 +84,6 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
             defaultRowHeight,
             collapsedInstances,
             waveformHeight: WAVEFORM_HEIGHT,
-            bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
             groupHeaderHeight: GROUP_HEADER_HEIGHT,
           });
 
