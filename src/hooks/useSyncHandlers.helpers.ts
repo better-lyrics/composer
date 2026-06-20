@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { createInitialBgWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
+import { createInitialBgWords, splitIntoWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -46,15 +46,35 @@ function buildInitialWordUpdates(
   return withBgSeedIfNeeded({ words: [{ text: textWithSpace, begin, end }] }, line, begin);
 }
 
+function isSyncableLine(line: LyricLine | undefined): boolean {
+  return !!line && splitIntoWords(line.text).length > 0;
+}
+
+function nextSyncableLineIndex(lines: LyricLine[], fromIndex: number): number {
+  for (let i = fromIndex + 1; i < lines.length; i++) {
+    if (isSyncableLine(lines[i])) return i;
+  }
+  return lines.length;
+}
+
+function prevSyncableLine(lines: LyricLine[], fromIndex: number): LyricLine | undefined {
+  for (let i = fromIndex - 1; i >= 0; i--) {
+    if (isSyncableLine(lines[i])) return lines[i];
+  }
+  return undefined;
+}
+
 function advanceSyncPosition(
   setSyncState: SetSyncState,
+  lines: LyricLine[],
   lineIndex: number,
   wordIndex: number,
   totalWords: number,
 ): void {
   const nextWordIndex = wordIndex + 1;
   if (nextWordIndex >= totalWords) {
-    setSyncState((prev) => ({ ...prev, position: { lineIndex: lineIndex + 1, wordIndex: 0 } }));
+    const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
+    setSyncState((prev) => ({ ...prev, position: { lineIndex: nextLineIndex, wordIndex: 0 } }));
   } else {
     setSyncState((prev) => ({ ...prev, position: { ...prev.position, wordIndex: nextWordIndex } }));
   }
@@ -67,5 +87,13 @@ function triggerPulse(setShowPulse: (show: boolean) => void): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { prepareSyncWord, withBgSeedIfNeeded, buildInitialWordUpdates, advanceSyncPosition, triggerPulse };
+export {
+  prepareSyncWord,
+  withBgSeedIfNeeded,
+  buildInitialWordUpdates,
+  advanceSyncPosition,
+  nextSyncableLineIndex,
+  prevSyncableLine,
+  triggerPulse,
+};
 export type { PreparedSyncWord, SetSyncState };
