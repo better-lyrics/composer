@@ -71,6 +71,11 @@ const TimelineSection: React.FC = () => {
         settingKey="defaultRollingEdit"
       />
       <ToggleSetting
+        label="Rolling edit mode affects syllable conjoining"
+        description="Adjusting syllable timings will respect whether or not rolling edit mode is enabled. Hold Alt to invert."
+        settingKey="rollingAffectsSyllableConjoining"
+      />
+      <ToggleSetting
         label="Default preview sidebar"
         description="Open the preview sidebar by default."
         settingKey="defaultPreviewSidebar"
