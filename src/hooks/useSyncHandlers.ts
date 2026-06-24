@@ -26,6 +26,10 @@ import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
 
+// -- Constants ----------------------------------------------------------------
+
+const REDO_PREROLL_SECONDS = 1.5;
+
 // -- Types --------------------------------------------------------------------
 
 interface UseSyncHandlersProps {
@@ -274,8 +278,13 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
       }));
+      const bounds = effectiveBounds(lines[index]);
+      if (bounds) {
+        seekTo(Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
+        setIsPlaying(true);
+      }
     },
-    [editMode, lines, seekTo, setSyncState],
+    [editMode, lines, seekTo, setSyncState, setIsPlaying],
   );
 
   const handleNudgeWord = useCallback(
@@ -403,4 +412,4 @@ function useSyncHandlers({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useSyncHandlers };
+export { useSyncHandlers, REDO_PREROLL_SECONDS };
