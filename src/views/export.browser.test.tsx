@@ -45,6 +45,17 @@ describe("ExportPanel", () => {
     await screen.getByRole("button", { name: /Edit$/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Edit TTML content" })).toBeInTheDocument();
   });
+
+  it("renders the edit textarea outside the overflow-auto scroll container so it can fill the panel height", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+    });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    await expect.element(textarea).toBeInTheDocument();
+    expect((textarea.element() as HTMLTextAreaElement).closest(".overflow-auto")).toBeNull();
+  });
 });
 
 describe("ExportPanel · project file customSnapPoints", () => {

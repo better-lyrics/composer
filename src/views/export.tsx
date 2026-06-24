@@ -256,16 +256,18 @@ const ExportPanel: React.FC = () => {
       </div>
 
       {/* Preview / Editor */}
-      <Scroll className="flex-1 p-6">
-        {isEditing ? (
+      {isEditing ? (
+        <div className="flex flex-col flex-1 min-h-0 p-6">
           <textarea
             value={editedContent ?? ""}
             aria-label="Edit TTML content"
             onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
-            className="w-full h-full p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
+            className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
             spellCheck={false}
           />
-        ) : (
+        </div>
+      ) : (
+        <Scroll className="flex-1 p-6">
           <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre
@@ -287,8 +289,8 @@ const ExportPanel: React.FC = () => {
               </pre>
             )}
           </Highlight>
-        )}
-      </Scroll>
+        </Scroll>
+      )}
     </div>
   );
 };
