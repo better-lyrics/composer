@@ -1,0 +1,10 @@
+# ensure that all code pushed has LF line-endings,
+# so that maintainers with `autocrlf` enabled don't create mixed line-endings in remote
+* text=auto
+
+# git probably will never mangle some binary files as text on accident,
+# but just in case, we can protect the logo and any future model files
+# (were they to be moved/added into the git repo)
+*.png binary
+*.onnx binary
+*.wasm binary
