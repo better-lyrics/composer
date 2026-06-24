@@ -279,7 +279,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const conjoinedByDefault = !hasGap && (
       (!rollingAffectsSyllableConjoining && (rollingEditMode || isSyllable)) ||
       (rollingAffectsSyllableConjoining && rollingEditMode)
-    )
+    );
 
     return altPressed ? !conjoinedByDefault : conjoinedByDefault;
   };
