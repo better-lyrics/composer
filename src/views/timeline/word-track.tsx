@@ -155,7 +155,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
         // LAYNE: logic here
         const conjoinedByDefault = !boundaryHasGap(wordIndex, edge) &&
           (
-            (rollingAffectsSyllableConjoining === false && (rollingEdit === true || isSyllableBoundary(wordIndex, edge))) ||
+            // expanded for readability
+            (rollingAffectsSyllableConjoining === false && (rollingEdit || isSyllableBoundary(wordIndex, edge))) ||
             (rollingAffectsSyllableConjoining === true && rollingEdit === true)
           );
 
@@ -275,7 +276,11 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const pos = syllablePositions[boundaryIndex];
     const isSyllable = pos === "first" || pos === "middle";
     const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
-    const conjoinedByDefault = (rollingEditMode || isSyllable) && !hasGap;
+    const conjoinedByDefault = !hasGap && (
+      (!rollingAffectsSyllableConjoining && (rollingEditMode || isSyllable)) ||
+      (rollingAffectsSyllableConjoining && rollingEditMode)
+    )
+
     return altPressed ? !conjoinedByDefault : conjoinedByDefault;
   };
 
