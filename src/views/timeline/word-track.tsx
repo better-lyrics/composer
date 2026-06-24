@@ -66,6 +66,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
 
+  // LAYNE: temporary: make it actually part of the timeline store
+  const rollingAffectsSyllableConjoining = useSettingsStore((s) => s.rollingAffectsSyllableConjoining);
+
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
 
@@ -148,8 +151,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
-        const conjoinedByDefault =
-          (rollingEdit || isSyllableBoundary(wordIndex, edge)) && !boundaryHasGap(wordIndex, edge);
+
+        // LAYNE: logic here
+        const conjoinedByDefault = !boundaryHasGap(wordIndex, edge) &&
+          (
+            (rollingAffectsSyllableConjoining === false && (rollingEdit === true || isSyllableBoundary(wordIndex, edge))) ||
+            (rollingAffectsSyllableConjoining === true && rollingEdit === true)
+          );
+
         const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
 
         const adjacentWordIndex =
@@ -260,6 +269,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
     [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
   );
 
+  // LAYNE: this function exists solely for visual state
   const isBoundaryConjoined = (boundaryIndex: number): boolean => {
     if (boundaryIndex < 0 || boundaryIndex >= words.length - 1) return false;
     const pos = syllablePositions[boundaryIndex];
