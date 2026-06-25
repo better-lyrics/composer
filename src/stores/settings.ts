@@ -37,7 +37,7 @@ interface SettingsState {
   defaultRowHeight: number;
   followPlayhead: boolean;
   defaultRollingEdit: boolean;
-  rollingAffectsSyllableConjoining: boolean;
+  rollingAffectsSyllables: boolean;
   defaultPreviewSidebar: boolean;
   timelineSnap: boolean;
   timelineSnapThreshold: number;
@@ -104,7 +104,7 @@ const DEFAULTS: SettingsState = {
   defaultRowHeight: 44,
   followPlayhead: true,
   defaultRollingEdit: false,
-  rollingAffectsSyllableConjoining: false,
+  rollingAffectsSyllables: false,
   defaultPreviewSidebar: false,
   timelineSnap: true,
   timelineSnapThreshold: 12,
