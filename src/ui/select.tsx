@@ -61,6 +61,7 @@ const Select: React.FC<SelectProps> = ({
       }
     >
       {(close) => (
+        // react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome
         <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5 p-1 w-max min-w-36">
           {options.map((option) => {
             const isSelected = option.value === value;
@@ -75,7 +76,7 @@ const Select: React.FC<SelectProps> = ({
                   close();
                 }}
                 className={cn(
-                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-md text-sm text-left text-composer-text transition-colors",
+                  "flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-left text-composer-text transition-colors",
                   isSelected ? "bg-composer-button font-medium" : "cursor-pointer hover:bg-composer-button",
                 )}
               >
