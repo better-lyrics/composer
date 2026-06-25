@@ -73,7 +73,7 @@ const TimelineSection: React.FC = () => {
       <ToggleSetting
         label="Rolling edit mode affects syllable conjoining"
         description={`Adjusting syllable timings will respect whether or not rolling edit mode is enabled. Hold ${ALT_KEY} to invert.`}
-        settingKey="rollingAffectsSyllableConjoining"
+        settingKey="rollingAffectsSyllables"
       />
       <ToggleSetting
         label="Default preview sidebar"
