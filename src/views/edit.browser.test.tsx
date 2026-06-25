@@ -228,6 +228,40 @@ describe("manual background vocal editing", () => {
   });
 });
 
+describe("agent assignment", () => {
+  const TWO_AGENTS = [
+    { id: "v1", name: "Lead", type: "person" as const },
+    { id: "v2", name: "Harmony", type: "person" as const },
+  ];
+
+  it("changes a line's agent through the per-line agent select", async () => {
+    useProjectStore.setState({
+      agents: TWO_AGENTS,
+      lines: [createLine({ text: "Hello world", agentId: "v1" })],
+    });
+    const screen = await render(<EditPanel />);
+
+    await screen.getByRole("button", { name: "Line agent", exact: true }).click();
+    await screen.getByRole("option", { name: "Harmony" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+
+  it("bulk-assigns an agent to the selected lines via the Assign agent select", async () => {
+    useProjectStore.setState({
+      agents: TWO_AGENTS,
+      lines: [createLine({ text: "alpha", agentId: "v1" }), createLine({ text: "bravo", agentId: "v1" })],
+    });
+    const screen = await render(<EditPanel />);
+
+    await screen.getByRole("button", { name: "1", exact: true }).click();
+    await screen.getByRole("button", { name: "Assign agent" }).click();
+    await screen.getByRole("option", { name: "Harmony" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
+  });
+});
+
 describe("bulk line selection", () => {
   it("shift-clicking a second gutter selects the inclusive range from the prior click", async () => {
     useProjectStore.setState({

@@ -15,6 +15,8 @@ interface SelectProps {
   onChange: (value: string) => void;
   options: SelectOption[];
   "aria-label"?: string;
+  placeholder?: string;
+  leadingColor?: string;
   placement?: Placement;
   className?: string;
 }
@@ -26,10 +28,14 @@ const Select: React.FC<SelectProps> = ({
   onChange,
   options,
   "aria-label": ariaLabel,
+  placeholder,
+  leadingColor,
   placement = "bottom-end",
   className,
 }) => {
   const selected = options.find((option) => option.value === value);
+  const showPlaceholder = !selected && placeholder !== undefined;
+  const triggerLabel = selected?.label ?? placeholder ?? value;
 
   return (
     <Popover
@@ -44,7 +50,12 @@ const Select: React.FC<SelectProps> = ({
             className,
           )}
         >
-          <span className="truncate">{selected?.label ?? value}</span>
+          <span className="flex items-center gap-1.5 truncate">
+            {leadingColor && (
+              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: leadingColor }} />
+            )}
+            <span className={cn("truncate", showPlaceholder && "text-composer-text-muted")}>{triggerLabel}</span>
+          </span>
           <IconChevronDown className="size-4 text-composer-text opacity-50 shrink-0" />
         </button>
       }

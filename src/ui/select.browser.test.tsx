@@ -62,4 +62,39 @@ describe("Select", () => {
     await expect.element(screen.getByRole("listbox")).not.toBeInTheDocument();
     expect(changes).toBe(0);
   });
+
+  it("shows the placeholder on the trigger when the value matches no option", async () => {
+    const screen = await render(
+      <Select aria-label="Letter" value="" placeholder="Pick one" onChange={() => {}} options={OPTIONS} />,
+    );
+    await expect.element(screen.getByRole("button", { name: "Letter" })).toHaveTextContent("Pick one");
+  });
+
+  it("still selects an option when a placeholder is set", async () => {
+    let selected = "";
+    const screen = await render(
+      <Select
+        aria-label="Letter"
+        value=""
+        placeholder="Pick one"
+        onChange={(v) => {
+          selected = v;
+        }}
+        options={OPTIONS}
+      />,
+    );
+    await screen.getByRole("button", { name: "Letter" }).click();
+    await screen.getByRole("option", { name: "Beta" }).click();
+    expect(selected).toBe("b");
+  });
+
+  it("renders a leading color dot on the trigger when leadingColor is set", async () => {
+    const screen = await render(
+      <Select aria-label="Letter" value="a" leadingColor="rgb(255, 0, 0)" onChange={() => {}} options={OPTIONS} />,
+    );
+    const trigger = screen.getByRole("button", { name: "Letter" }).element() as HTMLElement;
+    const dot = trigger.querySelector("span[style]") as HTMLElement | null;
+    expect(dot).not.toBeNull();
+    expect(dot?.style.backgroundColor).toBe("rgb(255, 0, 0)");
+  });
 });
