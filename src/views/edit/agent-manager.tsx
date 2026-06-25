@@ -3,8 +3,19 @@ import { AGENT_PRESETS, getAgentColor } from "@/domain/agent/colors";
 import type { Agent, AgentType } from "@/domain/agent/model";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
+import { Select } from "@/ui/select";
 import { IconPlus, IconTrash } from "@tabler/icons-react";
 import { useCallback, useState } from "react";
+
+// -- Constants ----------------------------------------------------------------
+
+const AGENT_TYPE_OPTIONS = [
+  { value: "person", label: "Person" },
+  { value: "group", label: "Group" },
+  { value: "character", label: "Character" },
+  { value: "organization", label: "Organization" },
+  { value: "other", label: "Other" },
+];
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -82,17 +93,14 @@ const EditAgentPopover: React.FC<{
               placeholder="Agent name"
               className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent"
             />
-            <select
+            <Select
+              aria-label="Agent type"
               value={type}
-              onChange={(e) => setType(e.target.value as AgentType)}
-              className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent cursor-pointer"
-            >
-              <option value="person">Person</option>
-              <option value="group">Group</option>
-              <option value="character">Character</option>
-              <option value="organization">Organization</option>
-              <option value="other">Other</option>
-            </select>
+              onChange={(next) => setType(next as AgentType)}
+              options={AGENT_TYPE_OPTIONS}
+              placement="bottom-start"
+              className="w-full"
+            />
             <div className="flex gap-2">
               <Button size="sm" variant="primary" onClick={() => handleSave(close)} className="flex-1">
                 Save
@@ -190,17 +198,14 @@ const AddAgentPopover: React.FC = () => {
               placeholder="Agent name"
               className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent"
             />
-            <select
+            <Select
+              aria-label="Custom agent type"
               value={customType}
-              onChange={(e) => setCustomType(e.target.value as AgentType)}
-              className="px-2 py-1.5 text-sm rounded-md bg-composer-input border border-composer-border focus:outline-none focus:border-composer-accent cursor-pointer"
-            >
-              <option value="person">Person</option>
-              <option value="group">Group</option>
-              <option value="character">Character</option>
-              <option value="organization">Organization</option>
-              <option value="other">Other</option>
-            </select>
+              onChange={(next) => setCustomType(next as AgentType)}
+              options={AGENT_TYPE_OPTIONS}
+              placement="bottom-start"
+              className="w-full"
+            />
             <Button size="sm" variant="primary" onClick={() => handleAddCustom(close)} disabled={!customName.trim()}>
               Add Custom Agent
             </Button>

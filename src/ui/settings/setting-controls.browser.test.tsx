@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SelectSetting, SliderSetting, ToggleSetting } from "@/ui/settings/setting-controls";
@@ -115,7 +114,7 @@ describe("SelectSetting", () => {
         options={granularityOptions}
       />,
     );
-    await expect.element(screen.getByRole("combobox")).toHaveValue("line");
+    await expect.element(screen.getByRole("button", { name: "Granularity" })).toHaveTextContent("Line");
   });
 
   it("writes the chosen option to the store", async () => {
@@ -128,7 +127,8 @@ describe("SelectSetting", () => {
         options={granularityOptions}
       />,
     );
-    await userEvent.selectOptions(screen.getByRole("combobox").element(), "line");
+    await screen.getByRole("button", { name: "Granularity" }).click();
+    await screen.getByRole("option", { name: "Line" }).click();
     await expect.poll(() => useSettingsStore.getState().defaultGranularity).toBe("line");
   });
 });
