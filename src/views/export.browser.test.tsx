@@ -56,6 +56,19 @@ describe("ExportPanel", () => {
     await expect.element(textarea).toBeInTheDocument();
     expect((textarea.element() as HTMLTextAreaElement).closest(".overflow-auto")).toBeNull();
   });
+
+  it("keeps textarea edits after clicking Done", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+    });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    await screen.getByRole("textbox", { name: "Edit TTML content" }).fill("CUSTOM EDITED CONTENT");
+    await screen.getByRole("button", { name: "Done" }).click();
+    await expect
+      .poll(() => screen.container.querySelector("pre")?.textContent ?? "")
+      .toContain("CUSTOM EDITED CONTENT");
+  });
 });
 
 describe("ExportPanel · project file customSnapPoints", () => {

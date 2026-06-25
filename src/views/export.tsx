@@ -41,6 +41,7 @@ const ExportPanel: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const syncedLineCount = useMemo(() => lines.filter((line) => effectiveBounds(line) !== null).length, [lines]);
@@ -57,7 +58,6 @@ const ExportPanel: React.FC = () => {
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
   const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
-  const isEditing = editedContent !== null;
   const displayContent = editedContent ?? generatedTtml;
   const exportContent = editedContent ?? minifiedTtml;
 
@@ -86,11 +86,12 @@ const ExportPanel: React.FC = () => {
   }, [exportContent]);
 
   const handleEdit = useCallback(() => {
-    setEditState((prev) => (prev ? null : { source: generatedTtml, content: displayContent }));
-  }, [generatedTtml, displayContent]);
+    setIsEditing((prev) => !prev);
+  }, []);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
+    setIsEditing(false);
   }, []);
 
   const handleExportProject = useCallback(() => {
@@ -259,7 +260,7 @@ const ExportPanel: React.FC = () => {
       {isEditing ? (
         <div className="flex flex-col flex-1 min-h-0 p-6">
           <textarea
-            value={editedContent ?? ""}
+            value={displayContent}
             aria-label="Edit TTML content"
             onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
             className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
