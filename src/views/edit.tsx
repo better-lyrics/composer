@@ -14,6 +14,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
+import { Select } from "@/ui/select";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
 import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
@@ -208,25 +209,20 @@ const LinePreview: React.FC<{
 
       <div className="flex items-center gap-1.5 ml-auto transition-opacity opacity-0 group-hover:opacity-100">
         {agents.length > 1 && line.lineId && (
-          <select
+          <Select
+            aria-label="Line agent"
             value={line.agentId}
-            onChange={(e) => {
+            onChange={(next) => {
               if (isSelected && hasMultipleSelected) {
-                onBulkAgentChange(e.target.value);
+                onBulkAgentChange(next);
               } else {
-                onAgentChange(line.lineId, e.target.value);
+                onAgentChange(line.lineId, next);
               }
             }}
-            onMouseDown={(e) => e.stopPropagation()}
-            className="h-5 px-1 text-xs border rounded cursor-pointer bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
-            style={{ borderLeftColor: agentColor, borderLeftWidth: "2px" }}
-          >
-            {agents.map((agent) => (
-              <option key={agent.id} value={agent.id}>
-                {agent.name || agent.id}
-              </option>
-            ))}
-          </select>
+            options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
+            leadingColor={agentColor}
+            className="h-5 pl-2 pr-1 text-xs"
+          />
         )}
 
         {line.lineId && (
@@ -730,20 +726,14 @@ Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
                 {selectedLines.size} line{selectedLines.size !== 1 ? "s" : ""} selected
               </span>
               {agents.length > 1 && (
-                <select
-                  onChange={(e) => handleBulkAgentChange(e.target.value)}
+                <Select
+                  aria-label="Assign agent"
+                  placeholder="Assign agent"
                   value=""
-                  className="h-6 px-1.5 text-xs border rounded cursor-pointer bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
-                >
-                  <option value="" disabled>
-                    Assign agent
-                  </option>
-                  {agents.map((agent) => (
-                    <option key={agent.id} value={agent.id}>
-                      {agent.name || agent.id}
-                    </option>
-                  ))}
-                </select>
+                  onChange={handleBulkAgentChange}
+                  options={agents.map((agent) => ({ value: agent.id, label: agent.name || agent.id }))}
+                  className="h-6 text-xs"
+                />
               )}
               <button
                 type="button"

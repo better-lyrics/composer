@@ -1,9 +1,6 @@
-import { exportProjectToFile, importProjectFromFile, clearCurrentProject } from "@/lib/persistence";
-import { cancelPendingSave } from "@/lib/persistence-debounce";
+import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { useAudioStore } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
@@ -31,17 +28,12 @@ const ExportPanel: React.FC = () => {
   const groups = useProjectStore((s) => s.groups);
   const granularity = useProjectStore((s) => s.granularity);
   const duration = useAudioStore((s) => s.duration);
-  const setMetadata = useProjectStore((s) => s.setMetadata);
-  const setLines = useProjectStore((s) => s.setLines);
-  const setGranularity = useProjectStore((s) => s.setGranularity);
-  const setAgents = useProjectStore((s) => s.setAgents);
-  const reset = useProjectStore((s) => s.reset);
-  const markClean = useProjectStore((s) => s.markClean);
-  const confirm = useConfirm();
 
   const [copied, setCopied] = useState(false);
   const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions(fileInputRef);
 
   const syncedLineCount = useMemo(() => lines.filter((line) => effectiveBounds(line) !== null).length, [lines]);
   const hasSyncedContent = syncedLineCount > 0;
@@ -57,7 +49,6 @@ const ExportPanel: React.FC = () => {
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
   const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
-  const isEditing = editedContent !== null;
   const displayContent = editedContent ?? generatedTtml;
   const exportContent = editedContent ?? minifiedTtml;
 
@@ -86,85 +77,13 @@ const ExportPanel: React.FC = () => {
   }, [exportContent]);
 
   const handleEdit = useCallback(() => {
-    setEditState((prev) => (prev ? null : { source: generatedTtml, content: displayContent }));
-  }, [generatedTtml, displayContent]);
+    setIsEditing((prev) => !prev);
+  }, []);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
+    setIsEditing(false);
   }, []);
-
-  const handleExportProject = useCallback(() => {
-    const audioSource = useAudioStore.getState().source;
-    const audioFileName = audioSource?.type === "file" ? audioSource.file.name : undefined;
-    const { dismissedSuggestions, dismissedExplicitSuggestions, syllableSplitDefaults, customSnapPoints } =
-      useProjectStore.getState();
-    exportProjectToFile(
-      metadata,
-      agents,
-      lines,
-      groups,
-      granularity,
-      syllableSplitDefaults,
-      dismissedSuggestions,
-      dismissedExplicitSuggestions,
-      customSnapPoints,
-      audioFileName,
-    );
-  }, [metadata, agents, lines, groups, granularity]);
-
-  const handleImportProject = useCallback(
-    async (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-
-      const existingLineCount = useProjectStore.getState().lines.length;
-      if (existingLineCount > 0) {
-        const ok = await confirm({
-          title: "Replace current project?",
-          description: `Loading this project file will replace your ${existingLineCount} existing line${existingLineCount === 1 ? "" : "s"} and metadata. This cannot be undone.`,
-          confirmLabel: "Replace",
-          variant: "destructive",
-          settingsKey: "confirmReplaceLyrics",
-        });
-        if (!ok) {
-          if (fileInputRef.current) fileInputRef.current.value = "";
-          return;
-        }
-      }
-
-      const project = await importProjectFromFile(file);
-      const store = useProjectStore.getState();
-      setMetadata(project.metadata);
-      setLines(project.lines);
-      store.setGroups(project.groups ?? []);
-      store.setDismissedSuggestions(project.dismissedSuggestions ?? []);
-      store.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
-      setGranularity(project.granularity);
-      store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
-      setAgents(project.agents);
-      store.setCustomSnapPoints(project.customSnapPoints ?? []);
-      markClean();
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    },
-    [setMetadata, setLines, setGranularity, setAgents, markClean, confirm],
-  );
-
-  const handleClearProject = useCallback(async () => {
-    const ok = await confirm({
-      title: "Clear all project data?",
-      description: "Remove every line, all metadata, and the audio file from this project. This cannot be undone.",
-      confirmLabel: "Clear",
-      variant: "destructive",
-      settingsKey: "confirmClearProject",
-    });
-    if (!ok) return;
-    cancelPendingSave();
-    reset();
-    await clearCurrentProject();
-  }, [reset, confirm]);
 
   const projectFileInput = (
     <input
@@ -256,16 +175,18 @@ const ExportPanel: React.FC = () => {
       </div>
 
       {/* Preview / Editor */}
-      <Scroll className="flex-1 p-6">
-        {isEditing ? (
+      {isEditing ? (
+        <div className="flex flex-col flex-1 min-h-0 p-6">
           <textarea
-            value={editedContent ?? ""}
+            value={displayContent}
             aria-label="Edit TTML content"
             onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
-            className="w-full h-full p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
+            className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
             spellCheck={false}
           />
-        ) : (
+        </div>
+      ) : (
+        <Scroll className="flex-1 p-6">
           <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre
@@ -287,8 +208,8 @@ const ExportPanel: React.FC = () => {
               </pre>
             )}
           </Highlight>
-        )}
-      </Scroll>
+        </Scroll>
+      )}
     </div>
   );
 };

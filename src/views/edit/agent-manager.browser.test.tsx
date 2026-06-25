@@ -32,4 +32,25 @@ describe("AgentManager", () => {
     await screen.getByRole("button", { name: /Add/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Custom agent name" })).toBeInTheDocument();
   });
+
+  it("changes an agent's type via the type select and persists on save", async () => {
+    useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
+    const screen = await render(<AgentManager />);
+    await screen.getByRole("button", { name: /v1/ }).click();
+    await screen.getByRole("button", { name: "Agent type" }).click();
+    await screen.getByRole("option", { name: "Group" }).click();
+    await screen.getByRole("button", { name: "Save" }).click();
+    await expect.poll(() => useProjectStore.getState().agents.find((a) => a.id === "v1")?.type).toBe("group");
+  });
+
+  it("creates a custom agent with the chosen type", async () => {
+    useProjectStore.setState({ agents: [{ id: "v1", name: "Lead", type: "person" }] });
+    const screen = await render(<AgentManager />);
+    await screen.getByRole("button", { name: /Add/ }).click();
+    await screen.getByRole("textbox", { name: "Custom agent name" }).fill("Choir");
+    await screen.getByRole("button", { name: "Custom agent type" }).click();
+    await screen.getByRole("option", { name: "Group" }).click();
+    await screen.getByRole("button", { name: "Add Custom Agent" }).click();
+    await expect.poll(() => useProjectStore.getState().agents.find((a) => a.name === "Choir")?.type).toBe("group");
+  });
 });
