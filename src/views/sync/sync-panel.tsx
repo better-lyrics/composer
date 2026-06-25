@@ -213,6 +213,12 @@ const SyncPanel: React.FC = () => {
     [granularity, lines, setLinesWithHistory, setGranularity],
   );
 
+  const handleToggleEdit = useCallback(() => {
+    const entering = !editMode;
+    setEditMode(entering);
+    if (entering && isPlaying) setIsPlaying(false);
+  }, [editMode, isPlaying, setIsPlaying]);
+
   const playingLineIndex = useMemo(() => {
     for (let i = 0; i < lines.length; i++) {
       const timing = effectiveBounds(lines[i]);
@@ -412,11 +418,11 @@ const SyncPanel: React.FC = () => {
           <Button
             hasIcon
             variant={editMode ? "primary" : "secondary"}
-            onClick={() => setEditMode(!editMode)}
-            title={editMode ? "Unlock sync mode" : "Lock to edit mode"}
+            onClick={handleToggleEdit}
+            title={editMode ? "Done editing, back to syncing" : "Edit timings (pauses playback)"}
           >
             {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
-            Edit
+            {editMode ? "Done" : "Edit"}
           </Button>
           {syncState.isActive && !editMode && (
             <Button hasIcon onClick={handleReset}>
@@ -527,7 +533,13 @@ const SyncPanel: React.FC = () => {
         <div className="flex items-center justify-between h-14">
           <TimingDisplay lastSyncedTime={lastSyncedTime} />
 
-          {!isComplete && isPlaying && (
+          {!isComplete && editMode && (
+            <div className="text-sm text-composer-text-muted">
+              Editing timings ・ click a word to re-record, or press Done to sync
+            </div>
+          )}
+
+          {!isComplete && !editMode && isPlaying && (
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
               <div className="flex items-center gap-2">
@@ -563,7 +575,7 @@ const SyncPanel: React.FC = () => {
             </div>
           )}
 
-          {!isComplete && !isPlaying && syncState.isActive && (
+          {!isComplete && !editMode && !isPlaying && syncState.isActive && (
             <div className="text-sm text-composer-text-muted">Paused ・ Click a line to jump, or play to continue</div>
           )}
         </div>

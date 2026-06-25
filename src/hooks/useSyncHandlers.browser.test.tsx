@@ -368,15 +368,15 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     expect(playingCalls).toHaveLength(0);
   });
 
-  it("in edit mode scrubs to the line begin without a pre-roll, cursor move, or playback", async () => {
+  it("in edit mode scrubs exactly to the line begin (no pre-roll), moves the cursor, and stays paused", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, getSyncState, playingCalls } = await mountSyncHandlers({ editMode: true });
 
     await act(() => result.current.handleJumpToLine(1));
 
     expect(useAudioStore.getState().currentTime).toBe(3);
-    expect(getSyncState().position).toEqual({ lineIndex: 0, wordIndex: 0 });
-    expect(playingCalls).toHaveLength(0);
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(playingCalls).not.toContain(true);
   });
 
   it("invariant: a redo re-tap commits to the store immediately so it survives a later quit", async () => {
@@ -439,14 +439,14 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     expect(useAudioStore.getState().currentTime).toBe(2.5);
   });
 
-  it("in edit mode scrubs to the word begin without a pre-roll or cursor move", async () => {
+  it("in edit mode scrubs exactly to the word begin (no pre-roll) and moves the cursor to that word", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, getSyncState } = await mountSyncHandlers({ editMode: true });
 
     await act(() => result.current.handleJumpToWord(1, 1));
 
     expect(useAudioStore.getState().currentTime).toBe(3.5);
-    expect(getSyncState().position).toEqual({ lineIndex: 0, wordIndex: 0 });
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
   });
 });
 

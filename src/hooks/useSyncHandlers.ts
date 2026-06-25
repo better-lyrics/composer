@@ -267,39 +267,28 @@ function useSyncHandlers({
 
   const handleJumpToLine = useCallback(
     (index: number) => {
-      if (editMode) {
-        const timing = effectiveBounds(lines[index]);
-        if (timing) {
-          seekTo(timing.begin);
-        }
-        return;
-      }
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
       }));
       const bounds = effectiveBounds(lines[index]);
-      if (bounds) {
-        seekTo(Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
-      }
+      if (!bounds) return;
+      // Edit mode scrubs exactly to the line to inspect timing; sync mode adds a
+      // pre-roll run-up to re-record. Both stay paused and move the cursor.
+      seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
     },
     [editMode, lines, seekTo, setSyncState],
   );
 
   const handleJumpToWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
-      const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
-      if (editMode) {
-        if (begin !== undefined) seekTo(begin);
-        return;
-      }
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
       }));
-      if (begin !== undefined) {
-        seekTo(Math.max(0, begin - REDO_PREROLL_SECONDS));
-      }
+      const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
+      if (begin === undefined) return;
+      seekTo(editMode ? begin : Math.max(0, begin - REDO_PREROLL_SECONDS));
     },
     [editMode, lines, seekTo, setSyncState],
   );
