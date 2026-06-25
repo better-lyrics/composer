@@ -91,7 +91,7 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(useProjectStore.getState().lines[1].text).toBe("Foo bar");
   });
 
-  it("preserves text when re-syncing mid-line over an existing word array", async () => {
+  it("re-syncing mid-line overwrites in place and preserves the line's later words", async () => {
     useProjectStore.getState().setLines([
       createLine({
         id: "l0",
@@ -108,14 +108,20 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
 
     const { result, act } = await mountSyncHandlers({
       initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5.0,
     });
 
     await act(() => {
       result.current.handleTap();
     });
 
+    const words = useProjectStore.getState().lines[0].words;
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_TEXT);
-    expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+    expect(words?.length).toBe(5);
+    expect(words?.[1].begin).toBe(5.0);
+    expect(words?.[0].end).toBe(5.0);
+    expect(words?.[2]).toEqual({ text: "how ", begin: 0.8, end: 1.2 });
+    expect(words?.[4]).toEqual({ text: "you", begin: 1.6, end: 2.0 });
   });
 
   it("regression: skips an empty line and still patches the word before it (issue #114)", async () => {
@@ -314,7 +320,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     ];
   }
 
-  it("seeks to a pre-roll before the line, moves the cursor, and resumes playback", async () => {
+  it("seeks to a pre-roll before the line and moves the cursor, but stays paused", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, getSyncState, playingCalls } = await mountSyncHandlers();
 
@@ -322,7 +328,7 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
 
     expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
     expect(useAudioStore.getState().currentTime).toBe(3 - REDO_PREROLL_SECONDS);
-    expect(playingCalls.at(-1)).toBe(true);
+    expect(playingCalls).not.toContain(true);
   });
 
   it("clamps the pre-roll seek to zero when the line begins inside the pre-roll window", async () => {
@@ -384,6 +390,63 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     const line = useProjectStore.getState().lines[1];
     expect(line.text).toBe("Second line");
     expect(line.words?.[0].begin).toBe(5.0);
+  });
+});
+
+describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
+  function twoSyncedLines() {
+    return [
+      createLine({
+        id: "l0",
+        text: "Hello world",
+        words: [
+          createWord({ text: "Hello ", begin: 0, end: 0.5 }),
+          createWord({ text: "world", begin: 0.5, end: 1.0 }),
+        ],
+      }),
+      createLine({
+        id: "l1",
+        text: "Second line",
+        words: [createWord({ text: "Second ", begin: 3, end: 3.5 }), createWord({ text: "line", begin: 3.5, end: 4 })],
+      }),
+    ];
+  }
+
+  it("seeks to the word's begin minus a pre-roll, moves the cursor to that word, and stays paused", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, getSyncState, playingCalls } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToWord(1, 1));
+
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
+    expect(useAudioStore.getState().currentTime).toBe(3.5 - REDO_PREROLL_SECONDS);
+    expect(playingCalls).not.toContain(true);
+  });
+
+  it("only moves the cursor for a word with no timing, without seeking", async () => {
+    useProjectStore
+      .getState()
+      .setLines([
+        createLine({ id: "l0", text: "Synced", words: [createWord({ text: "Synced", begin: 0, end: 1 })] }),
+        createLine({ id: "l1", text: "Not synced yet" }),
+      ]);
+    useAudioStore.getState().seekTo(2.5);
+    const { result, act, getSyncState } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToWord(1, 0));
+
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(useAudioStore.getState().currentTime).toBe(2.5);
+  });
+
+  it("in edit mode scrubs to the word begin without a pre-roll or cursor move", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, getSyncState } = await mountSyncHandlers({ editMode: true });
+
+    await act(() => result.current.handleJumpToWord(1, 1));
+
+    expect(useAudioStore.getState().currentTime).toBe(3.5);
+    expect(getSyncState().position).toEqual({ lineIndex: 0, wordIndex: 0 });
   });
 });
 

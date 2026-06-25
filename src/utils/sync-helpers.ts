@@ -151,6 +151,9 @@ function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
 
 // -- Tap and hold commit ------------------------------------------------------
 
+// Re-tapping a word that already has later words (redo) overwrites it in place and
+// keeps the untapped words, so a partial redo never wipes the tail. Tapping at or past
+// the end is forward live-sync: close the prior word and append.
 function commitTappedWord(
   existingWords: WordTiming[],
   wordIndex: number,
@@ -159,21 +162,24 @@ function commitTappedWord(
   end: number,
 ): WordTiming[] {
   if (existingWords.length === 0) return [{ text, begin, end }];
-  if (wordIndex === 0) return [{ ...existingWords[0], text, begin, end }];
-  const keepCount = Math.min(wordIndex, existingWords.length);
-  const result = existingWords.slice(0, keepCount);
-  const lastIdx = result.length - 1;
-  result[lastIdx] = { ...result[lastIdx], end: begin };
-  result.push({ text, begin, end });
+  if (wordIndex >= existingWords.length) {
+    const result = [...existingWords];
+    const lastIdx = result.length - 1;
+    result[lastIdx] = { ...result[lastIdx], end: begin };
+    result.push({ text, begin, end });
+    return result;
+  }
+  const result = [...existingWords];
+  result[wordIndex] = { ...result[wordIndex], text, begin, end };
+  if (wordIndex > 0) result[wordIndex - 1] = { ...result[wordIndex - 1], end: begin };
   return result;
 }
 
 function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: string, begin: number): WordTiming[] {
   if (existingWords.length === 0) return [{ text, begin, end: begin }];
-  if (wordIndex === 0) return [{ ...existingWords[0], text, begin }];
-  const keepCount = Math.min(wordIndex, existingWords.length);
-  const result = existingWords.slice(0, keepCount);
-  result.push({ text, begin, end: begin });
+  if (wordIndex >= existingWords.length) return [...existingWords, { text, begin, end: begin }];
+  const result = [...existingWords];
+  result[wordIndex] = wordIndex === 0 ? { ...result[0], text, begin } : { text, begin, end: begin };
   return result;
 }
 

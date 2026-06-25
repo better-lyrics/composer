@@ -281,10 +281,27 @@ function useSyncHandlers({
       const bounds = effectiveBounds(lines[index]);
       if (bounds) {
         seekTo(Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
-        setIsPlaying(true);
       }
     },
-    [editMode, lines, seekTo, setSyncState, setIsPlaying],
+    [editMode, lines, seekTo, setSyncState],
+  );
+
+  const handleJumpToWord = useCallback(
+    (lineIdx: number, wordIdx: number) => {
+      const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
+      if (editMode) {
+        if (begin !== undefined) seekTo(begin);
+        return;
+      }
+      setSyncState((prev) => ({
+        ...prev,
+        position: { lineIndex: lineIdx, wordIndex: wordIdx },
+      }));
+      if (begin !== undefined) {
+        seekTo(Math.max(0, begin - REDO_PREROLL_SECONDS));
+      }
+    },
+    [editMode, lines, seekTo, setSyncState],
   );
 
   const handleNudgeWord = useCallback(
@@ -392,6 +409,7 @@ function useSyncHandlers({
     handleReset,
     handleStartSync,
     handleJumpToLine,
+    handleJumpToWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,

@@ -103,6 +103,7 @@ const SyncPanel: React.FC = () => {
     handleReset,
     handleStartSync,
     handleJumpToLine,
+    handleJumpToWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,
@@ -467,6 +468,7 @@ const SyncPanel: React.FC = () => {
                   editMode={editMode}
                   linkInfo={linkInfo}
                   onClick={() => handleJumpToLine(index)}
+                  onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
                   onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
                   onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
                   onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
