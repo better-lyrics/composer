@@ -3,10 +3,19 @@ packages:
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
 trustPolicyExclude:
-  - semver@6.3.1
+  - "semver@6.3.1"
 blockExoticSubdeps: true
+
+overrides:
+  "@braccato/parsers": "^0.1.2"
+
+peerDependencyRules:
+  allowedVersions:
+    "react-helmet-async>react": "19"
+    "react-helmet-async>react-dom": "19"
+
 allowBuilds:
-  '@biomejs/biome': true
-  esbuild: true
-  protobufjs: true
-  sharp: true
+  "@biomejs/biome": false
+  esbuild: false
+  protobufjs: false
+  sharp: false
