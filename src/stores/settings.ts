@@ -37,12 +37,12 @@ interface SettingsState {
   defaultRowHeight: number;
   followPlayhead: boolean;
   defaultRollingEdit: boolean;
-  rollingAffectsSyllables: boolean;
   defaultPreviewSidebar: boolean;
   timelineSnap: boolean;
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
   snapPlayheadToPoints: boolean;
+  rollingAffectsSyllables: boolean;
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
@@ -104,12 +104,12 @@ const DEFAULTS: SettingsState = {
   defaultRowHeight: 44,
   followPlayhead: true,
   defaultRollingEdit: false,
-  rollingAffectsSyllables: false,
   defaultPreviewSidebar: false,
   timelineSnap: true,
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
   snapPlayheadToPoints: true,
+  rollingAffectsSyllables: false,
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
