@@ -25,9 +25,38 @@ function withQueryClient(children: ReactNode) {
 const PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
 
+function id3v2(frames: Array<[string, string]>): Uint8Array {
+  const enc = new TextEncoder();
+  const body: number[] = [];
+  for (const [id, text] of frames) {
+    const content = [0x03, ...enc.encode(text)];
+    const size = content.length;
+    body.push(
+      ...enc.encode(id),
+      (size >> 24) & 0xff,
+      (size >> 16) & 0xff,
+      (size >> 8) & 0xff,
+      size & 0xff,
+      0,
+      0,
+      ...content,
+    );
+  }
+  const synch = (n: number) => [(n >> 21) & 0x7f, (n >> 14) & 0x7f, (n >> 7) & 0x7f, n & 0x7f];
+  return new Uint8Array([0x49, 0x44, 0x33, 3, 0, 0, ...synch(body.length), ...body]);
+}
+
+function dispatchDrop(target: Element, file: File) {
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  const event = new Event("drop", { bubbles: true, cancelable: true });
+  Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
+  target.dispatchEvent(event);
+}
+
 // -- Empty state --------------------------------------------------------------
 
-describe("ImportPanel — no source", () => {
+describe("ImportPanel: no source", () => {
   it("renders the audio drop zone when no source is loaded", async () => {
     useAudioStore.setState({ source: null });
     useProjectStore.setState({ lines: [] });
@@ -44,7 +73,7 @@ describe("ImportPanel — no source", () => {
 
 // -- File source --------------------------------------------------------------
 
-describe("ImportPanel — file source", () => {
+describe("ImportPanel: file source", () => {
   it("shows the loading spinner for a file source while it is loading", async () => {
     useAudioStore.setState({
       source: { type: "file", file: createAudioFile() },
@@ -77,9 +106,9 @@ describe("ImportPanel — file source", () => {
   });
 });
 
-// -- YouTube source — title -----------------------------------------------
+// -- YouTube source: title -----------------------------------------------
 
-describe("ImportPanel — YouTube title", () => {
+describe("ImportPanel: YouTube title", () => {
   it("shows the loading spinner while a YouTube source is downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "abc123" },
@@ -124,9 +153,9 @@ describe("ImportPanel — YouTube title", () => {
   });
 });
 
-// -- YouTube source — thumbnail -------------------------------------------
+// -- YouTube source: thumbnail -------------------------------------------
 
-describe("ImportPanel — YouTube thumbnail", () => {
+describe("ImportPanel: YouTube thumbnail", () => {
   it("renders the persisted thumbnail image when one is in project metadata", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
@@ -210,9 +239,9 @@ describe("ImportPanel — YouTube thumbnail", () => {
   });
 });
 
-// -- YouTube source — subtitle copy ---------------------------------------
+// -- YouTube source: subtitle copy ---------------------------------------
 
-describe("ImportPanel — YouTube subtitle", () => {
+describe("ImportPanel: YouTube subtitle", () => {
   it("says 'Downloading from YouTube' while downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
@@ -308,5 +337,58 @@ describe("ImportPanel: videoId-gated thumb fallback", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
     const liveBridgeImg = screen.container.querySelector(`img[src^='${DEFAULT_BRIDGE_URL}']`);
     expect(liveBridgeImg).toBeNull();
+  });
+});
+
+// -- File drop: embedded tag capture --------------------------------------
+
+describe("ImportPanel: audio tag capture", () => {
+  it("sets the filename as the title synchronously on drop", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const file = new File([new Uint8Array(8)], "My Untagged Song.wav", { type: "audio/wav" });
+    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dispatchDrop(dropZone, file);
+
+    expect(useProjectStore.getState().metadata.title).toBe("My Untagged Song");
+  });
+
+  it("populates title/artists/album/isrc from a dropped file's embedded ID3 tags", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const bytes = id3v2([
+      ["TIT2", "Tagged Title"],
+      ["TPE1", "The Artist"],
+      ["TALB", "The Album"],
+      ["TSRC", "USQX91700001"],
+    ]);
+    const file = new File([bytes], "filename-fallback.mp3", { type: "audio/mpeg" });
+    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dispatchDrop(dropZone, file);
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Tagged Title");
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["The Artist"]);
+    expect(metadata.album).toBe("The Album");
+    expect(metadata.isrc).toBe("USQX91700001");
+  });
+
+  it("keeps the filename title when the dropped file has no embedded tags", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const file = new File([new Uint8Array(8)], "No Tags Here.wav", { type: "audio/wav" });
+    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    if (dropZone) dispatchDrop(dropZone, file);
+
+    expect(useProjectStore.getState().metadata.title).toBe("No Tags Here");
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("No Tags Here");
   });
 });

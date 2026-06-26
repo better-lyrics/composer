@@ -39,6 +39,7 @@ interface BridgeAudioResponse {
   titlePercentEncoded?: string;
   artistPercentEncoded?: string;
   albumPercentEncoded?: string;
+  isrcPercentEncoded?: string;
 }
 
 type ThumbBehavior =
@@ -89,6 +90,7 @@ beforeEach(() => {
       if (entry.titlePercentEncoded) headers.set("x-track-title", entry.titlePercentEncoded);
       if (entry.artistPercentEncoded) headers.set("x-track-artist", entry.artistPercentEncoded);
       if (entry.albumPercentEncoded) headers.set("x-track-album", entry.albumPercentEncoded);
+      if (entry.isrcPercentEncoded) headers.set("x-track-isrc", entry.isrcPercentEncoded);
       return new Response(entry.buffer, { headers });
     }
 
@@ -147,7 +149,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void
 
 // -- Bridge happy path --------------------------------------------------------
 
-describe("useResolveYouTubeTunnel — bridge happy path", () => {
+describe("useResolveYouTubeTunnel: bridge happy path", () => {
   it("writes the file from the bridge audio response into the audio store", async () => {
     bridge.audio.set("dQw4w9WgXcQ", {
       buffer: asBytes("opus-bytes"),
@@ -170,23 +172,69 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     expect(file.type).toBe("audio/opus");
   });
 
-  it("sets project metadata title/artist/album from the bridge response", async () => {
+  it("sets project metadata title/artist/album/isrc from the bridge response", async () => {
     bridge.audio.set("dQw4w9WgXcQ", {
       buffer: asBytes("opus"),
       mimeType: "audio/opus",
       titlePercentEncoded: encodeURIComponent("Never Gonna Give You Up"),
       artistPercentEncoded: encodeURIComponent("Rick Astley"),
       albumPercentEncoded: encodeURIComponent("Whenever You Need Somebody"),
+      isrcPercentEncoded: encodeURIComponent("GBARL9300135"),
     });
 
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
     await render(withQueryClient(<HookHost />));
 
-    await waitFor(() => useProjectStore.getState().metadata.artist === "Rick Astley");
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
     const md = useProjectStore.getState().metadata;
     expect(md.title).toBe("Rick Astley - Never Gonna Give You Up");
-    expect(md.artist).toBe("Rick Astley");
+    expect(md.artists).toEqual(["Rick Astley"]);
     expect(md.album).toBe("Whenever You Need Somebody");
+    expect(md.isrc).toBe("GBARL9300135");
+  });
+
+  it("leaves isrc unset when the bridge omits the x-track-isrc header", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
+  });
+
+  it("rejects a malformed bridge isrc instead of writing it to the store", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+      isrcPercentEncoded: encodeURIComponent("N/A"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
+  });
+
+  it("uppercases a lowercase-but-otherwise-valid bridge isrc", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+      isrcPercentEncoded: encodeURIComponent("gbarl9300135"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBe("GBARL9300135");
   });
 
   it("decodes percent-encoded UTF-8 metadata headers (the fullwidth-comma regression)", async () => {
@@ -200,14 +248,15 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
     await render(withQueryClient(<HookHost />));
 
-    await waitFor(() => useProjectStore.getState().metadata.artist === "Tyler, The Creator");
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Tyler, The Creator");
+    expect(useProjectStore.getState().metadata.artists).toEqual(["Tyler, The Creator"]);
     expect(useProjectStore.getState().metadata.title).toContain("RUNNING OUT OF TIME");
   });
 });
 
 // -- Fallback paths -----------------------------------------------------------
 
-describe("useResolveYouTubeTunnel — title fallback", () => {
+describe("useResolveYouTubeTunnel: title fallback", () => {
   it("falls back to videoId as the title when the bridge returns no metadata at all", async () => {
     bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus"), mimeType: "audio/opus" });
 
@@ -240,7 +289,7 @@ describe("useResolveYouTubeTunnel — title fallback", () => {
 
 // -- mimeType / file format ---------------------------------------------------
 
-describe("useResolveYouTubeTunnel — file format", () => {
+describe("useResolveYouTubeTunnel: file format", () => {
   it("labels the File with the actual bridge mime (regression for the .m4a-hardcode)", async () => {
     bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus"), mimeType: "audio/opus" });
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
@@ -289,7 +338,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
     await seedProject({
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "Never Gonna Give You Up", artist: "Rick Astley", album: "", duration: 0 },
+      metadata: { title: "Never Gonna Give You Up", artists: ["Rick Astley"], album: "", duration: 0 },
       lines: [],
       agents: [{ id: "v1", type: "person", name: "Lead" }],
       granularity: "word",
@@ -314,7 +363,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
       await new Promise((r) => setTimeout(r, 50));
 
       expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
-      expect(useProjectStore.getState().metadata.artist).toBe("Rick Astley");
+      expect(useProjectStore.getState().metadata.artists).toEqual(["Rick Astley"]);
       expect(seenTitles).not.toContain("dQw4w9WgXcQ");
     } finally {
       unsubscribe();

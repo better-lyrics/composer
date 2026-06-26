@@ -7,6 +7,7 @@ import { Scroll } from "@/ui/scroll";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
 import { rebaseTtmlEdits } from "@/utils/ttml-merge";
+import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
@@ -189,6 +190,8 @@ const ExportPanel: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      <MetadataPanel />
 
       {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} />}
 

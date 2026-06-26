@@ -14,7 +14,7 @@ function createMetadataInitialState(): MetadataState {
   return {
     metadata: {
       title: "",
-      artist: "",
+      artists: [],
       album: "",
       duration: 0,
     },

@@ -25,7 +25,7 @@ function seedSavedProject(currentStem?: "original" | "vocals" | "instrumental"):
   return seedProject({
     version: 1,
     savedAt: Date.now(),
-    metadata: { title: "Seeded Song", artist: "", album: "", duration: 0 },
+    metadata: { title: "Seeded Song", artists: [], album: "", duration: 0 },
     lines: [],
     agents: [{ id: "v1", type: "person", name: "Lead" }],
     granularity: "word",

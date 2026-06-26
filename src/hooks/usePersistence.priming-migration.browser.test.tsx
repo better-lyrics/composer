@@ -14,7 +14,7 @@ import { createMp3File } from "@/test/audio-fixtures";
 
 function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
   return saveCurrentProject(
-    { title: "t", artist: "", album: "", duration: 0 },
+    { title: "t", artists: [], album: "", duration: 0 },
     DEFAULT_AGENTS,
     [
       {
@@ -133,7 +133,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     expect(parseLamePriming(await mp3.arrayBuffer()).samples).toBeGreaterThan(0);
     await saveAudioFile(mp3);
     await saveCurrentProject(
-      { title: "race", artist: "", album: "", duration: 0 },
+      { title: "race", artists: [], album: "", duration: 0 },
       DEFAULT_AGENTS,
       [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],
@@ -159,7 +159,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     const noPrimingMp3 = new File([new Uint8Array([0, 1, 2, 3])], "not-mp3.bin", { type: "audio/mpeg" });
     await saveAudioFile(noPrimingMp3);
     await saveCurrentProject(
-      { title: "race-zero", artist: "", album: "", duration: 0 },
+      { title: "race-zero", artists: [], album: "", duration: 0 },
       DEFAULT_AGENTS,
       [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],

@@ -167,7 +167,7 @@ describe("ExportPanel · project file customSnapPoints", () => {
     const payload = {
       version: 1 as const,
       savedAt: Date.now(),
-      metadata: { title: "Imported", artist: "", album: "", duration: 0 },
+      metadata: { title: "Imported", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
       lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
       groups: [],

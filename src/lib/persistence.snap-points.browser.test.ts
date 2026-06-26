@@ -13,7 +13,7 @@ import { snapPoints } from "@/test/factories";
 
 function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
-    { title: "snap", artist: "", album: "", duration: 0 },
+    { title: "snap", artists: [], album: "", duration: 0 },
     DEFAULT_AGENTS,
     [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
     [],
@@ -71,7 +71,7 @@ describe("persistence · customSnapPoints", () => {
     const legacyRecord: SavedProject = {
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "legacy", artist: "", album: "", duration: 0 },
+      metadata: { title: "legacy", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
       lines: [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
       groups: [],

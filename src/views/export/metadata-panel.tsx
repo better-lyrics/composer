@@ -1,0 +1,195 @@
+import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
+import { accordionTransition, accordionVariants } from "@/utils/animationVariants";
+import { cn } from "@/utils/cn";
+import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
+import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
+import { IconChevronRight, IconPlus, IconX } from "@tabler/icons-react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
+import { nanoid } from "nanoid";
+import { useState } from "react";
+
+// -- Helpers ------------------------------------------------------------------
+
+type ExtraPair = { id: string; key: string; value: string };
+
+function pairsToRecord(pairs: ExtraPair[]): Record<string, string> {
+  const record: Record<string, string> = {};
+  for (const { key, value } of pairs) {
+    if (key.trim() !== "") record[key] = value;
+  }
+  return record;
+}
+
+// -- Component ----------------------------------------------------------------
+
+const MetadataPanel: React.FC = () => {
+  const metadata = useProjectStore((s) => s.metadata);
+  const setMetadata = useProjectStore((s) => s.setMetadata);
+
+  const [open, setOpen] = useState(false);
+  const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
+  const [extraPairs, setExtraPairs] = useState<ExtraPair[]>(() =>
+    Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ id: nanoid(), key, value })),
+  );
+
+  // The store keeps only a normalized isrc, but the field must show the raw draft
+  // while editing (so the invalid hint can appear). Show the draft as long as it
+  // still maps to the stored value; if isrc is written from outside (URL params,
+  // bridge, audio tags), the store wins and the field re-seeds.
+  const isrcValue = normalizeIsrc(isrcDraft) === metadata.isrc ? isrcDraft : (metadata.isrc ?? "");
+  const trimmedIsrc = isrcValue.trim();
+  const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
+
+  const handleIsrcChange = (value: string) => {
+    setIsrcDraft(value);
+    setMetadata({ isrc: normalizeIsrc(value) });
+  };
+
+  const handleExtraChange = (next: ExtraPair[]) => {
+    setExtraPairs(next);
+    setMetadata({ extra: pairsToRecord(next) });
+  };
+
+  const handleExtraEdit = (id: string, patch: Partial<ExtraPair>) => {
+    handleExtraChange(extraPairs.map((pair) => (pair.id === id ? { ...pair, ...patch } : pair)));
+  };
+
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <div className="border-b border-composer-border">
+      <Button
+        hasIcon
+        variant="ghost"
+        size="md"
+        className="w-full justify-start rounded-none h-8 px-6 text-composer-text-secondary"
+        aria-expanded={open}
+        onClick={() => setOpen((prev) => !prev)}
+      >
+        <IconChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} />
+        Metadata
+      </Button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <m.div
+            key="metadata-content"
+            variants={accordionVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            transition={reducedMotion ? { duration: 0 } : accordionTransition}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-4 px-6 pt-4 pb-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
+                <input
+                  type="text"
+                  aria-label="Title"
+                  value={metadata.title}
+                  placeholder="Song title"
+                  onChange={(e) => setMetadata({ title: e.target.value })}
+                  className={INPUT_STYLES}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Album</span>
+                <input
+                  type="text"
+                  aria-label="Album"
+                  value={metadata.album}
+                  placeholder="Album name"
+                  onChange={(e) => setMetadata({ album: e.target.value })}
+                  className={INPUT_STYLES}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">ISRC</span>
+                <input
+                  type="text"
+                  aria-label="ISRC"
+                  value={isrcValue}
+                  placeholder="e.g. USQX91700001"
+                  onChange={(e) => handleIsrcChange(e.target.value)}
+                  className={INPUT_STYLES}
+                />
+                {isrcInvalid && (
+                  <span className="text-xs text-composer-error-text select-none">
+                    Invalid ISRC ・ expected 12 characters like USQX91700001
+                  </span>
+                )}
+              </label>
+
+              <MetadataFieldList
+                label="Artists"
+                itemNoun="Artist"
+                placeholder="Artist name"
+                values={metadata.artists}
+                onChange={(next) => setMetadata({ artists: next })}
+              />
+
+              <MetadataFieldList
+                label="Producers"
+                itemNoun="Producer"
+                placeholder="Producer name"
+                values={metadata.songwriters ?? []}
+                onChange={(next) => setMetadata({ songwriters: next })}
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
+                {extraPairs.map((pair, index) => (
+                  <div key={pair.id} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      aria-label={`Field ${index + 1} key`}
+                      value={pair.key}
+                      placeholder="Key"
+                      onChange={(e) => handleExtraEdit(pair.id, { key: e.target.value })}
+                      className={INPUT_STYLES}
+                    />
+                    <input
+                      type="text"
+                      aria-label={`Field ${index + 1} value`}
+                      value={pair.value}
+                      placeholder="Value"
+                      onChange={(e) => handleExtraEdit(pair.id, { value: e.target.value })}
+                      className={INPUT_STYLES}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove field ${index + 1}`}
+                      onClick={() => handleExtraChange(extraPairs.filter((p) => p.id !== pair.id))}
+                    >
+                      <IconX className="size-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  hasIcon
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  aria-label="Add field"
+                  onClick={() => handleExtraChange([...extraPairs, { id: nanoid(), key: "", value: "" }])}
+                >
+                  <IconPlus className="size-3.5" />
+                  Add field
+                </Button>
+              </div>
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// -- Exports ------------------------------------------------------------------
+
+export { MetadataPanel };

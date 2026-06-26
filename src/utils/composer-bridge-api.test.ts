@@ -6,6 +6,7 @@ import {
   decodeHeader,
   extensionForBridgeMime,
   formatBridgeErrorForToast,
+  getAudioFromBridge,
   normalizeBaseUrl,
 } from "@/utils/composer-bridge-api";
 
@@ -327,5 +328,53 @@ describe("formatBridgeErrorForToast", () => {
     expect(formatBridgeErrorForToast(new Error("boom"))).toMatch(/unknown reason/);
     expect(formatBridgeErrorForToast("string error")).toMatch(/unknown reason/);
     expect(formatBridgeErrorForToast(null)).toMatch(/unknown reason/);
+  });
+});
+
+// -- getAudioFromBridge -------------------------------------------------------
+
+describe("getAudioFromBridge", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubAudioResponse(headers: Record<string, string>): void {
+    vi.stubGlobal("fetch", async (): Promise<Response> => {
+      const responseHeaders = new Headers({ "content-type": "audio/opus", ...headers });
+      return new Response(new TextEncoder().encode("opus-bytes").buffer, { headers: responseHeaders });
+    });
+  }
+
+  it("reads isrc from the x-track-isrc header", async () => {
+    stubAudioResponse({ "x-track-isrc": encodeURIComponent("GBARL9300135") });
+
+    const audio = await getAudioFromBridge("http://localhost:7777", "dQw4w9WgXcQ");
+
+    expect(audio.isrc).toBe("GBARL9300135");
+  });
+
+  it("leaves isrc undefined when the x-track-isrc header is absent", async () => {
+    stubAudioResponse({ "x-track-title": encodeURIComponent("Never Gonna Give You Up") });
+
+    const audio = await getAudioFromBridge("http://localhost:7777", "dQw4w9WgXcQ");
+
+    expect(audio.isrc).toBeUndefined();
+    expect(audio.title).toBe("Never Gonna Give You Up");
+  });
+
+  it("decodes percent-encoded title/artist/album/isrc together", async () => {
+    stubAudioResponse({
+      "x-track-title": encodeURIComponent("Never Gonna Give You Up"),
+      "x-track-artist": encodeURIComponent("Rick Astley"),
+      "x-track-album": encodeURIComponent("Whenever You Need Somebody"),
+      "x-track-isrc": encodeURIComponent("GBARL9300135"),
+    });
+
+    const audio = await getAudioFromBridge("http://localhost:7777", "dQw4w9WgXcQ");
+
+    expect(audio.title).toBe("Never Gonna Give You Up");
+    expect(audio.artist).toBe("Rick Astley");
+    expect(audio.album).toBe("Whenever You Need Somebody");
+    expect(audio.isrc).toBe("GBARL9300135");
   });
 });
