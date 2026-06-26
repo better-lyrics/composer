@@ -1,6 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import { SliderSetting, ToggleSetting } from "@/ui/settings/setting-controls";
-import { MOD_KEY, ALT_KEY } from "@/utils/platform";
+import { MOD_KEY } from "@/utils/platform";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Timeline Section ---------------------------------------------------------
@@ -72,7 +72,7 @@ const TimelineSection: React.FC = () => {
       />
       <ToggleSetting
         label="Rolling edit mode affects syllable conjoining"
-        description={`Adjusting syllable timings will respect whether or not rolling edit mode is enabled. Hold ${ALT_KEY} to invert.`}
+        description="Adjusting syllable timings will respect whether or not rolling edit mode is enabled."
         settingKey="rollingAffectsSyllables"
       />
       <ToggleSetting
