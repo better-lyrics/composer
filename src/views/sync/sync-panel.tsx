@@ -285,10 +285,11 @@ const SyncPanel: React.FC = () => {
           if (editMode) return;
           if (isHolding && isPlaying) {
             handleHoldTap();
-          } else if (!syncState.isActive && lines.length > 0) {
-            handleStartSync();
           } else if (isPlaying) {
+            if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
             handleTap();
+          } else if (lines.length > 0) {
+            handleStartSync();
           }
           break;
         case "sync.holdSync":

@@ -46,3 +46,39 @@ describe("SyncPanel", () => {
     await expect.element(screen.getByText(/Editing timings/)).toBeInTheDocument();
   });
 });
+
+describe("SyncPanel · tap while already playing", () => {
+  function pressTap(): void {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+  }
+
+  it("regression: a single space taps the current word when playback was started outside the sync flow", async () => {
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile() },
+      duration: 10,
+      currentTime: 5,
+      isPlaying: true,
+    });
+    useProjectStore.setState({ lines: [createLine({ text: "Hello world" })], activeTab: "sync" });
+    await render(<SyncPanel />);
+
+    pressTap();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.begin).toBe(5);
+  });
+
+  it("marks the session active after tapping so Reset becomes available", async () => {
+    useAudioStore.setState({
+      source: { type: "file", file: createAudioFile() },
+      duration: 10,
+      currentTime: 5,
+      isPlaying: true,
+    });
+    useProjectStore.setState({ lines: [createLine({ text: "Hello world" })], activeTab: "sync" });
+    const screen = await render(<SyncPanel />);
+
+    pressTap();
+
+    await expect.element(screen.getByRole("button", { name: "Reset" })).toBeInTheDocument();
+  });
+});
