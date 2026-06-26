@@ -6,9 +6,6 @@ trustPolicyExclude:
   - "semver@6.3.1"
 blockExoticSubdeps: true
 
-overrides:
-  "@braccato/parsers": "^0.1.2"
-
 peerDependencyRules:
   allowedVersions:
     "react-helmet-async>react": "19"
