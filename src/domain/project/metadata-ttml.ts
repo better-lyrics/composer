@@ -28,7 +28,7 @@ function fromComposerMeta(pairs: MetaPair[]): Partial<ProjectMetadata> {
   const songwriters: string[] = [];
   const extra: Record<string, string> = {};
   for (const { key, value } of pairs) {
-    if (!key || value == null) continue;
+    if (!key || !value) continue;
     switch (key) {
       case "artists":
         artists.push(value);
