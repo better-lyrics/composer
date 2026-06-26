@@ -66,9 +66,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
 
-  // LAYNE: temporary: make it actually part of the timeline store
   const rollingAffectsSyllables = useSettingsStore((s) => s.rollingAffectsSyllables);
-
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
 
@@ -152,12 +150,10 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
 
-        // LAYNE: logic here
-        const conjoinedByDefault = !boundaryHasGap(wordIndex, edge) &&
-          (
-            // expanded for readability
-            (rollingAffectsSyllables === false && (rollingEdit || isSyllableBoundary(wordIndex, edge))) ||
-            (rollingAffectsSyllables === true && rollingEdit === true)
+        const conjoinedByDefault =
+          !boundaryHasGap(wordIndex, edge) && (
+            (!rollingAffectsSyllables && (rollingEdit || isSyllableBoundary(wordIndex, edge))) ||
+            (rollingAffectsSyllables && rollingEdit)
           );
 
         const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
@@ -270,12 +266,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
     [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
   );
 
-  // LAYNE: this function exists solely for visual state
   const isBoundaryConjoined = (boundaryIndex: number): boolean => {
     if (boundaryIndex < 0 || boundaryIndex >= words.length - 1) return false;
     const pos = syllablePositions[boundaryIndex];
     const isSyllable = pos === "first" || pos === "middle";
     const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
+
     const conjoinedByDefault = !hasGap && (
       (!rollingAffectsSyllables && (rollingEditMode || isSyllable)) ||
       (rollingAffectsSyllables && rollingEditMode)
