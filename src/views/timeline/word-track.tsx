@@ -263,7 +263,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
+    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, rollingAffectsSyllables],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean => {
