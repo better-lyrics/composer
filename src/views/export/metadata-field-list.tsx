@@ -59,7 +59,7 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
       <Button
         hasIcon
         size="sm"
-        variant="ghost"
+        variant="secondary"
         className="self-start"
         aria-label={`Add ${itemNoun.toLowerCase()}`}
         onClick={handleAdd}

@@ -1,8 +1,11 @@
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { accordionTransition, accordionVariants } from "@/utils/animationVariants";
+import { cn } from "@/utils/cn";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
-import { IconChevronDown, IconChevronRight, IconPlus, IconX } from "@tabler/icons-react";
+import { IconChevronRight, IconPlus, IconX } from "@tabler/icons-react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -58,7 +61,7 @@ const MetadataPanel: React.FC = () => {
     handleExtraChange(extraPairs.map((pair, i) => (i === index ? { ...pair, ...patch } : pair)));
   };
 
-  const ChevronIcon = open ? IconChevronDown : IconChevronRight;
+  const reducedMotion = useReducedMotion();
 
   return (
     <div className="border-b border-composer-border">
@@ -66,118 +69,130 @@ const MetadataPanel: React.FC = () => {
         hasIcon
         variant="ghost"
         size="md"
-        className="w-full justify-start rounded-none px-6 py-3 text-composer-text-secondary"
+        className="w-full justify-start rounded-none h-8 px-6 text-composer-text-secondary"
         aria-expanded={open}
         onClick={() => setOpen((prev) => !prev)}
       >
-        <ChevronIcon className="size-4" />
+        <IconChevronRight className={cn("size-4 transition-transform", open && "rotate-90")} />
         Metadata
       </Button>
 
-      {open && (
-        <div className="flex flex-col gap-4 px-6 pb-4">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
-            <input
-              type="text"
-              aria-label="Title"
-              value={metadata.title}
-              placeholder="Song title"
-              onChange={(e) => setMetadata({ title: e.target.value })}
-              className={INPUT_STYLES}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-composer-text-secondary select-none">Album</span>
-            <input
-              type="text"
-              aria-label="Album"
-              value={metadata.album}
-              placeholder="Album name"
-              onChange={(e) => setMetadata({ album: e.target.value })}
-              className={INPUT_STYLES}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-composer-text-secondary select-none">ISRC</span>
-            <input
-              type="text"
-              aria-label="ISRC"
-              value={isrcText}
-              placeholder="e.g. USQX91700001"
-              onChange={(e) => handleIsrcChange(e.target.value)}
-              className={INPUT_STYLES}
-            />
-            {isrcInvalid && (
-              <span className="text-xs text-composer-error-text select-none">
-                Invalid ISRC ・ expected 12 characters like USQX91700001
-              </span>
-            )}
-          </label>
-
-          <MetadataFieldList
-            label="Artists"
-            itemNoun="Artist"
-            placeholder="Artist name"
-            values={metadata.artists}
-            onChange={(next) => setMetadata({ artists: next })}
-          />
-
-          <MetadataFieldList
-            label="Producers"
-            itemNoun="Producer"
-            placeholder="Producer name"
-            values={metadata.songwriters ?? []}
-            onChange={(next) => setMetadata({ songwriters: next })}
-          />
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
-            {extraPairs.map((pair, index) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, identity follows index
-              <div key={index} className="flex items-center gap-2">
+      <AnimatePresence initial={false}>
+        {open && (
+          <m.div
+            key="metadata-content"
+            variants={accordionVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            transition={reducedMotion ? { duration: 0 } : accordionTransition}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col gap-4 px-6 pt-4 pb-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Title</span>
                 <input
                   type="text"
-                  aria-label={`Field ${index + 1} key`}
-                  value={pair.key}
-                  placeholder="Key"
-                  onChange={(e) => handleExtraEdit(index, { key: e.target.value })}
+                  aria-label="Title"
+                  value={metadata.title}
+                  placeholder="Song title"
+                  onChange={(e) => setMetadata({ title: e.target.value })}
                   className={INPUT_STYLES}
                 />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Album</span>
                 <input
                   type="text"
-                  aria-label={`Field ${index + 1} value`}
-                  value={pair.value}
-                  placeholder="Value"
-                  onChange={(e) => handleExtraEdit(index, { value: e.target.value })}
+                  aria-label="Album"
+                  value={metadata.album}
+                  placeholder="Album name"
+                  onChange={(e) => setMetadata({ album: e.target.value })}
                   className={INPUT_STYLES}
                 />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">ISRC</span>
+                <input
+                  type="text"
+                  aria-label="ISRC"
+                  value={isrcText}
+                  placeholder="e.g. USQX91700001"
+                  onChange={(e) => handleIsrcChange(e.target.value)}
+                  className={INPUT_STYLES}
+                />
+                {isrcInvalid && (
+                  <span className="text-xs text-composer-error-text select-none">
+                    Invalid ISRC ・ expected 12 characters like USQX91700001
+                  </span>
+                )}
+              </label>
+
+              <MetadataFieldList
+                label="Artists"
+                itemNoun="Artist"
+                placeholder="Artist name"
+                values={metadata.artists}
+                onChange={(next) => setMetadata({ artists: next })}
+              />
+
+              <MetadataFieldList
+                label="Producers"
+                itemNoun="Producer"
+                placeholder="Producer name"
+                values={metadata.songwriters ?? []}
+                onChange={(next) => setMetadata({ songwriters: next })}
+              />
+
+              <div className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
+                {extraPairs.map((pair, index) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, identity follows index
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      aria-label={`Field ${index + 1} key`}
+                      value={pair.key}
+                      placeholder="Key"
+                      onChange={(e) => handleExtraEdit(index, { key: e.target.value })}
+                      className={INPUT_STYLES}
+                    />
+                    <input
+                      type="text"
+                      aria-label={`Field ${index + 1} value`}
+                      value={pair.value}
+                      placeholder="Value"
+                      onChange={(e) => handleExtraEdit(index, { value: e.target.value })}
+                      className={INPUT_STYLES}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      aria-label={`Remove field ${index + 1}`}
+                      onClick={() => handleExtraChange(extraPairs.filter((_, i) => i !== index))}
+                    >
+                      <IconX className="size-4" />
+                    </Button>
+                  </div>
+                ))}
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  aria-label={`Remove field ${index + 1}`}
-                  onClick={() => handleExtraChange(extraPairs.filter((_, i) => i !== index))}
+                  hasIcon
+                  size="sm"
+                  variant="secondary"
+                  className="self-start"
+                  aria-label="Add field"
+                  onClick={() => handleExtraChange([...extraPairs, { key: "", value: "" }])}
                 >
-                  <IconX className="size-4" />
+                  <IconPlus className="size-3.5" />
+                  Add field
                 </Button>
               </div>
-            ))}
-            <Button
-              hasIcon
-              size="sm"
-              variant="ghost"
-              className="self-start"
-              aria-label="Add field"
-              onClick={() => handleExtraChange([...extraPairs, { key: "", value: "" }])}
-            >
-              <IconPlus className="size-3.5" />
-              Add field
-            </Button>
-          </div>
-        </div>
-      )}
+            </div>
+          </m.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
