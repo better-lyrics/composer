@@ -7,6 +7,7 @@ import { Scroll } from "@/ui/scroll";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
 import { rebaseTtmlEdits } from "@/utils/ttml-merge";
+import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
@@ -189,15 +190,15 @@ const ExportPanel: React.FC = () => {
         </div>
       </div>
 
+      {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} />}
+
       {/* Preview / Editor */}
       {isEditing ? (
         <TtmlEditor
           value={displayContent}
           generatedTtml={generatedTtml}
           hasEdits={editedContent !== null}
-          hasConflict={hasConflict}
           onChange={(content) => setEditState({ source: generatedTtml, content })}
-          onRegenerate={handleRegenerate}
         />
       ) : (
         <Scroll className="flex-1 p-6">

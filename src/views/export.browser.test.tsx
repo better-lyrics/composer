@@ -112,6 +112,25 @@ describe("ExportPanel · edits across regeneration", () => {
     await expect.element(screen.getByText("The lyrics changed", { exact: false })).toBeInTheDocument();
     expect((textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
   });
+
+  it("surfaces the conflict notice in preview mode, not only while editing", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
+    });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
+    await screen.getByRole("button", { name: "Done" }).click();
+
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+    }));
+
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.container.querySelector("textarea")).toBeNull();
+  });
 });
 
 describe("ExportPanel · project file customSnapPoints", () => {

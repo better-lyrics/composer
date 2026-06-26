@@ -27,4 +27,14 @@ describe("TtmlDiffViewer", () => {
     await expect.element(screen.getByText("+")).toBeInTheDocument();
     await expect.element(screen.getByText("-")).toBeInTheDocument();
   });
+
+  it("emphasizes only the changed word within a modified line", async () => {
+    const screen = await render(<TtmlDiffViewer oldTtml="the quick brown fox" newTtml="the quick red fox" />);
+    await expect.element(screen.getByText("red")).toBeInTheDocument();
+    const marked = [...screen.container.querySelectorAll("mark")].map((node) => node.textContent);
+    expect(marked).toContain("red");
+    expect(marked).toContain("brown");
+    expect(marked).not.toContain("quick");
+    expect(marked).not.toContain("fox");
+  });
 });

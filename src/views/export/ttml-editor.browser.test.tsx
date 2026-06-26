@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { useState } from "react";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import { render } from "@/test/render";
@@ -18,50 +18,22 @@ function EditorHarness({ initialValue = "", ...rest }: HarnessProps) {
 
 describe("TtmlEditor", () => {
   it("reflects typed edits in the textarea", async () => {
-    const screen = await render(
-      <EditorHarness
-        initialValue="abc"
-        generatedTtml="abc"
-        hasEdits={false}
-        hasConflict={false}
-        onRegenerate={() => {}}
-      />,
-    );
+    const screen = await render(<EditorHarness initialValue="abc" generatedTtml="abc" hasEdits={false} />);
     const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
     await textarea.fill("xyz");
     await expect.element(textarea).toHaveValue("xyz");
   });
 
   it("keeps the textarea outside the overflow-auto scroll container", async () => {
-    const screen = await render(
-      <EditorHarness initialValue="x" generatedTtml="x" hasEdits={false} hasConflict={false} onRegenerate={() => {}} />,
-    );
+    const screen = await render(<EditorHarness initialValue="x" generatedTtml="x" hasEdits={false} />);
     const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
     expect((textarea.element() as HTMLTextAreaElement).closest(".overflow-auto")).toBeNull();
-  });
-
-  describe("conflict", () => {
-    it("shows a conflict notice and regenerates on click", async () => {
-      const onRegenerate = vi.fn();
-      const screen = await render(
-        <EditorHarness initialValue="mine" generatedTtml="next" hasEdits hasConflict onRegenerate={onRegenerate} />,
-      );
-      await expect.element(screen.getByText("The lyrics changed", { exact: false })).toBeInTheDocument();
-      await screen.getByRole("button", { name: "Regenerate" }).click();
-      expect(onRegenerate).toHaveBeenCalledOnce();
-    });
   });
 
   describe("diff view", () => {
     it("toggles between the editor and a diff of edits vs the latest TTML", async () => {
       const screen = await render(
-        <EditorHarness
-          initialValue={"line one\nLINE TWO EDITED"}
-          generatedTtml={"line one\nline two"}
-          hasEdits
-          hasConflict={false}
-          onRegenerate={() => {}}
-        />,
+        <EditorHarness initialValue={"line one\nLINE TWO EDITED"} generatedTtml={"line one\nline two"} hasEdits />,
       );
       await expect.element(screen.getByRole("textbox", { name: "Edit TTML content" })).toBeInTheDocument();
       await screen.getByRole("button", { name: "View diff" }).click();
@@ -72,15 +44,7 @@ describe("TtmlEditor", () => {
     });
 
     it("offers no diff toggle when there are no edits", async () => {
-      const screen = await render(
-        <EditorHarness
-          initialValue="same"
-          generatedTtml="same"
-          hasEdits={false}
-          hasConflict={false}
-          onRegenerate={() => {}}
-        />,
-      );
+      const screen = await render(<EditorHarness initialValue="same" generatedTtml="same" hasEdits={false} />);
       expect(screen.container.querySelector("button")).toBeNull();
     });
   });
