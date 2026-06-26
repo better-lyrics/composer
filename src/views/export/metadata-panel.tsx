@@ -27,29 +27,22 @@ const MetadataPanel: React.FC = () => {
   const setMetadata = useProjectStore((s) => s.setMetadata);
 
   const [open, setOpen] = useState(false);
-  const [isrcText, setIsrcText] = useState(() => metadata.isrc ?? "");
-  const [syncedIsrc, setSyncedIsrc] = useState(metadata.isrc);
+  const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
   const [extraPairs, setExtraPairs] = useState<ExtraPair[]>(() =>
     Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ key, value })),
   );
 
-  // Re-seed the local field when isrc is written from outside (URL params,
-  // bridge, audio tags), without disturbing an in-progress edit: our own writes
-  // advance syncedIsrc in step, so only external writes trip this. extra is
-  // panel-only, so it needs no equivalent sync.
-  if (metadata.isrc !== syncedIsrc) {
-    setSyncedIsrc(metadata.isrc);
-    setIsrcText(metadata.isrc ?? "");
-  }
-
-  const trimmedIsrc = isrcText.trim();
+  // The store keeps only a normalized isrc, but the field must show the raw draft
+  // while editing (so the invalid hint can appear). Show the draft as long as it
+  // still maps to the stored value; if isrc is written from outside (URL params,
+  // bridge, audio tags), the store wins and the field re-seeds.
+  const isrcValue = normalizeIsrc(isrcDraft) === metadata.isrc ? isrcDraft : (metadata.isrc ?? "");
+  const trimmedIsrc = isrcValue.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
 
   const handleIsrcChange = (value: string) => {
-    setIsrcText(value);
-    const normalized = normalizeIsrc(value);
-    setMetadata({ isrc: normalized });
-    setSyncedIsrc(normalized);
+    setIsrcDraft(value);
+    setMetadata({ isrc: normalizeIsrc(value) });
   };
 
   const handleExtraChange = (next: ExtraPair[]) => {
@@ -118,7 +111,7 @@ const MetadataPanel: React.FC = () => {
                 <input
                   type="text"
                   aria-label="ISRC"
-                  value={isrcText}
+                  value={isrcValue}
                   placeholder="e.g. USQX91700001"
                   onChange={(e) => handleIsrcChange(e.target.value)}
                   className={INPUT_STYLES}
