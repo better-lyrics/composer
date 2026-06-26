@@ -21,6 +21,7 @@ import {
   formatBridgeErrorForToast,
   getAudioFromBridge,
 } from "@/utils/composer-bridge-api";
+import { normalizeIsrc } from "@/utils/isrc";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -185,7 +186,8 @@ function useResolveYouTubeTunnel(): void {
         const metadataPatch: Partial<typeof project.metadata> = { title: data.filename || videoId };
         if (data.artist) metadataPatch.artists = [data.artist];
         if (data.album) metadataPatch.album = data.album;
-        if (data.isrc) metadataPatch.isrc = data.isrc;
+        const bridgeIsrc = data.isrc ? normalizeIsrc(data.isrc) : undefined;
+        if (bridgeIsrc) metadataPatch.isrc = bridgeIsrc;
         project.setMetadata(metadataPatch);
         flushPendingSave();
       }

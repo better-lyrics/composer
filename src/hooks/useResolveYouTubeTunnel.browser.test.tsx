@@ -207,6 +207,36 @@ describe("useResolveYouTubeTunnel: bridge happy path", () => {
     expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
   });
 
+  it("rejects a malformed bridge isrc instead of writing it to the store", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+      isrcPercentEncoded: encodeURIComponent("N/A"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
+  });
+
+  it("uppercases a lowercase-but-otherwise-valid bridge isrc", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+      isrcPercentEncoded: encodeURIComponent("gbarl9300135"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBe("GBARL9300135");
+  });
+
   it("decodes percent-encoded UTF-8 metadata headers (the fullwidth-comma regression)", async () => {
     bridge.audio.set("dQw4w9WgXcQ", {
       buffer: asBytes("opus"),
