@@ -71,7 +71,7 @@ function baseSavedProject(audioSource: { kind: "youtube"; videoId: string } | { 
   return {
     version: 1,
     savedAt: Date.now(),
-    metadata: { title: SAVED_TITLE, artist: "Saved Artist", album: "Saved Album", duration: 0 },
+    metadata: { title: SAVED_TITLE, artists: ["Saved Artist"], album: "Saved Album", duration: 0 },
     lines: [],
     agents: [{ id: "v1", type: "person", name: "Lead" }],
     granularity: "word" as const,

@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
@@ -31,13 +32,13 @@ function isValidPayload(value: unknown): value is ImportPayload {
 async function isProjectNonEmpty(): Promise<boolean> {
   const state = useProjectStore.getState();
   if (state.lines.length > 0) return true;
-  const { title, artist, album } = state.metadata;
-  if (title || artist || album) return true;
+  const { title, artists, album } = state.metadata;
+  if (title || artists.length || album) return true;
 
   const saved = await loadCurrentProject();
   if (!saved) return false;
   if (saved.lines.length > 0) return true;
-  return Boolean(saved.metadata.title || saved.metadata.artist || saved.metadata.album);
+  return Boolean(saved.metadata.title || saved.metadata.artists?.length || saved.metadata.album);
 }
 
 function useImportFromHash(): void {
@@ -86,7 +87,7 @@ function useImportFromHash(): void {
 
         const state = useProjectStore.getState();
         state.reset();
-        state.setMetadata(payload.metadata);
+        state.setMetadata(normalizeLoadedMetadata(payload.metadata));
         state.setLines(payload.lines);
         state.setGranularity(payload.granularity);
         for (const agent of payload.agents) {

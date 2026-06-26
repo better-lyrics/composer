@@ -16,8 +16,7 @@ describe("isValidIsrc", () => {
   });
   describe("invariants", () => {
     it("accepts digits in the registrant positions", () => expect(isValidIsrc("US3X91700001")).toBe(true));
-    it("normalizer trims surrounding whitespace", () =>
-      expect(normalizeIsrc(" usqx91700001 ")).toBe("USQX91700001"));
+    it("normalizer trims surrounding whitespace", () => expect(normalizeIsrc(" usqx91700001 ")).toBe("USQX91700001"));
     it("normalizer is idempotent on its own output", () => {
       const once = normalizeIsrc("usqx91700001");
       expect(normalizeIsrc(once as string)).toBe(once);

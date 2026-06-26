@@ -182,10 +182,10 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
     await render(withQueryClient(<HookHost />));
 
-    await waitFor(() => useProjectStore.getState().metadata.artist === "Rick Astley");
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
     const md = useProjectStore.getState().metadata;
     expect(md.title).toBe("Rick Astley - Never Gonna Give You Up");
-    expect(md.artist).toBe("Rick Astley");
+    expect(md.artists).toEqual(["Rick Astley"]);
     expect(md.album).toBe("Whenever You Need Somebody");
   });
 
@@ -200,7 +200,8 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
     await render(withQueryClient(<HookHost />));
 
-    await waitFor(() => useProjectStore.getState().metadata.artist === "Tyler, The Creator");
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Tyler, The Creator");
+    expect(useProjectStore.getState().metadata.artists).toEqual(["Tyler, The Creator"]);
     expect(useProjectStore.getState().metadata.title).toContain("RUNNING OUT OF TIME");
   });
 });
@@ -289,7 +290,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
     await seedProject({
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "Never Gonna Give You Up", artist: "Rick Astley", album: "", duration: 0 },
+      metadata: { title: "Never Gonna Give You Up", artists: ["Rick Astley"], album: "", duration: 0 },
       lines: [],
       agents: [{ id: "v1", type: "person", name: "Lead" }],
       granularity: "word",
@@ -314,7 +315,7 @@ describe("useResolveYouTubeTunnel: reload race", () => {
       await new Promise((r) => setTimeout(r, 50));
 
       expect(useProjectStore.getState().metadata.title).toBe("Never Gonna Give You Up");
-      expect(useProjectStore.getState().metadata.artist).toBe("Rick Astley");
+      expect(useProjectStore.getState().metadata.artists).toEqual(["Rick Astley"]);
       expect(seenTitles).not.toContain("dQw4w9WgXcQ");
     } finally {
       unsubscribe();

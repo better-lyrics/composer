@@ -4,7 +4,7 @@ import { importProjectFromFile } from "@/lib/persistence";
 
 describe("persistence: syllableSplitDefaults", () => {
   it("round-trips syllableSplitDefaults through importProjectFromFile", async () => {
-    const metadata = { title: "Song", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Song", artists: [], album: "", duration: 0 };
     const payload = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -23,7 +23,7 @@ describe("persistence: syllableSplitDefaults", () => {
   });
 
   it("fills in defaults when older project file is missing syllableSplitDefaults", async () => {
-    const metadata = { title: "Old Song", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Old Song", artists: [], album: "", duration: 0 };
     const legacyPayload = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -43,7 +43,7 @@ describe("persistence: syllableSplitDefaults", () => {
 
 describe("persistence: primingStripped round-trip", () => {
   it("persists and reads back primingStripped through importProjectFromFile", async () => {
-    const metadata = { title: "Song", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Song", artists: [], album: "", duration: 0 };
     const payload = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -63,7 +63,7 @@ describe("persistence: primingStripped round-trip", () => {
   });
 
   it("leaves primingStripped undefined when importing a pre-strip project", async () => {
-    const metadata = { title: "Old", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Old", artists: [], album: "", duration: 0 };
     const legacy = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -81,7 +81,7 @@ describe("persistence: primingStripped round-trip", () => {
   });
 
   it("preserves primingStripped=false explicitly", async () => {
-    const metadata = { title: "Mid", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Mid", artists: [], album: "", duration: 0 };
     const payload = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -102,7 +102,7 @@ describe("persistence: primingStripped round-trip", () => {
 
 describe("persistence: customSnapPoints round-trip", () => {
   it("importProjectFromFile preserves customSnapPoints when present", async () => {
-    const metadata = { title: "Song", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Song", artists: [], album: "", duration: 0 };
     const payload = {
       version: 1 as const,
       savedAt: Date.now(),
@@ -121,7 +121,7 @@ describe("persistence: customSnapPoints round-trip", () => {
   });
 
   it("leaves customSnapPoints undefined when importing a legacy project without the field", async () => {
-    const metadata = { title: "Old", artist: "", album: "", duration: 0 };
+    const metadata = { title: "Old", artists: [], album: "", duration: 0 };
     const legacy = {
       version: 1 as const,
       savedAt: Date.now(),

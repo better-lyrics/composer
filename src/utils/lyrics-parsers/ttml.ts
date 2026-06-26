@@ -48,7 +48,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
   const artistEl = doc.querySelector('[type="artist"]');
-  if (artistEl?.textContent) metadata.artist = artistEl.textContent;
+  if (artistEl?.textContent) metadata.artists = [artistEl.textContent];
 
   const albumEl = doc.querySelector('[type="album"]');
   if (albumEl?.textContent) metadata.album = albumEl.textContent;
