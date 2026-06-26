@@ -15,6 +15,7 @@ import {
 import {
   advanceSyncPosition,
   buildInitialWordUpdates,
+  isSyncableLine,
   nextSyncableLineIndex,
   prepareSyncWord,
   prevSyncableLine,
@@ -261,9 +262,12 @@ function useSyncHandlers({
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
-    setSyncState({ position: { lineIndex: nextSyncableLineIndex(lines, -1), wordIndex: 0 }, isActive: true });
+    const { lineIndex: cursorLine, wordIndex: cursorWord } = syncState.position;
+    const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
+    const startWord = startLine === cursorLine ? cursorWord : 0;
+    setSyncState({ position: { lineIndex: startLine, wordIndex: startWord }, isActive: true });
     setIsPlaying(true);
-  }, [lines, setIsPlaying, setSyncState]);
+  }, [lines, syncState.position, setIsPlaying, setSyncState]);
 
   const handleJumpToLine = useCallback(
     (index: number) => {

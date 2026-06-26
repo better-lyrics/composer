@@ -92,6 +92,7 @@ export {
   withBgSeedIfNeeded,
   buildInitialWordUpdates,
   advanceSyncPosition,
+  isSyncableLine,
   nextSyncableLineIndex,
   prevSyncableLine,
   triggerPulse,

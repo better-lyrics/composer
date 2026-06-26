@@ -450,6 +450,63 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
   });
 });
 
+describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
+  function twoSyncedLines() {
+    return [
+      createLine({
+        id: "l0",
+        text: "Hello world",
+        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 }), createWord({ text: "world", begin: 0.5, end: 1 })],
+      }),
+      createLine({
+        id: "l1",
+        text: "Second line",
+        words: [createWord({ text: "Second ", begin: 3, end: 3.5 }), createWord({ text: "line", begin: 3.5, end: 4 })],
+      }),
+    ];
+  }
+
+  it("regression: starts at the navigated line instead of resetting to the top", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, getSyncState, playingCalls } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: false },
+    });
+
+    await act(() => result.current.handleStartSync());
+
+    expect(getSyncState().position.lineIndex).toBe(1);
+    expect(getSyncState().isActive).toBe(true);
+    expect(playingCalls).toContain(true);
+  });
+
+  it("preserves the navigated word index when starting", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, getSyncState } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 1, wordIndex: 1 }, isActive: false },
+    });
+
+    await act(() => result.current.handleStartSync());
+
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
+  });
+
+  it("falls back to the first syncable line when the cursor sits on a non-syncable line", async () => {
+    useProjectStore
+      .getState()
+      .setLines([
+        createLine({ id: "l0", text: "" }),
+        createLine({ id: "l1", text: "Real line", words: [createWord({ text: "Real ", begin: 2, end: 2.5 })] }),
+      ]);
+    const { result, act, getSyncState } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: false },
+    });
+
+    await act(() => result.current.handleStartSync());
+
+    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+  });
+});
+
 describe("sync-panel bg-init contract", () => {
   it("preserves backgroundText and text when seeding backgroundWords on a synced line", async () => {
     const BG_TEXT = "ooh ahh";
