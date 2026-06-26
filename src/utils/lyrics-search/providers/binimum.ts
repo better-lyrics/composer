@@ -1,5 +1,6 @@
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
+import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -7,7 +8,6 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 const BINIMUM_BASE_URL = "https://lyrics-api.binimum.org/";
 const ID_PREFIX = "binimum-";
 const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
-const ISRC_REGEX = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 const VALID_TIMING_TYPES: ReadonlySet<SyncType> = new Set<SyncType>(["syllable", "word", "line"]);
 
 // -- Types --------------------------------------------------------------------
@@ -35,28 +35,18 @@ function hasNonEmptyString(value: string | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-function normalizeIsrc(input: string | undefined): string | null {
-  if (!hasNonEmptyString(input)) return null;
-  const candidate = input.trim().toUpperCase();
-  return ISRC_REGEX.test(candidate) ? candidate : null;
-}
-
-function isValidIsrc(input: string | undefined): boolean {
-  return normalizeIsrc(input) !== null;
-}
-
 function hasTrackAndArtist(query: LyricsSearchQuery): boolean {
   return hasNonEmptyString(query.track) && hasNonEmptyString(query.artist);
 }
 
 function canSearch(query: LyricsSearchQuery): boolean {
   if (hasTrackAndArtist(query)) return true;
-  return isValidIsrc(query.isrc);
+  return hasNonEmptyString(query.isrc) && isValidIsrc(query.isrc);
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {
   const url = new URL(BINIMUM_BASE_URL);
-  const isrc = normalizeIsrc(query.isrc);
+  const isrc = hasNonEmptyString(query.isrc) ? normalizeIsrc(query.isrc) : undefined;
 
   if (isrc && !hasTrackAndArtist(query)) {
     url.searchParams.set("isrc", isrc);
