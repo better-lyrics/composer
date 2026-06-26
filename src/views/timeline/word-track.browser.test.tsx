@@ -254,6 +254,47 @@ describe("WordTrack", () => {
     expect(calls[0].updates.end).toBeGreaterThan(1.2);
   });
 
+  it("drags a flush syllable boundary independently when rollingAffectsSyllables is on and rolling edit is off", async () => {
+    useSettingsStore.setState({ rollingAffectsSyllables: true });
+    useTimelineStore.setState({ rollingEditMode: false });
+
+    const calls: Array<{index: number, adjacentIndex?: number}> = [];
+
+    const words = [
+      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "l"}),
+      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "l"}),
+    ];
+
+    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+    // goal: drag boundary to left and make sure they separate
+    dragRightEdgeBy(blocks[0], -20); // viable?
+    expect(calls).toHaveLength(1);
+    expect(calls[0].adjacentIndex).toBe(undefined);
+  });
+
+  it("conjoins a flush syllable boundary when rollingAffectsSyllables is on and rolling edit is on", async () => {
+    useSettingsStore.setState({ rollingAffectsSyllables: true });
+    useTimelineStore.setState({ rollingEditMode: true });
+
+    const calls: Array<{index: number, adjacentIndex?: number}> = [];
+
+    const words = [
+      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "l"}),
+      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "l"}),
+    ];
+
+    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+
+    // goal: drag boundary and they stay together
+    dragRightEdge(blocks[0]);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].adjacentIndex).not.toBe(undefined);
+  });
+
   it("conjoins a touching word boundary when rolling edit mode is on", async () => {
     useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
     const calls: Array<{
