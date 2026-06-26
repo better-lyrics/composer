@@ -1,5 +1,7 @@
 import { Button } from "@/ui/button";
 import { IconPlus, IconX } from "@tabler/icons-react";
+import { nanoid } from "nanoid";
+import { useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -16,41 +18,46 @@ interface MetadataFieldListProps {
   onChange: (next: string[]) => void;
 }
 
+interface Row {
+  id: string;
+  value: string;
+}
+
 // -- Component ----------------------------------------------------------------
 
 const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, values, placeholder, onChange }) => {
-  const handleEdit = (index: number, value: string) => {
-    const next = values.map((existing, i) => (i === index ? value : existing));
-    onChange(next);
+  // Rows carry a stable id so reorders/removals keep input focus and identity.
+  // Seeded from the store on mount and re-seeded whenever the panel re-expands.
+  const [rows, setRows] = useState<Row[]>(() => values.map((value) => ({ id: nanoid(), value })));
+
+  const commit = (next: Row[]) => {
+    setRows(next);
+    onChange(next.map((row) => row.value));
   };
 
-  const handleRemove = (index: number) => {
-    onChange(values.filter((_, i) => i !== index));
-  };
-
-  const handleAdd = () => {
-    onChange([...values, ""]);
-  };
+  const handleEdit = (id: string, value: string) =>
+    commit(rows.map((row) => (row.id === id ? { ...row, value } : row)));
+  const handleRemove = (id: string) => commit(rows.filter((row) => row.id !== id));
+  const handleAdd = () => commit([...rows, { id: nanoid(), value: "" }]);
 
   return (
     <div className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-composer-text-secondary select-none">{label}</span>
-      {values.map((value, index) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, identity follows index
-        <div key={index} className="flex items-center gap-2">
+      {rows.map((row, index) => (
+        <div key={row.id} className="flex items-center gap-2">
           <input
             type="text"
             aria-label={`${itemNoun} ${index + 1}`}
-            value={value}
+            value={row.value}
             placeholder={placeholder}
-            onChange={(e) => handleEdit(index, e.target.value)}
+            onChange={(e) => handleEdit(row.id, e.target.value)}
             className={INPUT_STYLES}
           />
           <Button
             variant="ghost"
             size="icon"
             aria-label={`Remove ${itemNoun.toLowerCase()} ${index + 1}`}
-            onClick={() => handleRemove(index)}
+            onClick={() => handleRemove(row.id)}
           >
             <IconX className="size-4" />
           </Button>

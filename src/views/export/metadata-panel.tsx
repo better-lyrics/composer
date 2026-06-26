@@ -6,11 +6,12 @@ import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
 import { IconChevronRight, IconPlus, IconX } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
+import { nanoid } from "nanoid";
 import { useState } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
-type ExtraPair = { key: string; value: string };
+type ExtraPair = { id: string; key: string; value: string };
 
 function pairsToRecord(pairs: ExtraPair[]): Record<string, string> {
   const record: Record<string, string> = {};
@@ -29,7 +30,7 @@ const MetadataPanel: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
   const [extraPairs, setExtraPairs] = useState<ExtraPair[]>(() =>
-    Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ key, value })),
+    Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ id: nanoid(), key, value })),
   );
 
   // The store keeps only a normalized isrc, but the field must show the raw draft
@@ -50,8 +51,8 @@ const MetadataPanel: React.FC = () => {
     setMetadata({ extra: pairsToRecord(next) });
   };
 
-  const handleExtraEdit = (index: number, patch: Partial<ExtraPair>) => {
-    handleExtraChange(extraPairs.map((pair, i) => (i === index ? { ...pair, ...patch } : pair)));
+  const handleExtraEdit = (id: string, patch: Partial<ExtraPair>) => {
+    handleExtraChange(extraPairs.map((pair) => (pair.id === id ? { ...pair, ...patch } : pair)));
   };
 
   const reducedMotion = useReducedMotion();
@@ -142,14 +143,13 @@ const MetadataPanel: React.FC = () => {
               <div className="flex flex-col gap-1.5">
                 <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
                 {extraPairs.map((pair, index) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: rows are positional, identity follows index
-                  <div key={index} className="flex items-center gap-2">
+                  <div key={pair.id} className="flex items-center gap-2">
                     <input
                       type="text"
                       aria-label={`Field ${index + 1} key`}
                       value={pair.key}
                       placeholder="Key"
-                      onChange={(e) => handleExtraEdit(index, { key: e.target.value })}
+                      onChange={(e) => handleExtraEdit(pair.id, { key: e.target.value })}
                       className={INPUT_STYLES}
                     />
                     <input
@@ -157,14 +157,14 @@ const MetadataPanel: React.FC = () => {
                       aria-label={`Field ${index + 1} value`}
                       value={pair.value}
                       placeholder="Value"
-                      onChange={(e) => handleExtraEdit(index, { value: e.target.value })}
+                      onChange={(e) => handleExtraEdit(pair.id, { value: e.target.value })}
                       className={INPUT_STYLES}
                     />
                     <Button
                       variant="ghost"
                       size="icon"
                       aria-label={`Remove field ${index + 1}`}
-                      onClick={() => handleExtraChange(extraPairs.filter((_, i) => i !== index))}
+                      onClick={() => handleExtraChange(extraPairs.filter((p) => p.id !== pair.id))}
                     >
                       <IconX className="size-4" />
                     </Button>
@@ -176,7 +176,7 @@ const MetadataPanel: React.FC = () => {
                   variant="secondary"
                   className="self-start"
                   aria-label="Add field"
-                  onClick={() => handleExtraChange([...extraPairs, { key: "", value: "" }])}
+                  onClick={() => handleExtraChange([...extraPairs, { id: nanoid(), key: "", value: "" }])}
                 >
                   <IconPlus className="size-3.5" />
                   Add field
