@@ -35,6 +35,7 @@ interface TunnelResult {
   title?: string;
   artist?: string;
   album?: string;
+  isrc?: string;
   instanceLabel: string;
   instanceId: string;
   wasDefault: boolean;
@@ -66,7 +67,7 @@ function buildAudioFile(buffer: ArrayBuffer, filename: string | undefined, video
 async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<TunnelResult> {
   const baseUrl = useSettingsStore.getState().composerBridgeUrl;
   try {
-    const { buffer, mimeType, title, artist, album } = await getAudioFromBridge(baseUrl, videoId, signal);
+    const { buffer, mimeType, title, artist, album, isrc } = await getAudioFromBridge(baseUrl, videoId, signal);
     if (signal.aborted) throw new DOMException("aborted", "AbortError");
     const filename = [artist, title].filter(Boolean).join(" - ") || title;
     return {
@@ -75,6 +76,7 @@ async function fetchViaBridge(videoId: string, signal: AbortSignal): Promise<Tun
       title,
       artist,
       album,
+      isrc,
       instanceLabel: BRIDGE_INSTANCE_LABEL,
       instanceId: BRIDGE_INSTANCE_ID,
       wasDefault: false,
@@ -183,6 +185,7 @@ function useResolveYouTubeTunnel(): void {
         const metadataPatch: Partial<typeof project.metadata> = { title: data.filename || videoId };
         if (data.artist) metadataPatch.artists = [data.artist];
         if (data.album) metadataPatch.album = data.album;
+        if (data.isrc) metadataPatch.isrc = data.isrc;
         project.setMetadata(metadataPatch);
         flushPendingSave();
       }

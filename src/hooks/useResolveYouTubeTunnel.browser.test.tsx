@@ -39,6 +39,7 @@ interface BridgeAudioResponse {
   titlePercentEncoded?: string;
   artistPercentEncoded?: string;
   albumPercentEncoded?: string;
+  isrcPercentEncoded?: string;
 }
 
 type ThumbBehavior =
@@ -89,6 +90,7 @@ beforeEach(() => {
       if (entry.titlePercentEncoded) headers.set("x-track-title", entry.titlePercentEncoded);
       if (entry.artistPercentEncoded) headers.set("x-track-artist", entry.artistPercentEncoded);
       if (entry.albumPercentEncoded) headers.set("x-track-album", entry.albumPercentEncoded);
+      if (entry.isrcPercentEncoded) headers.set("x-track-isrc", entry.isrcPercentEncoded);
       return new Response(entry.buffer, { headers });
     }
 
@@ -170,13 +172,14 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     expect(file.type).toBe("audio/opus");
   });
 
-  it("sets project metadata title/artist/album from the bridge response", async () => {
+  it("sets project metadata title/artist/album/isrc from the bridge response", async () => {
     bridge.audio.set("dQw4w9WgXcQ", {
       buffer: asBytes("opus"),
       mimeType: "audio/opus",
       titlePercentEncoded: encodeURIComponent("Never Gonna Give You Up"),
       artistPercentEncoded: encodeURIComponent("Rick Astley"),
       albumPercentEncoded: encodeURIComponent("Whenever You Need Somebody"),
+      isrcPercentEncoded: encodeURIComponent("GBARL9300135"),
     });
 
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");
@@ -187,6 +190,21 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
     expect(md.title).toBe("Rick Astley - Never Gonna Give You Up");
     expect(md.artists).toEqual(["Rick Astley"]);
     expect(md.album).toBe("Whenever You Need Somebody");
+    expect(md.isrc).toBe("GBARL9300135");
+  });
+
+  it("leaves isrc unset when the bridge omits the x-track-isrc header", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      artistPercentEncoded: encodeURIComponent("Rick Astley"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
   });
 
   it("decodes percent-encoded UTF-8 metadata headers (the fullwidth-comma regression)", async () => {
