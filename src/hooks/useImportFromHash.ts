@@ -38,7 +38,8 @@ async function isProjectNonEmpty(): Promise<boolean> {
   const saved = await loadCurrentProject();
   if (!saved) return false;
   if (saved.lines.length > 0) return true;
-  return Boolean(saved.metadata.title || saved.metadata.artists?.length || saved.metadata.album);
+  const savedMetadata = normalizeLoadedMetadata(saved.metadata);
+  return Boolean(savedMetadata.title || savedMetadata.artists.length || savedMetadata.album);
 }
 
 function useImportFromHash(): void {
