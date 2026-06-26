@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { useImportModalStore } from "@/stores/import-modal-store";
+import { normalizeIsrc } from "@/utils/isrc";
 import { stripQueryParams } from "@/utils/url-params";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
 const IMPORT_PARAM_NAMES = ["title", "artist", "album", "duration", "isrc"] as const;
-const ISRC_PATTERN = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -24,18 +24,13 @@ function parseDurationSec(raw: string | null): number | undefined {
   return value;
 }
 
-function parseIsrc(raw: string | null): string | undefined {
-  if (raw === null) return undefined;
-  const normalized = raw.toUpperCase();
-  return ISRC_PATTERN.test(normalized) ? normalized : undefined;
-}
-
 function buildPrefillFromUrl(params: URLSearchParams): LyricsSearchQuery | null {
   const track = readTrimmed(params, "title");
   const artist = readTrimmed(params, "artist");
   const album = readTrimmed(params, "album");
   const durationSec = parseDurationSec(readTrimmed(params, "duration"));
-  const isrc = parseIsrc(readTrimmed(params, "isrc"));
+  const isrcRaw = readTrimmed(params, "isrc");
+  const isrc = isrcRaw ? normalizeIsrc(isrcRaw) : undefined;
   const videoId = readTrimmed(params, "videoId");
 
   const prefill: LyricsSearchQuery = {};
