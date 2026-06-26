@@ -22,6 +22,8 @@ export default defineConfig({
       "motion/react",
       "@dnd-kit/core",
       "react-router-dom",
+      "node-diff3",
+      "diff",
     ],
   },
   test: {

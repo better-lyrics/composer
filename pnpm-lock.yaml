@@ -44,6 +44,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      diff:
+        specifier: ^9.0.0
+        version: 9.0.0
       driver.js:
         specifier: ^1.4.0
         version: 1.4.0
@@ -56,6 +59,9 @@ importers:
       nanoid:
         specifier: ^5.1.11
         version: 5.1.11
+      node-diff3:
+        specifier: ^3.2.1
+        version: 3.2.1
       obscenity:
         specifier: ^0.4.6
         version: 0.4.6
@@ -1713,6 +1719,10 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
+  diff@9.0.0:
+    resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
+    engines: {node: '>=0.3.1'}
+
   doctypes@1.1.0:
     resolution: {integrity: sha512-LLBi6pEqS6Do3EKQ3J0NqHWV5hhb78Pi8vvESYwyOy2c31ZEZVdtitdzsQsKb7878PEERhzUk0ftqGhG6Mz+pQ==}
 
@@ -2251,6 +2261,10 @@ packages:
     resolution: {integrity: sha512-v+KEsUv2ps74PaSKv0gHTxTCgMXOIfBEbaqa6w6ISIGC7ZsvHN4N9oJ8d4cmf0n5oTzQz2SLmThbQWhjd/8eKg==}
     engines: {node: ^18 || >=20}
     hasBin: true
+
+  node-diff3@3.2.1:
+    resolution: {integrity: sha512-eKZcJ8RtMQ3cIaA15EgmtwG927fYnRlhtdA4Q9HAcCpAZPQhhU2XptnTH9GeAkMiX2bAXxlJSAFa9shFbztPgw==}
+    engines: {bun: '>=1.3.10'}
 
   node-releases@2.0.27:
     resolution: {integrity: sha512-nmh3lCkYZ3grZvqcCH+fjmQ7X+H0OeZgP40OierEaAptX4XofMh5kwNbWh7lBduUzCcV/8kZ+NDLCwm2iorIlA==}
@@ -4272,6 +4286,8 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
+  diff@9.0.0: {}
+
   doctypes@1.1.0: {}
 
   driver.js@1.4.0: {}
@@ -4838,6 +4854,8 @@ snapshots:
   nanoid@3.3.12: {}
 
   nanoid@5.1.11: {}
+
+  node-diff3@3.2.1: {}
 
   node-releases@2.0.27: {}
 

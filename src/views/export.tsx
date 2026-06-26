@@ -6,6 +6,8 @@ import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
+import { rebaseTtmlEdits } from "@/utils/ttml-merge";
+import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
   IconCopy,
@@ -48,7 +50,20 @@ const ExportPanel: React.FC = () => {
     return generateTTML({ metadata, agents, lines, groups, granularity, minify: true, duration });
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
-  const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
+  const drift = editState !== null && editState.source !== generatedTtml;
+  const rebased = useMemo(
+    () => (editState !== null && drift ? rebaseTtmlEdits(editState.source, editState.content, generatedTtml) : null),
+    [editState, drift, generatedTtml],
+  );
+  const editedContent =
+    editState === null
+      ? null
+      : !drift
+        ? editState.content
+        : rebased?.status === "clean"
+          ? rebased.content
+          : editState.content;
+  const hasConflict = drift && rebased?.status === "conflict";
   const displayContent = editedContent ?? generatedTtml;
   const exportContent = editedContent ?? minifiedTtml;
 
@@ -176,15 +191,14 @@ const ExportPanel: React.FC = () => {
 
       {/* Preview / Editor */}
       {isEditing ? (
-        <div className="flex flex-col flex-1 min-h-0 p-6">
-          <textarea
-            value={displayContent}
-            aria-label="Edit TTML content"
-            onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
-            className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
-            spellCheck={false}
-          />
-        </div>
+        <TtmlEditor
+          value={displayContent}
+          generatedTtml={generatedTtml}
+          hasEdits={editedContent !== null}
+          hasConflict={hasConflict}
+          onChange={(content) => setEditState({ source: generatedTtml, content })}
+          onRegenerate={handleRegenerate}
+        />
       ) : (
         <Scroll className="flex-1 p-6">
           <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
