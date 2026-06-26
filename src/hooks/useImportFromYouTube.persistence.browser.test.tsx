@@ -81,7 +81,7 @@ function baseSavedProject(audioSource: { kind: "youtube"; videoId: string } | { 
 
 // -- URL overrides persistence ------------------------------------------------
 
-describe("usePersistence + useImportFromYouTube — URL overrides persistence", () => {
+describe("usePersistence + useImportFromYouTube: URL overrides persistence", () => {
   beforeEach(() => setQuery(""));
   afterEach(() => setQuery(""));
 
@@ -165,7 +165,7 @@ describe("usePersistence + useImportFromYouTube — URL overrides persistence", 
 
 // -- Cold start ---------------------------------------------------------------
 
-describe("usePersistence + useImportFromYouTube — cold start", () => {
+describe("usePersistence + useImportFromYouTube: cold start", () => {
   beforeEach(() => setQuery(""));
   afterEach(() => setQuery(""));
 
@@ -197,7 +197,7 @@ describe("usePersistence + useImportFromYouTube — cold start", () => {
 
 // -- Edge cases ---------------------------------------------------------------
 
-describe("usePersistence + useImportFromYouTube — edge cases", () => {
+describe("usePersistence + useImportFromYouTube: edge cases", () => {
   beforeEach(() => setQuery(""));
   afterEach(() => setQuery(""));
 

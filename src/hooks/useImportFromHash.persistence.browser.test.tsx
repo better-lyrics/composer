@@ -72,7 +72,7 @@ function savedSnapshot(audioSource?: { kind: "youtube"; videoId: string } | { ki
 
 // -- Tests --------------------------------------------------------------------
 
-describe("usePersistence + useImportFromHash — hash overrides persistence", () => {
+describe("usePersistence + useImportFromHash: hash overrides persistence", () => {
   beforeEach(() => {
     setQuery("");
     setHash("");

@@ -67,7 +67,12 @@ describe("fromComposerMeta", () => {
     it("returns an empty object for no pairs", () => expect(fromComposerMeta([])).toEqual({}));
     it("ignores pairs with an empty key", () => expect(fromComposerMeta([{ key: "", value: "x" }])).toEqual({}));
     it("ignores pairs with an empty value", () => {
-      expect(fromComposerMeta([{ key: "album", value: "" }, { key: "spotifyId", value: "" }])).toEqual({});
+      expect(
+        fromComposerMeta([
+          { key: "album", value: "" },
+          { key: "spotifyId", value: "" },
+        ]),
+      ).toEqual({});
     });
   });
 });

@@ -149,7 +149,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 2000): Promise<void
 
 // -- Bridge happy path --------------------------------------------------------
 
-describe("useResolveYouTubeTunnel — bridge happy path", () => {
+describe("useResolveYouTubeTunnel: bridge happy path", () => {
   it("writes the file from the bridge audio response into the audio store", async () => {
     bridge.audio.set("dQw4w9WgXcQ", {
       buffer: asBytes("opus-bytes"),
@@ -226,7 +226,7 @@ describe("useResolveYouTubeTunnel — bridge happy path", () => {
 
 // -- Fallback paths -----------------------------------------------------------
 
-describe("useResolveYouTubeTunnel — title fallback", () => {
+describe("useResolveYouTubeTunnel: title fallback", () => {
   it("falls back to videoId as the title when the bridge returns no metadata at all", async () => {
     bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus"), mimeType: "audio/opus" });
 
@@ -259,7 +259,7 @@ describe("useResolveYouTubeTunnel — title fallback", () => {
 
 // -- mimeType / file format ---------------------------------------------------
 
-describe("useResolveYouTubeTunnel — file format", () => {
+describe("useResolveYouTubeTunnel: file format", () => {
   it("labels the File with the actual bridge mime (regression for the .m4a-hardcode)", async () => {
     bridge.audio.set("dQw4w9WgXcQ", { buffer: asBytes("opus"), mimeType: "audio/opus" });
     enableBridgeAndSelectVideo("dQw4w9WgXcQ");

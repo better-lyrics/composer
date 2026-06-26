@@ -56,7 +56,7 @@ function dispatchDrop(target: Element, file: File) {
 
 // -- Empty state --------------------------------------------------------------
 
-describe("ImportPanel — no source", () => {
+describe("ImportPanel: no source", () => {
   it("renders the audio drop zone when no source is loaded", async () => {
     useAudioStore.setState({ source: null });
     useProjectStore.setState({ lines: [] });
@@ -73,7 +73,7 @@ describe("ImportPanel — no source", () => {
 
 // -- File source --------------------------------------------------------------
 
-describe("ImportPanel — file source", () => {
+describe("ImportPanel: file source", () => {
   it("shows the loading spinner for a file source while it is loading", async () => {
     useAudioStore.setState({
       source: { type: "file", file: createAudioFile() },
@@ -106,9 +106,9 @@ describe("ImportPanel — file source", () => {
   });
 });
 
-// -- YouTube source — title -----------------------------------------------
+// -- YouTube source: title -----------------------------------------------
 
-describe("ImportPanel — YouTube title", () => {
+describe("ImportPanel: YouTube title", () => {
   it("shows the loading spinner while a YouTube source is downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "abc123" },
@@ -153,9 +153,9 @@ describe("ImportPanel — YouTube title", () => {
   });
 });
 
-// -- YouTube source — thumbnail -------------------------------------------
+// -- YouTube source: thumbnail -------------------------------------------
 
-describe("ImportPanel — YouTube thumbnail", () => {
+describe("ImportPanel: YouTube thumbnail", () => {
   it("renders the persisted thumbnail image when one is in project metadata", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
@@ -239,9 +239,9 @@ describe("ImportPanel — YouTube thumbnail", () => {
   });
 });
 
-// -- YouTube source — subtitle copy ---------------------------------------
+// -- YouTube source: subtitle copy ---------------------------------------
 
-describe("ImportPanel — YouTube subtitle", () => {
+describe("ImportPanel: YouTube subtitle", () => {
   it("says 'Downloading from YouTube' while downloading", async () => {
     useAudioStore.setState({
       source: { type: "youtube", videoId: "dQw4w9WgXcQ" },
