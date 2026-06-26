@@ -1,5 +1,7 @@
 import { useEffect } from "react";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useImportModalStore } from "@/stores/import-modal-store";
+import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
 import { stripQueryParams } from "@/utils/url-params";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
@@ -44,17 +46,37 @@ function buildPrefillFromUrl(params: URLSearchParams): LyricsSearchQuery | null 
   return Object.keys(prefill).length === 0 ? null : prefill;
 }
 
+function buildMetadataFromUrl(params: URLSearchParams): Partial<ProjectMetadata> | null {
+  const patch: Partial<ProjectMetadata> = {};
+  const title = readTrimmed(params, "title");
+  const artist = readTrimmed(params, "artist");
+  const album = readTrimmed(params, "album");
+  const duration = parseDurationSec(readTrimmed(params, "duration"));
+  const isrcRaw = readTrimmed(params, "isrc");
+  const isrc = isrcRaw ? normalizeIsrc(isrcRaw) : undefined;
+
+  if (title) patch.title = title;
+  if (artist) patch.artists = [artist];
+  if (album) patch.album = album;
+  if (duration !== undefined) patch.duration = duration;
+  if (isrc !== undefined) patch.isrc = isrc;
+
+  return Object.keys(patch).length === 0 ? null : patch;
+}
+
 function useImportFromQuery(): void {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const prefill = buildPrefillFromUrl(params);
-    if (prefill === null) return;
+    const metaPatch = buildMetadataFromUrl(params);
+    if (prefill === null && metaPatch === null) return;
     stripQueryParams(IMPORT_PARAM_NAMES);
-    useImportModalStore.getState().setDefaultPrefill(prefill);
+    if (prefill !== null) useImportModalStore.getState().setDefaultPrefill(prefill);
+    if (metaPatch !== null) useProjectStore.getState().setMetadata(metaPatch);
   }, []);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { useImportFromQuery };
+export { buildMetadataFromUrl, useImportFromQuery };
