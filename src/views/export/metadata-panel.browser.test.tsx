@@ -101,6 +101,27 @@ describe("MetadataPanel", () => {
     await expect.element(screen.getByRole("textbox", { name: "ISRC" })).toHaveValue("USQX91700001");
   });
 
+  it("re-seeds the ISRC field when isrc is written externally while mounted", async () => {
+    seedMetadata({ isrc: "USQX91700001" });
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+    await expect.element(screen.getByRole("textbox", { name: "ISRC" })).toHaveValue("USQX91700001");
+
+    useProjectStore.getState().setMetadata({ isrc: "GBARL9300135" });
+    await expect.element(screen.getByRole("textbox", { name: "ISRC" })).toHaveValue("GBARL9300135");
+  });
+
+  it("keeps an in-progress ISRC edit instead of overwriting it with the normalized store value", async () => {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+
+    const isrc = screen.getByRole("textbox", { name: "ISRC" });
+    await isrc.fill("usqx91700001");
+    await expect.poll(() => useProjectStore.getState().metadata.isrc).toBe("USQX91700001");
+    await expect.element(isrc).toHaveValue("usqx91700001");
+  });
+
   it("adds an extra key/value row and writes it to the store", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);

@@ -25,16 +25,28 @@ const MetadataPanel: React.FC = () => {
 
   const [open, setOpen] = useState(false);
   const [isrcText, setIsrcText] = useState(() => metadata.isrc ?? "");
+  const [syncedIsrc, setSyncedIsrc] = useState(metadata.isrc);
   const [extraPairs, setExtraPairs] = useState<ExtraPair[]>(() =>
     Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ key, value })),
   );
+
+  // Re-seed the local field when isrc is written from outside (URL params,
+  // bridge, audio tags), without disturbing an in-progress edit: our own writes
+  // advance syncedIsrc in step, so only external writes trip this. extra is
+  // panel-only, so it needs no equivalent sync.
+  if (metadata.isrc !== syncedIsrc) {
+    setSyncedIsrc(metadata.isrc);
+    setIsrcText(metadata.isrc ?? "");
+  }
 
   const trimmedIsrc = isrcText.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
 
   const handleIsrcChange = (value: string) => {
     setIsrcText(value);
-    setMetadata({ isrc: normalizeIsrc(value) });
+    const normalized = normalizeIsrc(value);
+    setMetadata({ isrc: normalized });
+    setSyncedIsrc(normalized);
   };
 
   const handleExtraChange = (next: ExtraPair[]) => {
