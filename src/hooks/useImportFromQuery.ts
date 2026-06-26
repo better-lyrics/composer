@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
@@ -73,7 +74,18 @@ function useImportFromQuery(): void {
     if (prefill === null && metaPatch === null) return;
     stripQueryParams(IMPORT_PARAM_NAMES);
     if (prefill !== null) useImportModalStore.getState().setDefaultPrefill(prefill);
-    if (metaPatch !== null) useProjectStore.getState().setMetadata(metaPatch);
+
+    if (metaPatch === null) return;
+
+    let cancelled = false;
+    getPersistenceSettled().then(() => {
+      if (cancelled) return;
+      useProjectStore.getState().setMetadata(metaPatch);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 }
 

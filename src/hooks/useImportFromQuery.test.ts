@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { buildMetadataFromUrl, useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
+import { getPersistenceSettled, markPersistenceSettled } from "@/lib/persistence-settled";
 import { INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 
@@ -254,6 +255,13 @@ describe("buildMetadataFromUrl", () => {
   });
 });
 
+async function flushSettled(): Promise<void> {
+  markPersistenceSettled();
+  await act(async () => {
+    await getPersistenceSettled();
+  });
+}
+
 describe("useImportFromQuery persists enriched-link metadata", () => {
   let handle: MountHandle | null = null;
 
@@ -270,10 +278,11 @@ describe("useImportFromQuery persists enriched-link metadata", () => {
     setUrl("");
   });
 
-  it("writes title/artists/album/isrc/duration into the project store", () => {
+  it("writes title/artists/album/isrc/duration into the project store once persistence settles", async () => {
     setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
 
     handle = mountHook();
+    await flushSettled();
 
     expect(useProjectStore.getState().metadata).toMatchObject({
       title: "Hello",
@@ -284,8 +293,55 @@ describe("useImportFromQuery persists enriched-link metadata", () => {
     });
   });
 
-  it("leaves project metadata untouched when no import params are present", () => {
+  it("leaves project metadata untouched when no import params are present", async () => {
     setUrl("?foo=bar");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
+  });
+
+  it("does not write a metadata patch when only videoId is present", async () => {
+    setUrl("?videoId=fJ9rUzIMcZQ");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
+  });
+});
+
+// -- Boot race: gate the project write behind persistence settling ------------
+
+describe("useImportFromQuery gates the metadata write behind persistence", () => {
+  let handle: MountHandle | null = null;
+
+  beforeEach(() => {
+    resetStore();
+    setUrl("");
+  });
+
+  afterEach(() => {
+    if (handle) {
+      handle.unmount();
+      handle = null;
+    }
+    setUrl("");
+  });
+
+  it("does not write enriched-link metadata until persistence has settled", () => {
+    setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
 
     handle = mountHook();
 
@@ -297,10 +353,50 @@ describe("useImportFromQuery persists enriched-link metadata", () => {
     });
   });
 
-  it("does not write a metadata patch when only videoId is present", () => {
-    setUrl("?videoId=fJ9rUzIMcZQ");
+  it("applies the enriched-link metadata after persistence settles", async () => {
+    setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
 
     handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      title: "Hello",
+      artists: ["Adele"],
+      album: "25",
+      isrc: "GBUM71029604",
+      duration: 355,
+    });
+  });
+
+  it("does not clobber a persistence-restored project when the URL has no import params", async () => {
+    setUrl("?foo=bar");
+    useProjectStore.getState().setMetadata({
+      title: "Restored Title",
+      artists: ["Restored Artist"],
+      album: "Restored Album",
+      isrc: "USQX91700001",
+      duration: 200,
+    });
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      title: "Restored Title",
+      artists: ["Restored Artist"],
+      album: "Restored Album",
+      isrc: "USQX91700001",
+      duration: 200,
+    });
+  });
+
+  it("does not write after unmount even once persistence settles", async () => {
+    setUrl("?title=Hello&artist=Adele");
+
+    handle = mountHook();
+    handle.unmount();
+    handle = null;
+    await flushSettled();
 
     expect(useProjectStore.getState().metadata).toEqual({
       title: "",
