@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { MetadataPanel } from "@/views/export/metadata-panel";
@@ -126,18 +127,36 @@ describe("MetadataPanel", () => {
     await expect.element(screen.getByRole("textbox", { name: "Field 1 value" })).toHaveValue("abc");
   });
 
-  it("supports keyboard: Tab moves focus from the Title input to the Album input", async () => {
+  it("supports keyboard: a real Tab advances focus from the Title input to the Album input", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);
     await screen.getByRole("button", { name: "Metadata" }).click();
 
     const title = screen.getByRole("textbox", { name: "Title" }).element() as HTMLInputElement;
-    title.focus();
-    expect(document.activeElement).toBe(title);
-
-    title.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
     const album = screen.getByRole("textbox", { name: "Album" }).element() as HTMLInputElement;
-    album.focus();
+
+    await userEvent.click(title);
+    await expect.poll(() => document.activeElement).toBe(title);
+
+    await userEvent.tab();
     await expect.poll(() => document.activeElement).toBe(album);
+  });
+
+  describe("edge cases", () => {
+    it("collapses duplicate extra keys to one store entry with the last value winning", async () => {
+      seedMetadata();
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+
+      await screen.getByRole("button", { name: "Add field" }).click();
+      await screen.getByRole("button", { name: "Add field" }).click();
+
+      await screen.getByRole("textbox", { name: "Field 1 key" }).fill("spotifyId");
+      await screen.getByRole("textbox", { name: "Field 1 value" }).fill("first");
+      await screen.getByRole("textbox", { name: "Field 2 key" }).fill("spotifyId");
+      await screen.getByRole("textbox", { name: "Field 2 value" }).fill("second");
+
+      await expect.poll(() => useProjectStore.getState().metadata.extra).toEqual({ spotifyId: "second" });
+    });
   });
 });
