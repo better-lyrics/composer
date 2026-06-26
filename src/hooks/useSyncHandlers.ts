@@ -273,8 +273,6 @@ function useSyncHandlers({
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
-      // Edit mode scrubs exactly to the line to inspect timing; sync mode adds a
-      // pre-roll run-up to re-record. Both stay paused and move the cursor.
       seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
     },
     [editMode, lines, seekTo, setSyncState],
