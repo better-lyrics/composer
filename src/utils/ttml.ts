@@ -2,6 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
@@ -11,6 +12,10 @@ import { effectiveBounds } from "@/domain/line/bounds";
 
 function escapeXml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
+
+function escapeXmlAttribute(str: string): string {
+  return escapeXml(str).replace(/"/g, "&quot;");
 }
 
 function emitWordSpan(word: { text: string; begin: number; end: number; explicit?: true }, text: string): string {
@@ -48,6 +53,9 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   parts.push(`${ind(2)}<metadata>`);
   if (metadata.title) {
     parts.push(`${ind(3)}<ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
+  }
+  for (const { key, value } of toComposerMeta(metadata)) {
+    parts.push(`${ind(3)}<composer:meta key="${escapeXmlAttribute(key)}" value="${escapeXmlAttribute(value)}"/>`);
   }
   for (const agent of agents) {
     if (agent.name) {
