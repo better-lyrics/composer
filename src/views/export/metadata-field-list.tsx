@@ -1,7 +1,7 @@
+import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-import { useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -23,17 +23,29 @@ interface Row {
   value: string;
 }
 
+// -- Reconciliation -----------------------------------------------------------
+
+const seedRows = (values: string[]): Row[] => values.map((value) => ({ id: nanoid(), value }));
+
+const reconcileRows = (previous: Row[], values: string[]): Row[] =>
+  values.map((value, index) =>
+    previous[index]?.value === value ? previous[index] : { id: previous[index]?.id ?? nanoid(), value },
+  );
+
+const sameStrings = (a: string[], b: string[]): boolean =>
+  a.length === b.length && a.every((value, index) => value === b[index]);
+
 // -- Component ----------------------------------------------------------------
 
 const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, values, placeholder, onChange }) => {
   // Rows carry a stable id so reorders/removals keep input focus and identity.
-  // Seeded from the store on mount and re-seeded whenever the panel re-expands.
-  const [rows, setRows] = useState<Row[]>(() => values.map((value) => ({ id: nanoid(), value })));
-
-  const commit = (next: Row[]) => {
-    setRows(next);
-    onChange(next.map((row) => row.value));
-  };
+  // The buffer re-seeds whenever values are written from outside (load, import).
+  const { rows, commit } = useReconciledBuffer<Row, string[]>(values, onChange, {
+    seed: seedRows,
+    reconcile: reconcileRows,
+    equal: sameStrings,
+    emit: (next) => next.map((row) => row.value),
+  });
 
   const handleEdit = (id: string, value: string) =>
     commit(rows.map((row) => (row.id === id ? { ...row, value } : row)));
@@ -80,4 +92,5 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
 
 // -- Exports ------------------------------------------------------------------
 
-export { MetadataFieldList, INPUT_STYLES };
+export { MetadataFieldList, INPUT_STYLES, seedRows, reconcileRows, sameStrings };
+export type { Row };

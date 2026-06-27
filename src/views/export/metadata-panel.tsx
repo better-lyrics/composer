@@ -3,23 +3,11 @@ import { Button } from "@/ui/button";
 import { accordionTransition, accordionVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
+import { ExtraFieldList } from "@/views/export/extra-field-list";
 import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
-import { IconChevronRight, IconPlus, IconX } from "@tabler/icons-react";
+import { IconChevronRight } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { nanoid } from "nanoid";
 import { useState } from "react";
-
-// -- Helpers ------------------------------------------------------------------
-
-type ExtraPair = { id: string; key: string; value: string };
-
-function pairsToRecord(pairs: ExtraPair[]): Record<string, string> {
-  const record: Record<string, string> = {};
-  for (const { key, value } of pairs) {
-    if (key.trim() !== "") record[key] = value;
-  }
-  return record;
-}
 
 // -- Component ----------------------------------------------------------------
 
@@ -29,9 +17,6 @@ const MetadataPanel: React.FC = () => {
 
   const [open, setOpen] = useState(false);
   const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
-  const [extraPairs, setExtraPairs] = useState<ExtraPair[]>(() =>
-    Object.entries(metadata.extra ?? {}).map(([key, value]) => ({ id: nanoid(), key, value })),
-  );
 
   // The store keeps only a normalized isrc, but the field must show the raw draft
   // while editing (so the invalid hint can appear). Show the draft as long as it
@@ -44,15 +29,6 @@ const MetadataPanel: React.FC = () => {
   const handleIsrcChange = (value: string) => {
     setIsrcDraft(value);
     setMetadata({ isrc: normalizeIsrc(value) });
-  };
-
-  const handleExtraChange = (next: ExtraPair[]) => {
-    setExtraPairs(next);
-    setMetadata({ extra: pairsToRecord(next) });
-  };
-
-  const handleExtraEdit = (id: string, patch: Partial<ExtraPair>) => {
-    handleExtraChange(extraPairs.map((pair) => (pair.id === id ? { ...pair, ...patch } : pair)));
   };
 
   const reducedMotion = useReducedMotion();
@@ -140,48 +116,7 @@ const MetadataPanel: React.FC = () => {
                 onChange={(next) => setMetadata({ songwriters: next })}
               />
 
-              <div className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-composer-text-secondary select-none">Extra fields</span>
-                {extraPairs.map((pair, index) => (
-                  <div key={pair.id} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      aria-label={`Field ${index + 1} key`}
-                      value={pair.key}
-                      placeholder="Key"
-                      onChange={(e) => handleExtraEdit(pair.id, { key: e.target.value })}
-                      className={INPUT_STYLES}
-                    />
-                    <input
-                      type="text"
-                      aria-label={`Field ${index + 1} value`}
-                      value={pair.value}
-                      placeholder="Value"
-                      onChange={(e) => handleExtraEdit(pair.id, { value: e.target.value })}
-                      className={INPUT_STYLES}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      aria-label={`Remove field ${index + 1}`}
-                      onClick={() => handleExtraChange(extraPairs.filter((p) => p.id !== pair.id))}
-                    >
-                      <IconX className="size-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  hasIcon
-                  size="sm"
-                  variant="secondary"
-                  className="self-start"
-                  aria-label="Add field"
-                  onClick={() => handleExtraChange([...extraPairs, { id: nanoid(), key: "", value: "" }])}
-                >
-                  <IconPlus className="size-3.5" />
-                  Add field
-                </Button>
-              </div>
+              <ExtraFieldList values={metadata.extra ?? {}} onChange={(next) => setMetadata({ extra: next })} />
             </div>
           </m.div>
         )}
