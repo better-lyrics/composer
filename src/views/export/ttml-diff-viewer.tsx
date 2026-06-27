@@ -57,15 +57,11 @@ function buildRows(oldTtml: string, newTtml: string): DiffRow[] {
       const words = diffWordsWithSpace(toLines(change.value)[0] ?? "", toLines(next.value)[0] ?? "");
       rows.push({
         kind: "remove",
-        segments: words
-          .filter((word) => !word.added)
-          .map((word) => ({ text: word.value, emphasis: Boolean(word.removed) })),
+        segments: words.flatMap((word) => (word.added ? [] : [{ text: word.value, emphasis: Boolean(word.removed) }])),
       });
       rows.push({
         kind: "add",
-        segments: words
-          .filter((word) => !word.removed)
-          .map((word) => ({ text: word.value, emphasis: Boolean(word.added) })),
+        segments: words.flatMap((word) => (word.removed ? [] : [{ text: word.value, emphasis: Boolean(word.added) }])),
       });
       i += 1;
       continue;
