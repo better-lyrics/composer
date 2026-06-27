@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-list";
+import { reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-rows";
 
 describe("seedRows", () => {
   it("maps each value to a row with a unique id", () => {

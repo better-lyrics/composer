@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pairsToRecord, reconcilePairs, sameRecord, seedPairs } from "@/views/export/extra-field-list";
+import { pairsToRecord, reconcilePairs, sameRecord, seedPairs } from "@/views/export/extra-field-pairs";
 
 describe("seedPairs", () => {
   it("maps each entry to a pair with a unique id", () => {
