@@ -12,6 +12,7 @@ interface WordHandlers {
   onNudgeEnd?: (idx: number, delta: number) => void;
   onSetEndTime?: (idx: number, newEnd: number) => void;
   onSplit?: (idx: number, newWords: WordTiming[]) => void;
+  onClickWord?: (idx: number) => void;
 }
 
 interface WordRendererProps {
@@ -78,7 +79,21 @@ const WordRenderer: React.FC<WordRendererProps> = ({
   return (
     <span className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}>
       <span className="flex items-center gap-1 group/word">
-        {renderWordContent(word, timing, isBackground, editMode)}
+        {handlers.onClickWord ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlers.onClickWord?.(idx);
+            }}
+            title="Re-record from this word"
+            className="appearance-none border-0 bg-transparent p-0 text-left cursor-pointer"
+          >
+            {renderWordContent(word, timing, isBackground, editMode)}
+          </button>
+        ) : (
+          renderWordContent(word, timing, isBackground, editMode)
+        )}
         {isSynced && timing && timing.end === timing.begin && (
           <Tooltip content="No duration - sync the next word to close this one or increase the end time">
             <span className="text-composer-warning">

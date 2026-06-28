@@ -15,6 +15,7 @@ import {
 import {
   advanceSyncPosition,
   buildInitialWordUpdates,
+  isSyncableLine,
   nextSyncableLineIndex,
   prepareSyncWord,
   prevSyncableLine,
@@ -257,23 +258,37 @@ function useSyncHandlers({
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
-    setSyncState({ position: { lineIndex: nextSyncableLineIndex(lines, -1), wordIndex: 0 }, isActive: true });
+    const { lineIndex: cursorLine, wordIndex: cursorWord } = syncState.position;
+    const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
+    const startWord = startLine === cursorLine ? cursorWord : 0;
+    setSyncState({ position: { lineIndex: startLine, wordIndex: startWord }, isActive: true });
     setIsPlaying(true);
-  }, [lines, setIsPlaying, setSyncState]);
+  }, [lines, syncState.position, setIsPlaying, setSyncState]);
 
   const handleJumpToLine = useCallback(
     (index: number) => {
-      if (editMode) {
-        const timing = effectiveBounds(lines[index]);
-        if (timing) {
-          seekTo(timing.begin);
-        }
-        return;
-      }
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
       }));
+      const bounds = effectiveBounds(lines[index]);
+      if (!bounds) return;
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - preroll));
+    },
+    [editMode, lines, seekTo, setSyncState],
+  );
+
+  const handleJumpToWord = useCallback(
+    (lineIdx: number, wordIdx: number) => {
+      setSyncState((prev) => ({
+        ...prev,
+        position: { lineIndex: lineIdx, wordIndex: wordIdx },
+      }));
+      const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
+      if (begin === undefined) return;
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(editMode ? begin : Math.max(0, begin - preroll));
     },
     [editMode, lines, seekTo, setSyncState],
   );
@@ -383,6 +398,7 @@ function useSyncHandlers({
     handleReset,
     handleStartSync,
     handleJumpToLine,
+    handleJumpToWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,

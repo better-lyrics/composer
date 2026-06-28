@@ -1,8 +1,15 @@
+import { setDefaultResultOrder } from "node:dns";
 import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import pkg from "./package.json";
+
+// Node 17+ returns `localhost` as ::1 (IPv6) first. When the browser server and
+// the headless-chrome tab land on mismatched loopback stacks the session never
+// connects ("Failed to connect to the browser session within the timeout"). Pin
+// IPv4 first so the handshake is deterministic; Linux/CI already resolve this way.
+setDefaultResultOrder("ipv4first");
 
 export default defineConfig({
   plugins: [react()],
@@ -22,6 +29,8 @@ export default defineConfig({
       "motion/react",
       "@dnd-kit/core",
       "react-router-dom",
+      "node-diff3",
+      "diff",
     ],
   },
   test: {

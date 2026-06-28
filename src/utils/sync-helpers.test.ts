@@ -15,16 +15,19 @@ describe("commitTappedWord", () => {
     expect(result).toEqual([{ text: "hello", begin: 5, end: 6 }]);
   });
 
-  it("replaces the first word when wordIndex is 0", () => {
+  it("redo at wordIndex 0 overwrites the first word in place and keeps later words", () => {
     const existing: WordTiming[] = [
       { text: "one ", begin: 0, end: 1 },
       { text: "two", begin: 1, end: 2 },
     ];
     const result = commitTappedWord(existing, 0, "ONE", 5, 6);
-    expect(result).toEqual([{ text: "ONE", begin: 5, end: 6 }]);
+    expect(result).toEqual([
+      { text: "ONE", begin: 5, end: 6 },
+      { text: "two", begin: 1, end: 2 },
+    ]);
   });
 
-  it("re-syncs from the middle: truncates and closes the prior word at begin", () => {
+  it("re-syncs from the middle: overwrites in place, closes the prior word, and preserves later words", () => {
     const existing: WordTiming[] = [
       { text: "one ", begin: 0, end: 1 },
       { text: "two ", begin: 1, end: 2 },
@@ -34,6 +37,7 @@ describe("commitTappedWord", () => {
     expect(result).toEqual([
       { text: "one ", begin: 0, end: 5 },
       { text: "TWO", begin: 5, end: 6 },
+      { text: "three", begin: 2, end: 3 },
     ]);
   });
 
@@ -83,7 +87,7 @@ describe("commitHeldWord", () => {
     expect(result).toEqual([{ text: "ONE", begin: 5, end: 1 }]);
   });
 
-  it("truncates to wordIndex and appends a held word", () => {
+  it("redo at a mid-line word overwrites it in place and preserves later words", () => {
     const existing: WordTiming[] = [
       { text: "one ", begin: 0, end: 1 },
       { text: "two ", begin: 1, end: 2 },
@@ -93,6 +97,7 @@ describe("commitHeldWord", () => {
     expect(result).toEqual([
       { text: "one ", begin: 0, end: 1 },
       { text: "TWO", begin: 5, end: 5 },
+      { text: "three", begin: 2, end: 3 },
     ]);
   });
 

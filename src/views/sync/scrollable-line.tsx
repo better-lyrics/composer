@@ -34,6 +34,7 @@ interface ScrollableLineProps {
   editMode: boolean;
   linkInfo?: ScrollableLineLinkInfo;
   onClick: () => void;
+  onClickWord?: (wordIndex: number) => void;
   onNudgeWord?: (wordIndex: number, delta: number) => void;
   onSetWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeWordEnd?: (wordIndex: number, delta: number) => void;
@@ -65,6 +66,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   editMode,
   linkInfo,
   onClick,
+  onClickWord,
   onNudgeWord,
   onSetWordTime,
   onNudgeWordEnd,
@@ -135,6 +137,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     onNudgeEnd: onNudgeWordEnd,
     onSetEndTime: onSetWordEndTime,
     onSplit: onSplitWord,
+    onClickWord,
   };
 
   const bgWordHandlers: WordHandlers = {
