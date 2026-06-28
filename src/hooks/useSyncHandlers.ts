@@ -27,10 +27,6 @@ import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
 
-// -- Constants ----------------------------------------------------------------
-
-const REDO_PREROLL_SECONDS = 1.5;
-
 // -- Types --------------------------------------------------------------------
 
 interface UseSyncHandlersProps {
@@ -277,7 +273,8 @@ function useSyncHandlers({
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
-      seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - REDO_PREROLL_SECONDS));
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - preroll));
     },
     [editMode, lines, seekTo, setSyncState],
   );
@@ -290,7 +287,8 @@ function useSyncHandlers({
       }));
       const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
       if (begin === undefined) return;
-      seekTo(editMode ? begin : Math.max(0, begin - REDO_PREROLL_SECONDS));
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(editMode ? begin : Math.max(0, begin - preroll));
     },
     [editMode, lines, seekTo, setSyncState],
   );
@@ -421,4 +419,4 @@ function useSyncHandlers({
 
 // -- Exports ------------------------------------------------------------------
 
-export { useSyncHandlers, REDO_PREROLL_SECONDS };
+export { useSyncHandlers };

@@ -1,6 +1,7 @@
-import { REDO_PREROLL_SECONDS, useSyncHandlers } from "@/hooks/useSyncHandlers";
+import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { createBgWordsFromLine, type SyncState } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
@@ -327,8 +328,28 @@ describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
     await act(() => result.current.handleJumpToLine(1));
 
     expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
-    expect(useAudioStore.getState().currentTime).toBe(3 - REDO_PREROLL_SECONDS);
+    expect(useAudioStore.getState().currentTime).toBe(3 - DEFAULTS.redoPreroll);
     expect(playingCalls).not.toContain(true);
+  });
+
+  it("uses the configured pre-roll instead of the default", async () => {
+    useSettingsStore.setState({ redoPreroll: 0.5 });
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToLine(1));
+
+    expect(useAudioStore.getState().currentTime).toBe(3 - 0.5);
+  });
+
+  it("seeks exactly to the line begin when the pre-roll is zero", async () => {
+    useSettingsStore.setState({ redoPreroll: 0 });
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToLine(1));
+
+    expect(useAudioStore.getState().currentTime).toBe(3);
   });
 
   it("clamps the pre-roll seek to zero when the line begins inside the pre-roll window", async () => {
@@ -419,8 +440,18 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     await act(() => result.current.handleJumpToWord(1, 1));
 
     expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
-    expect(useAudioStore.getState().currentTime).toBe(3.5 - REDO_PREROLL_SECONDS);
+    expect(useAudioStore.getState().currentTime).toBe(3.5 - DEFAULTS.redoPreroll);
     expect(playingCalls).not.toContain(true);
+  });
+
+  it("uses the configured pre-roll for word redo", async () => {
+    useSettingsStore.setState({ redoPreroll: 0.5 });
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToWord(1, 1));
+
+    expect(useAudioStore.getState().currentTime).toBe(3.5 - 0.5);
   });
 
   it("only moves the cursor for a word with no timing, without seeking", async () => {
