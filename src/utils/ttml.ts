@@ -7,6 +7,10 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
 import { effectiveBounds } from "@/domain/line/bounds";
 
+// -- Constants ----------------------------------------------------------------
+
+const APPLE_LYRIC_NS = "http://music.apple.com/lyric-ttml-internal";
+
 // -- Helpers ------------------------------------------------------------------
 
 function escapeXml(str: string): string {
@@ -35,12 +39,14 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
   const effectiveGranularity = lines.some((l) => l.words?.length) ? "word" : "line";
+  const timingValue = effectiveGranularity === "word" ? "Word" : "Line";
 
   const parts: string[] = [];
 
-  // Root element with namespaces
+  // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
+  // Apple timestamp shape are intentional; don't "fix" them to generic TTML.
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" composer:timing="${effectiveGranularity === "word" ? "Word" : "Line"}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
   );
 
   // Head section
