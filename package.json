@@ -49,23 +49,6 @@
     "wavesurfer.js": "^7.12.1",
     "zustand": "^5.0.0"
   },
-  "pnpm": {
-    "ignoredBuiltDependencies": [
-      "@biomejs/biome",
-      "esbuild",
-      "protobufjs",
-      "sharp"
-    ],
-    "overrides": {
-      "@braccato/parsers": "^0.1.2"
-    },
-    "peerDependencyRules": {
-      "allowedVersions": {
-        "react-helmet-async>react": "19",
-        "react-helmet-async>react-dom": "19"
-      }
-    }
-  },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
     "@tailwindcss/vite": "^4.0.0",

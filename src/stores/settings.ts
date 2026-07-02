@@ -42,6 +42,7 @@ interface SettingsState {
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
   snapPlayheadToPoints: boolean;
+  rollingAffectsSyllables: boolean;
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
@@ -108,6 +109,7 @@ const DEFAULTS: SettingsState = {
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
   snapPlayheadToPoints: true,
+  rollingAffectsSyllables: false,
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
