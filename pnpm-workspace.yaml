@@ -2,4 +2,17 @@ packages:
   - "."
 minimumReleaseAge: 10080
 trustPolicy: no-downgrade
+trustPolicyExclude:
+  - "semver@6.3.1"
 blockExoticSubdeps: true
+
+peerDependencyRules:
+  allowedVersions:
+    "react-helmet-async>react": "19"
+    "react-helmet-async>react-dom": "19"
+
+allowBuilds:
+  "@biomejs/biome": false
+  esbuild: false
+  protobufjs: false
+  sharp: false
