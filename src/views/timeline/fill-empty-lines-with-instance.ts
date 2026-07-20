@@ -1,6 +1,6 @@
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { applyInstanceTemplate, type InstanceApplyResult } from "@/views/timeline/apply-instance-template";
+import { type InstanceApplyResult, applyInstanceTemplate } from "@/views/timeline/apply-instance-template";
 
 type FillFailure = "not_enough_empty_lines" | "out_of_range";
 

@@ -28,6 +28,7 @@ interface TimelineState {
   zoom: number;
   followEnabled: boolean;
   previewSidebarOpen: boolean;
+  textVariant: "original" | "transliteration";
   selectedWords: WordSelection[];
 
   clipboard: ClipboardData | null;
@@ -61,6 +62,7 @@ interface TimelineActions {
   zoomOut: () => void;
   toggleFollow: () => void;
   togglePreviewSidebar: () => void;
+  toggleTextVariant: () => void;
   setSelectedWords: (selections: WordSelection[]) => void;
 
   toggleSelection: (selection: WordSelection) => void;
@@ -109,6 +111,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     zoom: settings.defaultZoom,
     followEnabled: settings.followPlayhead,
     previewSidebarOpen: settings.defaultPreviewSidebar,
+    textVariant: "original",
     selectedWords: [],
 
     clipboard: null,
@@ -140,6 +143,8 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     zoomOut: () => set((s) => ({ zoom: Math.max(MIN_ZOOM, s.zoom - ZOOM_STEP) })),
     toggleFollow: () => set((s) => ({ followEnabled: !s.followEnabled })),
     togglePreviewSidebar: () => set((s) => ({ previewSidebarOpen: !s.previewSidebarOpen })),
+    toggleTextVariant: () =>
+      set((s) => ({ textVariant: s.textVariant === "original" ? "transliteration" : "original" })),
     setSelectedWords: (selectedWords) => set({ selectedWords }),
 
     toggleSelection: (selection) => set((s) => ({ selectedWords: toggleWordSelection(s.selectedWords, selection) })),

@@ -12,6 +12,7 @@ interface WordTemplate {
   relativeBegin: number;
   relativeEnd: number;
   explicit?: true;
+  transliteration?: string;
 }
 
 interface LineTemplate {
@@ -23,6 +24,8 @@ interface LineTemplate {
   backgroundText?: string;
   backgroundWords?: WordTemplate[];
   backgroundTextSource?: "extraction" | "manual";
+  translations?: import("@/domain/language/model").TranslationTracks;
+  transliteration?: import("@/domain/language/model").TransliterationTrack;
 }
 
 // -- Exports ------------------------------------------------------------------

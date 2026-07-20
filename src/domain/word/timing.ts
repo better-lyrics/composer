@@ -6,6 +6,8 @@ interface WordTiming {
   end: number;
   explicit?: true;
   syllableGroupId?: string;
+  /** Display text paired with this exact timing slot. Timing remains canonical. */
+  transliteration?: string;
 }
 
 // -- Exports ------------------------------------------------------------------

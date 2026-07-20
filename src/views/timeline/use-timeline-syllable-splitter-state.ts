@@ -6,9 +6,9 @@ import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
-import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -27,6 +27,7 @@ interface SplitterTarget {
 interface UseTimelineSyllableSplitterStateParams {
   target: SplitterTarget | null;
   splitPoints: number[];
+  transliterationSplitPoints?: number[];
   resetSplitPoints: () => void;
   closeModal: () => void;
 }
@@ -46,6 +47,7 @@ interface UseTimelineSyllableSplitterStateResult {
 function useTimelineSyllableSplitterState({
   target,
   splitPoints,
+  transliterationSplitPoints,
   resetSplitPoints,
   closeModal,
 }: UseTimelineSyllableSplitterStateParams): UseTimelineSyllableSplitterStateResult {
@@ -103,7 +105,17 @@ function useTimelineSyllableSplitterState({
           newWords[newWords.length - 1] = { ...last, text: `${last.text} ` };
         }
       } else {
-        newWords = splitWordIntoSyllables({ word, splitPoints, reuseGroupId: true });
+        newWords = splitWordIntoSyllables({ word, splitPoints, transliterationSplitPoints, reuseGroupId: true });
+      }
+    }
+
+    if (word.transliteration && transliterationSplitPoints && newWords.length > 0 && !newWords[0].transliteration) {
+      const romanParts = splitWordIntoSyllables({
+        word: { ...word, text: word.transliteration, transliteration: undefined },
+        splitPoints: transliterationSplitPoints,
+      }).map((part) => part.text.trimEnd());
+      if (romanParts.length === newWords.length) {
+        newWords = newWords.map((part, index) => ({ ...part, transliteration: romanParts[index] }));
       }
     }
 
@@ -126,14 +138,14 @@ function useTimelineSyllableSplitterState({
         manualBackgroundWordEdit(updatedWords),
       );
     }
-  }, [target, splitPoints]);
+  }, [target, splitPoints, transliterationSplitPoints]);
 
   const confirmSplit = useCallback(async () => {
     if (!target || splitPoints.length === 0) return;
 
     useProjectStore.getState().setSyllableSplitDefaults({ applyToAll, caseInsensitive });
 
-    if (target.mode === "syllable" && applyToAll && identicalCount > 0) {
+    if (target.mode === "syllable" && !target.word.transliteration && applyToAll && identicalCount > 0) {
       const ok = await confirm(buildApplyToAllConfirmOptions({ identicalCount, sourceText }));
       if (!ok) return;
       useProjectStore.getState().splitSyllablesAcrossIdenticalWordsWithHistory({

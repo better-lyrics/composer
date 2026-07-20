@@ -1,8 +1,9 @@
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   type SplitterTarget,
   useTimelineSyllableSplitterState,
@@ -18,6 +19,7 @@ type SplitMode = "syllable" | "word";
 const TimelineSyllableSplitter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [splitPoints, setSplitPoints] = useState<number[]>([]);
+  const [transliterationSplitPoints, setTransliterationSplitPoints] = useState<number[]>([]);
   const [target, setTarget] = useState<SplitterTarget | null>(null);
 
   useEffect(() => {
@@ -26,7 +28,7 @@ const TimelineSyllableSplitter: React.FC = () => {
       if (selectedWords.length !== 1) return;
 
       const sel = selectedWords[0];
-      const lines = useProjectStore.getState().lines;
+      const lines = getEffectiveLines(useProjectStore.getState().lines);
       const line = lines.find((l) => l.id === sel.lineId);
       if (!line) return;
 
@@ -36,6 +38,7 @@ const TimelineSyllableSplitter: React.FC = () => {
 
       setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
       setSplitPoints([]);
+      setTransliterationSplitPoints([]);
       setIsOpen(true);
     };
 
@@ -50,12 +53,33 @@ const TimelineSyllableSplitter: React.FC = () => {
     };
   }, []);
 
-  const handleToggleSplit = useCallback((index: number) => {
-    setSplitPoints((prev) => (prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index]));
+  const handleToggleSplit = useCallback(
+    (index: number) => {
+      setSplitPoints((prev) => {
+        const next = prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index];
+        if (target?.word.transliteration) {
+          const originalLength = target.word.text.trimEnd().length;
+          const romanLength = target.word.transliteration.length;
+          const inferred = next.map((point) =>
+            Math.max(1, Math.min(romanLength - 1, Math.round((point / originalLength) * romanLength))),
+          );
+          if (new Set(inferred).size === inferred.length) setTransliterationSplitPoints(inferred);
+        }
+        return next;
+      });
+    },
+    [target],
+  );
+
+  const handleToggleTransliterationSplit = useCallback((index: number) => {
+    setTransliterationSplitPoints((prev) =>
+      prev.includes(index) ? prev.filter((point) => point !== index) : [...prev, index],
+    );
   }, []);
 
   const resetSplitPoints = useCallback(() => {
     setSplitPoints([]);
+    setTransliterationSplitPoints([]);
   }, []);
 
   const closeModal = useCallback(() => {
@@ -65,7 +89,7 @@ const TimelineSyllableSplitter: React.FC = () => {
   }, []);
 
   const { applyToAll, setApplyToAll, caseInsensitive, setCaseInsensitive, identicalCount, sourceText, confirmSplit } =
-    useTimelineSyllableSplitterState({ target, splitPoints, resetSplitPoints, closeModal });
+    useTimelineSyllableSplitterState({ target, splitPoints, transliterationSplitPoints, resetSplitPoints, closeModal });
 
   if (!target) return null;
 
@@ -86,7 +110,10 @@ const TimelineSyllableSplitter: React.FC = () => {
         onCaseInsensitiveChange={setCaseInsensitive}
         identicalCount={identicalCount}
         sourceText={sourceText}
-        showApplyControls={target.mode === "syllable"}
+        showApplyControls={target.mode === "syllable" && !target.word.transliteration}
+        secondaryText={target.word.transliteration}
+        secondarySplitPoints={transliterationSplitPoints}
+        onToggleSecondarySplit={handleToggleTransliterationSplit}
       />
     </Modal>
   );

@@ -1,15 +1,16 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { fromComposerMeta } from "@/domain/project/metadata-ttml";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { getSplitCharacter } from "@/utils/split-character";
-import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
-import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
+import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
+import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
+import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,11 +24,19 @@ function getComposerAttribute(el: Element, name: string): string | null {
   return null;
 }
 
+const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
+
+function elementRole(element: Element): string | null {
+  return element.getAttribute("ttm:role") || element.getAttributeNS("http://www.w3.org/ns/ttml#metadata", "role");
+}
+
 // -- TTML Parser --------------------------------------------------------------
 
 function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const metadata: Partial<ProjectMetadata> = {};
   const lines: LyricLine[] = [];
+  const lineIndexByKey = new Map<string, number>();
+  const paragraphByKey = new Map<string, Element>();
 
   const parser = new DOMParser();
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
@@ -105,9 +114,11 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const paragraphs = doc.getElementsByTagName("p");
 
   for (const p of paragraphs) {
+    const lineCountBefore = lines.length;
     const begin = parseTtmlTimestamp(p.getAttribute("begin") ?? "");
     const end = parseTtmlTimestamp(p.getAttribute("end") ?? "");
     const agentId = p.getAttribute("ttm:agent")?.replace("#", "") ?? "v1";
+    const lineKey = p.getAttribute("itunes:key") ?? p.getAttributeNS(ITUNES_NS, "key");
 
     const rawGroupId = getComposerAttribute(p, "groupId");
     const knownGroupId = rawGroupId && seenGroupIds.has(rawGroupId) ? rawGroupId : null;
@@ -147,7 +158,14 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
       if (backgroundWords.length > 0) {
         backgroundText = reconstructLineText(backgroundWords, getSplitCharacter());
       } else {
-        backgroundText = bgContainer.textContent || undefined;
+        let baseBackground = "";
+        for (const node of bgContainer.childNodes) {
+          if (node.nodeType === Node.TEXT_NODE) baseBackground += node.textContent ?? "";
+          else if (node.nodeType === Node.ELEMENT_NODE && elementRole(node as Element) !== "x-translation") {
+            baseBackground += node.textContent ?? "";
+          }
+        }
+        backgroundText = baseBackground.trim() || undefined;
       }
     }
 
@@ -205,7 +223,13 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
         );
       }
     }
+    if (lineKey && lines.length > lineCountBefore) {
+      lineIndexByKey.set(lineKey, lines.length - 1);
+      paragraphByKey.set(lineKey, p);
+    }
   }
+
+  parseTtmlAlternates(doc, lines, lineIndexByKey, paragraphByKey);
 
   return {
     lines,

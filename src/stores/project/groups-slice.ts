@@ -1,7 +1,7 @@
+import type { LinkGroup } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import type { LinkGroup } from "@/domain/group/template";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -119,6 +119,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
                   begin: w.relativeBegin + instanceStart,
                   end: w.relativeEnd + instanceStart,
                   ...(w.explicit ? { explicit: true as const } : {}),
+                  ...(w.transliteration ? { transliteration: w.transliteration } : {}),
                 })),
               }
             : {}),
@@ -130,10 +131,13 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
                   begin: w.relativeBegin + instanceStart,
                   end: w.relativeEnd + instanceStart,
                   ...(w.explicit ? { explicit: true as const } : {}),
+                  ...(w.transliteration ? { transliteration: w.transliteration } : {}),
                 })),
               }
             : {}),
           ...(tplLine.backgroundTextSource !== undefined ? { backgroundTextSource: tplLine.backgroundTextSource } : {}),
+          ...(tplLine.translations ? { translations: structuredClone(tplLine.translations) } : {}),
+          ...(tplLine.transliteration ? { transliteration: structuredClone(tplLine.transliteration) } : {}),
         }),
       );
 

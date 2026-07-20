@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import type { WordTiming } from "@/domain/word/timing";
 import { render } from "@/test/render";
+import { SyllableSplitter } from "@/views/sync/syllable-splitter";
+import { describe, expect, it } from "vitest";
 
 const SINGLE_CHAR: WordTiming = { text: "a", begin: 0, end: 1 };
 const MULTI_CHAR: WordTiming = { text: "hello", begin: 0, end: 1 };
@@ -29,6 +29,24 @@ describe("SyllableSplitter", () => {
     await expect.element(screen.getByText(/Click between letters/)).toBeInTheDocument();
     const splitButtons = document.querySelectorAll("button");
     expect(splitButtons.length).toBeGreaterThan(2);
+  });
+
+  it("renders one visible untimed boundary control for each transliteration space", async () => {
+    const screen = await render(
+      <SyllableSplitter
+        lineId="test-line"
+        type="word"
+        word={{ text: "걸음은", transliteration: "geol eum eun", begin: 0, end: 1 }}
+        wordIndex={0}
+        onSplit={() => {}}
+      />,
+    );
+    await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    const spaceBoundaries = document.querySelectorAll('button[aria-label^="Transliteration space boundary"]');
+    expect(spaceBoundaries).toHaveLength(2);
+    expect(spaceBoundaries[0].querySelector("svg")).not.toBeNull();
+    expect(document.querySelector('button[aria-label="Transliteration split point 4"]')).toBeNull();
+    expect(document.querySelector('button[aria-label="Transliteration split point 5"]')).toBeNull();
   });
 
   it("emits split words when a split point is toggled and Split Word is clicked", async () => {

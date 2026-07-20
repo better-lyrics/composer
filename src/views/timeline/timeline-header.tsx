@@ -1,22 +1,24 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
+import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import type { WordTiming } from "@/domain/word/timing";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
 import {
   IconArrowBarBoth,
   IconChevronsDown,
   IconChevronsUp,
   IconEye,
   IconFocusCentered,
+  IconLanguage,
   IconLayoutDistributeHorizontal,
   IconMagnet,
   IconMapPin,
@@ -25,16 +27,11 @@ import {
   IconTextPlus,
 } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
-
-// -- Types --------------------------------------------------------------------
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
 }
-
-// -- Component -----------------------------------------------------------------
 
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
   const zoom = useTimelineStore((s) => s.zoom);
@@ -61,6 +58,9 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const lines = useProjectStore((s) => s.lines);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
+  const textVariant = useTimelineStore((s) => s.textVariant);
+  const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
+  const hasTransliteration = useMemo(() => lines.some((line) => !!line.transliteration?.text), [lines]);
 
   const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
 
@@ -144,6 +144,19 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
       <h2 className="text-lg font-medium select-none">Timeline</h2>
 
       <div className="flex items-center gap-4">
+        <Button
+          variant={textVariant === "transliteration" ? "primary" : "ghost"}
+          size="sm"
+          onClick={toggleTextVariant}
+          disabled={!hasTransliteration}
+          hasIcon
+          className={cn(textVariant === "original" && "opacity-60")}
+          title="Toggle original / transliteration labels"
+        >
+          <IconLanguage size={16} />
+          <span>{textVariant === "transliteration" ? "Transliteration" : "Original"}</span>
+          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleTextVariant")} />}
+        </Button>
         {/* Follow toggle */}
         <Button
           variant={followEnabled ? "primary" : "ghost"}

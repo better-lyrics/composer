@@ -1,6 +1,7 @@
+import { withAlignedTransliteration } from "@/domain/language/align";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
 import { isLineSynced } from "@/domain/line/predicates";
+import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
@@ -15,9 +16,9 @@ function effectiveWords(line: LyricLine): WordTiming[] {
 
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
-    if (!isLineSynced(line)) return line;
+    if (!isLineSynced(line)) return withAlignedTransliteration(line);
     const { begin, end, ...rest } = line;
-    return { ...rest, words: effectiveWords(line) };
+    return withAlignedTransliteration({ ...rest, words: effectiveWords(line) });
   });
 }
 

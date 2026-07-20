@@ -1,7 +1,25 @@
-import { describe, expect, it } from "vitest";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import { describe, expect, it } from "vitest";
 
 describe("splitWordIntoSyllables", () => {
+  it("splits paired transliteration text into the same canonical timing slots", () => {
+    const result = splitWordIntoSyllables({
+      word: { text: "今日", transliteration: "kyouhi", begin: 0, end: 1 },
+      splitPoints: [1],
+      transliterationSplitPoints: [4],
+    });
+    expect(result.map((word) => word.text)).toEqual(["今", "日"]);
+    expect(result.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(result[0].end).toBe(result[1].begin);
+  });
+  it("removes untimed spaces at selected transliteration boundaries", () => {
+    const result = splitWordIntoSyllables({
+      word: { text: "걸음은", transliteration: "geol eum eun", begin: 0, end: 1 },
+      splitPoints: [1, 2],
+      transliterationSplitPoints: [5, 9],
+    });
+    expect(result.map((word) => word.transliteration)).toEqual(["geol", "eum", "eun"]);
+  });
   it("trims trailing space before computing per-character durations", () => {
     const result = splitWordIntoSyllables({
       word: { text: "running ", begin: 0, end: 8 },

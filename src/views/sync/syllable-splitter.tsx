@@ -20,10 +20,12 @@ interface SyllableSplitterProps {
 const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word, wordIndex, onSplit }) => {
   const {
     splitPoints,
+    transliterationSplitPoints,
     applyToAll,
     caseInsensitive,
     identicalCount,
     toggleSplit,
+    toggleTransliterationSplit,
     setApplyToAll,
     setCaseInsensitive,
     confirmSplit,
@@ -63,7 +65,10 @@ const SyllableSplitter: React.FC<SyllableSplitterProps> = ({ lineId, type, word,
             onCaseInsensitiveChange={setCaseInsensitive}
             identicalCount={identicalCount}
             sourceText={word.text.trimEnd()}
-            showApplyControls={true}
+            showApplyControls={!word.transliteration}
+            secondaryText={word.transliteration?.trim()}
+            secondarySplitPoints={transliterationSplitPoints}
+            onToggleSecondarySplit={toggleTransliterationSplit}
           />
         </div>
       )}

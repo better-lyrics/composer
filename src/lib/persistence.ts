@@ -1,19 +1,19 @@
 import type { Stem } from "@/audio/separation/types";
-import type { GranularityMode } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
+import type { GranularityMode } from "@/stores/project";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
 
 // -- Types --------------------------------------------------------------------
 
 type SavedAudioSource = { kind: "file"; name: string } | { kind: "youtube"; videoId: string };
 
 interface SavedProject {
-  version: 1;
+  version: 1 | 2;
   savedAt: number;
   metadata: ProjectMetadata;
   agents: Agent[];
@@ -53,7 +53,7 @@ async function saveCurrentProject(
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
-    version: 1,
+    version: 2,
     savedAt: Date.now(),
     metadata,
     agents,
@@ -73,7 +73,12 @@ async function saveCurrentProject(
 }
 
 async function loadCurrentProject(): Promise<SavedProject | undefined> {
-  return getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
+  const project = await getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
+  if (project?.version === 1) {
+    project.version = 2;
+    await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
+  }
+  return project;
 }
 
 async function replaceCurrentProject(project: SavedProject): Promise<void> {
@@ -125,7 +130,7 @@ function exportProjectToFile(
   audioFileName?: string,
 ): void {
   const project: SavedProject = {
-    version: 1,
+    version: 2,
     savedAt: Date.now(),
     metadata,
     agents,
@@ -154,13 +159,17 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
   const text = await file.text();
   const project = JSON.parse(text) as SavedProject;
 
-  if (project.version !== 1) {
+  if (project.version !== 1 && project.version !== 2) {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
 
   if (!project.syllableSplitDefaults) {
     project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
   }
+  // V2 adds optional translation/transliteration fields to lyric lines. V1
+  // lines are already structurally valid, so migration only updates the
+  // envelope version and preserves the original lyric objects verbatim.
+  project.version = 2;
 
   return project;
 }

@@ -1,12 +1,18 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
+import { withAlignedTransliteration } from "@/domain/language/align";
+import {
+  hasLexicalBoundaryAfter,
+  transliterationSyllables,
+  transliterationWordGroups,
+} from "@/domain/language/transliteration-format";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { formatTime } from "@/utils/format-time";
-import { stripSplitCharacter } from "@/utils/split-character";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -25,6 +31,45 @@ function escapeXmlAttribute(str: string): string {
 function emitWordSpan(word: { text: string; begin: number; end: number; explicit?: true }, text: string): string {
   const explicitAttr = word.explicit ? ' composer:explicit="true"' : "";
   return `<span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}"${explicitAttr}>${escapeXml(text)}</span>`;
+}
+
+function emitTransliterationSpans(
+  word: { text: string; begin: number; end: number; explicit?: true },
+  text: string,
+): string {
+  const tokens = text
+    .trim()
+    .split(/[-\u2010-\u2015\s]+/)
+    .filter(Boolean);
+  if (tokens.length <= 1) return emitWordSpan(word, tokens[0] ?? "");
+  const totalCharacters = tokens.reduce((sum, token) => sum + token.length, 0);
+  const duration = word.end - word.begin;
+  let consumedCharacters = 0;
+  return tokens
+    .map((token, index) => {
+      const begin = word.begin + duration * (consumedCharacters / totalCharacters);
+      consumedCharacters += token.length;
+      const end =
+        index === tokens.length - 1 ? word.end : word.begin + duration * (consumedCharacters / totalCharacters);
+      return emitWordSpan({ ...word, begin, end }, token);
+    })
+    .join(" ");
+}
+
+function emitAlignedTransliteration(words: NonNullable<LyricLine["words"]>): string {
+  let content = "";
+  for (let index = 0; index < words.length; index++) {
+    const word = words[index];
+    content += emitTransliterationSpans(word, word.transliteration?.trim() || word.text.trimEnd());
+    if (index < words.length - 1) content += hasLexicalBoundaryAfter(words, index) ? "  " : " ";
+  }
+  return content;
+}
+
+function emitUntimedTransliteration(text: string): string {
+  return transliterationWordGroups(text)
+    .map((word) => transliterationSyllables(word).join(" "))
+    .join("  ");
 }
 
 // -- Generator ----------------------------------------------------------------
@@ -47,6 +92,10 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   const timingValue = effectiveGranularity === "word" ? "Word" : "Line";
 
   const parts: string[] = [];
+  const keyedLines = lines
+    .filter((line) => effectiveBounds(line) !== null)
+    .map((line, index) => ({ line, key: `L${index + 1}` }));
+  const keyById = new Map(keyedLines.map(({ line, key }) => [line.id, key]));
 
   const language = metadata.language?.trim();
   const langAttr = language ? ` xml:lang="${escapeXmlAttribute(language)}"` : "";
@@ -84,6 +133,62 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     }
     parts.push(`${ind(3)}</composer:groups>`);
   }
+
+  const translationLanguages = new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})));
+  const transliterationLines = keyedLines.filter(({ line }) => !!line.transliteration?.text);
+  if (translationLanguages.size > 0 || transliterationLines.length > 0) {
+    parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
+    if (translationLanguages.size > 0) {
+      parts.push(`${ind(4)}<translations>`);
+      for (const language of translationLanguages) {
+        parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
+        for (const { line, key } of keyedLines) {
+          const track = line.translations?.[language];
+          if (track?.text) {
+            const background = track.backgroundText
+              ? `<span ttm:role="x-bg">${escapeXml(track.backgroundText)}</span>`
+              : "";
+            parts.push(`${ind(6)}<text for="${key}">${escapeXml(track.text)}${background}</text>`);
+          }
+        }
+        parts.push(`${ind(5)}</translation>`);
+      }
+      parts.push(`${ind(4)}</translations>`);
+    }
+    if (transliterationLines.length > 0) {
+      const byLanguage = new Map<string, typeof transliterationLines>();
+      for (const item of transliterationLines) {
+        const language = item.line.transliteration!.language;
+        byLanguage.set(language, [...(byLanguage.get(language) ?? []), item]);
+      }
+      parts.push(`${ind(4)}<transliterations>`);
+      for (const [language, languageLines] of byLanguage) {
+        parts.push(`${ind(5)}<transliteration xml:lang="${escapeXml(language)}">`);
+        for (const { line: rawLine, key } of languageLines) {
+          const line = withAlignedTransliteration(rawLine);
+          let content = "";
+          if (line.words?.some((word) => word.transliteration)) {
+            content = emitAlignedTransliteration(line.words);
+          } else {
+            content = escapeXml(emitUntimedTransliteration(line.transliteration!.text));
+          }
+          if (line.transliteration?.backgroundText) {
+            let bg = "";
+            if (line.backgroundWords?.some((word) => word.transliteration)) {
+              bg = emitAlignedTransliteration(line.backgroundWords);
+            } else {
+              bg = escapeXml(emitUntimedTransliteration(line.transliteration.backgroundText));
+            }
+            content += `<span ttm:role="x-bg">${bg}</span>`;
+          }
+          parts.push(`${ind(6)}<text for="${key}">${content}</text>`);
+        }
+        parts.push(`${ind(5)}</transliteration>`);
+      }
+      parts.push(`${ind(4)}</transliterations>`);
+    }
+    parts.push(`${ind(3)}</iTunesMetadata>`);
+  }
   parts.push(`${ind(2)}</metadata>`);
   parts.push(`${ind(1)}</head>`);
 
@@ -97,6 +202,8 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     if (!timing) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
+    const lineKey = keyById.get(line.id);
+    const keyAttr = lineKey ? ` itunes:key="${lineKey}"` : "";
     const groupAttr = line.groupId
       ? ` composer:groupId="${escapeXmlAttribute(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
       : "";
@@ -131,7 +238,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     }
 
     parts.push(
-      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${agentAttr}${groupAttr}>${content}</p>`,
+      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${keyAttr}${agentAttr}${groupAttr}>${content}</p>`,
     );
   }
 

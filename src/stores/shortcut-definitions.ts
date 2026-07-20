@@ -58,28 +58,34 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "2", mod: true },
   },
   {
+    id: "global.goToLanguages",
+    scope: "global",
+    description: "Go to Languages",
+    defaultBinding: { key: "3", mod: true },
+  },
+  {
     id: "global.goToSync",
     scope: "global",
     description: "Go to Sync",
-    defaultBinding: { key: "3", mod: true },
+    defaultBinding: { key: "4", mod: true },
   },
   {
     id: "global.goToTimeline",
     scope: "global",
     description: "Go to Timeline",
-    defaultBinding: { key: "4", mod: true },
+    defaultBinding: { key: "5", mod: true },
   },
   {
     id: "global.goToPreview",
     scope: "global",
     description: "Go to Preview",
-    defaultBinding: { key: "5", mod: true },
+    defaultBinding: { key: "6", mod: true },
   },
   {
     id: "global.goToExport",
     scope: "global",
     description: "Go to Export",
-    defaultBinding: { key: "6", mod: true },
+    defaultBinding: { key: "7", mod: true },
   },
   {
     id: "sync.tap",
@@ -104,6 +110,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "sync",
     description: "Nudge right",
     defaultBinding: { key: "ArrowRight" },
+  },
+  {
+    id: "sync.toggleTextVariant",
+    scope: "sync",
+    description: "Toggle original / transliteration text",
+    defaultBinding: { key: "l" },
   },
   {
     id: "timeline.toggleFollow",
@@ -284,6 +296,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Toggle explicit on selected word(s)",
     defaultBinding: { key: "e", shift: true },
+  },
+  {
+    id: "timeline.toggleTextVariant",
+    scope: "timeline",
+    description: "Toggle original / transliteration text",
+    defaultBinding: { key: "l" },
   },
   {
     id: "timeline.toggleSnap",

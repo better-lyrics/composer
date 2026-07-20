@@ -1,35 +1,39 @@
+import { isLinked } from "@/domain/instance/predicates";
+import { effectiveBounds } from "@/domain/line/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
-import { readToken } from "@/utils/theme/read-token";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import {
   shimmerTransition,
   shimmerVariants,
   syncCarouselTransition,
   syncPulseVariants,
 } from "@/utils/animationVariants";
-import { isLinked } from "@/domain/instance/predicates";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
-  getNudgeAmount,
   type SyncState,
   convertLineToWord,
   createBgWordsFromLine,
+  getNudgeAmount,
   getSyncedLineCount,
   getSyncedWordCount,
   getTotalWords,
   hasLineTiming,
 } from "@/utils/sync-helpers";
+import { readToken } from "@/utils/theme/read-token";
+import { syncDisplayLine } from "@/views/sync/display-text";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
-import { IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { m } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -48,6 +52,14 @@ const SyncPanel: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
+  const textVariant = useTimelineStore((s) => s.textVariant);
+  const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
+  const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
+  const hasTransliteration = useMemo(() => lines.some((line) => !!line.transliteration?.text), [lines]);
+  const displayLines = useMemo(
+    () => lines.map((line) => ({ ...line, ...syncDisplayLine(line, textVariant) })),
+    [lines, textVariant],
+  );
 
   const instanceCountByGroup = useMemo(() => {
     const indices = new Map<string, Set<number>>();
@@ -358,6 +370,10 @@ const SyncPanel: React.FC = () => {
           e.preventDefault();
           handleNudgeLastSynced(getNudgeAmount());
           break;
+        case "sync.toggleTextVariant":
+          e.preventDefault();
+          if (hasTransliteration) toggleTextVariant();
+          break;
       }
     };
 
@@ -387,7 +403,19 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [activeTab, performTap, beginHold, endHold, undo, redo, handleNudgeLastSynced, editMode, isHolding]);
+  }, [
+    activeTab,
+    performTap,
+    beginHold,
+    endHold,
+    undo,
+    redo,
+    handleNudgeLastSynced,
+    editMode,
+    isHolding,
+    hasTransliteration,
+    toggleTextVariant,
+  ]);
 
   const showScrollableView = !isPlaying || editMode;
 
@@ -420,6 +448,18 @@ const SyncPanel: React.FC = () => {
           <span className="font-mono text-sm text-composer-text-muted tabular-nums">{progressText}</span>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            hasIcon
+            size="sm"
+            variant={textVariant === "transliteration" ? "primary" : "ghost"}
+            disabled={!hasTransliteration}
+            onClick={toggleTextVariant}
+            title="Toggle original / transliteration text"
+          >
+            <IconLanguage className="size-4" />
+            {textVariant === "transliteration" ? "Transliteration" : "Original"}
+            {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleTextVariant")} />}
+          </Button>
           <div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
             <button
               type="button"
@@ -473,6 +513,7 @@ const SyncPanel: React.FC = () => {
         <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
           <div className="py-2">
             {lines.map((line, index) => {
+              const displayLine = displayLines[index];
               const timing = effectiveBounds(line);
               const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
               const totalInstances = linkedGroup ? (instanceCountByGroup.get(linkedGroup.id) ?? 0) : 0;
@@ -491,11 +532,15 @@ const SyncPanel: React.FC = () => {
                   lineId={line.id}
                   lineNumber={index + 1}
                   text={line.text}
+                  displayText={displayLine.text}
+                  displayWordTexts={displayLine.wordTexts}
                   isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
                   agentId={line.agentId}
                   backgroundText={line.backgroundText}
-                  backgroundWords={line.backgroundWords}
-                  words={line.words}
+                  displayBackgroundText={displayLine.backgroundText}
+                  displayBackgroundWordTexts={displayLine.backgroundWordTexts}
+                  backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
+                  words={displayLine.words ?? line.words}
                   lineBegin={timing?.begin}
                   lineEnd={timing?.end}
                   granularity={granularity}
@@ -546,7 +591,7 @@ const SyncPanel: React.FC = () => {
             </div>
           ) : (
             <SyncCarousel
-              lines={lines}
+              lines={displayLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}
@@ -571,7 +616,11 @@ const SyncPanel: React.FC = () => {
 
           {showGestureCircles && (
             <div className="flex items-center gap-4">
-              {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
+              {currentWord && (
+                <span className="text-xl font-medium text-composer-text">
+                  {displayLines[lineIndex]?.wordTexts?.[wordIndex] ?? currentWord}
+                </span>
+              )}
               <div className="flex items-center gap-2">
                 <m.button
                   type="button"

@@ -1,7 +1,7 @@
+import type { LineTemplate, LinkGroup, WordTemplate } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
-import type { LineTemplate, LinkGroup, WordTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 
@@ -116,11 +116,15 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       text: w.text,
       relativeBegin: w.begin - startTime,
       relativeEnd: w.end - startTime,
+      ...(w.explicit ? { explicit: true as const } : {}),
+      ...(w.transliteration ? { transliteration: w.transliteration } : {}),
     }));
     const tplBgWords: WordTemplate[] | undefined = line.backgroundWords?.map((w) => ({
       text: w.text,
       relativeBegin: w.begin - startTime,
       relativeEnd: w.end - startTime,
+      ...(w.explicit ? { explicit: true as const } : {}),
+      ...(w.transliteration ? { transliteration: w.transliteration } : {}),
     }));
 
     const lineBounds = mainBounds(line);
@@ -133,6 +137,8 @@ function instanceToTemplate(lines: LyricLine[], groupId: string, instanceIdx: nu
       backgroundText: line.backgroundText,
       backgroundWords: tplBgWords,
       backgroundTextSource: line.backgroundTextSource,
+      translations: line.translations,
+      transliteration: line.transliteration,
     });
   }
   return templates;

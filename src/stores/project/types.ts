@@ -9,7 +9,7 @@ import type { WordTiming } from "@/domain/word/timing";
 
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
-type SimpleTab = "import" | "edit" | "sync" | "timeline" | "preview" | "export";
+type SimpleTab = "import" | "edit" | "languages" | "sync" | "timeline" | "preview" | "export";
 
 interface SyllableSplitDefaults {
   applyToAll: boolean;
