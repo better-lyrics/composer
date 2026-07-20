@@ -64,20 +64,18 @@ async function transliterateOne(text: string, sourceLanguage: string, signal?: A
   const data = await fetchJson(romanizationEndpoint(sourceLanguage || "auto", text), signal);
   const detectedLanguage = typeof data[2] === "string" ? data[2] : sourceLanguage;
   const parts = responseParts(data);
-  const unpairedRomanization = normalizeGoogleTransliteration(
-    parts
-      .filter((part) => typeof part[1] !== "string")
-      .map((part) => (typeof part[3] === "string" ? part[3] : typeof part[2] === "string" ? part[2] : ""))
-      .join(""),
-  );
-  const pairedSegments = parts
-    .map((part): TransliterationSegment | null => {
-      const original = typeof part[1] === "string" ? part[1] : "";
-      const raw = typeof part[3] === "string" ? part[3] : typeof part[2] === "string" ? part[2] : "";
-      const transliteration = normalizeGoogleTransliteration(raw);
-      return original && transliteration ? { original, transliteration } : null;
-    })
-    .filter((part): part is TransliterationSegment => part !== null);
+  const unpairedRomanizationParts: string[] = [];
+  const pairedSegments: TransliterationSegment[] = [];
+  for (const part of parts) {
+    const raw = typeof part[3] === "string" ? part[3] : typeof part[2] === "string" ? part[2] : "";
+    const transliteration = normalizeGoogleTransliteration(raw);
+    if (typeof part[1] !== "string") {
+      if (transliteration) unpairedRomanizationParts.push(transliteration);
+      continue;
+    }
+    if (part[1] && transliteration) pairedSegments.push({ original: part[1], transliteration });
+  }
+  const unpairedRomanization = normalizeGoogleTransliteration(unpairedRomanizationParts.join(""));
   // Google commonly returns the original and its `dt=rm` romanization as
   // separate entries, with no original-text field on the romanization entry.
   const segments: TransliterationSegment[] = unpairedRomanization

@@ -2,6 +2,11 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Modal } from "@/ui/modal";
+import {
+  type PairedSplitPoints,
+  togglePrimarySplitPoint,
+  toggleTransliterationSplitPoint,
+} from "@/views/sync/paired-split-points";
 import { SplitModeContent } from "@/views/sync/split-mode-content";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
@@ -18,8 +23,11 @@ type SplitMode = "syllable" | "word";
 
 const TimelineSyllableSplitter: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [splitPoints, setSplitPoints] = useState<number[]>([]);
-  const [transliterationSplitPoints, setTransliterationSplitPoints] = useState<number[]>([]);
+  const [pairedSplitPoints, setPairedSplitPoints] = useState<PairedSplitPoints>({
+    splitPoints: [],
+    transliterationSplitPoints: [],
+  });
+  const { splitPoints, transliterationSplitPoints } = pairedSplitPoints;
   const [target, setTarget] = useState<SplitterTarget | null>(null);
 
   useEffect(() => {
@@ -37,8 +45,7 @@ const TimelineSyllableSplitter: React.FC = () => {
       if (!word || word.text.trimEnd().length < 2) return;
 
       setTarget({ lineId: sel.lineId, wordIndex: sel.wordIndex, type: sel.type, word, mode });
-      setSplitPoints([]);
-      setTransliterationSplitPoints([]);
+      setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       setIsOpen(true);
     };
 
@@ -55,37 +62,26 @@ const TimelineSyllableSplitter: React.FC = () => {
 
   const handleToggleSplit = useCallback(
     (index: number) => {
-      setSplitPoints((prev) => {
-        const next = prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index];
-        if (target?.word.transliteration) {
-          const originalLength = target.word.text.trimEnd().length;
-          const romanLength = target.word.transliteration.length;
-          const inferred = next.map((point) =>
-            Math.max(1, Math.min(romanLength - 1, Math.round((point / originalLength) * romanLength))),
-          );
-          if (new Set(inferred).size === inferred.length) setTransliterationSplitPoints(inferred);
-        }
-        return next;
-      });
+      if (!target) return;
+      setPairedSplitPoints((current) =>
+        togglePrimarySplitPoint(current, index, target.word.text, target.word.transliteration),
+      );
     },
     [target],
   );
 
   const handleToggleTransliterationSplit = useCallback((index: number) => {
-    setTransliterationSplitPoints((prev) =>
-      prev.includes(index) ? prev.filter((point) => point !== index) : [...prev, index],
-    );
+    setPairedSplitPoints((current) => toggleTransliterationSplitPoint(current, index));
   }, []);
 
   const resetSplitPoints = useCallback(() => {
-    setSplitPoints([]);
-    setTransliterationSplitPoints([]);
+    setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
   }, []);
 
   const closeModal = useCallback(() => {
     setIsOpen(false);
     setTarget(null);
-    setSplitPoints([]);
+    setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
   }, []);
 
   const { applyToAll, setApplyToAll, caseInsensitive, setCaseInsensitive, identicalCount, sourceText, confirmSplit } =

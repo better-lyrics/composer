@@ -43,12 +43,14 @@ const LanguagesPanel: React.FC = () => {
       abortRef.current = controller;
       setIsGenerating(true);
       try {
-        const mainInputs = lines
-          .filter((line) => line.text.trim())
-          .map((line) => ({ id: line.id, text: line.text.trim() }));
-        const bgInputs = lines
-          .filter((line) => line.backgroundText?.trim())
-          .map((line) => ({ id: line.id, text: line.backgroundText!.trim() }));
+        const mainInputs: Array<{ id: string; text: string }> = [];
+        const bgInputs: Array<{ id: string; text: string }> = [];
+        for (const line of lines) {
+          const text = line.text.trim();
+          const backgroundText = line.backgroundText?.trim();
+          if (text) mainInputs.push({ id: line.id, text });
+          if (backgroundText) bgInputs.push({ id: line.id, text: backgroundText });
+        }
         const [romanMain, romanBg, ...translationResults] = await Promise.all([
           googleLanguageProvider.transliterate(mainInputs, requestedSource, controller.signal),
           googleLanguageProvider.transliterate(bgInputs, requestedSource, controller.signal),
@@ -197,6 +199,7 @@ const LanguagesPanel: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <select
+            aria-label="Translation language"
             value={nextTarget}
             disabled={availableLanguages.length === 0}
             onChange={(event) => setNextTarget(event.target.value)}

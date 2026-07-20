@@ -4,6 +4,11 @@ import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import {
+  type PairedSplitPoints,
+  togglePrimarySplitPoint,
+  toggleTransliterationSplitPoint,
+} from "@/views/sync/paired-split-points";
 import { useCallback, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -40,8 +45,11 @@ function useSyllableSplitterState({
   onSplit,
 }: UseSyllableSplitterStateParams): UseSyllableSplitterStateResult {
   const initialDefaults = useProjectStore.getState().syllableSplitDefaults;
-  const [splitPoints, setSplitPoints] = useState<number[]>([]);
-  const [transliterationSplitPoints, setTransliterationSplitPoints] = useState<number[]>([]);
+  const [pairedSplitPoints, setPairedSplitPoints] = useState<PairedSplitPoints>({
+    splitPoints: [],
+    transliterationSplitPoints: [],
+  });
+  const { splitPoints, transliterationSplitPoints } = pairedSplitPoints;
   const [applyToAll, setApplyToAll] = useState(word.transliteration ? false : initialDefaults.applyToAll);
   const [caseInsensitive, setCaseInsensitive] = useState(initialDefaults.caseInsensitive);
 
@@ -57,26 +65,13 @@ function useSyllableSplitterState({
 
   const toggleSplit = useCallback(
     (index: number) => {
-      setSplitPoints((prev) => {
-        const next = prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index];
-        if (word.transliteration) {
-          const originalLength = word.text.trimEnd().length;
-          const romanLength = word.transliteration.trim().length;
-          const inferred = next.map((point) =>
-            Math.max(1, Math.min(romanLength - 1, Math.round((point / originalLength) * romanLength))),
-          );
-          if (new Set(inferred).size === inferred.length) setTransliterationSplitPoints(inferred);
-        }
-        return next;
-      });
+      setPairedSplitPoints((current) => togglePrimarySplitPoint(current, index, word.text, word.transliteration));
     },
     [word.text, word.transliteration],
   );
 
   const toggleTransliterationSplit = useCallback((index: number) => {
-    setTransliterationSplitPoints((prev) =>
-      prev.includes(index) ? prev.filter((point) => point !== index) : [...prev, index],
-    );
+    setPairedSplitPoints((current) => toggleTransliterationSplitPoint(current, index));
   }, []);
 
   const splitSingleWord = useCallback(() => {
@@ -103,15 +98,13 @@ function useSyllableSplitterState({
           splitPoints,
           caseInsensitive,
         });
-        setSplitPoints([]);
-        setTransliterationSplitPoints([]);
+        setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
         close();
         return;
       }
 
       splitSingleWord();
-      setSplitPoints([]);
-      setTransliterationSplitPoints([]);
+      setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       close();
     },
     [
@@ -129,8 +122,7 @@ function useSyllableSplitterState({
   );
 
   const cancelSplit = useCallback((close: () => void) => {
-    setSplitPoints([]);
-    setTransliterationSplitPoints([]);
+    setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
     close();
   }, []);
 
