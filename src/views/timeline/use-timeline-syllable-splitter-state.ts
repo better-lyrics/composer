@@ -1,3 +1,4 @@
+import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -127,16 +128,24 @@ function useTimelineSyllableSplitterState({
     if (!wordsArray) return;
 
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
+    const transliteration =
+      mode === "syllable"
+        ? reconcileTransliterationAfterSyllableSplit(
+            line,
+            type === "word" ? "words" : "backgroundWords",
+            wordIndex,
+            newWords,
+          )
+        : null;
+    const extraUpdates = transliteration ? { transliteration } : {};
 
     if (type === "word") {
-      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words");
+      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "words", extraUpdates);
     } else {
-      void handleWordChangeWithDivergenceCheck(
-        lineId,
-        updatedWords,
-        "backgroundWords",
-        manualBackgroundWordEdit(updatedWords),
-      );
+      void handleWordChangeWithDivergenceCheck(lineId, updatedWords, "backgroundWords", {
+        ...manualBackgroundWordEdit(updatedWords),
+        ...extraUpdates,
+      });
     }
   }, [target, splitPoints, transliterationSplitPoints]);
 
