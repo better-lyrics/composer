@@ -1,6 +1,9 @@
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
+@import "@braccato/core/styles/variables.css" layer(braccato-defaults);
+@import "@braccato/core/styles/lyrics.css";
+@import "@braccato/core/styles/instrumental.css";
 
 @theme {
   /* Background Colors */
@@ -67,6 +70,46 @@ body {
   background-color: var(--color-composer-bg);
   color: var(--color-composer-text);
   font-family: var(--font-family-sans);
+}
+
+/* Braccato preview. These must stay on :root: variables.css derives the active
+   and inactive lyric colours from them there, so setting them lower never lands. */
+:root {
+  --blyrics-text-color: var(--color-composer-text);
+  --blyrics-inactive-opacity: 0.2;
+  --blyrics-font-family: "Satoshi", sans-serif;
+  --blyrics-font-size: 2.5rem;
+}
+
+/* The element is the scroller braccato autoscrolls, which is what centres the
+   active line. */
+braccato-lyrics {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+braccato-lyrics::-webkit-scrollbar {
+  display: none;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling) {
+  scrollbar-color: color-mix(in srgb, var(--color-composer-text) 15%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-composer-text) 15%, transparent);
+  border-radius: 3px;
+}
+
+/* lyrics.css spends --blyrics-padding-bottom but hardcodes the top. */
+braccato-lyrics .blyrics-container {
+  padding-top: var(--blyrics-padding-top, 2rem);
 }
 
 /* Text selection */
