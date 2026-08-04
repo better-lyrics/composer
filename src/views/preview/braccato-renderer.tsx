@@ -1,8 +1,11 @@
-import "@braccato/core";
-import type { BraccatoElement } from "@braccato/core";
+import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
+import { TTMLParser } from "@braccato/parsers";
+import { IconArrowDown } from "@tabler/icons-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { useAudioStore } from "@/stores/audio";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/ui/button";
+import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -10,65 +13,103 @@ interface BraccatoRendererProps {
   ttmlString: string;
 }
 
+// -- Constants -----------------------------------------------------------------
+
+const LOG_PREFIX = "[BraccatoRenderer]";
+
+// -- Element registration -----------------------------------------------------
+
+// Must stay dynamic: registering evaluates `class ... extends HTMLElement`, which
+// has no HTMLElement during the vite-react-ssg prerender and fails the build.
+let registerPromise: Promise<unknown> | null = null;
+function ensureRegistered(): Promise<unknown> {
+  registerPromise ??= import("@braccato/core/element").catch((error: unknown) => {
+    console.error(LOG_PREFIX, "failed to register <braccato-lyrics>; preview will stay empty", error);
+  });
+  return registerPromise;
+}
+
 // -- Helpers ------------------------------------------------------------------
 
 function handleBraccatoLineClick(e: Event): void {
-  const detail = (e as CustomEvent<{ time: number }>).detail;
-  if (detail?.time == null) return;
+  const detail = (e as CustomEvent<LineClickDetail>).detail;
+  if (detail?.timeS == null) return;
   const audio = useAudioStore.getState();
-  audio.seekTo(detail.time / 1000);
+  audio.seekTo(detail.timeS);
   audio.setIsPlaying(true);
+}
+
+function handleBraccatoScroll(e: Event): void {
+  (e.currentTarget as BraccatoLyricsElement).renderer?.noteUserScroll();
 }
 
 // -- Component ----------------------------------------------------------------
 
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
-  const elementRef = useRef<BraccatoElement>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const audioElement = useAudioStore((s) => s.audioElement);
-  const elementKey = `${audioElement?.src ?? "no-audio"}:${blobUrl ?? "no-lyrics"}`;
+  const elementRef = useRef<BraccatoLyricsElement>(null);
+  const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
+  const latestLyricsRef = useRef(lyrics);
+  const appliedPlaybackRateRef = useRef(1);
+  const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
 
-  useEffect(() => {
-    const blob = new Blob([ttmlString], { type: "application/ttml+xml" });
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [ttmlString]);
-
-  // Callback ref so the click listener re-attaches when the <braccato-lyrics>
-  // element is recreated via the `key` change. React 19 runs the returned
-  // cleanup when the element is detached or this ref is reassigned.
-  const setElement = useCallback((el: BraccatoElement | null) => {
+  const setElement = useCallback((el: BraccatoLyricsElement | null) => {
     elementRef.current = el;
     if (!el) return;
+    el.theme = braccatoTheme;
+    el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+    el.lyrics = latestLyricsRef.current;
     el.addEventListener("braccato:line-click", handleBraccatoLineClick);
+    el.addEventListener("scroll", handleBraccatoScroll, { passive: true });
     return () => {
       el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
+      el.removeEventListener("scroll", handleBraccatoScroll);
       elementRef.current = null;
     };
   }, []);
 
+  const resumeAutoscroll = useCallback(() => {
+    elementRef.current?.renderer?.resumeAutoscroll();
+  }, []);
+
+  useEffect(() => {
+    void ensureRegistered();
+  }, []);
+
+  useEffect(() => {
+    latestLyricsRef.current = lyrics;
+    const element = elementRef.current;
+    if (element) element.lyrics = lyrics;
+  }, [lyrics]);
+
+  // Binding `source` would make braccato own the clock, and it only polls during
+  // playback, freezing the preview whenever the timeline is scrubbed paused.
   useRendererAudioSync(elementRef, (el, audio) => {
-    el.currentTime = audio.currentTime * 1000;
+    // Without the rate the word sweeps run on the wall clock and stutter at any
+    // speed but 1x. Tracked here rather than read back off the element, which has
+    // no properties to read until the registration import lands.
+    if (appliedPlaybackRateRef.current !== audio.playbackRate) {
+      appliedPlaybackRateRef.current = audio.playbackRate;
+      el.tickOptions = { playbackRate: audio.playbackRate };
+    }
+    el.currentTime = audio.currentTime;
     el.playing = !audio.paused;
   });
 
   return (
-    <braccato-lyrics
-      key={elementKey}
-      ref={setElement}
-      source={audioElement ? "#composer-audio" : undefined}
-      src={blobUrl ?? undefined}
-      className="flex-1 mx-auto w-full max-w-3xl px-6"
-      style={
-        {
-          "--braccato-font-family": "'Satoshi', sans-serif",
-          "--braccato-font-size": "2.5rem",
-          "--braccato-inactive-opacity": "0.2",
-          "--braccato-text-color": "var(--color-composer-text)",
-        } as React.CSSProperties
-      }
-    />
+    <div className="relative flex flex-col flex-1 min-h-0">
+      <braccato-lyrics ref={setElement} className="block flex-1 mx-auto w-full max-w-3xl px-6" />
+      {isAutoscrollPaused ? (
+        <Button
+          variant="secondary"
+          hasIcon
+          onClick={resumeAutoscroll}
+          className="absolute bottom-6 left-1/2 -translate-x-1/2 shadow-2xl"
+        >
+          <IconArrowDown className="size-4" />
+          Resume autoscroll
+        </Button>
+      ) : null}
+    </div>
   );
 };
 

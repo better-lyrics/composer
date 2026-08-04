@@ -152,3 +152,6 @@ test-results/
 # Built HTDemucs ONNX models (large; produced by scripts/build-htdemucs-onnx.sh)
 htdemucs-onnx-out/
 .wrangler
+
+# macOS
+.DS_Store
