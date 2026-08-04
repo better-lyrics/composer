@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { isProjectNonEmpty } from "@/lib/project-non-empty";
+import { useConfirmStore } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { normalizeIsrc } from "@/utils/isrc";
@@ -78,10 +80,22 @@ function useImportFromQuery(): void {
     if (metaPatch === null) return;
 
     let cancelled = false;
-    getPersistenceSettled().then(() => {
+    void (async () => {
+      await getPersistenceSettled();
+      if (cancelled) return;
+
+      if (await isProjectNonEmpty()) {
+        const accepted = await useConfirmStore.getState().open({
+          title: "Replace song metadata?",
+          description: "This link carries song details that will overwrite the metadata on your current project.",
+          confirmLabel: "Replace metadata",
+          variant: "destructive",
+        });
+        if (!accepted) return;
+      }
       if (cancelled) return;
       useProjectStore.getState().setMetadata(metaPatch);
-    });
+    })();
 
     return () => {
       cancelled = true;

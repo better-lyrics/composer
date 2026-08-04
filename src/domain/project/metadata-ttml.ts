@@ -7,6 +7,17 @@ interface MetaPair {
   value: string;
 }
 
+// -- Reserved keys ------------------------------------------------------------
+
+const RESERVED_META_KEYS: ReadonlySet<string> = new Set([
+  "artists",
+  "album",
+  "isrc",
+  "musicName",
+  "songwriter",
+  "songwriters",
+]);
+
 // -- Mapping ------------------------------------------------------------------
 
 function toComposerMeta(metadata: ProjectMetadata): MetaPair[] {
@@ -58,5 +69,4 @@ function fromComposerMeta(pairs: MetaPair[]): Partial<ProjectMetadata> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { fromComposerMeta, toComposerMeta };
-export type { MetaPair };
+export { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta };

@@ -22,8 +22,6 @@ interface MetadataFieldListProps {
 // -- Component ----------------------------------------------------------------
 
 const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, values, placeholder, onChange }) => {
-  // Rows carry a stable id so reorders/removals keep input focus and identity.
-  // The buffer re-seeds whenever values are written from outside (load, import).
   const { rows, commit } = useReconciledBuffer<Row, string[]>(values, onChange, {
     seed: seedRows,
     reconcile: reconcileRows,

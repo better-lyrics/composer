@@ -151,9 +151,7 @@ function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
 
 // -- Tap and hold commit ------------------------------------------------------
 
-// Re-tapping a word that already has later words (redo) overwrites it in place and
-// keeps the untapped words, so a partial redo never wipes the tail. Tapping at or past
-// the end is forward live-sync: close the prior word and append.
+// Redo overwrites in place and keeps the tail; tapping past the end appends.
 function commitTappedWord(
   existingWords: WordTiming[],
   wordIndex: number,
@@ -179,13 +177,23 @@ function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: st
   if (existingWords.length === 0) return [{ text, begin, end: begin }];
   if (wordIndex >= existingWords.length) return [...existingWords, { text, begin, end: begin }];
   const result = [...existingWords];
-  result[wordIndex] = wordIndex === 0 ? { ...result[0], text, begin } : { text, begin, end: begin };
+  result[wordIndex] =
+    wordIndex === 0 ? { ...result[0], text, begin } : { ...result[wordIndex], text, begin, end: begin };
+  return result;
+}
+
+function closeHeldWord(existingWords: WordTiming[], wordIndex: number, end: number): WordTiming[] {
+  if (existingWords.length === 0) return existingWords;
+  const target = Math.min(Math.max(wordIndex, 0), existingWords.length - 1);
+  const result = [...existingWords];
+  result[target] = { ...result[target], end };
   return result;
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export {
+  closeHeldWord,
   commitHeldWord,
   commitTappedWord,
   createBgWordsFromLine,

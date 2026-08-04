@@ -6,6 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
+  closeHeldWord,
   commitHeldWord,
   commitTappedWord,
   type SyncState,
@@ -165,9 +166,7 @@ function useSyncHandlers({
 
     const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...line.words];
-    const currentWordEntry = updatedWords[updatedWords.length - 1];
-    updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
+    const updatedWords = closeHeldWord(line.words, wordIndex, currentTime);
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
@@ -182,15 +181,13 @@ function useSyncHandlers({
 
     const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...line.words];
-    const currentWordEntry = updatedWords[updatedWords.length - 1];
-    updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
+    const closedWords = closeHeldWord(line.words, wordIndex, currentTime);
 
     const nextWordIndex = wordIndex + 1;
     const advancesToNextLine = nextWordIndex >= lineWords.length;
 
     if (advancesToNextLine) {
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
+      updateLineWithHistory(line.id, { words: closedWords }, { deriveText: false, propagateToSiblings: false });
 
       const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
       const nextLine = lines[nextLineIndex];
@@ -210,11 +207,15 @@ function useSyncHandlers({
       }));
     } else {
       const nextWordText = lineWords[nextWordIndex];
-      if (nextWordText) {
-        const textWithSpace = trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText;
-        updatedWords.push({ text: textWithSpace, begin: currentTime, end: currentTime });
-      }
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
+      const openedWords = nextWordText
+        ? commitHeldWord(
+            closedWords,
+            nextWordIndex,
+            trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText,
+            currentTime,
+          )
+        : closedWords;
+      updateLineWithHistory(line.id, { words: openedWords }, { deriveText: false, propagateToSiblings: false });
 
       setSyncState((prev) => ({
         ...prev,

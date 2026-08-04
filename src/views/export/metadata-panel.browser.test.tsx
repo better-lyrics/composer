@@ -64,13 +64,13 @@ describe("MetadataPanel", () => {
     await expect.poll(() => useProjectStore.getState().metadata.artists).toEqual(["Beta"]);
   });
 
-  it("adds a producer row backed by songwriters", async () => {
+  it("adds a songwriter row backed by songwriters", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);
     await screen.getByRole("button", { name: "Metadata" }).click();
 
-    await screen.getByRole("button", { name: "Add producer" }).click();
-    await screen.getByRole("textbox", { name: "Producer 1" }).fill("Finneas");
+    await screen.getByRole("button", { name: "Add songwriter" }).click();
+    await screen.getByRole("textbox", { name: "Songwriter 1" }).fill("Finneas");
     await expect.poll(() => useProjectStore.getState().metadata.songwriters).toEqual(["Finneas"]);
   });
 
@@ -143,7 +143,7 @@ describe("MetadataPanel", () => {
     await screen.getByRole("button", { name: "Metadata" }).click();
 
     await expect.element(screen.getByRole("textbox", { name: "Artist 1" })).toHaveValue("Billie Eilish");
-    await expect.element(screen.getByRole("textbox", { name: "Producer 1" })).toHaveValue("Finneas");
+    await expect.element(screen.getByRole("textbox", { name: "Songwriter 1" })).toHaveValue("Finneas");
     await expect.element(screen.getByRole("textbox", { name: "Field 1 key" })).toHaveValue("spotifyId");
     await expect.element(screen.getByRole("textbox", { name: "Field 1 value" })).toHaveValue("abc");
   });

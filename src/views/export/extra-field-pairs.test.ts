@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { pairsToRecord, reconcilePairs, sameRecord, seedPairs } from "@/views/export/extra-field-pairs";
+import {
+  isReservedExtraKey,
+  pairsToRecord,
+  reconcilePairs,
+  sameRecord,
+  seedPairs,
+} from "@/views/export/extra-field-pairs";
 
 describe("seedPairs", () => {
   it("maps each entry to a pair with a unique id", () => {
@@ -98,6 +104,57 @@ describe("reconcilePairs", () => {
       const snapshot = previous.map((p) => ({ ...p }));
       reconcilePairs(previous, { a: "1", b: "changed", c: "3" });
       expect(previous).toEqual(snapshot);
+    });
+  });
+});
+
+// -- Reserved keys ------------------------------------------------------------
+
+describe("isReservedExtraKey", () => {
+  it("flags a key that collides with a dedicated metadata field", () => {
+    expect(isReservedExtraKey("songwriter")).toBe(true);
+    expect(isReservedExtraKey("album")).toBe(true);
+  });
+
+  it("allows an ordinary key", () => {
+    expect(isReservedExtraKey("spotifyId")).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("ignores surrounding whitespace", () => {
+      expect(isReservedExtraKey("  album  ")).toBe(true);
+    });
+
+    it("treats a blank key as not reserved", () => {
+      expect(isReservedExtraKey("   ")).toBe(false);
+    });
+
+    it("is case sensitive, matching the TTML key exactly", () => {
+      expect(isReservedExtraKey("Album")).toBe(false);
+    });
+  });
+});
+
+describe("pairsToRecord reserved-key handling", () => {
+  it("drops a reserved key so it can never reach metadata.extra", () => {
+    const record = pairsToRecord([
+      { id: "1", key: "songwriter", value: "Typed By User" },
+      { id: "2", key: "spotifyId", value: "abc" },
+    ]);
+    expect(record).toEqual({ spotifyId: "abc" });
+  });
+
+  describe("invariants", () => {
+    it("never emits a key that isReservedExtraKey rejects", () => {
+      const record = pairsToRecord([
+        { id: "1", key: "album", value: "Deluxe" },
+        { id: "2", key: "artists", value: "Injected" },
+        { id: "3", key: "musicName", value: "Hijacked" },
+        { id: "4", key: "mood", value: "calm" },
+      ]);
+      for (const key of Object.keys(record)) {
+        expect(isReservedExtraKey(key)).toBe(false);
+      }
     });
   });
 });

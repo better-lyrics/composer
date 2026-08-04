@@ -16,13 +16,7 @@ interface ReconciledBuffer<Row> {
 
 // -- Hook ---------------------------------------------------------------------
 
-/**
- * Keeps a local editing buffer (rows carrying stable ids) in sync with an
- * external store value. The buffer resets only when the external value changes
- * from outside (a project load, import, or other foreign write), never when it
- * echoes back a change this buffer just emitted. Edits stay in the buffer with
- * stable row identity, so inputs never lose focus.
- */
+// Reseeds on foreign writes only, never on the store echoing back our own commit.
 function useReconciledBuffer<Row, External>(
   external: External,
   onChange: (next: External) => void,
@@ -49,4 +43,3 @@ function useReconciledBuffer<Row, External>(
 // -- Exports ------------------------------------------------------------------
 
 export { useReconciledBuffer };
-export type { ReconciledBufferOps };

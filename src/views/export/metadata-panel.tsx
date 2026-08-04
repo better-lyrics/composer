@@ -18,11 +18,8 @@ const MetadataPanel: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
 
-  // The store keeps only a normalized isrc, but the field must show the raw draft
-  // while editing (so the invalid hint can appear). Show the draft as long as it
-  // still maps to the stored value; if isrc is written from outside (URL params,
-  // bridge, audio tags), the store wins and the field re-seeds.
-  const isrcValue = normalizeIsrc(isrcDraft) === metadata.isrc ? isrcDraft : (metadata.isrc ?? "");
+  const draftStillMapsToStored = normalizeIsrc(isrcDraft) === metadata.isrc;
+  const isrcValue = draftStillMapsToStored ? isrcDraft : (metadata.isrc ?? "");
   const trimmedIsrc = isrcValue.trim();
   const isrcInvalid = trimmedIsrc !== "" && !isValidIsrc(trimmedIsrc);
 
@@ -94,7 +91,7 @@ const MetadataPanel: React.FC = () => {
                   className={INPUT_STYLES}
                 />
                 {isrcInvalid && (
-                  <span className="text-xs text-composer-error-text select-none">
+                  <span className="text-xs text-composer-error-text select-text cursor-text">
                     Invalid ISRC ・ expected 12 characters like USQX91700001
                   </span>
                 )}
@@ -109,9 +106,9 @@ const MetadataPanel: React.FC = () => {
               />
 
               <MetadataFieldList
-                label="Producers"
-                itemNoun="Producer"
-                placeholder="Producer name"
+                label="Songwriters"
+                itemNoun="Songwriter"
+                placeholder="Songwriter name"
                 values={metadata.songwriters ?? []}
                 onChange={(next) => setMetadata({ songwriters: next })}
               />

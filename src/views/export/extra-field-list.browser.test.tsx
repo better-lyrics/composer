@@ -51,8 +51,6 @@ describe("ExtraFieldList", () => {
       const screen = await render(<ExtraHost />);
       await screen.getByRole("button", { name: "Add field" }).click();
 
-      // The empty key maps to nothing in the record, so onChange echoes {}. The
-      // buffer must NOT treat that echo as an external clear and drop the row.
       await expect.element(screen.getByRole("textbox", { name: "Field 1 key" })).toHaveValue("");
       await screen.getByRole("textbox", { name: "Field 1 key" }).fill("k");
       await expect.element(screen.getByRole("textbox", { name: "Field 1 key" })).toHaveValue("k");
@@ -69,5 +67,33 @@ describe("ExtraFieldList", () => {
       await expect.poll(() => document.activeElement).toBe(input);
       expect(input.value).toBe("spotify");
     });
+  });
+});
+
+// -- Reserved keys ------------------------------------------------------------
+
+describe("ExtraFieldList reserved keys", () => {
+  it("warns when a key collides with a dedicated metadata field", async () => {
+    const screen = await render(<ExtraHost initial={{ mood: "calm" }} />);
+    const keyInput = screen.getByRole("textbox", { name: "Field 1 key" });
+
+    await userEvent.fill(keyInput, "songwriter");
+
+    await expect.element(screen.getByText(/reserved key/i)).toBeInTheDocument();
+  });
+
+  it("keeps the warning text selectable so it can be copied", async () => {
+    const screen = await render(<ExtraHost initial={{ mood: "calm" }} />);
+    await userEvent.fill(screen.getByRole("textbox", { name: "Field 1 key" }), "album");
+
+    const warning = screen.getByText(/reserved key/i);
+    await expect.element(warning).toHaveClass(/select-text/);
+  });
+
+  it("shows no warning for an ordinary key", async () => {
+    const screen = await render(<ExtraHost initial={{ mood: "calm" }} />);
+    await userEvent.fill(screen.getByRole("textbox", { name: "Field 1 key" }), "spotifyId");
+
+    expect(screen.container.textContent).not.toMatch(/reserved key/i);
   });
 });

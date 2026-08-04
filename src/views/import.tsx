@@ -31,6 +31,7 @@ function getFileExtension(filename: string): string {
 
 const GUTTER_WIDTH = 56;
 const ROW_HEIGHT = 56;
+const LOG_PREFIX = "[Composer]";
 
 // -- Sub-components -----------------------------------------------------------
 
@@ -117,11 +118,14 @@ const ImportPanel: React.FC = () => {
       void import("music-metadata")
         .then(({ parseBlob }) => parseBlob(file))
         .then(({ common }) => {
+          const active = useAudioStore.getState().source;
+          const isStillTheActiveFile = active?.type === "file" && active.file === file;
+          if (!isStillTheActiveFile) return;
           const patch = audioTagsToMetadata(common);
           if (Object.keys(patch).length > 0) setMetadata(patch);
         })
         .catch((error) => {
-          console.warn("[Composer] could not read audio tags", error);
+          console.warn(`${LOG_PREFIX} could not read audio tags`, error);
         });
     },
     [setSource, setMetadata],

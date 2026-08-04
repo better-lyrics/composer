@@ -24,4 +24,3 @@ function normalizeLoadedMetadata(raw: StoredMetadata): ProjectMetadata {
 // -- Exports ------------------------------------------------------------------
 
 export { normalizeLoadedMetadata };
-export type { StoredMetadata };

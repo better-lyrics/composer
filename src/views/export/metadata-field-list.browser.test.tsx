@@ -6,9 +6,6 @@ import { MetadataFieldList } from "@/views/export/metadata-field-list";
 
 // -- Helpers ------------------------------------------------------------------
 
-// Controlled host so the field list behaves exactly as it does under the store:
-// every edit echoes back through `values`, and the "external" button simulates a
-// foreign write (project load / import) that must reseed the buffer.
 function ArtistsHost({ initial = [] as string[] }) {
   const [values, setValues] = useState(initial);
   return (

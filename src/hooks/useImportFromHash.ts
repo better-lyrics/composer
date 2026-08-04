@@ -1,5 +1,5 @@
-import { loadCurrentProject } from "@/lib/persistence";
 import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
+import { isProjectNonEmpty } from "@/lib/project-non-empty";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import type { Agent } from "@/domain/agent/model";
@@ -27,19 +27,6 @@ function isValidPayload(value: unknown): value is ImportPayload {
     Array.isArray(payload.lines) &&
     (payload.granularity === "line" || payload.granularity === "word")
   );
-}
-
-async function isProjectNonEmpty(): Promise<boolean> {
-  const state = useProjectStore.getState();
-  if (state.lines.length > 0) return true;
-  const { title, artists, album } = state.metadata;
-  if (title || artists.length || album) return true;
-
-  const saved = await loadCurrentProject();
-  if (!saved) return false;
-  if (saved.lines.length > 0) return true;
-  const savedMetadata = normalizeLoadedMetadata(saved.metadata);
-  return Boolean(savedMetadata.title || savedMetadata.artists.length || savedMetadata.album);
 }
 
 function useImportFromHash(): void {

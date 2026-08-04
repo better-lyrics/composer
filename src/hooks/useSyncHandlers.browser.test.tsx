@@ -302,6 +302,149 @@ describe("useSyncHandlers.handleHold (word granularity)", () => {
   });
 });
 
+// -- Mid-line hold redo -------------------------------------------------------
+
+describe("useSyncHandlers.handleHold (mid-line redo)", () => {
+  const REDO_TEXT = "one two three";
+
+  function seedFullyTimedLine() {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: REDO_TEXT,
+        words: [
+          createWord({ text: "one ", begin: 0, end: 1 }),
+          createWord({ text: "two ", begin: 1, end: 2 }),
+          createWord({ text: "three", begin: 2, end: 3 }),
+        ],
+      }),
+    ]);
+  }
+
+  it("regression: handleHoldEnd closes the held word, not the last word of the line", async () => {
+    seedFullyTimedLine();
+
+    const { result, rerender, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[1]).toMatchObject({ begin: 5, end: 6 });
+    expect(words[2]).toMatchObject({ begin: 2, end: 3 });
+  });
+
+  it("regression: handleHoldEnd never leaves a word ending before it begins", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: REDO_TEXT,
+        words: [
+          createWord({ text: "one ", begin: 0, end: 1 }),
+          createWord({ text: "two ", begin: 1, end: 2 }),
+          createWord({ text: "three", begin: 10, end: 11 }),
+        ],
+      }),
+    ]);
+
+    const { result, rerender, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await act(() => {
+      result.current.handleHoldEnd();
+    });
+
+    for (const word of useProjectStore.getState().lines[0].words ?? []) {
+      expect(word.end).toBeGreaterThanOrEqual(word.begin);
+    }
+  });
+
+  it("regression: handleHoldTap keeps one timing per word instead of appending a duplicate", async () => {
+    seedFullyTimedLine();
+
+    const { result, rerender, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await act(() => {
+      result.current.handleHoldTap();
+    });
+
+    const line = useProjectStore.getState().lines[0];
+    expect(line.text).toBe(REDO_TEXT);
+    expect(line.words).toHaveLength(3);
+    expect(line.words?.filter((word) => word.text.trim() === "three")).toHaveLength(1);
+  });
+
+  it("handleHoldTap opens the next word in place and moves the cursor onto it", async () => {
+    seedFullyTimedLine();
+
+    const { result, rerender, act, getSyncState } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true }, currentTime: 6 });
+    await act(() => {
+      result.current.handleHoldTap();
+    });
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[1]).toMatchObject({ begin: 5, end: 6 });
+    expect(words[2]).toMatchObject({ text: "three", begin: 6, end: 6 });
+    expect(getSyncState().position.wordIndex).toBe(2);
+  });
+
+  it("preserves explicit and syllableGroupId when re-holding a mid-line word", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: REDO_TEXT,
+        words: [
+          createWord({ text: "one ", begin: 0, end: 1 }),
+          createWord({ text: "two ", begin: 1, end: 2, explicit: true, syllableGroupId: "g1" }),
+          createWord({ text: "three", begin: 2, end: 3 }),
+        ],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 1 }, isActive: true },
+      initialCurrentTime: 5,
+    });
+
+    await act(() => {
+      result.current.handleHoldStart();
+    });
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words[1].explicit).toBe(true);
+    expect(words[1].syllableGroupId).toBe("g1");
+  });
+});
+
 describe("useSyncHandlers.handleJumpToLine (smart line redo)", () => {
   function twoSyncedLines() {
     return [

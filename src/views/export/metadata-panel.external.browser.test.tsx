@@ -3,11 +3,6 @@ import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 
-// Regression: metadata written externally after the panel mounts (project load,
-// hash/query import, lyrics import) must be reflected in the editing fields, and
-// editing must never drop entries it never saw. See the parent/child lifecycle
-// bug fixed by routing every field list through useReconciledBuffer.
-
 const open = (screen: Awaited<ReturnType<typeof render>>) => screen.getByRole("button", { name: "Metadata" }).click();
 
 describe("MetadataPanel external writes after mount", () => {

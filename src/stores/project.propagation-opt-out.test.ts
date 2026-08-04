@@ -304,9 +304,6 @@ describe("instance resync · issue #96 reproduction", () => {
   it("a partial re-tap keeps the source's later words and leaves the sibling intact", () => {
     seedTwoWordSyncedInstances();
 
-    // Re-tap only word 0 and stop. Preserve-in-place re-tap keeps the source's later
-    // words (no transient one-word squash), and the propagation opt-out keeps the
-    // sibling untouched.
     tapResync("a0", 0, 0.5, 0.8);
 
     expect(getLine("a0").words).toHaveLength(3);
@@ -318,10 +315,7 @@ describe("instance resync · issue #96 reproduction", () => {
   it("preserve-in-place keeps the word count stable, so a propagating re-tap no longer squashes the sibling", () => {
     seedTwoWordSyncedInstances();
 
-    // Pre-fix, re-tapping word 0 truncated the source to one word; that transient count
-    // change made propagation collapse the sibling (issue #96). Preserve-in-place keeps
-    // all three words, so even with propagation on (no opt-out), the smart word-count
-    // propagation leaves the sibling's per-word timing untouched.
+    // Regression guard for issue #96.
     const line = getLine("a0");
     const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
     const text = trailingSpace[0] ? `${parts[0]} ` : parts[0];

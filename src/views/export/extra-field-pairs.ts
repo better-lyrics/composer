@@ -1,3 +1,4 @@
+import { RESERVED_META_KEYS } from "@/domain/project/metadata-ttml";
 import { nanoid } from "nanoid";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -25,15 +26,17 @@ const sameRecord = (a: Record<string, string>, b: Record<string, string>): boole
   return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
 };
 
+const isReservedExtraKey = (key: string): boolean => RESERVED_META_KEYS.has(key.trim());
+
 const pairsToRecord = (pairs: Pair[]): Record<string, string> => {
   const record: Record<string, string> = {};
   for (const { key, value } of pairs) {
-    if (key.trim() !== "") record[key] = value;
+    if (key.trim() !== "" && !isReservedExtraKey(key)) record[key] = value;
   }
   return record;
 };
 
 // -- Exports ------------------------------------------------------------------
 
-export { seedPairs, reconcilePairs, sameRecord, pairsToRecord };
+export { seedPairs, reconcilePairs, sameRecord, pairsToRecord, isReservedExtraKey };
 export type { Pair };

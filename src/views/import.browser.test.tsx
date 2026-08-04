@@ -392,3 +392,49 @@ describe("ImportPanel: audio tag capture", () => {
     await expect.poll(() => useProjectStore.getState().metadata.title).toBe("No Tags Here");
   });
 });
+
+// -- Stale tag writes ---------------------------------------------------------
+
+// Sound because the component started its parse first, so this one finishes later.
+async function waitForStaleParseToResolve(stale: File): Promise<void> {
+  const { parseBlob } = await import("music-metadata");
+  await parseBlob(stale);
+}
+
+describe("ImportPanel: stale audio tag writes", () => {
+  it("regression: a superseded file's tags never overwrite the current file's metadata", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const paddingThatMakesThisTheSlowerParse = new Uint8Array(4_000_000);
+    const stale = new File(
+      [
+        id3v2([
+          ["TIT2", "Stale Title"],
+          ["TPE1", "Stale Artist"],
+          ["TALB", "Stale Album"],
+        ]),
+        paddingThatMakesThisTheSlowerParse,
+      ],
+      "stale.mp3",
+      { type: "audio/mpeg" },
+    );
+    const current = new File([id3v2([["TIT2", "Current Title"]])], "current.mp3", { type: "audio/mpeg" });
+
+    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    expect(dropZone).not.toBeNull();
+    if (dropZone) {
+      dispatchDrop(dropZone, stale);
+      dispatchDrop(dropZone, current);
+    }
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Current Title");
+
+    await waitForStaleParseToResolve(stale);
+
+    expect(useProjectStore.getState().metadata.title).toBe("Current Title");
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
+    expect(useProjectStore.getState().metadata.album).toBe("");
+  });
+});

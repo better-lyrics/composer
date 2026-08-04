@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { fromComposerMeta, toComposerMeta } from "@/domain/project/metadata-ttml";
+import { RESERVED_META_KEYS, fromComposerMeta, toComposerMeta } from "@/domain/project/metadata-ttml";
 
 const base: ProjectMetadata = {
   title: "Song",
@@ -87,5 +87,26 @@ describe("round-trip", () => {
       songwriters: ["Tyler Okonma"],
       extra: { mood: "chill", spotifyId: "abc" },
     });
+  });
+});
+
+// -- Reserved keys ------------------------------------------------------------
+
+describe("RESERVED_META_KEYS", () => {
+  it("covers every key fromComposerMeta routes away from extra", () => {
+    for (const key of ["artists", "album", "isrc", "musicName", "songwriter", "songwriters"]) {
+      expect(RESERVED_META_KEYS.has(key)).toBe(true);
+    }
+  });
+
+  it("does not claim an ordinary extra key", () => {
+    expect(RESERVED_META_KEYS.has("spotifyId")).toBe(false);
+  });
+
+  it("every reserved key is swallowed by the switch rather than landing in extra", () => {
+    for (const key of RESERVED_META_KEYS) {
+      const parsed = fromComposerMeta([{ key, value: "v" }]);
+      expect(parsed.extra?.[key]).toBeUndefined();
+    }
   });
 });
