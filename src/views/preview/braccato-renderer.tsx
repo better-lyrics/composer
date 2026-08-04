@@ -47,7 +47,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   // attribute; `TTMLParser.parse` ignores its second argument.
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const latestLyricsRef = useRef(lyrics);
-  latestLyricsRef.current = lyrics;
 
   // Seeds the element as well as wiring the listener, so a node swapped in
   // without a lyrics change still gets the song. The effect below only covers
@@ -67,7 +66,11 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     void ensureRegistered();
   }, []);
 
+  // Both writes belong to the commit, not the render. A render that React
+  // replays or throws away must not leave the seed above holding a song the DOM
+  // never received, which `<Activity>` prerendering makes reachable.
   useEffect(() => {
+    latestLyricsRef.current = lyrics;
     const element = elementRef.current;
     if (element) element.lyrics = lyrics;
   }, [lyrics]);
