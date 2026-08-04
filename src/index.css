@@ -85,6 +85,33 @@ body {
   --blyrics-font-size: 2.5rem;
 }
 
+/* The element is the scroller braccato autoscrolls, which is what pulls the
+   active line to the middle of the view. The scrollbar itself stays hidden until
+   the reader takes over, matching what braccato 0.1.x drew in its shadow root. */
+braccato-lyrics {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+braccato-lyrics::-webkit-scrollbar {
+  display: none;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling) {
+  scrollbar-color: color-mix(in srgb, var(--color-composer-text) 15%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-composer-text) 15%, transparent);
+  border-radius: 3px;
+}
+
 /* Braccato measures the room its first line needs to reach the target scroll
    position and writes it here, but its own lyrics.css only spends the bottom
    half. Scoping to the tag outranks that rule whichever sheet lands first. */

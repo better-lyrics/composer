@@ -156,6 +156,48 @@ describe("BraccatoRenderer", () => {
     const backgroundWords = [...el.querySelectorAll(".blyrics--word.blyrics-background-lyric")];
     expect(backgroundWords.map((word) => word.textContent)).toEqual(["ooh", "ahh"]);
   });
+
+  it("applies the composer theme, keeping its scroll ratio and long-word glow", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    expect(el.theme).toContain("blyrics-target-scroll-pos-ratio");
+    expect(el.theme).toContain("data-long-word");
+    // Declaring no family or size is what keeps composer on Satoshi at its own
+    // size rather than the family the theme ships with upstream.
+    expect(el.theme).not.toContain("--blyrics-font-family:");
+    expect(el.theme).not.toContain("--blyrics-font-size:");
+
+    const themeElement = document.getElementById("blyrics-custom-style");
+    expect(themeElement).not.toBeNull();
+    expect(el.status).toBe("rendering");
+  });
+
+  it("offers a way back when the reader scrolls away, and takes it away on resume", async () => {
+    // Mid-song rather than at zero: scrolling away only means anything when
+    // there is a line being sung to scroll away from.
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+
+    // Braccato swallows scrolls it caused itself, so one gesture's worth of
+    // events is what actually reaches the renderer as a user scroll.
+    for (let i = 0; i < 5; i++) el.dispatchEvent(new Event("scroll"));
+
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "Resume autoscroll" }).click();
+
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+  });
 });
 
 // -- Edge cases ---------------------------------------------------------------
