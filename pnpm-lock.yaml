@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^1.0.0
-        version: 1.0.0
+        specifier: ^1.1.0
+        version: 1.1.0
       '@braccato/parsers':
         specifier: ^0.2.0
         version: 0.2.0
@@ -333,8 +333,8 @@ packages:
   '@blazediff/core@1.9.1':
     resolution: {integrity: sha512-ehg3jIkYKulZh+8om/O25vkvSsXXwC+skXmyA87FFx6A/45eqOkZsBltMw/TVteb0mloiGT8oGRTcjRAz66zaA==}
 
-  '@braccato/core@1.0.0':
-    resolution: {integrity: sha512-LsqDG8kvCyx4883T0ypDAtJMpfTbM50WlfgGRx85EubZwXypK9OiStL2BHJIhy9w74UVc73vwC2xUupACIsbqg==}
+  '@braccato/core@1.1.0':
+    resolution: {integrity: sha512-BBpwxZq6268HeImaJElD9dBSUcqZCgSon2tF0HlVNSCoqnIqr+FwNrkb99r20rZYCk+z6crOS4zmUw6xyxTHUg==}
 
   '@braccato/parsers@0.2.0':
     resolution: {integrity: sha512-vHdNv7t1DQnKw7tWTc/AfrGsK/nHLiihqM/xLm0gbTE+iN9WNKsupQ/jAeheQHaQQzZNCYnZicnXb5cxiXjqwg==}
@@ -3202,7 +3202,7 @@ snapshots:
 
   '@blazediff/core@1.9.1': {}
 
-  '@braccato/core@1.0.0':
+  '@braccato/core@1.1.0':
     dependencies:
       '@braccato/types': 1.0.0
 

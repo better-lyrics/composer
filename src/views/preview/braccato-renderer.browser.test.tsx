@@ -100,6 +100,23 @@ describe("BraccatoRenderer", () => {
     await expect.poll(() => el.playing).toBe(false);
   });
 
+  it("hands the playback rate over so word sweeps follow the song rather than the wall clock", async () => {
+    const audio = new Audio();
+    audio.currentTime = 14;
+    audio.playbackRate = 0.25;
+    useAudioStore.setState({ audioElement: audio });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    await expect.poll(() => el.tickOptions.playbackRate).toBe(0.25);
+
+    audio.playbackRate = 2;
+
+    await expect.poll(() => el.tickOptions.playbackRate).toBe(2);
+  });
+
   it("starts playback when a line is clicked", async () => {
     const audio = new Audio();
     useAudioStore.setState({ audioElement: audio, isPlaying: false });

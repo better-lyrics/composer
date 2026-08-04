@@ -49,6 +49,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const latestLyricsRef = useRef(lyrics);
+  const appliedPlaybackRateRef = useRef(1);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
 
   const setElement = useCallback((el: BraccatoLyricsElement | null) => {
@@ -83,6 +84,13 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
   useRendererAudioSync(elementRef, (el, audio) => {
+    // Without the rate the word sweeps run on the wall clock and stutter at any
+    // speed but 1x. Tracked here rather than read back off the element, which has
+    // no properties to read until the registration import lands.
+    if (appliedPlaybackRateRef.current !== audio.playbackRate) {
+      appliedPlaybackRateRef.current = audio.playbackRate;
+      el.tickOptions = { playbackRate: audio.playbackRate };
+    }
     el.currentTime = audio.currentTime;
     el.playing = !audio.paused;
   });
