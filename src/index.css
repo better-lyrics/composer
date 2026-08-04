@@ -72,12 +72,8 @@ body {
   font-family: var(--font-family-sans);
 }
 
-/* Braccato preview renderer.
-   The colour knobs must sit on :root: variables.css derives
-   --blyrics-lyric-{active,inactive}-color from these there, so a declaration
-   further down the tree is substituted too late to reach them. variables.css is
-   imported into a layer so these unlayered declarations outrank its own :root
-   defaults on the cascade rather than on which sheet the bundler emits first. */
+/* Braccato preview. These must stay on :root: variables.css derives the active
+   and inactive lyric colours from them there, so setting them lower never lands. */
 :root {
   --blyrics-text-color: var(--color-composer-text);
   --blyrics-inactive-opacity: 0.2;
@@ -85,9 +81,8 @@ body {
   --blyrics-font-size: 2.5rem;
 }
 
-/* The element is the scroller braccato autoscrolls, which is what pulls the
-   active line to the middle of the view. The scrollbar itself stays hidden until
-   the reader takes over, matching what braccato 0.1.x drew in its shadow root. */
+/* The element is the scroller braccato autoscrolls, which is what centres the
+   active line. */
 braccato-lyrics {
   overflow-y: auto;
   scrollbar-width: none;
@@ -112,9 +107,7 @@ braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
   border-radius: 3px;
 }
 
-/* Braccato measures the room its first line needs to reach the target scroll
-   position and writes it here, but its own lyrics.css only spends the bottom
-   half. Scoping to the tag outranks that rule whichever sheet lands first. */
+/* lyrics.css spends --blyrics-padding-bottom but hardcodes the top. */
 braccato-lyrics .blyrics-container {
   padding-top: var(--blyrics-padding-top, 2rem);
 }

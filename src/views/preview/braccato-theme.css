@@ -1,21 +1,11 @@
-/* Braccato preview theme, cherry-picked from the Sustain theme in the braccato
-   repo (demo/theme-sustain.css). Handed to the element as a string through its
-   `theme` property, which is how the `blyrics-*` comment settings below reach
-   the module.
-
-   Left behind on purpose: the DM Sans webfont and the font-family/font-size
-   declarations, so composer keeps Satoshi at the size set in index.css; the
-   distance-based blur and opacity ramp, which reads as depth on a full-bleed
-   player and as haze in a preview pane; and the agent alignment rules, which
-   lyrics.css already ships (and covers v3 besides). */
+/* Cherry-picked from the Sustain theme in the braccato repo (demo/theme-sustain.css),
+   minus its webfont, its font declarations, its distance blur ramp, and its agent
+   alignment (lyrics.css already ships that). Passed to the element as a string. */
 
 /* blyrics-target-scroll-pos-ratio = 0.5; */
 
 .blyrics-container {
   --blyrics-font-weight: 600;
-  /* 1.0.0 raised the default to 2rem. This is the room each line had on 0.1.x,
-     and lyrics.css marks its own padding !important, so the variable is the only
-     way in. */
   --blyrics-padding: 1.25rem;
   --blyrics-wobble-duration: 1s;
   --blyrics-word-wobble-transform-from: translateY(0);
@@ -28,7 +18,6 @@
   transition: transform 0.166s var(--blyrics-anim-delay, 0s);
 }
 
-/* Lines are clickable, so they answer the pointer. */
 .blyrics-container > div:hover {
   transform: scale(1.01);
   transition: transform 0.3s ease;
@@ -38,8 +27,7 @@
   font-size: 0.9em;
 }
 
-/* Only a word held past blyrics-long-word-threshold earns the glow. */
-
+/* Only a word held past blyrics-long-word-threshold glows. */
 .blyrics--word::after {
   --blyrics-glow-color: color(display-p3 1 1 1 / 0.0001);
 }

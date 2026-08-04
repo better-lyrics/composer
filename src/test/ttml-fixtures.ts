@@ -12,9 +12,8 @@ import { generateTTML } from "@/utils/ttml";
  * Windows: "first line here" 2-6s, "second line now" 12-18s, "third line ends"
  * 24-30s.
  *
- * `durationSeconds` becomes the document's `dur`, which is the only channel a
- * song duration reaches a lyrics parser through. Leave it out and the trailing
- * silence is unknown, so no outro instrumental can be derived.
+ * `durationSeconds` becomes the document's `dur`, the only channel a song
+ * duration reaches a lyrics parser through.
  */
 function buildSyncedTtml(durationSeconds?: number): string {
   const lines = [
@@ -50,11 +49,7 @@ function buildSyncedTtml(durationSeconds?: number): string {
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word", duration: durationSeconds });
 }
 
-/**
- * One word-synced line 2-6s carrying a background vocal over its second half,
- * rendered through the production generator so the `ttm:role="x-bg"` container
- * is shaped exactly as an export would shape it.
- */
+/** One word-synced line 2-6s carrying a background vocal over its second half. */
 function buildBackgroundVocalTtml(): string {
   const lines = [
     createLine({
