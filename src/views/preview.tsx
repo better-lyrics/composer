@@ -70,7 +70,7 @@ const PreviewPanel: React.FC = () => {
       {renderer === "am-lyrics" ? (
         <AmLyricsRenderer ttmlString={ttmlString} durationSeconds={duration} />
       ) : (
-        <BraccatoRenderer ttmlString={ttmlString} />
+        <BraccatoRenderer ttmlString={ttmlString} durationSeconds={duration} />
       )}
     </div>
   );

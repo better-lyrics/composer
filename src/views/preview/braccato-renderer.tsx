@@ -1,44 +1,34 @@
-import "@braccato/core";
-import type { BraccatoElement } from "@braccato/core";
+import "@braccato/core/element";
+import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
+import { TTMLParser } from "@braccato/parsers";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { useAudioStore } from "@/stores/audio";
-import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
 interface BraccatoRendererProps {
   ttmlString: string;
+  durationSeconds: number;
 }
 
 // -- Helpers ------------------------------------------------------------------
 
 function handleBraccatoLineClick(e: Event): void {
-  const detail = (e as CustomEvent<{ time: number }>).detail;
-  if (detail?.time == null) return;
+  const detail = (e as CustomEvent<LineClickDetail>).detail;
+  if (detail?.timeS == null) return;
   const audio = useAudioStore.getState();
-  audio.seekTo(detail.time / 1000);
+  audio.seekTo(detail.timeS);
   audio.setIsPlaying(true);
 }
 
 // -- Component ----------------------------------------------------------------
 
-const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
-  const elementRef = useRef<BraccatoElement>(null);
-  const [blobUrl, setBlobUrl] = useState<string | null>(null);
-  const audioElement = useAudioStore((s) => s.audioElement);
-  const elementKey = `${audioElement?.src ?? "no-audio"}:${blobUrl ?? "no-lyrics"}`;
+const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, durationSeconds }) => {
+  const elementRef = useRef<BraccatoLyricsElement>(null);
+  const lyrics = useMemo(() => TTMLParser.parse(ttmlString, durationSeconds * 1000), [ttmlString, durationSeconds]);
 
-  useEffect(() => {
-    const blob = new Blob([ttmlString], { type: "application/ttml+xml" });
-    const url = URL.createObjectURL(blob);
-    setBlobUrl(url);
-    return () => URL.revokeObjectURL(url);
-  }, [ttmlString]);
-
-  // Callback ref so the click listener re-attaches when the <braccato-lyrics>
-  // element is recreated via the `key` change. React 19 runs the returned
-  // cleanup when the element is detached or this ref is reassigned.
-  const setElement = useCallback((el: BraccatoElement | null) => {
+  const setElement = useCallback((el: BraccatoLyricsElement | null) => {
     elementRef.current = el;
     if (!el) return;
     el.addEventListener("braccato:line-click", handleBraccatoLineClick);
@@ -48,28 +38,20 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const element = elementRef.current;
+    if (element) element.lyrics = lyrics;
+  }, [lyrics]);
+
+  // No `source` is bound on purpose. A bound media element makes braccato own the
+  // clock, and it only polls while playback runs, which would freeze the preview
+  // whenever the user scrubs the timeline paused.
   useRendererAudioSync(elementRef, (el, audio) => {
-    el.currentTime = audio.currentTime * 1000;
+    el.currentTime = audio.currentTime;
     el.playing = !audio.paused;
   });
 
-  return (
-    <braccato-lyrics
-      key={elementKey}
-      ref={setElement}
-      source={audioElement ? "#composer-audio" : undefined}
-      src={blobUrl ?? undefined}
-      className="flex-1 mx-auto w-full max-w-3xl px-6"
-      style={
-        {
-          "--braccato-font-family": "'Satoshi', sans-serif",
-          "--braccato-font-size": "2.5rem",
-          "--braccato-inactive-opacity": "0.2",
-          "--braccato-text-color": "var(--color-composer-text)",
-        } as React.CSSProperties
-      }
-    />
-  );
+  return <braccato-lyrics ref={setElement} className="block flex-1 mx-auto w-full max-w-3xl px-6 overflow-y-auto" />;
 };
 
 // -- Exports ------------------------------------------------------------------

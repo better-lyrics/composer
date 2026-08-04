@@ -1,6 +1,9 @@
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
+@import "@braccato/core/styles/variables.css";
+@import "@braccato/core/styles/lyrics.css";
+@import "@braccato/core/styles/instrumental.css";
 
 @theme {
   /* Background Colors */
@@ -67,6 +70,24 @@ body {
   background-color: var(--color-composer-bg);
   color: var(--color-composer-text);
   font-family: var(--font-family-sans);
+}
+
+/* Braccato preview renderer.
+   The colour knobs must sit on :root: variables.css derives
+   --blyrics-lyric-{active,inactive}-color from these there, so a declaration
+   further down the tree is substituted too late to reach them. */
+:root {
+  --blyrics-text-color: var(--color-composer-text);
+  --blyrics-inactive-opacity: 0.2;
+  --blyrics-font-family: "Satoshi", sans-serif;
+  --blyrics-font-size: 2.5rem;
+}
+
+/* Braccato measures the room its first line needs to reach the target scroll
+   position and writes it here, but its own lyrics.css only spends the bottom
+   half. Scoping to the tag outranks that rule whichever sheet lands first. */
+braccato-lyrics .blyrics-container {
+  padding-top: var(--blyrics-padding-top, 2rem);
 }
 
 /* Text selection */
