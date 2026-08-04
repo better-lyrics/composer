@@ -57,7 +57,7 @@
     "@types/react-dom": "^19.0.0",
     "@vercel/og": "^0.11.1",
     "@vitejs/plugin-react": "^4.3.0",
-    "@vitest/browser": "^4.1.8",
+    "@vitest/browser": "^4.1.9",
     "@vitest/browser-playwright": "^4.1.6",
     "@vitest/coverage-v8": "^4.1.6",
     "jscpd": "^4.2.3",
