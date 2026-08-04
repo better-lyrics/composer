@@ -96,8 +96,8 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     el.songDurationMs = durationSeconds * 1000;
   }, [durationSeconds]);
 
-  useRendererAudioSync(elementRef, (el, _audio, currentTimeSeconds) => {
-    el.currentTime = currentTimeSeconds * 1000;
+  useRendererAudioSync(elementRef, (el, audio) => {
+    el.currentTime = audio.currentTime * 1000;
   });
 
   return <div ref={containerRef} className="flex flex-col flex-1 min-h-0" />;
