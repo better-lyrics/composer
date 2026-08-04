@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -29,16 +29,16 @@ function useReconciledBuffer<Row, External>(
   ops: ReconciledBufferOps<Row, External>,
 ): ReconciledBuffer<Row> {
   const [rows, setRows] = useState<Row[]>(() => ops.seed(external));
-  const lastExternal = useRef(external);
+  const [lastExternal, setLastExternal] = useState(external);
 
-  if (lastExternal.current !== external && !ops.equal(lastExternal.current, external)) {
-    lastExternal.current = external;
+  if (lastExternal !== external && !ops.equal(lastExternal, external)) {
+    setLastExternal(external);
     setRows((previous) => ops.reconcile(previous, external));
   }
 
   const commit = (next: Row[]) => {
     const emitted = ops.emit(next);
-    lastExternal.current = emitted;
+    setLastExternal(emitted);
     setRows(next);
     onChange(emitted);
   };
