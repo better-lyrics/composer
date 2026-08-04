@@ -1,4 +1,3 @@
-import "@braccato/core/element";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
 import { useCallback, useEffect, useMemo, useRef } from "react";
@@ -10,6 +9,25 @@ import { useAudioStore } from "@/stores/audio";
 interface BraccatoRendererProps {
   ttmlString: string;
   durationSeconds: number;
+}
+
+// -- Constants -----------------------------------------------------------------
+
+const LOG_PREFIX = "[BraccatoRenderer]";
+
+// -- Element registration -----------------------------------------------------
+
+// Registering the tag evaluates `class ... extends HTMLElement`, which throws
+// during vite-react-ssg's server render. Deferring it to an effect keeps the tag
+// out of the server bundle; the element upgrades in place once the chunk lands,
+// and braccato reapplies every property written before that. A failure here
+// leaves an un-upgraded tag that renders nothing, so it must not go unreported.
+let registerPromise: Promise<unknown> | null = null;
+function ensureRegistered(): Promise<unknown> {
+  registerPromise ??= import("@braccato/core/element").catch((error: unknown) => {
+    console.error(LOG_PREFIX, "failed to register <braccato-lyrics>; preview will stay empty", error);
+  });
+  return registerPromise;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -36,6 +54,10 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, duratio
       el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
       elementRef.current = null;
     };
+  }, []);
+
+  useEffect(() => {
+    void ensureRegistered();
   }, []);
 
   useEffect(() => {
