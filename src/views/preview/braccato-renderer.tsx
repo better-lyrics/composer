@@ -98,8 +98,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   // No `source` is bound on purpose. A bound media element makes braccato own the
   // clock, and it only polls while playback runs, which would freeze the preview
   // whenever the user scrubs the timeline paused.
-  useRendererAudioSync(elementRef, (el, audio) => {
-    el.currentTime = audio.currentTime;
+  useRendererAudioSync(elementRef, (el, audio, currentTimeSeconds) => {
+    el.currentTime = currentTimeSeconds;
     el.playing = !audio.paused;
   });
 
