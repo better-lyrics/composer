@@ -1,7 +1,7 @@
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
-@import "@braccato/core/styles/variables.css";
+@import "@braccato/core/styles/variables.css" layer(braccato-defaults);
 @import "@braccato/core/styles/lyrics.css";
 @import "@braccato/core/styles/instrumental.css";
 
@@ -75,7 +75,9 @@ body {
 /* Braccato preview renderer.
    The colour knobs must sit on :root: variables.css derives
    --blyrics-lyric-{active,inactive}-color from these there, so a declaration
-   further down the tree is substituted too late to reach them. */
+   further down the tree is substituted too late to reach them. variables.css is
+   imported into a layer so these unlayered declarations outrank its own :root
+   defaults on the cascade rather than on which sheet the bundler emits first. */
 :root {
   --blyrics-text-color: var(--color-composer-text);
   --blyrics-inactive-opacity: 0.2;

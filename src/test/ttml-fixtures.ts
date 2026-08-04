@@ -11,8 +11,12 @@ import { generateTTML } from "@/utils/ttml";
  *
  * Windows: "first line here" 2-6s, "second line now" 12-18s, "third line ends"
  * 24-30s.
+ *
+ * `durationSeconds` becomes the document's `dur`, which is the only channel a
+ * song duration reaches a lyrics parser through. Leave it out and the trailing
+ * silence is unknown, so no outro instrumental can be derived.
  */
-function buildSyncedTtml(): string {
+function buildSyncedTtml(durationSeconds?: number): string {
   const lines = [
     createLine({
       id: "line-a",
@@ -43,7 +47,7 @@ function buildSyncedTtml(): string {
     }),
   ];
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word", duration: durationSeconds });
 }
 
 /**

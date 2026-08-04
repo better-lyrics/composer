@@ -8,7 +8,6 @@ import { useAudioStore } from "@/stores/audio";
 
 interface BraccatoRendererProps {
   ttmlString: string;
-  durationSeconds: number;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -42,13 +41,21 @@ function handleBraccatoLineClick(e: Event): void {
 
 // -- Component ----------------------------------------------------------------
 
-const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, durationSeconds }) => {
+const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
-  const lyrics = useMemo(() => TTMLParser.parse(ttmlString, durationSeconds * 1000), [ttmlString, durationSeconds]);
+  // The song duration reaches the parser through the document's own `dur`
+  // attribute; `TTMLParser.parse` ignores its second argument.
+  const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
+  const latestLyricsRef = useRef(lyrics);
+  latestLyricsRef.current = lyrics;
 
+  // Seeds the element as well as wiring the listener, so a node swapped in
+  // without a lyrics change still gets the song. The effect below only covers
+  // the other direction.
   const setElement = useCallback((el: BraccatoLyricsElement | null) => {
     elementRef.current = el;
     if (!el) return;
+    el.lyrics = latestLyricsRef.current;
     el.addEventListener("braccato:line-click", handleBraccatoLineClick);
     return () => {
       el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
