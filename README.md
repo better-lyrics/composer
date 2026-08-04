@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://composer.betterlyrics.org"><img src="https://img.shields.io/badge/Open-composer.betterlyrics.org-F50032?style=flat-square" alt="Open Composer" /></a>
-  <a href="https://www.w3.org/TR/2018/REC-ttml1-20181108/"><img src="https://img.shields.io/badge/TTML%201-W3C%20Compliant-4caf50?style=flat-square" alt="TTML 1 W3C Compliant" /></a>
+  <a href="https://www.w3.org/TR/2018/REC-ttml1-20181108/"><img src="https://img.shields.io/badge/TTML%201-W3C%20subset-4caf50?style=flat-square" alt="TTML 1 W3C subset" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL%203.0-2196f3?style=flat-square" alt="AGPL 3.0 License" /></a>
   <a href="https://betterlyrics.org"><img src="https://img.shields.io/badge/Built%20for-Better%20Lyrics-F50032?style=flat-square" alt="Built for Better Lyrics" /></a>
 </p>
@@ -39,7 +39,7 @@ Four-step workflow:
 
 ## Features
 
-- **W3C TTML 1 compliant** - Standard XML output, works in any TTML 1 parser
+- **W3C TTML 1 subset** - Standard XML output that reads in TTML 1 parsers
 - **Linked groups** - Group repeating sections (choruses, hooks). Edit one instance, every linked instance updates.
 - **Tap-to-sync** - Press Space in time with the music to stamp each word
 - **YouTube import** - Paste a video URL to pull the audio straight in, no manual download needed
@@ -56,7 +56,7 @@ Four-step workflow:
 
 ## Standards
 
-Composer emits **TTML 1** ([W3C Recommendation, Nov 2018](https://www.w3.org/TR/2018/REC-ttml1-20181108/)) compliant XML. Linked groups and per-instance metadata are exposed via foreign-namespace extensions the spec explicitly permits, so files round-trip through any TTML 1 parser.
+Composer emits a restricted subset of **TTML 1** ([W3C Recommendation, Nov 2018](https://www.w3.org/TR/2018/REC-ttml1-20181108/)). Word-span times are absolute and timestamps omit the hours field when it is zero, so the output is not strict TTML 1. Linked groups and per-instance metadata are exposed via foreign-namespace extensions the spec explicitly permits, which downstream tools can safely ignore.
 
 For the full breakdown, see **Help → TTML & standards** in-app.
 

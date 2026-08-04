@@ -6,7 +6,7 @@ const TtmlStandardsSection: React.FC = () => (
   <div className="space-y-5">
     <h4 className={HEADING}>What Composer outputs</h4>
     <p className={PROSE}>
-      Composer emits{" "}
+      Composer emits a restricted subset of{" "}
       <a
         href="https://www.w3.org/TR/2018/REC-ttml1-20181108/"
         target="_blank"
@@ -15,8 +15,8 @@ const TtmlStandardsSection: React.FC = () => (
       >
         TTML 1
       </a>{" "}
-      (W3C Recommendation, November 2018). The output is well-formed XML that any TTML 1 conformant parser can read,
-      including the standard structure: <span className={INLINE_CODE}>&lt;tt&gt;</span> root with the TTML namespace,{" "}
+      (W3C Recommendation, November 2018). The output is well-formed XML that most TTML 1 parsers can read, including
+      the standard structure: <span className={INLINE_CODE}>&lt;tt&gt;</span> root with the TTML namespace,{" "}
       <span className={INLINE_CODE}>&lt;head&gt;</span> with <span className={INLINE_CODE}>&lt;ttm:title&gt;</span> and{" "}
       <span className={INLINE_CODE}>&lt;ttm:agent&gt;</span> declarations, and{" "}
       <span className={INLINE_CODE}>&lt;body&gt;&lt;div&gt;&lt;p&gt;</span> for lines with{" "}
@@ -42,7 +42,7 @@ const TtmlStandardsSection: React.FC = () => (
       </a>{" "}
       of the spec. The spec explicitly permits "arbitrary namespace qualified elements that reside in any namespace
       other than those namespaces defined for use with this specification" and the same for attributes on TTML-defined
-      vocabulary. That's the W3C-sanctioned way to add application-specific data while keeping the document conformant.
+      vocabulary. That's the W3C-sanctioned way to add application-specific data without breaking other TTML tooling.
     </p>
     <p className={PROSE}>
       Composer's namespace URI is <span className={INLINE_CODE}>https://composer.betterlyrics.org/ttml</span>. Custom
@@ -55,7 +55,7 @@ const TtmlStandardsSection: React.FC = () => (
 
     <h4 className={HEADING}>Why this matters</h4>
     <p className={PROSE}>
-      You can hand a Composer file to any TTML 1 parser and it will work. Tools that don't recognize the{" "}
+      Most TTML 1 tooling can read a Composer file. Tools that don't recognize the{" "}
       <span className={INLINE_CODE}>composer:</span> namespace can safely skip the extensions: foreign attributes get
       pruned during validation (per{" "}
       <a
