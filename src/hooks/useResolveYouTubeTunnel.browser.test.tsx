@@ -187,7 +187,7 @@ describe("useResolveYouTubeTunnel: bridge happy path", () => {
 
     await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Rick Astley");
     const md = useProjectStore.getState().metadata;
-    expect(md.title).toBe("Rick Astley - Never Gonna Give You Up");
+    expect(md.title).toBe("Never Gonna Give You Up");
     expect(md.artists).toEqual(["Rick Astley"]);
     expect(md.album).toBe("Whenever You Need Somebody");
     expect(md.isrc).toBe("GBARL9300135");
@@ -250,7 +250,59 @@ describe("useResolveYouTubeTunnel: bridge happy path", () => {
 
     await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Tyler, The Creator");
     expect(useProjectStore.getState().metadata.artists).toEqual(["Tyler, The Creator"]);
-    expect(useProjectStore.getState().metadata.title).toContain("RUNNING OUT OF TIME");
+    expect(useProjectStore.getState().metadata.title).toBe("RUNNING OUT OF TIME");
+  });
+});
+
+// -- Artist-prefixed titles (#146) --------------------------------------------
+
+describe("useResolveYouTubeTunnel: bridge title is never artist-prefixed", () => {
+  it("regression: writes the bridge title verbatim rather than joining artist and title", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      titlePercentEncoded: encodeURIComponent("Bezos I"),
+      artistPercentEncoded: encodeURIComponent("Bo Burnham"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Bo Burnham");
+    const md = useProjectStore.getState().metadata;
+    expect(md.title).toBe("Bezos I");
+    expect(md.title).not.toContain("Bo Burnham");
+    expect(md.artists).toEqual(["Bo Burnham"]);
+  });
+
+  it("preserves a separator that genuinely belongs to the title", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      titlePercentEncoded: encodeURIComponent("Wildfires - Live at Glastonbury"),
+      artistPercentEncoded: encodeURIComponent("Sault"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Sault");
+    expect(useProjectStore.getState().metadata.title).toBe("Wildfires - Live at Glastonbury");
+  });
+
+  it("writes a non-Latin title verbatim", async () => {
+    bridge.audio.set("dQw4w9WgXcQ", {
+      buffer: asBytes("opus"),
+      mimeType: "audio/opus",
+      titlePercentEncoded: encodeURIComponent("春はゆく"),
+      artistPercentEncoded: encodeURIComponent("Aimer"),
+    });
+
+    enableBridgeAndSelectVideo("dQw4w9WgXcQ");
+    await render(withQueryClient(<HookHost />));
+
+    await waitFor(() => useProjectStore.getState().metadata.artists[0] === "Aimer");
+    expect(useProjectStore.getState().metadata.title).toBe("春はゆく");
   });
 });
 
