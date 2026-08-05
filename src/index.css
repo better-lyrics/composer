@@ -134,6 +134,11 @@ braccato-lyrics .blyrics-container {
   overflow-anchor: none;
 }
 
+@utility tap-highlight-none {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
 @utility snap-onset-line {
   width: 1px;
   background: repeating-linear-gradient(180deg, var(--color-composer-onset) 0 5px, transparent 5px 11px);
