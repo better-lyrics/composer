@@ -94,6 +94,25 @@ describe("SyncPanel · keyboard hold release", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
   });
 
+  it("does not let a keyboard press take over a hold the pointer started", async () => {
+    loadPlayingProject();
+    const screen = await render(<SyncPanel />);
+
+    firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown");
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(6);
+    pressHoldKey("keydown");
+    pressHoldKey("keyup");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(8);
+    firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerup");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+  });
+
   it("ignores a keyup that arrives after blur already closed the hold", async () => {
     loadPlayingProject();
     await render(<SyncPanel />);

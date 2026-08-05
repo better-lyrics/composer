@@ -342,7 +342,7 @@ const SyncPanel: React.FC = () => {
           break;
         case "sync.holdSync":
           e.preventDefault();
-          if (editMode) return;
+          if (editMode || isHolding) return;
           heldKeyCodeRef.current = e.code;
           beginHold();
           break;
