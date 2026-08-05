@@ -102,6 +102,23 @@ const ExportPanel: React.FC = () => {
     setIsEditing(false);
   }, []);
 
+  // Resolving a conflict rebases the edit onto the current output, which is what
+  // makes the notice go away. It has to be a deliberate action: letting an
+  // incidental keystroke do it would silently drop the regenerated changes.
+  const handleKeepEdits = useCallback(() => {
+    setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
+  }, [generatedTtml]);
+
+  const handleEditContent = useCallback(
+    (content: string) => {
+      setEditState((prev) => {
+        if (prev !== null && hasConflict) return { ...prev, content };
+        return { source: generatedTtml, content };
+      });
+    },
+    [generatedTtml, hasConflict],
+  );
+
   const projectFileInput = (
     <input
       ref={fileInputRef}
@@ -193,7 +210,7 @@ const ExportPanel: React.FC = () => {
 
       <MetadataPanel />
 
-      {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} />}
+      {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} onKeepEdits={handleKeepEdits} />}
 
       {/* Preview / Editor */}
       {isEditing ? (
@@ -201,7 +218,7 @@ const ExportPanel: React.FC = () => {
           value={displayContent}
           generatedTtml={generatedTtml}
           hasEdits={editedContent !== null}
-          onChange={(content) => setEditState({ source: generatedTtml, content })}
+          onChange={handleEditContent}
         />
       ) : (
         <Scroll className="flex-1 p-6">

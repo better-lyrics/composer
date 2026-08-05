@@ -113,6 +113,47 @@ describe("ExportPanel · edits across regeneration", () => {
     expect((textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
   });
 
+  it("regression: typing in the editor does not silently resolve a conflict", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
+    });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
+
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+    }));
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+
+    await textarea.fill(`${(textarea.element() as HTMLTextAreaElement).value} `);
+
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+  });
+
+  it("clears the conflict only when the user keeps their edits explicitly", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
+    });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
+
+    useProjectStore.setState((state) => ({
+      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
+    }));
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "Keep my edits" }).click();
+
+    await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
+    expect((textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
+  });
+
   it("surfaces the conflict notice in preview mode, not only while editing", async () => {
     useProjectStore.setState({
       lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
