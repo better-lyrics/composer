@@ -8,15 +8,14 @@ import { useState } from "react";
 interface TtmlEditorProps {
   value: string;
   generatedTtml: string;
-  hasEdits: boolean;
   onChange: (value: string) => void;
 }
 
 // -- Components ---------------------------------------------------------------
 
-const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, hasEdits, onChange }) => {
+const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange }) => {
   const [showDiff, setShowDiff] = useState(false);
-  const canDiff = hasEdits && value !== generatedTtml;
+  const canDiff = value !== generatedTtml;
   const viewingDiff = showDiff && canDiff;
 
   return (

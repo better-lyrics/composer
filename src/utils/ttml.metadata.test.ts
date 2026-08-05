@@ -38,3 +38,46 @@ describe("generateTTML metadata", () => {
     expect(bare).not.toContain("composer:meta");
   });
 });
+
+describe("generateTTML attribute escaping", () => {
+  function parse(xml: string): Document {
+    return new DOMParser().parseFromString(xml, "application/xml");
+  }
+
+  it("regression: a group label containing quotes stays well-formed", () => {
+    const xml = generateTTML({
+      metadata: { title: "t", artists: [], album: "", duration: 0 },
+      agents: [],
+      lines,
+      groups: [{ id: "g1", label: 'The "Big" Chorus', color: "#fff", templateVersion: 1 }],
+      granularity: "line",
+    });
+
+    expect(xml).toContain('label="The &quot;Big&quot; Chorus"');
+    expect(parse(xml).querySelector("parsererror")).toBeNull();
+  });
+
+  it("regression: an agent name and id containing quotes stay well-formed", () => {
+    const xml = generateTTML({
+      metadata: { title: "t", artists: [], album: "", duration: 0 },
+      agents: [{ id: 'v"1', type: "person", name: 'The "Lead"' }],
+      lines,
+      granularity: "line",
+    });
+
+    expect(xml).toContain('xml:id="v&quot;1"');
+    expect(parse(xml).querySelector("parsererror")).toBeNull();
+  });
+
+  it("regression: a language tag containing quotes stays well-formed", () => {
+    const xml = generateTTML({
+      metadata: { title: "t", artists: [], album: "", duration: 0, language: 'en"US' },
+      agents: [],
+      lines,
+      granularity: "line",
+    });
+
+    expect(xml).toContain('xml:lang="en&quot;US"');
+    expect(parse(xml).querySelector("parsererror")).toBeNull();
+  });
+});

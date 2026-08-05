@@ -18,14 +18,14 @@ function EditorHarness({ initialValue = "", ...rest }: HarnessProps) {
 
 describe("TtmlEditor", () => {
   it("reflects typed edits in the textarea", async () => {
-    const screen = await render(<EditorHarness initialValue="abc" generatedTtml="abc" hasEdits={false} />);
+    const screen = await render(<EditorHarness initialValue="abc" generatedTtml="abc" />);
     const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
     await textarea.fill("xyz");
     await expect.element(textarea).toHaveValue("xyz");
   });
 
   it("keeps the textarea outside the overflow-auto scroll container", async () => {
-    const screen = await render(<EditorHarness initialValue="x" generatedTtml="x" hasEdits={false} />);
+    const screen = await render(<EditorHarness initialValue="x" generatedTtml="x" />);
     const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
     expect((textarea.element() as HTMLTextAreaElement).closest(".overflow-auto")).toBeNull();
   });
@@ -33,7 +33,7 @@ describe("TtmlEditor", () => {
   describe("diff view", () => {
     it("toggles between the editor and a diff of edits vs the latest TTML", async () => {
       const screen = await render(
-        <EditorHarness initialValue={"line one\nLINE TWO EDITED"} generatedTtml={"line one\nline two"} hasEdits />,
+        <EditorHarness initialValue={"line one\nLINE TWO EDITED"} generatedTtml={"line one\nline two"} />,
       );
       await expect.element(screen.getByRole("textbox", { name: "Edit TTML content" })).toBeInTheDocument();
       await screen.getByRole("button", { name: "View diff" }).click();
@@ -44,7 +44,7 @@ describe("TtmlEditor", () => {
     });
 
     it("offers no diff toggle when there are no edits", async () => {
-      const screen = await render(<EditorHarness initialValue="same" generatedTtml="same" hasEdits={false} />);
+      const screen = await render(<EditorHarness initialValue="same" generatedTtml="same" />);
       expect(screen.container.querySelector("button")).toBeNull();
     });
   });

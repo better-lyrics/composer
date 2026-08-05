@@ -1,3 +1,4 @@
+import { reconcileKeyedRows } from "@/views/export/reconcile-keyed-rows";
 import { nanoid } from "nanoid";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -12,8 +13,11 @@ interface Row {
 const seedRows = (values: string[]): Row[] => values.map((value) => ({ id: nanoid(), value }));
 
 const reconcileRows = (previous: Row[], values: string[]): Row[] =>
-  values.map((value, index) =>
-    previous[index]?.value === value ? previous[index] : { id: previous[index]?.id ?? nanoid(), value },
+  reconcileKeyedRows(
+    previous,
+    values,
+    (row, value) => row.value === value,
+    (id, value) => ({ id, value }),
   );
 
 const sameStrings = (a: string[], b: string[]): boolean =>

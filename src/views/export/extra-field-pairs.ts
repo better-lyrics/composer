@@ -1,4 +1,5 @@
 import { RESERVED_META_KEYS } from "@/domain/project/metadata-ttml";
+import { reconcileKeyedRows } from "@/views/export/reconcile-keyed-rows";
 import { nanoid } from "nanoid";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -15,10 +16,11 @@ const seedPairs = (extra: Record<string, string>): Pair[] =>
   Object.entries(extra).map(([key, value]) => ({ id: nanoid(), key, value }));
 
 const reconcilePairs = (previous: Pair[], extra: Record<string, string>): Pair[] =>
-  Object.entries(extra).map(([key, value], index) =>
-    previous[index]?.key === key && previous[index]?.value === value
-      ? previous[index]
-      : { id: previous[index]?.id ?? nanoid(), key, value },
+  reconcileKeyedRows(
+    previous,
+    Object.entries(extra),
+    (row, [key, value]) => row.key === key && row.value === value,
+    (id, [key, value]) => ({ id, key, value }),
   );
 
 const sameRecord = (a: Record<string, string>, b: Record<string, string>): boolean => {

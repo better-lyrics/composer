@@ -214,12 +214,7 @@ const ExportPanel: React.FC = () => {
 
       {/* Preview / Editor */}
       {isEditing ? (
-        <TtmlEditor
-          value={displayContent}
-          generatedTtml={generatedTtml}
-          hasEdits={editedContent !== null}
-          onChange={handleEditContent}
-        />
+        <TtmlEditor value={displayContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
           <Highlight theme={themes.nightOwl} code={displayContent} language="xml">

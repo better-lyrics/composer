@@ -30,4 +30,23 @@ describe("normalizeIsrc", () => {
   it("uppercases a valid code", () => expect(normalizeIsrc("usqx91700001")).toBe("USQX91700001"));
   it("returns undefined for invalid", () => expect(normalizeIsrc("nope")).toBeUndefined());
   it("returns undefined for empty", () => expect(normalizeIsrc("")).toBeUndefined());
+
+  describe("display formatting", () => {
+    it("accepts the hyphenated form printed on releases", () => {
+      expect(normalizeIsrc("US-QX9-17-00001")).toBe("USQX91700001");
+    });
+    it("accepts a space-separated form", () => {
+      expect(normalizeIsrc("US QX9 17 00001")).toBe("USQX91700001");
+    });
+    it("accepts a lowercase hyphenated form", () => {
+      expect(isValidIsrc("us-qx9-17-00001")).toBe(true);
+    });
+    it("still rejects a hyphenated code of the wrong length", () => {
+      expect(normalizeIsrc("US-QX9-17-0001")).toBeUndefined();
+    });
+    it("does not treat separators as filler for missing characters", () => {
+      expect(normalizeIsrc("US-QX9-17-000-01")).toBe("USQX91700001");
+      expect(normalizeIsrc("-----------")).toBeUndefined();
+    });
+  });
 });
