@@ -164,7 +164,7 @@ describe("MetadataPanel", () => {
   });
 
   describe("edge cases", () => {
-    it("collapses duplicate extra keys to one store entry with the last value winning", async () => {
+    it("flags a duplicate extra key instead of silently dropping the row", async () => {
       seedMetadata();
       const screen = await render(<MetadataPanel />);
       await screen.getByRole("button", { name: "Metadata" }).click();
@@ -177,7 +177,30 @@ describe("MetadataPanel", () => {
       await screen.getByRole("textbox", { name: "Field 2 key" }).fill("spotifyId");
       await screen.getByRole("textbox", { name: "Field 2 value" }).fill("second");
 
-      await expect.poll(() => useProjectStore.getState().metadata.extra).toEqual({ spotifyId: "second" });
+      await expect.element(screen.getByText("Duplicate key", { exact: false })).toBeInTheDocument();
+      await expect.poll(() => useProjectStore.getState().metadata.extra).toEqual({ spotifyId: "first" });
+    });
+
+    it("clears the duplicate warning once the key is renamed", async () => {
+      seedMetadata();
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+
+      await screen.getByRole("button", { name: "Add field" }).click();
+      await screen.getByRole("button", { name: "Add field" }).click();
+
+      await screen.getByRole("textbox", { name: "Field 1 key" }).fill("producer");
+      await screen.getByRole("textbox", { name: "Field 1 value" }).fill("Rick");
+      await screen.getByRole("textbox", { name: "Field 2 key" }).fill("producer");
+      await screen.getByRole("textbox", { name: "Field 2 value" }).fill("Danger Mouse");
+      await expect.element(screen.getByText("Duplicate key", { exact: false })).toBeInTheDocument();
+
+      await screen.getByRole("textbox", { name: "Field 2 key" }).fill("coProducer");
+
+      await expect.poll(() => screen.container.textContent).not.toContain("Duplicate key");
+      await expect
+        .poll(() => useProjectStore.getState().metadata.extra)
+        .toEqual({ producer: "Rick", coProducer: "Danger Mouse" });
     });
   });
 });

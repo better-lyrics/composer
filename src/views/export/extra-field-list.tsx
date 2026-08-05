@@ -1,6 +1,7 @@
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
 import {
+  duplicateKeyIds,
   isReservedExtraKey,
   type Pair,
   pairsToRecord,
@@ -28,6 +29,8 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
     equal: sameRecord,
     emit: pairsToRecord,
   });
+
+  const duplicates = duplicateKeyIds(pairs);
 
   const handleEdit = (id: string, patch: Partial<Pair>) =>
     commit(pairs.map((pair) => (pair.id === id ? { ...pair, ...patch } : pair)));
@@ -68,6 +71,11 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
           {isReservedExtraKey(pair.key) && (
             <span className="text-xs text-composer-error-text select-text cursor-text">
               Reserved key ・ use the matching field above instead
+            </span>
+          )}
+          {duplicates.has(pair.id) && (
+            <span className="text-xs text-composer-error-text select-text cursor-text">
+              Duplicate key ・ rename it or the first field with this key wins
             </span>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  duplicateKeyIds,
   isReservedExtraKey,
   pairsToRecord,
   reconcilePairs,
@@ -29,12 +30,36 @@ describe("pairsToRecord", () => {
     expect(pairsToRecord([{ id: "1", key: "  ", value: "x" }])).toEqual({});
   });
 
-  it("collapses duplicate keys with the last value winning", () => {
+  it("keeps the first of two rows sharing a key, so the visible order decides", () => {
     const record = pairsToRecord([
       { id: "1", key: "k", value: "first" },
       { id: "2", key: "k", value: "second" },
     ]);
-    expect(record).toEqual({ k: "second" });
+    expect(record).toEqual({ k: "first" });
+  });
+
+  it("trims a key before storing it so padding cannot fork one field into two", () => {
+    const record = pairsToRecord([{ id: "1", key: "  producer  ", value: "Rick" }]);
+    expect(record).toEqual({ producer: "Rick" });
+  });
+
+  it("reports the losing row of a duplicate key", () => {
+    const duplicates = duplicateKeyIds([
+      { id: "1", key: "k", value: "first" },
+      { id: "2", key: " k ", value: "second" },
+      { id: "3", key: "other", value: "x" },
+    ]);
+    expect([...duplicates]).toEqual(["2"]);
+  });
+
+  it("reports no duplicates for blank or reserved keys", () => {
+    const duplicates = duplicateKeyIds([
+      { id: "1", key: "", value: "a" },
+      { id: "2", key: "", value: "b" },
+      { id: "3", key: "artists", value: "c" },
+      { id: "4", key: "artists", value: "d" },
+    ]);
+    expect([...duplicates]).toEqual([]);
   });
 
   it("keeps a blank value under a real key", () => {

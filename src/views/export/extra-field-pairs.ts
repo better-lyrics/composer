@@ -28,15 +28,36 @@ const sameRecord = (a: Record<string, string>, b: Record<string, string>): boole
 
 const isReservedExtraKey = (key: string): boolean => RESERVED_META_KEYS.has(key.trim());
 
+// `extra` is keyed by name, so two rows sharing a key can only ever store one
+// value. The row that loses is reported rather than silently dropped.
+const duplicateKeyIds = (pairs: Pair[]): ReadonlySet<string> => {
+  const seen = new Map<string, string>();
+  const duplicates = new Set<string>();
+  for (const { id, key } of pairs) {
+    const normalized = key.trim();
+    if (normalized === "" || isReservedExtraKey(normalized)) continue;
+    const firstId = seen.get(normalized);
+    if (firstId === undefined) {
+      seen.set(normalized, id);
+      continue;
+    }
+    duplicates.add(id);
+  }
+  return duplicates;
+};
+
 const pairsToRecord = (pairs: Pair[]): Record<string, string> => {
   const record: Record<string, string> = {};
-  for (const { key, value } of pairs) {
-    if (key.trim() !== "" && !isReservedExtraKey(key)) record[key] = value;
+  const duplicates = duplicateKeyIds(pairs);
+  for (const { id, key, value } of pairs) {
+    const normalized = key.trim();
+    if (normalized === "" || isReservedExtraKey(normalized) || duplicates.has(id)) continue;
+    record[normalized] = value;
   }
   return record;
 };
 
 // -- Exports ------------------------------------------------------------------
 
-export { seedPairs, reconcilePairs, sameRecord, pairsToRecord, isReservedExtraKey };
+export { seedPairs, reconcilePairs, sameRecord, pairsToRecord, isReservedExtraKey, duplicateKeyIds };
 export type { Pair };
