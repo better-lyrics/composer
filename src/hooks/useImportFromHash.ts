@@ -22,6 +22,7 @@ function isValidPayload(value: unknown): value is ImportPayload {
   if (!value || typeof value !== "object") return false;
   const payload = value as Record<string, unknown>;
   return (
+    payload.metadata !== null &&
     typeof payload.metadata === "object" &&
     Array.isArray(payload.agents) &&
     Array.isArray(payload.lines) &&
@@ -73,9 +74,13 @@ function useImportFromHash(): void {
           }
         }
 
+        // Everything the import needs is built before the project is cleared, so
+        // a malformed payload can never leave the user with an emptied project.
+        const metadata = normalizeLoadedMetadata(payload.metadata);
+
         const state = useProjectStore.getState();
         state.reset();
-        state.setMetadata(normalizeLoadedMetadata(payload.metadata));
+        state.setMetadata(metadata);
         state.setLines(payload.lines);
         state.setGranularity(payload.granularity);
         for (const agent of payload.agents) {

@@ -35,8 +35,28 @@ describe("normalizeLoadedMetadata", () => {
     it("drops a whitespace-only legacy artist to an empty array", () => {
       expect(normalizeLoadedMetadata({ artist: "   " }).artists).toEqual([]);
     });
+    it("regression: does not throw on a record with no metadata", () => {
+      expect(normalizeLoadedMetadata(undefined)).toMatchObject({ title: "", artists: [], album: "", duration: 0 });
+      expect(normalizeLoadedMetadata(null)).toMatchObject({ title: "", artists: [], album: "", duration: 0 });
+    });
   });
   describe("invariants", () => {
+    it("spells out every optional key so a spread clears stale values", () => {
+      const stale = normalizeLoadedMetadata({
+        artists: ["Old"],
+        isrc: "USQX91700001",
+        songwriters: ["W"],
+        extra: { mood: "sad" },
+        language: "ja",
+      });
+      const loaded = normalizeLoadedMetadata({ title: "New", artists: ["New"], album: "", duration: 0 });
+      const merged = { ...stale, ...loaded };
+      expect(merged.isrc).toBeUndefined();
+      expect(merged.songwriters).toBeUndefined();
+      expect(merged.extra).toBeUndefined();
+      expect(merged.language).toBeUndefined();
+      expect(merged.artists).toEqual(["New"]);
+    });
     it("prefers artists over a stale legacy artist when both are present", () => {
       const out = normalizeLoadedMetadata({ artist: "Legacy", artists: ["New"] });
       expect(out.artists).toEqual(["New"]);

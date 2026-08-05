@@ -157,4 +157,17 @@ describe("usePersistence + useImportFromHash: hash overrides persistence", () =>
 
     expect(useProjectStore.getState().granularity).toBe("word");
   });
+
+  it("regression: a payload with null metadata is rejected and the saved project survives", async () => {
+    allowConsole(/Invalid import payload structure/);
+    await seedProject(savedSnapshot());
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload({ ...importedPayload(), metadata: null }));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    expect(useProjectStore.getState().metadata.title).toBe(SAVED_TITLE);
+    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([SAVED_LINE.text]);
+  });
 });

@@ -11,6 +11,7 @@ import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
+const LOG_PREFIX = "[Composer]";
 const IMPORT_PARAM_NAMES = ["title", "artist", "album", "duration", "isrc"] as const;
 
 // -- Helpers ------------------------------------------------------------------
@@ -84,7 +85,14 @@ function useImportFromQuery(): void {
       await getPersistenceSettled();
       if (cancelled) return;
 
-      if (await isProjectNonEmpty()) {
+      // Only the metadata fields are at stake here, so an unreadable saved
+      // project is treated as nothing to overwrite rather than blocking the link.
+      const hasProjectToOverwrite = await isProjectNonEmpty().catch((error) => {
+        console.warn(`${LOG_PREFIX} could not read the saved project`, error);
+        return false;
+      });
+
+      if (hasProjectToOverwrite) {
         const accepted = await useConfirmStore.getState().open({
           title: "Replace song metadata?",
           description: "This link carries song details that will overwrite the metadata on your current project.",

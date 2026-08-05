@@ -9,14 +9,25 @@ interface StoredMetadata extends Partial<Omit<ProjectMetadata, "artists">> {
 
 // -- Normalizer ---------------------------------------------------------------
 
-function normalizeLoadedMetadata(raw: StoredMetadata): ProjectMetadata {
-  const artists = raw.artists ?? (raw.artist?.trim() ? [raw.artist] : []);
-  const { artist: _legacy, ...rest } = raw;
+// Every optional key is spelled out so that spreading the result over existing
+// metadata clears the fields the loaded record omits. Returning a partial object
+// would let the previous project's ISRC, songwriters or extra fields survive an
+// import and end up in the newly exported TTML.
+function normalizeLoadedMetadata(raw: StoredMetadata | null | undefined): ProjectMetadata {
+  const source = raw ?? {};
+  const artists = source.artists ?? (source.artist?.trim() ? [source.artist] : []);
+  const { artist: _legacy, ...rest } = source;
   return {
-    title: raw.title ?? "",
-    album: raw.album ?? "",
-    duration: raw.duration ?? 0,
+    isrc: undefined,
+    songwriters: undefined,
+    extra: undefined,
+    language: undefined,
+    thumbnailDataUrl: undefined,
+    thumbnailForVideoId: undefined,
     ...rest,
+    title: source.title ?? "",
+    album: source.album ?? "",
+    duration: source.duration ?? 0,
     artists,
   };
 }
