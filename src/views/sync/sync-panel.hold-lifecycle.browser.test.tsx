@@ -62,3 +62,51 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
       .toBe("false");
   });
 });
+
+describe("SyncPanel · keyboard hold release", () => {
+  function pressHoldKey(type: "keydown" | "keyup"): void {
+    window.dispatchEvent(new KeyboardEvent(type, { key: "f", code: "KeyF", bubbles: true }));
+  }
+
+  it("closes the held word on keyup", async () => {
+    loadPlayingProject();
+    await render(<SyncPanel />);
+
+    pressHoldKey("keydown");
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(7);
+    pressHoldKey("keyup");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+  });
+
+  it("closes the held word when the window loses focus", async () => {
+    loadPlayingProject();
+    await render(<SyncPanel />);
+
+    pressHoldKey("keydown");
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(7);
+    window.dispatchEvent(new Event("blur"));
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+  });
+
+  it("ignores a keyup that arrives after blur already closed the hold", async () => {
+    loadPlayingProject();
+    await render(<SyncPanel />);
+
+    pressHoldKey("keydown");
+    setCurrentTime(7);
+    window.dispatchEvent(new Event("blur"));
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+
+    setCurrentTime(9);
+    pressHoldKey("keyup");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+  });
+});
