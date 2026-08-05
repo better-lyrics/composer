@@ -57,6 +57,10 @@ function getEffectiveKeysArray(id: string): string[] {
   return keys;
 }
 
+function getShortcutDescription(id: string): string {
+  return getShortcutById(id)?.description ?? id;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { useShortcutBindingsStore, getEffectiveBinding, getEffectiveKeysArray };
+export { useShortcutBindingsStore, getEffectiveBinding, getEffectiveKeysArray, getShortcutDescription };

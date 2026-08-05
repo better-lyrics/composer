@@ -2,7 +2,7 @@ import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -76,6 +76,7 @@ const SyncPanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
+  const holdPointerIdRef = useRef<number | null>(null);
 
   const linesRef = useRef(lines);
   linesRef.current = lines;
@@ -260,6 +261,77 @@ const SyncPanel: React.FC = () => {
     return currentLine.words[currentLine.words.length - 1]?.begin;
   }, [granularity, currentLine?.words, prevLine?.words, prevLine?.begin]);
 
+  const performTap = useCallback(() => {
+    if (editMode) return;
+    if (isHolding && isPlaying) {
+      handleHoldTap();
+    } else if (isPlaying) {
+      if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
+      handleTap();
+    } else if (lines.length > 0) {
+      handleStartSync();
+    }
+  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleHoldTap, handleTap, handleStartSync]);
+
+  const beginHold = useCallback(() => {
+    if (editMode || isHolding) return;
+    if (!syncState.isActive && lines.length > 0) {
+      handleStartSync();
+      handleHoldStart();
+      setIsHolding(true);
+    } else if (isPlaying) {
+      handleHoldStart();
+      setIsHolding(true);
+    }
+  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart]);
+
+  const endHold = useCallback(() => {
+    if (!isHolding) return;
+    handleHoldEnd();
+    setIsHolding(false);
+  }, [isHolding, handleHoldEnd]);
+
+  const handleTapPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      performTap();
+    },
+    [performTap],
+  );
+
+  // Only the pointer that opened the hold may close it, otherwise a second
+  // finger brushing the circle would end the first finger's word early.
+  const handleHoldPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      if (isHolding) return;
+      beginHold();
+      holdPointerIdRef.current = e.pointerId;
+    },
+    [isHolding, beginHold],
+  );
+
+  const handleHoldPointerRelease = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (e.pointerId !== holdPointerIdRef.current) return;
+      holdPointerIdRef.current = null;
+      endHold();
+    },
+    [endHold],
+  );
+
+  const showGestureCircles = !isComplete && !editMode && isPlaying;
+
+  // The release handlers live on the hold circle, so a hold outliving that
+  // element (song ends, media-session pause, sync completes) would never close
+  // its word and would leave isHolding stuck true.
+  useEffect(() => {
+    if (!showGestureCircles && isHolding) {
+      holdPointerIdRef.current = null;
+      endHold();
+    }
+  }, [showGestureCircles, isHolding, endHold]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
@@ -283,28 +355,13 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
-          if (editMode) return;
-          if (isHolding && isPlaying) {
-            handleHoldTap();
-          } else if (isPlaying) {
-            if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
-            handleTap();
-          } else if (lines.length > 0) {
-            handleStartSync();
-          }
+          performTap();
           break;
         case "sync.holdSync":
           e.preventDefault();
-          if (editMode) return;
+          if (editMode || isHolding) return;
           heldKeyCodeRef.current = e.code;
-          if (!syncState.isActive && lines.length > 0) {
-            handleStartSync();
-            handleHoldStart();
-            setIsHolding(true);
-          } else if (isPlaying) {
-            handleHoldStart();
-            setIsHolding(true);
-          }
+          beginHold();
           break;
         case "sync.nudgeLeft":
           e.preventDefault();
@@ -324,16 +381,14 @@ const SyncPanel: React.FC = () => {
       if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endHold();
       }
     };
 
     const handleBlur = () => {
       if (isHolding) {
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endHold();
       }
     };
 
@@ -345,22 +400,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [
-    activeTab,
-    syncState.isActive,
-    lines.length,
-    handleStartSync,
-    handleTap,
-    handleHoldStart,
-    handleHoldEnd,
-    handleHoldTap,
-    isPlaying,
-    undo,
-    redo,
-    handleNudgeLastSynced,
-    editMode,
-    isHolding,
-  ]);
+  }, [activeTab, performTap, beginHold, endHold, undo, redo, handleNudgeLastSynced, editMode, isHolding]);
 
   const showScrollableView = !isPlaying || editMode;
 
@@ -542,16 +582,24 @@ const SyncPanel: React.FC = () => {
             </div>
           )}
 
-          {!isComplete && !editMode && isPlaying && (
+          {showGestureCircles && (
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
               <div className="flex items-center gap-2">
-                <m.div
+                <m.button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={getShortcutDescription("sync.holdSync")}
+                  aria-pressed={isHolding}
+                  onPointerDown={handleHoldPointerDown}
+                  onPointerUp={handleHoldPointerRelease}
+                  onPointerCancel={handleHoldPointerRelease}
+                  onPointerLeave={handleHoldPointerRelease}
                   variants={syncPulseVariants}
                   initial={false}
                   animate={isHolding ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className={`flex items-center justify-center border-2 rounded-full size-14 ${
+                  className={`flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none ${
                     isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
                   }`}
                 >
@@ -560,20 +608,24 @@ const SyncPanel: React.FC = () => {
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </m.div>
-                <m.div
+                </m.button>
+                <m.button
+                  type="button"
+                  tabIndex={-1}
+                  aria-label={getShortcutDescription("sync.tap")}
+                  onPointerDown={handleTapPointerDown}
                   variants={syncPulseVariants}
                   initial={false}
                   animate={showPulse ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className="flex items-center justify-center border-2 rounded-full size-14 bg-composer-bg-elevated"
+                  className="flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none bg-composer-bg-elevated"
                 >
                   <span className="text-xs font-medium text-composer-text-muted">
                     {getEffectiveKeysArray("sync.tap")
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </m.div>
+                </m.button>
               </div>
             </div>
           )}
