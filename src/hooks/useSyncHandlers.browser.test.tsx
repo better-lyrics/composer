@@ -695,6 +695,48 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     expect(playingCalls).not.toContain(true);
   });
 
+  it("regression: re-recording a jumped-to line does not stretch the line before it (issue #132)", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: "first line",
+        words: [createWord({ text: "first ", begin: 0, end: 0.5 }), createWord({ text: "line", begin: 0.5, end: 1 })],
+      }),
+      createLine({
+        id: "l1",
+        text: "second line",
+        words: [createWord({ text: "second ", begin: 8, end: 8.5 }), createWord({ text: "line", begin: 8.5, end: 9 })],
+      }),
+    ]);
+    const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 7 });
+
+    await act(() => result.current.handleJumpToWord(1, 0));
+    await rerender({ syncState: getSyncState(), currentTime: 7 });
+    await act(() => result.current.handleTap());
+
+    const lines = useProjectStore.getState().lines;
+    expect(lines[1].words?.[0].begin).toBe(7);
+    expect(lines[0].words?.[1].end).toBe(1);
+  });
+
+  it("still closes the previous line when the cursor advanced there normally", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: "one",
+        words: [createWord({ text: "one", begin: 0, end: 0.5 })],
+      }),
+      createLine({ id: "l1", text: "two" }),
+    ]);
+    const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 0 });
+
+    await act(() => result.current.handleTap());
+    await rerender({ syncState: getSyncState(), currentTime: 3 });
+    await act(() => result.current.handleTap());
+
+    expect(useProjectStore.getState().lines[0].words?.[0].end).toBe(3);
+  });
+
   it("leaves playback alone in edit mode, where a click is a scrub", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
     const { result, act, playingCalls } = await mountSyncHandlers({ editMode: true });

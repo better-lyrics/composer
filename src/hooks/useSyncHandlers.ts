@@ -79,7 +79,7 @@ function useSyncHandlers({
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
-    if (wordIndex === 0 && prevLine?.words?.length) {
+    if (wordIndex === 0 && !syncState.jumpedToPosition && prevLine?.words?.length) {
       const prevWords = [...prevLine.words];
       prevWords[prevWords.length - 1] = {
         ...prevWords[prevWords.length - 1],
@@ -101,6 +101,7 @@ function useSyncHandlers({
     prevLine,
     setShowPulse,
     setSyncState,
+    syncState.jumpedToPosition,
   ]);
 
   const handleTapLine = useCallback(() => {
@@ -109,7 +110,7 @@ function useSyncHandlers({
     const line = lines[lineIndex];
     if (!line) return;
 
-    if (prevLine?.begin !== undefined) {
+    if (prevLine?.begin !== undefined && !syncState.jumpedToPosition) {
       updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
@@ -120,6 +121,7 @@ function useSyncHandlers({
     setSyncState((prev) => ({
       ...prev,
       position: { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 },
+      jumpedToPosition: false,
     }));
   }, [
     lines,
@@ -131,6 +133,7 @@ function useSyncHandlers({
     prevLine,
     setShowPulse,
     setSyncState,
+    syncState.jumpedToPosition,
   ]);
 
   const handleHoldStart = useCallback(() => {
@@ -287,6 +290,7 @@ function useSyncHandlers({
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
+        jumpedToPosition: true,
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
@@ -305,6 +309,7 @@ function useSyncHandlers({
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
+        jumpedToPosition: true,
       }));
       seekForRedo(word.begin);
     },

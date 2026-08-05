@@ -17,6 +17,11 @@ interface SyncPosition {
 interface SyncState {
   position: SyncPosition;
   isActive: boolean;
+  // True when the cursor was placed by a jump rather than by advancing through
+  // the song. Tapping the first word of a line closes the previous line so the
+  // two meet, which is right in a forward pass but stretches an already-correct
+  // line when the user jumped back to re-record this one.
+  jumpedToPosition?: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
