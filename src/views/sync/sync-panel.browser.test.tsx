@@ -6,7 +6,7 @@ import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
-import { firePointer, loadPlayingProject, setCurrentTime } from "@/test/sync-gesture-helpers";
+import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -219,14 +219,36 @@ describe("SyncPanel · touch sync", () => {
   });
 
   describe("edge cases", () => {
-    it("unmounts the circles in edit mode so presses cannot write timing", async () => {
+    it("unmounts both circles in edit mode", async () => {
       loadPlayingProject();
       const screen = await render(<SyncPanel />);
       await screen.getByRole("button", { name: "Edit" }).click();
 
       await expect.poll(() => screen.getByRole("button", { name: "Tap to sync" }).query()).toBe(null);
       await expect.poll(() => screen.getByRole("button", { name: "Hold to sync" }).query()).toBe(null);
-      expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    });
+
+    it("writes no timing when a tap reaches the panel while editing during playback", async () => {
+      loadPlayingProject();
+      const screen = await render(<SyncPanel />);
+      await screen.getByRole("button", { name: "Edit" }).click();
+      await expect.poll(() => screen.getByRole("button", { name: "Tap to sync" }).query()).toBe(null);
+
+      // Entering edit mode pauses, but the transport can be started again.
+      setIsPlaying(true);
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true }));
+
+      await expect.poll(() => useProjectStore.getState().lines[0].words).toBeUndefined();
+    });
+
+    it("prevents the default press action on both circles so the press cannot steal focus", async () => {
+      loadPlayingProject();
+      const screen = await render(<SyncPanel />);
+
+      for (const name of ["Hold to sync", "Tap to sync"]) {
+        const pressed = firePointer(screen.getByRole("button", { name }).element(), "pointerdown");
+        expect(pressed.defaultPrevented).toBe(true);
+      }
     });
 
     it("regression: the keyboard tap path still commits after the pointer refactor", async () => {
