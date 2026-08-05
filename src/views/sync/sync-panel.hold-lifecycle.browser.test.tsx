@@ -63,6 +63,63 @@ describe("SyncPanel · hold drained when the circles unmount", () => {
   });
 });
 
+describe("SyncPanel · hold pointer ownership", () => {
+  it("ignores a release from a pointer that did not start the hold", async () => {
+    loadPlayingProject();
+    const screen = await render(<SyncPanel />);
+
+    const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
+    firePointer(holdCircle.element(), "pointerdown", 1);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(7);
+    firePointer(holdCircle.element(), "pointerup", 2);
+
+    await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("true");
+    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(5);
+
+    setCurrentTime(8);
+    firePointer(holdCircle.element(), "pointerup", 1);
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(8);
+  });
+
+  it("lets a second finger drive the tap circle during a hold, the two-finger gesture", async () => {
+    loadPlayingProject();
+    const screen = await render(<SyncPanel />);
+
+    firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown", 1);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
+
+    setCurrentTime(7);
+    firePointer(screen.getByRole("button", { name: "Tap to sync" }).element(), "pointerdown", 2);
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
+    expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+  });
+
+  it("releases a hold started after an earlier hold was drained by an unmount", async () => {
+    loadPlayingProject();
+    const screen = await render(<SyncPanel />);
+
+    firePointer(screen.getByRole("button", { name: "Hold to sync" }).element(), "pointerdown", 3);
+    setCurrentTime(6);
+    setIsPlaying(false);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[0]?.end).toBe(6);
+
+    setIsPlaying(true);
+    setCurrentTime(7);
+    const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
+    firePointer(holdCircle.element(), "pointerdown", 9);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.begin).toBe(7);
+
+    setCurrentTime(9);
+    firePointer(holdCircle.element(), "pointerup", 9);
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.[1]?.end).toBe(9);
+  });
+});
+
 describe("SyncPanel · keyboard hold release", () => {
   function pressHoldKey(type: "keydown" | "keyup"): void {
     window.dispatchEvent(new KeyboardEvent(type, { key: "f", code: "KeyF", bubbles: true }));

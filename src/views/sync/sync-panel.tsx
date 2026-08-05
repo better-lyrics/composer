@@ -76,6 +76,7 @@ const SyncPanel: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
+  const holdPointerIdRef = useRef<number | null>(null);
 
   const linesRef = useRef(lines);
   linesRef.current = lines;
@@ -298,12 +299,25 @@ const SyncPanel: React.FC = () => {
     [performTap],
   );
 
+  // Only the pointer that opened the hold may close it, otherwise a second
+  // finger brushing the circle would end the first finger's word early.
   const handleHoldPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault();
+      if (isHolding) return;
       beginHold();
+      holdPointerIdRef.current = e.pointerId;
     },
-    [beginHold],
+    [isHolding, beginHold],
+  );
+
+  const handleHoldPointerRelease = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      if (e.pointerId !== holdPointerIdRef.current) return;
+      holdPointerIdRef.current = null;
+      endHold();
+    },
+    [endHold],
   );
 
   const showGestureCircles = !isComplete && !editMode && isPlaying;
@@ -312,7 +326,10 @@ const SyncPanel: React.FC = () => {
   // element (song ends, media-session pause, sync completes) would never close
   // its word and would leave isHolding stuck true.
   useEffect(() => {
-    if (!showGestureCircles && isHolding) endHold();
+    if (!showGestureCircles && isHolding) {
+      holdPointerIdRef.current = null;
+      endHold();
+    }
   }, [showGestureCircles, isHolding, endHold]);
 
   useEffect(() => {
@@ -575,9 +592,9 @@ const SyncPanel: React.FC = () => {
                   aria-label={getShortcutDescription("sync.holdSync")}
                   aria-pressed={isHolding}
                   onPointerDown={handleHoldPointerDown}
-                  onPointerUp={endHold}
-                  onPointerCancel={endHold}
-                  onPointerLeave={endHold}
+                  onPointerUp={handleHoldPointerRelease}
+                  onPointerCancel={handleHoldPointerRelease}
+                  onPointerLeave={handleHoldPointerRelease}
                   variants={syncPulseVariants}
                   initial={false}
                   animate={isHolding ? "pulse" : "idle"}
