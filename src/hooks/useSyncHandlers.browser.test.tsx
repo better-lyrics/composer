@@ -694,6 +694,16 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     expect(playingCalls).toContain(false);
     expect(playingCalls).not.toContain(true);
   });
+
+  it("leaves playback alone in edit mode, where a click is a scrub", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, playingCalls } = await mountSyncHandlers({ editMode: true });
+
+    await act(() => result.current.handleJumpToWord(1, 1));
+
+    expect(playingCalls).toHaveLength(0);
+    expect(useAudioStore.getState().currentTime).toBe(3.5);
+  });
 });
 
 // -- Background words ---------------------------------------------------------

@@ -266,13 +266,18 @@ function useSyncHandlers({
     setIsPlaying(true);
   }, [lines, syncState.position, setIsPlaying, setSyncState]);
 
-  // Re-recording seeks back and waits for the user to start playback, so a jump
-  // never leaves the transport running underneath them.
+  // Re-recording seeks back and waits for the user to start playback. Edit mode
+  // is the exception: there a click is a scrub for auditioning timings, so
+  // playback is left alone.
   const seekForRedo = useCallback(
     (begin: number) => {
+      if (editMode) {
+        seekTo(begin);
+        return;
+      }
       setIsPlaying(false);
       const preroll = useSettingsStore.getState().redoPreroll;
-      seekTo(editMode ? begin : Math.max(0, begin - preroll));
+      seekTo(Math.max(0, begin - preroll));
     },
     [editMode, seekTo, setIsPlaying],
   );
