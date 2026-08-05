@@ -306,6 +306,15 @@ const SyncPanel: React.FC = () => {
     [beginHold],
   );
 
+  const showGestureCircles = !isComplete && !editMode && isPlaying;
+
+  // The release handlers live on the hold circle, so a hold outliving that
+  // element (song ends, media-session pause, sync completes) would never close
+  // its word and would leave isHolding stuck true.
+  useEffect(() => {
+    if (!showGestureCircles && isHolding) endHold();
+  }, [showGestureCircles, isHolding, endHold]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
@@ -556,7 +565,7 @@ const SyncPanel: React.FC = () => {
             </div>
           )}
 
-          {!isComplete && !editMode && isPlaying && (
+          {showGestureCircles && (
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
               <div className="flex items-center gap-2">
