@@ -265,7 +265,15 @@ function useSyncHandlers({
     const { lineIndex: cursorLine, wordIndex: cursorWord } = syncState.position;
     const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
     const startWord = startLine === cursorLine ? cursorWord : 0;
-    setSyncState({ position: { lineIndex: startLine, wordIndex: startWord }, isActive: true });
+    // Pressing play is how a re-record actually starts, so it has to carry the
+    // jump forward. Only a cursor that had to be relocated counts as a fresh
+    // forward pass.
+    setSyncState((prev) => ({
+      ...prev,
+      position: { lineIndex: startLine, wordIndex: startWord },
+      isActive: true,
+      jumpedToPosition: startLine === cursorLine ? prev.jumpedToPosition : false,
+    }));
     setIsPlaying(true);
   }, [lines, syncState.position, setIsPlaying, setSyncState]);
 
