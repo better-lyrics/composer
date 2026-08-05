@@ -260,6 +260,36 @@ const SyncPanel: React.FC = () => {
     return currentLine.words[currentLine.words.length - 1]?.begin;
   }, [granularity, currentLine?.words, prevLine?.words, prevLine?.begin]);
 
+  const performTap = useCallback(() => {
+    if (editMode) return;
+    if (isHolding && isPlaying) {
+      handleHoldTap();
+    } else if (isPlaying) {
+      if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
+      handleTap();
+    } else if (lines.length > 0) {
+      handleStartSync();
+    }
+  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleHoldTap, handleTap, handleStartSync]);
+
+  const beginHold = useCallback(() => {
+    if (editMode || isHolding) return;
+    if (!syncState.isActive && lines.length > 0) {
+      handleStartSync();
+      handleHoldStart();
+      setIsHolding(true);
+    } else if (isPlaying) {
+      handleHoldStart();
+      setIsHolding(true);
+    }
+  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart]);
+
+  const endHold = useCallback(() => {
+    if (!isHolding) return;
+    handleHoldEnd();
+    setIsHolding(false);
+  }, [isHolding, handleHoldEnd]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
@@ -283,28 +313,13 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
-          if (editMode) return;
-          if (isHolding && isPlaying) {
-            handleHoldTap();
-          } else if (isPlaying) {
-            if (!syncState.isActive) setSyncState((prev) => ({ ...prev, isActive: true }));
-            handleTap();
-          } else if (lines.length > 0) {
-            handleStartSync();
-          }
+          performTap();
           break;
         case "sync.holdSync":
           e.preventDefault();
           if (editMode) return;
           heldKeyCodeRef.current = e.code;
-          if (!syncState.isActive && lines.length > 0) {
-            handleStartSync();
-            handleHoldStart();
-            setIsHolding(true);
-          } else if (isPlaying) {
-            handleHoldStart();
-            setIsHolding(true);
-          }
+          beginHold();
           break;
         case "sync.nudgeLeft":
           e.preventDefault();
@@ -324,16 +339,14 @@ const SyncPanel: React.FC = () => {
       if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endHold();
       }
     };
 
     const handleBlur = () => {
       if (isHolding) {
         heldKeyCodeRef.current = null;
-        handleHoldEnd();
-        setIsHolding(false);
+        endHold();
       }
     };
 
@@ -345,22 +358,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [
-    activeTab,
-    syncState.isActive,
-    lines.length,
-    handleStartSync,
-    handleTap,
-    handleHoldStart,
-    handleHoldEnd,
-    handleHoldTap,
-    isPlaying,
-    undo,
-    redo,
-    handleNudgeLastSynced,
-    editMode,
-    isHolding,
-  ]);
+  }, [activeTab, performTap, beginHold, endHold, undo, redo, handleNudgeLastSynced, editMode, isHolding]);
 
   const showScrollableView = !isPlaying || editMode;
 
