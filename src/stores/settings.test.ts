@@ -277,3 +277,41 @@ describe("timeline store reads header-toggle defaults at init", () => {
     expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().defaultRollingEdit);
   });
 });
+
+describe("re-record pre-roll setting", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to 1.5 seconds", () => {
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("can be changed via set()", () => {
+    useSettingsStore.getState().set("redoPreroll", 0.5);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0.5);
+  });
+
+  it("allows zero for an exact-begin seek", () => {
+    useSettingsStore.getState().set("redoPreroll", 0);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0);
+  });
+
+  it("resetToDefaults restores the default pre-roll", () => {
+    useSettingsStore.getState().set("redoPreroll", 3);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("migration backfills a missing pre-roll to the default", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(1.5);
+  });
+
+  it("migration preserves an explicitly set pre-roll", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ redoPreroll: 0.25 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(0.25);
+  });
+});

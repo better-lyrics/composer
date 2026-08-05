@@ -3,6 +3,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { fromComposerMeta } from "@/domain/project/metadata-ttml";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -47,11 +48,25 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const ttmTitleEl = doc.getElementsByTagName("ttm:title")[0];
   if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
+  const metaEls = Array.from(
+    new Set(
+      Array.from(doc.getElementsByTagName("composer:meta")).concat(
+        COMPOSER_NAMESPACES.flatMap((ns) => Array.from(doc.getElementsByTagNameNS(ns, "meta"))),
+      ),
+    ),
+  );
+  Object.assign(
+    metadata,
+    fromComposerMeta(
+      metaEls.map((el) => ({ key: el.getAttribute("key") ?? "", value: el.getAttribute("value") ?? "" })),
+    ),
+  );
+
   const artistEl = doc.querySelector('[type="artist"]');
-  if (artistEl?.textContent) metadata.artist = artistEl.textContent;
+  if (!metadata.artists && artistEl?.textContent) metadata.artists = [artistEl.textContent];
 
   const albumEl = doc.querySelector('[type="album"]');
-  if (albumEl?.textContent) metadata.album = albumEl.textContent;
+  if (!metadata.album && albumEl?.textContent) metadata.album = albumEl.textContent;
 
   // Extract agents from metadata
   const agents: Agent[] = [];

@@ -5,7 +5,7 @@ import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
-const baseMetadata: ProjectMetadata = { title: "Test", artist: "", album: "", duration: 60 };
+const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
 const wordLine: LyricLine = {

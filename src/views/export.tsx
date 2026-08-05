@@ -6,6 +6,10 @@ import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { generateTTML } from "@/utils/ttml";
+import { rebaseTtmlEdits } from "@/utils/ttml-merge";
+import { MetadataPanel } from "@/views/export/metadata-panel";
+import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
+import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
   IconCopy,
@@ -48,7 +52,20 @@ const ExportPanel: React.FC = () => {
     return generateTTML({ metadata, agents, lines, groups, granularity, minify: true, duration });
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
-  const editedContent = editState && editState.source === generatedTtml ? editState.content : null;
+  const drift = editState !== null && editState.source !== generatedTtml;
+  const rebased = useMemo(
+    () => (editState !== null && drift ? rebaseTtmlEdits(editState.source, editState.content, generatedTtml) : null),
+    [editState, drift, generatedTtml],
+  );
+  const editedContent =
+    editState === null
+      ? null
+      : !drift
+        ? editState.content
+        : rebased?.status === "clean"
+          ? rebased.content
+          : editState.content;
+  const hasConflict = drift && rebased?.status === "conflict";
   const displayContent = editedContent ?? generatedTtml;
   const exportContent = editedContent ?? minifiedTtml;
 
@@ -84,6 +101,23 @@ const ExportPanel: React.FC = () => {
     setEditState(null);
     setIsEditing(false);
   }, []);
+
+  // Resolving a conflict rebases the edit onto the current output, which is what
+  // makes the notice go away. It has to be a deliberate action: letting an
+  // incidental keystroke do it would silently drop the regenerated changes.
+  const handleKeepEdits = useCallback(() => {
+    setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
+  }, [generatedTtml]);
+
+  const handleEditContent = useCallback(
+    (content: string) => {
+      setEditState((prev) => {
+        if (prev !== null && hasConflict) return { ...prev, content };
+        return { source: generatedTtml, content };
+      });
+    },
+    [generatedTtml, hasConflict],
+  );
 
   const projectFileInput = (
     <input
@@ -174,17 +208,13 @@ const ExportPanel: React.FC = () => {
         </div>
       </div>
 
+      <MetadataPanel />
+
+      {hasConflict && <TtmlConflictNotice onRegenerate={handleRegenerate} onKeepEdits={handleKeepEdits} />}
+
       {/* Preview / Editor */}
       {isEditing ? (
-        <div className="flex flex-col flex-1 min-h-0 p-6">
-          <textarea
-            value={displayContent}
-            aria-label="Edit TTML content"
-            onChange={(e) => setEditState({ source: generatedTtml, content: e.target.value })}
-            className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
-            spellCheck={false}
-          />
-        </div>
+        <TtmlEditor value={displayContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
           <Highlight theme={themes.nightOwl} code={displayContent} language="xml">

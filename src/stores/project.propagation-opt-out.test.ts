@@ -301,32 +301,29 @@ describe("instance resync · issue #96 reproduction", () => {
     expect(getLine("a2").words).toEqual(cWords);
   });
 
-  it("a single partial tap (the worst-case squash state) leaves the sibling intact", () => {
+  it("a partial re-tap keeps the source's later words and leaves the sibling intact", () => {
     seedTwoWordSyncedInstances();
 
-    // Resync only word 0 and stop. Mid-resync the source array transiently
-    // holds one word: this is the state that previously collapsed the sibling.
     tapResync("a0", 0, 0.5, 0.8);
 
-    expect(getLine("a0").words).toHaveLength(1);
+    expect(getLine("a0").words).toHaveLength(3);
+    expect(getLine("a0").words?.[0].begin).toBe(0.5);
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
     expect(getLine("a1").words).toHaveLength(3);
   });
 
-  it("characterizes the bug: a resync left to propagate DOES squash the sibling", () => {
+  it("preserve-in-place keeps the word count stable, so a propagating re-tap no longer squashes the sibling", () => {
     seedTwoWordSyncedInstances();
 
-    // The pre-fix call signature: handleTapWord passed only { deriveText: false }
-    // with no opt-out, so propagation fired on the transient one-word array and
-    // collapsed the sibling. This is the behavior the opt-out must prevent.
+    // Regression guard for issue #96.
     const line = getLine("a0");
     const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
     const text = trailingSpace[0] ? `${parts[0]} ` : parts[0];
     const updated = commitTappedWord(line.words ?? [], 0, text, 0.5, 0.8);
     useProjectStore.getState().updateLineWithHistory("a0", { words: updated }, { deriveText: false });
 
-    expect(getLine("a1").words).toHaveLength(1);
-    expect(getLine("a1").words).not.toEqual(INSTANCE_B_WORDS);
+    expect(getLine("a1").words).toHaveLength(3);
+    expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
 });
 

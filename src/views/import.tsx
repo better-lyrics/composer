@@ -4,6 +4,7 @@ import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { audioTagsToMetadata } from "@/utils/audio-tags";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
 import { useCallback } from "react";
 
@@ -30,6 +31,7 @@ function getFileExtension(filename: string): string {
 
 const GUTTER_WIDTH = 56;
 const ROW_HEIGHT = 56;
+const LOG_PREFIX = "[Composer]";
 
 // -- Sub-components -----------------------------------------------------------
 
@@ -113,6 +115,18 @@ const ImportPanel: React.FC = () => {
     (file: File) => {
       setSource({ type: "file", file });
       setMetadata({ title: file.name.replace(/\.[^/.]+$/, "") });
+      void import("music-metadata")
+        .then(({ parseBlob }) => parseBlob(file))
+        .then(({ common }) => {
+          const active = useAudioStore.getState().source;
+          const isStillTheActiveFile = active?.type === "file" && active.file === file;
+          if (!isStillTheActiveFile) return;
+          const patch = audioTagsToMetadata(common);
+          if (Object.keys(patch).length > 0) setMetadata(patch);
+        })
+        .catch((error) => {
+          console.warn(`${LOG_PREFIX} could not read audio tags`, error);
+        });
     },
     [setSource, setMetadata],
   );

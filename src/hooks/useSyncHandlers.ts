@@ -6,6 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
+  closeHeldWord,
   commitHeldWord,
   commitTappedWord,
   type SyncState,
@@ -15,6 +16,7 @@ import {
 import {
   advanceSyncPosition,
   buildInitialWordUpdates,
+  isSyncableLine,
   nextSyncableLineIndex,
   prepareSyncWord,
   prevSyncableLine,
@@ -77,7 +79,7 @@ function useSyncHandlers({
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
-    if (wordIndex === 0 && prevLine?.words?.length) {
+    if (wordIndex === 0 && !syncState.jumpedToPosition && prevLine?.words?.length) {
       const prevWords = [...prevLine.words];
       prevWords[prevWords.length - 1] = {
         ...prevWords[prevWords.length - 1],
@@ -99,6 +101,7 @@ function useSyncHandlers({
     prevLine,
     setShowPulse,
     setSyncState,
+    syncState.jumpedToPosition,
   ]);
 
   const handleTapLine = useCallback(() => {
@@ -107,7 +110,7 @@ function useSyncHandlers({
     const line = lines[lineIndex];
     if (!line) return;
 
-    if (prevLine?.begin !== undefined) {
+    if (prevLine?.begin !== undefined && !syncState.jumpedToPosition) {
       updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
     }
 
@@ -118,6 +121,7 @@ function useSyncHandlers({
     setSyncState((prev) => ({
       ...prev,
       position: { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 },
+      jumpedToPosition: false,
     }));
   }, [
     lines,
@@ -129,6 +133,7 @@ function useSyncHandlers({
     prevLine,
     setShowPulse,
     setSyncState,
+    syncState.jumpedToPosition,
   ]);
 
   const handleHoldStart = useCallback(() => {
@@ -164,9 +169,7 @@ function useSyncHandlers({
 
     const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...line.words];
-    const currentWordEntry = updatedWords[updatedWords.length - 1];
-    updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
+    const updatedWords = closeHeldWord(line.words, wordIndex, currentTime);
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
@@ -181,15 +184,13 @@ function useSyncHandlers({
 
     const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = [...line.words];
-    const currentWordEntry = updatedWords[updatedWords.length - 1];
-    updatedWords[updatedWords.length - 1] = { ...currentWordEntry, end: currentTime };
+    const closedWords = closeHeldWord(line.words, wordIndex, currentTime);
 
     const nextWordIndex = wordIndex + 1;
     const advancesToNextLine = nextWordIndex >= lineWords.length;
 
     if (advancesToNextLine) {
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
+      updateLineWithHistory(line.id, { words: closedWords }, { deriveText: false, propagateToSiblings: false });
 
       const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
       const nextLine = lines[nextLineIndex];
@@ -209,11 +210,15 @@ function useSyncHandlers({
       }));
     } else {
       const nextWordText = lineWords[nextWordIndex];
-      if (nextWordText) {
-        const textWithSpace = trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText;
-        updatedWords.push({ text: textWithSpace, begin: currentTime, end: currentTime });
-      }
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
+      const openedWords = nextWordText
+        ? commitHeldWord(
+            closedWords,
+            nextWordIndex,
+            trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText,
+            currentTime,
+          )
+        : closedWords;
+      updateLineWithHistory(line.id, { words: openedWords }, { deriveText: false, propagateToSiblings: false });
 
       setSyncState((prev) => ({
         ...prev,
@@ -257,25 +262,78 @@ function useSyncHandlers({
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
-    setSyncState({ position: { lineIndex: nextSyncableLineIndex(lines, -1), wordIndex: 0 }, isActive: true });
+    const { lineIndex: cursorLine, wordIndex: cursorWord } = syncState.position;
+    const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
+    const startWord = startLine === cursorLine ? cursorWord : 0;
+    // Pressing play is how a re-record actually starts, so it has to carry the
+    // jump forward. Only a cursor that had to be relocated counts as a fresh
+    // forward pass.
+    setSyncState((prev) => ({
+      ...prev,
+      position: { lineIndex: startLine, wordIndex: startWord },
+      isActive: true,
+      jumpedToPosition: startLine === cursorLine ? prev.jumpedToPosition : false,
+    }));
     setIsPlaying(true);
-  }, [lines, setIsPlaying, setSyncState]);
+  }, [lines, syncState.position, setIsPlaying, setSyncState]);
+
+  // Re-recording seeks back and waits for the user to start playback. Edit mode
+  // is the exception: there a click is a scrub for auditioning timings, so
+  // playback is left alone.
+  const seekForRedo = useCallback(
+    (begin: number) => {
+      if (editMode) {
+        seekTo(begin);
+        return;
+      }
+      setIsPlaying(false);
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(Math.max(0, begin - preroll));
+    },
+    [editMode, seekTo, setIsPlaying],
+  );
 
   const handleJumpToLine = useCallback(
     (index: number) => {
-      if (editMode) {
-        const timing = effectiveBounds(lines[index]);
-        if (timing) {
-          seekTo(timing.begin);
-        }
-        return;
-      }
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
+        jumpedToPosition: true,
       }));
+      const bounds = effectiveBounds(lines[index]);
+      if (!bounds) return;
+      seekForRedo(bounds.begin);
     },
-    [editMode, lines, seekTo, setSyncState],
+    [lines, seekForRedo, setSyncState],
+  );
+
+  // Only a word that already carries timing can be re-recorded: parking the
+  // cursor on an untimed word would make the next tap write it into slot 0 and
+  // silently drop every word before it.
+  const handleJumpToWord = useCallback(
+    (lineIdx: number, wordIdx: number) => {
+      const word = lines[lineIdx]?.words?.[wordIdx];
+      if (!word) return;
+      setSyncState((prev) => ({
+        ...prev,
+        position: { lineIndex: lineIdx, wordIndex: wordIdx },
+        jumpedToPosition: true,
+      }));
+      seekForRedo(word.begin);
+    },
+    [lines, seekForRedo, setSyncState],
+  );
+
+  // The sync cursor addresses main words only, so a background word can be
+  // scrubbed to but not re-recorded from. Moving the cursor here would make the
+  // next tap overwrite the main word at the same index.
+  const handleJumpToBgWord = useCallback(
+    (lineIdx: number, wordIdx: number) => {
+      const word = lines[lineIdx]?.backgroundWords?.[wordIdx];
+      if (!word) return;
+      seekForRedo(word.begin);
+    },
+    [lines, seekForRedo],
   );
 
   const handleNudgeWord = useCallback(
@@ -383,6 +441,8 @@ function useSyncHandlers({
     handleReset,
     handleStartSync,
     handleJumpToLine,
+    handleJumpToWord,
+    handleJumpToBgWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,

@@ -74,9 +74,17 @@ function advanceSyncPosition(
   const nextWordIndex = wordIndex + 1;
   if (nextWordIndex >= totalWords) {
     const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
-    setSyncState((prev) => ({ ...prev, position: { lineIndex: nextLineIndex, wordIndex: 0 } }));
+    setSyncState((prev) => ({
+      ...prev,
+      position: { lineIndex: nextLineIndex, wordIndex: 0 },
+      jumpedToPosition: false,
+    }));
   } else {
-    setSyncState((prev) => ({ ...prev, position: { ...prev.position, wordIndex: nextWordIndex } }));
+    setSyncState((prev) => ({
+      ...prev,
+      position: { ...prev.position, wordIndex: nextWordIndex },
+      jumpedToPosition: false,
+    }));
   }
 }
 
@@ -92,6 +100,7 @@ export {
   withBgSeedIfNeeded,
   buildInitialWordUpdates,
   advanceSyncPosition,
+  isSyncableLine,
   nextSyncableLineIndex,
   prevSyncableLine,
   triggerPulse,

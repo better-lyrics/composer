@@ -2,6 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
@@ -15,6 +16,10 @@ const APPLE_LYRIC_NS = "http://music.apple.com/lyric-ttml-internal";
 
 function escapeXml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+}
+
+function escapeXmlAttribute(str: string): string {
+  return escapeXml(str).replace(/"/g, "&quot;");
 }
 
 function emitWordSpan(word: { text: string; begin: number; end: number; explicit?: true }, text: string): string {
@@ -46,7 +51,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
   // Apple timestamp shape are intentional; don't "fix" them to generic TTML.
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media" xml:lang="${escapeXml(metadata.language || "en")}" itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media" xml:lang="${escapeXmlAttribute(metadata.language || "en")}" itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
   );
 
   // Head section
@@ -55,20 +60,23 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   if (metadata.title) {
     parts.push(`${ind(3)}<ttm:title>${escapeXml(metadata.title)}</ttm:title>`);
   }
+  for (const { key, value } of toComposerMeta(metadata)) {
+    parts.push(`${ind(3)}<composer:meta key="${escapeXmlAttribute(key)}" value="${escapeXmlAttribute(value)}"/>`);
+  }
   for (const agent of agents) {
     if (agent.name) {
-      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}">`);
+      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}">`);
       parts.push(`${ind(4)}<ttm:name>${escapeXml(agent.name)}</ttm:name>`);
       parts.push(`${ind(3)}</ttm:agent>`);
     } else {
-      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXml(agent.id)}" type="${agent.type}"/>`);
+      parts.push(`${ind(3)}<ttm:agent xml:id="${escapeXmlAttribute(agent.id)}" type="${agent.type}"/>`);
     }
   }
   if (groups && groups.length > 0) {
     parts.push(`${ind(3)}<composer:groups>`);
     for (const g of groups) {
       parts.push(
-        `${ind(4)}<composer:group id="${escapeXml(g.id)}" label="${escapeXml(g.label)}" color="${escapeXml(g.color)}" templateVersion="${g.templateVersion}"/>`,
+        `${ind(4)}<composer:group id="${escapeXmlAttribute(g.id)}" label="${escapeXmlAttribute(g.label)}" color="${escapeXmlAttribute(g.color)}" templateVersion="${g.templateVersion}"/>`,
       );
     }
     parts.push(`${ind(3)}</composer:groups>`);
@@ -85,9 +93,9 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     const timing = effectiveBounds(line);
     if (!timing) continue;
 
-    const agentAttr = line.agentId ? ` ttm:agent="${escapeXml(line.agentId)}"` : "";
+    const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
     const groupAttr = line.groupId
-      ? ` composer:groupId="${escapeXml(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
+      ? ` composer:groupId="${escapeXmlAttribute(line.groupId)}" composer:instanceIdx="${line.instanceIdx ?? 0}" composer:templateLineIdx="${line.templateLineIdx ?? 0}"${line.detached ? ' composer:detached="true"' : ""}`
       : "";
     let content = "";
 

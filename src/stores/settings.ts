@@ -47,6 +47,7 @@ interface SettingsState {
   nudgeAmount: number;
   defaultWordDuration: number;
   minWordDuration: number;
+  redoPreroll: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -113,6 +114,7 @@ const DEFAULTS: SettingsState = {
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
   minWordDuration: 0.05,
+  redoPreroll: 1.5,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
@@ -166,6 +168,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
+  if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
   return next;
 }
 

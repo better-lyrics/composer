@@ -64,7 +64,7 @@ function convertLrc({ input, filename }: ConvertArgs): { ttml: string; projectPa
     }
     const metadata: ProjectMetadata = {
       title: result.metadata.title ?? "",
-      artist: result.metadata.artist ?? "",
+      artists: result.metadata.artists ?? [],
       album: result.metadata.album ?? "",
       duration: 0,
       language: result.metadata.language,

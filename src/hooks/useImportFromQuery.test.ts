@@ -1,9 +1,11 @@
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { useImportFromQuery } from "@/hooks/useImportFromQuery";
+import { buildMetadataFromUrl, useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
+import { getPersistenceSettled, markPersistenceSettled } from "@/lib/persistence-settled";
 import { INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
+import { useProjectStore } from "@/stores/project";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -56,6 +58,7 @@ function currentSearch(): string {
 function resetStore(): void {
   useImportModalStore.setState({ ...INITIAL_STATE });
   window.localStorage.removeItem("composer-import-modal");
+  useProjectStore.getState().reset();
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -233,6 +236,174 @@ describe("useImportFromQuery", () => {
     expect(useImportModalStore.getState().defaultPrefill).toEqual({ track: "Hello" });
     useImportModalStore.getState().clearDefaultPrefill();
     expect(useImportModalStore.getState().defaultPrefill).toBeNull();
+  });
+});
+
+describe("buildMetadataFromUrl", () => {
+  it("persists title/artists/album/isrc/duration from the enriched link", () => {
+    const out = buildMetadataFromUrl(new URLSearchParams("title=T&artist=A&album=Al&isrc=usqx91700001&duration=200"));
+    expect(out).toEqual({ title: "T", artists: ["A"], album: "Al", isrc: "USQX91700001", duration: 200 });
+  });
+  it("returns null when no fields present", () => {
+    expect(buildMetadataFromUrl(new URLSearchParams(""))).toBeNull();
+  });
+  it("drops an invalid isrc but keeps the rest", () => {
+    expect(buildMetadataFromUrl(new URLSearchParams("title=T&isrc=bad"))).toEqual({ title: "T" });
+  });
+  it("omits absent fields (no empty strings or zero duration)", () => {
+    expect(buildMetadataFromUrl(new URLSearchParams("artist=A"))).toEqual({ artists: ["A"] });
+  });
+});
+
+async function flushSettled(): Promise<void> {
+  markPersistenceSettled();
+  await act(async () => {
+    await getPersistenceSettled();
+  });
+}
+
+describe("useImportFromQuery persists enriched-link metadata", () => {
+  let handle: MountHandle | null = null;
+
+  beforeEach(() => {
+    resetStore();
+    setUrl("");
+  });
+
+  afterEach(() => {
+    if (handle) {
+      handle.unmount();
+      handle = null;
+    }
+    setUrl("");
+  });
+
+  it("writes title/artists/album/isrc/duration into the project store once persistence settles", async () => {
+    setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      title: "Hello",
+      artists: ["Adele"],
+      album: "25",
+      isrc: "GBUM71029604",
+      duration: 355,
+    });
+  });
+
+  it("leaves project metadata untouched when no import params are present", async () => {
+    setUrl("?foo=bar");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
+  });
+
+  it("does not write a metadata patch when only videoId is present", async () => {
+    setUrl("?videoId=fJ9rUzIMcZQ");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
+  });
+});
+
+// -- Boot race: gate the project write behind persistence settling ------------
+
+describe("useImportFromQuery gates the metadata write behind persistence", () => {
+  let handle: MountHandle | null = null;
+
+  beforeEach(() => {
+    resetStore();
+    setUrl("");
+  });
+
+  afterEach(() => {
+    if (handle) {
+      handle.unmount();
+      handle = null;
+    }
+    setUrl("");
+  });
+
+  it("does not write enriched-link metadata until persistence has settled", () => {
+    setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
+
+    handle = mountHook();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
+  });
+
+  it("applies the enriched-link metadata after persistence settles", async () => {
+    setUrl("?title=Hello&artist=Adele&album=25&isrc=gbum71029604&duration=355");
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      title: "Hello",
+      artists: ["Adele"],
+      album: "25",
+      isrc: "GBUM71029604",
+      duration: 355,
+    });
+  });
+
+  it("does not clobber a persistence-restored project when the URL has no import params", async () => {
+    setUrl("?foo=bar");
+    useProjectStore.getState().setMetadata({
+      title: "Restored Title",
+      artists: ["Restored Artist"],
+      album: "Restored Album",
+      isrc: "USQX91700001",
+      duration: 200,
+    });
+
+    handle = mountHook();
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      title: "Restored Title",
+      artists: ["Restored Artist"],
+      album: "Restored Album",
+      isrc: "USQX91700001",
+      duration: 200,
+    });
+  });
+
+  it("does not write after unmount even once persistence settles", async () => {
+    setUrl("?title=Hello&artist=Adele");
+
+    handle = mountHook();
+    handle.unmount();
+    handle = null;
+    await flushSettled();
+
+    expect(useProjectStore.getState().metadata).toEqual({
+      title: "",
+      artists: [],
+      album: "",
+      duration: 0,
+    });
   });
 });
 

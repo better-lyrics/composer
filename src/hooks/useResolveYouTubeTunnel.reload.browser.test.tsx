@@ -140,7 +140,7 @@ describe("post-reload survival", () => {
       savedAt: Date.now(),
       metadata: {
         title: "Never Gonna Give You Up",
-        artist: "Rick Astley",
+        artists: ["Rick Astley"],
         album: "Whenever You Need Somebody",
         duration: 213,
       },
@@ -167,7 +167,7 @@ describe("post-reload survival", () => {
 
     const md = useProjectStore.getState().metadata;
     expect(md.title).toBe("Never Gonna Give You Up");
-    expect(md.artist).toBe("Rick Astley");
+    expect(md.artists).toEqual(["Rick Astley"]);
     expect(md.album).toBe("Whenever You Need Somebody");
     expect(md.thumbnailDataUrl).toMatch(/^data:image\/png/);
     expect(md.thumbnailForVideoId).toBe("dQw4w9WgXcQ");
@@ -179,7 +179,7 @@ describe("post-reload survival", () => {
     await seedProject({
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "User Edited Title", artist: "", album: "", duration: 0 },
+      metadata: { title: "User Edited Title", artists: [], album: "", duration: 0 },
       lines: [],
       agents: [{ id: "v1", type: "person", name: "Lead" }],
       granularity: "word",
