@@ -2,7 +2,7 @@ import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -290,6 +290,22 @@ const SyncPanel: React.FC = () => {
     setIsHolding(false);
   }, [isHolding, handleHoldEnd]);
 
+  const handleTapPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      performTap();
+    },
+    [performTap],
+  );
+
+  const handleHoldPointerDown = useCallback(
+    (e: React.PointerEvent<HTMLButtonElement>) => {
+      e.preventDefault();
+      beginHold();
+    },
+    [beginHold],
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
@@ -544,12 +560,18 @@ const SyncPanel: React.FC = () => {
             <div className="flex items-center gap-4">
               {currentWord && <span className="text-xl font-medium text-composer-text">{currentWord}</span>}
               <div className="flex items-center gap-2">
-                <m.div
+                <m.button
+                  type="button"
+                  aria-label={getShortcutDescription("sync.holdSync")}
+                  onPointerDown={handleHoldPointerDown}
+                  onPointerUp={endHold}
+                  onPointerCancel={endHold}
+                  onPointerLeave={endHold}
                   variants={syncPulseVariants}
                   initial={false}
                   animate={isHolding ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className={`flex items-center justify-center border-2 rounded-full size-14 ${
+                  className={`flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none ${
                     isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
                   }`}
                 >
@@ -558,20 +580,23 @@ const SyncPanel: React.FC = () => {
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </m.div>
-                <m.div
+                </m.button>
+                <m.button
+                  type="button"
+                  aria-label={getShortcutDescription("sync.tap")}
+                  onPointerDown={handleTapPointerDown}
                   variants={syncPulseVariants}
                   initial={false}
                   animate={showPulse ? "pulse" : "idle"}
                   transition={syncCarouselTransition}
-                  className="flex items-center justify-center border-2 rounded-full size-14 bg-composer-bg-elevated"
+                  className="flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none bg-composer-bg-elevated"
                 >
                   <span className="text-xs font-medium text-composer-text-muted">
                     {getEffectiveKeysArray("sync.tap")
                       .map((k) => k.toUpperCase())
                       .join(" ")}
                   </span>
-                </m.div>
+                </m.button>
               </div>
             </div>
           )}
