@@ -86,7 +86,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
               e.stopPropagation();
               handlers.onClickWord?.(idx);
             }}
-            title="Re-record from this word"
+            title={isBackground ? "Jump to this word" : "Re-record from this word"}
             className="appearance-none border-0 bg-transparent p-0 text-left cursor-pointer"
           >
             {renderWordContent(word, timing, isBackground, editMode)}

@@ -35,6 +35,7 @@ interface ScrollableLineProps {
   linkInfo?: ScrollableLineLinkInfo;
   onClick: () => void;
   onClickWord?: (wordIndex: number) => void;
+  onClickBgWord?: (wordIndex: number) => void;
   onNudgeWord?: (wordIndex: number, delta: number) => void;
   onSetWordTime?: (wordIndex: number, newBegin: number) => void;
   onNudgeWordEnd?: (wordIndex: number, delta: number) => void;
@@ -67,6 +68,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   linkInfo,
   onClick,
   onClickWord,
+  onClickBgWord,
   onNudgeWord,
   onSetWordTime,
   onNudgeWordEnd,
@@ -145,6 +147,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
     onSetTime: onSetBgWordTime,
     onNudgeEnd: onNudgeBgWordEnd,
     onSetEndTime: onSetBgWordEndTime,
+    onClickWord: onClickBgWord,
   };
 
   const renderWordList = (

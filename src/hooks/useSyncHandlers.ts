@@ -306,6 +306,18 @@ function useSyncHandlers({
     [lines, seekForRedo, setSyncState],
   );
 
+  // The sync cursor addresses main words only, so a background word can be
+  // scrubbed to but not re-recorded from. Moving the cursor here would make the
+  // next tap overwrite the main word at the same index.
+  const handleJumpToBgWord = useCallback(
+    (lineIdx: number, wordIdx: number) => {
+      const word = lines[lineIdx]?.backgroundWords?.[wordIdx];
+      if (!word) return;
+      seekForRedo(word.begin);
+    },
+    [lines, seekForRedo],
+  );
+
   const handleNudgeWord = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
       nudgeWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
@@ -412,6 +424,7 @@ function useSyncHandlers({
     handleStartSync,
     handleJumpToLine,
     handleJumpToWord,
+    handleJumpToBgWord,
     handleNudgeWord,
     handleSetWordTime,
     handleNudgeWordEnd,

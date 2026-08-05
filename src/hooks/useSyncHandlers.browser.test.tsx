@@ -684,6 +684,73 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     expect(useAudioStore.getState().currentTime).toBe(3.5);
     expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 1 });
   });
+
+  it("pauses playback so a jump never leaves the transport running", async () => {
+    useProjectStore.getState().setLines(twoSyncedLines());
+    const { result, act, playingCalls } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToWord(1, 1));
+
+    expect(playingCalls).toContain(false);
+    expect(playingCalls).not.toContain(true);
+  });
+});
+
+// -- Background words ---------------------------------------------------------
+
+describe("useSyncHandlers.handleJumpToBgWord", () => {
+  it("scrubs to a background word with the same pre-roll", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: "Main line",
+        words: [createWord({ text: "Main ", begin: 0, end: 1 }), createWord({ text: "line", begin: 1, end: 2 })],
+        backgroundText: "ooh ahh",
+        backgroundWords: [
+          createWord({ text: "ooh ", begin: 4, end: 4.5 }),
+          createWord({ text: "ahh", begin: 4.5, end: 5 }),
+        ],
+      }),
+    ]);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToBgWord(0, 1));
+
+    expect(useAudioStore.getState().currentTime).toBe(4.5 - 1.5);
+  });
+
+  it("leaves the sync cursor alone, since it addresses main words only", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: "Main line",
+        words: [createWord({ text: "Main ", begin: 0, end: 1 }), createWord({ text: "line", begin: 1, end: 2 })],
+        backgroundText: "ooh ahh",
+        backgroundWords: [
+          createWord({ text: "ooh ", begin: 4, end: 4.5 }),
+          createWord({ text: "ahh", begin: 4.5, end: 5 }),
+        ],
+      }),
+    ]);
+    const { result, act, getSyncState } = await mountSyncHandlers();
+    const before = getSyncState().position;
+
+    await act(() => result.current.handleJumpToBgWord(0, 1));
+
+    expect(getSyncState().position).toEqual(before);
+  });
+
+  it("ignores a background word that has no timing", async () => {
+    useProjectStore
+      .getState()
+      .setLines([createLine({ id: "l0", text: "Main", words: [createWord({ text: "Main", begin: 0, end: 1 })] })]);
+    useAudioStore.getState().seekTo(2.5);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => result.current.handleJumpToBgWord(0, 0));
+
+    expect(useAudioStore.getState().currentTime).toBe(2.5);
+  });
 });
 
 describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
