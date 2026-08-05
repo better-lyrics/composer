@@ -121,8 +121,42 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(words?.length).toBe(5);
     expect(words?.[1].begin).toBe(5.0);
     expect(words?.[0].end).toBe(5.0);
-    expect(words?.[2]).toEqual({ text: "how ", begin: 0.8, end: 1.2 });
-    expect(words?.[4]).toEqual({ text: "you", begin: 1.6, end: 2.0 });
+    expect(words?.map((w) => w.text)).toEqual(["Hello ", "world ", "how ", "are ", "you"]);
+    for (let i = 0; i < (words?.length ?? 0); i++) {
+      const word = words?.[i];
+      if (!word) continue;
+      expect(word.end).toBeGreaterThanOrEqual(word.begin);
+      if (i > 0) expect(word.begin).toBeGreaterThanOrEqual(words![i - 1].end);
+    }
+  });
+
+  it("regression: a redo past the line's later words never exports a line ending before it begins", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: ORIGINAL_TEXT,
+        words: [
+          { text: "Hello ", begin: 0, end: 0.4 },
+          { text: "world ", begin: 0.4, end: 0.8 },
+          { text: "how ", begin: 0.8, end: 1.2 },
+          { text: "are ", begin: 1.2, end: 1.6 },
+          { text: "you", begin: 1.6, end: 2.0 },
+        ],
+      }),
+    ]);
+
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 0, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: 5.0,
+    });
+
+    await act(() => {
+      result.current.handleTap();
+    });
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words).toHaveLength(5);
+    expect(words[0].begin).toBeLessThanOrEqual(words[words.length - 1].end);
   });
 
   it("regression: skips an empty line and still patches the word before it (issue #114)", async () => {
@@ -339,7 +373,8 @@ describe("useSyncHandlers.handleHold (mid-line redo)", () => {
 
     const words = useProjectStore.getState().lines[0].words ?? [];
     expect(words[1]).toMatchObject({ begin: 5, end: 6 });
-    expect(words[2]).toMatchObject({ begin: 2, end: 3 });
+    expect(words).toHaveLength(3);
+    expect(words[2].begin).toBeGreaterThanOrEqual(words[1].end);
   });
 
   it("regression: handleHoldEnd never leaves a word ending before it begins", async () => {
@@ -597,7 +632,7 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
     expect(useAudioStore.getState().currentTime).toBe(3.5 - 0.5);
   });
 
-  it("only moves the cursor for a word with no timing, without seeking", async () => {
+  it("regression: ignores a word with no timing so the cursor cannot desync from the line's text", async () => {
     useProjectStore
       .getState()
       .setLines([
@@ -606,11 +641,38 @@ describe("useSyncHandlers.handleJumpToWord (smart word redo)", () => {
       ]);
     useAudioStore.getState().seekTo(2.5);
     const { result, act, getSyncState } = await mountSyncHandlers();
+    const before = getSyncState().position;
 
-    await act(() => result.current.handleJumpToWord(1, 0));
+    await act(() => result.current.handleJumpToWord(1, 2));
 
-    expect(getSyncState().position).toEqual({ lineIndex: 1, wordIndex: 0 });
+    expect(getSyncState().position).toEqual(before);
     expect(useAudioStore.getState().currentTime).toBe(2.5);
+  });
+
+  it("regression: tapping after a jump writes the word at the cursor, not into slot 0", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: "one two three",
+        words: [
+          createWord({ text: "one ", begin: 0, end: 0.5 }),
+          createWord({ text: "two ", begin: 0.5, end: 1 }),
+          createWord({ text: "three", begin: 1, end: 1.5 }),
+        ],
+      }),
+    ]);
+    const { result, act, rerender, getSyncState } = await mountSyncHandlers({ initialCurrentTime: 4 });
+
+    await act(() => result.current.handleJumpToWord(0, 2));
+    expect(getSyncState().position).toEqual({ lineIndex: 0, wordIndex: 2 });
+
+    await rerender({ syncState: { position: { lineIndex: 0, wordIndex: 2 }, isActive: true }, currentTime: 4 });
+    await act(() => result.current.handleTap());
+
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words).toHaveLength(3);
+    expect(words.map((w) => w.text)).toEqual(["one ", "two ", "three"]);
+    expect(words[2].begin).toBe(4);
   });
 
   it("in edit mode scrubs exactly to the word begin (no pre-roll) and moves the cursor to that word", async () => {

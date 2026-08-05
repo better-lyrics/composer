@@ -79,7 +79,7 @@ const WordRenderer: React.FC<WordRendererProps> = ({
   return (
     <span className={`inline-flex flex-col items-start ${isBackground ? "italic" : ""}`}>
       <span className="flex items-center gap-1 group/word">
-        {handlers.onClickWord ? (
+        {handlers.onClickWord && timing ? (
           <button
             type="button"
             onClick={(e) => {

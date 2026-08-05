@@ -1,6 +1,7 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -169,17 +170,19 @@ function commitTappedWord(
   }
   const result = [...existingWords];
   result[wordIndex] = { ...result[wordIndex], text, begin, end };
-  if (wordIndex > 0) result[wordIndex - 1] = { ...result[wordIndex - 1], end: begin };
-  return result;
+  if (wordIndex === 0) return enforceOrderAround(result, 0);
+
+  const previous = result[wordIndex - 1];
+  result[wordIndex - 1] = { ...previous, begin: Math.min(previous.begin, begin), end: begin };
+  return enforceOrderAround(enforceOrderAround(result, wordIndex), wordIndex - 1);
 }
 
 function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: string, begin: number): WordTiming[] {
   if (existingWords.length === 0) return [{ text, begin, end: begin }];
   if (wordIndex >= existingWords.length) return [...existingWords, { text, begin, end: begin }];
   const result = [...existingWords];
-  result[wordIndex] =
-    wordIndex === 0 ? { ...result[0], text, begin } : { ...result[wordIndex], text, begin, end: begin };
-  return result;
+  result[wordIndex] = { ...result[wordIndex], text, begin, end: begin };
+  return enforceOrderAround(result, wordIndex);
 }
 
 function closeHeldWord(existingWords: WordTiming[], wordIndex: number, end: number): WordTiming[] {
@@ -187,7 +190,7 @@ function closeHeldWord(existingWords: WordTiming[], wordIndex: number, end: numb
   const target = Math.min(Math.max(wordIndex, 0), existingWords.length - 1);
   const result = [...existingWords];
   result[target] = { ...result[target], end };
-  return result;
+  return enforceOrderAround(result, target);
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -266,6 +266,17 @@ function useSyncHandlers({
     setIsPlaying(true);
   }, [lines, syncState.position, setIsPlaying, setSyncState]);
 
+  // Re-recording seeks back and waits for the user to start playback, so a jump
+  // never leaves the transport running underneath them.
+  const seekForRedo = useCallback(
+    (begin: number) => {
+      setIsPlaying(false);
+      const preroll = useSettingsStore.getState().redoPreroll;
+      seekTo(editMode ? begin : Math.max(0, begin - preroll));
+    },
+    [editMode, seekTo, setIsPlaying],
+  );
+
   const handleJumpToLine = useCallback(
     (index: number) => {
       setSyncState((prev) => ({
@@ -274,24 +285,25 @@ function useSyncHandlers({
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
-      const preroll = useSettingsStore.getState().redoPreroll;
-      seekTo(editMode ? bounds.begin : Math.max(0, bounds.begin - preroll));
+      seekForRedo(bounds.begin);
     },
-    [editMode, lines, seekTo, setSyncState],
+    [lines, seekForRedo, setSyncState],
   );
 
+  // Only a word that already carries timing can be re-recorded: parking the
+  // cursor on an untimed word would make the next tap write it into slot 0 and
+  // silently drop every word before it.
   const handleJumpToWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
+      const word = lines[lineIdx]?.words?.[wordIdx];
+      if (!word) return;
       setSyncState((prev) => ({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
       }));
-      const begin = lines[lineIdx]?.words?.[wordIdx]?.begin ?? effectiveBounds(lines[lineIdx])?.begin;
-      if (begin === undefined) return;
-      const preroll = useSettingsStore.getState().redoPreroll;
-      seekTo(editMode ? begin : Math.max(0, begin - preroll));
+      seekForRedo(word.begin);
     },
-    [editMode, lines, seekTo, setSyncState],
+    [lines, seekForRedo, setSyncState],
   );
 
   const handleNudgeWord = useCallback(
