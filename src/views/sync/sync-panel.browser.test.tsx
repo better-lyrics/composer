@@ -1,4 +1,3 @@
-import { flushSync } from "react-dom";
 import { describe, expect, it } from "vitest";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useAudioStore } from "@/stores/audio";
@@ -7,6 +6,7 @@ import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { firePointer, loadPlayingProject, setCurrentTime } from "@/test/sync-gesture-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -86,28 +86,6 @@ describe("SyncPanel · tap while already playing", () => {
 });
 
 describe("SyncPanel · touch sync", () => {
-  function loadPlayingProject(text = "Hello world"): void {
-    useAudioStore.setState({
-      source: { type: "file", file: createAudioFile() },
-      duration: 10,
-      currentTime: 5,
-      isPlaying: true,
-    });
-    useProjectStore.setState({ lines: [createLine({ text })], activeTab: "sync" });
-  }
-
-  function firePointer(element: Element, type: string): void {
-    element.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true, pointerId: 1 }));
-  }
-
-  // Playback commits a render between a real press and its release; flushSync
-  // reproduces that so the release handler reads the advanced clock.
-  function setCurrentTime(seconds: number): void {
-    flushSync(() => {
-      useAudioStore.setState({ currentTime: seconds });
-    });
-  }
-
   it("commits the current word when the tap circle is pressed", async () => {
     loadPlayingProject();
     const screen = await render(<SyncPanel />);
@@ -199,6 +177,30 @@ describe("SyncPanel · touch sync", () => {
       await expect
         .element(screen.getByRole("button", { name: getShortcutDescription("sync.holdSync") }))
         .toBeInTheDocument();
+    });
+
+    it("keeps both circles out of the tab order, the gestures are already bound globally", async () => {
+      loadPlayingProject();
+      const screen = await render(<SyncPanel />);
+
+      for (const name of ["Hold to sync", "Tap to sync"]) {
+        expect(screen.getByRole("button", { name }).element().getAttribute("tabindex")).toBe("-1");
+      }
+    });
+
+    it("reports hold state to assistive tech through aria-pressed", async () => {
+      loadPlayingProject();
+      const screen = await render(<SyncPanel />);
+
+      const holdCircle = screen.getByRole("button", { name: "Hold to sync" });
+      expect(holdCircle.element().getAttribute("aria-pressed")).toBe("false");
+
+      firePointer(holdCircle.element(), "pointerdown");
+      await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("true");
+
+      setCurrentTime(7);
+      firePointer(holdCircle.element(), "pointerup");
+      await expect.poll(() => holdCircle.element().getAttribute("aria-pressed")).toBe("false");
     });
 
     it("a pointer hold overlapping a keyboard hold opens the word only once", async () => {

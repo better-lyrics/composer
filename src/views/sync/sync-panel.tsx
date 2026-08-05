@@ -562,7 +562,9 @@ const SyncPanel: React.FC = () => {
               <div className="flex items-center gap-2">
                 <m.button
                   type="button"
+                  tabIndex={-1}
                   aria-label={getShortcutDescription("sync.holdSync")}
+                  aria-pressed={isHolding}
                   onPointerDown={handleHoldPointerDown}
                   onPointerUp={endHold}
                   onPointerCancel={endHold}
@@ -583,6 +585,7 @@ const SyncPanel: React.FC = () => {
                 </m.button>
                 <m.button
                   type="button"
+                  tabIndex={-1}
                   aria-label={getShortcutDescription("sync.tap")}
                   onPointerDown={handleTapPointerDown}
                   variants={syncPulseVariants}
