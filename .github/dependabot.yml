@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    # Security updates only: a limit of 0 turns off routine version-update PRs,
+    # and security PRs are exempt from the limit so advisories still get raised.
+    open-pull-requests-limit: 0
+    ignore:
+      # vite-react-ssg imports react-router-dom/server.js and peers ^6.14.1.
+      # v7 removed that subpath, so any v7+ bump fails the SSG build.
+      - dependency-name: react-router-dom
+        versions: [">=7.0.0"]
