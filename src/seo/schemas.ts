@@ -1,7 +1,7 @@
 const SITE_ORIGIN = "https://composer.betterlyrics.org";
 const SITE_NAME = "Composer";
 const ORG_NAME = "Better Lyrics";
-const ORG_URL = "https://better-lyrics.boidu.dev";
+const ORG_URL = "https://betterlyrics.org";
 
 interface FaqEntry {
   question: string;
@@ -24,7 +24,7 @@ function organizationSchema() {
     "@type": "Organization",
     name: ORG_NAME,
     url: ORG_URL,
-    sameAs: [SITE_ORIGIN, "https://better-lyrics-docs.boidu.dev", "https://blog.boidu.dev"],
+    sameAs: [SITE_ORIGIN, "https://lyrics-api-docs.boidu.dev", "https://blog.boidu.dev"],
   };
 }
 
