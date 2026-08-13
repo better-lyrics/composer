@@ -48,10 +48,13 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
 
   const parts: string[] = [];
 
+  const language = metadata.language?.trim();
+  const langAttr = language ? ` xml:lang="${escapeXmlAttribute(language)}"` : "";
+
   // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
   // Apple timestamp shape are intentional; don't "fix" them to generic TTML.
   parts.push(
-    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media" xml:lang="${escapeXmlAttribute(metadata.language || "en")}" itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
+    `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:ttp="http://www.w3.org/ns/ttml#parameter" xmlns:itunes="${APPLE_LYRIC_NS}" xmlns:composer="${COMPOSER_NS}" ttp:timeBase="media"${langAttr} itunes:timing="${timingValue}" composer:timing="${timingValue}">`,
   );
 
   // Head section
