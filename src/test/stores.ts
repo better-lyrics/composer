@@ -60,6 +60,8 @@ async function resetAllStores(): Promise<void> {
     contextMenu: null,
     editingWord: null,
     rollingEditMode: false,
+    markerMode: false,
+    hoveredSnapPointId: null,
     collapsedInstances: {},
     pingingGroupId: null,
     renamingGroupId: null,

@@ -66,6 +66,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
 
+  const rollingAffectsSyllables = useSettingsStore((s) => s.rollingAffectsSyllables);
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
 
@@ -148,8 +149,12 @@ const WordTrack: React.FC<WordTrackProps> = ({
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
+
         const conjoinedByDefault =
-          (rollingEdit || isSyllableBoundary(wordIndex, edge)) && !boundaryHasGap(wordIndex, edge);
+          !boundaryHasGap(wordIndex, edge) &&
+          ((!rollingAffectsSyllables && (rollingEdit || isSyllableBoundary(wordIndex, edge))) ||
+            (rollingAffectsSyllables && rollingEdit));
+
         const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
 
         const adjacentWordIndex =
@@ -257,7 +262,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
+    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, rollingAffectsSyllables],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean => {
@@ -265,7 +270,11 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const pos = syllablePositions[boundaryIndex];
     const isSyllable = pos === "first" || pos === "middle";
     const hasGap = words[boundaryIndex].end < words[boundaryIndex + 1].begin;
-    const conjoinedByDefault = (rollingEditMode || isSyllable) && !hasGap;
+
+    const conjoinedByDefault =
+      !hasGap &&
+      ((!rollingAffectsSyllables && (rollingEditMode || isSyllable)) || (rollingAffectsSyllables && rollingEditMode));
+
     return altPressed ? !conjoinedByDefault : conjoinedByDefault;
   };
 
