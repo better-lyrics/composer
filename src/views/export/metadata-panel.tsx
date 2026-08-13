@@ -86,13 +86,14 @@ const MetadataPanel: React.FC = () => {
                 <input
                   type="text"
                   aria-label="ISRC"
+                  aria-invalid={isrcInvalid}
                   value={isrcValue}
                   placeholder="e.g. USQX91700001"
                   onChange={(e) => handleIsrcChange(e.target.value)}
                   className={INPUT_STYLES}
                 />
                 {isrcInvalid && (
-                  <span className="text-xs text-composer-error-text select-text cursor-text">
+                  <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
                     Invalid ISRC ・ expected 12 characters like USQX91700001
                   </span>
                 )}

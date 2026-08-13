@@ -84,6 +84,22 @@ describe("MetadataPanel", () => {
     expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
   });
 
+  it("announces the ISRC error and marks the input invalid", async () => {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+
+    const isrc = screen.getByRole("textbox", { name: "ISRC" });
+    await expect.element(isrc).toHaveAttribute("aria-invalid", "false");
+
+    await isrc.fill("not-valid");
+    await expect.element(screen.getByRole("alert")).toHaveTextContent(/Invalid ISRC/);
+    await expect.element(isrc).toHaveAttribute("aria-invalid", "true");
+
+    await isrc.fill("USQX91700001");
+    await expect.element(isrc).toHaveAttribute("aria-invalid", "false");
+  });
+
   it("stores a normalized uppercase ISRC for valid input", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);
