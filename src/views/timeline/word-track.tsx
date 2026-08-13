@@ -8,6 +8,7 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -48,6 +49,15 @@ interface DragState {
 
 const MIN_WORD_DURATION = 0.05;
 
+// -- Helpers -------------------------------------------------------------------
+
+function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
+  if (final.begin !== initial.begin || final.end !== initial.end) return true;
+  if (final.adjacentWordIndex === undefined) return false;
+  const adjacent = words[final.adjacentWordIndex];
+  return final.adjacentBegin !== adjacent.begin || final.adjacentEnd !== adjacent.end;
+}
+
 // -- Component -----------------------------------------------------------------
 
 const WordTrack: React.FC<WordTrackProps> = ({
@@ -76,6 +86,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const [resizing, setResizing] = useState(false);
   const dragStateRef = useRef<DragState | null>(null);
   const justResizedRef = useRef(false);
+  const draggedRef = useRef(false);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const conjoinedRef = useRef<{ active: boolean; adjacentWordIndex: number | null }>({
@@ -116,6 +127,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
       conjoinedRef.current = { active: false, adjacentWordIndex: null };
+      draggedRef.current = false;
       snap.beginGesture({
         selfIds: resizeGestureSelfIds(lineId, wordIndex, edge, words.length, trackType),
         leaderKey: selfKey(lineId, wordIndex, trackType),
@@ -144,7 +156,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
       };
 
       const handleMouseMove = (e: PointerEvent) => {
+        if (Math.abs(e.clientX - startX) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
+        if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
         const altHeld = e.altKey;
@@ -223,14 +237,18 @@ const WordTrack: React.FC<WordTrackProps> = ({
         snap.endGesture();
 
         const finalState = dragStateRef.current;
+        const dragged = draggedRef.current;
         dragStateRef.current = null;
         setDragState(null);
-        justResizedRef.current = true;
-        requestAnimationFrame(() => {
-          justResizedRef.current = false;
-        });
 
-        if (finalState) {
+        if (dragged) {
+          justResizedRef.current = true;
+          requestAnimationFrame(() => {
+            justResizedRef.current = false;
+          });
+        }
+
+        if (dragged && finalState && resizeChangedTiming(initialState, finalState, words)) {
           if (finalState.adjacentWordIndex !== undefined) {
             const mainUpdate = edge === "left" ? { begin: finalState.begin } : { end: finalState.end };
             const adjUpdate = edge === "left" ? { end: finalState.adjacentEnd! } : { begin: finalState.adjacentBegin! };
