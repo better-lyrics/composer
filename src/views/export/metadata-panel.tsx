@@ -7,7 +7,7 @@ import { ExtraFieldList } from "@/views/export/extra-field-list";
 import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
 import { IconChevronRight } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 // -- Component ----------------------------------------------------------------
 
@@ -15,6 +15,7 @@ const MetadataPanel: React.FC = () => {
   const metadata = useProjectStore((s) => s.metadata);
   const setMetadata = useProjectStore((s) => s.setMetadata);
 
+  const languageHintId = useId();
   const [open, setOpen] = useState(false);
   const [isrcDraft, setIsrcDraft] = useState(() => metadata.isrc ?? "");
 
@@ -95,6 +96,22 @@ const MetadataPanel: React.FC = () => {
                     Invalid ISRC ・ expected 12 characters like USQX91700001
                   </span>
                 )}
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-composer-text-secondary select-none">Language</span>
+                <input
+                  type="text"
+                  aria-label="Language"
+                  aria-describedby={languageHintId}
+                  value={metadata.language ?? ""}
+                  placeholder="e.g. en, ja, pt-BR"
+                  onChange={(e) => setMetadata({ language: e.target.value.trim() || undefined })}
+                  className={INPUT_STYLES}
+                />
+                <span id={languageHintId} className="text-xs text-composer-text-muted select-none">
+                  BCP-47 tag ・ leave blank to let players detect it
+                </span>
               </label>
 
               <MetadataFieldList

@@ -122,6 +122,33 @@ describe("MetadataPanel", () => {
     await expect.element(isrc).toHaveValue("usqx91700001");
   });
 
+  it("typing in Language updates the store", async () => {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+
+    await screen.getByRole("textbox", { name: "Language" }).fill("pt-BR");
+    await expect.poll(() => useProjectStore.getState().metadata.language).toBe("pt-BR");
+  });
+
+  it("describes the Language field with the BCP-47 hint", async () => {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+
+    await expect
+      .element(screen.getByRole("textbox", { name: "Language" }))
+      .toHaveAccessibleDescription("BCP-47 tag ・ leave blank to let players detect it");
+  });
+
+  it("seeds the Language field from the existing store value", async () => {
+    seedMetadata({ language: "ja-Latn" });
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+
+    await expect.element(screen.getByRole("textbox", { name: "Language" })).toHaveValue("ja-Latn");
+  });
+
   it("adds an extra key/value row and writes it to the store", async () => {
     seedMetadata();
     const screen = await render(<MetadataPanel />);
@@ -164,6 +191,36 @@ describe("MetadataPanel", () => {
   });
 
   describe("edge cases", () => {
+    it("clears the stored language to undefined rather than an empty string", async () => {
+      seedMetadata({ language: "ja" });
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+
+      const language = screen.getByRole("textbox", { name: "Language" });
+      await expect.element(language).toHaveValue("ja");
+
+      await language.clear();
+      await expect.poll(() => useProjectStore.getState().metadata.language).toBeUndefined();
+      await expect.element(language).toHaveValue("");
+    });
+
+    it("stores undefined for a whitespace-only language", async () => {
+      seedMetadata();
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+
+      await screen.getByRole("textbox", { name: "Language" }).fill("   ");
+      await expect.poll(() => useProjectStore.getState().metadata.language).toBeUndefined();
+    });
+
+    it("renders an empty Language field when no language is stored", async () => {
+      seedMetadata();
+      const screen = await render(<MetadataPanel />);
+      await screen.getByRole("button", { name: "Metadata" }).click();
+
+      await expect.element(screen.getByRole("textbox", { name: "Language" })).toHaveValue("");
+    });
+
     it("flags a duplicate extra key instead of silently dropping the row", async () => {
       seedMetadata();
       const screen = await render(<MetadataPanel />);
