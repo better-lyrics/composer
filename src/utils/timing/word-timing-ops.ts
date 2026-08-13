@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { type BoundaryEdge, isBoundaryFlush } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -12,6 +13,8 @@ type UpdateLineWithHistory = (
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
   updateKey: "words" | "backgroundWords";
+  // setBoundary only: routing mutateWord here too would newly stamp background provenance in useSyncHandlers.
+  buildUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
 }
 
 interface NeighborContext {
@@ -22,10 +25,23 @@ interface NeighborContext {
 
 type WordMutator = (ctx: NeighborContext) => WordTiming;
 
+interface SetBoundaryInput {
+  lines: LyricLine[];
+  lineIdx: number;
+  wordIdx: number;
+  edge: BoundaryEdge;
+  time: number;
+  minDuration: number;
+  rolling: boolean;
+  duration?: number;
+  updateLineWithHistory: UpdateLineWithHistory;
+}
+
 // -- Factory ------------------------------------------------------------------
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, updateKey } = config;
+  const buildUpdate = config.buildUpdate ?? ((words: WordTiming[]) => ({ [updateKey]: words }) as Partial<LyricLine>);
 
   function mutateWord(
     lines: LyricLine[],
@@ -98,7 +114,51 @@ function createWordTimingOps(config: WordFieldConfig) {
     mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, newEnd));
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd };
+  function setBoundary({
+    lines,
+    lineIdx,
+    wordIdx,
+    edge,
+    time,
+    minDuration,
+    rolling,
+    duration,
+    updateLineWithHistory,
+  }: SetBoundaryInput): void {
+    const line = lines[lineIdx];
+    if (!line) return;
+    const words = getWords(line);
+    if (!words?.[wordIdx]) return;
+
+    const rollNeighbour = rolling && isBoundaryFlush(words, wordIdx, edge);
+    const updatedWords = [...words];
+    const word = updatedWords[wordIdx];
+
+    // A flush pair spanning under twice minDuration cannot satisfy both floors, so hardCeiling
+    // gives up the minimum rather than letting either word invert.
+    if (edge === "begin") {
+      const prev: WordTiming | undefined = updatedWords[wordIdx - 1];
+      const floor = rollNeighbour && prev ? prev.begin + minDuration : (prev?.end ?? 0);
+      const hardCeiling = word.end;
+      const ceiling = word.end - minDuration;
+      const clamped = Math.min(hardCeiling, Math.max(floor, Math.min(ceiling, time)));
+      updatedWords[wordIdx] = { ...word, begin: clamped };
+      if (rollNeighbour && prev) updatedWords[wordIdx - 1] = { ...prev, end: clamped };
+    } else {
+      const next: WordTiming | undefined = updatedWords[wordIdx + 1];
+      const floor = word.begin + minDuration;
+      const neighbourCeiling = rollNeighbour && next ? next.end : (next?.begin ?? Number.POSITIVE_INFINITY);
+      const hardCeiling = Math.max(word.begin, Math.min(neighbourCeiling, duration ?? Number.POSITIVE_INFINITY));
+      const ceiling = rollNeighbour && next ? next.end - minDuration : hardCeiling;
+      const clamped = Math.min(hardCeiling, Math.max(floor, Math.min(ceiling, time)));
+      updatedWords[wordIdx] = { ...word, end: clamped };
+      if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
+    }
+
+    updateLineWithHistory(line.id, buildUpdate(updatedWords), { propagateToSiblings: false });
+  }
+
+  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };
 }
 
 // -- Exports -------------------------------------------------------------------
