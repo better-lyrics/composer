@@ -4,7 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { type BoundaryEdge, clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
@@ -143,29 +143,22 @@ const WordTrack: React.FC<WordTrackProps> = ({
         },
       });
 
-      const isSyllableBoundary = (idx: number, side: "left" | "right"): boolean => {
-        const pos = syllablePositions[idx];
-        if (side === "right") return pos === "first" || pos === "middle";
-        return pos === "middle" || pos === "last";
-      };
-
       const handleMouseMove = (e: PointerEvent) => {
         if (Math.abs(e.clientX - startX) >= DRAG_THRESHOLD_PX) draggedRef.current = true;
         lastPointerRef.current = { clientX: e.clientX, clientY: e.clientY };
         if (!draggedRef.current) return;
         const originalWord = words[wordIndex];
         const rawDeltaPx = e.clientX - startX;
-        const altHeld = e.altKey;
-        const conjoinedByDefault =
-          (rollingEdit || isSyllableBoundary(wordIndex, edge)) && isBoundaryFlush(words, wordIndex, boundaryEdge);
-        const conjoined = altHeld ? !conjoinedByDefault : conjoinedByDefault;
+        const conjoined = shouldRollNeighbour({
+          words,
+          wordIndex,
+          edge: boundaryEdge,
+          rollingEdit,
+          syllablePositions,
+          altHeld: e.altKey,
+        });
 
-        const adjacentWordIndex =
-          conjoined && edge === "left" && wordIndex > 0
-            ? wordIndex - 1
-            : conjoined && edge === "right" && wordIndex < words.length - 1
-              ? wordIndex + 1
-              : null;
+        const adjacentWordIndex = conjoined ? (edge === "left" ? wordIndex - 1 : wordIndex + 1) : null;
         conjoinedRef.current = { active: adjacentWordIndex !== null, adjacentWordIndex };
 
         const edgeAtStart = edge === "left" ? originalWord.begin : originalWord.end;
@@ -243,13 +236,15 @@ const WordTrack: React.FC<WordTrackProps> = ({
     [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
   );
 
-  const isBoundaryConjoined = (boundaryIndex: number): boolean => {
-    if (boundaryIndex < 0 || boundaryIndex >= words.length - 1) return false;
-    const pos = syllablePositions[boundaryIndex];
-    const isSyllable = pos === "first" || pos === "middle";
-    const conjoinedByDefault = (rollingEditMode || isSyllable) && isBoundaryFlush(words, boundaryIndex, "end");
-    return altPressed ? !conjoinedByDefault : conjoinedByDefault;
-  };
+  const isBoundaryConjoined = (boundaryIndex: number): boolean =>
+    shouldRollNeighbour({
+      words,
+      wordIndex: boundaryIndex,
+      edge: "end",
+      rollingEdit: rollingEditMode,
+      syllablePositions,
+      altHeld: altPressed,
+    });
 
   const hasSelection = selectedWords.length > 0;
 

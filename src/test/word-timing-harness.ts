@@ -29,12 +29,14 @@ const bgOps = createWordTimingOps({ getWords: (line) => line.backgroundWords, up
 
 // -- Fixtures -----------------------------------------------------------------
 
+// Trailing spaces mark word ends: without them these three read as one word
+// split into three syllables, which is a different rolling-boundary case.
 function makeLine() {
   return createLine({
     text: "a b c",
     words: [
-      { text: "a", begin: 0, end: 1 },
-      { text: "b", begin: 1, end: 2 },
+      { text: "a ", begin: 0, end: 1 },
+      { text: "b ", begin: 1, end: 2 },
       { text: "c", begin: 2, end: 3 },
     ],
   });

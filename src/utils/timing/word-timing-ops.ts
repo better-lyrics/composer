@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
-import { type BoundaryEdge, clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
+import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -130,7 +131,13 @@ function createWordTimingOps(config: WordFieldConfig) {
     const words = getWords(line);
     if (!words?.[wordIdx]) return;
 
-    const rollNeighbour = rolling && isBoundaryFlush(words, wordIdx, edge);
+    const rollNeighbour = shouldRollNeighbour({
+      words,
+      wordIndex: wordIdx,
+      edge,
+      rollingEdit: rolling,
+      syllablePositions: getSyllablePositions(words),
+    });
     const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, duration });
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];

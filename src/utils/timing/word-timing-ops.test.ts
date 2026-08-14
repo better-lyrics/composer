@@ -128,7 +128,7 @@ describe("createWordTimingOps: write contract", () => {
     const line = makeLine();
     wordsOps.setBegin([line], 0, 1, 1.5, updateLineWithHistory);
     const out = calls[0].updates.words ?? [];
-    expect(out[0]).toEqual({ text: "a", begin: 0, end: 1 });
+    expect(out[0]).toEqual({ text: "a ", begin: 0, end: 1 });
     expect(out[2]).toEqual({ text: "c", begin: 2, end: 3 });
   });
 });

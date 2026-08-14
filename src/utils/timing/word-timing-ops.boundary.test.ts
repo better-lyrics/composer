@@ -46,7 +46,7 @@ describe("createWordTimingOps: setBoundary", () => {
   it("moves only the target word when rolling is off", () => {
     const { words } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: false });
     expect(words[1].begin).toBe(1.5);
-    expect(words[0]).toEqual({ text: "a", begin: 0, end: 1 });
+    expect(words[0]).toEqual({ text: "a ", begin: 0, end: 1 });
   });
 
   it("drags the previous word's end along a flush begin boundary when rolling", () => {
@@ -73,13 +73,13 @@ describe("createWordTimingOps: setBoundary", () => {
   it("does not roll at the first index for begin", () => {
     const { words } = run({ wordIdx: 0, edge: "begin", time: 0.5, rolling: true });
     expect(words[0].begin).toBe(0.5);
-    expect(words[1]).toEqual({ text: "b", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b ", begin: 1, end: 2 });
   });
 
   it("does not roll at the last index for end", () => {
     const { words } = run({ wordIdx: 2, edge: "end", time: 4, rolling: true });
     expect(words[2].end).toBe(4);
-    expect(words[1]).toEqual({ text: "b", begin: 1, end: 2 });
+    expect(words[1]).toEqual({ text: "b ", begin: 1, end: 2 });
   });
 
   it("keeps the target word at least minDuration long", () => {
@@ -181,6 +181,23 @@ describe("createWordTimingOps: setBoundary", () => {
       expect(rolledOn.words[1].begin).toBeLessThanOrEqual(rolledOn.words[1].end);
     });
 
+    it("regression: rolls a syllable boundary with rolling off, so no gap opens inside a word", () => {
+      const syllables = () =>
+        createLine({
+          text: "hello",
+          words: [
+            { text: "hel", begin: 0, end: 1, syllableGroupId: "s1" },
+            { text: "lo", begin: 1, end: 2, syllableGroupId: "s1" },
+          ],
+        });
+      const fromEnd = run({ line: syllables(), wordIdx: 0, edge: "end", time: 1.4, rolling: false });
+      expect(fromEnd.words[0].end).toBe(1.4);
+      expect(fromEnd.words[1].begin).toBe(1.4);
+      const fromBegin = run({ line: syllables(), wordIdx: 1, edge: "begin", time: 0.6, rolling: false });
+      expect(fromBegin.words[1].begin).toBe(0.6);
+      expect(fromBegin.words[0].end).toBe(0.6);
+    });
+
     it("regression: never inverts a word whose begin is past a shorter audio duration", () => {
       const lastWord = run({ wordIdx: 2, edge: "end", time: 99, rolling: false, duration: 1.5 });
       expect(lastWord.words[2].begin).toBeLessThanOrEqual(lastWord.words[2].end);
@@ -193,7 +210,7 @@ describe("createWordTimingOps: setBoundary", () => {
   describe("invariants", () => {
     it("never lets a word's begin exceed its end", () => {
       const { words } = run({ wordIdx: 1, edge: "begin", time: 99, rolling: true });
-      expect(words[1]).toEqual({ text: "b", begin: 1.95, end: 2 });
+      expect(words[1]).toEqual({ text: "b ", begin: 1.95, end: 2 });
     });
 
     it("does not modify the input words array", () => {

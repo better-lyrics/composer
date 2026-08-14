@@ -1,3 +1,4 @@
+import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -14,6 +15,15 @@ interface BoundaryClampInput {
   duration?: number;
 }
 
+interface RollDecisionInput {
+  words: readonly WordTiming[];
+  wordIndex: number;
+  edge: BoundaryEdge;
+  rollingEdit: boolean;
+  syllablePositions: readonly SyllablePosition[];
+  altHeld?: boolean;
+}
+
 // -- Predicates ---------------------------------------------------------------
 
 // Overlaps count as flush, preserving the drag path's original `prev.end < word.begin` test.
@@ -26,6 +36,33 @@ function isBoundaryFlush(words: readonly WordTiming[], wordIndex: number, edge: 
   }
   const next = words[wordIndex + 1];
   return next !== undefined && next.begin <= word.end;
+}
+
+function isInsideSyllableGroup(position: SyllablePosition | undefined, edge: BoundaryEdge): boolean {
+  if (edge === "end") return position === "first" || position === "middle";
+  return position === "middle" || position === "last";
+}
+
+// -- Roll decision ------------------------------------------------------------
+
+// Syllables of one word carry their neighbour without Rolling; separate words need it.
+// `altHeld` is the drag-only inversion: keyboard paths omit it and take the default.
+function shouldRollNeighbour({
+  words,
+  wordIndex,
+  edge,
+  rollingEdit,
+  syllablePositions,
+  altHeld = false,
+}: RollDecisionInput): boolean {
+  const neighbour = edge === "begin" ? words[wordIndex - 1] : words[wordIndex + 1];
+  // Nothing to roll at the array ends, so Alt has nothing to invert into either.
+  if (!words[wordIndex] || !neighbour) return false;
+
+  const rollsByDefault =
+    (rollingEdit || isInsideSyllableGroup(syllablePositions[wordIndex], edge)) &&
+    isBoundaryFlush(words, wordIndex, edge);
+  return altHeld ? !rollsByDefault : rollsByDefault;
 }
 
 // -- Clamp --------------------------------------------------------------------
@@ -59,5 +96,5 @@ function clampBoundaryTime({
 
 // -- Exports ------------------------------------------------------------------
 
-export { clampBoundaryTime, isBoundaryFlush };
+export { clampBoundaryTime, isBoundaryFlush, shouldRollNeighbour };
 export type { BoundaryEdge };
