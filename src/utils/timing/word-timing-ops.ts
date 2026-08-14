@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { type BoundaryEdge, isBoundaryFlush } from "@/domain/word/boundary";
+import { type BoundaryEdge, clampBoundaryTime, isBoundaryFlush } from "@/domain/word/boundary";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -131,26 +131,16 @@ function createWordTimingOps(config: WordFieldConfig) {
     if (!words?.[wordIdx]) return;
 
     const rollNeighbour = rolling && isBoundaryFlush(words, wordIdx, edge);
+    const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, duration });
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
 
-    // A flush pair spanning under twice minDuration cannot satisfy both floors, so hardCeiling
-    // gives up the minimum rather than letting either word invert.
     if (edge === "begin") {
       const prev: WordTiming | undefined = updatedWords[wordIdx - 1];
-      const floor = rollNeighbour && prev ? prev.begin + minDuration : (prev?.end ?? 0);
-      const hardCeiling = word.end;
-      const ceiling = word.end - minDuration;
-      const clamped = Math.min(hardCeiling, Math.max(floor, Math.min(ceiling, time)));
       updatedWords[wordIdx] = { ...word, begin: clamped };
       if (rollNeighbour && prev) updatedWords[wordIdx - 1] = { ...prev, end: clamped };
     } else {
       const next: WordTiming | undefined = updatedWords[wordIdx + 1];
-      const floor = word.begin + minDuration;
-      const neighbourCeiling = rollNeighbour && next ? next.end : (next?.begin ?? Number.POSITIVE_INFINITY);
-      const hardCeiling = Math.max(word.begin, Math.min(neighbourCeiling, duration ?? Number.POSITIVE_INFINITY));
-      const ceiling = rollNeighbour && next ? next.end - minDuration : hardCeiling;
-      const clamped = Math.min(hardCeiling, Math.max(floor, Math.min(ceiling, time)));
       updatedWords[wordIdx] = { ...word, end: clamped };
       if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
     }
