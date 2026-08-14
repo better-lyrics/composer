@@ -1,9 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
+import type { BoundaryEdge } from "@/domain/word/boundary";
 import { Button } from "@/ui/button";
 import { createBgWordsFromLine } from "@/utils/sync-helpers";
+import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
+import { setWordBoundary } from "@/utils/timing/word-timing";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLineSynced } from "@/domain/line/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
@@ -162,63 +166,29 @@ const TimelineInfoPanel: React.FC = () => {
     return { count: selectedWords.length, wordCount, lineCount, begin: minBegin, end: maxEnd };
   }, [selectedWords, lines, rawLines]);
 
-  const handleSetBeginToCursor = useCallback(() => {
-    if (!selectedWord) return;
-    const line = lines[selectedWord.lineIndex];
-    if (!line) return;
+  const setSelectedWordBoundary = useCallback(
+    (edge: BoundaryEdge) => {
+      if (!selectedWord) return;
+      const audioEl = useAudioStore.getState().audioElement;
+      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const setBoundaryOp = selectedWord.type === "word" ? setWordBoundary : setBgWordBoundary;
+      setBoundaryOp({
+        lines,
+        lineIdx: selectedWord.lineIndex,
+        wordIdx: selectedWord.wordIndex,
+        edge,
+        time: currentTime,
+        minDuration: useSettingsStore.getState().minWordDuration,
+        duration,
+        rolling: useTimelineStore.getState().rollingEditMode,
+        updateLineWithHistory,
+      });
+    },
+    [selectedWord, lines, duration, updateLineWithHistory],
+  );
 
-    const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return;
-
-    const audioEl = useAudioStore.getState().audioElement;
-    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-
-    const wordIndex = selectedWord.wordIndex;
-    const word = wordsArray[wordIndex];
-    if (!word) return;
-
-    const prevEnd = wordIndex > 0 ? wordsArray[wordIndex - 1].end : 0;
-    const maxBegin = word.end - 0.05;
-    const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, currentTime)));
-
-    const updatedWords = [...wordsArray];
-    updatedWords[wordIndex] = { ...word, begin: clampedBegin };
-
-    if (selectedWord.type === "word") {
-      updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
-    } else {
-      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
-    }
-  }, [selectedWord, lines, updateLineWithHistory]);
-
-  const handleSetEndToCursor = useCallback(() => {
-    if (!selectedWord) return;
-    const line = lines[selectedWord.lineIndex];
-    if (!line) return;
-
-    const wordsArray = selectedWord.type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) return;
-
-    const audioEl = useAudioStore.getState().audioElement;
-    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-
-    const wordIndex = selectedWord.wordIndex;
-    const word = wordsArray[wordIndex];
-    if (!word) return;
-
-    const minEnd = word.begin + 0.05;
-    const nextBegin = wordIndex < wordsArray.length - 1 ? wordsArray[wordIndex + 1].begin : duration;
-    const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, currentTime)));
-
-    const updatedWords = [...wordsArray];
-    updatedWords[wordIndex] = { ...word, end: clampedEnd };
-
-    if (selectedWord.type === "word") {
-      updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
-    } else {
-      updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
-    }
-  }, [selectedWord, lines, duration, updateLineWithHistory]);
+  const handleSetBeginToCursor = useCallback(() => setSelectedWordBoundary("begin"), [setSelectedWordBoundary]);
+  const handleSetEndToCursor = useCallback(() => setSelectedWordBoundary("end"), [setSelectedWordBoundary]);
 
   if (multiSelectionInfo) {
     const spanDuration = multiSelectionInfo.end - multiSelectionInfo.begin;
