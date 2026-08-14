@@ -329,8 +329,8 @@ const WordTrack: React.FC<WordTrackProps> = ({
     const time = clickX / zoom;
 
     const audioDuration = useAudioStore.getState().duration;
-    const wordDuration = useSettingsStore.getState().defaultWordDuration;
-    const slot = findInsertionSlot(words, time, wordDuration, audioDuration);
+    const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
+    const slot = findInsertionSlot(words, time, defaultWordDuration, audioDuration, minWordDuration);
     if (!slot) return;
 
     const newWord: WordTiming = { text: "... ", begin: slot.begin, end: slot.end };

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -114,7 +115,7 @@ const DEFAULTS: SettingsState = {
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
-  minWordDuration: 0.05,
+  minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
   defaultGranularity: "word",
 

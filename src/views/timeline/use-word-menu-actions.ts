@@ -86,9 +86,9 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordDuration = useSettingsStore.getState().defaultWordDuration;
+    const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
     const existingWords = type === "word" ? line.words : line.backgroundWords;
-    const slot = findInsertionSlot(existingWords ?? [], time, wordDuration, duration);
+    const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, duration, minWordDuration);
     if (!slot) {
       clearContextMenu();
       return;
