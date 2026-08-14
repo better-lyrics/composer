@@ -65,6 +65,12 @@ const GroupsSection: React.FC = () => (
         You can also use the regular clipboard: select every word of an instance ({MOD_KEY} + C with the banner
         selected), then paste ({MOD_KEY} + V) somewhere else. Same fill/insert behavior at the destination.
       </p>
+      <p className={`${PROSE} mt-2`}>
+        A third route is <strong>Conform</strong>: select contiguous ungrouped lines, right-click, and pick "Conform to
+        [Chorus]". The item only shows when the selection is exactly as long as the group. It swaps those lines' text,
+        timing, agent and background vocals for the group's, landing where the selection already sat, or at the playhead
+        when those lines had no timing yet. Composer asks before overwriting, and {MOD_KEY} + Z undoes it.
+      </p>
     </div>
 
     <div>
