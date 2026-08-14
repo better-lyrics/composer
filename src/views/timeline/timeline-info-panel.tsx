@@ -2,10 +2,9 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields, CLEARED_BACKGROUND } from "@/domain/line/background";
 import type { BoundaryEdge } from "@/domain/word/boundary";
+import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import { Button } from "@/ui/button";
-import { createBgWordsFromLine } from "@/utils/sync-helpers";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -13,64 +12,9 @@ import { isLineSynced } from "@/domain/line/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 
 // -- Components ----------------------------------------------------------------
-
-const BackgroundTextEditor: React.FC<{ lineId: string; backgroundText?: string }> = ({ lineId, backgroundText }) => {
-  const [value, setValue] = useState(() => backgroundText ?? "");
-  const [isEditing, setIsEditing] = useState(false);
-  const focusOnMount = useCallback((el: HTMLInputElement | null) => {
-    el?.focus();
-  }, []);
-  const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
-
-  const handleCommit = useCallback(() => {
-    const trimmed = value.trim() || undefined;
-    if (trimmed) {
-      const line = useProjectStore.getState().lines.find((l) => l.id === lineId);
-      const bgWords = line ? createBgWordsFromLine({ ...line, backgroundText: trimmed }) : null;
-      updateLineWithHistory(lineId, backgroundFields({ text: trimmed, words: bgWords ?? undefined, source: "manual" }));
-    } else {
-      updateLineWithHistory(lineId, CLEARED_BACKGROUND);
-    }
-    setIsEditing(false);
-  }, [lineId, value, updateLineWithHistory]);
-
-  if (!isEditing) {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          setValue(backgroundText ?? "");
-          setIsEditing(true);
-        }}
-        className="text-xs cursor-pointer text-composer-text-muted hover:text-composer-text px-1.5 py-0.5 rounded hover:bg-composer-button"
-        title="Edit background vocals"
-      >
-        {backgroundText ? `BG: ${backgroundText}` : "Add BG"}
-      </button>
-    );
-  }
-
-  return (
-    <input
-      ref={focusOnMount}
-      type="text"
-      aria-label="Background vocals text"
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      onBlur={handleCommit}
-      onKeyDown={(e) => {
-        e.stopPropagation();
-        if (e.key === "Enter") handleCommit();
-        if (e.key === "Escape") setIsEditing(false);
-      }}
-      placeholder="Background vocals"
-      className="w-32 px-1.5 py-0.5 text-xs border rounded bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent"
-    />
-  );
-};
 
 const TimelineInfoPanel: React.FC = () => {
   const rawLines = useProjectStore((s) => s.lines);
