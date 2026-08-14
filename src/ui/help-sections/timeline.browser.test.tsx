@@ -142,6 +142,14 @@ describe("TimelineSection", () => {
     expect(boundaryItem?.querySelectorAll("[data-inline-key-badge]").length).toBe(2);
   });
 
+  it("documents that the boundary shortcuts keep syllables joined without Rolling", async () => {
+    const screen = await render(<TimelineSection />);
+    const items = Array.from(screen.container.querySelectorAll("li"));
+    const boundaryItem = items.find((li) => li.textContent?.includes("snap a word's start or end"));
+    expect(boundaryItem?.textContent).toContain("stay joined whether Rolling is on or off");
+    expect(boundaryItem?.textContent).toContain("just as they do when you drag");
+  });
+
   it("drops the stale waveform double-click placement copy", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("double-click the waveform");
