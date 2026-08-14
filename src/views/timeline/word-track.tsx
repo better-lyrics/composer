@@ -46,10 +46,6 @@ interface DragState {
   adjacentEnd?: number;
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const MIN_WORD_DURATION = 0.05;
-
 // -- Helpers -------------------------------------------------------------------
 
 function resizeChangedTiming(initial: DragState, final: DragState, words: WordTiming[]): boolean {
@@ -124,6 +120,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       setDragState(initialState);
 
       const rollingEdit = useTimelineStore.getState().rollingEditMode;
+      const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
 
       setResizing(true);
@@ -178,7 +175,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           wordIndex,
           edge: boundaryEdge,
           time: edgeAtStart + (rawDeltaPx + snapShiftPx) / zoom,
-          minDuration: MIN_WORD_DURATION,
+          minDuration: minWordDuration,
           rollNeighbour: adjacentWordIndex !== null,
           duration,
         });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -21,6 +22,7 @@ const GESTURE_START_X = 200;
 // duration, so no boundary position can satisfy both words' floors.
 const TIGHT_PAIR = [createWord({ text: "a ", begin: 0.99, end: 1 }), createWord({ text: "b", begin: 1, end: 1.02 })];
 const ROOMY_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })];
+const GAPPED_PAIR = [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1.5, end: 2.5 })];
 
 async function renderResizableTrack(words: WordTiming[], options: { rolling?: boolean; duration?: number } = {}) {
   const { rolling = true, duration = 3 } = options;
@@ -81,6 +83,30 @@ describe("WordTrack boundary drag inputs", () => {
       await expect.poll(() => calls.length).toBe(1);
       expect(calls[0].adjacentIndex).toBeUndefined();
       expect(calls[0].updates.end ?? Number.NaN).toBeGreaterThanOrEqual(ROOMY_PAIR[1].begin);
+    });
+  });
+
+  describe("minimum word duration setting", () => {
+    it("clamps a conjoined drag with the configured minimum", async () => {
+      useSettingsStore.getState().set("minWordDuration", 0.2);
+      const { blocks, calls } = await renderResizableTrack(ROOMY_PAIR);
+
+      dragEdgeBy(blocks[1], "left", 300);
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].updates.begin).toBeCloseTo(1.8, 10);
+      expect(calls[0].adjacentUpdates?.end).toBeCloseTo(1.8, 10);
+    });
+
+    it("clamps an independent right-edge drag with the configured minimum", async () => {
+      useSettingsStore.getState().set("minWordDuration", 0.2);
+      const { blocks, calls } = await renderResizableTrack(GAPPED_PAIR);
+
+      dragEdgeBy(blocks[0], "right", -300);
+
+      await expect.poll(() => calls.length).toBe(1);
+      expect(calls[0].adjacentIndex).toBeUndefined();
+      expect(calls[0].updates.end).toBeCloseTo(0.2, 10);
     });
   });
 });
