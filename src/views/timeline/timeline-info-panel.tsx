@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import { Button } from "@/ui/button";
@@ -47,9 +48,7 @@ const TimelineInfoPanel: React.FC = () => {
     const group = groups.find((g) => g.id === firstGroupId);
     if (!group) return null;
     const sameInstance = instanceKeys.size === 1;
-    const totalInstances = new Set(
-      rawLines.flatMap((l) => (l.groupId === firstGroupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-    ).size;
+    const totalInstances = instanceIndicesOf(rawLines, firstGroupId).length;
     return {
       group,
       sameInstance,

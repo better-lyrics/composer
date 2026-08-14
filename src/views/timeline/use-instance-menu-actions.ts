@@ -1,5 +1,5 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -94,11 +94,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
       const { groupId, instanceIdx } = contextMenu.target;
       const projectLines = useProjectStore.getState().lines;
-      const indices = new Set<number>();
-      for (const l of projectLines) {
-        if (l.groupId === groupId && l.instanceIdx !== undefined) indices.add(l.instanceIdx);
-      }
-      const sorted = Array.from(indices).sort((a, b) => a - b);
+      const sorted = instanceIndicesOf(projectLines, groupId);
       if (sorted.length < 2) return;
       const here = sorted.indexOf(instanceIdx);
       const next = sorted[(here + direction + sorted.length) % sorted.length];

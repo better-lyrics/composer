@@ -1,3 +1,4 @@
+import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { LinkGroup } from "@/domain/group/template";
@@ -99,11 +100,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
 
   addInstance: (groupId, structure, instanceStart, insertAtIndex) =>
     set((state) => {
-      const usedIndices = new Set(
-        state.lines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-      );
-      let instanceIdx = 0;
-      while (usedIndices.has(instanceIdx)) instanceIdx++;
+      const instanceIdx = nextInstanceIdx(state.lines, groupId);
 
       const newLines: LyricLine[] = structure.map((tplLine, templateLineIdx) =>
         reconcileLine({

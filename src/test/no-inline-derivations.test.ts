@@ -74,6 +74,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "isLinked from @/domain/instance/predicates",
   },
   {
+    name: "inline instance-index enumeration",
+    regex: /\.groupId === [\w.]+ &&\s*[\w.]+\.instanceIdx !== undefined/,
+    use: "instanceIndicesOf / nextInstanceIdx from @/domain/instance/enumerate",
+  },
+  {
     name: "inline word-selection identity check",
     regex: /\.wordIndex === [\w.]+\.wordIndex\b/,
     use: "sameWordSelection / isWordSelected from @/domain/selection/identity",

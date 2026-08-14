@@ -1,3 +1,4 @@
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
@@ -64,14 +65,6 @@ function currentInstanceFromSelection(
   }
   if (groupId === null || instanceIdx === null) return null;
   return { groupId, instanceIdx };
-}
-
-function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
-  const set = new Set<number>();
-  for (const line of lines) {
-    if (line.groupId === groupId && line.instanceIdx !== undefined) set.add(line.instanceIdx);
-  }
-  return Array.from(set).sort((a, b) => a - b);
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -576,7 +569,7 @@ function useTimelineKeyboard(
             toast.error("Select words inside one instance first");
             break;
           }
-          const all = listInstancesOfGroup(projectLines, inst.groupId);
+          const all = instanceIndicesOf(projectLines, inst.groupId);
           if (all.length < 2) {
             toast.error("This group has only one instance");
             break;
@@ -613,7 +606,7 @@ function useTimelineKeyboard(
           const group = useProjectStore.getState().groups.find((g) => g.id === inst.groupId);
           if (!group) break;
           e.preventDefault();
-          const instanceCount = listInstancesOfGroup(projectLines, inst.groupId).length;
+          const instanceCount = instanceIndicesOf(projectLines, inst.groupId).length;
           void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount });
           break;
         }
