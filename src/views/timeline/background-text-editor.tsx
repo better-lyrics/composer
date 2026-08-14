@@ -10,14 +10,15 @@ interface BackgroundTextEditorProps {
   backgroundText?: string;
 }
 
+// -- Helpers -------------------------------------------------------------------
+
+const focusOnMount = (el: HTMLInputElement | null) => el?.focus();
+
 // -- Components ----------------------------------------------------------------
 
 const BackgroundTextEditor: React.FC<BackgroundTextEditorProps> = ({ lineId, backgroundText }) => {
   const [value, setValue] = useState(() => backgroundText ?? "");
   const [isEditing, setIsEditing] = useState(false);
-  const focusOnMount = useCallback((el: HTMLInputElement | null) => {
-    el?.focus();
-  }, []);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
 
   const handleCommit = useCallback(() => {

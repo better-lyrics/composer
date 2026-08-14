@@ -14,8 +14,8 @@ type UpdateLineWithHistory = (
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
   updateKey: "words" | "backgroundWords";
-  // setBoundary only: routing mutateWord here too would newly stamp background provenance in useSyncHandlers.
-  buildUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
+  // mutateWord deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
+  buildBoundaryUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
 }
 
 interface NeighborContext {
@@ -42,7 +42,8 @@ interface SetBoundaryInput {
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, updateKey } = config;
-  const buildUpdate = config.buildUpdate ?? ((words: WordTiming[]) => ({ [updateKey]: words }) as Partial<LyricLine>);
+  const buildBoundaryUpdate =
+    config.buildBoundaryUpdate ?? ((words: WordTiming[]) => ({ [updateKey]: words }) as Partial<LyricLine>);
 
   function mutateWord(
     lines: LyricLine[],
@@ -152,7 +153,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
     }
 
-    updateLineWithHistory(line.id, buildUpdate(updatedWords), { propagateToSiblings: false });
+    updateLineWithHistory(line.id, buildBoundaryUpdate(updatedWords), { propagateToSiblings: false });
   }
 
   return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };

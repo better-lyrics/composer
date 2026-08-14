@@ -18,6 +18,13 @@ interface AppliedInstance {
   instanceIdx: number;
 }
 
+interface InstanceApplyResult<Reason extends string> {
+  ok: boolean;
+  reason?: Reason;
+  updatedLines?: LyricLine[];
+  instanceIdx?: number;
+}
+
 // -- Functions -----------------------------------------------------------------
 
 function offsetWords(words: WordTemplate[], instanceStart: number): WordTiming[] {
@@ -73,3 +80,4 @@ function applyInstanceTemplate({
 // -- Exports -------------------------------------------------------------------
 
 export { applyInstanceTemplate };
+export type { InstanceApplyResult };

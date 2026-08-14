@@ -1,14 +1,10 @@
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { applyInstanceTemplate } from "@/views/timeline/apply-instance-template";
+import { applyInstanceTemplate, type InstanceApplyResult } from "@/views/timeline/apply-instance-template";
 
-interface FillResult {
-  ok: boolean;
-  reason?: "not_enough_empty_lines" | "out_of_range";
-  updatedLines?: LyricLine[];
-  newGroup?: LinkGroup;
-  instanceIdx?: number;
-}
+type FillFailure = "not_enough_empty_lines" | "out_of_range";
+
+type FillResult = InstanceApplyResult<FillFailure>;
 
 interface FillInput {
   lines: LyricLine[];

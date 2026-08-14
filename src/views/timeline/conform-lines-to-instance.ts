@@ -1,7 +1,7 @@
 import { instanceBounds } from "@/domain/instance/bounds";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { applyInstanceTemplate } from "@/views/timeline/apply-instance-template";
+import { applyInstanceTemplate, type InstanceApplyResult } from "@/views/timeline/apply-instance-template";
 import { lineIdsAreContiguous, selectionTouchesAnyGroup } from "@/views/timeline/group-ops";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -22,12 +22,7 @@ type ConformFailure =
   | "not_contiguous"
   | "length_mismatch";
 
-interface ConformResult {
-  ok: boolean;
-  reason?: ConformFailure;
-  updatedLines?: LyricLine[];
-  instanceIdx?: number;
-}
+type ConformResult = InstanceApplyResult<ConformFailure>;
 
 // -- Operation -----------------------------------------------------------------
 

@@ -268,7 +268,7 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
     expect((calls[0].updates.backgroundWords ?? [])[1].begin).toBe(1.5);
   });
 
-  it("an instance without a buildUpdate hook writes only the word array", () => {
+  it("an instance without a buildBoundaryUpdate hook writes only the word array", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
     bgOps.setBegin([bgLine()], 0, 1, 1.5, updateLineWithHistory);
     expect(Object.keys(calls[0].updates)).toEqual(["backgroundWords"]);
