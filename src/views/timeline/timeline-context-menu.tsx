@@ -11,7 +11,7 @@ import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
-import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
+import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
 import { useEffect, useLayoutEffect } from "react";
 
 function MenuItem({
@@ -57,7 +57,16 @@ const TimelineContextMenu: React.FC = () => {
 
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
-    middleware: [flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }), shift({ padding: 8 })],
+    middleware: [
+      flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply: ({ availableHeight, elements }) => {
+          elements.floating.style.maxHeight = `${availableHeight}px`;
+        },
+      }),
+    ],
   });
 
   const agents = useProjectStore((s) => s.agents);
@@ -158,7 +167,7 @@ const TimelineContextMenu: React.FC = () => {
     <FloatingPortal>
       <div
         ref={refs.setFloating}
-        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none"
+        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none overflow-y-auto overscroll-contain"
         style={floatingStyles}
       >
         {target.kind === "word" && (
