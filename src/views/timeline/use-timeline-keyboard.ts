@@ -4,6 +4,8 @@ import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
+import { setWordBoundary } from "@/utils/timing/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { MOD_KEY } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -153,26 +155,18 @@ function useTimelineKeyboard(
         }
       }
 
-      const updatedWords = [...wordsArray];
-
-      if (edge === "begin") {
-        const prevEnd = wordIndex > 0 ? wordsArray[wordIndex - 1].end : 0;
-        const maxBegin = word.end - useSettingsStore.getState().minWordDuration;
-        const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, currentTime)));
-        updatedWords[wordIndex] = { ...word, begin: clampedBegin };
-      } else {
-        const minEnd = word.begin + useSettingsStore.getState().minWordDuration;
-        const nextBegin = wordIndex < wordsArray.length - 1 ? wordsArray[wordIndex + 1].begin : duration;
-        const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, currentTime)));
-        updatedWords[wordIndex] = { ...word, end: clampedEnd };
-      }
-
-      const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
-      if (targetWord.type === "word") {
-        updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
-      } else {
-        updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
-      }
+      const setBoundaryOp = targetWord.type === "word" ? setWordBoundary : setBgWordBoundary;
+      setBoundaryOp({
+        lines,
+        lineIdx: targetWord.lineIndex,
+        wordIdx: wordIndex,
+        edge,
+        time: currentTime,
+        minDuration: useSettingsStore.getState().minWordDuration,
+        duration,
+        rolling: useTimelineStore.getState().rollingEditMode,
+        updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
+      });
     },
     [lines, duration, scrollContainerRef],
   );
