@@ -133,6 +133,15 @@ describe("TimelineSection", () => {
     expect(dropItem?.querySelector("[data-inline-key-badge]")).not.toBeNull();
   });
 
+  it("documents rolling edit on the boundary shortcuts and info panel buttons", async () => {
+    const screen = await render(<TimelineSection />);
+    const items = Array.from(screen.container.querySelectorAll("li"));
+    const boundaryItem = items.find((li) => li.textContent?.includes("snap a word's start or end"));
+    expect(boundaryItem?.textContent).toContain("carries that neighbor along");
+    expect(boundaryItem?.textContent).toContain("buttons in the info panel do the same thing");
+    expect(boundaryItem?.querySelectorAll("[data-inline-key-badge]").length).toBe(2);
+  });
+
   it("drops the stale waveform double-click placement copy", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("double-click the waveform");

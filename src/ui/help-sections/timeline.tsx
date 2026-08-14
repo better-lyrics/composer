@@ -100,7 +100,9 @@ const TimelineSection: React.FC = () => (
         <li>
           Use <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> and{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> to snap a word's start or end to the
-          current playhead position.
+          current playhead position. With <strong>Rolling</strong> on, moving an edge that sits flush against its
+          neighbor carries that neighbor along, so the two stay joined. The <strong>Set Begin</strong> and{" "}
+          <strong>Set End</strong> buttons in the info panel do the same thing.
         </li>
         <li>
           With one or more words selected, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
