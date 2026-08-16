@@ -200,7 +200,7 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     expect(currentWords(0)[0].end).toBe(2);
   });
 
-  it("closes the gap from both sides across two keystrokes", async () => {
+  it("closes the gap from both sides when the end edge goes first", async () => {
     await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
 
     pressBoundaryKey("]");
@@ -211,16 +211,24 @@ describe("useTimelineKeyboard · set boundary from a gap", () => {
     expect(currentWords()[0].end).toBeCloseTo(2.5, 10);
   });
 
-  it("stops reaching once the playhead lands on the begin it just pulled back", async () => {
+  it("closes the gap from both sides when the begin edge goes first", async () => {
     await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
 
     pressBoundaryKey("[");
     await expect.poll(() => currentWords()[1].begin).toBeCloseTo(2.5, 10);
     pressBoundaryKey("]");
 
-    const minDuration = useSettingsStore.getState().minWordDuration;
-    await expect.poll(() => currentWords()[1].end).toBeCloseTo(2.5 + minDuration, 10);
-    expect(currentWords()[0].end).toBe(2);
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(2.5, 10);
+    expect(currentWords()[1].end).toBe(4);
+  });
+
+  it("regression: leaves a word intact when the playhead rests on its begin", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 3, rolling: false });
+
+    pressBoundaryKey("]");
+
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(3, 10);
+    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
   });
 
   it("changes nothing when no word starts after the playhead", async () => {

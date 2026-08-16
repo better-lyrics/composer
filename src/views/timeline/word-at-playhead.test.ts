@@ -184,13 +184,35 @@ describe("findBoundaryTarget", () => {
       });
     });
 
-    it("treats a playhead resting exactly on a word's begin as inside that word", () => {
+    it("keeps the begin edge on the word the playhead starts", () => {
       expect(findBoundaryTarget([gappedLine()], 3, "begin")).toEqual({
         lineId: "gapped",
         lineIndex: 0,
         wordIndex: 1,
         type: "word",
       });
+    });
+
+    it("sends the end edge back a word when the playhead rests on a word's begin", () => {
+      expect(findBoundaryTarget([gappedLine()], 3, "end")).toEqual({
+        lineId: "gapped",
+        lineIndex: 0,
+        wordIndex: 0,
+        type: "word",
+      });
+    });
+
+    it("hands each edge its own side of a flush seam", () => {
+      const flush = createLine({
+        id: "flush",
+        text: "a b",
+        words: [
+          { text: "a ", begin: 1, end: 2 },
+          { text: "b", begin: 2, end: 3 },
+        ],
+      });
+      expect(findBoundaryTarget([flush], 2, "end")?.wordIndex).toBe(0);
+      expect(findBoundaryTarget([flush], 2, "begin")?.wordIndex).toBe(1);
     });
   });
 
@@ -218,6 +240,17 @@ describe("findBoundaryTarget", () => {
       });
       expect(findBoundaryTarget([line], 1.5, "begin")?.wordIndex).toBe(1);
       expect(findBoundaryTarget([line], 3.5, "end")?.wordIndex).toBe(1);
+    });
+
+    it("prefers a word spanning the playhead over one that merely ends on it", () => {
+      const ending = createLine({ id: "ending", words: [{ text: "x", begin: 1, end: 2 }] });
+      const spanning = createLine({ id: "spanning", words: [{ text: "y", begin: 1.5, end: 2.5 }] });
+      expect(findBoundaryTarget([ending, spanning], 2, "end")).toEqual({
+        lineId: "spanning",
+        lineIndex: 1,
+        wordIndex: 0,
+        type: "word",
+      });
     });
 
     it("leaves the input lines untouched", () => {

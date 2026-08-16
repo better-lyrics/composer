@@ -79,10 +79,29 @@ function findWordAcrossGap(lines: LyricLine[], time: number, edge: BoundaryEdge)
   return nearest;
 }
 
+// The end edge will not claim a word the playhead has only just entered, since setting
+// that word's end back to its own begin just collapses it to the minimum duration. It
+// falls through to the gap search and lands on the word before instead.
+function containsForEdge(word: WordTiming, time: number, edge: BoundaryEdge): boolean {
+  const startedBefore = edge === "begin" ? time >= word.begin : time > word.begin;
+  return startedBefore && time < word.end;
+}
+
+function findContainingWord(lines: LyricLine[], time: number, edge: BoundaryEdge): WordSelection | null {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+    const mainIndex = line.words?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
+    if (mainIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: mainIndex, type: "word" };
+    const bgIndex = line.backgroundWords?.findIndex((word) => containsForEdge(word, time, edge)) ?? -1;
+    if (bgIndex !== -1) return { lineId: line.id, lineIndex, wordIndex: bgIndex, type: "bg" };
+  }
+  return null;
+}
+
 // Containment resolves first, so anything the gap search still sees lies wholly on one
 // side of the playhead and can be ranked by plain distance.
 function findBoundaryTarget(lines: LyricLine[], time: number, edge: BoundaryEdge): WordSelection | null {
-  return findWordsAtTime(lines, time)[0] ?? findWordAcrossGap(lines, time, edge);
+  return findContainingWord(lines, time, edge) ?? findWordAcrossGap(lines, time, edge);
 }
 
 // -- Exports -------------------------------------------------------------------
