@@ -196,8 +196,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
                 const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
                 const time = (e.clientX - rect.left) / zoomPx;
                 const audioDuration = useAudioStore.getState().duration;
-                const wordDuration = useSettingsStore.getState().defaultWordDuration;
-                const slot = findInsertionSlot([], time, wordDuration, audioDuration);
+                const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
+                const slot = findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
                 if (!slot) return;
                 const newWord: WordTiming = {
                   text: displayText.slice(0, 60) || "...",
@@ -273,8 +273,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
               const time = (e.clientX - rect.left) / zoom;
               const audioDuration = useAudioStore.getState().duration;
-              const wordDuration = useSettingsStore.getState().defaultWordDuration;
-              const slot = findInsertionSlot([], time, wordDuration, audioDuration);
+              const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
+              const slot = findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
               if (!slot) return;
               const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
               useProjectStore

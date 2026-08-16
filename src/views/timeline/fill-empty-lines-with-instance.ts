@@ -1,13 +1,10 @@
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import type { LineTemplate } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
+import { applyInstanceTemplate, type InstanceApplyResult } from "@/views/timeline/apply-instance-template";
 
-interface FillResult {
-  ok: boolean;
-  reason?: "not_enough_empty_lines" | "out_of_range";
-  updatedLines?: LyricLine[];
-  newGroup?: LinkGroup;
-  instanceIdx?: number;
-}
+type FillFailure = "not_enough_empty_lines" | "out_of_range";
+
+type FillResult = InstanceApplyResult<FillFailure>;
 
 interface FillInput {
   lines: LyricLine[];
@@ -35,49 +32,12 @@ function fillEmptyLinesWithInstance(input: FillInput): FillResult {
     }
   }
 
-  const usedIndices = new Set(
-    lines.flatMap((l) => (l.groupId === groupId && l.instanceIdx !== undefined ? [l.instanceIdx] : [])),
-  );
-  let instanceIdx = 0;
-  while (usedIndices.has(instanceIdx)) instanceIdx++;
-
-  const updatedLines = lines.map((line, idx) => {
-    if (idx < startIndex || idx >= startIndex + template.length) return line;
-    const tplLine = template[idx - startIndex];
-    return reconcileLine({
-      ...line,
-      text: tplLine.text,
-      agentId: tplLine.agentId,
-      groupId,
-      instanceIdx,
-      templateLineIdx: idx - startIndex,
-      ...(tplLine.relativeBegin !== undefined
-        ? { begin: tplLine.relativeBegin + instanceStart }
-        : { begin: undefined }),
-      ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : { end: undefined }),
-      ...(tplLine.words
-        ? {
-            words: tplLine.words.map((w) => ({
-              text: w.text,
-              begin: w.relativeBegin + instanceStart,
-              end: w.relativeEnd + instanceStart,
-            })),
-          }
-        : { words: undefined }),
-      ...(tplLine.backgroundText !== undefined
-        ? { backgroundText: tplLine.backgroundText }
-        : { backgroundText: undefined }),
-      ...(tplLine.backgroundWords
-        ? {
-            backgroundWords: tplLine.backgroundWords.map((w) => ({
-              text: w.text,
-              begin: w.relativeBegin + instanceStart,
-              end: w.relativeEnd + instanceStart,
-            })),
-          }
-        : { backgroundWords: undefined }),
-      backgroundTextSource: tplLine.backgroundTextSource,
-    });
+  const { updatedLines, instanceIdx } = applyInstanceTemplate({
+    lines,
+    groupId,
+    template,
+    startIndex,
+    instanceStart,
   });
 
   return { ok: true, updatedLines, instanceIdx };

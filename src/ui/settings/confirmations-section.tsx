@@ -48,6 +48,11 @@ const ConfirmationsSection: React.FC = () => {
           description="Show a warning when a syllable split would also apply to other identical words across the project."
           settingKey="confirmApplyToAllSyllableSplit"
         />
+        <ToggleSetting
+          label="Confirm conforming lines to a group"
+          description="Show a warning before existing lines take on a group's text and timing."
+          settingKey="confirmConformToGroup"
+        />
       </div>
     </div>
   );

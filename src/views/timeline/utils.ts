@@ -4,12 +4,10 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
-import { findWordsAtTime } from "@/views/timeline/word-at-playhead";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -34,10 +32,6 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
 }
 
 const formatTime = (seconds: number) => formatTimeBase(seconds, 2);
-
-function findWordAtTime(lines: LyricLine[], time: number): WordSelection | null {
-  return findWordsAtTime(lines, time)[0] ?? null;
-}
 
 interface GroupHeaderRow {
   kind: "group-header";
@@ -427,7 +421,6 @@ export {
   distributeWordsInLine,
   distributeLinesTiming,
   formatTime,
-  findWordAtTime,
   getEffectiveRows,
   getWordsInInstance,
   computeRowLayout,

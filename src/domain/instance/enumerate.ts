@@ -7,6 +7,23 @@ function linesOfInstance(lines: ReadonlyArray<LyricLine>, groupId: string, insta
   return lines.filter((line) => belongsToInstance(line, groupId, instanceIdx));
 }
 
+function instanceIndicesOf(lines: ReadonlyArray<LyricLine>, groupId: string): number[] {
+  const indices = new Set<number>();
+  for (const line of lines) {
+    if (line.groupId === groupId && line.instanceIdx !== undefined) indices.add(line.instanceIdx);
+  }
+  return Array.from(indices).toSorted((a, b) => a - b);
+}
+
+function nextInstanceIdx(lines: ReadonlyArray<LyricLine>, groupId: string): number {
+  let instanceIdx = 0;
+  for (const used of instanceIndicesOf(lines, groupId)) {
+    if (used > instanceIdx) break;
+    if (used === instanceIdx) instanceIdx++;
+  }
+  return instanceIdx;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { linesOfInstance };
+export { instanceIndicesOf, linesOfInstance, nextInstanceIdx };

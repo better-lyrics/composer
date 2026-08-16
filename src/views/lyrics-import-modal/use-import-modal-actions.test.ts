@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import {
   importParsedLyrics,
@@ -209,6 +210,12 @@ describe("importParsedLyrics metadata", () => {
   it("applies metadata when keys are present", async () => {
     await importParsedLyrics(parseResult({ metadata: { title: "Bohemian Rhapsody" } }), buildContext());
     expect(useProjectStore.getState().metadata.title).toBe("Bohemian Rhapsody");
+  });
+
+  it("lands the language of an imported TTML in the store", async () => {
+    const ttml = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="pt-BR"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Ola</span> <span begin="00:01.500" end="00:02.000">mundo</span></p></div></body></tt>`;
+    await importParsedLyrics(parseLyricsFile("song.ttml", ttml), buildContext());
+    expect(useProjectStore.getState().metadata.language).toBe("pt-BR");
   });
 });
 

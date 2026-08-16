@@ -1,4 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
+import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
+import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -12,6 +14,8 @@ type UpdateLineWithHistory = (
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
   updateKey: "words" | "backgroundWords";
+  // mutateWord deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
+  buildBoundaryUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
 }
 
 interface NeighborContext {
@@ -22,10 +26,24 @@ interface NeighborContext {
 
 type WordMutator = (ctx: NeighborContext) => WordTiming;
 
+interface SetBoundaryInput {
+  lines: LyricLine[];
+  lineIdx: number;
+  wordIdx: number;
+  edge: BoundaryEdge;
+  time: number;
+  minDuration: number;
+  rolling: boolean;
+  duration?: number;
+  updateLineWithHistory: UpdateLineWithHistory;
+}
+
 // -- Factory ------------------------------------------------------------------
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, updateKey } = config;
+  const buildBoundaryUpdate =
+    config.buildBoundaryUpdate ?? ((words: WordTiming[]) => ({ [updateKey]: words }) as Partial<LyricLine>);
 
   function mutateWord(
     lines: LyricLine[],
@@ -98,7 +116,47 @@ function createWordTimingOps(config: WordFieldConfig) {
     mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, newEnd));
   }
 
-  return { nudgeBegin, setBegin, nudgeEnd, setEnd };
+  function setBoundary({
+    lines,
+    lineIdx,
+    wordIdx,
+    edge,
+    time,
+    minDuration,
+    rolling,
+    duration,
+    updateLineWithHistory,
+  }: SetBoundaryInput): void {
+    const line = lines[lineIdx];
+    if (!line) return;
+    const words = getWords(line);
+    if (!words?.[wordIdx]) return;
+
+    const rollNeighbour = shouldRollNeighbour({
+      words,
+      wordIndex: wordIdx,
+      edge,
+      rollingEdit: rolling,
+      syllablePositions: getSyllablePositions(words),
+    });
+    const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, duration });
+    const updatedWords = [...words];
+    const word = updatedWords[wordIdx];
+
+    if (edge === "begin") {
+      const prev: WordTiming | undefined = updatedWords[wordIdx - 1];
+      updatedWords[wordIdx] = { ...word, begin: clamped };
+      if (rollNeighbour && prev) updatedWords[wordIdx - 1] = { ...prev, end: clamped };
+    } else {
+      const next: WordTiming | undefined = updatedWords[wordIdx + 1];
+      updatedWords[wordIdx] = { ...word, end: clamped };
+      if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
+    }
+
+    updateLineWithHistory(line.id, buildBoundaryUpdate(updatedWords), { propagateToSiblings: false });
+  }
+
+  return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };
 }
 
 // -- Exports -------------------------------------------------------------------

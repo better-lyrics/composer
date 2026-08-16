@@ -31,7 +31,6 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   // negative value (it would force four new .browser.test.tsx files for a
   // zero-behaviour-change extraction).
   "views/timeline/timeline-context-menu.tsx",
-  "views/timeline/timeline-info-panel.tsx",
   "views/sync/scrollable-line.tsx",
   "views/timeline/line-row.tsx",
   // shortcut-definitions.ts is intentionally exempt: it is a flat declarative

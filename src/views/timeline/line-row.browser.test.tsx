@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LineRow } from "@/views/timeline/line-row";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -129,5 +130,28 @@ describe("LineRow", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
+  });
+
+  it("honours the minimum word duration setting when creating a word from the drop-zone", async () => {
+    useAudioStore.setState({ duration: 0.1 });
+    useSettingsStore.setState({ minWordDuration: 0.5 });
+    const line = createLine({
+      id: "l1",
+      text: "hello world",
+      words: [createWord({ text: "hello", begin: 0, end: 1 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    const screen = await render(
+      <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+      { dndContext: true },
+    );
+
+    const dropZone = Array.from(screen.container.querySelectorAll("div")).find((d) => d.textContent?.trim() === "BG");
+    dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+
+    useSettingsStore.setState({ minWordDuration: 0.05 });
+    dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
   });
 });

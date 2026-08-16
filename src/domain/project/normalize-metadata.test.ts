@@ -29,8 +29,14 @@ describe("normalizeLoadedMetadata", () => {
         isrc: "USQX91700001",
         songwriters: ["W"],
         extra: { spotifyId: "z" },
+        language: "pt-BR",
       });
-      expect(out).toMatchObject({ isrc: "USQX91700001", songwriters: ["W"], extra: { spotifyId: "z" } });
+      expect(out).toMatchObject({
+        isrc: "USQX91700001",
+        songwriters: ["W"],
+        extra: { spotifyId: "z" },
+        language: "pt-BR",
+      });
     });
     it("drops a whitespace-only legacy artist to an empty array", () => {
       expect(normalizeLoadedMetadata({ artist: "   " }).artists).toEqual([]);

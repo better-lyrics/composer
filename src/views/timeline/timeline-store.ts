@@ -186,3 +186,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT, ZOOM_STEP };
+export type { ContextMenuTarget };

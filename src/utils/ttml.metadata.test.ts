@@ -39,6 +39,56 @@ describe("generateTTML metadata", () => {
   });
 });
 
+describe("generateTTML xml:lang", () => {
+  const bare: ProjectMetadata = { title: "t", artists: [], album: "", duration: 0 };
+  const generate = (language?: string) =>
+    generateTTML({ metadata: { ...bare, language }, agents: [], lines, granularity: "line" });
+  const rootOf = (xml: string) => new DOMParser().parseFromString(xml, "application/xml").documentElement;
+
+  it("omits xml:lang when no language is set", () => {
+    expect(rootOf(generate()).hasAttribute("xml:lang")).toBe(false);
+  });
+
+  it("emits the language when set", () => {
+    expect(rootOf(generate("ja")).getAttribute("xml:lang")).toBe("ja");
+  });
+
+  it("keeps a region subtag intact", () => {
+    expect(rootOf(generate("pt-BR")).getAttribute("xml:lang")).toBe("pt-BR");
+  });
+
+  describe("edge cases", () => {
+    it("omits xml:lang when the language is an empty string", () => {
+      expect(rootOf(generate("")).hasAttribute("xml:lang")).toBe(false);
+    });
+
+    it("omits xml:lang when the language is whitespace only", () => {
+      expect(rootOf(generate("   ")).hasAttribute("xml:lang")).toBe(false);
+    });
+
+    it("trims surrounding whitespace off the emitted language", () => {
+      expect(rootOf(generate("  ja  ")).getAttribute("xml:lang")).toBe("ja");
+    });
+  });
+
+  describe("invariants", () => {
+    it("leaves no double space in the tt tag when the language is absent", () => {
+      expect(generate().split("\n")[0]).not.toContain("  ");
+    });
+
+    it("stays well-formed with the attribute omitted", () => {
+      expect(new DOMParser().parseFromString(generate(), "application/xml").querySelector("parsererror")).toBeNull();
+    });
+
+    it("keeps the other tt attributes when the language is absent", () => {
+      const xml = generate();
+      expect(xml).toContain('ttp:timeBase="media"');
+      expect(xml).toContain('itunes:timing="Line"');
+      expect(xml).toContain('composer:timing="Line"');
+    });
+  });
+});
+
 describe("generateTTML attribute escaping", () => {
   function parse(xml: string): Document {
     return new DOMParser().parseFromString(xml, "application/xml");

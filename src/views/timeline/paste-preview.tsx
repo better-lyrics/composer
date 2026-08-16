@@ -4,6 +4,7 @@ import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { cn } from "@/utils/cn";
 import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
@@ -142,7 +143,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         if (match) {
           const group = useProjectStore.getState().groups.find((g) => g.id === match.groupId);
           const groupLabel = group?.label ?? "group";
-          const instanceCount = countInstances(lines, match.groupId);
+          const instanceCount = instanceIndicesOf(lines, match.groupId).length;
           const ok = await confirm({
             title: `Link as another ${groupLabel}?`,
             description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${instanceCount} instance${instanceCount === 1 ? "" : "s"}). Link as another instance, or paste as plain words?`,
@@ -261,14 +262,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
 };
 
 // -- Helpers -------------------------------------------------------------------
-
-function countInstances(lines: LyricLine[], groupId: string): number {
-  const seen = new Set<number>();
-  for (const line of lines) {
-    if (line.groupId === groupId && line.instanceIdx !== undefined) seen.add(line.instanceIdx);
-  }
-  return seen.size;
-}
 
 function checkOverlaps(
   clipboard: ClipboardData,

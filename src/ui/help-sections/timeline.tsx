@@ -100,7 +100,18 @@ const TimelineSection: React.FC = () => (
         <li>
           Use <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> and{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> to snap a word's start or end to the
-          current playhead position.
+          current playhead position. With <strong>Rolling</strong> on, moving an edge that sits flush against its
+          neighbor carries that neighbor along, so the two stay joined. Flush syllables of one word stay joined whether
+          Rolling is on or off, just as they do when you drag the boundary. The <strong>Set Begin</strong> and{" "}
+          <strong>Set End</strong> buttons in the info panel do the same thing.
+        </li>
+        <li>
+          With nothing selected and the playhead resting in the space between two words, those same two keys reach for
+          the nearest word instead of doing nothing.{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> pulls back the word that starts after
+          the playhead, and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> pushes forward the
+          word that ended before it, so two keystrokes close a gap from both sides. Neither one drags a neighbor along,
+          since a word across a gap has nothing to stay joined to.
         </li>
         <li>
           With one or more words selected, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}

@@ -11,7 +11,7 @@ import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
-import { flip, FloatingPortal, shift, useFloating } from "@floating-ui/react";
+import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
 import { useEffect, useLayoutEffect } from "react";
 
 function MenuItem({
@@ -49,6 +49,63 @@ function MenuDivider() {
   return <div className="my-1 border-t border-composer-border" />;
 }
 
+// -- Grouping section ---------------------------------------------------------
+
+type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
+
+function GroupingMenuSection({
+  groupableSelection,
+  conformableSelection,
+  onCreateGroup,
+  onConform,
+}: {
+  groupableSelection: ContextMenuTargets["groupableSelection"];
+  conformableSelection: ContextMenuTargets["conformableSelection"];
+  onCreateGroup: () => void;
+  onConform: (groupId: string) => void;
+}) {
+  if (!groupableSelection && !conformableSelection) return null;
+  const soleOption = conformableSelection?.options.length === 1 ? conformableSelection.options[0] : null;
+
+  return (
+    <>
+      <MenuDivider />
+      {groupableSelection && (
+        <MenuItem
+          label={
+            groupableSelection.count > 1
+              ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${groupableSelection.addedFromGaps} gap)` : ""}`
+              : "Group this line"
+          }
+          shortcut={getEffectiveKeysArray("timeline.createGroup")}
+          onClick={onCreateGroup}
+        />
+      )}
+      {soleOption && (
+        <MenuItem label={`Conform to "${soleOption.group.label}"`} onClick={() => onConform(soleOption.group.id)} />
+      )}
+      {conformableSelection && !soleOption && (
+        <>
+          <p className="px-3 py-1 text-xs text-composer-text-muted">Conform to group</p>
+          <div className="flex flex-col gap-px">
+            {conformableSelection.options.map(({ group }) => (
+              <button
+                key={group.id}
+                type="button"
+                onClick={() => onConform(group.id)}
+                className="w-full text-left py-1 pl-2 pr-2.5 text-sm cursor-pointer rounded-md flex items-center gap-2 text-composer-text hover:bg-composer-button transition-colors"
+              >
+                <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: group.color }} />
+                {group.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
 // -- Component ----------------------------------------------------------------
 
 const TimelineContextMenu: React.FC = () => {
@@ -57,7 +114,16 @@ const TimelineContextMenu: React.FC = () => {
 
   const { refs, floatingStyles } = useFloating({
     placement: "bottom-start",
-    middleware: [flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }), shift({ padding: 8 })],
+    middleware: [
+      flip({ fallbackPlacements: ["top-start", "bottom-end", "top-end"] }),
+      shift({ padding: 8 }),
+      size({
+        padding: 8,
+        apply: ({ availableHeight, elements }) => {
+          elements.floating.style.maxHeight = `${availableHeight}px`;
+        },
+      }),
+    ],
   });
 
   const agents = useProjectStore((s) => s.agents);
@@ -68,6 +134,7 @@ const TimelineContextMenu: React.FC = () => {
     explicitToggleContext,
     gutterLineGroupInfo,
     groupableSelection,
+    conformableSelection,
     mergeInfo,
     groupedWordInfo,
     snapNeededInfo,
@@ -99,6 +166,7 @@ const TimelineContextMenu: React.FC = () => {
   const {
     handleJumpToGroupFromBanner,
     handleCreateGroupFromSelection,
+    handleConformToGroup,
     handleDeleteGroup,
     handleRenameStart,
     handleRecolorGroup,
@@ -158,7 +226,7 @@ const TimelineContextMenu: React.FC = () => {
     <FloatingPortal>
       <div
         ref={refs.setFloating}
-        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none"
+        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none overflow-y-auto overscroll-contain"
         style={floatingStyles}
       >
         {target.kind === "word" && (
@@ -207,20 +275,12 @@ const TimelineContextMenu: React.FC = () => {
                 />
               </>
             )}
-            {groupableSelection && (
-              <>
-                <MenuDivider />
-                <MenuItem
-                  label={
-                    groupableSelection.count > 1
-                      ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${groupableSelection.addedFromGaps} gap)` : ""}`
-                      : "Group this line"
-                  }
-                  shortcut={getEffectiveKeysArray("timeline.createGroup")}
-                  onClick={handleCreateGroupFromSelection}
-                />
-              </>
-            )}
+            <GroupingMenuSection
+              groupableSelection={groupableSelection}
+              conformableSelection={conformableSelection}
+              onCreateGroup={handleCreateGroupFromSelection}
+              onConform={handleConformToGroup}
+            />
             {explicitToggleContext && (
               <>
                 <MenuDivider />
@@ -253,20 +313,12 @@ const TimelineContextMenu: React.FC = () => {
           <>
             <MenuItem label="Add word here" shortcut={["Double Click"]} onClick={handleAddWordHere} />
             {placeLineHereInfo && <MenuItem label="Place line here" onClick={handlePlaceLineHere} />}
-            {groupableSelection && (
-              <>
-                <MenuDivider />
-                <MenuItem
-                  label={
-                    groupableSelection.count > 1
-                      ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${groupableSelection.addedFromGaps} gap)` : ""}`
-                      : "Group this line"
-                  }
-                  shortcut={getEffectiveKeysArray("timeline.createGroup")}
-                  onClick={handleCreateGroupFromSelection}
-                />
-              </>
-            )}
+            <GroupingMenuSection
+              groupableSelection={groupableSelection}
+              conformableSelection={conformableSelection}
+              onCreateGroup={handleCreateGroupFromSelection}
+              onConform={handleConformToGroup}
+            />
           </>
         )}
 
@@ -274,20 +326,12 @@ const TimelineContextMenu: React.FC = () => {
           <>
             <MenuItem label="Add line above" shortcut={["Shift", "N"]} onClick={() => handleAddLine("above")} />
             <MenuItem label="Add line below" shortcut={["N"]} onClick={() => handleAddLine("below")} />
-            {groupableSelection && (
-              <>
-                <MenuDivider />
-                <MenuItem
-                  label={
-                    groupableSelection.count > 1
-                      ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${groupableSelection.addedFromGaps} gap)` : ""}`
-                      : "Group this line"
-                  }
-                  shortcut={getEffectiveKeysArray("timeline.createGroup")}
-                  onClick={handleCreateGroupFromSelection}
-                />
-              </>
-            )}
+            <GroupingMenuSection
+              groupableSelection={groupableSelection}
+              conformableSelection={conformableSelection}
+              onCreateGroup={handleCreateGroupFromSelection}
+              onConform={handleConformToGroup}
+            />
             <MenuDivider />
             {agents.length > 1 && (
               <>
@@ -302,7 +346,7 @@ const TimelineContextMenu: React.FC = () => {
                         key={agent.id}
                         type="button"
                         onClick={() => handleAssignAgent(agent.id)}
-                        className={`w-full text-left px-2 py-1 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
+                        className={`w-full text-left py-1 pl-2 pr-2.5 text-sm cursor-pointer rounded-md flex items-center gap-2 transition-colors ${
                           isActive
                             ? "bg-composer-accent/15 text-composer-text"
                             : "text-composer-text hover:bg-composer-button"

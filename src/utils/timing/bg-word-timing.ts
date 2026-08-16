@@ -1,8 +1,10 @@
+import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
 
-const { nudgeBegin, setBegin, nudgeEnd, setEnd } = createWordTimingOps({
+const { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary } = createWordTimingOps({
   getWords: (line) => line.backgroundWords,
   updateKey: "backgroundWords",
+  buildBoundaryUpdate: manualBackgroundWordEdit,
 });
 
 export {
@@ -10,4 +12,5 @@ export {
   setBegin as setBgWordBegin,
   nudgeEnd as nudgeBgWordEnd,
   setEnd as setBgWordEnd,
+  setBoundary as setBgWordBoundary,
 };

@@ -1,19 +1,26 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { WordTrack } from "@/views/timeline/word-track";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { applyWordPatch } from "@/utils/word-patch";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 
-type UpdateWord = (index: number, updates: object, adjacentIndex?: number, adjacentUpdates?: object) => void;
+type UpdateWord = (
+  index: number,
+  updates: Partial<WordTiming>,
+  adjacentIndex?: number,
+  adjacentUpdates?: Partial<WordTiming>,
+) => void;
 
 async function renderTrack(words: WordTiming[], onUpdateWord: UpdateWord = () => {}) {
   const line = createLine({ words });
   useProjectStore.setState({ lines: [line] });
-  return render(
+  const screen = await render(
     <WordTrack
       lineId={line.id}
       lineIndex={0}
@@ -26,6 +33,7 @@ async function renderTrack(words: WordTiming[], onUpdateWord: UpdateWord = () =>
     />,
     { dndContext: true },
   );
+  return { screen, line };
 }
 
 function dragRightEdge(block: HTMLElement, opts: { altKey?: boolean } = {}) {
@@ -43,7 +51,74 @@ function dragRightEdgeBy(block: HTMLElement, offsetPx: number) {
   document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
 }
 
+const commitToStore: UpdateWord = (index, updates, adjacentIndex, adjacentUpdates) => {
+  const line = useProjectStore.getState().lines[0];
+  if (!line.words) return;
+  const patched = applyWordPatch(
+    line.words,
+    index,
+    updates,
+    adjacentIndex !== undefined && adjacentUpdates ? { index: adjacentIndex, updates: adjacentUpdates } : undefined,
+  );
+  if (!patched) return;
+  useProjectStore.getState().updateLineWithHistory(line.id, { words: patched }, { propagateToSiblings: false });
+};
+
+async function renderTrackWritingToStore(words: WordTiming[]) {
+  const rendered = await renderTrack(words, commitToStore);
+  // Browser tests load no stylesheet, so the Tailwind-sized edges have no box for Playwright to click.
+  for (const el of rendered.screen.container.querySelectorAll<HTMLElement>("[data-edge]")) {
+    el.style.width = "8px";
+    el.style.height = "16px";
+  }
+  return rendered;
+}
+
+function edgeOf(block: HTMLElement, edge: "left" | "right"): HTMLElement {
+  return block.querySelector(`[data-edge="${edge}"]`) as HTMLElement;
+}
+
+const GESTURE_START_X = 200;
+
+function pressEdge(block: HTMLElement, edge: "left" | "right"): HTMLElement {
+  const el = edgeOf(block, edge);
+  const clientX = GESTURE_START_X;
+  el.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true, button: 0, clientX, clientY: 0 }));
+  el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX, clientY: 0 }));
+  return el;
+}
+
+function movePointer(move: { dx: number; dy: number }) {
+  const clientX = GESTURE_START_X + move.dx;
+  document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX, clientY: move.dy }));
+}
+
+function releasePointer(el: HTMLElement, move: { dx: number; dy: number }) {
+  const clientX = GESTURE_START_X + move.dx;
+  document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX, clientY: move.dy }));
+  el.dispatchEvent(new MouseEvent("click", { bubbles: true, button: 0, clientX, clientY: move.dy }));
+}
+
+function pressEdgeMoveAndClick(
+  block: HTMLElement,
+  edge: "left" | "right",
+  ...moves: Array<{ dx: number; dy: number }>
+) {
+  const el = pressEdge(block, edge);
+  let last = { dx: 0, dy: 0 };
+  for (const move of moves) {
+    movePointer(move);
+    last = move;
+  }
+  releasePointer(el, last);
+}
+
 const WORDS = [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })];
+
+const GAPPED_WORDS = [
+  createWord({ text: "hello ", begin: 0, end: 1 }),
+  createWord({ text: "world", begin: 1.2, end: 2 }),
+];
 
 const SYLLABLE_GROUP_WORDS = [
   createWord({ text: "hello ", begin: 0, end: 1 }),
@@ -187,7 +262,7 @@ describe("WordTrack", () => {
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
     ];
-    const screen = await renderTrack(words);
+    const { screen } = await renderTrack(words);
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     expect(blocks[0].style.borderRightStyle).toBe("dashed");
     expect(blocks[1].style.borderLeftStyle).toBe("dashed");
@@ -199,7 +274,7 @@ describe("WordTrack", () => {
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.5, end: 1, syllableGroupId: "g" }),
     ];
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0]);
     expect(calls).toHaveLength(1);
@@ -212,7 +287,7 @@ describe("WordTrack", () => {
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
     ];
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0]);
     expect(calls).toHaveLength(1);
@@ -225,7 +300,7 @@ describe("WordTrack", () => {
       createWord({ text: "ev", begin: 0, end: 0.5, syllableGroupId: "g" }),
       createWord({ text: "er", begin: 0.8, end: 1.3, syllableGroupId: "g" }),
     ];
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
     dragRightEdge(blocks[0], { altKey: true });
     expect(calls).toHaveLength(1);
@@ -240,7 +315,7 @@ describe("WordTrack", () => {
       createWord({ text: "er", begin: 1.2, end: 1.6, syllableGroupId: "g" }),
       createWord({ text: "y", begin: 1.6, end: 2, syllableGroupId: "g" }),
     ];
-    const screen = await renderTrack(words, (index, updates, adjacentIndex) =>
+    const { screen } = await renderTrack(words, (index, updates, adjacentIndex) =>
       calls.push({ index, updates, adjacentIndex }),
     );
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
@@ -263,7 +338,7 @@ describe("WordTrack", () => {
       adjacentUpdates?: { begin?: number; end?: number };
     }> = [];
     const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
-    const screen = await renderTrack(words, (index, updates, adjacentIndex, adjacentUpdates) =>
+    const { screen } = await renderTrack(words, (index, updates, adjacentIndex, adjacentUpdates) =>
       calls.push({ index, updates, adjacentIndex, adjacentUpdates }),
     );
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
@@ -287,7 +362,7 @@ describe("WordTrack", () => {
     useTimelineStore.setState({ rollingEditMode: true, zoom: 100 });
     const calls: Array<{ index: number; adjacentIndex?: number }> = [];
     const words = [createWord({ text: "a ", begin: 1, end: 1.5 }), createWord({ text: "b", begin: 1.5, end: 2 })];
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
+    const { screen } = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
     const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
 
     const edge = blocks[0].querySelector('[data-edge="right"]') as HTMLElement;
@@ -324,7 +399,7 @@ describe("WordTrack", () => {
   it("adds a word on double-click and spaces the seam before it", async () => {
     useAudioStore.setState({ duration: 3 });
     useTimelineStore.setState({ zoom: 100 });
-    const screen = await renderTrack(WORDS);
+    const { screen } = await renderTrack(WORDS);
     const track = screen.container.querySelector(".relative") as HTMLElement;
     const rect = track.getBoundingClientRect();
 
@@ -334,5 +409,130 @@ describe("WordTrack", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
     expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["hello ", "world ", "..."]);
+  });
+
+  describe("boundary click (issue #165)", () => {
+    it("selects the word when its left edge is clicked without dragging", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen, line } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      await userEvent.click(edgeOf(blocks[1], "left"));
+
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
+        lineId: line.id,
+        lineIndex: 0,
+        wordIndex: 1,
+        type: "word",
+      });
+    });
+
+    it("selects the word when its right edge is clicked without dragging", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen, line } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      await userEvent.click(edgeOf(blocks[0], "right"));
+
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
+        lineId: line.id,
+        lineIndex: 0,
+        wordIndex: 0,
+        type: "word",
+      });
+    });
+
+    it("does not push an undo entry when a boundary is clicked without dragging", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+      const historyBefore = useProjectStore.getState().history.length;
+
+      await userEvent.click(edgeOf(blocks[1], "left"));
+
+      expect(useProjectStore.getState().history).toHaveLength(historyBefore);
+      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+    });
+
+    it("selects the word when the pointer jitters vertically without moving sideways", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen, line } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      pressEdgeMoveAndClick(blocks[1], "left", { dx: 0, dy: 40 });
+
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
+        lineId: line.id,
+        lineIndex: 0,
+        wordIndex: 1,
+        type: "word",
+      });
+      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(useProjectStore.getState().history).toHaveLength(0);
+    });
+
+    it("selects the word when the press drifts a single pixel sideways", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen, line } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      pressEdgeMoveAndClick(blocks[1], "left", { dx: 1, dy: 0 });
+
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(1);
+      expect(useTimelineStore.getState().selectedWords[0]).toEqual({
+        lineId: line.id,
+        lineIndex: 0,
+        wordIndex: 1,
+        type: "word",
+      });
+      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(useProjectStore.getState().history).toHaveLength(0);
+    });
+
+    it("holds the block still below the drag threshold and moves it above", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+      const el = pressEdge(blocks[1], "left");
+
+      movePointer({ dx: 2, dy: 0 });
+      await expect.poll(() => blocks[1].style.left).toBe("120px");
+
+      movePointer({ dx: 30, dy: 0 });
+      await expect.poll(() => blocks[1].style.left).toBe("150px");
+
+      releasePointer(el, { dx: 30, dy: 0 });
+    });
+
+    it("commits nothing when a drag returns to where it started", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      pressEdgeMoveAndClick(blocks[1], "left", { dx: 30, dy: 0 }, { dx: 0, dy: 0 });
+
+      expect(useProjectStore.getState().lines[0].words?.[1].begin).toBe(1.2);
+      expect(useProjectStore.getState().lines[0].words?.[1].end).toBe(2);
+      expect(useProjectStore.getState().history).toHaveLength(0);
+      expect(useProjectStore.getState().isDirty).toBe(false);
+    });
+
+    it("leaves selection empty and commits the new timing after a real drag", async () => {
+      useTimelineStore.setState({ zoom: 100 });
+      const { screen } = await renderTrackWritingToStore(GAPPED_WORDS);
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+
+      pressEdgeMoveAndClick(blocks[1], "left", { dx: 30, dy: 0 });
+
+      await expect.poll(() => useProjectStore.getState().lines[0].words?.[1].begin).not.toBe(1.2);
+      const movedBegin = useProjectStore.getState().lines[0].words?.[1].begin;
+      expect(movedBegin).toBeGreaterThan(1.4);
+      expect(movedBegin).toBeLessThan(1.6);
+      expect(useTimelineStore.getState().selectedWords).toHaveLength(0);
+      expect(useProjectStore.getState().history.length).toBeGreaterThan(0);
+    });
   });
 });

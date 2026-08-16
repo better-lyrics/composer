@@ -48,6 +48,9 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const ttmTitleEl = doc.getElementsByTagName("ttm:title")[0];
   if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
+  const documentLanguage = doc.documentElement.getAttribute("xml:lang")?.trim();
+  if (documentLanguage) metadata.language = documentLanguage;
+
   const metaEls = Array.from(
     new Set(
       Array.from(doc.getElementsByTagName("composer:meta")).concat(

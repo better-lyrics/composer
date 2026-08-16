@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -67,6 +68,7 @@ interface SettingsState {
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
   confirmApplyToAllSyllableSplit: boolean;
+  confirmConformToGroup: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
@@ -113,7 +115,7 @@ const DEFAULTS: SettingsState = {
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
-  minWordDuration: 0.05,
+  minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
   defaultGranularity: "word",
 
@@ -134,6 +136,7 @@ const DEFAULTS: SettingsState = {
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
   confirmApplyToAllSyllableSplit: true,
+  confirmConformToGroup: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
@@ -191,6 +194,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmResetShortcuts: state.confirmResetShortcuts,
           confirmGroupDissolution: state.confirmGroupDissolution,
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
+          confirmConformToGroup: state.confirmConformToGroup,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,
