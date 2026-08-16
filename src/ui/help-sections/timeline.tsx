@@ -106,6 +106,14 @@ const TimelineSection: React.FC = () => (
           <strong>Set End</strong> buttons in the info panel do the same thing.
         </li>
         <li>
+          With nothing selected and the playhead resting in the space between two words, those same two keys reach for
+          the nearest word instead of doing nothing.{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordBegin")} /> pulls back the word that starts after
+          the playhead, and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> pushes forward the
+          word that ended before it, so two keystrokes close a gap from both sides. Neither one drags a neighbor along,
+          since a word across a gap has nothing to stay joined to.
+        </li>
+        <li>
           With one or more words selected, press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} /> to nudge them as a group. Each word
           keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.

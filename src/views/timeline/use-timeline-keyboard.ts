@@ -24,7 +24,7 @@ import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -34,7 +34,6 @@ import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coo
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
-  findWordAtTime,
   getWordsInInstance,
   partitionNudgeSelections,
   shiftSelectionsTogether,
@@ -89,8 +88,11 @@ function useTimelineKeyboard(
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
       const fromPlayhead = !selectedWord;
-      const targetWord = selectedWord ?? findWordAtTime(lines, currentTime);
-      if (!targetWord) return;
+      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge);
+      if (!targetWord) {
+        toast(edge === "begin" ? "No word starts after the playhead" : "No word ends before the playhead");
+        return;
+      }
 
       const line = lines[targetWord.lineIndex];
       if (!line) return;

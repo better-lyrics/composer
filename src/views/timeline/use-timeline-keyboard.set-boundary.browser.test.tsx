@@ -37,12 +37,32 @@ async function armTimeline(options: {
   await renderHook(() => useTimelineKeyboard(scrollContainerRef, [options.line], duration));
 }
 
+async function armPlayhead(options: {
+  lines: LyricLine[];
+  currentTime: number;
+  rolling: boolean;
+  duration?: number;
+}) {
+  const duration = options.duration ?? 10;
+  useAudioStore.setState({ currentTime: options.currentTime, duration });
+  useProjectStore.setState({ activeTab: "timeline", lines: options.lines });
+  useTimelineStore.setState({ rollingEditMode: options.rolling, selectedWords: [] });
+  const scrollContainerRef = createRef<HTMLDivElement | null>();
+  await renderHook(() =>
+    useTimelineKeyboard(
+      scrollContainerRef,
+      useProjectStore((state) => state.lines),
+      duration,
+    ),
+  );
+}
+
 function pressBoundaryKey(key: "[" | "]") {
   window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 }
 
-function currentWords() {
-  return useProjectStore.getState().lines[0].words ?? [];
+function currentWords(lineIndex = 0) {
+  return useProjectStore.getState().lines[lineIndex].words ?? [];
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -129,5 +149,97 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
     pressBoundaryKey("[");
 
     await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.8, 10);
+  });
+});
+
+describe("useTimelineKeyboard · set boundary from a gap", () => {
+  const gappedLine = () =>
+    createLine({
+      text: "done gave",
+      words: [
+        { text: "done ", begin: 1, end: 2 },
+        { text: "gave", begin: 3, end: 4 },
+      ],
+    });
+
+  it("pulls the next word's begin back to a playhead sitting in the gap", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(2.5, 10);
+    expect(currentWords()[0].end).toBe(2);
+  });
+
+  it("pushes the previous word's end forward to a playhead sitting in the gap", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
+
+    pressBoundaryKey("]");
+
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(2.5, 10);
+    expect(currentWords()[1].begin).toBe(3);
+  });
+
+  it("leaves the far side of the gap alone even with rolling on", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: true });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(2.5, 10);
+    expect(currentWords()[0].end).toBe(2);
+  });
+
+  it("reaches into the following line when the gap spans a line break", async () => {
+    const first = createLine({ text: "done", words: [{ text: "done", begin: 1, end: 2 }] });
+    const second = createLine({ text: "gave", words: [{ text: "gave", begin: 3, end: 4 }] });
+    await armPlayhead({ lines: [first, second], currentTime: 2.5, rolling: false });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords(1)[0].begin).toBeCloseTo(2.5, 10);
+    expect(currentWords(0)[0].end).toBe(2);
+  });
+
+  it("closes the gap from both sides across two keystrokes", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
+
+    pressBoundaryKey("]");
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(2.5, 10);
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(2.5, 10);
+    expect(currentWords()[0].end).toBeCloseTo(2.5, 10);
+  });
+
+  it("stops reaching once the playhead lands on the begin it just pulled back", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 2.5, rolling: false });
+
+    pressBoundaryKey("[");
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(2.5, 10);
+    pressBoundaryKey("]");
+
+    const minDuration = useSettingsStore.getState().minWordDuration;
+    await expect.poll(() => currentWords()[1].end).toBeCloseTo(2.5 + minDuration, 10);
+    expect(currentWords()[0].end).toBe(2);
+  });
+
+  it("changes nothing when no word starts after the playhead", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 8, rolling: false });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].end).toBe(4);
+    expect(currentWords()[0]).toEqual({ text: "done ", begin: 1, end: 2 });
+    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
+  });
+
+  it("changes nothing when no word ends before the playhead", async () => {
+    await armPlayhead({ lines: [gappedLine()], currentTime: 0.5, rolling: false });
+
+    pressBoundaryKey("]");
+
+    await expect.poll(() => currentWords()[0].begin).toBe(1);
+    expect(currentWords()[0]).toEqual({ text: "done ", begin: 1, end: 2 });
+    expect(currentWords()[1]).toEqual({ text: "gave", begin: 3, end: 4 });
   });
 });
