@@ -7,8 +7,17 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 describe("TimelineSection", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<TimelineSection />);
-    expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
+    expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(4);
     expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(7);
+  });
+
+  it("renders the playhead step slider bound to playheadStepAmount", async () => {
+    useSettingsStore.setState({ playheadStepAmount: 0.1 });
+    const screen = await render(<TimelineSection />);
+    const slider = screen.getByLabelText("Playhead step");
+    await expect.element(slider).toBeInTheDocument();
+    expect((slider.element() as HTMLInputElement).value).toBe("0.1");
+    await expect.element(screen.getByText("100ms")).toBeInTheDocument();
   });
 
   it("flips the default rolling edit setting when its toggle is clicked", async () => {
