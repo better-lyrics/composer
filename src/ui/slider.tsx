@@ -72,35 +72,37 @@ const Slider: React.FC<SliderProps> = ({
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
+      if (e.altKey || e.shiftKey || e.metaKey || e.ctrlKey) return;
+
       const largeStep = (max - min) * 0.1;
       const smallStep = step || (max - min) * 0.01;
+
+      const commit = (next: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onChange(next);
+      };
 
       switch (e.key) {
         case "ArrowLeft":
         case "ArrowDown":
-          e.preventDefault();
-          onChange(Math.max(min, value - smallStep));
+          commit(Math.max(min, value - smallStep));
           break;
         case "ArrowRight":
         case "ArrowUp":
-          e.preventDefault();
-          onChange(Math.min(max, value + smallStep));
+          commit(Math.min(max, value + smallStep));
           break;
         case "PageDown":
-          e.preventDefault();
-          onChange(Math.max(min, value - largeStep));
+          commit(Math.max(min, value - largeStep));
           break;
         case "PageUp":
-          e.preventDefault();
-          onChange(Math.min(max, value + largeStep));
+          commit(Math.min(max, value + largeStep));
           break;
         case "Home":
-          e.preventDefault();
-          onChange(min);
+          commit(min);
           break;
         case "End":
-          e.preventDefault();
-          onChange(max);
+          commit(max);
           break;
       }
     },

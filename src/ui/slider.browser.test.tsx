@@ -158,6 +158,53 @@ describe("Slider", () => {
     expect(value).toBe(100);
   });
 
+  it("ignores an arrow press that carries a modifier, leaving it for app shortcuts", async () => {
+    const updates: number[] = [];
+    const screen = await render(
+      <ControlledHarness initial={50} min={0} max={100} step={5} onChange={(v) => updates.push(v)} />,
+    );
+    const slider = screen.getByRole("slider").element() as HTMLElement;
+    slider.focus();
+
+    for (const modifiers of [{ altKey: true }, { shiftKey: true }, { metaKey: true }, { ctrlKey: true }]) {
+      slider.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, ...modifiers }));
+    }
+
+    expect(updates).toEqual([]);
+  });
+
+  it("stops an unmodified arrow press from also reaching a window listener", async () => {
+    let windowSawKey = false;
+    const spy = () => {
+      windowSawKey = true;
+    };
+    window.addEventListener("keydown", spy);
+
+    const screen = await render(<ControlledHarness initial={50} min={0} max={100} step={5} />);
+    const slider = screen.getByRole("slider").element() as HTMLElement;
+    slider.focus();
+    slider.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    window.removeEventListener("keydown", spy);
+    expect(windowSawKey).toBe(false);
+  });
+
+  it("lets an unhandled key through to a window listener", async () => {
+    let seenKey = "";
+    const spy = (event: KeyboardEvent) => {
+      seenKey = event.key;
+    };
+    window.addEventListener("keydown", spy);
+
+    const screen = await render(<ControlledHarness initial={50} min={0} max={100} step={5} />);
+    const slider = screen.getByRole("slider").element() as HTMLElement;
+    slider.focus();
+    slider.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+
+    window.removeEventListener("keydown", spy);
+    expect(seenKey).toBe("a");
+  });
+
   // -- Mouse ------------------------------------------------------------------
 
   it("snaps value to step when clicking the track", async () => {
