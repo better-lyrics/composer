@@ -319,6 +319,60 @@ describe("useTimelineKeyboard · page the playhead", () => {
   });
 });
 
+describe("useTimelineKeyboard · jump the playhead to the track ends", () => {
+  it("moves the playhead to the end of the track on End", async () => {
+    useAudioStore.setState({ currentTime: 10, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+
+    expect(seek.get()).toBe(120);
+  });
+
+  it("moves the playhead to the start of the track on Home", async () => {
+    useAudioStore.setState({ currentTime: 90, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+
+    expect(seek.get()).toBe(0);
+  });
+
+  it("seeks to zero on End for a track with no duration yet", async () => {
+    useAudioStore.setState({ currentTime: 0, duration: 0 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+
+    expect(seek.get()).toBe(0);
+  });
+
+  it("scrolls the end of the track into view", async () => {
+    const container = buildScrollContainer(300, 12000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 0, duration: 100 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 100 });
+    trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 100));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+
+    expect(container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+});
+
 describe("useTimelineKeyboard · nudge selected words", () => {
   function renderWithSelectedWord(): Promise<{ lineId: string }> {
     const line = createLine({ text: "solo", words: [{ text: "solo", begin: 1, end: 2 }] });

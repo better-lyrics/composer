@@ -357,6 +357,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Page playhead forward one screen",
     defaultBinding: { key: "PageDown" },
   },
+  {
+    id: "timeline.playheadToStart",
+    scope: "timeline",
+    description: "Move playhead to start",
+    defaultBinding: { key: "Home" },
+  },
+  {
+    id: "timeline.playheadToEnd",
+    scope: "timeline",
+    description: "Move playhead to end",
+    defaultBinding: { key: "End" },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------

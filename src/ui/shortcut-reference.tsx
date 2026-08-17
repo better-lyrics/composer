@@ -67,6 +67,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
         description: "Page playhead forward one screen",
         shortcutId: "timeline.pagePlayheadForward",
       },
+      { keys: ["Home"], description: "Move playhead to start", shortcutId: "timeline.playheadToStart" },
+      { keys: ["End"], description: "Move playhead to end", shortcutId: "timeline.playheadToEnd" },
       { keys: ["Space"], description: "Jump viewport to playhead", shortcutId: "timeline.jumpToPlayhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },

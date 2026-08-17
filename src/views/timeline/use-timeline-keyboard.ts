@@ -733,6 +733,13 @@ function useTimelineKeyboard(
           seekAndReveal(steppedTime(current, delta, duration), pageContainer);
           break;
         }
+        case "timeline.playheadToStart":
+        case "timeline.playheadToEnd": {
+          e.preventDefault();
+          const target = matched === "timeline.playheadToStart" ? 0 : Math.max(0, duration);
+          seekAndReveal(target, scrollContainerRef.current);
+          break;
+        }
       }
     };
 
