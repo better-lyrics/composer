@@ -345,6 +345,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Step playhead forward",
     defaultBinding: { key: "ArrowRight" },
   },
+  {
+    id: "timeline.pagePlayheadBack",
+    scope: "timeline",
+    description: "Page playhead back one screen",
+    defaultBinding: { key: "PageUp" },
+  },
+  {
+    id: "timeline.pagePlayheadForward",
+    scope: "timeline",
+    description: "Page playhead forward one screen",
+    defaultBinding: { key: "PageDown" },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------

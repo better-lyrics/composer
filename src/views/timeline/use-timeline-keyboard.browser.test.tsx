@@ -5,6 +5,7 @@ import { createLine, snapPoints } from "@/test/factories";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { viewportSeconds } from "@/views/timeline/playhead-step";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -237,6 +238,84 @@ describe("useTimelineKeyboard · step the playhead", () => {
 
     expect(container.scrollLeft).toBeGreaterThan(0);
     container.remove();
+  });
+});
+
+describe("useTimelineKeyboard · page the playhead", () => {
+  it("pages the playhead forward by one viewport width on PageDown", async () => {
+    const container = buildScrollContainer(600, 12000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 10, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 100 });
+    const seek = trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(10 + viewportSeconds(container.clientWidth, 100), 5);
+    container.remove();
+  });
+
+  it("pages the playhead back by one viewport width on PageUp", async () => {
+    const container = buildScrollContainer(600, 12000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 60, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 100 });
+    const seek = trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageUp", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(60 - viewportSeconds(container.clientWidth, 100), 5);
+    container.remove();
+  });
+
+  it("pages a shorter distance when zoomed in", async () => {
+    const container = buildScrollContainer(600, 12000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 60, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 400 });
+    const seek = trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(60 + viewportSeconds(container.clientWidth, 400), 5);
+    container.remove();
+  });
+
+  it("clamps paging at the end of the track", async () => {
+    const container = buildScrollContainer(600, 12000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 119, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 100 });
+    const seek = trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown", bubbles: true }));
+
+    expect(seek.get()).toBe(120);
+    container.remove();
+  });
+
+  it("does not seek when there is no scroll container to measure", async () => {
+    useAudioStore.setState({ currentTime: 10, duration: 120 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 120));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "PageDown", bubbles: true }));
+
+    expect(seek.get()).toBe(-1);
   });
 });
 

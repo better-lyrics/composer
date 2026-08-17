@@ -31,7 +31,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
-import { steppedTime } from "@/views/timeline/playhead-step";
+import { steppedTime, viewportSeconds } from "@/views/timeline/playhead-step";
 import { seekAndReveal } from "@/views/timeline/seek-and-reveal";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
@@ -718,6 +718,19 @@ function useTimelineKeyboard(
           const step = useSettingsStore.getState().playheadStepAmount;
           const delta = matched === "timeline.stepPlayheadBack" ? -step : step;
           seekAndReveal(steppedTime(current, delta, duration), scrollContainerRef.current);
+          break;
+        }
+        case "timeline.pagePlayheadBack":
+        case "timeline.pagePlayheadForward": {
+          e.preventDefault();
+          const pageContainer = scrollContainerRef.current;
+          if (!pageContainer) break;
+          const audioEl = useAudioStore.getState().audioElement;
+          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const span = viewportSeconds(pageContainer.clientWidth, useTimelineStore.getState().zoom);
+          if (span <= 0) break;
+          const delta = matched === "timeline.pagePlayheadBack" ? -span : span;
+          seekAndReveal(steppedTime(current, delta, duration), pageContainer);
           break;
         }
       }
