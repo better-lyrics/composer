@@ -271,13 +271,13 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     id: "timeline.nudgeLeft",
     scope: "timeline",
     description: "Nudge selected words left",
-    defaultBinding: { key: "ArrowLeft" },
+    defaultBinding: { key: "ArrowLeft", alt: true },
   },
   {
     id: "timeline.nudgeRight",
     scope: "timeline",
     description: "Nudge selected words right",
-    defaultBinding: { key: "ArrowRight" },
+    defaultBinding: { key: "ArrowRight", alt: true },
   },
   {
     id: "timeline.toggleExplicit",

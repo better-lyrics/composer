@@ -61,6 +61,20 @@ describe("SHORTCUT_DEFINITIONS", () => {
     }
   });
 
+  it("registers word nudging on the alt-modified arrows so the bare arrows stay free for transport", () => {
+    const expectedBindings: Record<string, ShortcutBinding> = {
+      "timeline.nudgeLeft": { key: "ArrowLeft", alt: true },
+      "timeline.nudgeRight": { key: "ArrowRight", alt: true },
+    };
+
+    for (const [id, binding] of Object.entries(expectedBindings)) {
+      const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);
+      expect(definition, `missing definition for ${id}`).toBeDefined();
+      expect(definition?.scope).toBe("timeline");
+      expect(definition?.defaultBinding).toEqual(binding);
+    }
+  });
+
   describe("invariants", () => {
     it("has a unique id for every definition", () => {
       const ids = SHORTCUT_DEFINITIONS.map((d) => d.id);

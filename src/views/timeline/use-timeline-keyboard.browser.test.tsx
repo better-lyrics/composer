@@ -123,6 +123,61 @@ describe("useTimelineKeyboard", () => {
   });
 });
 
+describe("useTimelineKeyboard · nudge selected words", () => {
+  function renderWithSelectedWord(): Promise<{ lineId: string }> {
+    const line = createLine({ text: "solo", words: [{ text: "solo", begin: 1, end: 2 }] });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    useSettingsStore.getState().set("nudgeAmount", 0.05);
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    return renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 10)).then(() => ({ lineId: line.id }));
+  }
+
+  it("nudges the selected word right on Alt+ArrowRight", async () => {
+    await renderWithSelectedWord();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", altKey: true, bubbles: true }));
+
+    const word = useProjectStore.getState().lines[0].words?.[0];
+    expect(word?.begin).toBeCloseTo(1.05, 5);
+    expect(word?.end).toBeCloseTo(2.05, 5);
+  });
+
+  it("nudges the selected word left on Alt+ArrowLeft", async () => {
+    await renderWithSelectedWord();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", altKey: true, bubbles: true }));
+
+    const word = useProjectStore.getState().lines[0].words?.[0];
+    expect(word?.begin).toBeCloseTo(0.95, 5);
+    expect(word?.end).toBeCloseTo(1.95, 5);
+  });
+
+  it("leaves the selected word alone on a bare ArrowRight", async () => {
+    await renderWithSelectedWord();
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    const word = useProjectStore.getState().lines[0].words?.[0];
+    expect(word?.begin).toBe(1);
+    expect(word?.end).toBe(2);
+  });
+
+  it("leaves the selected word alone on Shift+Alt+ArrowRight, which belongs to the fine snap jump", async () => {
+    await renderWithSelectedWord();
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", { key: "ArrowRight", altKey: true, shiftKey: true, bubbles: true }),
+    );
+
+    const word = useProjectStore.getState().lines[0].words?.[0];
+    expect(word?.begin).toBe(1);
+    expect(word?.end).toBe(2);
+  });
+});
+
 describe("useTimelineKeyboard · jump to snap point", () => {
   function trackSeek(): { get: () => number } {
     let seeked = -1;
