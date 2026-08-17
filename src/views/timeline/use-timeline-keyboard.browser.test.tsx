@@ -8,6 +8,32 @@ import { useSettingsStore } from "@/stores/settings";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
+// -- Helpers ------------------------------------------------------------------
+
+function trackSeek(): { get: () => number } {
+  let seeked = -1;
+  useAudioStore.setState({
+    seekTo: (time: number) => {
+      seeked = time;
+    },
+  } as Parameters<typeof useAudioStore.setState>[0]);
+  return { get: () => seeked };
+}
+
+function buildScrollContainer(width: number, contentWidth: number): HTMLDivElement {
+  const container = document.createElement("div");
+  container.style.width = `${width}px`;
+  container.style.overflow = "auto";
+  const spacer = document.createElement("div");
+  spacer.style.width = `${contentWidth}px`;
+  spacer.style.height = "10px";
+  container.appendChild(spacer);
+  document.body.appendChild(container);
+  return container;
+}
+
+// -- Tests --------------------------------------------------------------------
+
 describe("useTimelineKeyboard", () => {
   it("toggles snap when the snap shortcut is pressed in the timeline scope", async () => {
     useProjectStore.setState({ activeTab: "timeline" });
@@ -123,6 +149,97 @@ describe("useTimelineKeyboard", () => {
   });
 });
 
+describe("useTimelineKeyboard · step the playhead", () => {
+  it("steps the playhead forward by playheadStepAmount on ArrowRight", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    useAudioStore.setState({ currentTime: 10, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(10.1, 5);
+  });
+
+  it("steps the playhead back by playheadStepAmount on ArrowLeft", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    useAudioStore.setState({ currentTime: 10, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(9.9, 5);
+  });
+
+  it("steps the playhead while a word is selected, without nudging that word", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    const line = createLine({ text: "solo", words: [{ text: "solo", begin: 1, end: 2 }] });
+    useAudioStore.setState({ currentTime: 10, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    expect(seek.get()).toBeCloseTo(10.1, 5);
+    const word = useProjectStore.getState().lines[0].words?.[0];
+    expect(word?.begin).toBe(1);
+    expect(word?.end).toBe(2);
+  });
+
+  it("clamps to zero when stepping back from the start of the track", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    useAudioStore.setState({ currentTime: 0.02, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+
+    expect(seek.get()).toBe(0);
+  });
+
+  it("clamps to the duration when stepping past the end of the track", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    useAudioStore.setState({ currentTime: 29.98, duration: 30 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    expect(seek.get()).toBe(30);
+  });
+
+  it("scrolls an off-screen step target back into view", async () => {
+    useSettingsStore.getState().set("playheadStepAmount", 0.1);
+    const container = buildScrollContainer(300, 8000);
+    const ref = createRef<HTMLDivElement | null>();
+    ref.current = container;
+    useAudioStore.setState({ currentTime: 50, duration: 80 });
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ zoom: 100 });
+    trackSeek();
+    await renderHook(() => useTimelineKeyboard(ref, [], 80));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+
+    expect(container.scrollLeft).toBeGreaterThan(0);
+    container.remove();
+  });
+});
+
 describe("useTimelineKeyboard · nudge selected words", () => {
   function renderWithSelectedWord(): Promise<{ lineId: string }> {
     const line = createLine({ text: "solo", words: [{ text: "solo", begin: 1, end: 2 }] });
@@ -179,16 +296,6 @@ describe("useTimelineKeyboard · nudge selected words", () => {
 });
 
 describe("useTimelineKeyboard · jump to snap point", () => {
-  function trackSeek(): { get: () => number } {
-    let seeked = -1;
-    useAudioStore.setState({
-      seekTo: (time: number) => {
-        seeked = time;
-      },
-    } as Parameters<typeof useAudioStore.setState>[0]);
-    return { get: () => seeked };
-  }
-
   it("seeks to the next pin when Shift+ArrowRight is pressed", async () => {
     useAudioStore.setState({ currentTime: 4, duration: 30 });
     useProjectStore.setState({ activeTab: "timeline", customSnapPoints: snapPoints([5, 12]) });
@@ -292,18 +399,6 @@ describe("useTimelineKeyboard · jump to snap point", () => {
 
     expect(seek.get()).toBe(5);
   });
-
-  function buildScrollContainer(width: number, contentWidth: number): HTMLDivElement {
-    const container = document.createElement("div");
-    container.style.width = `${width}px`;
-    container.style.overflow = "auto";
-    const spacer = document.createElement("div");
-    spacer.style.width = `${contentWidth}px`;
-    spacer.style.height = "10px";
-    container.appendChild(spacer);
-    document.body.appendChild(container);
-    return container;
-  }
 
   it("scrolls an off-screen jump target back into view", async () => {
     const container = buildScrollContainer(300, 8000);

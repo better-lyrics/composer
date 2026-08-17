@@ -59,6 +59,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       { keys: ["N"], description: "Insert line below selected word", shortcutId: "timeline.insertLineBelow" },
       { keys: ["Shift", "N"], description: "Insert line above selected word", shortcutId: "timeline.insertLineAbove" },
       { keys: ["X"], description: "Expand all lines", shortcutId: "timeline.expandAll" },
+      { keys: ["ArrowLeft"], description: "Step playhead back", shortcutId: "timeline.stepPlayheadBack" },
+      { keys: ["ArrowRight"], description: "Step playhead forward", shortcutId: "timeline.stepPlayheadForward" },
       { keys: ["Space"], description: "Jump viewport to playhead", shortcutId: "timeline.jumpToPlayhead" },
       { keys: ["Escape"], description: "Deselect / cancel paste" },
       { keys: ["["], description: "Set word begin to playhead", shortcutId: "timeline.setWordBegin" },

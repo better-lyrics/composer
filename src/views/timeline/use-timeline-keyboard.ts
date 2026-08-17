@@ -31,6 +31,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { centerTimeScrollLeft } from "@/views/timeline/coords";
+import { steppedTime } from "@/views/timeline/playhead-step";
 import { seekAndReveal } from "@/views/timeline/seek-and-reveal";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
@@ -707,6 +708,16 @@ function useTimelineKeyboard(
             break;
           }
           seekAndReveal(target, scrollContainerRef.current);
+          break;
+        }
+        case "timeline.stepPlayheadBack":
+        case "timeline.stepPlayheadForward": {
+          e.preventDefault();
+          const audioEl = useAudioStore.getState().audioElement;
+          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const step = useSettingsStore.getState().playheadStepAmount;
+          const delta = matched === "timeline.stepPlayheadBack" ? -step : step;
+          seekAndReveal(steppedTime(current, delta, duration), scrollContainerRef.current);
           break;
         }
       }

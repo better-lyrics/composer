@@ -333,6 +333,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Jump to next snap point or onset",
     defaultBinding: { key: "ArrowRight", shift: true, alt: true },
   },
+  {
+    id: "timeline.stepPlayheadBack",
+    scope: "timeline",
+    description: "Step playhead back",
+    defaultBinding: { key: "ArrowLeft" },
+  },
+  {
+    id: "timeline.stepPlayheadForward",
+    scope: "timeline",
+    description: "Step playhead forward",
+    defaultBinding: { key: "ArrowRight" },
+  },
 ];
 
 // -- Exports ------------------------------------------------------------------
