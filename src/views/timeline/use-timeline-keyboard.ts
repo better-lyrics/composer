@@ -30,7 +30,8 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
+import { centerTimeScrollLeft } from "@/views/timeline/coords";
+import { seekAndReveal } from "@/views/timeline/seek-and-reveal";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
@@ -705,17 +706,7 @@ function useTimelineKeyboard(
             toast(fine ? "No snap point or onset that way" : "No snap point that way");
             break;
           }
-          useAudioStore.getState().seekTo(target);
-          const jumpScrollContainer = scrollContainerRef.current;
-          if (jumpScrollContainer) {
-            const nextScrollLeft = revealTimeScrollLeft(
-              target,
-              useTimelineStore.getState().zoom,
-              jumpScrollContainer.scrollLeft,
-              jumpScrollContainer.clientWidth,
-            );
-            if (nextScrollLeft !== null) jumpScrollContainer.scrollLeft = nextScrollLeft;
-          }
+          seekAndReveal(target, scrollContainerRef.current);
           break;
         }
       }
