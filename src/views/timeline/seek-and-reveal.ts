@@ -1,11 +1,18 @@
+import { scrubPreview } from "@/audio/scrub-preview";
 import { useAudioStore } from "@/stores/audio";
 import { revealTimeScrollLeft } from "@/views/timeline/coords";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
+// -- Constants -----------------------------------------------------------------
+
+const KEYBOARD_SCRUB_RATE = 1;
+
 // -- Functions -----------------------------------------------------------------
 
 function seekAndReveal(time: number, scrollContainer: HTMLDivElement | null): void {
-  useAudioStore.getState().seekTo(time);
+  const { seekTo, isPlaying } = useAudioStore.getState();
+  seekTo(time);
+  if (!isPlaying) scrubPreview.play(time, KEYBOARD_SCRUB_RATE);
   if (!scrollContainer) return;
   const nextScrollLeft = revealTimeScrollLeft(
     time,
