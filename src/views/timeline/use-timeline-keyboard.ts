@@ -24,7 +24,7 @@ import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { findBoundaryTarget, selectionForPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -320,13 +320,18 @@ function useTimelineKeyboard(
           e.preventDefault();
           const audioEl = useAudioStore.getState().audioElement;
           const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const matches = findWordsAtTime(lines, currentTime);
-          const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
+          const next = selectionForPlayhead(lines, currentTime, useTimelineStore.getState().selectedWords);
           if (!next) {
-            toast("No word under the playhead");
+            toast("No timed words to select");
             break;
           }
-          useTimelineStore.getState().setSelectedWords([next]);
+          useTimelineStore.getState().setSelectedWords([next.selection]);
+          if (next.fromGap) {
+            const reachedLine = lines[next.selection.lineIndex];
+            const reachedWords = next.selection.type === "word" ? reachedLine?.words : reachedLine?.backgroundWords;
+            const reachedWord = reachedWords?.[next.selection.wordIndex];
+            if (reachedWord) seekAndReveal(reachedWord.begin, scrollContainerRef.current);
+          }
           break;
         }
         case "timeline.toggleFollow":

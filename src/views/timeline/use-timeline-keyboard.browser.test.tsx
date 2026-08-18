@@ -713,3 +713,72 @@ describe("useTimelineKeyboard · background provenance", () => {
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });
+
+describe("useTimelineKeyboard · select the word at the playhead", () => {
+  it("travels the playhead to the word it reached across a gap", async () => {
+    const line = createLine({
+      id: "l1",
+      words: [
+        { text: "a", begin: 1, end: 2 },
+        { text: "b", begin: 8, end: 9 },
+      ],
+    });
+    useAudioStore.setState({ currentTime: 7.9, duration: 30, isPlaying: false });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+
+    expect(useTimelineStore.getState().selectedWords).toEqual([
+      { lineId: "l1", lineIndex: 0, wordIndex: 1, type: "word" },
+    ]);
+    expect(seek.get()).toBe(8);
+  });
+
+  it("leaves the playhead alone when it already sits inside a word", async () => {
+    const line = createLine({ id: "l1", words: [{ text: "a", begin: 1, end: 2 }] });
+    useAudioStore.setState({ currentTime: 1.5, duration: 30, isPlaying: false });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+
+    expect(useTimelineStore.getState().selectedWords).toHaveLength(1);
+    expect(seek.get()).toBe(-1);
+  });
+
+  it("reaches backwards to the last word when the playhead is past everything", async () => {
+    const line = createLine({ id: "l1", words: [{ text: "a", begin: 1, end: 2 }] });
+    useAudioStore.setState({ currentTime: 25, duration: 30, isPlaying: false });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+
+    expect(seek.get()).toBe(1);
+  });
+
+  it("toasts and selects nothing when the project has no timed words", async () => {
+    const line = createLine({ id: "l1", text: "untimed" });
+    useAudioStore.setState({ currentTime: 5, duration: 30, isPlaying: false });
+    useProjectStore.setState({ activeTab: "timeline", lines: [line] });
+    useTimelineStore.setState({ selectedWords: [] });
+    const seek = trackSeek();
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [line], 30));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "a", bubbles: true }));
+
+    expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    expect(seek.get()).toBe(-1);
+  });
+});

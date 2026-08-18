@@ -113,13 +113,15 @@ describe("select word under playhead", () => {
     await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([mainWordZero]);
   });
 
-  it("leaves the selection empty when the playhead is past every word", async () => {
+  it("reaches back to the last word when the playhead is past every word", async () => {
     seedTimelineWithWords();
     await render(<TimelinePanel />);
     seedPlayheadTime(10);
 
     pressSelectWordAtPlayhead();
-    await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([]);
+    await expect
+      .poll(() => useTimelineStore.getState().selectedWords)
+      .toEqual([{ lineId, lineIndex: 0, wordIndex: 1, type: "word" }]);
   });
 });
 
