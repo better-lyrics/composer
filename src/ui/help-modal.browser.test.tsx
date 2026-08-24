@@ -30,3 +30,35 @@ describe("HelpModal", () => {
     expect(closeCalls).toBeGreaterThan(0);
   });
 });
+
+describe("HelpModal initialSection", () => {
+  it("opens on the requested section", async () => {
+    const screen = await render(<HelpModal isOpen initialSection="best-practices" onClose={() => {}} />);
+    await expect.element(screen.getByRole("heading", { name: "Lines and text", exact: true })).toBeInTheDocument();
+  });
+
+  it("falls back to getting started when no section is requested", async () => {
+    const screen = await render(<HelpModal isOpen onClose={() => {}} />);
+    await expect.element(screen.getByText(/Composer is the lyrics editor for/i)).toBeInTheDocument();
+  });
+
+  it("falls back to getting started when the requested section is unknown", async () => {
+    const screen = await render(<HelpModal isOpen initialSection="no-such-section" onClose={() => {}} />);
+    await expect.element(screen.getByText(/Composer is the lyrics editor for/i)).toBeInTheDocument();
+  });
+
+  it("still switches section when a sidebar button is clicked after opening on a section", async () => {
+    const screen = await render(<HelpModal isOpen initialSection="best-practices" onClose={() => {}} />);
+    await expect.element(screen.getByRole("heading", { name: "Lines and text", exact: true })).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "Getting Started", exact: true }).click();
+
+    await expect.element(screen.getByText(/Composer is the lyrics editor for/i)).toBeInTheDocument();
+    expect(document.querySelector("dialog")?.textContent).not.toContain("Lines and text");
+  });
+
+  it("seeds any registered section, not only best practices", async () => {
+    const screen = await render(<HelpModal isOpen initialSection="recovery" onClose={() => {}} />);
+    await expect.element(screen.getByRole("heading", { name: "The app is frozen", exact: true })).toBeInTheDocument();
+  });
+});

@@ -24,6 +24,7 @@ import { useState } from "react";
 
 interface HelpModalProps {
   isOpen: boolean;
+  initialSection?: string;
   onClose: () => void;
 }
 
@@ -47,8 +48,8 @@ const HELP_SECTIONS: ModalNavSection[] = [
 
 // -- Help Modal ---------------------------------------------------------------
 
-const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
-  const [activeSection, setActiveSection] = useState("getting-started");
+const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, onClose }) => {
+  const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
 
   return (
     <Modal
