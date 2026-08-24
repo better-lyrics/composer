@@ -25,7 +25,7 @@ const BACKGROUND_VOCALS: RuleGroup = {
       body: [
         "Two background snippets in the same line share one outer pair. Bracket each of them separately and you get a background line that's more punctuation than words.",
       ],
-      aside: "Settings > Preserve brackets when extracting does this for you, and it's on by default.",
+      aside: "Settings → Preserve brackets when extracting does this for you, and it's on by default.",
       example: {
         wrong: <LyricSample lines={[{ main: "Running through the night", background: "(ooh yeah) (ooh yeah)" }]} />,
         right: <LyricSample lines={[{ main: "Running through the night", background: "(ooh yeah, ooh yeah)" }]} />,
