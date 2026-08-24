@@ -16,6 +16,7 @@ import {
   IconLink,
   IconPencil,
   IconRocket,
+  IconTagStarred,
 } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -30,6 +31,7 @@ interface HelpModalProps {
 
 const HELP_SECTIONS: ModalNavSection[] = [
   { id: "getting-started", label: "Getting Started", icon: IconRocket },
+  { id: "best-practices", label: "Best practices", icon: IconTagStarred },
   { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
   { id: "importing", label: "Importing", icon: IconFileImport },
   { id: "editing", label: "Editing Lyrics", icon: IconPencil },

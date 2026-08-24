@@ -4,6 +4,7 @@ import { render } from "@/test/render";
 
 const SECTION_IDS = [
   "getting-started",
+  "best-practices",
   "keyboard-shortcuts",
   "importing",
   "editing",
