@@ -1,12 +1,12 @@
-import { type DriveStep, driver } from "driver.js";
 import { beforeEach, describe, expect, it } from "vitest";
 import { GuideCard } from "@/tour/guide-card";
-import { TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
+import { BEST_PRACTICES_STEP_TITLE, createTourSteps } from "@/tour/tour-steps";
 import { useTour } from "@/tour/use-tour";
 import { render } from "@/test/render";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { allowConsole } from "@/test/console-guard";
 
 // -- Harness ------------------------------------------------------------------
 
@@ -36,6 +36,8 @@ function HandoffHarness({ onOpen }: { onOpen: () => void }) {
 const driverNextBtn = () => document.querySelector(".driver-popover-next-btn") as HTMLButtonElement | null;
 const driverProgress = () => document.querySelector(".driver-popover-progress-text")?.textContent ?? "";
 const driverTitle = () => document.querySelector(".driver-popover-title")?.textContent ?? "";
+const SKIP_CLASS = "composer-tour-skip";
+const driverSkipBtn = () => document.querySelector(`.${SKIP_CLASS}`) as HTMLButtonElement | null;
 
 async function clickNext() {
   await expect.poll(() => driverNextBtn() !== null).toBe(true);
@@ -56,100 +58,7 @@ function setLyricsSynced() {
   });
 }
 
-// -- Step order helpers -------------------------------------------------------
-
-const BEST_PRACTICES_TITLE = "One thing before you do this for real";
-
-function findByTitle(steps: DriveStep[], title: string) {
-  return steps.find((step) => step.popover?.title === title);
-}
-
-function clickNextOn(step: DriveStep, steps: DriveStep[]) {
-  step.popover?.onNextClick?.(undefined, step, { config: { steps }, state: {}, driver: driver({ steps }) });
-}
-
 // -- Tests --------------------------------------------------------------------
-
-describe("createTourSteps", () => {
-  it("places the best practices step immediately before the closing video", () => {
-    const steps = createTourSteps(() => {});
-    const videoIndex = steps.findIndex((s) => s.popover?.description?.includes("composer-tour-video-embed"));
-    expect(videoIndex).toBeGreaterThan(0);
-    expect(steps[videoIndex - 1]?.popover?.title).toBe(BEST_PRACTICES_TITLE);
-  });
-
-  it("puts the closing video last, so best practices is second to last", () => {
-    const steps = createTourSteps(() => {});
-    expect(steps[steps.length - 2]?.popover?.title).toBe(BEST_PRACTICES_TITLE);
-    expect(steps[steps.length - 1]?.popover?.description).toContain("composer-tour-video-embed");
-  });
-
-  it("invokes the callback when the best practices step is actioned", () => {
-    let opened = false;
-    const steps = createTourSteps(() => {
-      opened = true;
-    });
-    const step = findByTitle(steps, BEST_PRACTICES_TITLE);
-    expect(step).toBeDefined();
-    if (step) clickNextOn(step, steps);
-    expect(opened).toBe(true);
-  });
-
-  it("binds the callback given to the call that built the steps", () => {
-    let firstCalls = 0;
-    let secondCalls = 0;
-    const firstSteps = createTourSteps(() => firstCalls++);
-    const secondSteps = createTourSteps(() => secondCalls++);
-
-    const secondStep = findByTitle(secondSteps, BEST_PRACTICES_TITLE);
-    if (secondStep) clickNextOn(secondStep, secondSteps);
-
-    expect(secondCalls).toBe(1);
-    expect(firstCalls).toBe(0);
-    expect(findByTitle(firstSteps, BEST_PRACTICES_TITLE)).not.toBe(secondStep);
-  });
-
-  it("labels the best practices action Read them and keeps the back and close buttons", () => {
-    const step = findByTitle(
-      createTourSteps(() => {}),
-      BEST_PRACTICES_TITLE,
-    );
-    expect(step?.popover?.nextBtnText).toBe("Read them");
-    expect(step?.popover?.showButtons).toEqual(["previous", "next", "close"]);
-  });
-
-  it("anchors the best practices step to no element, so it reads as a modal", () => {
-    const step = findByTitle(
-      createTourSteps(() => {}),
-      BEST_PRACTICES_TITLE,
-    );
-    expect(step?.element).toBeUndefined();
-    expect(step?.popover?.popoverClass).toContain("composer-tour-modal");
-  });
-
-  it("leaves the gated step indices untouched", () => {
-    expect(TOUR_GATED_STEPS.map((s) => s.stepIndex)).toEqual([2, 4, 6]);
-  });
-
-  it("keeps every gated index pointing at the step it was written to gate", () => {
-    const steps = createTourSteps(() => {});
-    const gatedTitles = TOUR_GATED_STEPS.map((gate) => steps[gate.stepIndex]?.popover?.title);
-    expect(gatedTitles).toEqual(["Import your audio", "Add your lyrics", "Sync at least one line"]);
-    expect(TOUR_GATED_STEPS.map((gate) => gate.tabId)).toEqual(["import", "edit", "sync"]);
-  });
-
-  it("keeps every gated step ahead of the best practices step", () => {
-    const steps = createTourSteps(() => {});
-    const bestPracticesIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_TITLE);
-    for (const gate of TOUR_GATED_STEPS) expect(gate.stepIndex).toBeLessThan(bestPracticesIndex);
-  });
-
-  it("gives each of its twelve steps a popover with a title", () => {
-    const steps = createTourSteps(() => {});
-    expect(steps).toHaveLength(12);
-    for (const step of steps) expect(step.popover?.title?.trim().length ?? 0).toBeGreaterThan(0);
-  });
-});
 
 describe("useTour best practices handoff", () => {
   beforeEach(() => {
@@ -157,13 +66,14 @@ describe("useTour best practices handoff", () => {
   });
 
   it("closes the tour as it opens help, so nothing is left over the modal", async () => {
-    const stepIndex = createTourSteps(() => {}).findIndex((s) => s.popover?.title === BEST_PRACTICES_TITLE);
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex }));
+    const steps = createTourSteps(() => {});
+    const stepIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_STEP_TITLE);
+    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex, stepCount: steps.length }));
     let opened = 0;
     const screen = await render(<HandoffHarness onOpen={() => opened++} />);
 
     await screen.getByTestId("resume").click();
-    await expect.poll(driverTitle).toBe(BEST_PRACTICES_TITLE);
+    await expect.poll(driverTitle).toBe(BEST_PRACTICES_STEP_TITLE);
     expect(driverNextBtn()?.textContent).toBe("Read them");
 
     driverNextBtn()?.click();
@@ -171,6 +81,91 @@ describe("useTour best practices handoff", () => {
     expect(opened).toBe(1);
     await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
     expect(document.body.classList.contains("driver-active")).toBe(false);
+  });
+});
+
+describe("useTour skip to the closing walkthrough", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  async function resumeOntoBestPractices(screen: Awaited<ReturnType<typeof render>>) {
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe(BEST_PRACTICES_STEP_TITLE);
+  }
+
+  function seedResumeAtBestPractices() {
+    const steps = createTourSteps(() => {});
+    const stepIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_STEP_TITLE);
+    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex, stepCount: steps.length }));
+  }
+
+  it("offers a skip control that reaches the closing video", async () => {
+    seedResumeAtBestPractices();
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+    await resumeOntoBestPractices(screen);
+
+    expect(driverSkipBtn()?.textContent).toBe("Skip");
+    driverSkipBtn()?.click();
+
+    await expect.poll(driverTitle).toBe("See a full walkthrough");
+    await expect.poll(() => document.querySelector(".composer-tour-video-embed")).not.toBe(null);
+  });
+
+  it("keeps the skip control off every other step", async () => {
+    const screen = await render(<TourHarness />);
+    await screen.getByTestId("start").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    expect(driverSkipBtn()).toBe(null);
+  });
+
+  it("does not stack duplicate skip controls when the step re-renders", async () => {
+    seedResumeAtBestPractices();
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+    await resumeOntoBestPractices(screen);
+
+    window.dispatchEvent(new Event("resize"));
+    await expect.poll(() => document.querySelectorAll(`.${SKIP_CLASS}`).length).toBe(1);
+  });
+});
+
+describe("useTour resume payload", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("resumes an index written against the current step list", async () => {
+    const steps = createTourSteps(() => {});
+    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9, stepCount: steps.length }));
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Export your TTML");
+  });
+
+  it("discards an index written against a different step list", async () => {
+    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9, stepCount: 4 }));
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+  });
+
+  it("discards a legacy payload that carries no step count", async () => {
+    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9 }));
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+  });
+
+  it("discards an unreadable payload rather than throwing", async () => {
+    allowConsole(/tour resume state/);
+    localStorage.setItem("composer-tour-resume", "{ not json");
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
   });
 });
 

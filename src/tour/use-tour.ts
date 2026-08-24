@@ -1,6 +1,6 @@
-import { type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
+import { BEST_PRACTICES_STEP_TITLE, type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 import type { GuideCardState } from "@/tour/guide-card";
-import { driver, type Driver, type DriveStep } from "driver.js";
+import { driver, type Driver, type DriveStep, type PopoverDOM } from "driver.js";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 
@@ -8,27 +8,53 @@ import { useReducedMotion } from "motion/react";
 
 const STORAGE_KEY = "composer-tour-seen";
 const RESUME_KEY = "composer-tour-resume";
+const LOG_PREFIX = "[Tour]";
+const SKIP_BUTTON_CLASS = "composer-tour-skip";
 const GATE_CHECK_INTERVAL = 300;
 const GATE_SUCCESS_DELAY = 800;
 
 // -- Resume state persistence -------------------------------------------------
 
-function saveResumeState(stepIndex: number) {
-  localStorage.setItem(RESUME_KEY, JSON.stringify({ stepIndex }));
+function saveResumeState(stepIndex: number, stepCount: number) {
+  localStorage.setItem(RESUME_KEY, JSON.stringify({ stepIndex, stepCount }));
 }
 
-function loadResumeState(): { stepIndex: number } | null {
+// A stored index only means anything against the step list it was written for. Inserting or removing a
+// step silently repoints it, so a payload whose count no longer matches is discarded rather than resumed.
+function loadResumeState(stepCount: number): { stepIndex: number } | null {
   const raw = localStorage.getItem(RESUME_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as { stepIndex: number };
-  } catch {
+    const parsed = JSON.parse(raw) as { stepIndex?: unknown; stepCount?: unknown };
+    if (parsed.stepCount !== stepCount || typeof parsed.stepIndex !== "number") return null;
+    return { stepIndex: parsed.stepIndex };
+  } catch (error) {
+    console.warn(LOG_PREFIX, "discarding unreadable tour resume state", error);
     return null;
   }
 }
 
 function clearResumeState() {
   localStorage.removeItem(RESUME_KEY);
+}
+
+// -- Skip to the closing walkthrough ------------------------------------------
+
+// The conventions step overrides its next button to hand off to the help modal, which ends the tour,
+// so without this the closing video step is unreachable. driver.js has no third footer button, so it
+// gets injected, and tour-theme.css styles it alongside the Back button.
+function injectSkipToVideo(popover: PopoverDOM, activeStep: DriveStep | undefined, tourDriver: Driver) {
+  if (activeStep?.popover?.title !== BEST_PRACTICES_STEP_TITLE) return;
+  if (popover.footerButtons.querySelector(`.${SKIP_BUTTON_CLASS}`)) return;
+
+  // Not driver-popover-prev-btn: driver delegates clicks with closest(".driver-popover-prev-btn"),
+  // so borrowing that class for styling would make this button walk backwards.
+  const skip = document.createElement("button");
+  skip.type = "button";
+  skip.className = SKIP_BUTTON_CLASS;
+  skip.textContent = "Skip";
+  skip.addEventListener("click", () => tourDriver.moveNext());
+  popover.footerButtons.insertBefore(skip, popover.nextButton);
 }
 
 // -- Types --------------------------------------------------------------------
@@ -87,6 +113,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         prevBtnText: "Back",
         doneBtnText: "Done",
         allowClose: true,
+        onPopoverRender: (popover, opts) => injectSkipToVideo(popover, opts.state.activeStep, opts.driver),
         onHighlighted: (_el, _step, opts) => {
           const idx = opts.state.activeIndex;
           if (idx !== undefined) {
@@ -109,7 +136,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
       const stepLabel = `Step ${gatedStep.stepIndex + 1} / ${totalSteps}`;
 
       setGuideCard({ task: gatedStep.task, stepLabel, stepIndex: gatedStep.stepIndex, isComplete: false });
-      saveResumeState(gatedStep.stepIndex);
+      saveResumeState(gatedStep.stepIndex, totalSteps);
 
       gateIntervalRef.current = setInterval(() => {
         if (gatedStep.gateCheck()) {
@@ -118,7 +145,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
           setTimeout(() => {
             setGuideCard(null);
-            const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx));
+            const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx, patchedSteps.length));
             driverRef.current = d;
             d.drive(nextStepIndex);
           }, GATE_SUCCESS_DELAY);
@@ -176,7 +203,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
     if (nextIdx < steps.length) {
       const patchedSteps = patchStepsWithGates(steps);
-      const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx));
+      const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx, patchedSteps.length));
       driverRef.current = d;
       d.drive(nextIdx);
     }
@@ -191,7 +218,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
       const steps = createTourSteps(openBestPractices);
       const patchedSteps = patchStepsWithGates(steps);
 
-      const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx));
+      const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx, patchedSteps.length));
       driverRef.current = d;
       d.drive(startIndex ?? 0);
     },
@@ -220,14 +247,14 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
       return;
     }
 
-    const resume = loadResumeState();
+    const resume = loadResumeState(createTourSteps(openBestPractices).length);
     if (resume) {
       markTourSeen();
       driveTour(resume.stepIndex);
     } else {
       startTour();
     }
-  }, [guideCard, destroyDriver, clearGateInterval, markTourSeen, driveTour, startTour]);
+  }, [guideCard, destroyDriver, clearGateInterval, markTourSeen, driveTour, startTour, openBestPractices]);
 
   return {
     startTour,

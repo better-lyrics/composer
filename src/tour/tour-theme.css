@@ -59,7 +59,8 @@
   background: var(--color-composer-accent);
 }
 
-.driver-popover.composer-tour .driver-popover-prev-btn {
+.driver-popover.composer-tour .driver-popover-prev-btn,
+.driver-popover.composer-tour .composer-tour-skip {
   background: var(--color-composer-button);
   color: var(--color-composer-text);
   border: none;
@@ -71,7 +72,8 @@
   cursor: pointer;
 }
 
-.driver-popover.composer-tour .driver-popover-prev-btn:hover {
+.driver-popover.composer-tour .driver-popover-prev-btn:hover,
+.driver-popover.composer-tour .composer-tour-skip:hover {
   background: var(--color-composer-button-hover);
 }
 

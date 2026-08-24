@@ -18,6 +18,8 @@ function switchTab(tabId: string) {
   useProjectStore.getState().setActiveTab(tabId as "import" | "edit" | "sync" | "timeline" | "preview" | "export");
 }
 
+const BEST_PRACTICES_STEP_TITLE = "One thing before you do this for real";
+
 const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="https://www.youtube.com/embed/to138zXZ0nc?rel=0" title="Composer demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" allowfullscreen></iframe></div>`;
 
 // -- Gate checks --------------------------------------------------------------
@@ -145,7 +147,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
     // 10: Best practices, ahead of the closing video
     {
       popover: {
-        title: "One thing before you do this for real",
+        title: BEST_PRACTICES_STEP_TITLE,
         description:
           "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Much easier to get right the first time than to fix afterwards.",
         popoverClass: "composer-tour composer-tour-modal",
@@ -194,5 +196,5 @@ const TOUR_GATED_STEPS: GatedStep[] = [
 
 // -- Exports ------------------------------------------------------------------
 
-export { createTourSteps, TOUR_GATED_STEPS };
+export { BEST_PRACTICES_STEP_TITLE, createTourSteps, TOUR_GATED_STEPS };
 export type { GatedStep };
