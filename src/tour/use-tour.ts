@@ -6,8 +6,8 @@ import { useReducedMotion } from "motion/react";
 
 // -- Constants ----------------------------------------------------------------
 
-const STORAGE_KEY = "composer-tour-seen";
-const RESUME_KEY = "composer-tour-resume";
+const TOUR_SEEN_KEY = "composer-tour-seen";
+const TOUR_RESUME_KEY = "composer-tour-resume:v1";
 const LOG_PREFIX = "[Tour]";
 const VIDEO_BUTTON_CLASS = "composer-tour-video-btn";
 const GATE_CHECK_INTERVAL = 300;
@@ -16,13 +16,13 @@ const GATE_SUCCESS_DELAY = 800;
 // -- Resume state persistence -------------------------------------------------
 
 function saveResumeState(stepIndex: number, stepCount: number) {
-  localStorage.setItem(RESUME_KEY, JSON.stringify({ stepIndex, stepCount }));
+  localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex, stepCount }));
 }
 
 // A stored index only means anything against the step list it was written for. Inserting or removing a
 // step silently repoints it, so a payload whose count no longer matches is discarded rather than resumed.
 function loadResumeState(stepCount: number): { stepIndex: number } | null {
-  const raw = localStorage.getItem(RESUME_KEY);
+  const raw = localStorage.getItem(TOUR_RESUME_KEY);
   if (!raw) return null;
   try {
     const parsed = JSON.parse(raw) as { stepIndex?: unknown; stepCount?: unknown };
@@ -35,7 +35,7 @@ function loadResumeState(stepCount: number): { stepIndex: number } | null {
 }
 
 function clearResumeState() {
-  localStorage.removeItem(RESUME_KEY);
+  localStorage.removeItem(TOUR_RESUME_KEY);
 }
 
 // -- Watch the closing walkthrough --------------------------------------------
@@ -71,10 +71,10 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   const [guideCard, setGuideCard] = useState<GuideCardState | null>(null);
   const reducedMotion = useReducedMotion();
 
-  const shouldShowTour = !localStorage.getItem(STORAGE_KEY);
+  const shouldShowTour = !localStorage.getItem(TOUR_SEEN_KEY);
 
   const markTourSeen = useCallback(() => {
-    localStorage.setItem(STORAGE_KEY, "true");
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
   }, []);
 
   const clearGateInterval = useCallback(() => {
@@ -267,4 +267,4 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
 // -- Exports ------------------------------------------------------------------
 
-export { useTour };
+export { TOUR_RESUME_KEY, TOUR_SEEN_KEY, useTour };

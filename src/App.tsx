@@ -14,7 +14,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
-import { useTour } from "@/tour/use-tour";
+import { TOUR_RESUME_KEY, TOUR_SEEN_KEY, useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -108,8 +108,8 @@ const AppContent: React.FC = () => {
         isOpen={settingsOpen}
         onClose={closeSettings}
         onResetTour={() => {
-          localStorage.removeItem("composer-tour-seen");
-          localStorage.removeItem("composer-tour-resume");
+          localStorage.removeItem(TOUR_SEEN_KEY);
+          localStorage.removeItem(TOUR_RESUME_KEY);
         }}
       />
       <TabBar />

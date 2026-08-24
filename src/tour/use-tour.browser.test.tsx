@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { GuideCard } from "@/tour/guide-card";
 import { BEST_PRACTICES_STEP_TITLE, createTourSteps } from "@/tour/tour-steps";
-import { useTour } from "@/tour/use-tour";
+import { TOUR_RESUME_KEY, useTour } from "@/tour/use-tour";
 import { render } from "@/test/render";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -68,7 +68,7 @@ describe("useTour best practices handoff", () => {
   it("closes the tour as it opens help, so nothing is left over the modal", async () => {
     const steps = createTourSteps(() => {});
     const stepIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_STEP_TITLE);
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex, stepCount: steps.length }));
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex, stepCount: steps.length }));
     let opened = 0;
     const screen = await render(<HandoffHarness onOpen={() => opened++} />);
 
@@ -97,7 +97,7 @@ describe("useTour watch the closing walkthrough", () => {
   function seedResumeAtBestPractices() {
     const steps = createTourSteps(() => {});
     const stepIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_STEP_TITLE);
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex, stepCount: steps.length }));
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex, stepCount: steps.length }));
   }
 
   it("offers a control that reaches the closing video", async () => {
@@ -136,7 +136,7 @@ describe("useTour resume payload", () => {
 
   it("resumes an index written against the current step list", async () => {
     const steps = createTourSteps(() => {});
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9, stepCount: steps.length }));
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: 9, stepCount: steps.length }));
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
 
     await screen.getByTestId("resume").click();
@@ -144,7 +144,7 @@ describe("useTour resume payload", () => {
   });
 
   it("discards an index written against a different step list", async () => {
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9, stepCount: 4 }));
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: 9, stepCount: 4 }));
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
 
     await screen.getByTestId("resume").click();
@@ -152,7 +152,7 @@ describe("useTour resume payload", () => {
   });
 
   it("discards a legacy payload that carries no step count", async () => {
-    localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex: 9 }));
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: 9 }));
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
 
     await screen.getByTestId("resume").click();
@@ -161,7 +161,7 @@ describe("useTour resume payload", () => {
 
   it("discards an unreadable payload rather than throwing", async () => {
     allowConsole(/tour resume state/);
-    localStorage.setItem("composer-tour-resume", "{ not json");
+    localStorage.setItem(TOUR_RESUME_KEY, "{ not json");
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
 
     await screen.getByTestId("resume").click();

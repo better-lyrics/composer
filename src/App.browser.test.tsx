@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
+import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 
 const bridgeSectionVisible = () => document.querySelector('[data-testid="bridge-section"]') !== null;
 
@@ -16,7 +17,7 @@ describe("App", () => {
   });
 
   it("switches the active tab when a tab button is clicked", async () => {
-    localStorage.setItem("composer-tour-seen", "true");
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
     useProjectStore.setState({ activeTab: "import" });
     const screen = await render(<App />);
     const editButton = screen.container.querySelector('[data-tour="tab-edit"]') as HTMLButtonElement;
@@ -28,7 +29,7 @@ describe("App", () => {
   it("reopening settings normally resets the section, not stuck on the last highlighted one", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
-    localStorage.setItem("composer-tour-seen", "true");
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
     await render(<App />);
 
     useUIStore.getState().openSettings("bridge-section");
