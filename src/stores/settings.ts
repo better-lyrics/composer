@@ -158,7 +158,7 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 5;
+const SETTINGS_PERSIST_VERSION = 6;
 
 function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
@@ -172,6 +172,9 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
+  // The key predates the default flip, so every old blob carries an explicit
+  // false that a plain undefined guard would never reach.
+  if (version < 6) next.preserveBracketsOnExtraction = true;
   return next;
 }
 
