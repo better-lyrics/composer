@@ -1,17 +1,54 @@
+import { cdp, userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
+import { groupAnchorId } from "@/best-practices/rule-list";
 import { render } from "@/test/render";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { BestPracticesSection } from "@/ui/help-sections/best-practices";
 
 // -- Helpers -------------------------------------------------------------------
 
+type Screen = Awaited<ReturnType<typeof render>>;
+
 function comesBefore(first: Element, second: Element): boolean {
   return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
 }
 
 function chipLabels(container: Element): (string | null)[] {
-  return Array.from(container.querySelectorAll("li")).map((chip) => chip.textContent);
+  return Array.from(container.querySelectorAll("li button")).map((chip) => chip.textContent);
+}
+
+function anchorFor(groupId: string): HTMLElement {
+  const heading = document.getElementById(groupAnchorId(groupId));
+  if (!heading) throw new Error(`No heading anchored at ${groupAnchorId(groupId)}`);
+  return heading;
+}
+
+function recordScrollIntoView(element: Element): ScrollIntoViewOptions[] {
+  const calls: ScrollIntoViewOptions[] = [];
+  element.scrollIntoView = (options?: boolean | ScrollIntoViewOptions) => {
+    if (typeof options === "object") calls.push(options);
+  };
+  return calls;
+}
+
+// Motion caches the preference in a module global refreshed only by the media
+// query change event, so settle on the event rather than on matchMedia.
+async function emulateReducedMotion(value: "reduce" | "no-preference"): Promise<void> {
+  const query = window.matchMedia("(prefers-reduced-motion)");
+  if (query.matches === (value === "reduce")) return;
+  const settled = new Promise<void>((resolve) => query.addEventListener("change", () => resolve(), { once: true }));
+  await cdp().send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value }] });
+  await settled;
+}
+
+async function clickEveryChip(screen: Screen): Promise<Map<string, ScrollIntoViewOptions[]>> {
+  const calls = new Map<string, ScrollIntoViewOptions[]>();
+  for (const group of BEST_PRACTICE_GROUPS) calls.set(group.id, recordScrollIntoView(anchorFor(group.id)));
+  for (const group of BEST_PRACTICE_GROUPS) {
+    await screen.getByRole("button", { name: group.label, exact: true }).click();
+  }
+  return calls;
 }
 
 // -- Best practices section ----------------------------------------------------
@@ -42,6 +79,65 @@ describe("BestPracticesSection", () => {
   it("renders every rule card", async () => {
     const screen = await render(<BestPracticesSection />);
     expect(screen.container.querySelectorAll("article").length).toBe(17);
+  });
+});
+
+// -- Chips as an index ---------------------------------------------------------
+
+describe("BestPracticesSection chips", () => {
+  it("offers every chip as a button named after its group", async () => {
+    const screen = await render(<BestPracticesSection />);
+    for (const group of BEST_PRACTICE_GROUPS) {
+      const chip = screen.getByRole("button", { name: group.label, exact: true });
+      await expect.element(chip).toBeInTheDocument();
+      expect(chip.element().tagName).toBe("BUTTON");
+    }
+  });
+
+  it("scrolls each group heading into view from its own chip", async () => {
+    const screen = await render(<BestPracticesSection />);
+    const calls = await clickEveryChip(screen);
+    for (const group of BEST_PRACTICE_GROUPS) {
+      expect(calls.get(group.id)).toHaveLength(1);
+      expect(calls.get(group.id)?.[0]?.block).toBe("start");
+    }
+  });
+
+  it("animates the scroll when the reader states no motion preference", async () => {
+    const screen = await render(<BestPracticesSection />);
+    const calls = await clickEveryChip(screen);
+    for (const group of BEST_PRACTICE_GROUPS) expect(calls.get(group.id)?.[0]?.behavior).toBe("smooth");
+  });
+
+  it("jumps without animation when the reader prefers reduced motion", async () => {
+    await emulateReducedMotion("reduce");
+    try {
+      const screen = await render(<BestPracticesSection />);
+      const calls = await clickEveryChip(screen);
+      for (const group of BEST_PRACTICE_GROUPS) expect(calls.get(group.id)?.[0]?.behavior).toBe("auto");
+    } finally {
+      await emulateReducedMotion("no-preference");
+    }
+  });
+
+  it("puts the first chip in the tab order", async () => {
+    const screen = await render(<BestPracticesSection />);
+    const first = screen.getByRole("button", { name: BEST_PRACTICE_GROUPS[0]?.label ?? "", exact: true });
+    (document.activeElement as HTMLElement | null)?.blur();
+    await expect.poll(() => document.activeElement).toBe(document.body);
+    await userEvent.tab();
+    await expect.poll(() => document.activeElement).toBe(first.element());
+  });
+
+  it("activates a chip from the keyboard", async () => {
+    const screen = await render(<BestPracticesSection />);
+    const group = BEST_PRACTICE_GROUPS[0];
+    const calls = recordScrollIntoView(anchorFor(group?.id ?? ""));
+    const chip = screen.getByRole("button", { name: group?.label ?? "", exact: true });
+    (chip.element() as HTMLElement).focus();
+    await expect.poll(() => document.activeElement).toBe(chip.element());
+    await userEvent.keyboard("{Enter}");
+    await expect.poll(() => calls.length).toBe(1);
   });
 });
 
