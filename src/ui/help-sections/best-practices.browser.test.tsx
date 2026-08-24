@@ -2,6 +2,7 @@ import { cdp, userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
 import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
+import { comesBefore } from "@/test/dom-order";
 import { render } from "@/test/render";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { BestPracticesSection } from "@/ui/help-sections/best-practices";
@@ -9,10 +10,6 @@ import { BestPracticesSection } from "@/ui/help-sections/best-practices";
 // -- Helpers -------------------------------------------------------------------
 
 type Screen = Awaited<ReturnType<typeof render>>;
-
-function comesBefore(first: Element, second: Element): boolean {
-  return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
-}
 
 function chipLabels(container: Element): (string | null)[] {
   return Array.from(container.querySelectorAll("li button")).map((chip) => chip.textContent);
