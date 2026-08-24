@@ -2,12 +2,71 @@
  * @vitest-environment node
  */
 import { describe, expect, it } from "vitest";
-import { decodeThemeCode, encodeThemeCode } from "./code";
+import { decodeThemeCode, encodeThemeCode, SEED_CODE_ORDER } from "./code";
 import { type Theme, SEED_TOKENS } from "./model";
 import { PRESETS } from "./presets";
 
 let counter = 0;
 const makeId = () => `test-id-${counter++}`;
+
+// The Default preset's share code as emitted by Composer 1.37.x, before the
+// positive/negative seeds existed. Any wire-order change breaks this fixture.
+const LEGACY_DEFAULT_CODE =
+  "ctm1:dark:Default:28292c,1a1a1c,3e3e41,ffffff,aaaaaa,696b77,818cf8,d4a5a5,5865f2,b45555,ffe5e5,f5a623,ff7a85,737476,ffd66b,4fd6c0";
+
+describe("wire format compatibility", () => {
+  it("regression: a 1.37.x share code still maps every seed to the token it was written for", () => {
+    const decoded = decodeThemeCode(LEGACY_DEFAULT_CODE, makeId);
+    expect(decoded.tokens.bg).toBe("#28292c");
+    expect(decoded.tokens.explicit).toBe("#ff7a85");
+    expect(decoded.tokens.wave).toBe("#737476");
+    expect(decoded.tokens.snap).toBe("#ffd66b");
+    expect(decoded.tokens.onset).toBe("#4fd6c0");
+  });
+
+  it("regression: seeds added after 1.37.x stay unset when decoding a legacy code", () => {
+    const decoded = decodeThemeCode(LEGACY_DEFAULT_CODE, makeId);
+    expect(decoded.tokens.positive).toBeUndefined();
+    expect(decoded.tokens.negative).toBeUndefined();
+  });
+
+  it("pins the first sixteen wire slots to the 1.37.x order", () => {
+    expect(SEED_CODE_ORDER.slice(0, 16)).toEqual([
+      "bg",
+      "bg-dark",
+      "bg-elevated",
+      "text",
+      "text-tertiary",
+      "text-faint",
+      "accent",
+      "accent-warm",
+      "link",
+      "error",
+      "error-text",
+      "warning",
+      "explicit",
+      "wave",
+      "snap",
+      "onset",
+    ]);
+  });
+
+  it("covers every seed token, so no seed is unshareable", () => {
+    expect([...SEED_CODE_ORDER].sort()).toEqual([...SEED_TOKENS].sort());
+  });
+
+  it("has no duplicate slots", () => {
+    expect(new Set(SEED_CODE_ORDER).size).toBe(SEED_CODE_ORDER.length);
+  });
+
+  it("encodes into the wire order, not the display order", () => {
+    const code = encodeThemeCode(PRESETS[0]);
+    const hexes = code.split(":")[3].split(",");
+    SEED_CODE_ORDER.forEach((key, index) => {
+      expect(`#${hexes[index]}`.toLowerCase()).toBe(PRESETS[0].tokens[key]?.toLowerCase());
+    });
+  });
+});
 
 describe("encodeThemeCode", () => {
   it("emits the ctm1 envelope with scheme, encoded name, and seed hexes", () => {
@@ -143,36 +202,36 @@ describe("edge cases", () => {
 
   it("only maps as many seeds as are present in the code", () => {
     const decoded = decodeThemeCode("ctm1:dark:Partial:280000,1a1a1c", makeId);
-    expect(decoded.tokens[SEED_TOKENS[0]]).toBe("#280000");
-    expect(decoded.tokens[SEED_TOKENS[1]]).toBe("#1a1a1c");
-    expect(decoded.tokens[SEED_TOKENS[2]]).toBeUndefined();
+    expect(decoded.tokens[SEED_CODE_ORDER[0]]).toBe("#280000");
+    expect(decoded.tokens[SEED_CODE_ORDER[1]]).toBe("#1a1a1c");
+    expect(decoded.tokens[SEED_CODE_ORDER[2]]).toBeUndefined();
   });
 });
 
 describe("invalid hex seeds are skipped, not assigned", () => {
   it("drops a non-hex seed value", () => {
     const decoded = decodeThemeCode("ctm1:dark:Bad:zzzzzz", makeId);
-    expect(decoded.tokens[SEED_TOKENS[0]]).toBeUndefined();
+    expect(decoded.tokens[SEED_CODE_ORDER[0]]).toBeUndefined();
   });
 
   it("keeps valid seeds and drops only the invalid ones", () => {
     const decoded = decodeThemeCode("ctm1:dark:Mixed:280000,zzzzzz,1a1a1c", makeId);
-    expect(decoded.tokens[SEED_TOKENS[0]]).toBe("#280000");
-    expect(decoded.tokens[SEED_TOKENS[1]]).toBeUndefined();
-    expect(decoded.tokens[SEED_TOKENS[2]]).toBe("#1a1a1c");
+    expect(decoded.tokens[SEED_CODE_ORDER[0]]).toBe("#280000");
+    expect(decoded.tokens[SEED_CODE_ORDER[1]]).toBeUndefined();
+    expect(decoded.tokens[SEED_CODE_ORDER[2]]).toBe("#1a1a1c");
   });
 
   it("skips empty inter-comma slots", () => {
     const decoded = decodeThemeCode("ctm1:dark:Gaps:280000,,1a1a1c", makeId);
-    expect(decoded.tokens[SEED_TOKENS[0]]).toBe("#280000");
-    expect(decoded.tokens[SEED_TOKENS[1]]).toBeUndefined();
-    expect(decoded.tokens[SEED_TOKENS[2]]).toBe("#1a1a1c");
+    expect(decoded.tokens[SEED_CODE_ORDER[0]]).toBe("#280000");
+    expect(decoded.tokens[SEED_CODE_ORDER[1]]).toBeUndefined();
+    expect(decoded.tokens[SEED_CODE_ORDER[2]]).toBe("#1a1a1c");
   });
 
   it("drops wrong-length hex values", () => {
     const decoded = decodeThemeCode("ctm1:dark:Short:2800,1a1a1c", makeId);
-    expect(decoded.tokens[SEED_TOKENS[0]]).toBeUndefined();
-    expect(decoded.tokens[SEED_TOKENS[1]]).toBe("#1a1a1c");
+    expect(decoded.tokens[SEED_CODE_ORDER[0]]).toBeUndefined();
+    expect(decoded.tokens[SEED_CODE_ORDER[1]]).toBe("#1a1a1c");
   });
 
   it("does not let CSS-injection-shaped payloads through", () => {
