@@ -36,8 +36,8 @@ function HandoffHarness({ onOpen }: { onOpen: () => void }) {
 const driverNextBtn = () => document.querySelector(".driver-popover-next-btn") as HTMLButtonElement | null;
 const driverProgress = () => document.querySelector(".driver-popover-progress-text")?.textContent ?? "";
 const driverTitle = () => document.querySelector(".driver-popover-title")?.textContent ?? "";
-const SKIP_CLASS = "composer-tour-skip";
-const driverSkipBtn = () => document.querySelector(`.${SKIP_CLASS}`) as HTMLButtonElement | null;
+const VIDEO_BTN_CLASS = "composer-tour-video-btn";
+const driverWatchBtn = () => document.querySelector(`.${VIDEO_BTN_CLASS}`) as HTMLButtonElement | null;
 
 async function clickNext() {
   await expect.poll(() => driverNextBtn() !== null).toBe(true);
@@ -84,7 +84,7 @@ describe("useTour best practices handoff", () => {
   });
 });
 
-describe("useTour skip to the closing walkthrough", () => {
+describe("useTour watch the closing walkthrough", () => {
   beforeEach(() => {
     localStorage.clear();
   });
@@ -100,32 +100,32 @@ describe("useTour skip to the closing walkthrough", () => {
     localStorage.setItem("composer-tour-resume", JSON.stringify({ stepIndex, stepCount: steps.length }));
   }
 
-  it("offers a skip control that reaches the closing video", async () => {
+  it("offers a control that reaches the closing video", async () => {
     seedResumeAtBestPractices();
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
     await resumeOntoBestPractices(screen);
 
-    expect(driverSkipBtn()?.textContent).toBe("Skip");
-    driverSkipBtn()?.click();
+    expect(driverWatchBtn()?.textContent).toBe("Watch the video");
+    driverWatchBtn()?.click();
 
     await expect.poll(driverTitle).toBe("See a full walkthrough");
     await expect.poll(() => document.querySelector(".composer-tour-video-embed")).not.toBe(null);
   });
 
-  it("keeps the skip control off every other step", async () => {
+  it("keeps the control off every other step", async () => {
     const screen = await render(<TourHarness />);
     await screen.getByTestId("start").click();
     await expect.poll(driverTitle).toBe("Welcome to Composer");
-    expect(driverSkipBtn()).toBe(null);
+    expect(driverWatchBtn()).toBe(null);
   });
 
-  it("does not stack duplicate skip controls when the step re-renders", async () => {
+  it("does not stack duplicate controls when the step re-renders", async () => {
     seedResumeAtBestPractices();
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
     await resumeOntoBestPractices(screen);
 
     window.dispatchEvent(new Event("resize"));
-    await expect.poll(() => document.querySelectorAll(`.${SKIP_CLASS}`).length).toBe(1);
+    await expect.poll(() => document.querySelectorAll(`.${VIDEO_BTN_CLASS}`).length).toBe(1);
   });
 });
 

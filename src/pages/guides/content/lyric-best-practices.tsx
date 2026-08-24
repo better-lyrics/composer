@@ -23,12 +23,12 @@ const GuideContents: React.FC = () => (
 const LyricBestPracticesContent: React.FC = () => (
   <>
     <p>
-      Seventeen conventions for lyric files people actually enjoy reading along to. The format requires none of them.
-      The good files follow them anyway.
+      None of this is in the TTML spec. It is the set of habits good lyric files share, written down so you don't have
+      to work them out by reading other people's files.
     </p>
     <p>
-      TTML will take a file that breaks every rule here and Better Lyrics will render it without complaint. What it
-      changes is whether people enjoy reading along, or find the file quietly annoying in a way they can't name.
+      Break every rule here and the file still validates, and Better Lyrics still renders it. It just reads worse: lines
+      that outstay the vocal, backing parts you mistake for the lead.
     </p>
 
     <GuideContents />

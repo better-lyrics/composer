@@ -31,9 +31,8 @@ const BestPracticesSection: React.FC = () => {
   return (
     <div className="flex flex-col gap-4">
       <p className={`${PROSE} max-w-[68ch]`}>
-        None of this is enforced. TTML will take a file that breaks every rule here and Better Lyrics will render it
-        without complaint. What it changes is whether people enjoy reading along, or find the file quietly annoying in a
-        way they can't name.
+        Nothing here is enforced. Break every rule and the file still validates, and Better Lyrics still renders it. It
+        just reads worse: lines that outstay the vocal, backing parts you mistake for the lead.
       </p>
 
       <ul aria-label="Rule groups" className="flex flex-wrap gap-1.5 select-none">

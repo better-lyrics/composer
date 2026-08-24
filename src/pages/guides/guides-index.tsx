@@ -55,7 +55,8 @@ const GUIDES: GuideListing[] = [
   {
     slug: "lyric-best-practices",
     title: "Lyric Best Practices for TTML",
-    description: "Seventeen conventions that separate a lyric file people enjoy reading from one that feels off.",
+    description:
+      "Line breaks, background vocals, voice assignment, syllable splits. What good lyric files do that the spec never mentions.",
   },
 ];
 

@@ -108,7 +108,7 @@ const GUIDE_ENTRIES: Record<string, GuideEntry> = {
   "lyric-best-practices": {
     title: "Lyric Best Practices for TTML",
     description:
-      "Seventeen conventions for authoring TTML lyrics: where to break lines, how to bracket background vocals, which voice owns a line, and when to split a syllable.",
+      "Where to break a line, when a background vocal needs brackets, who owns a line two people sing, and how far to split a word. Seventeen rules for TTML lyrics, each with an example.",
     datePublished: "2026-08-25",
     related: [
       { title: "Background Vocals in TTML", path: "/guides/background-vocals-in-ttml" },

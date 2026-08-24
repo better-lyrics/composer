@@ -56,7 +56,7 @@ async function clickEveryChip(screen: Screen): Promise<Map<string, ScrollIntoVie
 describe("BestPracticesSection", () => {
   it("opens with the framing that none of this is enforced", async () => {
     const screen = await render(<BestPracticesSection />);
-    await expect.element(screen.getByText(/None of this is enforced/i)).toBeInTheDocument();
+    await expect.element(screen.getByText(/Nothing here is enforced/i)).toBeInTheDocument();
   });
 
   it("renders the rule groups", async () => {
@@ -175,7 +175,7 @@ describe("BestPracticesSection invariants", () => {
 
   it("places the framing above the chips and the chips above the first rule", async () => {
     const screen = await render(<BestPracticesSection />);
-    const intro = screen.getByText(/None of this is enforced/i).element();
+    const intro = screen.getByText(/Nothing here is enforced/i).element();
     const chips = screen.getByRole("list", { name: "Rule groups" }).element();
     const firstCard = screen.container.querySelector("article");
     expect(firstCard).not.toBeNull();

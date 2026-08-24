@@ -9,7 +9,7 @@ import { useReducedMotion } from "motion/react";
 const STORAGE_KEY = "composer-tour-seen";
 const RESUME_KEY = "composer-tour-resume";
 const LOG_PREFIX = "[Tour]";
-const SKIP_BUTTON_CLASS = "composer-tour-skip";
+const VIDEO_BUTTON_CLASS = "composer-tour-video-btn";
 const GATE_CHECK_INTERVAL = 300;
 const GATE_SUCCESS_DELAY = 800;
 
@@ -38,23 +38,23 @@ function clearResumeState() {
   localStorage.removeItem(RESUME_KEY);
 }
 
-// -- Skip to the closing walkthrough ------------------------------------------
+// -- Watch the closing walkthrough --------------------------------------------
 
 // The conventions step overrides its next button to hand off to the help modal, which ends the tour,
 // so without this the closing video step is unreachable. driver.js has no third footer button, so it
 // gets injected, and tour-theme.css styles it alongside the Back button.
-function injectSkipToVideo(popover: PopoverDOM, activeStep: DriveStep | undefined, tourDriver: Driver) {
+function injectWatchVideo(popover: PopoverDOM, activeStep: DriveStep | undefined, tourDriver: Driver) {
   if (activeStep?.popover?.title !== BEST_PRACTICES_STEP_TITLE) return;
-  if (popover.footerButtons.querySelector(`.${SKIP_BUTTON_CLASS}`)) return;
+  if (popover.footerButtons.querySelector(`.${VIDEO_BUTTON_CLASS}`)) return;
 
   // Not driver-popover-prev-btn: driver delegates clicks with closest(".driver-popover-prev-btn"),
   // so borrowing that class for styling would make this button walk backwards.
-  const skip = document.createElement("button");
-  skip.type = "button";
-  skip.className = SKIP_BUTTON_CLASS;
-  skip.textContent = "Skip";
-  skip.addEventListener("click", () => tourDriver.moveNext());
-  popover.footerButtons.insertBefore(skip, popover.nextButton);
+  const watch = document.createElement("button");
+  watch.type = "button";
+  watch.className = VIDEO_BUTTON_CLASS;
+  watch.textContent = "Watch the video";
+  watch.addEventListener("click", () => tourDriver.moveNext());
+  popover.footerButtons.insertBefore(watch, popover.nextButton);
 }
 
 // -- Types --------------------------------------------------------------------
@@ -113,7 +113,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         prevBtnText: "Back",
         doneBtnText: "Done",
         allowClose: true,
-        onPopoverRender: (popover, opts) => injectSkipToVideo(popover, opts.state.activeStep, opts.driver),
+        onPopoverRender: (popover, opts) => injectWatchVideo(popover, opts.state.activeStep, opts.driver),
         onHighlighted: (_el, _step, opts) => {
           const idx = opts.state.activeIndex;
           if (idx !== undefined) {

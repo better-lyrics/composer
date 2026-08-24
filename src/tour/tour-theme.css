@@ -60,7 +60,7 @@
 }
 
 .driver-popover.composer-tour .driver-popover-prev-btn,
-.driver-popover.composer-tour .composer-tour-skip {
+.driver-popover.composer-tour .composer-tour-video-btn {
   background: var(--color-composer-button);
   color: var(--color-composer-text);
   border: none;
@@ -73,7 +73,7 @@
 }
 
 .driver-popover.composer-tour .driver-popover-prev-btn:hover,
-.driver-popover.composer-tour .composer-tour-skip:hover {
+.driver-popover.composer-tour .composer-tour-video-btn:hover {
   background: var(--color-composer-button-hover);
 }
 

@@ -149,7 +149,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       popover: {
         title: BEST_PRACTICES_STEP_TITLE,
         description:
-          "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Much easier to get right the first time than to fix afterwards.",
+          "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Read them now, or carry on to the walkthrough video.",
         popoverClass: "composer-tour composer-tour-modal",
         showButtons: ["previous", "next", "close"],
         nextBtnText: "Read them",
