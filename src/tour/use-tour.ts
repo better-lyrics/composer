@@ -31,9 +31,15 @@ function clearResumeState() {
   localStorage.removeItem(RESUME_KEY);
 }
 
+// -- Types --------------------------------------------------------------------
+
+interface UseTourOptions {
+  onOpenBestPractices: () => void;
+}
+
 // -- Hook ---------------------------------------------------------------------
 
-function useTour() {
+function useTour({ onOpenBestPractices }: UseTourOptions) {
   const driverRef = useRef<Driver | null>(null);
   const gateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [guideCard, setGuideCard] = useState<GuideCardState | null>(null);
@@ -58,6 +64,11 @@ function useTour() {
       driverRef.current = null;
     }
   }, []);
+
+  const openBestPractices = useCallback(() => {
+    destroyDriver();
+    onOpenBestPractices();
+  }, [destroyDriver, onOpenBestPractices]);
 
   const createDriverInstance = useCallback(
     (steps: DriveStep[], onStepChange?: (index: number) => void) => {
@@ -156,7 +167,7 @@ function useTour() {
     setGuideCard(null);
     if (currentIdx === undefined) return;
 
-    const steps = createTourSteps();
+    const steps = createTourSteps(openBestPractices);
     const gatedIndices = new Set(TOUR_GATED_STEPS.map((g) => g.stepIndex));
     let nextIdx = currentIdx + 1;
     while (nextIdx < steps.length && gatedIndices.has(nextIdx)) {
@@ -169,7 +180,7 @@ function useTour() {
       driverRef.current = d;
       d.drive(nextIdx);
     }
-  }, [guideCard, clearGateInterval, createDriverInstance, patchStepsWithGates]);
+  }, [guideCard, clearGateInterval, createDriverInstance, patchStepsWithGates, openBestPractices]);
 
   const driveTour = useCallback(
     (startIndex?: number) => {
@@ -177,14 +188,14 @@ function useTour() {
       clearGateInterval();
       setGuideCard(null);
 
-      const steps = createTourSteps();
+      const steps = createTourSteps(openBestPractices);
       const patchedSteps = patchStepsWithGates(steps);
 
       const d = createDriverInstance(patchedSteps, (idx) => saveResumeState(idx));
       driverRef.current = d;
       d.drive(startIndex ?? 0);
     },
-    [destroyDriver, clearGateInterval, createDriverInstance, patchStepsWithGates],
+    [destroyDriver, clearGateInterval, createDriverInstance, patchStepsWithGates, openBestPractices],
   );
 
   const startTour = useCallback(() => {

@@ -51,7 +51,14 @@ const AppContent: React.FC = () => {
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
-  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
+  const openHelp = useCallback((section?: string) => {
+    setHelpSection(section);
+    setHelpOpen(true);
+  }, []);
+  const openBestPractices = useCallback(() => openHelp("best-practices"), [openHelp]);
+  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour({
+    onOpenBestPractices: openBestPractices,
+  });
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
 
@@ -73,11 +80,6 @@ const AppContent: React.FC = () => {
   useAutoSeparate();
   useDocumentTitle();
   useVocalOnsetSnapPoints();
-
-  const openHelp = useCallback((section?: string) => {
-    setHelpSection(section);
-    setHelpOpen(true);
-  }, []);
 
   const setHelpOpenCb = useCallback(
     (open: boolean) => {

@@ -31,7 +31,7 @@ const gateFirstLineSynced = () => {
 
 // -- Tour Steps ---------------------------------------------------------------
 
-function createTourSteps(): DriveStep[] {
+function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
   return [
     // 0: Welcome
     {
@@ -142,7 +142,20 @@ function createTourSteps(): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("export"),
     },
-    // 10: Outro with video
+    // 10: Best practices, ahead of the closing video
+    {
+      popover: {
+        title: "One thing before you do this for real",
+        description:
+          "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Much easier to get right the first time than to fix afterwards.",
+        popoverClass: "composer-tour composer-tour-modal",
+        showButtons: ["previous", "next", "close"],
+        nextBtnText: "Read them",
+        showProgress: false,
+        onNextClick: () => onOpenBestPractices(),
+      },
+    },
+    // 11: Outro with video
     {
       popover: {
         title: "See a full walkthrough",
