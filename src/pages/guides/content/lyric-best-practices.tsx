@@ -1,5 +1,6 @@
+import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
-import { groupAnchorId, RuleList } from "@/best-practices/rule-list";
+import { RuleList } from "@/best-practices/rule-list";
 
 // -- Table of contents ---------------------------------------------------------
 

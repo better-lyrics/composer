@@ -1,11 +1,6 @@
+import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import { RuleCard } from "@/best-practices/rule-card";
-
-// -- Anchors -------------------------------------------------------------------
-
-function groupAnchorId(groupId: string): string {
-  return `best-practice-${groupId}`;
-}
 
 // -- Components ----------------------------------------------------------------
 
@@ -31,4 +26,4 @@ const RuleList: React.FC = () => (
 
 // -- Exports -------------------------------------------------------------------
 
-export { groupAnchorId, RuleList };
+export { RuleList };

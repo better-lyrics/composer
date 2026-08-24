@@ -1,7 +1,7 @@
 import { cdp, userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
+import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
-import { groupAnchorId } from "@/best-practices/rule-list";
 import { render } from "@/test/render";
 import { HelpSectionContent } from "@/ui/help-sections";
 import { BestPracticesSection } from "@/ui/help-sections/best-practices";

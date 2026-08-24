@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@/test/render";
+import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
-import { groupAnchorId } from "@/best-practices/rule-list";
 import BackgroundVocalsContent from "@/pages/guides/content/background-vocals-in-ttml";
 import AppleMusicLyricsContent from "@/pages/guides/content/how-to-make-apple-music-synced-lyrics";
 import KaraokeContent from "@/pages/guides/content/karaoke-style-lyrics-guide";
