@@ -1,6 +1,6 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { GroupsExtras } from "@/ui/help-sections/groups-extras";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
 

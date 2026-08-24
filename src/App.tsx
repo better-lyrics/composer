@@ -14,7 +14,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
-import { useTour } from "@/tour/use-tour";
+import { TOUR_RESUME_KEY, TOUR_SEEN_KEY, useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -47,10 +47,18 @@ const AppContent: React.FC = () => {
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [helpSection, setHelpSection] = useState<string | undefined>(undefined);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
-  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour();
+  const openHelp = useCallback((section?: string) => {
+    setHelpSection(section);
+    setHelpOpen(true);
+  }, []);
+  const openBestPractices = useCallback(() => openHelp("best-practices"), [openHelp]);
+  const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour({
+    onOpenBestPractices: openBestPractices,
+  });
   const startTourRef = useRef(startTour);
   startTourRef.current = startTour;
 
@@ -73,7 +81,13 @@ const AppContent: React.FC = () => {
   useDocumentTitle();
   useVocalOnsetSnapPoints();
 
-  const setHelpOpenCb = useCallback((open: boolean) => setHelpOpen(open), []);
+  const setHelpOpenCb = useCallback(
+    (open: boolean) => {
+      if (open) openHelp();
+      else setHelpOpen(false);
+    },
+    [openHelp],
+  );
   const setSettingsOpenCb = useCallback(
     (open: boolean) => (open ? openSettings() : closeSettings()),
     [openSettings, closeSettings],
@@ -87,19 +101,15 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
-      <AppHeader
-        onSettingsOpen={() => openSettings()}
-        onHelpOpen={() => setHelpOpen(true)}
-        onTourStart={resumeOrStartTour}
-      />
-      <HelpModal isOpen={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AppHeader onSettingsOpen={() => openSettings()} onHelpOpen={() => openHelp()} onTourStart={resumeOrStartTour} />
+      <HelpModal key={helpSection} isOpen={helpOpen} initialSection={helpSection} onClose={() => setHelpOpen(false)} />
       <SettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}
         isOpen={settingsOpen}
         onClose={closeSettings}
         onResetTour={() => {
-          localStorage.removeItem("composer-tour-seen");
-          localStorage.removeItem("composer-tour-resume");
+          localStorage.removeItem(TOUR_SEEN_KEY);
+          localStorage.removeItem(TOUR_RESUME_KEY);
         }}
       />
       <TabBar />

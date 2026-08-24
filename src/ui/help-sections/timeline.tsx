@@ -1,5 +1,5 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";

@@ -66,9 +66,9 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => previewMainTexts(screen.container)).toContain("Hello world");
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh");
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh)");
     expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
   });
 
   it("merges a standalone parenthesis line into the line above on bulk extract", async () => {
@@ -83,9 +83,9 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Real lyric line"]);
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh yeah");
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh yeah)");
   });
 
   it("pulls inline parentheses from a single line via the per-line popover action", async () => {
@@ -100,7 +100,7 @@ describe("background vocal extraction", () => {
     await pullButton.click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
@@ -131,9 +131,9 @@ describe("background vocal extraction", () => {
     await expect
       .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Hello world", "Second line"]);
-    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["ooh", "ah"]);
+    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["(ooh)", "(ah)"]);
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world", "Second line"]);
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["ooh", "ah"]);
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(ooh)", "(ah)"]);
   });
 
   it("keeps parentheses in the text when pasting with the setting off", async () => {
