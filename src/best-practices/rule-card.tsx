@@ -1,5 +1,6 @@
 import { IconCheck, IconX } from "@tabler/icons-react";
 import type { Rule } from "@/best-practices/model";
+import { HEADING, PROSE } from "@/ui/help-sections/shared";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------
@@ -37,12 +38,9 @@ const ExampleRow: React.FC<ExampleRowProps> = ({ kind, children }) => {
 
 const RuleCard: React.FC<RuleCardProps> = ({ rule }) => (
   <article className="flex flex-col gap-2 rounded-xl border border-composer-border bg-gradient-to-b from-white/[2.5%] to-transparent px-4.5 py-4 select-none">
-    <h4 className="text-[13.5px] font-semibold tracking-[-0.01em] select-text">{rule.title}</h4>
+    <h4 className={cn(HEADING, "tracking-[-0.01em] select-text")}>{rule.title}</h4>
     {rule.body.map((paragraph, index) => (
-      <p
-        key={`${index}-${paragraph}`}
-        className="max-w-[68ch] text-[12.5px] leading-relaxed text-composer-text-secondary select-text"
-      >
+      <p key={`${index}-${paragraph}`} className={cn(PROSE, "max-w-[68ch] select-text")}>
         {paragraph}
       </p>
     ))}
