@@ -52,6 +52,11 @@ const GUIDES: GuideListing[] = [
     title: "LRC to TTML Conversion Guide",
     description: "Deep dive on converting plain LRC and enhanced LRC into clean TTML you can ship.",
   },
+  {
+    slug: "lyric-best-practices",
+    title: "Lyric Best Practices for TTML",
+    description: "Seventeen conventions that separate a lyric file people enjoy reading from one that feels off.",
+  },
 ];
 
 const PATH = "/guides";

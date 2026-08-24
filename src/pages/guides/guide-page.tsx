@@ -3,6 +3,7 @@ import BackgroundVocalsContent from "@/pages/guides/content/background-vocals-in
 import AppleMusicSyncedLyricsContent from "@/pages/guides/content/how-to-make-apple-music-synced-lyrics";
 import KaraokeStyleLyricsContent from "@/pages/guides/content/karaoke-style-lyrics-guide";
 import LrcToTtmlConversionContent from "@/pages/guides/content/lrc-to-ttml-conversion-guide";
+import LyricBestPracticesContent from "@/pages/guides/content/lyric-best-practices";
 import MultiAgentDuetsContent from "@/pages/guides/content/multi-agent-lyrics-duets";
 import TtmlFileFormatSpecContent from "@/pages/guides/content/ttml-file-format-spec";
 import TtmlVsLrcContent from "@/pages/guides/content/ttml-vs-lrc";
@@ -103,6 +104,17 @@ const GUIDE_ENTRIES: Record<string, GuideEntry> = {
       { title: "TTML vs LRC", path: "/guides/ttml-vs-lrc" },
     ],
     Content: LrcToTtmlConversionContent,
+  },
+  "lyric-best-practices": {
+    title: "Lyric Best Practices for TTML",
+    description:
+      "Seventeen conventions for authoring TTML lyrics: where to break lines, how to bracket background vocals, which voice owns a line, and when to split a syllable.",
+    datePublished: "2026-08-25",
+    related: [
+      { title: "Background Vocals in TTML", path: "/guides/background-vocals-in-ttml" },
+      { title: "Karaoke-Style Lyrics Guide", path: "/guides/karaoke-style-lyrics-guide" },
+    ],
+    Content: LyricBestPracticesContent,
   },
 };
 
