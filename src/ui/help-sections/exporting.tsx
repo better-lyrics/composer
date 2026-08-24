@@ -1,4 +1,4 @@
-import { PROSE } from "@/ui/help-sections/shared";
+import { PROSE } from "@/ui/typography";
 
 // -- Exporting ----------------------------------------------------------------
 

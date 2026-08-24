@@ -2,7 +2,7 @@ import { useReducedMotion } from "motion/react";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import type { RuleGroup } from "@/best-practices/model";
 import { groupAnchorId, RuleList } from "@/best-practices/rule-list";
-import { PROSE } from "@/ui/help-sections/shared";
+import { PROSE } from "@/ui/typography";
 
 // -- Interfaces ---------------------------------------------------------------
 

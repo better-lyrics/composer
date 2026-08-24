@@ -1,6 +1,6 @@
 import { IconCheck, IconX } from "@tabler/icons-react";
 import type { Rule } from "@/best-practices/model";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, PROSE } from "@/ui/typography";
 import { cn } from "@/utils/cn";
 
 // -- Interfaces ----------------------------------------------------------------
