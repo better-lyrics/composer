@@ -126,7 +126,7 @@ const DEFAULTS: SettingsState = {
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
-  preserveBracketsOnExtraction: false,
+  preserveBracketsOnExtraction: true,
 
   confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,
