@@ -1,28 +1,7 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import type { Rule } from "@/best-practices/model";
 import { LINES_AND_TEXT } from "@/best-practices/rules/lines-and-text";
 import { expectCleanRuleCopy } from "@/test/copy-guards";
-
-// -- Helpers -------------------------------------------------------------------
-
-const SLUG = /^[a-z]+(-[a-z]+)*$/;
-
-function markup(node: React.ReactNode): string {
-  const document = new DOMParser().parseFromString(renderToStaticMarkup(node), "text/html");
-  return document.body.textContent ?? "";
-}
-
-function withExample(rule: Rule): NonNullable<Rule["example"]> {
-  if (!rule.example) throw new Error(`Rule ${rule.id} carries no example`);
-  return rule.example;
-}
-
-function ruleById(id: string): Rule {
-  const rule = LINES_AND_TEXT.rules.find((candidate) => candidate.id === id);
-  if (!rule) throw new Error(`No rule with id ${id}`);
-  return rule;
-}
+import { markup, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
 
 // -- Group ---------------------------------------------------------------------
 
@@ -55,15 +34,15 @@ describe("LINES_AND_TEXT", () => {
   });
 
   it("carries the paragraph counts the cards were written for", () => {
-    expect(ruleById("one-breath-per-line").body).toHaveLength(2);
-    expect(ruleById("sentence-case").body).toHaveLength(1);
-    expect(ruleById("empty-instrumental").body).toHaveLength(2);
+    expect(ruleById(LINES_AND_TEXT, "one-breath-per-line").body).toHaveLength(2);
+    expect(ruleById(LINES_AND_TEXT, "sentence-case").body).toHaveLength(1);
+    expect(ruleById(LINES_AND_TEXT, "empty-instrumental").body).toHaveLength(2);
   });
 
   it("puts an aside on the sentence case rule alone", () => {
-    expect(ruleById("sentence-case").aside).toBeDefined();
-    expect(ruleById("one-breath-per-line").aside).toBeUndefined();
-    expect(ruleById("empty-instrumental").aside).toBeUndefined();
+    expect(ruleById(LINES_AND_TEXT, "sentence-case").aside).toBeDefined();
+    expect(ruleById(LINES_AND_TEXT, "one-breath-per-line").aside).toBeUndefined();
+    expect(ruleById(LINES_AND_TEXT, "empty-instrumental").aside).toBeUndefined();
   });
 });
 
@@ -71,34 +50,34 @@ describe("LINES_AND_TEXT", () => {
 
 describe("LINES_AND_TEXT examples", () => {
   it("contrasts the run-on line against the two split lines", () => {
-    const example = withExample(ruleById("one-breath-per-line"));
+    const example = withExample(ruleById(LINES_AND_TEXT, "one-breath-per-line"));
     expect(markup(example.wrong)).toContain("I've been waiting for you all night, where did you go, my love?");
     expect(markup(example.right)).toContain("I've been waiting for you all night");
     expect(markup(example.right)).toContain("Where did you go, my love?");
   });
 
   it("keeps the deliberate shouted line in the sentence case counter-example", () => {
-    const example = withExample(ruleById("sentence-case"));
+    const example = withExample(ruleById(LINES_AND_TEXT, "sentence-case"));
     expect(markup(example.wrong)).toContain("WHERE DID YOU GO, MY LOVE.");
     expect(markup(example.wrong)).toContain("i cant stop.");
     expect(markup(example.right)).not.toContain("WHERE DID YOU GO, MY LOVE.");
   });
 
   it("shows the corrected sentence case lines", () => {
-    const example = withExample(ruleById("sentence-case"));
+    const example = withExample(ruleById(LINES_AND_TEXT, "sentence-case"));
     expect(markup(example.right)).toContain("I can't stop");
     expect(markup(example.right)).toContain("Where did you go, my love?");
   });
 
   it("replaces the instrumental placeholder line with a rest", () => {
-    const example = withExample(ruleById("empty-instrumental"));
+    const example = withExample(ruleById(LINES_AND_TEXT, "empty-instrumental"));
     expect(markup(example.wrong)).toContain("(instrumental)");
     expect(markup(example.right)).not.toContain("(instrumental)");
     expect(markup(example.right)).toContain("18 seconds of nothing");
   });
 
   it("keeps the surrounding verse and chorus lines on both sides of the instrumental example", () => {
-    const example = withExample(ruleById("empty-instrumental"));
+    const example = withExample(ruleById(LINES_AND_TEXT, "empty-instrumental"));
     for (const half of [example.wrong, example.right]) {
       expect(markup(half)).toContain("The last line of the verse");
       expect(markup(half)).toContain("First line of the chorus");
