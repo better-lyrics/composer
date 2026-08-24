@@ -42,6 +42,8 @@
   --color-composer-error-text: #ffe5e5;
   --color-composer-warning: #f5a623;
   --color-composer-explicit: #ff7a85;
+  --color-composer-positive: #4fd6c0;
+  --color-composer-negative: #f2777a;
   --color-composer-onset: #4fd6c0;
 
   /* Waveform */
@@ -137,6 +139,14 @@ braccato-lyrics .blyrics-container {
 @utility tap-highlight-none {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
+}
+
+@utility timing-gap-fill {
+  background: repeating-linear-gradient(
+    45deg,
+    color-mix(in srgb, var(--color-composer-text) 5%, transparent) 0 3px,
+    transparent 3px 6px
+  );
 }
 
 @utility snap-onset-line {

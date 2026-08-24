@@ -32,6 +32,8 @@ const EXPECTED_KEYS: TokenKey[] = [
   "error-text",
   "warning",
   "explicit",
+  "positive",
+  "negative",
   "wave",
   "wave-progress",
   "snap",
@@ -39,8 +41,8 @@ const EXPECTED_KEYS: TokenKey[] = [
 ];
 
 describe("TOKENS", () => {
-  it("defines exactly 31 tokens (29 from the plan table plus on-accent and onset)", () => {
-    expect(TOKENS).toHaveLength(31);
+  it("defines exactly 33 tokens (29 from the plan table plus on-accent, onset, positive, negative)", () => {
+    expect(TOKENS).toHaveLength(33);
   });
 
   it("defines on-accent as a contrast token derived from accent-dark", () => {
@@ -152,8 +154,8 @@ describe("derived exports", () => {
     expect(bgDark?.quick).toBeUndefined();
   });
 
-  it("SEED_TOKENS lists the 16 seed keys", () => {
-    expect(SEED_TOKENS).toHaveLength(16);
+  it("SEED_TOKENS lists the 18 seed keys", () => {
+    expect(SEED_TOKENS).toHaveLength(18);
     expect(SEED_TOKENS).toEqual([
       "bg",
       "bg-dark",
@@ -168,6 +170,8 @@ describe("derived exports", () => {
       "error-text",
       "warning",
       "explicit",
+      "positive",
+      "negative",
       "wave",
       "snap",
       "onset",
@@ -175,7 +179,7 @@ describe("derived exports", () => {
   });
 
   it("TOKEN_VAR maps every key to its var", () => {
-    expect(Object.keys(TOKEN_VAR)).toHaveLength(31);
+    expect(Object.keys(TOKEN_VAR)).toHaveLength(33);
     for (const token of TOKENS) {
       expect(TOKEN_VAR[token.key]).toBe(token.varName);
     }

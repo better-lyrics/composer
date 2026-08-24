@@ -4,6 +4,7 @@
 // alpha + shade tokens.
 
 import type { Theme } from "@/domain/theme/model";
+import { DARK_NEGATIVE, DARK_POSITIVE, LIGHT_NEGATIVE, LIGHT_POSITIVE } from "@/domain/theme/mark-constants";
 import { DARK_ONSET, LIGHT_ONSET } from "@/domain/theme/onset-constants";
 import { DARK_SNAP, LIGHT_SNAP } from "@/domain/theme/snap-constants";
 
@@ -29,6 +30,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#f1fa8c",
       explicit: "#ff79c6",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#44475a",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -55,6 +58,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#ebcb8b",
       explicit: "#b48ead",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#4c566a",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -81,6 +86,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#fdf6e3",
       warning: "#b58900",
       explicit: "#d33682",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#33555f",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -107,6 +114,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#7a1f1c",
       warning: "#b58900",
       explicit: "#d33682",
+      positive: LIGHT_POSITIVE,
+      negative: LIGHT_NEGATIVE,
       wave: "#cfcbb8",
       snap: LIGHT_SNAP,
       onset: LIGHT_ONSET,
@@ -133,6 +142,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#fff0ea",
       warning: "#d79921",
       explicit: "#d3869b",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#504945",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -159,6 +170,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5ea",
       warning: "#e0af68",
       explicit: "#bb9af7",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#3b4261",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -185,6 +198,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5ec",
       warning: "#f9e2af",
       explicit: "#f5c2e7",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#45475a",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -211,6 +226,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5ec",
       warning: "#f6c177",
       explicit: "#ebbcba",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#403d52",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -237,6 +254,8 @@ const CLASSIC_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#d19a66",
       explicit: "#c678dd",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#4b5263",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
