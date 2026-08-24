@@ -141,14 +141,6 @@ braccato-lyrics .blyrics-container {
   -webkit-touch-callout: none;
 }
 
-@utility timing-gap-fill {
-  background: repeating-linear-gradient(
-    45deg,
-    color-mix(in srgb, var(--color-composer-text) 5%, transparent) 0 3px,
-    transparent 3px 6px
-  );
-}
-
 @utility snap-onset-line {
   width: 1px;
   background: repeating-linear-gradient(180deg, var(--color-composer-onset) 0 5px, transparent 5px 11px);
