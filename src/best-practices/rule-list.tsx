@@ -1,18 +1,29 @@
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import { RuleCard } from "@/best-practices/rule-card";
 
+// -- Anchors -------------------------------------------------------------------
+
+function groupAnchorId(groupId: string): string {
+  return `best-practice-${groupId}`;
+}
+
 // -- Components ----------------------------------------------------------------
 
 const RuleList: React.FC = () => (
   <div className="flex flex-col gap-8">
     {BEST_PRACTICE_GROUPS.map((group) => (
-      <section key={group.id} aria-labelledby={`best-practice-${group.id}`} className="flex flex-col gap-2.5">
-        <h3 id={`best-practice-${group.id}`} className="text-[13px] font-bold tracking-[-0.01em] select-none">
+      <section key={group.id} aria-labelledby={groupAnchorId(group.id)}>
+        <h3
+          id={groupAnchorId(group.id)}
+          className="mb-3.5 scroll-mt-3.5 text-[13px] font-bold tracking-[-0.01em] select-none"
+        >
           {group.label}
         </h3>
-        {group.rules.map((rule) => (
-          <RuleCard key={rule.id} rule={rule} />
-        ))}
+        <div className="flex flex-col gap-2.5">
+          {group.rules.map((rule) => (
+            <RuleCard key={rule.id} rule={rule} />
+          ))}
+        </div>
       </section>
     ))}
   </div>
@@ -20,4 +31,4 @@ const RuleList: React.FC = () => (
 
 // -- Exports -------------------------------------------------------------------
 
-export { RuleList };
+export { groupAnchorId, RuleList };

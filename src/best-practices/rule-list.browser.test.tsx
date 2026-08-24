@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
-import { RuleList } from "@/best-practices/rule-list";
+import { groupAnchorId, RuleList } from "@/best-practices/rule-list";
 import { render } from "@/test/render";
 
 // -- Helpers -------------------------------------------------------------------
@@ -58,6 +58,15 @@ describe("RuleList", () => {
     expect(headingOutline(screen.container)).toEqual(EXPECTED_OUTLINE);
   });
 
+  it("anchors every group heading under the id its own registry entry derives", async () => {
+    const screen = await render(<RuleList />);
+    for (const group of BEST_PRACTICE_GROUPS) {
+      const heading = screen.container.querySelector(`#${CSS.escape(groupAnchorId(group.id))}`);
+      expect(heading?.tagName).toBe("H3");
+      expect(heading?.textContent).toBe(group.label);
+    }
+  });
+
   it("names each group section by its heading", async () => {
     const screen = await render(<RuleList />);
     const sections = screen.container.querySelectorAll("section[aria-labelledby]");
@@ -103,6 +112,25 @@ describe("RuleList invariants", () => {
   it("prefixes no group heading with a number", async () => {
     const screen = await render(<RuleList />);
     for (const heading of groupHeadings(screen.container)) expect(heading).not.toMatch(/^\s*\d/);
+  });
+
+  it("pairs the bottom spacing of every group heading with a matching scroll margin", async () => {
+    // Asserted as classes rather than computed style: the browser project loads
+    // no stylesheet, so getComputedStyle would only read UA defaults here.
+    const screen = await render(<RuleList />);
+    for (const heading of screen.container.querySelectorAll("h3")) {
+      const classes = Array.from(heading.classList);
+      const bottomSpacing = classes.find((name) => name.startsWith("mb-"));
+      expect(bottomSpacing).toBeDefined();
+      expect(classes).toContain(`scroll-mt-${bottomSpacing?.slice("mb-".length)}`);
+    }
+  });
+
+  it("gives every group heading a unique, non-empty anchor id", async () => {
+    const screen = await render(<RuleList />);
+    const ids = Array.from(screen.container.querySelectorAll("h3")).map((heading) => heading.id);
+    expect(ids).toEqual(BEST_PRACTICE_GROUPS.map((group) => groupAnchorId(group.id)));
+    expect(new Set(ids).size).toBe(ids.length);
   });
 
   it("renders each group heading exactly once", async () => {
