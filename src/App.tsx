@@ -102,7 +102,12 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
       <AppHeader onSettingsOpen={() => openSettings()} onHelpOpen={() => openHelp()} onTourStart={resumeOrStartTour} />
-      <HelpModal key={helpSection} isOpen={helpOpen} initialSection={helpSection} onClose={() => setHelpOpen(false)} />
+      <HelpModal
+        key={helpOpen ? `help-${helpSection ?? "default"}` : "help-closed"}
+        isOpen={helpOpen}
+        initialSection={helpSection}
+        onClose={() => setHelpOpen(false)}
+      />
       <SettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}
         isOpen={settingsOpen}

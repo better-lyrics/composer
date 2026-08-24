@@ -8,6 +8,7 @@ import MultiAgentDuetsContent from "@/pages/guides/content/multi-agent-lyrics-du
 import TtmlFileFormatSpecContent from "@/pages/guides/content/ttml-file-format-spec";
 import TtmlVsLrcContent from "@/pages/guides/content/ttml-vs-lrc";
 import WhatIsTtmlContent from "@/pages/guides/content/what-is-ttml";
+import type { GuideSlug } from "@/pages/guides/slugs";
 import { Navigate, useParams } from "react-router-dom";
 
 interface GuideEntry {
@@ -18,7 +19,7 @@ interface GuideEntry {
   Content: React.FC;
 }
 
-const GUIDE_ENTRIES: Record<string, GuideEntry> = {
+const GUIDE_ENTRIES: Record<GuideSlug, GuideEntry> = {
   "what-is-ttml": {
     title: "What is TTML?",
     description:
@@ -118,9 +119,13 @@ const GUIDE_ENTRIES: Record<string, GuideEntry> = {
   },
 };
 
+function isGuideSlug(value: string): value is GuideSlug {
+  return value in GUIDE_ENTRIES;
+}
+
 const GuidePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const entry = slug ? GUIDE_ENTRIES[slug] : undefined;
+  const entry = slug && isGuideSlug(slug) ? GUIDE_ENTRIES[slug] : undefined;
 
   if (!slug || !entry) {
     return <Navigate to="/guides" replace />;
@@ -135,4 +140,5 @@ const GuidePage: React.FC = () => {
   );
 };
 
+export { GUIDE_ENTRIES };
 export default GuidePage;

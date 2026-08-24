@@ -21,4 +21,4 @@ interface RuleGroup {
 
 // -- Exports -------------------------------------------------------------------
 
-export type { Rule, RuleExample, RuleGroup };
+export type { Rule, RuleGroup };

@@ -1,16 +1,6 @@
 import { ErrorFallback } from "@/pages/error-fallback";
+import { GUIDE_SLUGS } from "@/pages/guides/slugs";
 import type { RouteRecord } from "vite-react-ssg";
-
-const GUIDE_SLUGS = [
-  "what-is-ttml",
-  "ttml-vs-lrc",
-  "ttml-file-format-spec",
-  "how-to-make-apple-music-synced-lyrics",
-  "karaoke-style-lyrics-guide",
-  "background-vocals-in-ttml",
-  "multi-agent-lyrics-duets",
-  "lrc-to-ttml-conversion-guide",
-] as const;
 
 const errorElement = <ErrorFallback />;
 

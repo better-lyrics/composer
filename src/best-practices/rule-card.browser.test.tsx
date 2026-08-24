@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { LyricSample } from "@/best-practices/examples";
 import type { Rule } from "@/best-practices/model";
 import { RuleCard } from "@/best-practices/rule-card";
+import { comesBefore } from "@/test/dom-order";
 import { render } from "@/test/render";
 
 // -- Fixtures ------------------------------------------------------------------
@@ -38,10 +39,6 @@ const WITH_ASIDE_AND_EXAMPLE: Rule = {
 };
 
 // -- Helpers -------------------------------------------------------------------
-
-function comesBefore(first: Element, second: Element): boolean {
-  return Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
-}
 
 function exampleKinds(container: Element): (string | null)[] {
   return Array.from(container.querySelectorAll("[data-example-kind]")).map((row) =>
