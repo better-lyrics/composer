@@ -1,3 +1,4 @@
+import type { GuideSlug } from "@/pages/guides/slugs";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { PageHead } from "@/seo/page-head";
@@ -6,7 +7,7 @@ import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 interface GuideListing {
-  slug: string;
+  slug: GuideSlug;
   title: string;
   description: string;
 }
