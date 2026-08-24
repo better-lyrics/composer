@@ -62,8 +62,14 @@ describe("SYLLABLES", () => {
 // -- Review locks --------------------------------------------------------------
 
 describe("SYLLABLES review locks", () => {
+  // The aside used to say the renderer derived the stretch "from the timing", which was wrong. A held
+  // syllable is marked in the output and themes style it, so the negative assertion below stays.
   it("leaves the held note to the renderer rather than the spelling", () => {
-    expect(ruleById(SYLLABLES, "split-on-stretch").aside).toMatch(/renderer does that from the timing/i);
+    const aside = ruleById(SYLLABLES, "split-on-stretch").aside ?? "";
+    expect(aside).toMatch(/never stretch the spelling/i);
+    expect(aside).toMatch(/marked in the output/i);
+    expect(aside).toMatch(/theme decides/i);
+    expect(aside).not.toMatch(/from the timing/i);
   });
 
   it("keeps whole words as the default", () => {

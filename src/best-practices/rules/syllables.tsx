@@ -15,7 +15,7 @@ const SYLLABLES: RuleGroup = {
         'Split one into syllables when the artist is leaning on a single syllable and holding it far longer than the rest. That\'s the only case where the extra timing shows up on screen. Cutting "beautiful" into three parts because a dictionary says it has three is work nobody will ever see.',
       ],
       aside:
-        "Spell the word normally however long it's held. Never stretch the spelling to show it, the renderer does that from the timing.",
+        "Spell the word normally however long it's held. Never stretch the spelling to show it. A held syllable gets marked in the output and the theme decides how it reads, often a heavier glow.",
       example: {
         wrong: (
           <div className="flex flex-col gap-3">
