@@ -9,7 +9,12 @@ function findByTitle(steps: DriveStep[], title: string) {
 }
 
 function clickNextOn(step: DriveStep, steps: DriveStep[]) {
-  step.popover?.onNextClick?.(undefined, step, { config: { steps }, state: {}, driver: driver({ steps }) });
+  step.popover?.onNextClick?.(undefined, step, {
+    config: { steps },
+    state: {},
+    driver: driver({ steps }),
+    index: steps.indexOf(step),
+  });
 }
 
 // -- Tests --------------------------------------------------------------------
