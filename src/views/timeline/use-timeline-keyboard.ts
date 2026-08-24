@@ -24,13 +24,15 @@ import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { findBoundaryTarget, selectionForPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
+import { centerTimeScrollLeft } from "@/views/timeline/coords";
+import { steppedTime, viewportSeconds } from "@/views/timeline/playhead-step";
+import { seekAndReveal } from "@/views/timeline/seek-and-reveal";
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
@@ -318,13 +320,18 @@ function useTimelineKeyboard(
           e.preventDefault();
           const audioEl = useAudioStore.getState().audioElement;
           const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const matches = findWordsAtTime(lines, currentTime);
-          const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
+          const next = selectionForPlayhead(lines, currentTime, useTimelineStore.getState().selectedWords);
           if (!next) {
-            toast("No word under the playhead");
+            toast("No timed words to select");
             break;
           }
-          useTimelineStore.getState().setSelectedWords([next]);
+          useTimelineStore.getState().setSelectedWords([next.selection]);
+          if (next.fromGap) {
+            const reachedLine = lines[next.selection.lineIndex];
+            const reachedWords = next.selection.type === "word" ? reachedLine?.words : reachedLine?.backgroundWords;
+            const reachedWord = reachedWords?.[next.selection.wordIndex];
+            if (reachedWord) seekAndReveal(reachedWord.begin, scrollContainerRef.current);
+          }
           break;
         }
         case "timeline.toggleFollow":
@@ -705,17 +712,37 @@ function useTimelineKeyboard(
             toast(fine ? "No snap point or onset that way" : "No snap point that way");
             break;
           }
-          useAudioStore.getState().seekTo(target);
-          const jumpScrollContainer = scrollContainerRef.current;
-          if (jumpScrollContainer) {
-            const nextScrollLeft = revealTimeScrollLeft(
-              target,
-              useTimelineStore.getState().zoom,
-              jumpScrollContainer.scrollLeft,
-              jumpScrollContainer.clientWidth,
-            );
-            if (nextScrollLeft !== null) jumpScrollContainer.scrollLeft = nextScrollLeft;
-          }
+          seekAndReveal(target, scrollContainerRef.current);
+          break;
+        }
+        case "timeline.stepPlayheadBack":
+        case "timeline.stepPlayheadForward": {
+          e.preventDefault();
+          const audioEl = useAudioStore.getState().audioElement;
+          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const step = useSettingsStore.getState().playheadStepAmount;
+          const delta = matched === "timeline.stepPlayheadBack" ? -step : step;
+          seekAndReveal(steppedTime(current, delta, duration), scrollContainerRef.current);
+          break;
+        }
+        case "timeline.pagePlayheadBack":
+        case "timeline.pagePlayheadForward": {
+          e.preventDefault();
+          const pageContainer = scrollContainerRef.current;
+          if (!pageContainer) break;
+          const audioEl = useAudioStore.getState().audioElement;
+          const current = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+          const span = viewportSeconds(pageContainer.clientWidth, useTimelineStore.getState().zoom);
+          if (span <= 0) break;
+          const delta = matched === "timeline.pagePlayheadBack" ? -span : span;
+          seekAndReveal(steppedTime(current, delta, duration), pageContainer);
+          break;
+        }
+        case "timeline.playheadToStart":
+        case "timeline.playheadToEnd": {
+          e.preventDefault();
+          const target = matched === "timeline.playheadToStart" ? 0 : Math.max(0, duration);
+          seekAndReveal(target, scrollContainerRef.current);
           break;
         }
       }

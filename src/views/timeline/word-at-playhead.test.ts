@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createLine } from "@/test/factories";
 import type { WordSelection } from "@/domain/selection/model";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import {
+  findBoundaryTarget,
+  findWordsAtTime,
+  pickNextWordAtPlayhead,
+  selectionForPlayhead,
+} from "@/views/timeline/word-at-playhead";
 
 describe("findWordsAtTime", () => {
   it("returns empty when nothing overlaps the time", () => {
@@ -259,6 +264,142 @@ describe("findBoundaryTarget", () => {
       findBoundaryTarget(lines, 2.5, "begin");
       findBoundaryTarget(lines, 2.5, "end");
       expect(lines).toEqual(snapshot);
+    });
+  });
+});
+
+describe("selectionForPlayhead", () => {
+  it("selects the containing word without flagging a gap reach", () => {
+    const line = createLine({ id: "l1", words: [{ text: "a", begin: 1, end: 2 }] });
+    expect(selectionForPlayhead([line], 1.5, [])).toEqual({
+      selection: { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+      fromGap: false,
+    });
+  });
+
+  it("cycles through overlapping matches so main and background stay reachable", () => {
+    const line = createLine({
+      id: "l1",
+      words: [{ text: "main", begin: 0, end: 2 }],
+      backgroundWords: [{ text: "bg", begin: 0.5, end: 1.5 }],
+    });
+    const main: WordSelection = { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" };
+    expect(selectionForPlayhead([line], 1, [])?.selection).toEqual(main);
+    expect(selectionForPlayhead([line], 1, [main])?.selection).toEqual<WordSelection>({ ...main, type: "bg" });
+  });
+
+  it("reaches the nearest word behind when the playhead sits just past it", () => {
+    const line = createLine({
+      id: "l1",
+      words: [
+        { text: "a", begin: 0, end: 1 },
+        { text: "b", begin: 5, end: 6 },
+      ],
+    });
+    expect(selectionForPlayhead([line], 1.2, [])).toEqual({
+      selection: { lineId: "l1", lineIndex: 0, wordIndex: 0, type: "word" },
+      fromGap: true,
+    });
+  });
+
+  it("reaches the nearest word ahead when the playhead sits just before it", () => {
+    const line = createLine({
+      id: "l1",
+      words: [
+        { text: "a", begin: 0, end: 1 },
+        { text: "b", begin: 5, end: 6 },
+      ],
+    });
+    const result = selectionForPlayhead([line], 4.8, []);
+    expect(result?.selection.wordIndex).toBe(1);
+    expect(result?.fromGap).toBe(true);
+  });
+
+  it("reaches backwards without a distance limit when the playhead is far past every word", () => {
+    const line = createLine({ id: "l1", words: [{ text: "a", begin: 0, end: 1 }] });
+    const result = selectionForPlayhead([line], 900, []);
+    expect(result?.selection.wordIndex).toBe(0);
+    expect(result?.fromGap).toBe(true);
+  });
+
+  it("reaches a background word when it is the nearest thing to the playhead", () => {
+    const line = createLine({
+      id: "l1",
+      words: [{ text: "main", begin: 0, end: 1 }],
+      backgroundWords: [{ text: "bg", begin: 8, end: 9 }],
+    });
+    expect(selectionForPlayhead([line], 7.9, [])?.selection.type).toBe("bg");
+  });
+
+  describe("edge cases", () => {
+    it("returns null when there are no lines at all", () => {
+      expect(selectionForPlayhead([], 3, [])).toBeNull();
+    });
+
+    it("returns null when no line carries any timed words", () => {
+      const line = createLine({ id: "l1", text: "untimed" });
+      expect(selectionForPlayhead([line], 3, [])).toBeNull();
+    });
+
+    it("prefers the containing word over a closer-looking neighbour", () => {
+      const line = createLine({
+        id: "l1",
+        words: [
+          { text: "a", begin: 0, end: 10 },
+          { text: "b", begin: 10.01, end: 11 },
+        ],
+      });
+      const result = selectionForPlayhead([line], 9.999, []);
+      expect(result?.selection.wordIndex).toBe(0);
+      expect(result?.fromGap).toBe(false);
+    });
+
+    it("picks the earlier word when two are exactly equidistant", () => {
+      const line = createLine({
+        id: "l1",
+        words: [
+          { text: "a", begin: 0, end: 1 },
+          { text: "b", begin: 3, end: 4 },
+        ],
+      });
+      expect(selectionForPlayhead([line], 2, [])?.selection.wordIndex).toBe(0);
+    });
+
+    it("skips a word whose timings are not finite rather than ranking it as nearest", () => {
+      const line = createLine({
+        id: "l1",
+        words: [
+          { text: "good", begin: 1, end: 2 },
+          { text: "broken", begin: Number.NaN, end: Number.NaN },
+        ],
+      });
+      expect(selectionForPlayhead([line], 50, [])?.selection.wordIndex).toBe(0);
+    });
+
+    it("returns null when every word has non-finite timings", () => {
+      const line = createLine({ id: "l1", words: [{ text: "broken", begin: Number.NaN, end: Number.NaN }] });
+      expect(selectionForPlayhead([line], 50, [])).toBeNull();
+    });
+
+    it("treats the exclusive end of a word as a gap, not containment", () => {
+      const line = createLine({ id: "l1", words: [{ text: "a", begin: 0, end: 1 }] });
+      expect(selectionForPlayhead([line], 1, [])?.fromGap).toBe(true);
+    });
+  });
+
+  describe("invariants", () => {
+    it("always returns a selection when any timed word exists, for any playhead time", () => {
+      const line = createLine({ id: "l1", words: [{ text: "a", begin: 4, end: 5 }] });
+      for (const time of [0, 4, 4.5, 5, 1000]) {
+        expect(selectionForPlayhead([line], time, [])).not.toBeNull();
+      }
+    });
+
+    it("only ever flags fromGap when the playhead is outside every word", () => {
+      const line = createLine({ id: "l1", words: [{ text: "a", begin: 4, end: 5 }] });
+      expect(selectionForPlayhead([line], 4.5, [])?.fromGap).toBe(false);
+      expect(selectionForPlayhead([line], 3, [])?.fromGap).toBe(true);
+      expect(selectionForPlayhead([line], 9, [])?.fromGap).toBe(true);
     });
   });
 });

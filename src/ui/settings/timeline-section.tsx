@@ -11,6 +11,15 @@ const TimelineSection: React.FC = () => {
   return (
     <div className="divide-y divide-composer-border">
       <SliderSetting
+        label="Playhead step"
+        description="How far the playhead moves per arrow key press."
+        settingKey="playheadStepAmount"
+        min={0.01}
+        max={1}
+        step={0.01}
+        format={(v) => `${(v * 1000).toFixed(0)}ms`}
+      />
+      <SliderSetting
         label="Default zoom"
         description="Initial zoom level (px/sec) when opening the timeline."
         settingKey="defaultZoom"

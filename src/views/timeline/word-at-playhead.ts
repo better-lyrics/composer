@@ -40,6 +40,52 @@ function pickNextWordAtPlayhead(matches: WordSelection[], selectedWords: WordSel
   return matches[0];
 }
 
+function distanceToWord(word: WordTiming, time: number): number {
+  if (!Number.isFinite(word.begin) || !Number.isFinite(word.end)) return Number.POSITIVE_INFINITY;
+  if (time >= word.begin && time < word.end) return 0;
+  return Math.min(Math.abs(word.begin - time), Math.abs(time - word.end));
+}
+
+function nearestWordToTime(lines: LyricLine[], time: number): WordSelection | null {
+  let nearest: WordSelection | null = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+    const line = lines[lineIndex];
+    const tracks: Array<[readonly WordTiming[] | undefined, WordSelection["type"]]> = [
+      [line.words, "word"],
+      [line.backgroundWords, "bg"],
+    ];
+    for (const [words, type] of tracks) {
+      if (!words) continue;
+      for (let wordIndex = 0; wordIndex < words.length; wordIndex++) {
+        const distance = distanceToWord(words[wordIndex], time);
+        if (distance >= nearestDistance) continue;
+        nearestDistance = distance;
+        nearest = { lineId: line.id, lineIndex, wordIndex, type };
+      }
+    }
+  }
+  return nearest;
+}
+
+// Containment keeps the main/background cycle intact, and a contained hit must not
+// move the playhead: snapping it to the word's begin would push it clear of an
+// overlapping background word and break the cycle on the next press. Only a
+// playhead parked in a gap reaches for the nearest word and travels to it.
+function selectionForPlayhead(
+  lines: LyricLine[],
+  time: number,
+  selectedWords: WordSelection[],
+): { selection: WordSelection; fromGap: boolean } | null {
+  const matches = findWordsAtTime(lines, time);
+  if (matches.length > 0) {
+    const contained = pickNextWordAtPlayhead(matches, selectedWords);
+    return contained ? { selection: contained, fromGap: false } : null;
+  }
+  const nearest = nearestWordToTime(lines, time);
+  return nearest ? { selection: nearest, fromGap: true } : null;
+}
+
 function nearestInTrack(
   words: readonly WordTiming[] | undefined,
   time: number,
@@ -106,4 +152,4 @@ function findBoundaryTarget(lines: LyricLine[], time: number, edge: BoundaryEdge
 
 // -- Exports -------------------------------------------------------------------
 
-export { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead };
+export { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead, selectionForPlayhead };

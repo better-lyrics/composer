@@ -46,6 +46,7 @@ interface SettingsState {
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
+  playheadStepAmount: number;
   defaultWordDuration: number;
   minWordDuration: number;
   redoPreroll: number;
@@ -114,6 +115,7 @@ const DEFAULTS: SettingsState = {
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
+  playheadStepAmount: 0.1,
   defaultWordDuration: 0.3,
   minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
@@ -172,6 +174,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
+  if (next.playheadStepAmount === undefined) next.playheadStepAmount = 0.1;
   return next;
 }
 

@@ -271,13 +271,13 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     id: "timeline.nudgeLeft",
     scope: "timeline",
     description: "Nudge selected words left",
-    defaultBinding: { key: "ArrowLeft" },
+    defaultBinding: { key: "ArrowLeft", alt: true },
   },
   {
     id: "timeline.nudgeRight",
     scope: "timeline",
     description: "Nudge selected words right",
-    defaultBinding: { key: "ArrowRight" },
+    defaultBinding: { key: "ArrowRight", alt: true },
   },
   {
     id: "timeline.toggleExplicit",
@@ -332,6 +332,42 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Jump to next snap point or onset",
     defaultBinding: { key: "ArrowRight", shift: true, alt: true },
+  },
+  {
+    id: "timeline.stepPlayheadBack",
+    scope: "timeline",
+    description: "Step playhead back",
+    defaultBinding: { key: "ArrowLeft" },
+  },
+  {
+    id: "timeline.stepPlayheadForward",
+    scope: "timeline",
+    description: "Step playhead forward",
+    defaultBinding: { key: "ArrowRight" },
+  },
+  {
+    id: "timeline.pagePlayheadBack",
+    scope: "timeline",
+    description: "Page playhead back one screen",
+    defaultBinding: { key: "PageUp" },
+  },
+  {
+    id: "timeline.pagePlayheadForward",
+    scope: "timeline",
+    description: "Page playhead forward one screen",
+    defaultBinding: { key: "PageDown" },
+  },
+  {
+    id: "timeline.playheadToStart",
+    scope: "timeline",
+    description: "Move playhead to start",
+    defaultBinding: { key: "Home" },
+  },
+  {
+    id: "timeline.playheadToEnd",
+    scope: "timeline",
+    description: "Move playhead to end",
+    defaultBinding: { key: "End" },
   },
 ];
 
