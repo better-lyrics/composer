@@ -1,6 +1,6 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { expect } from "vitest";
 import type { RuleGroup } from "@/best-practices/model";
+import { renderedText } from "@/test/rule-fixtures";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -9,13 +9,6 @@ import type { RuleGroup } from "@/best-practices/model";
 const FORBIDDEN_PUNCTUATION = /[\u2013\u2014\u201c\u201d\u2018\u2019]/;
 
 // -- Guards --------------------------------------------------------------------
-
-// Reads rendered text rather than raw markup: renderToStaticMarkup escapes
-// apostrophes into entities, and attribute values are not copy.
-function renderedText(node: React.ReactNode): string {
-  const rendered = new DOMParser().parseFromString(renderToStaticMarkup(node), "text/html");
-  return rendered.body.textContent ?? "";
-}
 
 function expectCleanRuleCopy(group: RuleGroup) {
   const copy = group.rules

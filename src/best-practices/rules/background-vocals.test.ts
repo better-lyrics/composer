@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BACKGROUND_VOCALS } from "@/best-practices/rules/background-vocals";
 import { expectCleanRuleCopy } from "@/test/copy-guards";
-import { exampleDocument, markup, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
+import { exampleDocument, renderedText, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -63,8 +63,8 @@ describe("BACKGROUND_VOCALS", () => {
   it("gives the first four rules both halves of a comparison", () => {
     for (const id of ["brackets", "one-bracket-pair", "ad-libs-are-backgrounds", "ad-lib-in-a-gap"]) {
       const example = withExample(ruleById(BACKGROUND_VOCALS, id));
-      expect(markup(example.wrong).length).toBeGreaterThan(0);
-      expect(markup(example.right).length).toBeGreaterThan(0);
+      expect(renderedText(example.wrong).length).toBeGreaterThan(0);
+      expect(renderedText(example.right).length).toBeGreaterThan(0);
     }
   });
 
@@ -101,46 +101,47 @@ describe("BACKGROUND_VOCALS review locks", () => {
 describe("BACKGROUND_VOCALS examples", () => {
   it("adds the missing brackets around the background run", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "brackets"));
-    expect(markup(example.wrong)).toContain("ooh yeah");
-    expect(markup(example.wrong)).not.toContain("(ooh yeah)");
-    expect(markup(example.right)).toContain("(ooh yeah)");
-    for (const half of [example.wrong, example.right]) expect(markup(half)).toContain("I can't stop");
+    expect(renderedText(example.wrong)).toContain("ooh yeah");
+    expect(renderedText(example.wrong)).not.toContain("(ooh yeah)");
+    expect(renderedText(example.right)).toContain("(ooh yeah)");
+    for (const half of [example.wrong, example.right]) expect(renderedText(half)).toContain("I can't stop");
   });
 
   it("collapses two bracket pairs into one outer pair", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "one-bracket-pair"));
-    expect(markup(example.wrong)).toContain("(ooh yeah) (ooh yeah)");
-    expect(markup(example.right)).toContain("(ooh yeah, ooh yeah)");
-    for (const half of [example.wrong, example.right]) expect(markup(half)).toContain("Running through the night");
+    expect(renderedText(example.wrong)).toContain("(ooh yeah) (ooh yeah)");
+    expect(renderedText(example.right)).toContain("(ooh yeah, ooh yeah)");
+    for (const half of [example.wrong, example.right])
+      expect(renderedText(half)).toContain("Running through the night");
   });
 
   it("demotes the promoted ad-lib line into a bracketed background", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "ad-libs-are-backgrounds"));
-    expect(markup(example.wrong)).toContain("Uh, come on");
-    expect(markup(example.wrong)).not.toContain("(uh, come on)");
-    expect(markup(example.right)).toContain("(uh, come on)");
-    for (const half of [example.wrong, example.right]) expect(markup(half)).toContain("Take it higher");
+    expect(renderedText(example.wrong)).toContain("Uh, come on");
+    expect(renderedText(example.wrong)).not.toContain("(uh, come on)");
+    expect(renderedText(example.right)).toContain("(uh, come on)");
+    for (const half of [example.wrong, example.right]) expect(renderedText(half)).toContain("Take it higher");
   });
 
   it("captions the gap example for the one attached case and the two split cases", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "ad-lib-in-a-gap"));
-    expect(markup(example.wrong)).toContain("Far out, still one paragraph");
-    expect(markup(example.right)).toContain("Close by, one paragraph");
-    expect(markup(example.right)).toContain("Far out, two paragraphs");
+    expect(renderedText(example.wrong)).toContain("Far out, still one paragraph");
+    expect(renderedText(example.right)).toContain("Close by, one paragraph");
+    expect(renderedText(example.right)).toContain("Far out, two paragraphs");
   });
 
   it("spells out the cost of the stretched paragraph on the wrong side", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "ad-lib-in-a-gap"));
-    expect(markup(example.wrong)).toContain("The verse line hangs on screen through the whole gap.");
-    expect(markup(example.right)).not.toContain("hangs on screen");
+    expect(renderedText(example.wrong)).toContain("The verse line hangs on screen through the whole gap.");
+    expect(renderedText(example.right)).not.toContain("hangs on screen");
   });
 
   it("drops the brackets on the ad-lib that earns a line of its own", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "ad-lib-in-a-gap"));
-    expect(markup(example.wrong)).toContain("(yeah!)");
-    expect(markup(example.right)).toContain("(yeah!)");
-    expect(markup(example.right)).toContain("Yeah!");
-    expect(markup(example.wrong)).not.toContain("Yeah!");
+    expect(renderedText(example.wrong)).toContain("(yeah!)");
+    expect(renderedText(example.right)).toContain("(yeah!)");
+    expect(renderedText(example.right)).toContain("Yeah!");
+    expect(renderedText(example.wrong)).not.toContain("Yeah!");
   });
 
   it("draws the far-out ad-lib as a single stretched paragraph on the wrong side", () => {
@@ -154,8 +155,8 @@ describe("BACKGROUND_VOCALS examples", () => {
   it("names the verse line and the ad-lib in every timing strip", () => {
     const example = withExample(ruleById(BACKGROUND_VOCALS, "ad-lib-in-a-gap"));
     for (const half of [example.wrong, example.right]) {
-      expect(markup(half)).toContain("verse line");
-      expect(markup(half)).toContain("Last line of the verse");
+      expect(renderedText(half)).toContain("verse line");
+      expect(renderedText(half)).toContain("Last line of the verse");
     }
   });
 });

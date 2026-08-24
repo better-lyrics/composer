@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { VOICES } from "@/best-practices/rules/voices";
 import { expectCleanRuleCopy } from "@/test/copy-guards";
-import { exampleDocument, markup, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
+import { exampleDocument, renderedText, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
 
 // -- Group ---------------------------------------------------------------------
 
@@ -44,8 +44,8 @@ describe("VOICES", () => {
   it("gives every rule both halves of a comparison", () => {
     for (const rule of VOICES.rules) {
       const example = withExample(rule);
-      expect(markup(example.wrong).length).toBeGreaterThan(0);
-      expect(markup(example.right).length).toBeGreaterThan(0);
+      expect(renderedText(example.wrong).length).toBeGreaterThan(0);
+      expect(renderedText(example.right).length).toBeGreaterThan(0);
     }
   });
 
@@ -91,66 +91,66 @@ describe("VOICES review locks", () => {
 describe("VOICES examples", () => {
   it("hands the line back to the artist who sang the main part", () => {
     const example = withExample(ruleById(VOICES, "line-belongs-to-main"));
-    expect(markup(example.wrong)).toContain("Artist B");
-    expect(markup(example.right)).toContain("Artist A");
-    expect(markup(example.right)).not.toContain("Artist B");
+    expect(renderedText(example.wrong)).toContain("Artist B");
+    expect(renderedText(example.right)).toContain("Artist A");
+    expect(renderedText(example.right)).not.toContain("Artist B");
   });
 
   it("changes nothing but the agent on the ownership example", () => {
     const example = withExample(ruleById(VOICES, "line-belongs-to-main"));
     for (const half of [example.wrong, example.right]) {
-      expect(markup(half)).toContain("I've been waiting");
-      expect(markup(half)).toContain("(waiting on you)");
+      expect(renderedText(half)).toContain("I've been waiting");
+      expect(renderedText(half)).toContain("(waiting on you)");
     }
   });
 
   it("pulls the credited ad-lib out of the background and onto a line of its own", () => {
     const example = withExample(ruleById(VOICES, "credited-feature"));
-    expect(markup(example.wrong)).toContain("(yeah, uh-huh)");
-    expect(markup(example.right)).not.toContain("(yeah, uh-huh)");
-    expect(markup(example.right)).toContain("Yeah, uh-huh");
+    expect(renderedText(example.wrong)).toContain("(yeah, uh-huh)");
+    expect(renderedText(example.right)).not.toContain("(yeah, uh-huh)");
+    expect(renderedText(example.right)).toContain("Yeah, uh-huh");
   });
 
   it("credits the feature on the line it gains", () => {
     const example = withExample(ruleById(VOICES, "credited-feature"));
-    expect(markup(example.wrong)).not.toContain("Feat. Artist B");
-    expect(markup(example.right)).toContain("Feat. Artist B");
+    expect(renderedText(example.wrong)).not.toContain("Feat. Artist B");
+    expect(renderedText(example.right)).toContain("Feat. Artist B");
   });
 
   it("keeps the lead's own lines on both halves of the credited-feature example", () => {
     const example = withExample(ruleById(VOICES, "credited-feature"));
     for (const half of [example.wrong, example.right]) {
-      expect(markup(half)).toContain("I've been waiting");
-      expect(markup(half)).toContain("For you all night");
+      expect(renderedText(half)).toContain("I've been waiting");
+      expect(renderedText(half)).toContain("For you all night");
     }
   });
 
   it("collapses the doubled line into one chorus line", () => {
     const example = withExample(ruleById(VOICES, "two-voices-is-chorus"));
-    expect(markup(example.wrong)).toContain("(we were never gonna make it)");
-    expect(markup(example.right)).not.toContain("(we were never gonna make it)");
-    expect(markup(example.right)).toContain("We were never gonna make it");
+    expect(renderedText(example.wrong)).toContain("(we were never gonna make it)");
+    expect(renderedText(example.right)).not.toContain("(we were never gonna make it)");
+    expect(renderedText(example.right)).toContain("We were never gonna make it");
   });
 
   it("swaps the named artist for the chorus on the doubled line", () => {
     const example = withExample(ruleById(VOICES, "two-voices-is-chorus"));
-    expect(markup(example.wrong)).toContain("Artist A");
-    expect(markup(example.right)).not.toContain("Artist A");
-    expect(markup(example.right)).toContain("Chorus");
+    expect(renderedText(example.wrong)).toContain("Artist A");
+    expect(renderedText(example.right)).not.toContain("Artist A");
+    expect(renderedText(example.right)).toContain("Chorus");
   });
 
   it("moves the hand-off split onto the phrase boundary", () => {
     const example = withExample(ruleById(VOICES, "hand-off"));
-    expect(markup(example.wrong)).toContain("I've been waiting for");
-    expect(markup(example.wrong)).toContain("you all night");
-    expect(markup(example.right)).toContain("For you all night");
+    expect(renderedText(example.wrong)).toContain("I've been waiting for");
+    expect(renderedText(example.wrong)).toContain("you all night");
+    expect(renderedText(example.right)).toContain("For you all night");
   });
 
   it("shows the mid-phrase hand-off as one whole line given to the chorus", () => {
     const example = withExample(ruleById(VOICES, "hand-off"));
-    expect(markup(example.right)).toContain("Chorus, when the hand-off lands mid-phrase");
-    expect(markup(example.right)).toContain("I've been waiting for you all night");
-    expect(markup(example.wrong)).not.toContain("Chorus");
+    expect(renderedText(example.right)).toContain("Chorus, when the hand-off lands mid-phrase");
+    expect(renderedText(example.right)).toContain("I've been waiting for you all night");
+    expect(renderedText(example.wrong)).not.toContain("Chorus");
   });
 
   it("draws three lines on the right of the hand-off example", () => {

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { LINES_AND_TEXT } from "@/best-practices/rules/lines-and-text";
 import { expectCleanRuleCopy } from "@/test/copy-guards";
-import { markup, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
+import { renderedText, ruleById, SLUG, withExample } from "@/test/rule-fixtures";
 
 // -- Group ---------------------------------------------------------------------
 
@@ -51,44 +51,44 @@ describe("LINES_AND_TEXT", () => {
 describe("LINES_AND_TEXT examples", () => {
   it("contrasts the run-on line against the two split lines", () => {
     const example = withExample(ruleById(LINES_AND_TEXT, "one-breath-per-line"));
-    expect(markup(example.wrong)).toContain("I've been waiting for you all night, where did you go, my love?");
-    expect(markup(example.right)).toContain("I've been waiting for you all night");
-    expect(markup(example.right)).toContain("Where did you go, my love?");
+    expect(renderedText(example.wrong)).toContain("I've been waiting for you all night, where did you go, my love?");
+    expect(renderedText(example.right)).toContain("I've been waiting for you all night");
+    expect(renderedText(example.right)).toContain("Where did you go, my love?");
   });
 
   it("keeps the deliberate shouted line in the sentence case counter-example", () => {
     const example = withExample(ruleById(LINES_AND_TEXT, "sentence-case"));
-    expect(markup(example.wrong)).toContain("WHERE DID YOU GO, MY LOVE.");
-    expect(markup(example.wrong)).toContain("i cant stop.");
-    expect(markup(example.right)).not.toContain("WHERE DID YOU GO, MY LOVE.");
+    expect(renderedText(example.wrong)).toContain("WHERE DID YOU GO, MY LOVE.");
+    expect(renderedText(example.wrong)).toContain("i cant stop.");
+    expect(renderedText(example.right)).not.toContain("WHERE DID YOU GO, MY LOVE.");
   });
 
   it("shows the corrected sentence case lines", () => {
     const example = withExample(ruleById(LINES_AND_TEXT, "sentence-case"));
-    expect(markup(example.right)).toContain("I can't stop");
-    expect(markup(example.right)).toContain("Where did you go, my love?");
+    expect(renderedText(example.right)).toContain("I can't stop");
+    expect(renderedText(example.right)).toContain("Where did you go, my love?");
   });
 
   it("replaces the instrumental placeholder line with a rest", () => {
     const example = withExample(ruleById(LINES_AND_TEXT, "empty-instrumental"));
-    expect(markup(example.wrong)).toContain("(instrumental)");
-    expect(markup(example.right)).not.toContain("(instrumental)");
-    expect(markup(example.right)).toContain("18 seconds of nothing");
+    expect(renderedText(example.wrong)).toContain("(instrumental)");
+    expect(renderedText(example.right)).not.toContain("(instrumental)");
+    expect(renderedText(example.right)).toContain("18 seconds of nothing");
   });
 
   it("keeps the surrounding verse and chorus lines on both sides of the instrumental example", () => {
     const example = withExample(ruleById(LINES_AND_TEXT, "empty-instrumental"));
     for (const half of [example.wrong, example.right]) {
-      expect(markup(half)).toContain("The last line of the verse");
-      expect(markup(half)).toContain("First line of the chorus");
+      expect(renderedText(half)).toContain("The last line of the verse");
+      expect(renderedText(half)).toContain("First line of the chorus");
     }
   });
 
   it("gives every rule in this group both halves of a comparison", () => {
     for (const rule of LINES_AND_TEXT.rules) {
       const example = withExample(rule);
-      expect(markup(example.wrong).length).toBeGreaterThan(0);
-      expect(markup(example.right).length).toBeGreaterThan(0);
+      expect(renderedText(example.wrong).length).toBeGreaterThan(0);
+      expect(renderedText(example.right).length).toBeGreaterThan(0);
     }
   });
 });

@@ -11,7 +11,9 @@ function exampleDocument(node: React.ReactNode): Document {
   return new DOMParser().parseFromString(renderToStaticMarkup(node), "text/html");
 }
 
-function markup(node: React.ReactNode): string {
+// Reads rendered text rather than raw markup: renderToStaticMarkup escapes
+// apostrophes into entities, and attribute values are not copy.
+function renderedText(node: React.ReactNode): string {
   return exampleDocument(node).body.textContent ?? "";
 }
 
@@ -28,4 +30,4 @@ function ruleById(group: RuleGroup, id: string): Rule {
 
 // -- Exports -------------------------------------------------------------------
 
-export { exampleDocument, markup, ruleById, SLUG, withExample };
+export { exampleDocument, renderedText, ruleById, SLUG, withExample };
