@@ -24,4 +24,4 @@ function expectCleanRuleCopy(group: RuleGroup) {
 
 // -- Exports -------------------------------------------------------------------
 
-export { expectCleanRuleCopy, FORBIDDEN_PUNCTUATION };
+export { expectCleanRuleCopy };
