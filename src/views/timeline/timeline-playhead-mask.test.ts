@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
+import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -28,6 +28,29 @@ function addRoot(): HTMLElement {
   const root = document.createElement("div");
   document.body.appendChild(root);
   return root;
+}
+
+interface TimelineFixture {
+  host: HTMLElement;
+  scrollContainer: HTMLElement;
+}
+
+function addTimelineFixture(): TimelineFixture {
+  const host = addRoot();
+  const panel = document.createElement("div");
+  panel.dataset.tour = "timeline-panel";
+  host.appendChild(panel);
+  const scrollContainer = document.createElement("div");
+  panel.appendChild(scrollContainer);
+  addWordBlock(scrollContainer, { top: 200, height: 40, left: 100, width: 400 });
+  return { host, scrollContainer };
+}
+
+function addDragGhost(host: HTMLElement, rect: BlockRect): HTMLElement {
+  const overlay = document.createElement("div");
+  host.appendChild(overlay);
+  addWordBlock(overlay, rect);
+  return overlay;
 }
 
 afterEach(() => {
@@ -104,6 +127,53 @@ describe("buildPlayheadMask", () => {
 
       expect(scoped).not.toContain("500px");
       expect(documentScoped).toContain("500px");
+    });
+  });
+
+  describe("playheadMaskRoot", () => {
+    it("matches a document-scoped query while no word is being dragged", () => {
+      const { scrollContainer } = addTimelineFixture();
+
+      expect(buildPlayheadMask(playheadMaskRoot(scrollContainer), PLAYHEAD_X, CONTAINER_TOP)).toBe(
+        buildPlayheadMask(document, PLAYHEAD_X, CONTAINER_TOP),
+      );
+    });
+
+    it("matches a document-scoped query while a word is being dragged", () => {
+      const { host, scrollContainer } = addTimelineFixture();
+      addDragGhost(host, { top: 600, height: 40, left: 100, width: 400 });
+
+      expect(buildPlayheadMask(playheadMaskRoot(scrollContainer), PLAYHEAD_X, CONTAINER_TOP)).toBe(
+        buildPlayheadMask(document, PLAYHEAD_X, CONTAINER_TOP),
+      );
+    });
+
+    it("regression: the scroll container alone drops the drag ghost's band", () => {
+      const { host, scrollContainer } = addTimelineFixture();
+      addDragGhost(host, { top: 600, height: 40, left: 100, width: 400 });
+
+      expect(buildPlayheadMask(scrollContainer, PLAYHEAD_X, CONTAINER_TOP)).not.toContain("500px");
+      expect(buildPlayheadMask(playheadMaskRoot(scrollContainer), PLAYHEAD_X, CONTAINER_TOP)).toContain("500px");
+    });
+
+    it("counts a drag ghost overlapping the dragged word once", () => {
+      const { host, scrollContainer } = addTimelineFixture();
+      addDragGhost(host, { top: 210, height: 40, left: 100, width: 400 });
+
+      expect(buildPlayheadMask(playheadMaskRoot(scrollContainer), PLAYHEAD_X, CONTAINER_TOP)).toBe(
+        "linear-gradient(to bottom, black 0, black 100px, rgba(0,0,0,0.5) 100px, rgba(0,0,0,0.5) 150px, black 150px, black 100%)",
+      );
+    });
+
+    it("falls back to the document when the panel root is missing", () => {
+      const scrollContainer = addRoot();
+      addWordBlock(scrollContainer, { top: 200, height: 40, left: 100, width: 400 });
+      const outsideRoot = addRoot();
+      addWordBlock(outsideRoot, { top: 600, height: 40, left: 100, width: 400 });
+
+      expect(buildPlayheadMask(playheadMaskRoot(scrollContainer), PLAYHEAD_X, CONTAINER_TOP)).toBe(
+        buildPlayheadMask(document, PLAYHEAD_X, CONTAINER_TOP),
+      );
     });
   });
 

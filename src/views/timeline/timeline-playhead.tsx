@@ -3,7 +3,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { buildPlayheadMask } from "@/views/timeline/timeline-playhead-mask";
+import { buildPlayheadMask, playheadMaskRoot } from "@/views/timeline/timeline-playhead-mask";
 import { createPlayheadDrag } from "@/views/timeline/playhead-drag";
 import { snapPlayheadTime } from "@/views/timeline/playhead-snap";
 import { GUTTER_WIDTH, timeToX } from "@/views/timeline/coords";
@@ -136,7 +136,9 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const playheadCenterXViewport = playheadCenterXLocal + containerRect.left;
       playheadCenterXLocalRef.current = playheadCenterXLocal;
       containerLeftRef.current = containerRect.left;
-      const mask = container ? buildPlayheadMask(container, playheadCenterXViewport, containerRect.top) : "";
+      const mask = container
+        ? buildPlayheadMask(playheadMaskRoot(container), playheadCenterXViewport, containerRect.top)
+        : "";
       if (mask !== lastMaskRef.current) {
         lastMaskRef.current = mask;
         const style = playheadRef.current.style;

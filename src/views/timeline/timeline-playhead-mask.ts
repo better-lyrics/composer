@@ -2,8 +2,16 @@
 
 const MASK_DIM_ALPHA = 0.5;
 const WORD_CORNER_RADIUS_PX = 12;
+const TIMELINE_PANEL_SELECTOR = "[data-tour='timeline-panel']";
 
 // -- Helpers -------------------------------------------------------------------
+
+// dnd-kit renders the drag ghost's word blocks into a DragOverlay that does not portal
+// and sits beside the panel root, so the panel's parent is the smallest root that still
+// holds every word block the document-scoped query used to find.
+function playheadMaskRoot(scrollContainer: Element): ParentNode {
+  return scrollContainer.closest(TIMELINE_PANEL_SELECTOR)?.parentElement ?? scrollContainer.ownerDocument;
+}
 
 function cornerYInset(distFromEdge: number, radius: number): number {
   if (distFromEdge >= radius || distFromEdge < 0) return 0;
@@ -50,4 +58,4 @@ function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, co
 
 // -- Exports -------------------------------------------------------------------
 
-export { buildPlayheadMask };
+export { buildPlayheadMask, playheadMaskRoot };
