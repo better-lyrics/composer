@@ -8,12 +8,28 @@ import { getSplitCharacter } from "@/utils/split-character";
 // -- Constants ----------------------------------------------------------------
 
 const FIRST_LYRIC_TEXT = "Is it so hard to say the same thing";
+const CHINESE_CREDIT_PREFIXES = [
+  ["作词", "qrcLyricist"],
+  ["作曲", "qrcComposer"],
+  ["编曲", "qrcArranger"],
+  ["編曲", "qrcArranger"],
+  ["制作人", "qrcProducer"],
+  ["製作人", "qrcProducer"],
+] as const;
 
 // -- Helpers ------------------------------------------------------------------
 
 function withoutLineId(line: LyricLine): Omit<LyricLine, "id"> {
   const { id, ...rest } = line;
   return rest;
+}
+
+// Mirrors how QQ tags CJK: one word tag per character, so the reconstructed text
+// carries a split character at every joint.
+function perCharacterQrcLine(beginMs: number, text: string): string {
+  const characters = [...text];
+  const body = characters.map((character, index) => `${character}(${beginMs + index * 100},100)`).join("");
+  return `[${beginMs},${characters.length * 100}]${body}`;
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -144,6 +160,29 @@ describe("parseQrc", () => {
       expect(result.lines.map((line) => line.text)).toEqual(["Stand by me"]);
     });
 
+    it("detects a Chinese credit line QQ tagged one character at a time", () => {
+      const result = parseQrc("[1000,500]作(1000,150)词(1150,150)：(1300,200)方文山(1500,100)\n[2000,500]歌(2000,500)");
+      expect(result.lines.map((line) => line.text)).toEqual(["歌"]);
+      expect(result.metadata.songwriters).toEqual(["方文山"]);
+      expect(result.metadata.extra?.qrcLyricist).toBe("方文山");
+    });
+
+    it("detects every Chinese credit prefix QQ tags one character at a time", () => {
+      for (const [prefix, extraKey] of CHINESE_CREDIT_PREFIXES) {
+        const result = parseQrc(perCharacterQrcLine(1000, `${prefix}：方文山`));
+        expect(result.lines).toEqual([]);
+        expect(result.metadata.extra?.[extraKey]).toBe("方文山");
+        expect(result.metadata.songwriters).toEqual(["方文山"]);
+      }
+    });
+
+    it("drops a credit line that names nobody without inventing an empty entry", () => {
+      const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
+      expect(result.lines).toEqual([]);
+      expect(result.metadata.extra).toBeUndefined();
+      expect(result.metadata.songwriters).toBeUndefined();
+    });
+
     it("reports no songwriters when the document credits nobody", () => {
       const result = parseQrc("[1000,500]Hi (1000,500)");
       expect(result.metadata.songwriters).toBeUndefined();
@@ -179,12 +218,27 @@ describe("parseQrc", () => {
       expect(result.lines[0].agentId).toBe("v1");
     });
 
-    it("keeps lines before the first marker on the singer that becomes v1", () => {
+    it("gives lines before the first marker an unnamed voice instead of the first singer", () => {
       const result = parseQrc(
         "[1000,500]Intro (1000,500)\n[2000,500]Fox the Fox：(2000,500)\n[3000,500]Verse(3000,500)",
       );
-      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Fox the Fox" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: "Voice 1" },
+        { id: "v2", type: "person", name: "Fox the Fox" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("reads a marker name QQ tagged one character at a time", () => {
+      const result = parseQrc("[1000,500]周(1000,150)杰(1150,150)倫(1300,100)：(1400,100)\n[2000,500]歌(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "周杰倫" }]);
+      expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+    });
+
+    it("reads a marker name whose word tags split a word", () => {
+      const result = parseQrc("[1000,500]The (1000,150)Week(1150,150)nd：(1300,200)\n[2000,500]Hi(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "The Weeknd" }]);
     });
 
     it("reuses an agent when a marker repeats instead of minting a new one", () => {
@@ -201,7 +255,7 @@ describe("parseQrc", () => {
     it("does not treat a credit line as a singer marker", () => {
       const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
       expect(result.agents).toBeUndefined();
-      expect(result.metadata.extra?.qrcLyricsBy).toBe("");
+      expect(result.lines).toEqual([]);
     });
   });
 
@@ -266,6 +320,19 @@ describe("parseQrc", () => {
           expect(words[i].end).toBeGreaterThanOrEqual(words[i].begin);
           if (i > 0) expect(words[i].begin).toBeGreaterThanOrEqual(words[i - 1].begin);
         }
+      }
+    });
+
+    it("never leaves a split character in an agent name or a songwriter", () => {
+      const splitChar = getSplitCharacter();
+      const documents = [
+        WANDERLUST_QRC,
+        `${perCharacterQrcLine(1000, "作词：方文山")}\n${perCharacterQrcLine(3000, "周杰倫：")}\n[9000,500]歌(9000,500)`,
+      ];
+      for (const document of documents) {
+        const result = parseQrc(document);
+        for (const agent of result.agents ?? []) expect(agent.name).not.toContain(splitChar);
+        for (const songwriter of result.metadata.songwriters ?? []) expect(songwriter).not.toContain(splitChar);
       }
     });
 

@@ -10,18 +10,19 @@ import {
   decodeCredits,
   isCreditLine,
   isQrcTitleLine,
+  MS_PER_SECOND,
   parseHeaderTags,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
-import { getSplitCharacter } from "@/utils/split-character";
+import { getSplitCharacter, stripSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
 const LINE_HEADER_REGEX = /\[(\d+),(\d+)\]/g;
 const WORD_TAG_REGEX = /\((\d+),(\d+)\)/g;
-const MS_PER_SECOND = 1000;
-const DEFAULT_AGENT_ID = "v1";
+const DEFAULT_AGENT_NAME = "Voice 1";
+const DEFAULT_AGENT: Agent = { id: "v1", type: "person", name: DEFAULT_AGENT_NAME };
 
 // -- Types --------------------------------------------------------------------
 
@@ -124,21 +125,32 @@ function readQrcSemantics(parsed: QrcLine[], headerMetadata: Partial<ProjectMeta
   const extra: Record<string, string> = { ...headerMetadata.extra };
   const agents: Agent[] = [];
   const agentsByName = new Map<string, Agent>();
-  let currentAgentId = DEFAULT_AGENT_ID;
+  let currentAgentId = DEFAULT_AGENT.id;
 
   for (const line of parsed) {
     if (line.text.length === 0) continue;
+    // Classification and the names it extracts read the separator-free text; the
+    // stored line keeps the reconstruction, split characters and all.
+    const plainText = stripSplitCharacter(line.text);
 
-    if (isCreditLine(line.text)) {
-      const value = creditValue(line.text);
-      extra[creditExtraKey(line.text)] = value;
-      for (const name of decodeCredits(value)) songwriters.add(name);
+    if (isCreditLine(plainText)) {
+      const value = creditValue(plainText);
+      if (value.length > 0) {
+        extra[creditExtraKey(plainText)] = value;
+        for (const name of decodeCredits(value)) songwriters.add(name);
+      }
       continue;
     }
-    if (isQrcTitleLine(line.text, headerMetadata)) continue;
+    if (isQrcTitleLine(plainText, headerMetadata)) continue;
 
-    const singer = readSingerMarker(line.text);
+    const singer = readSingerMarker(plainText);
     if (singer !== null) {
+      // Lines already emitted predate every marker, so they belong to an unnamed
+      // voice rather than to the first singer the document happens to announce.
+      if (agents.length === 0 && lines.length > 0) {
+        agents.push(DEFAULT_AGENT);
+        agentsByName.set(DEFAULT_AGENT_NAME, DEFAULT_AGENT);
+      }
       currentAgentId = agentForSinger(singer, agents, agentsByName).id;
       continue;
     }
@@ -178,4 +190,4 @@ function parseQrc(content: string): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { MS_PER_SECOND, parseQrc };
+export { parseQrc };

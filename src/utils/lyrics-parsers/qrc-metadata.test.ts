@@ -8,7 +8,6 @@ import {
   parseHeaderTags,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
-import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -195,9 +194,8 @@ describe("creditValue", () => {
   });
 
   describe("edge cases", () => {
-    it("removes the split character reinserted at spaceless joints", () => {
-      const splitChar = getSplitCharacter();
-      expect(creditValue(`Lyrics by：${splitChar}TESFAYE/${splitChar}ABEL`)).toBe("TESFAYE/ABEL");
+    it("reads a Chinese credit value", () => {
+      expect(creditValue("作词：方文山")).toBe("方文山");
     });
 
     it("keeps a colon that appears inside the value", () => {
@@ -280,15 +278,12 @@ describe("isQrcTitleLine", () => {
       expect(isQrcTitleLine("  wanderlust  -   the weeknd ", WANDERLUST_TAGS)).toBe(true);
     });
 
-    it("ignores a split character reinserted at a spaceless joint", () => {
-      const splitChar = getSplitCharacter();
-      expect(isQrcTitleLine(`Wanderlust -${splitChar}The Weeknd`, WANDERLUST_TAGS)).toBe(true);
+    it("ignores whitespace missing around the separator", () => {
+      expect(isQrcTitleLine("Wanderlust -The Weeknd", WANDERLUST_TAGS)).toBe(true);
     });
 
     it("matches a CJK title line whose words carry no spaces", () => {
-      const splitChar = getSplitCharacter();
-      const tags = { title: "青花瓷", artists: ["周杰倫"] };
-      expect(isQrcTitleLine(`青花瓷${splitChar}-${splitChar}周杰倫`, tags)).toBe(true);
+      expect(isQrcTitleLine("青花瓷-周杰倫", { title: "青花瓷", artists: ["周杰倫"] })).toBe(true);
     });
 
     it("matches only the first artist", () => {

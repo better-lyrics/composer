@@ -1,9 +1,8 @@
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { MS_PER_SECOND } from "@/utils/lyrics-parsers/qrc";
-import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
+const MS_PER_SECOND = 1000;
 const HEADER_TAG_REGEX = /\[([a-z]+):([^\]]*)\]/gi;
 const CREDIT_PREFIX_REGEX =
   /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
@@ -72,7 +71,7 @@ function creditExtraKey(text: string): string {
 }
 
 function creditValue(text: string): string {
-  return stripSplitCharacter(text).match(CREDIT_VALUE_REGEX)?.[1].trim() ?? "";
+  return text.match(CREDIT_VALUE_REGEX)?.[1].trim() ?? "";
 }
 
 // A token with no Latin letters is left alone so CJK names survive intact.
@@ -102,7 +101,7 @@ function decodeCredits(value: string): string[] {
 // -- Title line ---------------------------------------------------------------
 
 function normalizeTitleLine(text: string): string {
-  return stripSplitCharacter(text).replace(/\s+/g, "").toLowerCase();
+  return text.replace(/\s+/g, "").toLowerCase();
 }
 
 function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
@@ -125,4 +124,13 @@ function readSingerMarker(text: string): string | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { creditExtraKey, creditValue, decodeCredits, isCreditLine, isQrcTitleLine, parseHeaderTags, readSingerMarker };
+export {
+  creditExtraKey,
+  creditValue,
+  decodeCredits,
+  isCreditLine,
+  isQrcTitleLine,
+  MS_PER_SECOND,
+  parseHeaderTags,
+  readSingerMarker,
+};
