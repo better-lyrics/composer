@@ -1,3 +1,4 @@
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getBannerNodes } from "@/views/timeline/banner-progress-registry";
@@ -35,147 +36,133 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
   const containerRef = useRef<HTMLDivElement>(null);
   const playheadRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   const lastFollowedLineRef = useRef<number>(-1);
   const verticalTargetRef = useRef<number | null>(null);
   const lastMaskRef = useRef<string>("");
   const playheadCenterXLocalRef = useRef<number>(0);
   const containerLeftRef = useRef<number>(0);
 
-  // RAF loop - always runs, reads directly from audio element and stores
-  useEffect(() => {
-    const update = () => {
-      if (!playheadRef.current) {
-        rafRef.current = requestAnimationFrame(update);
-        return;
-      }
+  useFrameLoop(() => {
+    if (!playheadRef.current) return;
 
-      // Read directly from audio element for smooth updates
-      const audioEl = useAudioStore.getState().audioElement;
-      const isPlaying = useAudioStore.getState().isPlaying;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled } = useTimelineStore.getState();
+    // Read directly from audio element for smooth updates
+    const audioEl = useAudioStore.getState().audioElement;
+    const isPlaying = useAudioStore.getState().isPlaying;
+    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+    const { zoom, scrollLeft, isDraggingPlayhead, dragTime, followEnabled } = useTimelineStore.getState();
 
-      // Auto-scroll to keep playhead centered when follow is enabled
-      const container = scrollContainerRef.current;
-      if (followEnabled && isPlaying && container && !isDraggingPlayhead) {
-        const viewportWidth = container.clientWidth;
-        const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
-        const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
-        container.scrollLeft = targetScrollLeft;
+    // Auto-scroll to keep playhead centered when follow is enabled
+    const container = scrollContainerRef.current;
+    if (followEnabled && isPlaying && container && !isDraggingPlayhead) {
+      const viewportWidth = container.clientWidth;
+      const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
+      const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
+      container.scrollLeft = targetScrollLeft;
 
-        const lines = useProjectStore.getState().lines;
-        let activeLineIndex = -1;
-        for (let i = 0; i < lines.length; i++) {
-          const timing = effectiveBounds(lines[i]);
-          if (timing && currentTime >= timing.begin && currentTime < timing.end) {
-            activeLineIndex = i;
-            break;
-          }
-        }
-
-        if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
-          lastFollowedLineRef.current = activeLineIndex;
-          const BG_DROP_ZONE_HEIGHT = 24;
-          const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
-
-          const layout = computeRowLayout({
-            lines,
-            rowHeights,
-            defaultRowHeight,
-            collapsedInstances,
-            waveformHeight: WAVEFORM_HEIGHT,
-            bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
-            groupHeaderHeight: GROUP_HEADER_HEIGHT,
-          });
-
-          const activeLine = lines[activeLineIndex];
-          const activeInstanceKey = isLinked(activeLine) ? `${activeLine.groupId}:${activeLine.instanceIdx}` : null;
-          const isActiveCollapsed = activeInstanceKey !== null && collapsedInstances[activeInstanceKey];
-
-          const target =
-            isActiveCollapsed && activeInstanceKey !== null
-              ? layout.headerTops.get(activeInstanceKey)
-              : layout.lineTops.get(activeLine.id);
-
-          if (target) {
-            const viewportHeight = container.clientHeight;
-            const rowCenter = target.top + target.height / 2;
-            verticalTargetRef.current = Math.max(
-              0,
-              Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
-            );
-          }
-        }
-
-        // Lerp vertical scroll only while animating toward target
-        if (verticalTargetRef.current !== null) {
-          const diff = verticalTargetRef.current - container.scrollTop;
-          if (Math.abs(diff) > 0.5) {
-            container.scrollTop += diff * 0.15;
-          } else {
-            container.scrollTop = verticalTargetRef.current;
-            verticalTargetRef.current = null;
-          }
-        }
-      } else {
-        lastFollowedLineRef.current = -1;
-        verticalTargetRef.current = null;
-      }
-
-      container?.parentElement?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
-
-      const displayTime = isDraggingPlayhead ? dragTime : currentTime;
-      const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
-      const position = timeToX(displayTime, zoom, actualScrollLeft) - 1; // -1 to center the 2px wide playhead
-      playheadRef.current.style.transform = `translate3d(${position}px, 0, 0)`;
-
-      // Update height to match full scrollable content
-      if (container) {
-        playheadRef.current.style.height = `${container.scrollHeight}px`;
-      }
-
-      const containerRect = containerRef.current?.getBoundingClientRect();
-      if (containerRect) {
-        const playheadCenterXLocal = timeToX(displayTime, zoom, actualScrollLeft);
-        const playheadCenterXViewport = playheadCenterXLocal + containerRect.left;
-        playheadCenterXLocalRef.current = playheadCenterXLocal;
-        containerLeftRef.current = containerRect.left;
-        const mask = buildPlayheadMask(playheadCenterXViewport, containerRect.top);
-        if (mask !== lastMaskRef.current) {
-          lastMaskRef.current = mask;
-          const style = playheadRef.current.style;
-          style.maskImage = mask;
-          style.webkitMaskImage = mask;
+      const lines = useProjectStore.getState().lines;
+      let activeLineIndex = -1;
+      for (let i = 0; i < lines.length; i++) {
+        const timing = effectiveBounds(lines[i]);
+        if (timing && currentTime >= timing.begin && currentTime < timing.end) {
+          activeLineIndex = i;
+          break;
         }
       }
 
-      // Update progress fill on collapsed banner DOM nodes (registered via mount)
-      const banners = getBannerNodes();
-      for (const banner of banners) {
-        const startStr = banner.dataset.instanceStart;
-        const endStr = banner.dataset.instanceEnd;
-        if (!startStr || !endStr) continue;
-        const startNum = Number.parseFloat(startStr);
-        const endNum = Number.parseFloat(endStr);
-        const span = endNum - startNum;
-        if (!Number.isFinite(span) || span <= 0) {
-          banner.style.setProperty("--progress-fill", "0%");
-          continue;
+      if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
+        lastFollowedLineRef.current = activeLineIndex;
+        const BG_DROP_ZONE_HEIGHT = 24;
+        const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+
+        const layout = computeRowLayout({
+          lines,
+          rowHeights,
+          defaultRowHeight,
+          collapsedInstances,
+          waveformHeight: WAVEFORM_HEIGHT,
+          bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
+          groupHeaderHeight: GROUP_HEADER_HEIGHT,
+        });
+
+        const activeLine = lines[activeLineIndex];
+        const activeInstanceKey = isLinked(activeLine) ? `${activeLine.groupId}:${activeLine.instanceIdx}` : null;
+        const isActiveCollapsed = activeInstanceKey !== null && collapsedInstances[activeInstanceKey];
+
+        const target =
+          isActiveCollapsed && activeInstanceKey !== null
+            ? layout.headerTops.get(activeInstanceKey)
+            : layout.lineTops.get(activeLine.id);
+
+        if (target) {
+          const viewportHeight = container.clientHeight;
+          const rowCenter = target.top + target.height / 2;
+          verticalTargetRef.current = Math.max(
+            0,
+            Math.min(container.scrollHeight - viewportHeight, rowCenter - viewportHeight / 2),
+          );
         }
-        const ratio = (currentTime - startNum) / span;
-        const clamped = Math.max(0, Math.min(1, ratio));
-        banner.style.setProperty("--progress-fill", `${(clamped * 100).toFixed(2)}%`);
       }
 
-      rafRef.current = requestAnimationFrame(update);
-    };
+      // Lerp vertical scroll only while animating toward target
+      if (verticalTargetRef.current !== null) {
+        const diff = verticalTargetRef.current - container.scrollTop;
+        if (Math.abs(diff) > 0.5) {
+          container.scrollTop += diff * 0.15;
+        } else {
+          container.scrollTop = verticalTargetRef.current;
+          verticalTargetRef.current = null;
+        }
+      }
+    } else {
+      lastFollowedLineRef.current = -1;
+      verticalTargetRef.current = null;
+    }
 
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [scrollContainerRef]);
+    container?.parentElement?.classList.toggle("scrollbar-hidden", isPlaying && followEnabled);
+
+    const displayTime = isDraggingPlayhead ? dragTime : currentTime;
+    const actualScrollLeft = container?.scrollLeft ?? scrollLeft;
+    const position = timeToX(displayTime, zoom, actualScrollLeft) - 1; // -1 to center the 2px wide playhead
+    playheadRef.current.style.transform = `translate3d(${position}px, 0, 0)`;
+
+    // Update height to match full scrollable content
+    if (container) {
+      playheadRef.current.style.height = `${container.scrollHeight}px`;
+    }
+
+    const containerRect = containerRef.current?.getBoundingClientRect();
+    if (containerRect) {
+      const playheadCenterXLocal = timeToX(displayTime, zoom, actualScrollLeft);
+      const playheadCenterXViewport = playheadCenterXLocal + containerRect.left;
+      playheadCenterXLocalRef.current = playheadCenterXLocal;
+      containerLeftRef.current = containerRect.left;
+      const mask = buildPlayheadMask(playheadCenterXViewport, containerRect.top);
+      if (mask !== lastMaskRef.current) {
+        lastMaskRef.current = mask;
+        const style = playheadRef.current.style;
+        style.maskImage = mask;
+        style.webkitMaskImage = mask;
+      }
+    }
+
+    // Update progress fill on collapsed banner DOM nodes (registered via mount)
+    const banners = getBannerNodes();
+    for (const banner of banners) {
+      const startStr = banner.dataset.instanceStart;
+      const endStr = banner.dataset.instanceEnd;
+      if (!startStr || !endStr) continue;
+      const startNum = Number.parseFloat(startStr);
+      const endNum = Number.parseFloat(endStr);
+      const span = endNum - startNum;
+      if (!Number.isFinite(span) || span <= 0) {
+        banner.style.setProperty("--progress-fill", "0%");
+        continue;
+      }
+      const ratio = (currentTime - startNum) / span;
+      const clamped = Math.max(0, Math.min(1, ratio));
+      banner.style.setProperty("--progress-fill", `${(clamped * 100).toFixed(2)}%`);
+    }
+  });
 
   useEffect(() => {
     let yielded = false;
