@@ -18,7 +18,7 @@ const IDLE_FRAMES = TAIL_FRAMES + 4;
 // -- Components ---------------------------------------------------------------
 
 const FrameProbe: React.FC<FrameProbeProps> = ({ onFrame, enabled }) => {
-  useFrameLoop(onFrame, enabled);
+  useFrameLoop(onFrame, "frame-probe", enabled);
   return null;
 };
 

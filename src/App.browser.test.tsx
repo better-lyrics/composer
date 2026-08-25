@@ -88,7 +88,7 @@ describe("App", () => {
     let frames = 0;
     const unsubscribe = subscribeFrame(() => {
       frames += 1;
-    });
+    }, "app-wiring-probe");
     await settleFrames(() => frames);
     frames = 0;
     useProjectStore.setState({ activeTab: "edit" });

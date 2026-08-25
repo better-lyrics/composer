@@ -1,43 +1,30 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
-// -- Types --------------------------------------------------------------------
-
-type FrameLoop = typeof import("@/lib/frame-loop");
-
-// -- Constants ----------------------------------------------------------------
-
-const FRAME_MS = 16;
+import { advanceFrames, type FrameLoopModule, loadFrameLoop } from "@/test/frame-loop-harness";
 
 // -- Harness ------------------------------------------------------------------
 
-let subscribeFrame: FrameLoop["subscribeFrame"];
-let setFrameSource: FrameLoop["setFrameSource"];
-let wake: FrameLoop["wake"];
-let nextFrame: FrameLoop["nextFrame"];
-let cancelNextFrame: FrameLoop["cancelNextFrame"];
+let subscribeFrame: FrameLoopModule["subscribeFrame"];
+let holdFrames: FrameLoopModule["holdFrames"];
+let wake: FrameLoopModule["wake"];
+let nextFrame: FrameLoopModule["nextFrame"];
+let cancelNextFrame: FrameLoopModule["cancelNextFrame"];
 let tailFrames: number;
 
-function advanceFrames(count: number): void {
-  vi.advanceTimersByTime(FRAME_MS * count);
-}
-
-function countingSubscriber(): { calls: () => number; subscribe: () => () => void } {
+function countingSubscriber(label = "probe"): { calls: () => number; subscribe: () => () => void } {
   let calls = 0;
   return {
     calls: () => calls,
     subscribe: () =>
       subscribeFrame(() => {
         calls += 1;
-      }),
+      }, label),
   };
 }
 
 beforeEach(async () => {
-  vi.resetModules();
-  vi.useFakeTimers();
-  const frameLoop = await import("@/lib/frame-loop");
+  const frameLoop = await loadFrameLoop();
   subscribeFrame = frameLoop.subscribeFrame;
-  setFrameSource = frameLoop.setFrameSource;
+  holdFrames = frameLoop.holdFrames;
   wake = frameLoop.wake;
   nextFrame = frameLoop.nextFrame;
   cancelNextFrame = frameLoop.cancelNextFrame;
@@ -61,22 +48,22 @@ describe("frame-loop", () => {
       unsubscribe();
     });
 
-    it("runs every frame while a live source is set", () => {
+    it("runs every frame while a hold is held", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
-      setFrameSource("playing", true);
+      const release = holdFrames("playing");
       advanceFrames(40);
       expect(probe.calls()).toBe(40);
-      setFrameSource("playing", false);
+      release();
       unsubscribe();
     });
 
-    it("stops after the tail once the last live source is cleared", () => {
+    it("stops after the tail once the last hold is released", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
-      setFrameSource("playing", true);
+      const release = holdFrames("playing");
       advanceFrames(10);
-      setFrameSource("playing", false);
+      release();
       advanceFrames(tailFrames);
       const stopped = probe.calls();
       advanceFrames(100);
@@ -86,7 +73,7 @@ describe("frame-loop", () => {
   });
 
   describe("tail behaviour", () => {
-    it("runs exactly TAIL_FRAMES frames after a wake with no live source", () => {
+    it("runs exactly TAIL_FRAMES frames after a wake with no hold", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
       advanceFrames(100);
@@ -109,7 +96,7 @@ describe("frame-loop", () => {
       const unsubscribe = subscribeFrame(() => {
         calls += 1;
         if (calls === 1) wake();
-      });
+      }, "waker");
       advanceFrames(100);
       expect(calls).toBe(1 + tailFrames);
       unsubscribe();
@@ -140,13 +127,13 @@ describe("frame-loop", () => {
       const unsubscribeFirst = subscribeFrame(() => {
         firstCalls += 1;
         unsubscribeRemoved?.();
-      });
+      }, "first");
       unsubscribeRemoved = subscribeFrame(() => {
         removedCalls += 1;
-      });
+      }, "removed");
       const unsubscribeLast = subscribeFrame(() => {
         lastCalls += 1;
-      });
+      }, "last");
       advanceFrames(1);
       expect(firstCalls).toBe(1);
       expect(removedCalls).toBe(0);
@@ -164,56 +151,28 @@ describe("frame-loop", () => {
           unsubscribes.push(
             subscribeFrame(() => {
               addedCalls += 1;
-            }),
+            }, "added"),
           );
-        }),
+        }, "adder"),
       );
       advanceFrames(1);
       expect(addedCalls).toBe(1);
       for (const unsubscribe of unsubscribes) unsubscribe();
     });
 
-    it("treats a repeated setFrameSource value as a no-op", () => {
-      const probe = countingSubscriber();
-      const unsubscribe = probe.subscribe();
-      setFrameSource("scrubbing", true);
-      setFrameSource("scrubbing", true);
-      advanceFrames(30);
-      expect(probe.calls()).toBe(30);
-      setFrameSource("scrubbing", false);
-      advanceFrames(tailFrames);
-      const stopped = probe.calls();
-      advanceFrames(100);
-      expect(probe.calls()).toBe(stopped);
-      unsubscribe();
-    });
-
-    it("does not re-arm the tail when clearing a source that was never set", () => {
-      const probe = countingSubscriber();
-      const unsubscribe = probe.subscribe();
-      advanceFrames(100);
-      expect(probe.calls()).toBe(tailFrames);
-      setFrameSource("never-set", false);
-      advanceFrames(100);
-      expect(probe.calls()).toBe(tailFrames);
-      unsubscribe();
-    });
-
-    it("keeps running until every live source is cleared", () => {
-      const probe = countingSubscriber();
-      const unsubscribe = probe.subscribe();
-      setFrameSource("playing", true);
-      setFrameSource("scrubbing", true);
-      advanceFrames(10);
-      setFrameSource("playing", false);
-      advanceFrames(20);
-      expect(probe.calls()).toBe(30);
-      setFrameSource("scrubbing", false);
-      advanceFrames(tailFrames);
-      const stopped = probe.calls();
-      advanceFrames(100);
-      expect(probe.calls()).toBe(stopped);
-      unsubscribe();
+    it("keeps the same callback subscribed twice as two independent subscriptions", () => {
+      let calls = 0;
+      const callback = () => {
+        calls += 1;
+      };
+      const unsubscribeFirst = subscribeFrame(callback, "twin-a");
+      const unsubscribeSecond = subscribeFrame(callback, "twin-b");
+      advanceFrames(1);
+      expect(calls).toBe(2);
+      unsubscribeFirst();
+      advanceFrames(1);
+      expect(calls).toBe(3);
+      unsubscribeSecond();
     });
 
     it("cancels a one-shot frame handed to cancelNextFrame", () => {
@@ -234,11 +193,11 @@ describe("frame-loop", () => {
       wake();
       wake();
       wake();
-      setFrameSource("playing", true);
+      const release = holdFrames("playing");
       expect(vi.getTimerCount()).toBe(1);
       advanceFrames(1);
       expect(vi.getTimerCount()).toBe(1);
-      setFrameSource("playing", false);
+      release();
       unsubscribe();
     });
 
@@ -257,7 +216,7 @@ describe("frame-loop", () => {
       const subscribers = counts.map((_unused, index) => () => {
         counts[index] += 1;
       });
-      const forward = subscribers.map((callback) => subscribeFrame(callback));
+      const forward = subscribers.map((callback, index) => subscribeFrame(callback, `ordered-${index}`));
       advanceFrames(100);
       expect(counts).toEqual([tailFrames, tailFrames, tailFrames]);
       for (const unsubscribe of forward) unsubscribe();
@@ -265,7 +224,7 @@ describe("frame-loop", () => {
       counts[0] = 0;
       counts[1] = 0;
       counts[2] = 0;
-      const reversed = subscribers.toReversed().map((callback) => subscribeFrame(callback));
+      const reversed = subscribers.toReversed().map((callback, index) => subscribeFrame(callback, `reversed-${index}`));
       advanceFrames(100);
       expect(counts).toEqual([tailFrames, tailFrames, tailFrames]);
       for (const unsubscribe of reversed) unsubscribe();
@@ -273,8 +232,8 @@ describe("frame-loop", () => {
 
     it("hands every subscriber the same timestamp within one frame", () => {
       const timestamps: number[] = [];
-      const unsubscribeFirst = subscribeFrame((now) => timestamps.push(now));
-      const unsubscribeSecond = subscribeFrame((now) => timestamps.push(now));
+      const unsubscribeFirst = subscribeFrame((now) => timestamps.push(now), "stamp-a");
+      const unsubscribeSecond = subscribeFrame((now) => timestamps.push(now), "stamp-b");
       advanceFrames(1);
       expect(timestamps).toHaveLength(2);
       expect(timestamps[0]).toBe(timestamps[1]);
@@ -284,7 +243,7 @@ describe("frame-loop", () => {
   });
 
   describe("regressions", () => {
-    it("regression #174: does not schedule a frame when idle with no live source", () => {
+    it("regression #174: does not schedule a frame when idle with no hold", () => {
       const probe = countingSubscriber();
       const unsubscribe = probe.subscribe();
       advanceFrames(tailFrames);

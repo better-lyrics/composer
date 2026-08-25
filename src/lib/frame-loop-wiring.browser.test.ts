@@ -66,7 +66,7 @@ beforeEach(() => {
   disposeWiring = wireFrameLoop();
   unsubscribeProbe = subscribeFrame(() => {
     frames += 1;
-  });
+  }, "wiring-probe");
 });
 
 afterEach(() => {
@@ -177,6 +177,51 @@ describe("wireFrameLoop", () => {
       const settled = await settleFrames(() => frames);
       await stepFrames(30);
       expect(frames).toBe(settled);
+    });
+  });
+
+  describe("re-entrancy", () => {
+    it("keeps the surviving wiring bound when an earlier wiring is disposed", async () => {
+      const audioElement = attachAudioElement();
+      const disposeSecond = wireFrameLoop();
+      disposeWiring?.();
+      disposeWiring = disposeSecond;
+
+      expect(await wokeAfter(() => audioElement.dispatchEvent(new Event("play")))).toBe(true);
+      expect(await wokeAfter(() => useProjectStore.setState({ activeTab: "edit" }))).toBe(true);
+    });
+
+    it("keeps the playing hold alive when an earlier wiring is disposed mid-playback", async () => {
+      const disposeSecond = wireFrameLoop();
+      useAudioStore.getState().setIsPlaying(true);
+      disposeWiring?.();
+      disposeWiring = disposeSecond;
+
+      frames = 0;
+      await stepFrames(LIVE_FRAMES);
+      expect(frames).toBeGreaterThan(TAIL_FRAMES);
+
+      useAudioStore.getState().setIsPlaying(false);
+      await settleFrames(() => frames);
+    });
+  });
+
+  describe("invariants", () => {
+    it("a frame callback that writes to a store keeps the loop awake forever", async () => {
+      await quiesce();
+      let writes = 0;
+      const unsubscribeWriter = subscribeFrame(() => {
+        writes += 1;
+        useTimelineStore.setState({ scrollLeft: writes });
+      }, "store-writer");
+
+      await stepFrames(30);
+      const midpoint = writes;
+      await stepFrames(30);
+
+      expect(writes).toBeGreaterThan(midpoint + 20);
+      unsubscribeWriter();
+      await settleFrames(() => frames);
     });
   });
 
