@@ -1,4 +1,4 @@
-import { setFrameSource, wake } from "@/lib/frame-loop";
+import { holdFrames, wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
 import { useConfirmStore } from "@/stores/confirm-store";
@@ -22,7 +22,7 @@ interface AudioFrameInputs {
 
 // -- Constants ----------------------------------------------------------------
 
-const PLAYING_FRAME_SOURCE = "playing";
+const PLAYING_HOLD_LABEL = "playing";
 
 const AUDIO_WAKE_EVENTS = [
   "play",
@@ -41,20 +41,35 @@ const AUDIO_WAKE_EVENTS = [
 
 function wireFrameLoop(): () => void {
   let boundAudioElement: HTMLAudioElement | null = null;
+  let releasePlayingHold: (() => void) | null = null;
+
+  // Fresh identity per wiring: addEventListener dedupes a shared reference, so one
+  // disposer would silently unbind every other wiring.
+  const wakeFromAudio = () => wake();
 
   const bindAudioElement = (element: HTMLAudioElement | null) => {
     if (boundAudioElement === element) return;
     if (boundAudioElement) {
-      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.removeEventListener(eventType, wake);
+      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.removeEventListener(eventType, wakeFromAudio);
     }
     boundAudioElement = element;
     if (boundAudioElement) {
-      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.addEventListener(eventType, wake);
+      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.addEventListener(eventType, wakeFromAudio);
     }
   };
 
+  const syncPlayingHold = (isPlaying: boolean) => {
+    if (isPlaying === (releasePlayingHold !== null)) return;
+    if (isPlaying) {
+      releasePlayingHold = holdFrames(PLAYING_HOLD_LABEL);
+      return;
+    }
+    releasePlayingHold?.();
+    releasePlayingHold = null;
+  };
+
   const syncAudio = (state: AudioFrameInputs) => {
-    setFrameSource(PLAYING_FRAME_SOURCE, state.isPlaying);
+    syncPlayingHold(state.isPlaying);
     bindAudioElement(state.audioElement);
     wake();
   };
@@ -86,10 +101,10 @@ function wireFrameLoop(): () => void {
     for (const unsubscribe of unsubscribes) unsubscribe();
     document.removeEventListener("visibilitychange", wakeWhenVisible);
     bindAudioElement(null);
-    setFrameSource(PLAYING_FRAME_SOURCE, false);
+    syncPlayingHold(false);
   };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { AUDIO_WAKE_EVENTS, wireFrameLoop };
+export { AUDIO_WAKE_EVENTS, PLAYING_HOLD_LABEL, wireFrameLoop };
