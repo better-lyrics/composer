@@ -5,7 +5,11 @@ import { useEffect, useRef } from "react";
 
 function useFrameLoop(callback: FrameCallback, label: string, enabled = true): void {
   const callbackRef = useRef(callback);
-  callbackRef.current = callback;
+
+  // Assigned in an effect, never during render: React may replay or discard a render.
+  useEffect(() => {
+    callbackRef.current = callback;
+  });
 
   useEffect(() => {
     if (!enabled) return;
