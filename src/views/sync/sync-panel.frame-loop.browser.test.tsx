@@ -4,12 +4,15 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { SyncPanel } from "@/views/sync/sync-panel";
 
 // -- Harness -------------------------------------------------------------------
 
 let disposeWiring: (() => void) | null = null;
+let probe: FrameProbe;
 
 function seedEditableProject(): HTMLAudioElement {
   const audioElement = document.createElement("audio");
@@ -36,9 +39,11 @@ function wordProgress(root: HTMLElement, begin: number): string | undefined {
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
+  probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
 });
@@ -84,5 +89,27 @@ describe("SyncPanel on the frame loop", () => {
     await screen.getByRole("button", { name: "Edit" }).click();
 
     await expect.poll(() => wordProgress(screen.container, 1)).toBe("50%");
+  });
+
+  describe("invariants", () => {
+    it("regression #174: stops running frames once edit mode settles while paused", async () => {
+      seedEditableProject();
+      const screen = await render(<SyncPanel />);
+      await screen.getByRole("button", { name: "Edit" }).click();
+      await expect.poll(() => wordProgress(screen.container, 1)).toBe("0%");
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
+
+    it("regression #174: stops running frames while edit mode is off", async () => {
+      seedEditableProject();
+      await render(<SyncPanel />);
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
   });
 });
