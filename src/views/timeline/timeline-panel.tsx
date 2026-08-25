@@ -34,6 +34,7 @@ import {
   type SyllablePosition,
 } from "@/domain/word/syllable-groups";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
+import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
@@ -176,6 +177,7 @@ const TimelinePanel: React.FC = () => {
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
+  useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
 
   const lastDistributedDurationRef = useRef<number | null>(null);
 
