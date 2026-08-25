@@ -2,11 +2,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import {
-  convertViaParser,
-  type ConversionResult,
-  type ParserConversion,
-} from "@/pages/converters/convert-via-parser";
+import { convertViaParser, type ConversionResult, type ParserConversion } from "@/pages/converters/convert-via-parser";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { describe, expect, it } from "vitest";
 
