@@ -14,6 +14,7 @@ const ACTIVE_LYRIC_TIME_S = 14;
 const SCROLL_EVENTS = 5;
 const IDLE_FRAMES = 30;
 const SECOND_SCROLL_AT_MS = 1000;
+const PAUSE_AFTER_SCROLL_MS = 1000;
 
 // -- Harness -------------------------------------------------------------------
 
@@ -39,15 +40,23 @@ function scrollAway(el: BraccatoLyricsElement): void {
   for (let i = 0; i < SCROLL_EVENTS; i++) el.dispatchEvent(new Event("scroll"));
 }
 
-async function renderPausedPreview() {
+async function renderPreview(isPlaying: boolean) {
   const audio = new Audio();
   audio.currentTime = ACTIVE_LYRIC_TIME_S;
-  useAudioStore.setState({ audioElement: audio, isPlaying: false });
+  useAudioStore.setState({ audioElement: audio, isPlaying });
 
   const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
   const el = braccatoElement(screen.container);
   await waitForLyrics(el);
   return { screen, el };
+}
+
+async function renderPausedPreview() {
+  return renderPreview(false);
+}
+
+async function renderPlayingPreview() {
+  return renderPreview(true);
 }
 
 // Braccato's resume deadline is 25 s of wall clock. Faking setTimeout and Date is the only way
@@ -135,19 +144,13 @@ describe("BraccatoRenderer resume affordance while paused", () => {
       expect(resumeButton(screen.container)).toBeNull();
     });
 
-    it("arms no wake while the song is playing, the playing hold already covering it", async () => {
-      const audio = new Audio();
-      audio.currentTime = ACTIVE_LYRIC_TIME_S;
-      useAudioStore.setState({ audioElement: audio, isPlaying: true });
-
-      const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
-      const el = braccatoElement(screen.container);
-      await waitForLyrics(el);
+    it("arms the wake while the song is playing too", async () => {
+      const { screen, el } = await renderPlayingPreview();
       useFakeClock();
 
       const timersBefore = vi.getTimerCount();
       scrollAway(el);
-      expect(vi.getTimerCount()).toBe(timersBefore);
+      expect(vi.getTimerCount()).toBe(timersBefore + 1);
       await stepFrames(IDLE_FRAMES);
       expect(resumeButton(screen.container)).not.toBeNull();
 
@@ -155,6 +158,32 @@ describe("BraccatoRenderer resume affordance while paused", () => {
       await stepFrames(IDLE_FRAMES);
 
       expect(resumeButton(screen.container)).toBeNull();
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: clears the affordance when the reader scrolls while playing and then pauses", async () => {
+      const { screen, el } = await renderPlayingPreview();
+      useFakeClock();
+
+      scrollAway(el);
+      await stepFrames(IDLE_FRAMES);
+      expect(resumeButton(screen.container)).not.toBeNull();
+
+      vi.advanceTimersByTime(PAUSE_AFTER_SCROLL_MS);
+      useAudioStore.setState({ isPlaying: false });
+      await settleFrames(probe.count);
+      expect(resumeButton(screen.container)).not.toBeNull();
+
+      const quietBaseline = probe.count();
+      await stepFrames(IDLE_FRAMES);
+      expect(probe.count()).toBe(quietBaseline);
+
+      vi.advanceTimersByTime(RESUME_AFFORDANCE_WAKE_MS);
+      await settleFrames(probe.count);
+
+      expect(resumeButton(screen.container)).toBeNull();
+      expect(probe.count()).toBeGreaterThan(quietBaseline);
     });
   });
 

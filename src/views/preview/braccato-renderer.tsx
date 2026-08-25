@@ -63,9 +63,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const handleScroll = useCallback(
     (e: Event) => {
       (e.currentTarget as BraccatoLyricsElement).renderer?.noteUserScroll();
-      // A playing song already holds the loop awake, so only a paused reader needs the wake that
-      // hands braccato the tick it hides the affordance on.
-      if (useAudioStore.getState().isPlaying) return;
       clearResumeWake();
       resumeWakeRef.current = window.setTimeout(() => {
         resumeWakeRef.current = null;
