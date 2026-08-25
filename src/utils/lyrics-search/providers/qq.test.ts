@@ -165,7 +165,7 @@ describeOnline("qqProvider", () => {
     try {
       cachedResults = await qqProvider.search(CACHED_QUERY, new AbortController().signal);
     } catch (error) {
-      if (error instanceof LyricsSearchError && error.message.toLowerCase().includes(RATE_LIMIT_MESSAGE_FRAGMENT)) {
+      if (isRateLimitError(error)) {
         isRateLimited = true;
         console.warn("[qq.test] QQ Music rate limit reached: happy-path assertions will be skipped at runtime.");
         return;
@@ -268,8 +268,12 @@ describeOnline("qqProvider", () => {
       async () => {
         if (skipIfOffline() || isRateLimited) return;
         const controller = new AbortController();
-        const results = await qqProvider.search(UNMATCHABLE_QUERY, controller.signal);
-        expect(results).toEqual([]);
+        try {
+          expect(await qqProvider.search(UNMATCHABLE_QUERY, controller.signal)).toEqual([]);
+        } catch (error) {
+          if (isRateLimitError(error)) return;
+          throw error;
+        }
       },
       NETWORK_TEST_TIMEOUT_MS,
     );
