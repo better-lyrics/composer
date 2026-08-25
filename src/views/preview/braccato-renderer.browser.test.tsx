@@ -1,5 +1,6 @@
 import type { BraccatoLyricsElement } from "@braccato/core/element";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { render } from "@/test/render";
 import { buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
@@ -25,7 +26,15 @@ function lineTexts(el: BraccatoLyricsElement): string[] {
   return [...el.querySelectorAll(".blyrics--line")].map((line) => line.textContent ?? "");
 }
 
+let disposeWiring: (() => void) | null = null;
+
+beforeEach(() => {
+  disposeWiring = wireFrameLoop();
+});
+
 afterEach(() => {
+  disposeWiring?.();
+  disposeWiring = null;
   for (const el of document.querySelectorAll("#composer-audio")) {
     el.remove();
   }
@@ -56,8 +65,24 @@ describe("BraccatoRenderer", () => {
     await waitForLyrics(el);
     await expect.poll(() => activeLineText(el)).toContain("second line");
 
-    audio.currentTime = 26;
+    useAudioStore.getState().seekTo(26);
     await expect.poll(() => activeLineText(el)).toContain("third line");
+  });
+
+  it("keeps following the clock while the timeline is scrubbed paused", async () => {
+    const audio = new Audio();
+    useAudioStore.setState({ audioElement: audio, isPlaying: false });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    useAudioStore.getState().seekTo(26);
+    await expect.poll(() => el.currentTime).toBe(26);
+
+    useAudioStore.getState().seekTo(4);
+    await expect.poll(() => el.currentTime).toBe(4);
+    expect(el.playing).toBe(false);
   });
 
   it("tracks a newly registered audio element", async () => {
@@ -288,7 +313,7 @@ describe("BraccatoRenderer invariants", () => {
 
     await screen.rerender(<BraccatoRenderer ttmlString={buildBackgroundVocalTtml()} />);
 
-    audio.currentTime = 5;
+    useAudioStore.getState().seekTo(5);
     await expect.poll(() => el.currentTime).toBe(5);
   });
 });
