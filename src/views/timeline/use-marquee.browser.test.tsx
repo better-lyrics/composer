@@ -68,15 +68,17 @@ interface FrameRelease {
   dispose: () => void;
 }
 
-// Subscribed before the hook's own tick so the mouseup lands in the same task, ahead of it.
 function createFrameRelease(): FrameRelease {
   let pendingRelease: (() => void) | null = null;
   const unsubscribe = subscribeFrame(() => {
     const resolveRelease = pendingRelease;
     if (!resolveRelease) return;
     pendingRelease = null;
-    releaseDrag();
-    resolveRelease();
+    try {
+      releaseDrag();
+    } finally {
+      resolveRelease();
+    }
   }, "marquee-release-gate");
 
   return {
@@ -101,6 +103,7 @@ let frameRelease: FrameRelease;
 
 beforeEach(() => {
   probe = createFrameProbe();
+  // Subscribed before the hook's autoScroll subscriber so the mouseup lands in the same task, ahead of it.
   frameRelease = createFrameRelease();
 });
 
