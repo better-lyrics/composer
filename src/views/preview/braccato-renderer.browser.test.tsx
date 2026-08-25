@@ -2,6 +2,8 @@ import type { BraccatoLyricsElement } from "@braccato/core/element";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
@@ -27,12 +29,15 @@ function lineTexts(el: BraccatoLyricsElement): string[] {
 }
 
 let disposeWiring: (() => void) | null = null;
+let probe: FrameProbe;
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
+  probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
   for (const el of document.querySelectorAll("#composer-audio")) {
@@ -288,6 +293,37 @@ describe("BraccatoRenderer edge cases", () => {
 // -- Invariants ---------------------------------------------------------------
 
 describe("BraccatoRenderer invariants", () => {
+  it("regression #174: stops running frames once the audio is paused and idle", async () => {
+    useAudioStore.setState({ audioElement: new Audio(), isPlaying: false });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    await waitForLyrics(getBraccatoElement(screen.container));
+    await probe.quiesce();
+
+    await settleFrames(probe.count);
+    expect(probe.count()).toBe(0);
+  });
+
+  it("regression #174: quiesces again once the reader is scrolled back", async () => {
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio, isPlaying: false });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    for (let i = 0; i < 5; i++) el.dispatchEvent(new Event("scroll"));
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).toBeInTheDocument();
+
+    await screen.getByRole("button", { name: "Resume autoscroll" }).click();
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+    await probe.quiesce();
+
+    await settleFrames(probe.count);
+    expect(probe.count()).toBe(0);
+  });
+
   it("updates lyrics in place rather than recreating the element", async () => {
     useAudioStore.setState({ audioElement: new Audio() });
 

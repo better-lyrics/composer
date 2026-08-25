@@ -3,21 +3,28 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 
 // -- Harness -------------------------------------------------------------------
 
 const SyncedElement: React.FC = () => {
   const elementRef = useRef<HTMLDivElement>(null);
-  useRendererAudioSync(elementRef, (element, audio) => {
-    element.dataset.time = String(audio.currentTime);
-    element.dataset.paused = String(audio.paused);
-    element.dataset.rate = String(audio.playbackRate);
-  });
+  useRendererAudioSync(
+    elementRef,
+    (element, audio) => {
+      element.dataset.time = String(audio.currentTime);
+      element.dataset.paused = String(audio.paused);
+      element.dataset.rate = String(audio.playbackRate);
+    },
+    "synced-element",
+  );
   return <div ref={elementRef} data-test="synced" />;
 };
 
 let disposeWiring: (() => void) | null = null;
+let probe: FrameProbe;
 
 function attachAudio(): HTMLAudioElement {
   const audioElement = document.createElement("audio");
@@ -33,9 +40,11 @@ function syncedElement(root: HTMLElement): HTMLElement {
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
+  probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
 });
@@ -99,5 +108,17 @@ describe("useRendererAudioSync", () => {
     const screen = await render(<SyncedElement />);
 
     expect(syncedElement(screen.container).dataset.time).toBeUndefined();
+  });
+
+  describe("invariants", () => {
+    it("regression #174: stops running frames once the audio is paused and idle", async () => {
+      attachAudio();
+      const screen = await render(<SyncedElement />);
+      await expect.poll(() => syncedElement(screen.container).dataset.time).toBe("0");
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
   });
 });

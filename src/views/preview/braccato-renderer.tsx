@@ -3,6 +3,7 @@ import { TTMLParser } from "@braccato/parsers";
 import { IconArrowDown } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
+import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
@@ -69,10 +70,15 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
   const resumeAutoscroll = useCallback(() => {
     elementRef.current?.renderer?.resumeAutoscroll();
+    // Braccato clears the affordance and scrolls back on its next tick, which this
+    // component drives, so a paused reader would otherwise see nothing happen.
+    wake();
   }, []);
 
   useEffect(() => {
-    void ensureRegistered();
+    // The element upgrades once the registration import resolves, long after the mount
+    // wake expired, so the first frame that can address its accessors has to be asked for.
+    void ensureRegistered().then(wake);
   }, []);
 
   useEffect(() => {
@@ -83,17 +89,21 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
-  useRendererAudioSync(elementRef, (el, audio) => {
-    // Without the rate the word sweeps run on the wall clock and stutter at any
-    // speed but 1x. Tracked here rather than read back off the element, which has
-    // no properties to read until the registration import lands.
-    if (appliedPlaybackRateRef.current !== audio.playbackRate) {
-      appliedPlaybackRateRef.current = audio.playbackRate;
-      el.tickOptions = { playbackRate: audio.playbackRate };
-    }
-    el.currentTime = audio.currentTime;
-    el.playing = !audio.paused;
-  });
+  useRendererAudioSync(
+    elementRef,
+    (el, audio) => {
+      // Without the rate the word sweeps run on the wall clock and stutter at any
+      // speed but 1x. Tracked here rather than read back off the element, which has
+      // no properties to read until the registration import lands.
+      if (appliedPlaybackRateRef.current !== audio.playbackRate) {
+        appliedPlaybackRateRef.current = audio.playbackRate;
+        el.tickOptions = { playbackRate: audio.playbackRate };
+      }
+      el.currentTime = audio.currentTime;
+      el.playing = !audio.paused;
+    },
+    "braccato-renderer",
+  );
 
   return (
     <div className="relative flex flex-col flex-1 min-h-0">
