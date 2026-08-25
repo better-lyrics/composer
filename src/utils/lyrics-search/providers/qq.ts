@@ -1,5 +1,7 @@
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectQrcSyncType } from "@/domain/lyrics-search/sync-type";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString, hasUsableDuration } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -19,14 +21,6 @@ interface QqLyricsResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function hasUsableDuration(value: number | undefined): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
 // The endpoint 404s on song + artist alone, so a query without album or duration cannot match at all.
 function canSearch(query: LyricsSearchQuery): boolean {
   if (!hasNonEmptyString(query.track) || !hasNonEmptyString(query.artist)) return false;
@@ -43,12 +37,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   }
   if (hasNonEmptyString(query.videoId)) url.searchParams.set("videoId", query.videoId.trim());
   return url;
-}
-
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
 }
 
 function buildResult(query: LyricsSearchQuery, qrc: string): LyricsSearchResult {

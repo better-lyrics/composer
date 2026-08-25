@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { isAbortError as sharedIsAbortError } from "@/utils/abort-error";
 import {
   isAbortError,
   payloadToContent,
@@ -143,18 +144,7 @@ describe("wrapTextAsParseResult", () => {
 });
 
 describe("isAbortError", () => {
-  it("recognises an aborted fetch", () => {
-    expect(isAbortError(new DOMException("aborted", "AbortError"))).toBe(true);
-  });
-
-  it("rejects other DOMExceptions and plain errors", () => {
-    expect(isAbortError(new DOMException("boom", "NotFoundError"))).toBe(false);
-    expect(isAbortError(new Error("AbortError"))).toBe(false);
-  });
-
-  it("rejects non-errors", () => {
-    expect(isAbortError(null)).toBe(false);
-    expect(isAbortError(undefined)).toBe(false);
-    expect(isAbortError("AbortError")).toBe(false);
+  it("re-exports the shared predicate rather than keeping a local copy", () => {
+    expect(isAbortError).toBe(sharedIsAbortError);
   });
 });

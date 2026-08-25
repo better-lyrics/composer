@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { isAbortError } from "@/utils/abort-error";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Constants ----------------------------------------------------------------
@@ -31,10 +32,6 @@ async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal)
   const text = await response.text();
   if (text.length === 0) return null;
   return text;
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -1,5 +1,7 @@
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString, hasUsableDuration } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -16,17 +18,11 @@ interface BoiduLyricsResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 function canSearch(query: LyricsSearchQuery): boolean {
   return (
     hasNonEmptyString(query.track) &&
     hasNonEmptyString(query.artist) &&
-    typeof query.durationSec === "number" &&
-    Number.isFinite(query.durationSec) &&
-    query.durationSec > 0 &&
+    hasUsableDuration(query.durationSec) &&
     hasNonEmptyString(query.videoId)
   );
 }
@@ -39,12 +35,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   url.searchParams.set("videoId", (query.videoId ?? "").trim());
   if (hasNonEmptyString(query.album)) url.searchParams.set("al", query.album.trim());
   return url;
-}
-
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
 }
 
 function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult {

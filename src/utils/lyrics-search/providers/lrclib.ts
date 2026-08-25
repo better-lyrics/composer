@@ -1,5 +1,7 @@
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectLrcSyncType, type SyncType } from "@/domain/lyrics-search/sync-type";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -26,14 +28,14 @@ interface LrcLibResponse {
 // -- Helpers ------------------------------------------------------------------
 
 function hasNonEmptyTrack(query: LyricsSearchQuery): boolean {
-  return typeof query.track === "string" && query.track.trim().length > 0;
+  return hasNonEmptyString(query.track);
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {
   const url = new URL(SEARCH_PATH, LRCLIB_BASE_URL);
   url.searchParams.set("track_name", (query.track ?? "").trim());
-  if (query.artist?.trim()) url.searchParams.set("artist_name", query.artist.trim());
-  if (query.album?.trim()) url.searchParams.set("album_name", query.album.trim());
+  if (hasNonEmptyString(query.artist)) url.searchParams.set("artist_name", query.artist.trim());
+  if (hasNonEmptyString(query.album)) url.searchParams.set("album_name", query.album.trim());
   if (typeof query.durationSec === "number" && Number.isFinite(query.durationSec)) {
     url.searchParams.set("duration", Math.round(query.durationSec).toString());
   }
@@ -51,12 +53,9 @@ function buildGetUrl(query: LyricsSearchQuery): URL {
 
 function canRunGet(query: LyricsSearchQuery): boolean {
   return (
-    typeof query.track === "string" &&
-    query.track.trim().length > 0 &&
-    typeof query.artist === "string" &&
-    query.artist.trim().length > 0 &&
-    typeof query.album === "string" &&
-    query.album.trim().length > 0 &&
+    hasNonEmptyString(query.track) &&
+    hasNonEmptyString(query.artist) &&
+    hasNonEmptyString(query.album) &&
     typeof query.durationSec === "number" &&
     Number.isFinite(query.durationSec)
   );
@@ -88,10 +87,6 @@ function mapResponseToResult(response: LrcLibResponse): LyricsSearchResult | nul
     durationSec: Math.round(response.duration),
     payload,
   };
-}
-
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
 }
 
 async function fetchSearch(query: LyricsSearchQuery, signal: AbortSignal): Promise<LrcLibResponse[]> {
