@@ -9,6 +9,11 @@ import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
+import {
+  isSupportedLyricsFile,
+  LYRICS_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_FILE_MESSAGE,
+} from "@/domain/lyrics-file/supported-formats";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { textToLyricLines } from "@/utils/lyrics-text";
@@ -20,11 +25,7 @@ import {
   syntheticFilenameForResult,
   wrapTextAsParseResult,
 } from "@/views/lyrics-import-modal/shell-helpers";
-import {
-  ACCEPTED_EXTENSIONS,
-  UNSUPPORTED_TYPE_MESSAGE,
-  UploadSection,
-} from "@/views/lyrics-import-modal/upload-section";
+import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
 import {
   importParsedLyrics,
   type ImportParsedLyricsContext,
@@ -187,8 +188,8 @@ const LyricsImportModalShell: React.FC = () => {
     setIsModalDragOver(false);
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    if (!ACCEPTED_EXTENSIONS.test(file.name)) {
-      toast.error(UNSUPPORTED_TYPE_MESSAGE);
+    if (!isSupportedLyricsFile(file.name)) {
+      toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
       return;
     }
     setPendingFile(file);
@@ -284,7 +285,7 @@ const LyricsImportModalShell: React.FC = () => {
           <IconUpload size={32} stroke={1.5} className="text-composer-accent" />
           <div className="text-sm font-medium text-composer-text">Drop lyrics file to import</div>
           <div className="font-mono text-[10.5px] tracking-tight text-composer-text opacity-50">
-            .txt .lrc .srt .ttml
+            {LYRICS_FORMATS_COMPACT}
           </div>
         </div>
       </div>

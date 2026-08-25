@@ -1,3 +1,4 @@
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -53,8 +54,8 @@ const GettingStartedSection: React.FC = () => (
       <div>
         <h4 className={HEADING}>2. Add your lyrics</h4>
         <p className={PROSE}>
-          Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (.lrc, .srt,
-          .ttml, .txt), drop it there instead. You can also use{" "}
+          Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (
+          {LYRICS_FORMATS_PROSE}), drop it there instead. You can also use{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline to import lyrics without
           leaving that view.
         </p>

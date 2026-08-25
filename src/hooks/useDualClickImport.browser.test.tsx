@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { render } from "@/test/render";
 
 // -- Harness ------------------------------------------------------------------
@@ -85,7 +87,8 @@ describe("useDualClickImport · hidden input", () => {
     const input = (await screen.getByLabelText("Direct lyrics upload picker").element()) as HTMLInputElement;
     expect(input).toBeInstanceOf(HTMLInputElement);
     expect(input.type).toBe("file");
-    expect(input.accept).toBe(".txt,.lrc,.srt,.ttml,.xml");
+    expect(input.accept).toBe(LYRICS_FILE_ACCEPT_ATTRIBUTE);
+    expect(input.accept.split(",")).toEqual([".txt", ".lrc", ".srt", ".ttml", ".qrc", ".xml"]);
     expect(input.tabIndex).toBe(-1);
     expect(input.className).toContain("sr-only");
   });
@@ -112,6 +115,19 @@ describe("useDualClickImport · file pick wiring", () => {
     const recorded = useImportModalStore.getState().lastImportResult;
     expect(recorded?.source.label).toBe("File");
     expect(recorded?.source.filename).toBe("lyrics.txt");
+  });
+
+  it("parses a picked QRC file into timed lines and agents", async () => {
+    useProjectStore.setState({ lines: [] });
+    await render(<Harness onOpen={() => {}} />);
+    const input = getHiddenFileInput();
+    const file = new File([WANDERLUST_QRC], "wanderlust.qrc", { type: "text/plain" });
+
+    dispatchFileChange(input, file);
+
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(84);
+    expect(useProjectStore.getState().agents).toHaveLength(2);
+    expect(useImportModalStore.getState().lastImportResult?.source.filename).toBe("wanderlust.qrc");
   });
 
   it("clears the input value after a pick so re-picking the same filename re-fires", async () => {

@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { isSupportedLyricsFile, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -34,6 +35,10 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 // -- Constants ----------------------------------------------------------------
 
 const RUN_DEBOUNCE_MS = 500;
+
+const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time...
+
+Or drag and drop a lyrics file (${LYRICS_FORMATS_PROSE})`;
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
@@ -638,7 +643,7 @@ const EditPanel: React.FC = () => {
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && /\.(txt|lrc|srt|ttml|xml)$/i.test(file.name)) {
+      if (file && isSupportedLyricsFile(file.name)) {
         handleDroppedFile(file);
       }
     },
@@ -707,9 +712,7 @@ const EditPanel: React.FC = () => {
             onPaste={() => {
               pastedRef.current = true;
             }}
-            placeholder="Paste your lyrics here, one line at a time...
-
-Or drag and drop a lyrics file (.txt, .lrc, .srt, .ttml)"
+            placeholder={LYRICS_TEXTAREA_PLACEHOLDER}
             className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
             spellCheck={false}
           />

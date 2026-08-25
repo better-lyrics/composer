@@ -1,4 +1,5 @@
 import { useCallback, useRef } from "react";
+import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -10,7 +11,6 @@ import { importParsedLyrics } from "@/views/lyrics-import-modal/use-import-modal
 // -- Constants ----------------------------------------------------------------
 
 const SINGLE_CLICK_DELAY_MS = 220;
-const ACCEPTED_FILE_INPUT = ".txt,.lrc,.srt,.ttml,.xml";
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -79,7 +79,7 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
       ref={fileInputRef}
       type="file"
       aria-label="Direct lyrics upload picker"
-      accept={ACCEPTED_FILE_INPUT}
+      accept={LYRICS_FILE_ACCEPT_ATTRIBUTE}
       onChange={handleFileChange}
       className="sr-only"
       tabIndex={-1}

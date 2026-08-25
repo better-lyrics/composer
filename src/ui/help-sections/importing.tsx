@@ -1,3 +1,4 @@
+import { LYRICS_FORMATS_DESCRIBED, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
@@ -100,7 +101,7 @@ const ImportSection: React.FC = () => (
           (e.g. <span className={INLINE_CODE}>beau|ti|ful</span>).
         </li>
         <li>
-          <strong>Upload</strong>: drag a file in, or click to browse. Accepts .txt, .lrc, .srt, .ttml.
+          <strong>Upload</strong>: drag a file in, or click to browse. Accepts {LYRICS_FORMATS_PROSE}.
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
@@ -108,8 +109,8 @@ const ImportSection: React.FC = () => (
         flow.
       </p>
       <p className={`${PROSE} mt-3`}>
-        Supported formats: .txt (plain text), .lrc (line-level timing), .srt (subtitles), .ttml (full timing + agents).
-        Imported timing is preserved; plain .txt files get none and you sync them manually.
+        Supported formats: {LYRICS_FORMATS_DESCRIBED}. Imported timing is preserved; plain .txt files get none and you
+        sync them manually.
       </p>
       <p className={`${PROSE} mt-3`}>
         If Composer was opened with{" "}
