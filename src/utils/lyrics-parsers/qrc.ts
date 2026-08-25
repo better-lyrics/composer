@@ -1,8 +1,16 @@
 import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
-import { parseHeaderTags } from "@/utils/lyrics-parsers/qrc-metadata";
+import {
+  creditExtraKey,
+  creditValue,
+  decodeCredits,
+  isCreditLine,
+  isQrcTitleLine,
+  parseHeaderTags,
+} from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -11,6 +19,7 @@ import { getSplitCharacter } from "@/utils/split-character";
 const LINE_HEADER_REGEX = /\[(\d+),(\d+)\]/g;
 const WORD_TAG_REGEX = /\((\d+),(\d+)\)/g;
 const MS_PER_SECOND = 1000;
+const DEFAULT_AGENT_ID = "v1";
 
 // -- Types --------------------------------------------------------------------
 
@@ -24,6 +33,11 @@ interface QrcLine {
 interface QrcBody {
   words: WordTiming[];
   residue: string;
+}
+
+interface QrcSemantics {
+  lines: LooseLine[];
+  metadata: Partial<ProjectMetadata>;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -87,22 +101,49 @@ function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
   };
 }
 
+// -- QRC semantics ------------------------------------------------------------
+
+// Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
+// title line and the credits block.
+function readQrcSemantics(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcSemantics {
+  const lines: LooseLine[] = [];
+  const songwriters = new Set<string>();
+  const extra: Record<string, string> = { ...headerMetadata.extra };
+
+  for (const line of parsed) {
+    if (line.text.length === 0) continue;
+
+    if (isCreditLine(line.text)) {
+      const value = creditValue(line.text);
+      extra[creditExtraKey(line.text)] = value;
+      for (const name of decodeCredits(value)) songwriters.add(name);
+      continue;
+    }
+    if (isQrcTitleLine(line.text, headerMetadata)) continue;
+
+    lines.push({
+      id: generateLineId(),
+      text: line.text,
+      agentId: DEFAULT_AGENT_ID,
+      ...(line.words.length > 0 ? { words: line.words } : { begin: line.begin, end: line.end }),
+    });
+  }
+
+  const metadata: Partial<ProjectMetadata> = { ...headerMetadata };
+  if (songwriters.size > 0) metadata.songwriters = [...songwriters];
+  if (Object.keys(extra).length > 0) metadata.extra = extra;
+  return { lines, metadata };
+}
+
 // -- QRC Parser ---------------------------------------------------------------
 
 function parseQrc(content: string): ParseResult {
   const lyricContent = extractLyricContent(content);
-  const { metadata, offsetSeconds } = parseHeaderTags(lyricContent);
+  const header = parseHeaderTags(lyricContent);
   const tokenized = tokenizeLines(lyricContent);
-  const parsed = offsetSeconds === 0 ? tokenized : tokenized.map((line) => shiftQrcLine(line, offsetSeconds));
-
-  const lines: LooseLine[] = parsed
-    .filter((line) => line.text.length > 0)
-    .map((line) => ({
-      id: generateLineId(),
-      text: line.text,
-      agentId: "v1",
-      ...(line.words.length > 0 ? { words: line.words } : { begin: line.begin, end: line.end }),
-    }));
+  const parsed =
+    header.offsetSeconds === 0 ? tokenized : tokenized.map((line) => shiftQrcLine(line, header.offsetSeconds));
+  const { lines, metadata } = readQrcSemantics(parsed, header.metadata);
 
   const reconciledLines = lines.map(reconcileLine);
   return {

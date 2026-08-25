@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { parseHeaderTags } from "@/utils/lyrics-parsers/qrc-metadata";
+import {
+  creditExtraKey,
+  creditValue,
+  decodeCredits,
+  isCreditLine,
+  isQrcTitleLine,
+  parseHeaderTags,
+} from "@/utils/lyrics-parsers/qrc-metadata";
+import { getSplitCharacter } from "@/utils/split-character";
+
+// -- Constants ----------------------------------------------------------------
+
+const WANDERLUST_TAGS = { title: "Wanderlust", artists: ["The Weeknd"] };
 
 // -- Tests --------------------------------------------------------------------
 
@@ -85,6 +97,221 @@ describe("parseHeaderTags", () => {
 
     it("ignores an unterminated tag", () => {
       expect(parseHeaderTags("[ti:Wanderlust").metadata).toEqual({});
+    });
+  });
+});
+
+describe("isCreditLine", () => {
+  it("matches English credit prefixes", () => {
+    expect(isCreditLine("Lyrics by：QUENNEVILLE/JASON")).toBe(true);
+    expect(isCreditLine("Composed by：QUENNEVILLE/JASON")).toBe(true);
+  });
+
+  it("matches Chinese credit prefixes", () => {
+    expect(isCreditLine("作词 : 方文山")).toBe(true);
+    expect(isCreditLine("作曲：周杰倫")).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("matches the remaining English prefixes", () => {
+      expect(isCreditLine("Arranged by：X")).toBe(true);
+      expect(isCreditLine("Produced by：X")).toBe(true);
+      expect(isCreditLine("Written by：X")).toBe(true);
+    });
+
+    it("matches the remaining Chinese prefixes", () => {
+      expect(isCreditLine("编曲：X")).toBe(true);
+      expect(isCreditLine("編曲：X")).toBe(true);
+      expect(isCreditLine("制作人：X")).toBe(true);
+      expect(isCreditLine("製作人：X")).toBe(true);
+    });
+
+    it("matches an ASCII colon", () => {
+      expect(isCreditLine("Lyrics by: QUENNEVILLE")).toBe(true);
+    });
+
+    it("matches whatever the case", () => {
+      expect(isCreditLine("LYRICS BY：QUENNEVILLE")).toBe(true);
+    });
+
+    it("tolerates surrounding whitespace", () => {
+      expect(isCreditLine("  Composed by ：X  ")).toBe(true);
+    });
+  });
+
+  describe("error paths", () => {
+    it("does not match a lyric that merely contains the word by", () => {
+      expect(isCreditLine("Stand by me")).toBe(false);
+    });
+
+    it("does not match a credit word with no colon after it", () => {
+      expect(isCreditLine("Written by the stars")).toBe(false);
+    });
+
+    it("does not match a prefix that is not at the start", () => {
+      expect(isCreditLine("Song lyrics by：X")).toBe(false);
+    });
+
+    it("does not match an empty line", () => {
+      expect(isCreditLine("")).toBe(false);
+      expect(isCreditLine("   ")).toBe(false);
+    });
+  });
+});
+
+describe("creditExtraKey", () => {
+  it("derives a key from an English prefix", () => {
+    expect(creditExtraKey("Lyrics by：X")).toBe("qrcLyricsBy");
+    expect(creditExtraKey("Composed by：X")).toBe("qrcComposedBy");
+    expect(creditExtraKey("Arranged by：X")).toBe("qrcArrangedBy");
+    expect(creditExtraKey("Produced by：X")).toBe("qrcProducedBy");
+    expect(creditExtraKey("Written by：X")).toBe("qrcWrittenBy");
+  });
+
+  it("derives a key from a Chinese prefix", () => {
+    expect(creditExtraKey("作词：方文山")).toBe("qrcLyricist");
+    expect(creditExtraKey("作曲：周杰倫")).toBe("qrcComposer");
+    expect(creditExtraKey("编曲：X")).toBe("qrcArranger");
+    expect(creditExtraKey("編曲：X")).toBe("qrcArranger");
+    expect(creditExtraKey("制作人：X")).toBe("qrcProducer");
+    expect(creditExtraKey("製作人：X")).toBe("qrcProducer");
+  });
+
+  describe("edge cases", () => {
+    it("derives the same key whatever the case", () => {
+      expect(creditExtraKey("LYRICS BY：X")).toBe("qrcLyricsBy");
+    });
+
+    it("falls back to a generic key rather than losing the credit", () => {
+      expect(creditExtraKey("Nothing here")).toBe("qrcCredits");
+    });
+  });
+});
+
+describe("creditValue", () => {
+  it("reads everything after the first colon", () => {
+    expect(creditValue("Lyrics by：TESFAYE/ABEL")).toBe("TESFAYE/ABEL");
+  });
+
+  describe("edge cases", () => {
+    it("removes the split character reinserted at spaceless joints", () => {
+      const splitChar = getSplitCharacter();
+      expect(creditValue(`Lyrics by：${splitChar}TESFAYE/${splitChar}ABEL`)).toBe("TESFAYE/ABEL");
+    });
+
+    it("keeps a colon that appears inside the value", () => {
+      expect(creditValue("Lyrics by：A/B：C")).toBe("A/B：C");
+    });
+  });
+
+  describe("error paths", () => {
+    it("returns an empty string when nothing follows the colon", () => {
+      expect(creditValue("Lyrics by：")).toBe("");
+    });
+
+    it("returns an empty string when the line has no colon", () => {
+      expect(creditValue("Lyrics by")).toBe("");
+    });
+  });
+});
+
+describe("decodeCredits", () => {
+  it("pairs surname and given name into a readable full name", () => {
+    expect(decodeCredits("TESFAYE/ABEL/BALSHE/AHMAD")).toEqual(["Abel Tesfaye", "Ahmad Balshe"]);
+  });
+
+  it("keeps multi-part given names intact", () => {
+    expect(decodeCredits("QUENNEVILLE/JASON MATTHEW")).toEqual(["Jason Matthew Quenneville"]);
+  });
+
+  it("tolerates stray whitespace around slashes", () => {
+    expect(decodeCredits("BALSHE/ AHMAD")).toEqual(["Ahmad Balshe"]);
+  });
+
+  describe("edge cases", () => {
+    it("falls back to a plain split when the token count is odd", () => {
+      expect(decodeCredits("TESFAYE/ABEL/SOLO")).toEqual(["Tesfaye", "Abel", "Solo"]);
+    });
+
+    it("returns an empty list for empty input", () => {
+      expect(decodeCredits("")).toEqual([]);
+      expect(decodeCredits("   ")).toEqual([]);
+    });
+
+    it("drops empty tokens from trailing or doubled slashes", () => {
+      expect(decodeCredits("TESFAYE/ABEL/")).toEqual(["Abel Tesfaye"]);
+      expect(decodeCredits("TESFAYE//ABEL")).toEqual(["Abel Tesfaye"]);
+    });
+
+    it("leaves CJK names untouched by title casing", () => {
+      expect(decodeCredits("周杰倫/方文山")).toEqual(["方文山 周杰倫"]);
+    });
+
+    it("title cases an initial without swallowing it", () => {
+      expect(decodeCredits("TAMAELA/ALBERT C J BERTH")).toEqual(["Albert C J Berth Tamaela"]);
+    });
+
+    it("returns a single token unchanged apart from casing", () => {
+      expect(decodeCredits("PRINCE")).toEqual(["Prince"]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("never returns an empty or whitespace-only name", () => {
+      for (const name of decodeCredits("TESFAYE/ABEL//BALSHE/ /AHMAD")) {
+        expect(name.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it("returns the same result for the same input", () => {
+      expect(decodeCredits("TESFAYE/ABEL")).toEqual(decodeCredits("TESFAYE/ABEL"));
+    });
+  });
+});
+
+describe("isQrcTitleLine", () => {
+  it("matches the title line QQ builds from the header tags", () => {
+    expect(isQrcTitleLine("Wanderlust - The Weeknd", WANDERLUST_TAGS)).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("ignores case and whitespace", () => {
+      expect(isQrcTitleLine("  wanderlust  -   the weeknd ", WANDERLUST_TAGS)).toBe(true);
+    });
+
+    it("ignores a split character reinserted at a spaceless joint", () => {
+      const splitChar = getSplitCharacter();
+      expect(isQrcTitleLine(`Wanderlust -${splitChar}The Weeknd`, WANDERLUST_TAGS)).toBe(true);
+    });
+
+    it("matches a CJK title line whose words carry no spaces", () => {
+      const splitChar = getSplitCharacter();
+      const tags = { title: "青花瓷", artists: ["周杰倫"] };
+      expect(isQrcTitleLine(`青花瓷${splitChar}-${splitChar}周杰倫`, tags)).toBe(true);
+    });
+
+    it("matches only the first artist", () => {
+      const tags = { title: "Wanderlust", artists: ["The Weeknd", "Belly"] };
+      expect(isQrcTitleLine("Wanderlust - The Weeknd", tags)).toBe(true);
+      expect(isQrcTitleLine("Wanderlust - Belly", tags)).toBe(false);
+    });
+  });
+
+  describe("error paths", () => {
+    it("never eats a lyric that merely contains a hyphen", () => {
+      expect(isQrcTitleLine("Half - hearted love", WANDERLUST_TAGS)).toBe(false);
+    });
+
+    it("does not match the title or the artist on their own", () => {
+      expect(isQrcTitleLine("Wanderlust", WANDERLUST_TAGS)).toBe(false);
+      expect(isQrcTitleLine("The Weeknd", WANDERLUST_TAGS)).toBe(false);
+    });
+
+    it("matches nothing when a header tag is missing", () => {
+      expect(isQrcTitleLine("Wanderlust - The Weeknd", { title: "Wanderlust" })).toBe(false);
+      expect(isQrcTitleLine("Wanderlust - The Weeknd", { artists: ["The Weeknd"] })).toBe(false);
+      expect(isQrcTitleLine("Wanderlust - The Weeknd", {})).toBe(false);
+      expect(isQrcTitleLine(" - ", { title: "", artists: [""] })).toBe(false);
     });
   });
 });

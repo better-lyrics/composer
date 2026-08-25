@@ -87,6 +87,63 @@ describe("parseQrc", () => {
     });
   });
 
+  describe("credits", () => {
+    it("decodes the credits block into songwriters", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      expect(result.metadata.songwriters).toEqual([
+        "Jason Matthew Quenneville",
+        "Danny Schofield",
+        "Abel Tesfaye",
+        "Ahmad Balshe",
+        "Joseph Brady Bostani",
+        "Selfia Musmin",
+        "Albert C J Berth Tamaela",
+      ]);
+    });
+
+    it("keeps the raw credit strings in metadata extra", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      expect(result.metadata.extra?.qrcLyricsBy).toContain("QUENNEVILLE/JASON MATTHEW");
+      expect(result.metadata.extra?.qrcComposedBy).toContain("QUENNEVILLE/JASON MATTHEW");
+    });
+
+    it("dedupes writers credited on both the lyrics and composed lines", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      const unique = new Set(result.metadata.songwriters);
+      expect(unique.size).toBe(result.metadata.songwriters?.length);
+    });
+
+    it("drops the credits block and the title line from the lyrics", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      const texts = result.lines.map((line) => line.text);
+      expect(texts.some((text) => text.startsWith("Lyrics by"))).toBe(false);
+      expect(texts.some((text) => text.startsWith("Composed by"))).toBe(false);
+      expect(texts).not.toContain("Wanderlust - The Weeknd");
+    });
+
+    it("merges header-tag extras with credit extras", () => {
+      const result = parseQrc("[by:Kugou User]\n[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL(1250,250)");
+      expect(result.metadata.extra).toEqual({ qrcTranscriber: "Kugou User", qrcLyricsBy: "TESFAYE/ABEL" });
+      expect(result.metadata.songwriters).toEqual(["Abel Tesfaye"]);
+    });
+
+    it("keeps a hyphenated lyric that is not the title line", () => {
+      const result = parseQrc("[ti:Wanderlust]\n[ar:The Weeknd]\n[1000,500]Half (1000,250)- hearted(1250,250)");
+      expect(result.lines.map((line) => line.text)).toEqual(["Half - hearted"]);
+    });
+
+    it("keeps a lyric that merely contains the word by", () => {
+      const result = parseQrc("[1000,500]Stand (1000,250)by me(1250,250)");
+      expect(result.lines.map((line) => line.text)).toEqual(["Stand by me"]);
+    });
+
+    it("reports no songwriters when the document credits nobody", () => {
+      const result = parseQrc("[1000,500]Hi (1000,500)");
+      expect(result.metadata.songwriters).toBeUndefined();
+      expect(result.metadata.extra).toBeUndefined();
+    });
+  });
+
   describe("edge cases", () => {
     it("joins spaceless CJK syllables with the split character", () => {
       const splitChar = getSplitCharacter();

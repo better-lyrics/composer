@@ -1,9 +1,28 @@
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { MS_PER_SECOND } from "@/utils/lyrics-parsers/qrc";
+import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
 const HEADER_TAG_REGEX = /\[([a-z]+):([^\]]*)\]/gi;
+const CREDIT_PREFIX_REGEX =
+  /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
+const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
+const LATIN_LETTER_REGEX = /[a-z]/i;
+const FALLBACK_CREDIT_KEY = "qrcCredits";
+const CREDIT_EXTRA_KEYS = new Map([
+  ["lyrics", "qrcLyricsBy"],
+  ["composed", "qrcComposedBy"],
+  ["arranged", "qrcArrangedBy"],
+  ["produced", "qrcProducedBy"],
+  ["written", "qrcWrittenBy"],
+  ["作词", "qrcLyricist"],
+  ["作曲", "qrcComposer"],
+  ["编曲", "qrcArranger"],
+  ["編曲", "qrcArranger"],
+  ["制作人", "qrcProducer"],
+  ["製作人", "qrcProducer"],
+]);
 
 // -- Types --------------------------------------------------------------------
 
@@ -36,7 +55,59 @@ function parseHeaderTags(lyricContent: string): HeaderTags {
   return { metadata, offsetSeconds };
 }
 
+// -- Credits ------------------------------------------------------------------
+
+function isCreditLine(text: string): boolean {
+  return CREDIT_PREFIX_REGEX.test(text.trim());
+}
+
+function creditExtraKey(text: string): string {
+  const match = CREDIT_PREFIX_REGEX.exec(text.trim());
+  const prefix = match?.[1] ?? match?.[2] ?? "";
+  return CREDIT_EXTRA_KEYS.get(prefix.toLowerCase()) ?? FALLBACK_CREDIT_KEY;
+}
+
+function creditValue(text: string): string {
+  return stripSplitCharacter(text).match(CREDIT_VALUE_REGEX)?.[1].trim() ?? "";
+}
+
+// A token with no Latin letters is left alone so CJK names survive intact.
+function titleCaseToken(token: string): string {
+  return token
+    .split(/\s+/)
+    .map((part) => (LATIN_LETTER_REGEX.test(part) ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part))
+    .join(" ");
+}
+
+function decodeCredits(value: string): string[] {
+  const tokens = value
+    .split("/")
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0)
+    .map(titleCaseToken);
+
+  if (tokens.length % 2 !== 0) return tokens;
+
+  const names: string[] = [];
+  for (let index = 0; index < tokens.length; index += 2) {
+    names.push(`${tokens[index + 1]} ${tokens[index]}`);
+  }
+  return names;
+}
+
+// -- Title line ---------------------------------------------------------------
+
+function normalizeTitleLine(text: string): string {
+  return stripSplitCharacter(text).replace(/\s+/g, "").toLowerCase();
+}
+
+function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
+  const artist = tags.artists?.[0];
+  if (!tags.title || !artist) return false;
+  return normalizeTitleLine(text) === normalizeTitleLine(`${tags.title} - ${artist}`);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { parseHeaderTags };
+export { creditExtraKey, creditValue, decodeCredits, isCreditLine, isQrcTitleLine, parseHeaderTags };
 export type { HeaderTags };
