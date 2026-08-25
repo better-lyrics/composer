@@ -16,7 +16,7 @@ function createFrameProbe(): FrameProbe {
   let frames = 0;
   const unsubscribe = subscribeFrame(() => {
     frames += 1;
-  });
+  }, "frame-probe");
 
   const count = () => frames;
 

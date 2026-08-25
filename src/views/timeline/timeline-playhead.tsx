@@ -162,7 +162,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const clamped = Math.max(0, Math.min(1, ratio));
       banner.style.setProperty("--progress-fill", `${(clamped * 100).toFixed(2)}%`);
     }
-  });
+  }, "timeline-playhead");
 
   useEffect(() => {
     let yielded = false;

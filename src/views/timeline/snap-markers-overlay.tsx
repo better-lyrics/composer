@@ -56,13 +56,17 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
   const isVisible = visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode;
 
-  useFrameLoop(() => {
-    const layer = layerRef.current;
-    if (layer) {
-      const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
-      layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
-    }
-  }, isVisible);
+  useFrameLoop(
+    () => {
+      const layer = layerRef.current;
+      if (layer) {
+        const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
+        layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
+      }
+    },
+    "snap-markers-overlay",
+    isVisible,
+  );
 
   if (!isVisible) return null;
 
