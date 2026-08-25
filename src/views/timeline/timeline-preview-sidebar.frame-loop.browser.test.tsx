@@ -3,6 +3,8 @@ import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 
@@ -24,6 +26,7 @@ const Harness: React.FC = () => (
 );
 
 let disposeWiring: (() => void) | null = null;
+let probe: FrameProbe;
 
 function seedLines(): void {
   useProjectStore.setState({
@@ -64,9 +67,11 @@ function viewportOf(root: HTMLElement): HTMLElement {
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
+  probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
 });
@@ -122,5 +127,27 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
     useAudioStore.getState().seekTo(25);
 
     await expect.poll(() => viewport.scrollTop).toBeGreaterThan(0);
+  });
+
+  describe("invariants", () => {
+    it("regression #174: stops running frames once the audio is paused and idle", async () => {
+      seedLines();
+      attachAudio();
+      const screen = await render(<Harness />);
+      await expect.poll(() => lineOpacity(screen.container, 0)).toBe("1");
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
+
+    it("regression #174: stops running frames when there is nothing synced to preview", async () => {
+      useProjectStore.setState({ lines: [] });
+      await render(<Harness />);
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
   });
 });
