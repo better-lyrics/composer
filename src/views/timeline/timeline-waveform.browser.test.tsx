@@ -15,8 +15,7 @@ function setupWaveformAudio(duration = 30) {
   });
 }
 
-// The browser project registers no Tailwind plugin and imports no stylesheet, so
-// the sweep rules are lifted out of the real src/index.css rather than restated.
+// The browser project has no Tailwind plugin, so sweep rules come from the real src/index.css.
 function extractCssBlock(css: string, header: RegExp): string {
   const match = header.exec(css);
   if (!match) throw new Error(`no CSS block matching ${header} in src/index.css`);
@@ -369,6 +368,7 @@ describe("TimelineWaveform loading dots", () => {
       sweepStyles = document.createElement("style");
       sweepStyles.textContent = WAVEFORM_SWEEP_CSS;
       document.head.appendChild(sweepStyles);
+      expect(sweepStyles.sheet?.cssRules.length).toBeGreaterThan(1);
     });
 
     afterAll(() => sweepStyles.remove());
@@ -387,7 +387,7 @@ describe("TimelineWaveform loading dots", () => {
       return new Promise((resolve) => requestAnimationFrame(() => resolve()));
     }
 
-    function playableAudio(durationSeconds: number): HTMLAudioElement {
+    function setupPlayableAudio(durationSeconds: number): HTMLAudioElement {
       const audio = new Audio();
       audio.src = bufferToBlobUrl(makeSineBuffer(durationSeconds));
       setupWaveformAudio(durationSeconds);
@@ -403,21 +403,22 @@ describe("TimelineWaveform loading dots", () => {
     });
 
     it("keeps sweeping right after WaveSurfer becomes ready, because the layer is still fading out", async () => {
-      playableAudio(2);
+      setupPlayableAudio(2);
       await render(<TimelineWaveform />);
-      await expect.poll(() => requireDots().style.opacity, { timeout: 5000 }).toBe("0");
-      expect(sweepAnimationName()).toBe(SWEEP_ANIMATION_NAME);
+      await expect
+        .poll(() => ({ opacity: requireDots().style.opacity, animation: sweepAnimationName() }), { timeout: 5000 })
+        .toEqual({ opacity: "0", animation: SWEEP_ANIMATION_NAME });
     });
 
     it("stops sweeping once the fade-out has finished", async () => {
-      playableAudio(2);
+      setupPlayableAudio(2);
       await render(<TimelineWaveform />);
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
       expect(requireDots().style.opacity).toBe("0");
     });
 
     it("regression #174: never sweeps once settled and invisible", async () => {
-      playableAudio(2);
+      setupPlayableAudio(2);
       await render(<TimelineWaveform />);
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
 
@@ -431,18 +432,16 @@ describe("TimelineWaveform loading dots", () => {
     });
 
     it("regression: the loading layer is never unmounted across the whole ready-then-settle cycle", async () => {
-      playableAudio(2);
+      setupPlayableAudio(2);
       await render(<TimelineWaveform />);
       const layer = requireDots();
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
       expect(requireDots()).toBe(layer);
     });
 
-    // Sampled per committed DOM mutation rather than per animation frame: a passive
-    // effect's lag is sub-frame, so a rAF sampler only catches it when a vsync
-    // boundary happens to fall between the two commits.
-    it("regression #174: sweep is already active in the frame the source changes", async () => {
-      const audio = playableAudio(2);
+    // A passive effect's lag is sub-frame, so a rAF sampler would miss it; sample per committed mutation.
+    it("regression #174: sweep is active in the commit the source changes, then stops again once resettled", async () => {
+      const audio = setupPlayableAudio(2);
       await render(<TimelineWaveform />);
       const layer = requireDots();
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
@@ -465,13 +464,17 @@ describe("TimelineWaveform loading dots", () => {
 
       expect(commits.filter((c) => c.opacity === "1" && !c.sweeping)).toEqual([]);
       expect(requireDots()).toBe(layer);
+
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots().style.opacity).toBe("0");
     });
 
     it("settle delay outlasts the fade-out transition it is paired with", async () => {
       setupWaveformAudio(30);
       await render(<TimelineWaveform />);
-      expect(requireDots().className).toContain("duration-200");
-      expect(FADE_SETTLE_MS).toBeGreaterThan(200);
+      const fadeMs = Number(/duration-(\d+)/.exec(requireDots().className)?.[1]);
+      expect(fadeMs).toBeGreaterThan(0);
+      expect(FADE_SETTLE_MS).toBeGreaterThan(fadeMs);
     });
   });
 });

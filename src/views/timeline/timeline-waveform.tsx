@@ -102,7 +102,10 @@ const TimelineWaveform: React.FC = () => {
     [duration, totalWidth, timeFromClick, addSnappedPoint, seekTo],
   );
 
-  const onDestroy = useCallback(() => setWs(null), []);
+  const onDestroy = useCallback(() => {
+    setWs(null);
+    setSettledFor(null);
+  }, []);
 
   const onReady = useCallback((wavesurfer: WaveSurfer) => {
     setWs(wavesurfer);
