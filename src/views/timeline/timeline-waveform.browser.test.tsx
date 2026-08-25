@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import indexCss from "@/index.css?raw";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createAudioFile } from "@/test/audio-fixtures";
+import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { readToken } from "@/utils/theme/read-token";
 import { TOKEN_VAR } from "@/domain/theme/model";
@@ -13,6 +14,27 @@ function setupWaveformAudio(duration = 30) {
     duration,
   });
 }
+
+// The browser project registers no Tailwind plugin and imports no stylesheet, so
+// the sweep rules are lifted out of the real src/index.css rather than restated.
+function extractCssBlock(css: string, header: RegExp): string {
+  const match = header.exec(css);
+  if (!match) throw new Error(`no CSS block matching ${header} in src/index.css`);
+  const bodyStart = match.index + match[0].length;
+  let depth = 1;
+  for (let i = bodyStart; i < css.length; i++) {
+    if (css[i] === "{") depth++;
+    else if (css[i] === "}" && --depth === 0) return css.slice(bodyStart, i);
+  }
+  throw new Error(`unbalanced CSS block matching ${header} in src/index.css`);
+}
+
+const SWEEP_ANIMATION_NAME = "waveform-loading-sweep";
+
+const WAVEFORM_SWEEP_CSS = [
+  `.waveform-loading-dots {${extractCssBlock(indexCss, /@utility\s+waveform-loading-dots\s*\{/)}}`,
+  `@keyframes ${SWEEP_ANIMATION_NAME} {${extractCssBlock(indexCss, /@keyframes\s+waveform-loading-sweep\s*\{/)}}`,
+].join("\n");
 
 describe("TimelineWaveform", () => {
   it("renders nothing when there is no audio source", async () => {
@@ -338,5 +360,106 @@ describe("TimelineWaveform loading dots", () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
     expect(getDots()?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  describe("sweep lifecycle", () => {
+    let sweepStyles: HTMLStyleElement;
+
+    beforeAll(() => {
+      sweepStyles = document.createElement("style");
+      sweepStyles.textContent = WAVEFORM_SWEEP_CSS;
+      document.head.appendChild(sweepStyles);
+    });
+
+    afterAll(() => sweepStyles.remove());
+
+    function requireDots(): HTMLElement {
+      const dots = getDots();
+      if (!dots) throw new Error("loading dots layer not found");
+      return dots;
+    }
+
+    function sweepAnimationName(): string {
+      return getComputedStyle(requireDots(), "::before").animationName;
+    }
+
+    function nextFrame(): Promise<void> {
+      return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+
+    function playableAudio(durationSeconds: number): HTMLAudioElement {
+      const audio = new Audio();
+      audio.src = bufferToBlobUrl(makeSineBuffer(durationSeconds));
+      setupWaveformAudio(durationSeconds);
+      useAudioStore.setState({ audioElement: audio });
+      return audio;
+    }
+
+    it("sweeps while the loading layer is still visible", async () => {
+      setupWaveformAudio(30);
+      await render(<TimelineWaveform />);
+      expect(requireDots().style.opacity).toBe("1");
+      expect(sweepAnimationName()).toBe(SWEEP_ANIMATION_NAME);
+    });
+
+    it("keeps sweeping right after WaveSurfer becomes ready, because the layer is still fading out", async () => {
+      playableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect.poll(() => requireDots().style.opacity, { timeout: 5000 }).toBe("0");
+      expect(sweepAnimationName()).toBe(SWEEP_ANIMATION_NAME);
+    });
+
+    it("stops sweeping once the fade-out has finished", async () => {
+      playableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots().style.opacity).toBe("0");
+    });
+
+    it("regression #174: never sweeps once settled and invisible", async () => {
+      playableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      const sweptWhileSettled: number[] = [];
+      for (let frame = 0; frame < 30; frame++) {
+        await nextFrame();
+        if (sweepAnimationName() !== "none") sweptWhileSettled.push(frame);
+      }
+      expect(sweptWhileSettled).toEqual([]);
+      expect(requireDots().style.opacity).toBe("0");
+    });
+
+    it("regression: the loading layer is never unmounted across the whole ready-then-settle cycle", async () => {
+      playableAudio(2);
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots()).toBe(layer);
+    });
+
+    it("regression #174: sweep is already active in the frame the source changes", async () => {
+      const audio = playableAudio(2);
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      audio.src = bufferToBlobUrl(makeSineBuffer(3));
+      useAudioStore.setState({ duration: 3 });
+
+      let becameVisibleAgain = false;
+      const visibleButNotSweeping: number[] = [];
+      for (let frame = 0; frame < 60; frame++) {
+        if (layer.style.opacity === "1") {
+          becameVisibleAgain = true;
+          if (sweepAnimationName() !== SWEEP_ANIMATION_NAME) visibleButNotSweeping.push(frame);
+        }
+        await nextFrame();
+      }
+
+      expect(becameVisibleAgain).toBe(true);
+      expect(visibleButNotSweeping).toEqual([]);
+      expect(requireDots()).toBe(layer);
+    });
   });
 });
