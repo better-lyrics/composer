@@ -36,4 +36,4 @@ async function settleFrames(readFrameCount: () => number): Promise<number> {
 
 // -- Exports ------------------------------------------------------------------
 
-export { QUIET_FRAMES, settleFrames, stepFrame, stepFrames };
+export { settleFrames, stepFrames };
