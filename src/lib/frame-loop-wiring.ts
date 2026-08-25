@@ -43,18 +43,18 @@ function wireFrameLoop(): () => void {
   let boundAudioElement: HTMLAudioElement | null = null;
   let releasePlayingHold: (() => void) | null = null;
 
-  // Fresh identity per wiring: addEventListener dedupes a shared reference, so one
-  // disposer would silently unbind every other wiring.
-  const wakeFromAudio = () => wake();
+  // Fresh identity per wiring: Zustand listener sets and addEventListener both dedupe a
+  // shared reference, so one disposer would silently unbind every other wiring.
+  const wakeFromThisWiring = () => wake();
 
   const bindAudioElement = (element: HTMLAudioElement | null) => {
     if (boundAudioElement === element) return;
     if (boundAudioElement) {
-      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.removeEventListener(eventType, wakeFromAudio);
+      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.removeEventListener(eventType, wakeFromThisWiring);
     }
     boundAudioElement = element;
     if (boundAudioElement) {
-      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.addEventListener(eventType, wakeFromAudio);
+      for (const eventType of AUDIO_WAKE_EVENTS) boundAudioElement.addEventListener(eventType, wakeFromThisWiring);
     }
   };
 
@@ -80,18 +80,18 @@ function wireFrameLoop(): () => void {
 
   const unsubscribes = [
     useAudioStore.subscribe(syncAudio),
-    useAuthStore.subscribe(wake),
-    useConfirmStore.subscribe(wake),
-    useDivergenceStore.subscribe(wake),
-    useImportModalStore.subscribe(wake),
-    useModalStackStore.subscribe(wake),
-    useProjectStore.subscribe(wake),
-    useSeparationStore.subscribe(wake),
-    useSettingsStore.subscribe(wake),
-    useShortcutBindingsStore.subscribe(wake),
-    useThemeStore.subscribe(wake),
-    useUIStore.subscribe(wake),
-    useTimelineStore.subscribe(wake),
+    useAuthStore.subscribe(wakeFromThisWiring),
+    useConfirmStore.subscribe(wakeFromThisWiring),
+    useDivergenceStore.subscribe(wakeFromThisWiring),
+    useImportModalStore.subscribe(wakeFromThisWiring),
+    useModalStackStore.subscribe(wakeFromThisWiring),
+    useProjectStore.subscribe(wakeFromThisWiring),
+    useSeparationStore.subscribe(wakeFromThisWiring),
+    useSettingsStore.subscribe(wakeFromThisWiring),
+    useShortcutBindingsStore.subscribe(wakeFromThisWiring),
+    useThemeStore.subscribe(wakeFromThisWiring),
+    useUIStore.subscribe(wakeFromThisWiring),
+    useTimelineStore.subscribe(wakeFromThisWiring),
   ];
 
   document.addEventListener("visibilitychange", wakeWhenVisible);
