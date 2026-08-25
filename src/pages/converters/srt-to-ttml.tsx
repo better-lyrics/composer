@@ -1,13 +1,10 @@
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
+import { convertViaParser, type ParserConversion } from "@/pages/converters/convert-via-parser";
 import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
-import type { Agent } from "@/domain/agent/model";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { generateTTML } from "@/utils/ttml";
 import { useCallback } from "react";
 
 const SAMPLE_SRT = `1
@@ -59,31 +56,16 @@ const HOW_TO_STEPS = [
   },
 ];
 
-function convertSrt({ input, filename }: ConvertArgs): { ttml: string; projectPayload: string } | { error: string } {
-  try {
-    const result = parseLyricsFile(filename.endsWith(".srt") ? filename : "input.srt", input);
-    if (result.lines.length === 0) {
-      return { error: "No subtitle cues found. Check that your input uses standard SRT formatting." };
-    }
-    const metadata: ProjectMetadata = {
-      title: result.metadata.title ?? "",
-      artists: result.metadata.artists ?? [],
-      album: result.metadata.album ?? "",
-      duration: 0,
-      language: result.metadata.language,
-    };
-    const agents: Agent[] = result.agents ?? [{ id: "v1", type: "person", name: "Voice 1" }];
-    const ttml = generateTTML({ metadata, agents, lines: result.lines, granularity: "line" });
-    const projectPayload = JSON.stringify({ metadata, agents, lines: result.lines, granularity: "line" });
-    return { ttml, projectPayload };
-  } catch (conversionError) {
-    console.error("[Composer] SRT conversion failed", conversionError);
-    return { error: "Could not parse SRT. Check the input format." };
-  }
-}
+const SRT_CONVERSION: ParserConversion = {
+  extension: "srt",
+  granularity: "line",
+  emptyMessage: "No subtitle cues found. Check that your input uses standard SRT formatting.",
+  failureMessage: "Could not parse SRT. Check the input format.",
+  logLabel: "SRT",
+};
 
 const SrtToTtmlPage: React.FC = () => {
-  const convert = useCallback(convertSrt, []);
+  const convert = useCallback((args: ConvertArgs) => convertViaParser(SRT_CONVERSION, args), []);
 
   return (
     <LandingLayout>

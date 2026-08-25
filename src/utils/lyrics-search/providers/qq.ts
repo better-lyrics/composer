@@ -27,8 +27,10 @@ function hasUsableDuration(value: number | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
+// The endpoint 404s on song + artist alone, so a query without album or duration cannot match at all.
 function canSearch(query: LyricsSearchQuery): boolean {
-  return hasNonEmptyString(query.track) && hasNonEmptyString(query.artist);
+  if (!hasNonEmptyString(query.track) || !hasNonEmptyString(query.artist)) return false;
+  return hasNonEmptyString(query.album) || hasUsableDuration(query.durationSec);
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {

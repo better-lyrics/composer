@@ -22,14 +22,20 @@ const CACHED_QUERY = {
   videoId: "vlrC-y1I3go",
 } as const;
 
+// Carries a duration so canSearch lets it through and the 404 branch is actually exercised.
 const UNMATCHABLE_QUERY = {
   track: "asdkfjhasdkjfhasdkfjh",
   artist: "qwertyuiopzxcvbn",
+  durationSec: 200,
 } as const;
 
 let isOnline = true;
 let cachedResults: LyricsSearchResult[] = [];
 let isRateLimited = false;
+
+function isRateLimitError(error: unknown): boolean {
+  return error instanceof LyricsSearchError && error.message.toLowerCase().includes(RATE_LIMIT_MESSAGE_FRAGMENT);
+}
 
 async function probeOnline(): Promise<boolean> {
   if (SKIP_NETWORK) return false;
@@ -46,6 +52,105 @@ async function probeOnline(): Promise<boolean> {
 }
 
 const describeOnline = SKIP_NETWORK ? describe.skip : describe;
+
+// -- canSearch (pure predicate, never touches the network) --------------------
+
+describe("qqProvider.canSearch", () => {
+  const TRACK_AND_ARTIST = { track: "Wanderlust", artist: "The Weeknd" } as const;
+
+  it("returns true with the full query", () => {
+    expect(qqProvider.canSearch(CACHED_QUERY)).toBe(true);
+  });
+
+  it("returns true with track, artist and album", () => {
+    expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)" })).toBe(true);
+  });
+
+  it("returns true with track, artist and duration", () => {
+    expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 307 })).toBe(true);
+  });
+
+  describe("narrowing to what the endpoint can answer", () => {
+    it("returns false with only a track and an artist", () => {
+      expect(qqProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
+    });
+
+    it("returns false when album is whitespace and duration is absent", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   " })).toBe(false);
+    });
+
+    it("returns false when a videoId is the only extra field", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, videoId: "vlrC-y1I3go" })).toBe(false);
+    });
+
+    it("returns true when album is whitespace but duration is usable", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   ", durationSec: 307 })).toBe(true);
+    });
+  });
+
+  describe("duration guard", () => {
+    it("returns false for a zero duration with no album", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 0 })).toBe(false);
+    });
+
+    it("returns false for a negative duration with no album", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: -5 })).toBe(false);
+    });
+
+    it("returns false for NaN with no album", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.NaN })).toBe(false);
+    });
+
+    it("returns false for Infinity with no album", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.POSITIVE_INFINITY })).toBe(false);
+    });
+
+    it("accepts a fractional duration that the URL builder rounds", () => {
+      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 306.4 })).toBe(true);
+    });
+
+    it("still passes on an unusable duration when an album is present", () => {
+      const query = { ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)", durationSec: Number.NaN };
+      expect(qqProvider.canSearch(query)).toBe(true);
+    });
+  });
+
+  describe("required fields", () => {
+    it("returns false when the query is empty", () => {
+      expect(qqProvider.canSearch({})).toBe(false);
+    });
+
+    it("returns false when track is missing", () => {
+      expect(qqProvider.canSearch({ artist: "The Weeknd", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(false);
+    });
+
+    it("returns false when artist is missing", () => {
+      expect(qqProvider.canSearch({ track: "Wanderlust", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(false);
+    });
+
+    it("returns false when track is whitespace only", () => {
+      expect(qqProvider.canSearch({ track: "   ", artist: "The Weeknd", durationSec: 307 })).toBe(false);
+    });
+
+    it("returns false when artist is whitespace only", () => {
+      expect(qqProvider.canSearch({ track: "Wanderlust", artist: "  \t ", durationSec: 307 })).toBe(false);
+    });
+  });
+
+  describe("invariants", () => {
+    it("does not mutate the query it inspects", () => {
+      const query = { ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)", durationSec: 307 };
+      const snapshot = { ...query };
+      qqProvider.canSearch(query);
+      expect(query).toEqual(snapshot);
+    });
+
+    it("agrees with search: a query it rejects resolves to [] without a request", async () => {
+      expect(qqProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
+      await expect(qqProvider.search(TRACK_AND_ARTIST, new AbortController().signal)).resolves.toEqual([]);
+    });
+  });
+});
 
 // -- Tests --------------------------------------------------------------------
 
@@ -94,43 +199,6 @@ describeOnline("qqProvider", () => {
     it("identifies as qq with the QQ Music source label", () => {
       expect(qqProvider.name).toBe("qq");
       expect(qqProvider.sourceLabel).toBe("QQ Music");
-    });
-  });
-
-  // -- canSearch -------------------------------------------------------------
-
-  describe("canSearch", () => {
-    it("returns true with only a track and an artist", () => {
-      expect(qqProvider.canSearch({ track: "Wanderlust", artist: "The Weeknd" })).toBe(true);
-    });
-
-    it("returns true with the full query", () => {
-      expect(qqProvider.canSearch(CACHED_QUERY)).toBe(true);
-    });
-
-    it("returns false when the query is empty", () => {
-      expect(qqProvider.canSearch({})).toBe(false);
-    });
-
-    it("returns false when track is missing", () => {
-      expect(qqProvider.canSearch({ artist: "The Weeknd" })).toBe(false);
-    });
-
-    it("returns false when artist is missing", () => {
-      expect(qqProvider.canSearch({ track: "Wanderlust" })).toBe(false);
-    });
-
-    it("returns false when track is whitespace only", () => {
-      expect(qqProvider.canSearch({ track: "   ", artist: "The Weeknd" })).toBe(false);
-    });
-
-    it("returns false when artist is whitespace only", () => {
-      expect(qqProvider.canSearch({ track: "Wanderlust", artist: "  \t " })).toBe(false);
-    });
-
-    it("returns true when album, duration and videoId are all absent", () => {
-      const { album: _album, durationSec: _durationSec, videoId: _videoId, ...trackAndArtist } = CACHED_QUERY;
-      expect(qqProvider.canSearch(trackAndArtist)).toBe(true);
     });
   });
 
