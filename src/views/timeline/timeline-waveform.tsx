@@ -173,4 +173,4 @@ const TimelineWaveform: React.FC = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { TimelineWaveform };
+export { FADE_SETTLE_MS, TimelineWaveform };

@@ -1,6 +1,6 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 import indexCss from "@/index.css?raw";
-import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
@@ -438,28 +438,40 @@ describe("TimelineWaveform loading dots", () => {
       expect(requireDots()).toBe(layer);
     });
 
+    // Sampled per committed DOM mutation rather than per animation frame: a passive
+    // effect's lag is sub-frame, so a rAF sampler only catches it when a vsync
+    // boundary happens to fall between the two commits.
     it("regression #174: sweep is already active in the frame the source changes", async () => {
       const audio = playableAudio(2);
       await render(<TimelineWaveform />);
       const layer = requireDots();
       await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
 
+      const commits: { opacity: string; sweeping: boolean }[] = [];
+      const observer = new MutationObserver(() => {
+        commits.push({ opacity: layer.style.opacity, sweeping: layer.hasAttribute("data-sweeping") });
+      });
+      observer.observe(layer, { attributes: true, attributeFilter: ["style", "data-sweeping"] });
+
       audio.src = bufferToBlobUrl(makeSineBuffer(3));
       useAudioStore.setState({ duration: 3 });
 
-      let becameVisibleAgain = false;
-      const visibleButNotSweeping: number[] = [];
-      for (let frame = 0; frame < 60; frame++) {
-        if (layer.style.opacity === "1") {
-          becameVisibleAgain = true;
-          if (sweepAnimationName() !== SWEEP_ANIMATION_NAME) visibleButNotSweeping.push(frame);
-        }
-        await nextFrame();
+      try {
+        await expect.poll(() => commits.some((c) => c.opacity === "1"), { timeout: 5000 }).toBe(true);
+        for (let frame = 0; frame < 5; frame++) await nextFrame();
+      } finally {
+        observer.disconnect();
       }
 
-      expect(becameVisibleAgain).toBe(true);
-      expect(visibleButNotSweeping).toEqual([]);
+      expect(commits.filter((c) => c.opacity === "1" && !c.sweeping)).toEqual([]);
       expect(requireDots()).toBe(layer);
+    });
+
+    it("settle delay outlasts the fade-out transition it is paired with", async () => {
+      setupWaveformAudio(30);
+      await render(<TimelineWaveform />);
+      expect(requireDots().className).toContain("duration-200");
+      expect(FADE_SETTLE_MS).toBeGreaterThan(200);
     });
   });
 });
