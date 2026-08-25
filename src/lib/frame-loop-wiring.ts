@@ -107,4 +107,4 @@ function wireFrameLoop(): () => void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { AUDIO_WAKE_EVENTS, PLAYING_HOLD_LABEL, wireFrameLoop };
+export { AUDIO_WAKE_EVENTS, wireFrameLoop };
