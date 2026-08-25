@@ -2,6 +2,7 @@ import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import type { WordTiming } from "@/domain/word/timing";
+import { parseHeaderTags } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -76,10 +77,23 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
   });
 }
 
+function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
+  const shift = (seconds: number) => Math.max(0, seconds + offsetSeconds);
+  return {
+    begin: shift(line.begin),
+    end: shift(line.end),
+    text: line.text,
+    words: line.words.map((word) => ({ ...word, begin: shift(word.begin), end: shift(word.end) })),
+  };
+}
+
 // -- QRC Parser ---------------------------------------------------------------
 
 function parseQrc(content: string): ParseResult {
-  const parsed = tokenizeLines(extractLyricContent(content));
+  const lyricContent = extractLyricContent(content);
+  const { metadata, offsetSeconds } = parseHeaderTags(lyricContent);
+  const tokenized = tokenizeLines(lyricContent);
+  const parsed = offsetSeconds === 0 ? tokenized : tokenized.map((line) => shiftQrcLine(line, offsetSeconds));
 
   const lines: LooseLine[] = parsed
     .filter((line) => line.text.length > 0)
@@ -93,7 +107,7 @@ function parseQrc(content: string): ParseResult {
   const reconciledLines = lines.map(reconcileLine);
   return {
     lines: reconciledLines,
-    metadata: {},
+    metadata,
     hasTimingData: reconciledLines.some(hasAnyTiming),
   };
 }

@@ -48,6 +48,45 @@ describe("parseQrc", () => {
     });
   });
 
+  describe("metadata", () => {
+    it("lifts header tags into project metadata", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      expect(result.metadata.title).toBe("Wanderlust");
+      expect(result.metadata.artists).toEqual(["The Weeknd"]);
+      expect(result.metadata.album).toBe("Kiss Land");
+    });
+
+    it("does not mistake a line header for a metadata tag", () => {
+      const result = parseQrc("[34059,2299]Is (34059,2299)");
+      expect(result.metadata.title).toBeUndefined();
+    });
+
+    it("shifts line and word timing by the header offset", () => {
+      const result = parseQrc("[offset:1000]\n[34059,2299]Is (34059,130)it (34189,2170)");
+      expect(result.lines[0].words?.[0].begin).toBeCloseTo(35.059, 9);
+      expect(result.lines[0].words?.[0].end).toBeCloseTo(35.189, 9);
+      expect(result.lines[0].words?.[1].end).toBeCloseTo(37.359, 9);
+    });
+
+    it("shifts a line-synced line by the header offset", () => {
+      const result = parseQrc("[offset:1000]\n[1000,2500]No word tags here");
+      expect(result.lines[0].begin).toBe(2);
+      expect(result.lines[0].end).toBe(4.5);
+    });
+
+    it("clamps a negative offset so no time drops below zero", () => {
+      const result = parseQrc("[offset:-60000]\n[34059,2299]Is (34059,130)it (34189,2170)");
+      expect(result.lines[0].words?.[0].begin).toBe(0);
+      expect(result.lines[0].words?.[0].end).toBe(0);
+    });
+
+    it("leaves timing untouched when the offset is zero", () => {
+      const result = parseQrc("[offset:0]\n[34059,2299]Is (34059,130)it (34189,2170)");
+      expect(result.lines[0].words?.[0].begin).toBe(34.059);
+      expect(result.lines[0].words?.[0].end).toBe(34.189);
+    });
+  });
+
   describe("edge cases", () => {
     it("joins spaceless CJK syllables with the split character", () => {
       const splitChar = getSplitCharacter();
@@ -112,9 +151,8 @@ describe("parseQrc", () => {
       }
     });
 
-    it("reports no metadata or agents at this stage", () => {
+    it("reports no agents at this stage", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      expect(result.metadata).toEqual({});
       expect(result.agents).toBeUndefined();
     });
   });
