@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { App } from "@/App";
+import { subscribeFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { allowConsole } from "@/test/console-guard";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TOUR_SEEN_KEY } from "@/tour/use-tour";
 
@@ -77,5 +79,22 @@ describe("App", () => {
     helpButton().click();
     await expect.poll(helpModalOpen).toBe(true);
     expect(activeHelpSection()).toBe("Getting Started");
+  });
+
+  it("wires the frame loop so a store write wakes it", async () => {
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    await render(<App />);
+
+    let frames = 0;
+    const unsubscribe = subscribeFrame(() => {
+      frames += 1;
+    });
+    await settleFrames(() => frames);
+    frames = 0;
+    useProjectStore.setState({ activeTab: "edit" });
+    await settleFrames(() => frames);
+    unsubscribe();
+
+    expect(frames).toBeGreaterThan(0);
   });
 });

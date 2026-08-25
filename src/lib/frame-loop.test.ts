@@ -157,16 +157,20 @@ describe("frame-loop", () => {
 
     it("runs a subscriber added during a frame in that same frame", () => {
       let addedCalls = 0;
-      let unsubscribeAdded: (() => void) | null = null;
-      const unsubscribeFirst = subscribeFrame(() => {
-        unsubscribeAdded ??= subscribeFrame(() => {
-          addedCalls += 1;
-        });
-      });
+      const unsubscribes: Array<() => void> = [];
+      unsubscribes.push(
+        subscribeFrame(() => {
+          if (unsubscribes.length > 1) return;
+          unsubscribes.push(
+            subscribeFrame(() => {
+              addedCalls += 1;
+            }),
+          );
+        }),
+      );
       advanceFrames(1);
       expect(addedCalls).toBe(1);
-      unsubscribeFirst();
-      unsubscribeAdded?.();
+      for (const unsubscribe of unsubscribes) unsubscribe();
     });
 
     it("treats a repeated setFrameSource value as a no-op", () => {
