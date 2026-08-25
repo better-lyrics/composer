@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { formatTimeMs } from "@/utils/sync-helpers";
 import { TimingDisplay } from "@/views/sync/timing-display";
@@ -8,6 +10,7 @@ import { TimingDisplay } from "@/views/sync/timing-display";
 // -- Harness -------------------------------------------------------------------
 
 let disposeWiring: (() => void) | null = null;
+let probe: FrameProbe;
 
 function attachAudio(): HTMLAudioElement {
   const audioElement = document.createElement("audio");
@@ -17,9 +20,11 @@ function attachAudio(): HTMLAudioElement {
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
+  probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
 });
@@ -53,5 +58,17 @@ describe("TimingDisplay on the frame loop", () => {
     const screen = await render(<TimingDisplay />);
 
     await expect.poll(() => screen.container.textContent).toContain(formatTimeMs(3.5));
+  });
+
+  describe("invariants", () => {
+    it("regression #174: stops running frames once the audio is paused and idle", async () => {
+      attachAudio();
+      const screen = await render(<TimingDisplay />);
+      await expect.poll(() => screen.container.textContent).toContain(formatTimeMs(0));
+      await probe.quiesce();
+
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
+    });
   });
 });
