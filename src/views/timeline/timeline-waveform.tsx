@@ -11,6 +11,10 @@ import WavesurferPlayer from "@wavesurfer/react";
 import { useCallback, useEffect, useState } from "react";
 import type WaveSurfer from "wavesurfer.js";
 
+// -- Constants -----------------------------------------------------------------
+
+const FADE_SETTLE_MS = 260;
+
 // -- Component -----------------------------------------------------------------
 
 const TimelineWaveform: React.FC = () => {
@@ -24,7 +28,11 @@ const TimelineWaveform: React.FC = () => {
   const markerMode = useTimelineStore((s) => s.markerMode);
 
   const [ws, setWs] = useState<WaveSurfer | null>(null);
+  const [settledFor, setSettledFor] = useState<WaveSurfer | null>(null);
   const [altHeld, setAltHeld] = useState(false);
+
+  // Never move this into an effect: opacity and the sweep gate must land in the same commit.
+  const sweeping = ws === null || settledFor !== ws;
 
   const totalWidth = duration > 0 ? duration * zoom : 0;
   const waveformKey = audioElement?.src ?? "no-audio";
@@ -53,6 +61,12 @@ const TimelineWaveform: React.FC = () => {
     if (!ws) return;
     ws.zoom(zoom);
   }, [ws, zoom]);
+
+  useEffect(() => {
+    if (!ws) return;
+    const timer = setTimeout(() => setSettledFor(ws), FADE_SETTLE_MS);
+    return () => clearTimeout(timer);
+  }, [ws]);
 
   const timeFromClick = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -110,6 +124,7 @@ const TimelineWaveform: React.FC = () => {
       />
       <div
         data-waveform-loading-dots
+        data-sweeping={sweeping ? "" : undefined}
         aria-hidden="true"
         className="absolute top-0 left-0 waveform-loading-dots pointer-events-none transition-opacity duration-200 ease-out"
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws ? 0 : 1 }}
