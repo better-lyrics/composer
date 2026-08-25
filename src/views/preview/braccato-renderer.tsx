@@ -18,6 +18,10 @@ interface BraccatoRendererProps {
 
 const LOG_PREFIX = "[BraccatoRenderer]";
 
+// Mirrors braccato's unexported USER_SCROLL_RESUME_DELAY_MS (25000); the margin lands the wake
+// on the far side of its deadline instead of racing it.
+const RESUME_AFFORDANCE_WAKE_MS = 25_500;
+
 // -- Element registration -----------------------------------------------------
 
 // Must stay dynamic: registering evaluates `class ... extends HTMLElement`, which
@@ -40,10 +44,6 @@ function handleBraccatoLineClick(e: Event): void {
   audio.setIsPlaying(true);
 }
 
-function handleBraccatoScroll(e: Event): void {
-  (e.currentTarget as BraccatoLyricsElement).renderer?.noteUserScroll();
-}
-
 // -- Component ----------------------------------------------------------------
 
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
@@ -52,28 +52,55 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const latestLyricsRef = useRef(lyrics);
   const appliedPlaybackRateRef = useRef(1);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
+  const resumeWakeRef = useRef<number | null>(null);
 
-  const setElement = useCallback((el: BraccatoLyricsElement | null) => {
-    elementRef.current = el;
-    if (!el) return;
-    el.theme = braccatoTheme;
-    el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-    el.lyrics = latestLyricsRef.current;
-    el.addEventListener("braccato:line-click", handleBraccatoLineClick);
-    el.addEventListener("scroll", handleBraccatoScroll, { passive: true });
-    return () => {
-      el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
-      el.removeEventListener("scroll", handleBraccatoScroll);
-      elementRef.current = null;
-    };
+  const clearResumeWake = useCallback(() => {
+    if (resumeWakeRef.current === null) return;
+    window.clearTimeout(resumeWakeRef.current);
+    resumeWakeRef.current = null;
   }, []);
 
+  const handleScroll = useCallback(
+    (e: Event) => {
+      (e.currentTarget as BraccatoLyricsElement).renderer?.noteUserScroll();
+      // A playing song already holds the loop awake, so only a paused reader needs the wake that
+      // hands braccato the tick it hides the affordance on.
+      if (useAudioStore.getState().isPlaying) return;
+      clearResumeWake();
+      resumeWakeRef.current = window.setTimeout(() => {
+        resumeWakeRef.current = null;
+        wake();
+      }, RESUME_AFFORDANCE_WAKE_MS);
+    },
+    [clearResumeWake],
+  );
+
+  const setElement = useCallback(
+    (el: BraccatoLyricsElement | null) => {
+      elementRef.current = el;
+      if (!el) return;
+      el.theme = braccatoTheme;
+      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+      el.lyrics = latestLyricsRef.current;
+      el.addEventListener("braccato:line-click", handleBraccatoLineClick);
+      el.addEventListener("scroll", handleScroll, { passive: true });
+      return () => {
+        el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
+        el.removeEventListener("scroll", handleScroll);
+        clearResumeWake();
+        elementRef.current = null;
+      };
+    },
+    [handleScroll, clearResumeWake],
+  );
+
   const resumeAutoscroll = useCallback(() => {
+    clearResumeWake();
     elementRef.current?.renderer?.resumeAutoscroll();
     // Braccato clears the affordance and scrolls back on its next tick, which this
     // component drives, so a paused reader would otherwise see nothing happen.
     wake();
-  }, []);
+  }, [clearResumeWake]);
 
   useEffect(() => {
     // The element upgrades once the registration import resolves, long after the mount
@@ -125,4 +152,4 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
 // -- Exports ------------------------------------------------------------------
 
-export { BraccatoRenderer };
+export { BraccatoRenderer, RESUME_AFFORDANCE_WAKE_MS };
