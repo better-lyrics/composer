@@ -6,6 +6,7 @@ import {
   isCreditLine,
   isQrcTitleLine,
   parseHeaderTags,
+  readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -312,6 +313,66 @@ describe("isQrcTitleLine", () => {
       expect(isQrcTitleLine("Wanderlust - The Weeknd", { artists: ["The Weeknd"] })).toBe(false);
       expect(isQrcTitleLine("Wanderlust - The Weeknd", {})).toBe(false);
       expect(isQrcTitleLine(" - ", { title: "", artists: [""] })).toBe(false);
+    });
+  });
+});
+
+describe("readSingerMarker", () => {
+  it("reads a name from a fullwidth-colon marker", () => {
+    expect(readSingerMarker("The Weeknd：")).toBe("The Weeknd");
+    expect(readSingerMarker("Fox the Fox：")).toBe("Fox the Fox");
+  });
+
+  it("reads a name from an ASCII-colon marker", () => {
+    expect(readSingerMarker("The Weeknd:")).toBe("The Weeknd");
+  });
+
+  describe("edge cases", () => {
+    it("rejects a lyric that ends in a colon but reads as a sentence", () => {
+      expect(readSingerMarker("And then she said, listen to me:")).toBeNull();
+    });
+
+    it("rejects a long trailing-colon line", () => {
+      expect(readSingerMarker(`${"a".repeat(41)}：`)).toBeNull();
+    });
+
+    it("accepts a name right on the length bound", () => {
+      expect(readSingerMarker(`${"a".repeat(40)}：`)).toBe("a".repeat(40));
+    });
+
+    it("rejects a bare colon", () => {
+      expect(readSingerMarker("：")).toBeNull();
+      expect(readSingerMarker("  ：")).toBeNull();
+    });
+
+    it("rejects a line that does not end in a colon", () => {
+      expect(readSingerMarker("The Weeknd")).toBeNull();
+      expect(readSingerMarker("Lyrics by：QUENNEVILLE")).toBeNull();
+    });
+
+    it("rejects a name that carries a second colon", () => {
+      expect(readSingerMarker("Verse 1：The Weeknd：")).toBeNull();
+    });
+
+    it("rejects every flavour of sentence punctuation", () => {
+      for (const name of ["Wait.", "Wait,", "Wait!", "Wait?", "Wait;", "等。", "等，", "等！", "等？"]) {
+        expect(readSingerMarker(`${name}：`)).toBeNull();
+      }
+    });
+
+    it("accepts a short CJK performer name", () => {
+      expect(readSingerMarker("周杰倫：")).toBe("周杰倫");
+    });
+
+    it("trims whitespace around the marker and the name", () => {
+      expect(readSingerMarker("  The Weeknd  ：  ")).toBe("The Weeknd");
+    });
+  });
+
+  describe("error paths", () => {
+    it("rejects an empty line", () => {
+      expect(readSingerMarker("")).toBeNull();
+      expect(readSingerMarker("   ")).toBeNull();
     });
   });
 });

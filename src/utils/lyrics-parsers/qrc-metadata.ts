@@ -9,6 +9,10 @@ const CREDIT_PREFIX_REGEX =
   /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
 const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
 const LATIN_LETTER_REGEX = /[a-z]/i;
+const MARKER_MAX_NAME_LENGTH = 40;
+const TRAILING_COLON_REGEX = /[:：]$/;
+const COLON_REGEX = /[:：]/;
+const SENTENCE_PUNCTUATION_REGEX = /[.,!?;。，！？]/;
 const FALLBACK_CREDIT_KEY = "qrcCredits";
 const CREDIT_EXTRA_KEYS = new Map([
   ["lyrics", "qrcLyricsBy"],
@@ -107,7 +111,18 @@ function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
   return normalizeTitleLine(text) === normalizeTitleLine(`${tags.title} - ${artist}`);
 }
 
+// -- Singer markers -----------------------------------------------------------
+
+function readSingerMarker(text: string): string | null {
+  const trimmed = text.trim();
+  if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
+
+  const name = trimmed.slice(0, -1).trim();
+  if (name.length === 0 || name.length > MARKER_MAX_NAME_LENGTH) return null;
+  if (SENTENCE_PUNCTUATION_REGEX.test(name) || COLON_REGEX.test(name)) return null;
+  return name;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { creditExtraKey, creditValue, decodeCredits, isCreditLine, isQrcTitleLine, parseHeaderTags };
-export type { HeaderTags };
+export { creditExtraKey, creditValue, decodeCredits, isCreditLine, isQrcTitleLine, parseHeaderTags, readSingerMarker };

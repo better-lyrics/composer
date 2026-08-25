@@ -1,3 +1,4 @@
+import type { Agent } from "@/domain/agent/model";
 import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -10,6 +11,7 @@ import {
   isCreditLine,
   isQrcTitleLine,
   parseHeaderTags,
+  readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -38,6 +40,7 @@ interface QrcBody {
 interface QrcSemantics {
   lines: LooseLine[];
   metadata: Partial<ProjectMetadata>;
+  agents?: Agent[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -103,12 +106,25 @@ function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
 
 // -- QRC semantics ------------------------------------------------------------
 
+function agentForSinger(name: string, agents: Agent[], byName: Map<string, Agent>): Agent {
+  const existing = byName.get(name);
+  if (existing) return existing;
+
+  const agent: Agent = { id: `v${agents.length + 1}`, type: "person", name };
+  agents.push(agent);
+  byName.set(name, agent);
+  return agent;
+}
+
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
-// title line and the credits block.
+// title line, the credits block and the singer markers.
 function readQrcSemantics(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcSemantics {
   const lines: LooseLine[] = [];
   const songwriters = new Set<string>();
   const extra: Record<string, string> = { ...headerMetadata.extra };
+  const agents: Agent[] = [];
+  const agentsByName = new Map<string, Agent>();
+  let currentAgentId = DEFAULT_AGENT_ID;
 
   for (const line of parsed) {
     if (line.text.length === 0) continue;
@@ -121,10 +137,16 @@ function readQrcSemantics(parsed: QrcLine[], headerMetadata: Partial<ProjectMeta
     }
     if (isQrcTitleLine(line.text, headerMetadata)) continue;
 
+    const singer = readSingerMarker(line.text);
+    if (singer !== null) {
+      currentAgentId = agentForSinger(singer, agents, agentsByName).id;
+      continue;
+    }
+
     lines.push({
       id: generateLineId(),
       text: line.text,
-      agentId: DEFAULT_AGENT_ID,
+      agentId: currentAgentId,
       ...(line.words.length > 0 ? { words: line.words } : { begin: line.begin, end: line.end }),
     });
   }
@@ -132,7 +154,7 @@ function readQrcSemantics(parsed: QrcLine[], headerMetadata: Partial<ProjectMeta
   const metadata: Partial<ProjectMetadata> = { ...headerMetadata };
   if (songwriters.size > 0) metadata.songwriters = [...songwriters];
   if (Object.keys(extra).length > 0) metadata.extra = extra;
-  return { lines, metadata };
+  return { lines, metadata, agents: agents.length > 0 ? agents : undefined };
 }
 
 // -- QRC Parser ---------------------------------------------------------------
@@ -143,13 +165,14 @@ function parseQrc(content: string): ParseResult {
   const tokenized = tokenizeLines(lyricContent);
   const parsed =
     header.offsetSeconds === 0 ? tokenized : tokenized.map((line) => shiftQrcLine(line, header.offsetSeconds));
-  const { lines, metadata } = readQrcSemantics(parsed, header.metadata);
+  const { lines, metadata, agents } = readQrcSemantics(parsed, header.metadata);
 
   const reconciledLines = lines.map(reconcileLine);
   return {
     lines: reconciledLines,
     metadata,
     hasTimingData: reconciledLines.some(hasAnyTiming),
+    agents,
   };
 }
 

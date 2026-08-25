@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
@@ -8,14 +9,20 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 const FIRST_LYRIC_TEXT = "Is it so hard to say the same thing";
 
+// -- Helpers ------------------------------------------------------------------
+
+function withoutLineId(line: LyricLine): Omit<LyricLine, "id"> {
+  const { id, ...rest } = line;
+  return rest;
+}
+
 // -- Tests --------------------------------------------------------------------
 
 describe("parseQrc", () => {
   describe("lines and words", () => {
-    // Tightened to exactly 84 in Task 5, once credits and markers are filtered out.
-    it("parses the lyric lines from a real QRC document", () => {
+    it("parses exactly the real lyric lines from a real QRC document", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      expect(result.lines.length).toBeGreaterThan(80);
+      expect(result.lines).toHaveLength(84);
       expect(result.hasTimingData).toBe(true);
     });
 
@@ -144,6 +151,60 @@ describe("parseQrc", () => {
     });
   });
 
+  describe("agents", () => {
+    it("turns singer markers into agents", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: "The Weeknd" },
+        { id: "v2", type: "person", name: "Fox the Fox" },
+      ]);
+    });
+
+    it("attributes lines to the singer marked most recently before them", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      const foxLines = result.lines.filter((line) => line.agentId === "v2");
+      expect(foxLines).toHaveLength(9);
+      expect(foxLines[0].text).toBe("Precious little diamond");
+    });
+
+    it("drops marker lines from the lyrics", () => {
+      const texts = parseQrc(WANDERLUST_QRC).lines.map((line) => line.text);
+      expect(texts).not.toContain("The Weeknd：");
+      expect(texts).not.toContain("Fox the Fox：");
+    });
+
+    it("returns no agents when the document has no singer markers", () => {
+      const result = parseQrc("[34059,2299]Is (34059,2299)");
+      expect(result.agents).toBeUndefined();
+      expect(result.lines[0].agentId).toBe("v1");
+    });
+
+    it("keeps lines before the first marker on the singer that becomes v1", () => {
+      const result = parseQrc(
+        "[1000,500]Intro (1000,500)\n[2000,500]Fox the Fox：(2000,500)\n[3000,500]Verse(3000,500)",
+      );
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Fox the Fox" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+    });
+
+    it("reuses an agent when a marker repeats instead of minting a new one", () => {
+      const result = parseQrc(
+        "[1000,500]A：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]B：(3000,500)\n[4000,500]Two(4000,500)\n[5000,500]A：(5000,500)\n[6000,500]Three(6000,500)",
+      );
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: "A" },
+        { id: "v2", type: "person", name: "B" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2", "v1"]);
+    });
+
+    it("does not treat a credit line as a singer marker", () => {
+      const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
+      expect(result.agents).toBeUndefined();
+      expect(result.metadata.extra?.qrcLyricsBy).toBe("");
+    });
+  });
+
   describe("edge cases", () => {
     it("joins spaceless CJK syllables with the split character", () => {
       const splitChar = getSplitCharacter();
@@ -208,9 +269,23 @@ describe("parseQrc", () => {
       }
     });
 
-    it("reports no agents at this stage", () => {
+    it("every line references an agent that exists", () => {
       const result = parseQrc(WANDERLUST_QRC);
-      expect(result.agents).toBeUndefined();
+      const ids = new Set((result.agents ?? []).map((agent) => agent.id));
+      for (const line of result.lines) expect(ids.has(line.agentId)).toBe(true);
+    });
+
+    it("is idempotent across repeated parses apart from generated line ids", () => {
+      const first = parseQrc(WANDERLUST_QRC);
+      const second = parseQrc(WANDERLUST_QRC);
+      expect(first.lines.map(withoutLineId)).toEqual(second.lines.map(withoutLineId));
+      expect(first.metadata).toEqual(second.metadata);
+      expect(first.agents).toEqual(second.agents);
+    });
+
+    it("gives every line a unique id", () => {
+      const result = parseQrc(WANDERLUST_QRC);
+      expect(new Set(result.lines.map((line) => line.id)).size).toBe(result.lines.length);
     });
   });
 
