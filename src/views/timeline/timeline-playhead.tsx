@@ -136,7 +136,7 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const playheadCenterXViewport = playheadCenterXLocal + containerRect.left;
       playheadCenterXLocalRef.current = playheadCenterXLocal;
       containerLeftRef.current = containerRect.left;
-      const mask = buildPlayheadMask(playheadCenterXViewport, containerRect.top);
+      const mask = container ? buildPlayheadMask(container, playheadCenterXViewport, containerRect.top) : "";
       if (mask !== lastMaskRef.current) {
         lastMaskRef.current = mask;
         const style = playheadRef.current.style;

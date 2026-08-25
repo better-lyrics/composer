@@ -11,8 +11,8 @@ function cornerYInset(distFromEdge: number, radius: number): number {
   return radius - Math.sqrt(radius * radius - d * d);
 }
 
-function buildPlayheadMask(playheadCenterXViewport: number, containerTopViewport: number): string {
-  const wordBlocks = document.querySelectorAll("[data-word-block]");
+function buildPlayheadMask(root: ParentNode, playheadCenterXViewport: number, containerTopViewport: number): string {
+  const wordBlocks = root.querySelectorAll("[data-word-block]");
   const ranges: { top: number; bottom: number }[] = [];
   for (const wb of wordBlocks) {
     const el = wb as HTMLElement;
