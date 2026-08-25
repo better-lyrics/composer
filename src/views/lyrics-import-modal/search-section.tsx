@@ -40,6 +40,7 @@ const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
   lrclib: "LRCLib",
   binimum: "Binimum",
   "boidu-lyrics": "Better Lyrics",
+  qq: "QQ Music",
 };
 
 // -- Helpers ------------------------------------------------------------------

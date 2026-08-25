@@ -1,11 +1,12 @@
 import { binimumProvider } from "@/utils/lyrics-search/providers/binimum";
 import { boiduLyricsProvider } from "@/utils/lyrics-search/providers/boidu-lyrics";
 import { lrclibProvider } from "@/utils/lyrics-search/providers/lrclib";
+import { qqProvider } from "@/utils/lyrics-search/providers/qq";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 
 // -- Providers ---------------------------------------------------------------
 
-const PROVIDERS: LyricsSearchProvider[] = [lrclibProvider, binimumProvider, boiduLyricsProvider];
+const PROVIDERS: LyricsSearchProvider[] = [lrclibProvider, binimumProvider, boiduLyricsProvider, qqProvider];
 
 // -- Public API ---------------------------------------------------------------
 
