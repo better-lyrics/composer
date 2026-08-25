@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { subscribeFrame } from "@/lib/frame-loop";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
@@ -66,8 +66,7 @@ const Harness: React.FC = () => {
 };
 
 let disposeWiring: (() => void) | null = null;
-let unsubscribeProbe: (() => void) | null = null;
-let frames = 0;
+let probe: FrameProbe;
 
 function seedPaused(zoom: number, currentTime: number): void {
   useAudioStore.setState({ duration: 60, currentTime, isPlaying: false });
@@ -90,30 +89,14 @@ function transformAt(time: number, zoom: number, scrollLeft: number): string {
   return `translate3d(${time * zoom - scrollLeft + GUTTER_WIDTH - 1}px, 0px, 0px)`;
 }
 
-async function quiesce(): Promise<void> {
-  await settleFrames(() => frames);
-  frames = 0;
-}
-
-async function wokeAfter(trigger: () => void): Promise<boolean> {
-  await quiesce();
-  trigger();
-  await settleFrames(() => frames);
-  return frames > 0;
-}
-
 beforeEach(() => {
-  frames = 0;
   disposeWiring = wireFrameLoop();
-  unsubscribeProbe = subscribeFrame(() => {
-    frames += 1;
-  });
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
-  unsubscribeProbe?.();
+  probe.dispose();
   disposeWiring?.();
-  unsubscribeProbe = null;
   disposeWiring = null;
 });
 
@@ -208,7 +191,7 @@ describe("TimelinePlayhead on the frame loop", () => {
       seedPaused(50, 5);
       await render(<Harness />);
 
-      const woke = await wokeAfter(() => {
+      const woke = await probe.wokeAfter(() => {
         useProjectStore
           .getState()
           .setLines([
@@ -222,15 +205,19 @@ describe("TimelinePlayhead on the frame loop", () => {
       seedPaused(50, 5);
       await render(<Harness />);
 
-      expect(await wokeAfter(() => useTimelineStore.getState().toggleFollow())).toBe(true);
+      expect(await probe.wokeAfter(() => useTimelineStore.getState().toggleFollow())).toBe(true);
     });
 
     it("keeps updating after an instance is collapsed and expanded", async () => {
       seedPaused(50, 5);
       await render(<Harness />);
 
-      expect(await wokeAfter(() => useTimelineStore.getState().setInstanceCollapsed("group-1:0", true))).toBe(true);
-      expect(await wokeAfter(() => useTimelineStore.getState().setInstanceCollapsed("group-1:0", false))).toBe(true);
+      expect(await probe.wokeAfter(() => useTimelineStore.getState().setInstanceCollapsed("group-1:0", true))).toBe(
+        true,
+      );
+      expect(await probe.wokeAfter(() => useTimelineStore.getState().setInstanceCollapsed("group-1:0", false))).toBe(
+        true,
+      );
     });
   });
 
@@ -241,22 +228,22 @@ describe("TimelinePlayhead on the frame loop", () => {
 
       useAudioStore.getState().setIsPlaying(true);
       await stepFrames(LIVE_FRAMES);
-      expect(frames).toBeGreaterThan(LIVE_FRAMES - 2);
+      expect(probe.count()).toBeGreaterThan(LIVE_FRAMES - 2);
 
       useAudioStore.getState().setIsPlaying(false);
-      const settled = await settleFrames(() => frames);
+      const settled = await settleFrames(probe.count);
       await stepFrames(30);
-      expect(frames).toBe(settled);
+      expect(probe.count()).toBe(settled);
     });
 
     it("regression #174: follow mode does not keep the loop awake while paused", async () => {
       seedPaused(50, 5);
       useTimelineStore.setState({ followEnabled: true });
       await render(<Harness />);
-      await quiesce();
+      await probe.quiesce();
 
-      await settleFrames(() => frames);
-      expect(frames).toBe(0);
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
     });
   });
 });

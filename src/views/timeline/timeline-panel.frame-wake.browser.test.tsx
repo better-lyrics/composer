@@ -1,17 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { subscribeFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 
 // -- Harness -------------------------------------------------------------------
 
-let unsubscribeProbe: (() => void) | null = null;
-let frames = 0;
+let probe: FrameProbe;
 
 function seedTimeline(): void {
   useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60 });
@@ -39,28 +38,12 @@ function scrollHost(): HTMLDivElement {
   return host;
 }
 
-async function quiesce(): Promise<void> {
-  await settleFrames(() => frames);
-  frames = 0;
-}
-
-async function wokeAfter(trigger: () => void): Promise<boolean> {
-  await quiesce();
-  trigger();
-  await settleFrames(() => frames);
-  return frames > 0;
-}
-
 beforeEach(() => {
-  frames = 0;
-  unsubscribeProbe = subscribeFrame(() => {
-    frames += 1;
-  });
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
-  unsubscribeProbe?.();
-  unsubscribeProbe = null;
+  probe.dispose();
 });
 
 // -- Tests ---------------------------------------------------------------------
@@ -73,7 +56,7 @@ describe("TimelinePanel frame wake sources", () => {
     container.style.height = "200px";
 
     expect(
-      await wokeAfter(() => {
+      await probe.wokeAfter(() => {
         container.scrollTop = 240;
       }),
     ).toBe(true);
@@ -85,7 +68,7 @@ describe("TimelinePanel frame wake sources", () => {
     const host = scrollHost();
 
     expect(
-      await wokeAfter(() => {
+      await probe.wokeAfter(() => {
         host.style.flex = "none";
         host.style.height = "180px";
       }),
@@ -96,10 +79,10 @@ describe("TimelinePanel frame wake sources", () => {
     it("regression #174: an idle paused timeline stops running frames", async () => {
       seedTimeline();
       await render(<TimelinePanel />);
-      await quiesce();
+      await probe.quiesce();
 
-      await settleFrames(() => frames);
-      expect(frames).toBe(0);
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
     });
   });
 });

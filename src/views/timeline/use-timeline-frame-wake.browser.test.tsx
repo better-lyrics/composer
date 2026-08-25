@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { subscribeFrame } from "@/lib/frame-loop";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
@@ -26,20 +26,7 @@ const WakeProbe: React.FC<WakeProbeProps> = ({ enabled = true }) => {
   );
 };
 
-let unsubscribeProbe: (() => void) | null = null;
-let frames = 0;
-
-async function quiesce(): Promise<void> {
-  await settleFrames(() => frames);
-  frames = 0;
-}
-
-async function wokeAfter(trigger: () => void): Promise<boolean> {
-  await quiesce();
-  trigger();
-  await settleFrames(() => frames);
-  return frames > 0;
-}
+let probe: FrameProbe;
 
 function scrollContainer(root: HTMLElement): HTMLDivElement {
   const container = root.querySelector<HTMLDivElement>("[data-test='scroll']");
@@ -54,15 +41,11 @@ function contentElement(root: HTMLElement): HTMLDivElement {
 }
 
 beforeEach(() => {
-  frames = 0;
-  unsubscribeProbe = subscribeFrame(() => {
-    frames += 1;
-  });
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
-  unsubscribeProbe?.();
-  unsubscribeProbe = null;
+  probe.dispose();
 });
 
 // -- Tests ---------------------------------------------------------------------
@@ -72,7 +55,7 @@ describe("useTimelineFrameWake", () => {
     const screen = await render(<WakeProbe />);
     const container = scrollContainer(screen.container);
     expect(
-      await wokeAfter(() => {
+      await probe.wokeAfter(() => {
         container.scrollTop = 300;
       }),
     ).toBe(true);
@@ -82,7 +65,7 @@ describe("useTimelineFrameWake", () => {
     const screen = await render(<WakeProbe />);
     const container = scrollContainer(screen.container);
     expect(
-      await wokeAfter(() => {
+      await probe.wokeAfter(() => {
         container.scrollLeft = 300;
       }),
     ).toBe(true);
@@ -92,7 +75,7 @@ describe("useTimelineFrameWake", () => {
     const screen = await render(<WakeProbe />);
     const content = contentElement(screen.container);
     expect(
-      await wokeAfter(() => {
+      await probe.wokeAfter(() => {
         content.style.height = "320px";
       }),
     ).toBe(true);
@@ -104,7 +87,7 @@ describe("useTimelineFrameWake", () => {
       const container = scrollContainer(screen.container);
       const content = contentElement(screen.container);
       expect(
-        await wokeAfter(() => {
+        await probe.wokeAfter(() => {
           container.scrollTop = 300;
           content.style.height = "320px";
         }),
@@ -115,14 +98,14 @@ describe("useTimelineFrameWake", () => {
       const screen = await render(<WakeProbe enabled={false} />);
       const container = scrollContainer(screen.container);
       expect(
-        await wokeAfter(() => {
+        await probe.wokeAfter(() => {
           container.scrollTop = 300;
         }),
       ).toBe(false);
 
       await screen.rerender(<WakeProbe enabled={true} />);
       expect(
-        await wokeAfter(() => {
+        await probe.wokeAfter(() => {
           container.scrollTop = 600;
         }),
       ).toBe(true);
@@ -135,14 +118,14 @@ describe("useTimelineFrameWake", () => {
       const container = scrollContainer(screen.container);
       const content = contentElement(screen.container);
       expect(
-        await wokeAfter(() => {
+        await probe.wokeAfter(() => {
           container.scrollTop = 300;
         }),
       ).toBe(true);
 
       await screen.unmount();
       expect(
-        await wokeAfter(() => {
+        await probe.wokeAfter(() => {
           container.scrollTop = 600;
           content.style.height = "320px";
         }),
@@ -153,9 +136,9 @@ describe("useTimelineFrameWake", () => {
   describe("invariants", () => {
     it("leaves the loop quiescent when nothing moves", async () => {
       await render(<WakeProbe />);
-      await quiesce();
-      await settleFrames(() => frames);
-      expect(frames).toBe(0);
+      await probe.quiesce();
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
     });
   });
 });

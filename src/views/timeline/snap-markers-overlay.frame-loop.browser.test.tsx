@@ -1,9 +1,9 @@
 import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { subscribeFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { snapPoints } from "@/test/factories";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -43,8 +43,7 @@ const Harness: React.FC<HarnessProps> = ({ wakeSources = true }) => {
   );
 };
 
-let unsubscribeProbe: (() => void) | null = null;
-let frames = 0;
+let probe: FrameProbe;
 
 function seedNothingToShow(): void {
   useSettingsStore.setState({ vocalOnsetSnap: false });
@@ -66,21 +65,12 @@ function transformAt(scrollLeft: number): string {
   return `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0px, 0px)`;
 }
 
-async function quiesce(): Promise<void> {
-  await settleFrames(() => frames);
-  frames = 0;
-}
-
 beforeEach(() => {
-  frames = 0;
-  unsubscribeProbe = subscribeFrame(() => {
-    frames += 1;
-  });
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
-  unsubscribeProbe?.();
-  unsubscribeProbe = null;
+  probe.dispose();
 });
 
 // -- Tests ---------------------------------------------------------------------
@@ -126,12 +116,12 @@ describe("SnapMarkersOverlay on the frame loop", () => {
   describe("invariants", () => {
     it("regression #174: never subscribes while there is nothing to show", async () => {
       seedNothingToShow();
-      await quiesce();
+      await probe.quiesce();
 
       await render(<Harness wakeSources={false} />);
 
-      await settleFrames(() => frames);
-      expect(frames).toBe(0);
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
     });
 
     it("regression #174: stops running frames once the overlay settles", async () => {
@@ -141,10 +131,10 @@ describe("SnapMarkersOverlay on the frame loop", () => {
 
       const screen = await render(<Harness />);
       await expect.poll(() => layerOf(screen.container)?.style.transform).toBe(transformAt(0));
-      await quiesce();
+      await probe.quiesce();
 
-      await settleFrames(() => frames);
-      expect(frames).toBe(0);
+      await settleFrames(probe.count);
+      expect(probe.count()).toBe(0);
     });
   });
 });
