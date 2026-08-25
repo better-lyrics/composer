@@ -18,4 +18,4 @@ function formatProviderName(name: ProviderName): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { formatProviderName, PROVIDER_DISPLAY_NAMES };
+export { formatProviderName };

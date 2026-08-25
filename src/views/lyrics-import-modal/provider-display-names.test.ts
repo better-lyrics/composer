@@ -1,48 +1,31 @@
 import { describe, expect, it } from "vitest";
 import { getProviders } from "@/utils/lyrics-search/registry";
-import { formatProviderName, PROVIDER_DISPLAY_NAMES } from "@/views/lyrics-import-modal/provider-display-names";
+import { formatProviderName } from "@/views/lyrics-import-modal/provider-display-names";
+
+// -- Helpers ------------------------------------------------------------------
+
+function registeredLabels(): string[] {
+  return getProviders().map((provider) => formatProviderName(provider.name));
+}
 
 // -- Tests --------------------------------------------------------------------
 
-describe("PROVIDER_DISPLAY_NAMES", () => {
-  it("labels every provider the registry can produce an error for", () => {
-    const registered = getProviders()
-      .map((provider) => provider.name)
-      .toSorted();
-    expect(Object.keys(PROVIDER_DISPLAY_NAMES).toSorted()).toEqual(registered);
-  });
-
-  it("agrees with the source label each provider advertises", () => {
-    for (const provider of getProviders()) {
-      expect(PROVIDER_DISPLAY_NAMES[provider.name]).toBe(provider.sourceLabel);
-    }
-  });
-
-  describe("invariants", () => {
-    it("gives every provider a distinct label so a combined error message stays unambiguous", () => {
-      const labels = Object.values(PROVIDER_DISPLAY_NAMES);
-      expect(new Set(labels).size).toBe(labels.length);
-    });
-
-    it("stores labels without stray whitespace", () => {
-      for (const label of Object.values(PROVIDER_DISPLAY_NAMES)) {
-        expect(label).toBe(label.trim());
-        expect(label.length).toBeGreaterThan(0);
-      }
-    });
-  });
-});
-
 describe("formatProviderName", () => {
-  it("renders the human label for every registered provider", () => {
+  it("labels every provider the registry can raise an error for", () => {
     for (const provider of getProviders()) {
-      expect(formatProviderName(provider.name)).toBe(provider.sourceLabel);
+      expect(formatProviderName(provider.name).trim().length).toBeGreaterThan(0);
     }
   });
 
   it("never falls back to the raw provider id", () => {
     for (const provider of getProviders()) {
       expect(formatProviderName(provider.name)).not.toBe(provider.name);
+    }
+  });
+
+  it("agrees with the source label each provider advertises", () => {
+    for (const provider of getProviders()) {
+      expect(formatProviderName(provider.name)).toBe(provider.sourceLabel);
     }
   });
 
@@ -54,6 +37,17 @@ describe("formatProviderName", () => {
   });
 
   describe("invariants", () => {
+    it("gives every provider a distinct label so a combined error message stays unambiguous", () => {
+      const labels = registeredLabels();
+      expect(new Set(labels).size).toBe(labels.length);
+    });
+
+    it("returns labels without stray whitespace", () => {
+      for (const label of registeredLabels()) {
+        expect(label).toBe(label.trim());
+      }
+    });
+
     it("is stable across calls", () => {
       expect(formatProviderName("qq")).toBe(formatProviderName("qq"));
     });
