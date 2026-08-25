@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { subscribeFrame } from "@/lib/frame-loop";
 import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
@@ -58,6 +59,35 @@ function releaseDrag(): void {
   document.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
 }
 
+function marqueeIn(root: HTMLElement): HTMLElement | null {
+  return root.querySelector<HTMLElement>("[data-test='marquee']");
+}
+
+interface FrameRelease {
+  releaseWithinFrame: () => Promise<void>;
+  dispose: () => void;
+}
+
+// Subscribed before the hook's own tick so the mouseup lands in the same task, ahead of it.
+function createFrameRelease(): FrameRelease {
+  let pendingRelease: (() => void) | null = null;
+  const unsubscribe = subscribeFrame(() => {
+    const resolveRelease = pendingRelease;
+    if (!resolveRelease) return;
+    pendingRelease = null;
+    releaseDrag();
+    resolveRelease();
+  }, "marquee-release-gate");
+
+  return {
+    releaseWithinFrame: () =>
+      new Promise<void>((resolve) => {
+        pendingRelease = resolve;
+      }),
+    dispose: unsubscribe,
+  };
+}
+
 async function dragToEdgeAndScroll(root: HTMLElement): Promise<{ container: HTMLDivElement; rect: DOMRect }> {
   const container = scrollContainerOf(root);
   const rect = pressInside(container);
@@ -67,13 +97,16 @@ async function dragToEdgeAndScroll(root: HTMLElement): Promise<{ container: HTML
 }
 
 let probe: FrameProbe;
+let frameRelease: FrameRelease;
 
 beforeEach(() => {
   probe = createFrameProbe();
+  frameRelease = createFrameRelease();
 });
 
 afterEach(() => {
   releaseDrag();
+  frameRelease.dispose();
   probe.dispose();
 });
 
@@ -129,6 +162,17 @@ describe("useMarquee auto-scroll", () => {
       const settled = await settleFrames(probe.count);
       await stepFrames(IDLE_FRAMES);
       expect(probe.count()).toBe(settled);
+    });
+
+    it("regression: a mouseup that lands in the auto-scroll frame does not re-show the marquee", async () => {
+      const screen = await render(<Harness />);
+      await dragToEdgeAndScroll(screen.container);
+      expect(marqueeIn(screen.container)).not.toBeNull();
+
+      await frameRelease.releaseWithinFrame();
+      await settleFrames(probe.count);
+
+      expect(marqueeIn(screen.container)).toBeNull();
     });
 
     it("regression #174: a released drag leaves no stale hold, so a second drag scrolls and quiesces too", async () => {

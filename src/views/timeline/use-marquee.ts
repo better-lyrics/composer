@@ -61,7 +61,7 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
 
   const autoScroll = useCallback(() => {
     const c = scrollContainerRef.current;
-    if (!c) return;
+    if (!c || stateRef.current !== "active") return;
 
     const cRect = c.getBoundingClientRect();
     const cy = currentRef.current.clientY - cRect.top;
