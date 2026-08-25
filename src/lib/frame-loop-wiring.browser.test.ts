@@ -14,6 +14,7 @@ import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useThemeStore } from "@/stores/theme";
 import { useUIStore } from "@/stores/ui";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -40,8 +41,7 @@ const WIRED_STORE_WRITES: Array<[string, () => void]> = [
 // -- Harness ------------------------------------------------------------------
 
 let disposeWiring: (() => void) | null = null;
-let unsubscribeProbe: (() => void) | null = null;
-let frames = 0;
+let probe: FrameProbe;
 
 function attachAudioElement(): HTMLAudioElement {
   const audioElement = document.createElement("audio");
@@ -49,30 +49,14 @@ function attachAudioElement(): HTMLAudioElement {
   return audioElement;
 }
 
-async function quiesce(): Promise<void> {
-  await settleFrames(() => frames);
-  frames = 0;
-}
-
-async function wokeAfter(trigger: () => void): Promise<boolean> {
-  await quiesce();
-  trigger();
-  await settleFrames(() => frames);
-  return frames > 0;
-}
-
 beforeEach(() => {
-  frames = 0;
   disposeWiring = wireFrameLoop();
-  unsubscribeProbe = subscribeFrame(() => {
-    frames += 1;
-  }, "wiring-probe");
+  probe = createFrameProbe();
 });
 
 afterEach(() => {
-  unsubscribeProbe?.();
+  probe.dispose();
   disposeWiring?.();
-  unsubscribeProbe = null;
   disposeWiring = null;
 });
 
@@ -82,7 +66,7 @@ describe("wireFrameLoop", () => {
   describe("store wakes", () => {
     for (const [storeName, write] of WIRED_STORE_WRITES) {
       it(`wakes the loop on a ${storeName} store write`, async () => {
-        expect(await wokeAfter(write)).toBe(true);
+        expect(await probe.wokeAfter(write)).toBe(true);
       });
     }
   });
@@ -91,15 +75,15 @@ describe("wireFrameLoop", () => {
     for (const eventType of AUDIO_WAKE_EVENTS) {
       it(`wakes the loop on the audio ${eventType} event`, async () => {
         const audioElement = attachAudioElement();
-        expect(await wokeAfter(() => audioElement.dispatchEvent(new Event(eventType)))).toBe(true);
+        expect(await probe.wokeAfter(() => audioElement.dispatchEvent(new Event(eventType)))).toBe(true);
       });
     }
 
     it("stops listening to the previous element after a rebind", async () => {
       const replaced = attachAudioElement();
       const current = attachAudioElement();
-      expect(await wokeAfter(() => replaced.dispatchEvent(new Event("play")))).toBe(false);
-      expect(await wokeAfter(() => current.dispatchEvent(new Event("play")))).toBe(true);
+      expect(await probe.wokeAfter(() => replaced.dispatchEvent(new Event("play")))).toBe(false);
+      expect(await probe.wokeAfter(() => current.dispatchEvent(new Event("play")))).toBe(true);
     });
 
     it("fires loadstart when a stem switch assigns a new src", async () => {
@@ -112,7 +96,7 @@ describe("wireFrameLoop", () => {
 
     it("wakes the loop when a stem switch assigns a new src", async () => {
       const audioElement = attachAudioElement();
-      const woke = await wokeAfter(() => {
+      const woke = await probe.wokeAfter(() => {
         audioElement.src = URL.createObjectURL(createAudioFile());
       });
       expect(woke).toBe(true);
@@ -121,52 +105,52 @@ describe("wireFrameLoop", () => {
 
   describe("playing frame source", () => {
     it("keeps the loop live while isPlaying is true", async () => {
-      await quiesce();
+      await probe.quiesce();
       useAudioStore.getState().setIsPlaying(true);
       await stepFrames(LIVE_FRAMES);
-      expect(frames).toBeGreaterThan(TAIL_FRAMES);
+      expect(probe.count()).toBeGreaterThan(TAIL_FRAMES);
       useAudioStore.getState().setIsPlaying(false);
-      await settleFrames(() => frames);
+      await settleFrames(probe.count);
     });
 
     it("lets the loop quiesce once isPlaying goes false", async () => {
       useAudioStore.getState().setIsPlaying(true);
       await stepFrames(LIVE_FRAMES);
       useAudioStore.getState().setIsPlaying(false);
-      const settled = await settleFrames(() => frames);
+      const settled = await settleFrames(probe.count);
       await stepFrames(30);
-      expect(frames).toBe(settled);
+      expect(probe.count()).toBe(settled);
     });
 
     it("seeds the playing frame source when wiring starts during playback", async () => {
       disposeWiring?.();
       useAudioStore.setState({ isPlaying: true });
       disposeWiring = wireFrameLoop();
-      frames = 0;
+      const baseline = probe.count();
       await stepFrames(LIVE_FRAMES);
-      expect(frames).toBeGreaterThan(TAIL_FRAMES);
+      expect(probe.count() - baseline).toBeGreaterThan(TAIL_FRAMES);
       useAudioStore.getState().setIsPlaying(false);
-      await settleFrames(() => frames);
+      await settleFrames(probe.count);
     });
   });
 
   describe("document visibility", () => {
     it("wakes the loop when the document becomes visible", async () => {
       expect(document.hidden).toBe(false);
-      expect(await wokeAfter(() => document.dispatchEvent(new Event("visibilitychange")))).toBe(true);
+      expect(await probe.wokeAfter(() => document.dispatchEvent(new Event("visibilitychange")))).toBe(true);
     });
   });
 
   describe("disposal", () => {
     it("removes every wake source", async () => {
       const audioElement = attachAudioElement();
-      await quiesce();
+      await probe.quiesce();
       disposeWiring?.();
       disposeWiring = null;
 
-      expect(await wokeAfter(() => useProjectStore.setState({ activeTab: "edit" }))).toBe(false);
-      expect(await wokeAfter(() => audioElement.dispatchEvent(new Event("play")))).toBe(false);
-      expect(await wokeAfter(() => document.dispatchEvent(new Event("visibilitychange")))).toBe(false);
+      expect(await probe.wokeAfter(() => useProjectStore.setState({ activeTab: "edit" }))).toBe(false);
+      expect(await probe.wokeAfter(() => audioElement.dispatchEvent(new Event("play")))).toBe(false);
+      expect(await probe.wokeAfter(() => document.dispatchEvent(new Event("visibilitychange")))).toBe(false);
     });
 
     it("clears the playing frame source so the loop can quiesce", async () => {
@@ -174,9 +158,9 @@ describe("wireFrameLoop", () => {
       await stepFrames(LIVE_FRAMES);
       disposeWiring?.();
       disposeWiring = null;
-      const settled = await settleFrames(() => frames);
+      const settled = await settleFrames(probe.count);
       await stepFrames(30);
-      expect(frames).toBe(settled);
+      expect(probe.count()).toBe(settled);
     });
   });
 
@@ -187,8 +171,8 @@ describe("wireFrameLoop", () => {
       disposeWiring?.();
       disposeWiring = disposeSecond;
 
-      expect(await wokeAfter(() => audioElement.dispatchEvent(new Event("play")))).toBe(true);
-      expect(await wokeAfter(() => useProjectStore.setState({ activeTab: "edit" }))).toBe(true);
+      expect(await probe.wokeAfter(() => audioElement.dispatchEvent(new Event("play")))).toBe(true);
+      expect(await probe.wokeAfter(() => useProjectStore.setState({ activeTab: "edit" }))).toBe(true);
     });
 
     it("keeps the playing hold alive when an earlier wiring is disposed mid-playback", async () => {
@@ -197,18 +181,18 @@ describe("wireFrameLoop", () => {
       disposeWiring?.();
       disposeWiring = disposeSecond;
 
-      frames = 0;
+      const baseline = probe.count();
       await stepFrames(LIVE_FRAMES);
-      expect(frames).toBeGreaterThan(TAIL_FRAMES);
+      expect(probe.count() - baseline).toBeGreaterThan(TAIL_FRAMES);
 
       useAudioStore.getState().setIsPlaying(false);
-      await settleFrames(() => frames);
+      await settleFrames(probe.count);
     });
   });
 
   describe("invariants", () => {
     it("a frame callback that writes to a store keeps the loop awake forever", async () => {
-      await quiesce();
+      await probe.quiesce();
       let writes = 0;
       const unsubscribeWriter = subscribeFrame(() => {
         writes += 1;
@@ -221,17 +205,16 @@ describe("wireFrameLoop", () => {
 
       expect(writes).toBeGreaterThan(midpoint + 20);
       unsubscribeWriter();
-      await settleFrames(() => frames);
+      await settleFrames(probe.count);
     });
   });
 
   describe("regressions", () => {
     it("regression #174: with no writes and no events the loop quiesces within TAIL_FRAMES + 2 frames", async () => {
-      await quiesce();
       const audioElement = attachAudioElement();
+      await probe.quiesce();
       audioElement.dispatchEvent(new Event("pause"));
-      frames = 0;
-      const total = await settleFrames(() => frames);
+      const total = await settleFrames(probe.count);
       expect(total).toBeGreaterThan(0);
       expect(total).toBeLessThanOrEqual(TAIL_FRAMES + 2);
     });
