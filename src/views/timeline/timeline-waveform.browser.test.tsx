@@ -1,5 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import indexCss from "@/index.css?raw";
+import { installStyleSheet, WAVEFORM_SWEEP_ANIMATION, WAVEFORM_SWEEP_CSS } from "@/test/browser-css";
 import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -14,26 +14,6 @@ function setupWaveformAudio(duration = 30) {
     duration,
   });
 }
-
-// The browser project has no Tailwind plugin, so sweep rules come from the real src/index.css.
-function extractCssBlock(css: string, header: RegExp): string {
-  const match = header.exec(css);
-  if (!match) throw new Error(`no CSS block matching ${header} in src/index.css`);
-  const bodyStart = match.index + match[0].length;
-  let depth = 1;
-  for (let i = bodyStart; i < css.length; i++) {
-    if (css[i] === "{") depth++;
-    else if (css[i] === "}" && --depth === 0) return css.slice(bodyStart, i);
-  }
-  throw new Error(`unbalanced CSS block matching ${header} in src/index.css`);
-}
-
-const SWEEP_ANIMATION_NAME = "waveform-loading-sweep";
-
-const WAVEFORM_SWEEP_CSS = [
-  `.waveform-loading-dots {${extractCssBlock(indexCss, /@utility\s+waveform-loading-dots\s*\{/)}}`,
-  `@keyframes ${SWEEP_ANIMATION_NAME} {${extractCssBlock(indexCss, /@keyframes\s+waveform-loading-sweep\s*\{/)}}`,
-].join("\n");
 
 describe("TimelineWaveform", () => {
   it("renders nothing when there is no audio source", async () => {
@@ -365,9 +345,7 @@ describe("TimelineWaveform loading dots", () => {
     let sweepStyles: HTMLStyleElement;
 
     beforeAll(() => {
-      sweepStyles = document.createElement("style");
-      sweepStyles.textContent = WAVEFORM_SWEEP_CSS;
-      document.head.appendChild(sweepStyles);
+      sweepStyles = installStyleSheet(WAVEFORM_SWEEP_CSS);
       expect(sweepStyles.sheet?.cssRules.length).toBeGreaterThan(1);
     });
 
@@ -399,7 +377,7 @@ describe("TimelineWaveform loading dots", () => {
       setupWaveformAudio(30);
       await render(<TimelineWaveform />);
       expect(requireDots().style.opacity).toBe("1");
-      expect(sweepAnimationName()).toBe(SWEEP_ANIMATION_NAME);
+      expect(sweepAnimationName()).toBe(WAVEFORM_SWEEP_ANIMATION);
     });
 
     it("keeps sweeping right after WaveSurfer becomes ready, because the layer is still fading out", async () => {
@@ -407,7 +385,7 @@ describe("TimelineWaveform loading dots", () => {
       await render(<TimelineWaveform />);
       await expect
         .poll(() => ({ opacity: requireDots().style.opacity, animation: sweepAnimationName() }), { timeout: 5000 })
-        .toEqual({ opacity: "0", animation: SWEEP_ANIMATION_NAME });
+        .toEqual({ opacity: "0", animation: WAVEFORM_SWEEP_ANIMATION });
     });
 
     it("stops sweeping once the fade-out has finished", async () => {
