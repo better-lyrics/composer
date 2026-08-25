@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { useSettingsStore } from "@/stores/settings";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
 import { getSplitCharacter } from "@/utils/split-character";
@@ -176,6 +178,26 @@ describe("parseQrc", () => {
       }
     });
 
+    it("credits each CJK songwriter separately", () => {
+      const result = parseQrc(perCharacterQrcLine(1000, "作词：方文山/黄俊郎"));
+      expect(result.metadata.songwriters).toEqual(["方文山", "黄俊郎"]);
+    });
+
+    it("drops a title line QQ tagged one character at a time", () => {
+      const result = parseQrc(
+        `[ti:青花瓷]\n[ar:周杰倫]\n${perCharacterQrcLine(1000, "青花瓷 - 周杰倫")}\n[9000,500]歌(9000,500)`,
+      );
+      expect(result.lines.map((line) => line.text)).toEqual(["歌"]);
+    });
+
+    it("keeps both halves of a credit list QQ wrapped across two lines", () => {
+      const result = parseQrc(
+        "[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL(1250,250)\n[2000,500]Lyrics by：(2000,250)BALSHE/AHMAD(2250,250)",
+      );
+      expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL/BALSHE/AHMAD");
+      expect(result.metadata.songwriters).toEqual(["Abel Tesfaye", "Ahmad Balshe"]);
+    });
+
     it("drops a credit line that names nobody without inventing an empty entry", () => {
       const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
       expect(result.lines).toEqual([]);
@@ -218,15 +240,31 @@ describe("parseQrc", () => {
       expect(result.lines[0].agentId).toBe("v1");
     });
 
-    it("gives lines before the first marker an unnamed voice instead of the first singer", () => {
+    it("gives lines before the first marker the default voice instead of the first singer", () => {
       const result = parseQrc(
         "[1000,500]Intro (1000,500)\n[2000,500]Fox the Fox：(2000,500)\n[3000,500]Verse(3000,500)",
       );
       expect(result.agents).toEqual([
-        { id: "v1", type: "person", name: "Voice 1" },
+        { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
         { id: "v2", type: "person", name: "Fox the Fox" },
       ]);
       expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("names the default voice as the project already names an unnamed one", () => {
+      const result = parseQrc(
+        "[1000,500]Intro (1000,500)\n[2000,500]Fox the Fox：(2000,500)\n[3000,500]Verse(3000,500)",
+      );
+      expect(result.agents?.[0]).toEqual(DEFAULT_AGENTS[0]);
+      expect(result.agents?.[0]).not.toBe(DEFAULT_AGENTS[0]);
+    });
+
+    it("treats markers that differ only in case as one singer", () => {
+      const result = parseQrc(
+        "[1000,500]The Weeknd：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]THE WEEKND：(3000,500)\n[4000,500]Two(4000,500)",
+      );
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "The Weeknd" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
     });
 
     it("reads a marker name QQ tagged one character at a time", () => {
@@ -253,9 +291,10 @@ describe("parseQrc", () => {
     });
 
     it("does not treat a credit line as a singer marker", () => {
-      const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
+      const result = parseQrc("[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL(1250,250)");
       expect(result.agents).toBeUndefined();
       expect(result.lines).toEqual([]);
+      expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL");
     });
   });
 
@@ -320,6 +359,25 @@ describe("parseQrc", () => {
           expect(words[i].end).toBeGreaterThanOrEqual(words[i].begin);
           if (i > 0) expect(words[i].begin).toBeGreaterThanOrEqual(words[i - 1].begin);
         }
+      }
+    });
+
+    it("parses the same lyrics whatever the split character is set to", () => {
+      const baseline = parseQrc(WANDERLUST_QRC);
+      const original = useSettingsStore.getState().splitCharacter;
+      try {
+        for (const splitCharacter of ["/", "-", ":", "・"]) {
+          useSettingsStore.setState({ splitCharacter });
+          const result = parseQrc(WANDERLUST_QRC);
+          expect(result.lines).toHaveLength(baseline.lines.length);
+          expect(result.metadata).toEqual(baseline.metadata);
+          expect(result.agents).toEqual(baseline.agents);
+          expect(result.lines.map((line) => line.words?.map((word) => word.text))).toEqual(
+            baseline.lines.map((line) => line.words?.map((word) => word.text)),
+          );
+        }
+      } finally {
+        useSettingsStore.setState({ splitCharacter: original });
       }
     });
 

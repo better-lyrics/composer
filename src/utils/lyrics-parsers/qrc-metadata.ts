@@ -64,6 +64,9 @@ function isCreditLine(text: string): boolean {
   return CREDIT_PREFIX_REGEX.test(text.trim());
 }
 
+// The fallback catches a prefix added to CREDIT_PREFIX_REGEX but not to
+// CREDIT_EXTRA_KEYS, so a new prefix degrades to a generic key instead of
+// silently dropping the credit.
 function creditExtraKey(text: string): string {
   const match = CREDIT_PREFIX_REGEX.exec(text.trim());
   const prefix = match?.[1] ?? match?.[2] ?? "";
@@ -82,6 +85,9 @@ function titleCaseToken(token: string): string {
     .join(" ");
 }
 
+// QQ pairs SURNAME/GIVENNAME only for Latin credits. A slash between CJK tokens
+// separates two people, each already written surname first, so pairing them
+// would invent a person who does not exist.
 function decodeCredits(value: string): string[] {
   const tokens = value
     .split("/")
@@ -89,7 +95,8 @@ function decodeCredits(value: string): string[] {
     .filter((token) => token.length > 0)
     .map(titleCaseToken);
 
-  if (tokens.length % 2 !== 0) return tokens;
+  const pairable = tokens.length % 2 === 0 && tokens.every((token) => LATIN_LETTER_REGEX.test(token));
+  if (!pairable) return tokens;
 
   const names: string[] = [];
   for (let index = 0; index < tokens.length; index += 2) {

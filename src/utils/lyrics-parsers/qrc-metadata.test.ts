@@ -243,7 +243,16 @@ describe("decodeCredits", () => {
     });
 
     it("leaves CJK names untouched by title casing", () => {
-      expect(decodeCredits("周杰倫/方文山")).toEqual(["方文山 周杰倫"]);
+      expect(decodeCredits("周杰倫")).toEqual(["周杰倫"]);
+    });
+
+    it("treats slash-separated CJK tokens as separate people", () => {
+      expect(decodeCredits("周杰倫/方文山")).toEqual(["周杰倫", "方文山"]);
+      expect(decodeCredits("方文山/黄俊郎/周杰倫/林迈可")).toEqual(["方文山", "黄俊郎", "周杰倫", "林迈可"]);
+    });
+
+    it("keeps mixed-script tokens separate rather than guessing a convention", () => {
+      expect(decodeCredits("周杰倫/JASON")).toEqual(["周杰倫", "Jason"]);
     });
 
     it("title cases an initial without swallowing it", () => {
