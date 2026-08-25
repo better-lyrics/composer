@@ -6,6 +6,8 @@ type SyncType = "syllable" | "word" | "line" | "unsynced";
 
 const LRC_LINE_TIMESTAMP_REGEX = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/;
 const LRC_INLINE_WORD_TAG_REGEX = /<(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?>/;
+const QRC_LINE_HEADER_REGEX = /\[\d+,\d+\]/;
+const QRC_WORD_TAG_REGEX = /\(\d+,\d+\)/;
 
 // -- LRC ----------------------------------------------------------------------
 
@@ -77,7 +79,15 @@ function detectTtmlSyncTypeViaRegex(xml: string): SyncType {
   return "unsynced";
 }
 
+// -- QRC ----------------------------------------------------------------------
+
+function detectQrcSyncType(content: string): SyncType {
+  if (!content || !content.trim()) return "unsynced";
+  if (!QRC_LINE_HEADER_REGEX.test(content)) return "unsynced";
+  return QRC_WORD_TAG_REGEX.test(content) ? "word" : "line";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { detectLrcSyncType, detectTtmlSyncType };
+export { detectLrcSyncType, detectQrcSyncType, detectTtmlSyncType };
 export type { SyncType };
