@@ -80,7 +80,7 @@ afterEach(() => {
 
 // -- Tests ---------------------------------------------------------------------
 
-describe("BraccatoRenderer resume affordance while paused", () => {
+describe("BraccatoRenderer resume affordance", () => {
   it("clears the affordance on braccato's own deadline, with the loop asleep in between", async () => {
     const { screen, el } = await renderPausedPreview();
     useFakeClock();

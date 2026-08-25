@@ -99,17 +99,13 @@ async function dragToEdgeAndScroll(root: HTMLElement): Promise<{ container: HTML
 }
 
 let probe: FrameProbe;
-let frameRelease: FrameRelease;
 
 beforeEach(() => {
   probe = createFrameProbe();
-  // Subscribed before the hook's autoScroll subscriber so the mouseup lands in the same task, ahead of it.
-  frameRelease = createFrameRelease();
 });
 
 afterEach(() => {
   releaseDrag();
-  frameRelease.dispose();
   probe.dispose();
 });
 
@@ -168,14 +164,20 @@ describe("useMarquee auto-scroll", () => {
     });
 
     it("regression: a mouseup that lands in the auto-scroll frame does not re-show the marquee", async () => {
-      const screen = await render(<Harness />);
-      await dragToEdgeAndScroll(screen.container);
-      expect(marqueeIn(screen.container)).not.toBeNull();
+      // Subscribed here, ahead of the hook's autoScroll subscriber, so the mouseup runs first in the same frame.
+      const frameRelease = createFrameRelease();
+      try {
+        const screen = await render(<Harness />);
+        await dragToEdgeAndScroll(screen.container);
+        expect(marqueeIn(screen.container)).not.toBeNull();
 
-      await frameRelease.releaseWithinFrame();
-      await settleFrames(probe.count);
+        await frameRelease.releaseWithinFrame();
+        await settleFrames(probe.count);
 
-      expect(marqueeIn(screen.container)).toBeNull();
+        expect(marqueeIn(screen.container)).toBeNull();
+      } finally {
+        frameRelease.dispose();
+      }
     });
 
     it("regression #174: a released drag leaves no stale hold, so a second drag scrolls and quiesces too", async () => {
