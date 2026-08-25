@@ -25,7 +25,6 @@ interface CssDeclaration {
 }
 
 interface CssBlock {
-  prelude: string;
   chain: string[];
   keyframesName: string | null;
   declarations: CssDeclaration[];
@@ -101,7 +100,6 @@ function parseBlocks(source: string): CssBlock[] {
       const prelude = buffer.trim();
       const named = KEYFRAMES_PRELUDE.exec(prelude);
       const block: CssBlock = {
-        prelude,
         chain: [...(parent?.chain ?? []), prelude],
         keyframesName: named ? named[1].toLowerCase() : (parent?.keyframesName ?? null),
         declarations: [],
