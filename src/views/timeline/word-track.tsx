@@ -13,6 +13,7 @@ import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
 import { selfKey } from "@/views/timeline/snap";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useSelectionStretchDrag } from "@/views/timeline/use-selection-stretch";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { WordBlock } from "@/views/timeline/word-block";
@@ -95,6 +96,21 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const getLastPointer = useCallback(() => lastPointerRef.current, []);
   useSnapBypass({ active: resizing, getLastPointer });
 
+  // Multi-block selections: dragging the selection's boundary edge becomes a
+  // proportional stretch (anchored at the opposite side) instead of a resize.
+  // Destructure the stable callback: the hook returns a fresh object every
+  // render, and an object dep would needlessly invalidate this component's
+  // memoized handlers.
+  const { tryStart: tryStartStretch } = useSelectionStretchDrag({
+    onDragEnd: (dragged) => {
+      if (!dragged) return;
+      justResizedRef.current = true;
+      requestAnimationFrame(() => {
+        justResizedRef.current = false;
+      });
+    },
+  });
+
   // react-doctor-disable-next-line react-doctor/exhaustive-deps
   useEffect(() => {
     return () => {
@@ -114,6 +130,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
   const handleResizeStart = useCallback(
     (wordIndex: number, edge: "left" | "right", startX: number) => {
+      if (tryStartStretch({ lineId, type: trackType, wordIndex, edge, startX })) return;
       const word = words[wordIndex];
       const initialState: DragState = { wordIndex, edge, begin: word.begin, end: word.end };
       dragStateRef.current = initialState;
@@ -233,7 +250,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       document.addEventListener("pointermove", handleMouseMove);
       document.addEventListener("pointerup", handleMouseUp);
     },
-    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType],
+    [words, zoom, duration, onUpdateWord, syllablePositions, snap, lineId, trackType, tryStartStretch],
   );
 
   const isBoundaryConjoined = (boundaryIndex: number): boolean =>
