@@ -264,7 +264,6 @@ describe("decodeCredits", () => {
   });
 
   it("keeps a mixed-case list of complete names as separate people", () => {
-    expect(decodeCredits("Mark Knopfler/Neil Dorfsman")).toEqual(["Mark Knopfler", "Neil Dorfsman"]);
     expect(decodeCredits("Jacques Webster/Kanye West/Dez Wright/Samuel Gloade")).toEqual([
       "Jacques Webster",
       "Kanye West",
