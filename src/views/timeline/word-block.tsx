@@ -164,17 +164,18 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-2 z-20",
+          "absolute left-0 top-0 bottom-0 w-2 z-10",
           showLeftGrip
-            ? "cursor-ew-resize rounded-l-md bg-composer-accent"
+            ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [
-                "z-10 hover:bg-composer-text/10",
+                "hover:bg-composer-text/10",
                 syllablePosition === "middle" || syllablePosition === "last" || leftConjoined
                   ? "cursor-col-resize"
                   : "cursor-ew-resize",
                 leftHighlighted && "bg-composer-text/10",
               ],
         )}
+        data-grip={showLeftGrip || undefined}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
         onMouseEnter={() => onEdgeHover?.("left", true)}
@@ -189,17 +190,18 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-2 z-20",
+          "absolute right-0 top-0 bottom-0 w-2 z-10",
           showRightGrip
-            ? "cursor-ew-resize rounded-r-md bg-composer-accent"
+            ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [
-                "z-10 hover:bg-composer-text/10",
+                "hover:bg-composer-text/10",
                 syllablePosition === "first" || syllablePosition === "middle" || rightConjoined
                   ? "cursor-col-resize"
                   : "cursor-ew-resize",
                 rightHighlighted && "bg-composer-text/10",
               ],
         )}
+        data-grip={showRightGrip || undefined}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
         onMouseEnter={() => onEdgeHover?.("right", true)}

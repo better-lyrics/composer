@@ -72,7 +72,7 @@ function storeWords(): WordTiming[] {
 }
 
 function gripEdge(block: HTMLElement, edge: "left" | "right"): HTMLElement | null {
-  return block.querySelector<HTMLElement>(`[data-edge="${edge}"].bg-composer-accent`);
+  return block.querySelector<HTMLElement>(`[data-edge="${edge}"][data-grip]`);
 }
 
 function pressEdge(block: HTMLElement, edge: "left" | "right"): void {
