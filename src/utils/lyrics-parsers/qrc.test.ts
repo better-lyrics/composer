@@ -203,6 +203,8 @@ describe("parseQrc", () => {
       expect(result.lines).toEqual([]);
       expect(result.metadata.extra).toBeUndefined();
       expect(result.metadata.songwriters).toBeUndefined();
+      // A credit prefix also reads as a singer marker, so credits must be classified first.
+      expect(result.agents).toBeUndefined();
     });
 
     it("reports no songwriters when the document credits nobody", () => {
