@@ -61,4 +61,3 @@ export {
   SUPPORTED_LYRICS_FORMATS,
   UNSUPPORTED_LYRICS_FILE_MESSAGE,
 };
-export type { SupportedLyricsFormat };

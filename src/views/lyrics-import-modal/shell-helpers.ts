@@ -1,6 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { isAbortError } from "@/utils/abort-error";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Constants ----------------------------------------------------------------
@@ -36,4 +35,4 @@ async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal)
 
 // -- Exports ------------------------------------------------------------------
 
-export { isAbortError, payloadToContent, syntheticFilenameForResult, wrapTextAsParseResult };
+export { payloadToContent, syntheticFilenameForResult, wrapTextAsParseResult };

@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
-import { isAbortError as sharedIsAbortError } from "@/utils/abort-error";
 import {
-  isAbortError,
   payloadToContent,
   syntheticFilenameForResult,
   wrapTextAsParseResult,
@@ -140,11 +138,5 @@ describe("wrapTextAsParseResult", () => {
 
   it("wraps an empty list without inventing lines", () => {
     expect(wrapTextAsParseResult([]).lines).toEqual([]);
-  });
-});
-
-describe("isAbortError", () => {
-  it("re-exports the shared predicate rather than keeping a local copy", () => {
-    expect(isAbortError).toBe(sharedIsAbortError);
   });
 });

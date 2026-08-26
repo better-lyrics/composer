@@ -6,6 +6,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { isAbortError } from "@/utils/abort-error";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
@@ -20,7 +21,6 @@ import { textToLyricLines } from "@/utils/lyrics-text";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
 import {
-  isAbortError,
   payloadToContent,
   syntheticFilenameForResult,
   wrapTextAsParseResult,
