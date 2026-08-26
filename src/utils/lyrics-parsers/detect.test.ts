@@ -80,9 +80,13 @@ describe("detectFileType", () => {
       expect(detectFileType("pasted", SRT_BODY)).toBe("srt");
     });
 
-    it("prefers QRC over SRT for an extension-less body carrying a bracketed millisecond pair", () => {
-      expect(detectFileType("pasted", SRT_BODY_WITH_QRC_BRACKET)).toBe("qrc");
+    it("reads an extension-less SRT body as SRT even when its text carries a bracketed pair", () => {
+      expect(detectFileType("pasted", SRT_BODY_WITH_QRC_BRACKET)).toBe("srt");
       expect(detectFileType("subtitles.srt", SRT_BODY_WITH_QRC_BRACKET)).toBe("srt");
+    });
+
+    it("still reads an extension-less QRC body as QRC, since QRC cannot open like a cue", () => {
+      expect(detectFileType("pasted", QRC_BODY)).toBe("qrc");
     });
   });
 
