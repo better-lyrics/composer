@@ -109,6 +109,44 @@ const WANDERLUST_QRC = `<?xml version="1.0" encoding="utf-8"?>
 </LyricInfo>
 </QrcInfos>`;
 
+/**
+ * The opening of the QRC document QQ Music serves for Travis Scott "SICKO MODE",
+ * captured live from lyrics-api.boidu.dev/qq/getLyrics on 2026-08-26. Verbatim
+ * apart from two cuts: the "Drake：" singer marker that follows the credits, and
+ * every lyric line past the second. Credits it with the agent-noun prefixes
+ * ("Lyricist：", "Composer：") rather than the "X by" forms, over a list of
+ * mixed-case complete names.
+ */
+const SICKO_MODE_QRC = `<?xml version="1.0" encoding="utf-8"?>
+<QrcInfos>
+<QrcHeadInfo SaveTime="312" Version="100"/>
+<LyricInfo LyricCount="1">
+<Lyric_1 LyricType="1" LyricContent="[ti:SICKO MODE (Explicit)]
+[ar:Travis Scott]
+[al:ASTROWORLD (Explicit)]
+[by:]
+[offset:0]
+[0,1730]SICKO(0,240) (240,48)MODE(288,192) (480,48)((528,48)Explicit(576,385))(961,48) (1009,48)-(1057,48) (1105,48)Travis(1153,288) (1441,48)Scott(1489,241)
+[1737,3403]Lyricist：(1737,217)Jacques (1954,201)Webster/(2155,190)Aubrey (2345,208)Graham/(2553,176)Chauncey (2729,226)Hollis/(2955,216)Ozan (3171,190)Yildirim/(3361,192)Cydel (3553,192)Young/(3745,200)Mirsad (3945,200)Dervic/(4145,208)BryTavious (4353,176)Chambers/(4529,217)Mike (4746,191)Dean(4937,203)
+[5140,13381]Composer：(5140,168)Jacques (5308,181)Webster/(5489,194)Aubrey (5683,174)Graham/(5857,184)Chauncey (6041,184)Hollis/(6225,209)Ozan (6434,187)Yildirim/(6621,180)Cydel (6801,200)Young/(7001,179)Mirsad (7180,214)Dervic/(7394,199)BryTavious (7593,249)Chambers/(7842,263)Mike (8105,304)Dean(8409,1036)
+[20473,7278]Astro (20473,422)yeah(24007,233)
+[27751,2778]Sun (27751,27)is (27778,255)down (28033,409)freezin' (29050,367)cold(29417,361)
+"/>
+</LyricInfo>
+</QrcInfos>`;
+
+/** The eight people SICKO_MODE_QRC credits, in the order the document lists them. */
+const SICKO_MODE_WRITERS = [
+  "Jacques Webster",
+  "Aubrey Graham",
+  "Chauncey Hollis",
+  "Ozan Yildirim",
+  "Cydel Young",
+  "Mirsad Dervic",
+  "BryTavious Chambers",
+  "Mike Dean",
+];
+
 // -- Exports ------------------------------------------------------------------
 
-export { WANDERLUST_QRC };
+export { SICKO_MODE_QRC, SICKO_MODE_WRITERS, WANDERLUST_QRC };

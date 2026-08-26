@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SICKO_MODE_WRITERS } from "@/test/qrc-fixtures";
 import {
   creditExtraKey,
   creditValue,
@@ -112,6 +113,13 @@ describe("isCreditLine", () => {
     expect(isCreditLine("作曲：周杰倫")).toBe(true);
   });
 
+  it("matches the English agent-noun prefixes QQ uses instead of an X by form", () => {
+    expect(isCreditLine("Lyricist：Jacques Webster")).toBe(true);
+    expect(isCreditLine("Composer：Jacques Webster")).toBe(true);
+    expect(isCreditLine("Arranger：Mike Dean")).toBe(true);
+    expect(isCreditLine("Producer：Quincy Jones")).toBe(true);
+  });
+
   describe("edge cases", () => {
     it("matches the remaining English prefixes", () => {
       expect(isCreditLine("Arranged by：X")).toBe(true);
@@ -137,6 +145,11 @@ describe("isCreditLine", () => {
     it("tolerates surrounding whitespace", () => {
       expect(isCreditLine("  Composed by ：X  ")).toBe(true);
     });
+
+    it("matches an agent-noun prefix whatever the case or the colon", () => {
+      expect(isCreditLine("lyricist: Jacques Webster")).toBe(true);
+      expect(isCreditLine("  PRODUCER ：Quincy Jones  ")).toBe(true);
+    });
   });
 
   describe("error paths", () => {
@@ -150,6 +163,15 @@ describe("isCreditLine", () => {
 
     it("does not match a prefix that is not at the start", () => {
       expect(isCreditLine("Song lyrics by：X")).toBe(false);
+    });
+
+    it("does not match an agent noun with no colon after it", () => {
+      expect(isCreditLine("Producer of the year")).toBe(false);
+      expect(isCreditLine("Composer unknown")).toBe(false);
+    });
+
+    it("does not match an agent-noun prefix that is not at the start", () => {
+      expect(isCreditLine("Executive producer：X")).toBe(false);
     });
 
     it("does not match an empty line", () => {
@@ -177,9 +199,23 @@ describe("creditExtraKey", () => {
     expect(creditExtraKey("製作人：X")).toBe("qrcProducer");
   });
 
+  it("derives a key from an English agent-noun prefix", () => {
+    expect(creditExtraKey("Lyricist：X")).toBe("qrcLyricsBy");
+    expect(creditExtraKey("Composer：X")).toBe("qrcComposedBy");
+    expect(creditExtraKey("Arranger：X")).toBe("qrcArrangedBy");
+    expect(creditExtraKey("Producer：X")).toBe("qrcProducedBy");
+  });
+
   describe("edge cases", () => {
     it("derives the same key whatever the case", () => {
       expect(creditExtraKey("LYRICS BY：X")).toBe("qrcLyricsBy");
+    });
+
+    it("files an agent noun and its by form under one key", () => {
+      expect(creditExtraKey("Composer：X")).toBe(creditExtraKey("Composed by：X"));
+      expect(creditExtraKey("Lyricist：X")).toBe(creditExtraKey("Lyrics by：X"));
+      expect(creditExtraKey("Arranger：X")).toBe(creditExtraKey("Arranged by：X"));
+      expect(creditExtraKey("Producer：X")).toBe(creditExtraKey("Produced by：X"));
     });
 
     it("falls back to a generic key rather than losing the credit", () => {
@@ -227,6 +263,26 @@ describe("decodeCredits", () => {
     expect(decodeCredits("BALSHE/ AHMAD")).toEqual(["Ahmad Balshe"]);
   });
 
+  it("keeps a mixed-case list of complete names as separate people", () => {
+    expect(decodeCredits("Mark Knopfler/Neil Dorfsman")).toEqual(["Mark Knopfler", "Neil Dorfsman"]);
+    expect(decodeCredits("Jacques Webster/Kanye West/Dez Wright/Samuel Gloade")).toEqual([
+      "Jacques Webster",
+      "Kanye West",
+      "Dez Wright",
+      "Samuel Gloade",
+    ]);
+  });
+
+  it("keeps the capitals inside a name it was given", () => {
+    expect(decodeCredits("BryTavious Chambers/Paul McCartney")).toEqual(["BryTavious Chambers", "Paul McCartney"]);
+    expect(decodeCredits("Dolores O'Riordan/Dennis DeYoung")).toEqual(["Dolores O'Riordan", "Dennis DeYoung"]);
+  });
+
+  it("leaves an all-caps stage name alone in a list that is not in the all-caps convention", () => {
+    expect(decodeCredits("SZA/Doja Cat")).toEqual(["SZA", "Doja Cat"]);
+    expect(decodeCredits("Travis Scott/MIKE DEAN")).toEqual(["Travis Scott", "MIKE DEAN"]);
+  });
+
   describe("edge cases", () => {
     it("falls back to a plain split when the token count is odd", () => {
       expect(decodeCredits("TESFAYE/ABEL/SOLO")).toEqual(["Tesfaye", "Abel", "Solo"]);
@@ -262,6 +318,16 @@ describe("decodeCredits", () => {
     it("returns a single token unchanged apart from casing", () => {
       expect(decodeCredits("PRINCE")).toEqual(["Prince"]);
     });
+
+    it("does not pair an even list that mixes an all-caps token with a mixed-case one", () => {
+      expect(decodeCredits("PinkPantheress/RISC")).toEqual(["PinkPantheress", "RISC"]);
+      expect(decodeCredits("Meltt/Kieran Wagstaff")).toEqual(["Meltt", "Kieran Wagstaff"]);
+    });
+
+    it("cannot recover the capitals inside a token once the all-caps convention is in force", () => {
+      expect(decodeCredits("MCCARTNEY/PAUL")).toEqual(["Paul Mccartney"]);
+      expect(decodeCredits("MCCARTNEY/PAUL/LENNON/JOHN")).toEqual(["Paul Mccartney", "John Lennon"]);
+    });
   });
 
   describe("invariants", () => {
@@ -273,6 +339,23 @@ describe("decodeCredits", () => {
 
     it("returns the same result for the same input", () => {
       expect(decodeCredits("TESFAYE/ABEL")).toEqual(decodeCredits("TESFAYE/ABEL"));
+    });
+
+    it("halves an even list only when every token is all caps", () => {
+      const allCaps = "TESFAYE/ABEL/BALSHE/AHMAD";
+      const completeNames = "Mark Knopfler/Neil Dorfsman/Travis Scott/Dez Wright";
+      expect(decodeCredits(allCaps)).toHaveLength(allCaps.split("/").length / 2);
+      expect(decodeCredits(completeNames)).toHaveLength(completeNames.split("/").length);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: does not fold a real QQ credit list of complete names into invented people", () => {
+      expect(decodeCredits("Mark Knopfler/Neil Dorfsman")).toEqual(["Mark Knopfler", "Neil Dorfsman"]);
+    });
+
+    it("regression: credits every writer QQ lists for SICKO MODE", () => {
+      expect(decodeCredits(SICKO_MODE_WRITERS.join("/"))).toEqual(SICKO_MODE_WRITERS);
     });
   });
 });

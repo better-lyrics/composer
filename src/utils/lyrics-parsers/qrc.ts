@@ -137,8 +137,7 @@ function ensureAgent(name: string, agents: Agent[], byName: Map<string, Agent>):
 // title line, the credits block and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
   const lines: LooseLine[] = [];
-  const songwriters = new Set<string>();
-  const extra: Record<string, string> = { ...headerMetadata.extra };
+  const creditsByKey = new Map<string, string>();
   const agents: Agent[] = [];
   const agentsByName = new Map<string, Agent>();
   let currentAgentId = agentIdAt(0);
@@ -150,9 +149,9 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
       const value = creditValue(line.plainText);
       if (value.length > 0) {
         const key = creditExtraKey(line.plainText);
-        // QQ wraps a long credit list across two lines under the same prefix.
-        extra[key] = extra[key] ? `${extra[key]}/${value}` : value;
-        for (const name of decodeCredits(value)) songwriters.add(name);
+        const started = creditsByKey.get(key);
+        // QQ wraps a credit list across two lines and can wrap mid-pair, so only the join decodes.
+        creditsByKey.set(key, started ? `${started}/${value}` : value);
       }
       continue;
     }
@@ -175,6 +174,13 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
       agentId: currentAgentId,
       ...(line.words.length > 0 ? { words: line.words } : { begin: line.begin, end: line.end }),
     });
+  }
+
+  const extra: Record<string, string> = { ...headerMetadata.extra };
+  const songwriters = new Set<string>();
+  for (const [key, creditList] of creditsByKey) {
+    extra[key] = creditList;
+    for (const name of decodeCredits(creditList)) songwriters.add(name);
   }
 
   const metadata: Partial<ProjectMetadata> = { ...headerMetadata };

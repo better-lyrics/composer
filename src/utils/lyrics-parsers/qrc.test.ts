@@ -3,13 +3,16 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { useSettingsStore } from "@/stores/settings";
-import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
+import { SICKO_MODE_QRC, SICKO_MODE_WRITERS, WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseQrc } from "@/utils/lyrics-parsers/qrc";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
 const FIRST_LYRIC_TEXT = "Is it so hard to say the same thing";
+// One credit list QQ wrapped across two lines, with the wrap between BALSHE and AHMAD.
+const WRAPPED_MID_PAIR_QRC =
+  "[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL/BALSHE(1250,250)\n[2000,500]Lyrics by：(2000,250)AHMAD(2250,250)";
 const CHINESE_CREDIT_PREFIXES = [
   ["作词", "qrcLyricist"],
   ["作曲", "qrcComposer"],
@@ -198,6 +201,18 @@ describe("parseQrc", () => {
       expect(result.metadata.songwriters).toEqual(["Abel Tesfaye", "Ahmad Balshe"]);
     });
 
+    it("reads a credit line whose prefix is an agent noun rather than an X by form", () => {
+      const result = parseQrc(SICKO_MODE_QRC);
+      expect(result.metadata.songwriters).toEqual(SICKO_MODE_WRITERS);
+      expect(result.metadata.extra?.qrcLyricsBy).toBe(SICKO_MODE_WRITERS.join("/"));
+      expect(result.metadata.extra?.qrcComposedBy).toBe(SICKO_MODE_WRITERS.join("/"));
+    });
+
+    it("drops an agent-noun credit line and the title line from the lyrics", () => {
+      const result = parseQrc(SICKO_MODE_QRC);
+      expect(result.lines.map((line) => line.text)).toEqual(["Astro yeah", "Sun is down freezin' cold"]);
+    });
+
     it("drops a credit line that names nobody without inventing an empty entry", () => {
       const result = parseQrc("[1000,500]Lyrics by：(1000,500)");
       expect(result.lines).toEqual([]);
@@ -211,6 +226,53 @@ describe("parseQrc", () => {
       const result = parseQrc("[1000,500]Hi (1000,500)");
       expect(result.metadata.songwriters).toBeUndefined();
       expect(result.metadata.extra).toBeUndefined();
+    });
+
+    it("joins an X by line and an agent-noun line that share a key into one credit list", () => {
+      const result = parseQrc(
+        "[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL(1250,250)\n[2000,500]Lyricist：(2000,250)BALSHE/AHMAD(2250,250)",
+      );
+      expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL/BALSHE/AHMAD");
+      expect(result.metadata.songwriters).toEqual(["Abel Tesfaye", "Ahmad Balshe"]);
+    });
+
+    it("consumes a bare agent-noun line as an empty credit rather than a singer marker", () => {
+      for (const noun of ["Producer", "Composer", "Lyricist", "Arranger"]) {
+        const result = parseQrc(`[1000,500]${noun}：(1000,500)`);
+        expect(result.agents).toBeUndefined();
+        expect(result.lines).toEqual([]);
+        expect(result.metadata.extra).toBeUndefined();
+      }
+    });
+
+    describe("regressions", () => {
+      it("regression: decodes a wrapped credit list whose wrap falls between a surname and its given name", () => {
+        const result = parseQrc(WRAPPED_MID_PAIR_QRC);
+        expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL/BALSHE/AHMAD");
+        expect(result.metadata.songwriters).toEqual(["Abel Tesfaye", "Ahmad Balshe"]);
+      });
+
+      it("regression: reads the songwriters of a wrapped list the same as the unwrapped list", () => {
+        const wrapped = parseQrc(WRAPPED_MID_PAIR_QRC);
+        const unwrapped = parseQrc("[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL/BALSHE/AHMAD(1250,250)");
+        expect(wrapped.metadata.songwriters).toEqual(unwrapped.metadata.songwriters);
+        expect(wrapped.metadata.extra).toEqual(unwrapped.metadata.extra);
+      });
+
+      it("regression: joins each credit key separately and orders songwriters by key, not by line", () => {
+        const result = parseQrc(
+          [
+            "[1000,500]Lyrics by：(1000,250)TESFAYE/ABEL/BALSHE(1250,250)",
+            "[2000,500]Composed by：(2000,250)QUENNEVILLE(2250,250)",
+            "[3000,500]Lyrics by：(3000,250)AHMAD(3250,250)",
+            "[4000,500]Composed by：(4000,250)JASON(4250,250)",
+          ].join("\n"),
+        );
+        expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL/BALSHE/AHMAD");
+        expect(result.metadata.extra?.qrcComposedBy).toBe("QUENNEVILLE/JASON");
+        // Every name of the first key precedes every name of the second, though the lines interleave.
+        expect(result.metadata.songwriters).toEqual(["Abel Tesfaye", "Ahmad Balshe", "Jason Quenneville"]);
+      });
     });
   });
 

@@ -5,7 +5,7 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 const MS_PER_SECOND = 1000;
 const HEADER_TAG_REGEX = /\[([a-z]+):([^\]]*)\]/gi;
 const CREDIT_PREFIX_REGEX =
-  /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
+  /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(lyricist|composer|arranger|producer|作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
 const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
 const LATIN_LETTER_REGEX = /[a-z]/i;
 const MARKER_MAX_NAME_LENGTH = 40;
@@ -19,6 +19,10 @@ const CREDIT_EXTRA_KEYS = new Map([
   ["arranged", "qrcArrangedBy"],
   ["produced", "qrcProducedBy"],
   ["written", "qrcWrittenBy"],
+  ["lyricist", "qrcLyricsBy"],
+  ["composer", "qrcComposedBy"],
+  ["arranger", "qrcArrangedBy"],
+  ["producer", "qrcProducedBy"],
   ["作词", "qrcLyricist"],
   ["作曲", "qrcComposer"],
   ["编曲", "qrcArranger"],
@@ -77,32 +81,40 @@ function creditValue(text: string): string {
   return text.match(CREDIT_VALUE_REGEX)?.[1].trim() ?? "";
 }
 
-// A token with no Latin letters is left alone so CJK names survive intact.
-function titleCaseToken(token: string): string {
+// The Latin test is load-bearing: "周杰倫" === "周杰倫".toUpperCase() is true.
+function isAllCapsLatinToken(token: string): boolean {
+  return LATIN_LETTER_REGEX.test(token) && token === token.toUpperCase();
+}
+
+// MCCARTNEY reads back as Mccartney: inner capitals need a name dictionary to recover.
+function titleCaseIfAllCaps(token: string): string {
+  if (!isAllCapsLatinToken(token)) return token;
   return token
     .split(/\s+/)
     .map((part) => (LATIN_LETTER_REGEX.test(part) ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase() : part))
     .join(" ");
 }
 
-// QQ pairs SURNAME/GIVENNAME only for Latin credits. A slash between CJK tokens
-// separates two people, each already written surname first, so pairing them
-// would invent a person who does not exist.
+// QQ writes SURNAME/GIVENNAME only in all caps, so the casing of the list as a whole says which
+// convention is in force. Off that convention, both re-casing a name and pairing one invent people.
 function decodeCredits(value: string): string[] {
   const tokens = value
     .split("/")
     .map((token) => token.trim())
-    .filter((token) => token.length > 0)
-    .map(titleCaseToken);
+    .filter((token) => token.length > 0);
 
-  const pairable = tokens.length % 2 === 0 && tokens.every((token) => LATIN_LETTER_REGEX.test(token));
-  if (!pairable) return tokens;
+  const latinTokens = tokens.filter((token) => LATIN_LETTER_REGEX.test(token));
+  const allCapsConvention = latinTokens.length > 0 && latinTokens.every(isAllCapsLatinToken);
+  const names = allCapsConvention ? tokens.map(titleCaseIfAllCaps) : tokens;
 
-  const names: string[] = [];
-  for (let index = 0; index < tokens.length; index += 2) {
-    names.push(`${tokens[index + 1]} ${tokens[index]}`);
+  const pairable = allCapsConvention && tokens.length % 2 === 0 && tokens.every(isAllCapsLatinToken);
+  if (!pairable) return names;
+
+  const paired: string[] = [];
+  for (let index = 0; index < names.length; index += 2) {
+    paired.push(`${names[index + 1]} ${names[index]}`);
   }
-  return names;
+  return paired;
 }
 
 // -- Title line ---------------------------------------------------------------
