@@ -433,4 +433,14 @@ describe("BraccatoRenderer regressions", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
   });
+
+  it("regression: clicking a line while scrolled away seeks and takes the reader back", async () => {
+    const { screen } = await showResumeAffordance();
+    const el = getBraccatoElement(screen.container);
+
+    el.querySelector<HTMLElement>(".blyrics--line")?.click();
+
+    await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+  });
 });

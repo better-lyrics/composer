@@ -34,16 +34,6 @@ function ensureRegistered(): Promise<unknown> {
   return registerPromise;
 }
 
-// -- Helpers ------------------------------------------------------------------
-
-function handleBraccatoLineClick(e: Event): void {
-  const detail = (e as CustomEvent<LineClickDetail>).detail;
-  if (detail?.timeS == null) return;
-  const audio = useAudioStore.getState();
-  audio.seekTo(detail.timeS);
-  audio.setIsPlaying(true);
-}
-
 // -- Component ----------------------------------------------------------------
 
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
@@ -72,25 +62,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     [clearResumeWake],
   );
 
-  const setElement = useCallback(
-    (el: BraccatoLyricsElement | null) => {
-      elementRef.current = el;
-      if (!el) return;
-      el.theme = braccatoTheme;
-      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-      el.lyrics = latestLyricsRef.current;
-      el.addEventListener("braccato:line-click", handleBraccatoLineClick);
-      el.addEventListener("scroll", handleScroll, { passive: true });
-      return () => {
-        el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
-        el.removeEventListener("scroll", handleScroll);
-        clearResumeWake();
-        elementRef.current = null;
-      };
-    },
-    [handleScroll, clearResumeWake],
-  );
-
   const resumeAutoscroll = useCallback(() => {
     clearResumeWake();
     elementRef.current?.renderer?.resumeAutoscroll();
@@ -98,6 +69,37 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     // component drives, so a paused reader would otherwise see nothing happen.
     wake();
   }, [clearResumeWake]);
+
+  const handleLineClick = useCallback(
+    (e: Event) => {
+      const detail = (e as CustomEvent<LineClickDetail>).detail;
+      if (detail?.timeS == null) return;
+      const audio = useAudioStore.getState();
+      audio.seekTo(detail.timeS);
+      audio.setIsPlaying(true);
+      resumeAutoscroll();
+    },
+    [resumeAutoscroll],
+  );
+
+  const setElement = useCallback(
+    (el: BraccatoLyricsElement | null) => {
+      elementRef.current = el;
+      if (!el) return;
+      el.theme = braccatoTheme;
+      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+      el.lyrics = latestLyricsRef.current;
+      el.addEventListener("braccato:line-click", handleLineClick);
+      el.addEventListener("scroll", handleScroll, { passive: true });
+      return () => {
+        el.removeEventListener("braccato:line-click", handleLineClick);
+        el.removeEventListener("scroll", handleScroll);
+        clearResumeWake();
+        elementRef.current = null;
+      };
+    },
+    [handleScroll, handleLineClick, clearResumeWake],
+  );
 
   useEffect(() => {
     // The element upgrades once the registration import resolves, long after the mount
