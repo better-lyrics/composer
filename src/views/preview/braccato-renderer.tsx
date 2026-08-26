@@ -137,7 +137,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
           variant="secondary"
           hasIcon
           onClick={resumeAutoscroll}
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 shadow-2xl"
+          className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 shadow-2xl"
         >
           <IconArrowDown className="size-4" />
           Resume autoscroll

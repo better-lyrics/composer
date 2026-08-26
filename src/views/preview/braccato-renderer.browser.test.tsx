@@ -1,12 +1,39 @@
 import type { BraccatoLyricsElement } from "@braccato/core/element";
+import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
+import { installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
-import { settleFrames } from "@/test/frame-steps";
+import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
+
+// -- Constants -----------------------------------------------------------------
+
+// The browser project has no Tailwind plugin, so the utilities that float the affordance over the
+// lyrics are installed by hand next to braccato's own `.blyrics-container` rule, which carries the
+// z-index: 1 the affordance has to clear, and next to the scroller rule from src/index.css.
+const RESUME_AFFORDANCE_LAYOUT_CSS = [
+  braccatoLyricsCss,
+  POSITION_UTILITIES_CSS,
+  "braccato-lyrics{display:block;overflow-y:auto}",
+  ".flex{display:flex}",
+  ".flex-col{flex-direction:column}",
+  ".flex-1{flex:1 1 0%}",
+  ".min-h-0{min-height:0}",
+  ".bottom-6{bottom:1.5rem}",
+  ".left-1\\/2{left:50%}",
+  ".-translate-x-1\\/2{translate:-50% 0}",
+  ".z-10{z-index:10}",
+].join("\n");
+
+// PreviewPanel hands the renderer a bounded flex column; without one the lyrics run past the
+// viewport and the affordance lands where elementFromPoint cannot see it.
+const PREVIEW_PANEL_CSS = "display:flex;flex-direction:column;height:600px";
+
+const QUIET_FRAMES_AFTER_CLICK = 6;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -351,5 +378,59 @@ describe("BraccatoRenderer invariants", () => {
 
     useAudioStore.getState().seekTo(5);
     await expect.poll(() => el.currentTime).toBe(5);
+  });
+});
+
+// -- Regressions ---------------------------------------------------------------
+
+describe("BraccatoRenderer regressions", () => {
+  let layoutStyles: HTMLStyleElement | null = null;
+
+  beforeEach(() => {
+    layoutStyles = installStyleSheet(RESUME_AFFORDANCE_LAYOUT_CSS);
+  });
+
+  afterEach(() => {
+    layoutStyles?.remove();
+    layoutStyles = null;
+  });
+
+  type ResumeAffordance = { screen: Awaited<ReturnType<typeof render>>; button: HTMLElement };
+
+  async function showResumeAffordance(): Promise<ResumeAffordance> {
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio, isPlaying: false });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    screen.container.style.cssText = PREVIEW_PANEL_CSS;
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    for (let i = 0; i < 5; i++) el.dispatchEvent(new Event("scroll"));
+    const affordance = screen.getByRole("button", { name: "Resume autoscroll" });
+    await expect.element(affordance).toBeInTheDocument();
+    return { screen, button: affordance.element() as HTMLElement };
+  }
+
+  function topmostAtCentre(element: HTMLElement): Element | null {
+    const rect = element.getBoundingClientRect();
+    return document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  }
+
+  it("regression: the resume affordance is the topmost element at its own centre", async () => {
+    const { button } = await showResumeAffordance();
+
+    expect(topmostAtCentre(button)?.closest("button")).toBe(button);
+  });
+
+  it("regression: a pointer at the resume affordance resumes autoscroll rather than seeking the line beneath", async () => {
+    const { screen, button } = await showResumeAffordance();
+
+    topmostAtCentre(button)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+
+    await stepFrames(QUIET_FRAMES_AFTER_CLICK);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
   });
 });
