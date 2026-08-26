@@ -1,3 +1,5 @@
+// Owns QRC timing grammar only; content conventions live in utils/lyrics-parsers/qrc-metadata.ts.
+
 // -- Constants ----------------------------------------------------------------
 
 const QRC_LINE_HEADER_REGEX = /\[(\d+),(\d+)\]/;

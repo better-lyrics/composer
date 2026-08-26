@@ -66,7 +66,7 @@ function parseHeaderTags(lyricContent: string): HeaderTags {
 
 // -- Slash lists --------------------------------------------------------------
 
-// QQ delimits its lists with a slash; what a slash means is the caller's business.
+// QQ delimits with a slash; its meaning is the caller's business, but qrc.ts keys agents on its absence from members.
 function splitSlashList(value: string): string[] {
   return value
     .split("/")

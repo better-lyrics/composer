@@ -142,7 +142,7 @@ function ensureAgent(performers: string[], agents: Agent[], byKey: Map<string, A
 }
 
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
-// title line, the credits block and the singer markers.
+// credits block, the title line and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
   const lines: LooseLine[] = [];
   const creditsByKey = new Map<string, string>();
