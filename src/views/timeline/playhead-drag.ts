@@ -1,5 +1,6 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { computeScrubVelocity, DEFAULT_SCRUB_OPTS, type ScrubSample } from "@/audio/scrub-velocity";
+import { holdFrames, subscribeFrame } from "@/lib/frame-loop";
 import { computeEdgeScrollVelocity } from "@/views/timeline/edge-scroll";
 import { GUTTER_WIDTH } from "@/views/timeline/timeline-store";
 
@@ -28,6 +29,7 @@ interface PlayheadDrag {
 
 const EDGE_SCROLL_ZONE = 60;
 const EDGE_SCROLL_MAX_SPEED = 22;
+const EDGE_SCROLL_LABEL = "playhead-edge-scroll";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -53,9 +55,11 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
 
     let pointerX = e.clientX;
     let metaHeld = e.metaKey;
-    let edgeScrollRaf: number | null = null;
     let prevSample: ScrubSample | null = null;
+    let unsubscribeEdgeScroll: (() => void) | null = null;
     const controller = new AbortController();
+    // Edge auto-scroll must keep running while the pointer is held still at the edge.
+    const releaseEdgeScrollFrames = holdFrames(EDGE_SCROLL_LABEL);
 
     const tickScrubPreview = (time: number): void => {
       const curr: ScrubSample = { time, wallClockMs: performance.now() };
@@ -65,7 +69,6 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     };
 
     const tickEdgeScroll = (): void => {
-      edgeScrollRaf = requestAnimationFrame(tickEdgeScroll);
       const container = config.getScrollContainer();
       if (!container) return;
       const rect = container.getBoundingClientRect();
@@ -99,10 +102,9 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     };
 
     const cleanup = (): void => {
-      if (edgeScrollRaf !== null) {
-        cancelAnimationFrame(edgeScrollRaf);
-        edgeScrollRaf = null;
-      }
+      unsubscribeEdgeScroll?.();
+      unsubscribeEdgeScroll = null;
+      releaseEdgeScrollFrames();
       controller.abort();
       scrubPreview.stop();
       activeCleanup = null;
@@ -118,7 +120,7 @@ function createPlayheadDrag(config: PlayheadDragConfig): PlayheadDrag {
     activeCleanup = cleanup;
     document.addEventListener("mousemove", handleMouseMove, { signal: controller.signal });
     document.addEventListener("mouseup", handleMouseUp, { signal: controller.signal });
-    tickEdgeScroll();
+    unsubscribeEdgeScroll = subscribeFrame(tickEdgeScroll, EDGE_SCROLL_LABEL);
   };
 
   const dispose = (): void => {
