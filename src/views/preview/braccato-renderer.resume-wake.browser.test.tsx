@@ -195,6 +195,8 @@ describe("BraccatoRenderer resume affordance", () => {
       scrollAway(el);
       await settleFrames(probe.count);
       resumeButton(screen.container)?.click();
+      expect(useAudioStore.getState().isPlaying).toBe(true);
+      useAudioStore.setState({ isPlaying: false });
       await settleFrames(probe.count);
       expect(resumeButton(screen.container)).toBeNull();
 

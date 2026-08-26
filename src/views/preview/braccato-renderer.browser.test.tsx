@@ -340,7 +340,7 @@ describe("BraccatoRenderer invariants", () => {
     expect(probe.count()).toBe(0);
   });
 
-  it("regression #174: quiesces again once the reader is scrolled back", async () => {
+  it("regression #174: quiesces again once the reader is scrolled back and playback stops", async () => {
     const audio = new Audio();
     audio.currentTime = 14;
     useAudioStore.setState({ audioElement: audio, isPlaying: false });
@@ -354,6 +354,9 @@ describe("BraccatoRenderer invariants", () => {
 
     await screen.getByRole("button", { name: "Resume autoscroll" }).click();
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+
+    expect(useAudioStore.getState().isPlaying).toBe(true);
+    useAudioStore.getState().setIsPlaying(false);
     await probe.quiesce();
 
     await settleFrames(probe.count);
@@ -439,7 +442,17 @@ describe("BraccatoRenderer regressions", () => {
     topmostAtCentre(button)?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 
     await stepFrames(QUIET_FRAMES_AFTER_CLICK);
+    expect(useAudioStore.getState().currentTime).toBe(0);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+  });
+
+  it("regression: resuming autoscroll from the affordance starts playback again", async () => {
+    const { screen } = await showResumeAffordance();
     expect(useAudioStore.getState().isPlaying).toBe(false);
+
+    await screen.getByRole("button", { name: "Resume autoscroll" }).click();
+
+    await expect.poll(() => useAudioStore.getState().isPlaying).toBe(true);
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
   });
 

@@ -68,6 +68,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const resumeAutoscroll = useCallback(() => {
     clearResumeWake();
     elementRef.current?.renderer?.resumeAutoscroll();
+    useAudioStore.getState().setIsPlaying(true);
     // Braccato clears the affordance and scrolls back on its next tick, which this
     // component drives, so a paused reader would otherwise see nothing happen.
     wake();
@@ -77,9 +78,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     (e: Event) => {
       const detail = (e as CustomEvent<LineClickDetail>).detail;
       if (detail?.timeS == null) return;
-      const audio = useAudioStore.getState();
-      audio.seekTo(detail.timeS);
-      audio.setIsPlaying(true);
+      useAudioStore.getState().seekTo(detail.timeS);
       resumeAutoscroll();
     },
     [resumeAutoscroll],
