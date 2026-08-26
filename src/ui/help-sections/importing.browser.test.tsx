@@ -34,7 +34,7 @@ describe("ImportSection", () => {
     for (const format of SUPPORTED_LYRICS_FORMATS) {
       expect(screen.container.textContent).toContain(`${format.label} (${format.description})`);
     }
-    expect(screen.container.textContent).toContain(".qrc (Better Lyrics Portato word timing)");
+    expect(screen.container.textContent).toContain(".qrc (QQ Music word timing)");
   });
 
   it("names every registered search provider in the search description", async () => {
