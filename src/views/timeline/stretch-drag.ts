@@ -9,9 +9,9 @@ import {
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
-  selectionExtremes,
   trackWords,
 } from "@/views/timeline/stretch-targets";
+import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -50,9 +50,13 @@ function planStretchDrag(
   const targets = resolveStretchTargets(rawLines, selections);
   if (!targets) return null;
 
-  const { t0: w0, t1: w1, count } = selectionExtremes(targets);
-  // One block is a plain resize; line-synced rows never add a grip.
-  if (count < 2) return null;
+  // Single owner of "what is a grip": the dragged edge must be the selection's
+  // grip on that side. This also enforces the 2+ block rule.
+  const grips = selectionGripEdges(rawLines, selections);
+  const grip = drag.edge === "right" ? grips.right : grips.left;
+  if (!grip || grip.lineId !== drag.lineId || grip.type !== drag.type || grip.wordIndex !== drag.wordIndex) {
+    return null;
+  }
 
   const draggedTrack = targets.tracks.get(`${drag.lineId}:${drag.type}`);
   const draggedWords = draggedTrack ? trackWords(draggedTrack) : null;
@@ -63,8 +67,6 @@ function planStretchDrag(
 
   const anchor: StretchAnchor = drag.edge === "right" ? "start" : "end";
   const edgeTime = anchor === "start" ? draggedWord.end : draggedWord.begin;
-  // The grip must be the selection's own extreme on that side.
-  if (Math.abs(edgeTime - (anchor === "start" ? w1 : w0)) > STRETCH_EPS) return null;
 
   const bounds = deriveBounds(targets, { ...options, anchor });
   if (!bounds) return null;
