@@ -7,7 +7,10 @@ import { detectFileType } from "@/utils/lyrics-parsers/detect";
 const LRC_BODY = "[00:12.34]Hello world";
 const SRT_BODY = "1\n00:00:01,000 --> 00:00:02,000\nHello world";
 const TTML_BODY = '<tt xmlns="http://www.w3.org/ns/ttml"></tt>';
+const TTML_BODY_WITH_QRC_BRACKET =
+  '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="1s" end="2s">Meet me at [1000,500] tonight</p></div></body></tt>';
 const QRC_BODY = "[34059,2299]Is (34059,130)it (34189,120)";
+const SRT_BODY_WITH_QRC_BRACKET = "1\n00:00:01,000 --> 00:00:02,000\nMeet me at [1000,500] tonight";
 const PLAIN_BODY = "Is it so hard to say the same thing";
 
 // -- Tests --------------------------------------------------------------------
@@ -39,6 +42,11 @@ describe("detectFileType", () => {
       expect(detectFileType("lyrics.qrc", WANDERLUST_QRC)).toBe("qrc");
     });
 
+    it("trusts the .qrc extension on a body the content sniffer would read as plain text", () => {
+      expect(detectFileType("lyrics.qrc", PLAIN_BODY)).toBe("qrc");
+      expect(detectFileType("lyrics.qrc", "")).toBe("qrc");
+    });
+
     it("detects QRC inside a .xml file by its QrcInfos root", () => {
       expect(detectFileType("lyrics.xml", WANDERLUST_QRC)).toBe("qrc");
     });
@@ -62,8 +70,19 @@ describe("detectFileType", () => {
       expect(detectFileType("pasted", TTML_BODY)).toBe("ttml");
     });
 
-    it("does not mistake SRT for QRC", () => {
+    it("reads TTML carrying a bracketed millisecond pair in its lyrics as TTML", () => {
+      expect(detectFileType("pasted", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+      expect(detectFileType("song.xml", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+      expect(detectFileType("song.ttml", TTML_BODY_WITH_QRC_BRACKET)).toBe("ttml");
+    });
+
+    it("reads a bare SRT body as SRT", () => {
       expect(detectFileType("pasted", SRT_BODY)).toBe("srt");
+    });
+
+    it("prefers QRC over SRT for an extension-less body carrying a bracketed millisecond pair", () => {
+      expect(detectFileType("pasted", SRT_BODY_WITH_QRC_BRACKET)).toBe("qrc");
+      expect(detectFileType("subtitles.srt", SRT_BODY_WITH_QRC_BRACKET)).toBe("srt");
     });
   });
 
