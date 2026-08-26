@@ -1,6 +1,6 @@
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { cn } from "@/utils/cn";
-import { hasUsableDuration } from "@/utils/lyrics-search/query-guards";
 import { formatDuration } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SyncTypeBadge } from "@/views/lyrics-import-modal/sync-type-badge";
 import { IconLoader2 } from "@tabler/icons-react";

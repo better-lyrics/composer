@@ -1,8 +1,8 @@
 import { useQueries } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
-import { hasUsableDuration } from "@/utils/lyrics-search/query-guards";
 import { getProviders } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
