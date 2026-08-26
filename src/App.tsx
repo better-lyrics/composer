@@ -10,6 +10,7 @@ import { usePanicRecovery } from "@/hooks/usePanicRecovery";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
+import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
@@ -70,6 +71,8 @@ const AppContent: React.FC = () => {
     const timer = setTimeout(() => startTourRef.current(), 500);
     return () => clearTimeout(timer);
   }, [shouldShowTour]);
+
+  useEffect(() => wireFrameLoop(), []);
 
   usePersistence();
   useImportFromHash();
