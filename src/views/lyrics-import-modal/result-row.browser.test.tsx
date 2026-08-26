@@ -197,9 +197,9 @@ describe("ResultRow duration match", () => {
   });
 });
 
-// -- Unknown duration ---------------------------------------------------------
+// -- Absent duration ----------------------------------------------------------
 
-describe("ResultRow unknown duration", () => {
+describe("ResultRow without a usable duration", () => {
   it("renders no duration at all when the result carries none", async () => {
     const screen = await render(
       <ResultRow
@@ -228,11 +228,12 @@ describe("ResultRow unknown duration", () => {
         onSelect={noop}
       />,
     );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
     const row = screen.getByRole("option").element();
     expect(row.textContent).not.toMatch(/\d+:\d{2}/);
     expect(row.textContent).not.toMatch(/[+−]\d+s/);
-    expect(row.querySelector('[title="Matches your duration"]')).toBeNull();
-    expect(row.querySelector('[title^="Off by"]')).toBeNull();
+    expect(screen.getByTitle("Matches your duration").query()).toBeNull();
+    expect(screen.getByTitle(/^Off by/).query()).toBeNull();
   });
 
   it("still renders the track, artist, sync badge and source label", async () => {
@@ -253,20 +254,23 @@ describe("ResultRow unknown duration", () => {
     await expect.element(screen.getByText("LRCLib")).toBeInTheDocument();
   });
 
-  it("stays selectable without a duration", async () => {
-    let selects = 0;
+  it("renders nothing rather than the 0:00 sentinel for a non-finite duration", async () => {
     const screen = await render(
       <ResultRow
-        result={buildResult({ durationSec: undefined })}
+        result={buildResult({ durationSec: Number.NaN })}
         isHovered={false}
         isFocused={false}
         isSelecting={false}
+        expectedDurationSec={355}
         onHover={noop}
-        onSelect={() => selects++}
+        onSelect={noop}
       />,
     );
-    await screen.getByRole("option").click();
-    expect(selects).toBe(1);
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toContain("0:00");
+    expect(row.textContent).not.toContain("NaN");
+    expect(screen.getByTitle(/^Off by/).query()).toBeNull();
   });
 });
 

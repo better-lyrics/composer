@@ -604,7 +604,29 @@ describe("useLyricsSearch sort order", () => {
     await h.unmount();
   });
 
-  it("keeps every unknown-duration result when no expectedDurationSec is provided", async () => {
+  it("sorts a non-finite duration last within its sync-type bucket", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("not-a-number", "lrclib", "line", Number.NaN),
+          makeResultFull("far", "lrclib", "line", 400),
+          makeResultFull("exact", "lrclib", "line", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["exact", "far", "not-a-number"]);
+
+    await h.unmount();
+  });
+
+  it("does not reorder unknown-duration results when no expectedDurationSec is provided", async () => {
     track(
       fakeProviderFactory({
         name: "lrclib",

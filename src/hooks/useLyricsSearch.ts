@@ -2,6 +2,7 @@ import { useQueries } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
+import { hasUsableDuration } from "@/utils/lyrics-search/query-guards";
 import { getProviders } from "@/utils/lyrics-search/registry";
 import { LyricsSearchError, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
@@ -115,9 +116,9 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
   const sorted = merged.toSorted((a, b) => {
     const syncDiff = SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType];
     if (syncDiff !== 0) return syncDiff;
-    if (expected === undefined || !Number.isFinite(expected)) return 0;
-    if (a.durationSec === undefined) return b.durationSec === undefined ? 0 : 1;
-    if (b.durationSec === undefined) return -1;
+    if (!hasUsableDuration(expected)) return 0;
+    if (!hasUsableDuration(a.durationSec)) return hasUsableDuration(b.durationSec) ? 1 : 0;
+    if (!hasUsableDuration(b.durationSec)) return -1;
     return Math.abs(a.durationSec - expected) - Math.abs(b.durationSec - expected);
   });
 
