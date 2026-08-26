@@ -101,6 +101,49 @@ function isFiniteWord(word: WordTiming | undefined): word is WordTiming {
   return !!word && Number.isFinite(word.begin) && Number.isFinite(word.end);
 }
 
+// One owner for the "walk the finite selected word blocks across every track"
+// traversal shared by selectionExtremes, deriveBounds and selectionGripEdges.
+function* selectedFiniteWords(
+  targets: StretchTargets,
+): Generator<{ track: StretchTrack; words: WordTiming[]; idx: number; word: WordTiming }> {
+  for (const track of targets.tracks.values()) {
+    const words = trackWords(track);
+    for (const idx of track.indices) {
+      const word = words[idx];
+      if (!isFiniteWord(word)) continue;
+      yield { track, words, idx, word };
+    }
+  }
+}
+
+// Outer time bounds of the selection: t0 = earliest begin, t1 = latest end over
+// the finite selected word blocks (count of them). Word blocks define the grips;
+// a purely line-synced selection (no word blocks) falls back to its rows so the
+// plain mapping API still has extremes.
+function selectionExtremes(targets: StretchTargets): {
+  t0: number;
+  t1: number;
+  count: number;
+  hasWords: boolean;
+} {
+  let t0 = Number.POSITIVE_INFINITY;
+  let t1 = Number.NEGATIVE_INFINITY;
+  let count = 0;
+  for (const { word } of selectedFiniteWords(targets)) {
+    count++;
+    if (word.begin < t0) t0 = word.begin;
+    if (word.end > t1) t1 = word.end;
+  }
+  const hasWords = count > 0;
+  if (!hasWords) {
+    for (const line of targets.lineSynced) {
+      if (line.begin < t0) t0 = line.begin;
+      if (line.end > t1) t1 = line.end;
+    }
+  }
+  return { t0, t1, count, hasWords };
+}
+
 // -- Constraint derivation -----------------------------------------------------
 
 // Every selected item maps affinely around the anchor A: newX = A + (x - A) * k
@@ -123,28 +166,7 @@ function deriveBounds(
   // leak NaN into the factor — every bound below is checked before use.
   if (!Number.isFinite(options.duration) || !Number.isFinite(options.minWordDuration)) return null;
 
-  // Word-block extremes define the selection's sides (the grips). Line-synced
-  // rows scale along but never define the anchor; a pure line-synced selection
-  // falls back to its own extremes for the plain mapping API.
-  let t0 = Number.POSITIVE_INFINITY;
-  let t1 = Number.NEGATIVE_INFINITY;
-  let hasWords = false;
-  for (const track of targets.tracks.values()) {
-    const words = trackWords(track);
-    for (const idx of track.indices) {
-      const word = words[idx];
-      if (!isFiniteWord(word)) continue;
-      hasWords = true;
-      if (word.begin < t0) t0 = word.begin;
-      if (word.end > t1) t1 = word.end;
-    }
-  }
-  if (!hasWords) {
-    for (const line of targets.lineSynced) {
-      if (line.begin < t0) t0 = line.begin;
-      if (line.end > t1) t1 = line.end;
-    }
-  }
+  const { t0, t1 } = selectionExtremes(targets);
 
   const span = t1 - t0;
   if (!Number.isFinite(t0) || !Number.isFinite(t1) || span <= STRETCH_EPS) return null;
@@ -153,41 +175,36 @@ function deriveBounds(
   let kLo = 0;
   let kHi = Number.POSITIVE_INFINITY;
 
-  for (const track of targets.tracks.values()) {
-    const words = trackWords(track);
-    for (const idx of track.indices) {
-      const word = words[idx];
-      if (!isFiniteWord(word)) continue;
-      const b = word.begin;
-      const e = word.end;
-      if (e - b > STRETCH_EPS) kLo = Math.max(kLo, options.minWordDuration / (e - b));
-      // Nearest non-selected neighbours, skipping selected indices.
-      let leftEnd = 0;
-      for (let i = idx - 1; i >= 0; i--) {
-        if (!track.indices.has(i)) {
-          leftEnd = words[i].end;
-          break;
-        }
+  for (const { track, words, idx, word } of selectedFiniteWords(targets)) {
+    const b = word.begin;
+    const e = word.end;
+    if (e - b > STRETCH_EPS) kLo = Math.max(kLo, options.minWordDuration / (e - b));
+    // Nearest non-selected neighbours, skipping selected indices.
+    let leftEnd = 0;
+    for (let i = idx - 1; i >= 0; i--) {
+      if (!track.indices.has(i)) {
+        leftEnd = words[i].end;
+        break;
       }
-      let rightBegin = options.duration;
-      for (let i = idx + 1; i < words.length; i++) {
-        if (!track.indices.has(i)) {
-          rightBegin = words[i].begin;
-          break;
-        }
+    }
+    let rightBegin = options.duration;
+    for (let i = idx + 1; i < words.length; i++) {
+      if (!track.indices.has(i)) {
+        rightBegin = words[i].begin;
+        break;
       }
-      if (b > anchorTime + STRETCH_EPS && leftEnd > anchorTime + STRETCH_EPS) {
-        kLo = Math.max(kLo, (leftEnd - anchorTime) / (b - anchorTime));
-      }
-      if (b < anchorTime - STRETCH_EPS) {
-        kHi = Math.min(kHi, (anchorTime - leftEnd) / (anchorTime - b));
-      }
-      if (e > anchorTime + STRETCH_EPS) {
-        kHi = Math.min(kHi, (rightBegin - anchorTime) / (e - anchorTime));
-      }
-      if (e < anchorTime - STRETCH_EPS && rightBegin < anchorTime - STRETCH_EPS) {
-        kLo = Math.max(kLo, (anchorTime - rightBegin) / (anchorTime - e));
-      }
+    }
+    if (b > anchorTime + STRETCH_EPS && leftEnd > anchorTime + STRETCH_EPS) {
+      kLo = Math.max(kLo, (leftEnd - anchorTime) / (b - anchorTime));
+    }
+    if (b < anchorTime - STRETCH_EPS) {
+      kHi = Math.min(kHi, (anchorTime - leftEnd) / (anchorTime - b));
+    }
+    if (e > anchorTime + STRETCH_EPS) {
+      kHi = Math.min(kHi, (rightBegin - anchorTime) / (e - anchorTime));
+    }
+    if (e < anchorTime - STRETCH_EPS && rightBegin < anchorTime - STRETCH_EPS) {
+      kLo = Math.max(kLo, (anchorTime - rightBegin) / (anchorTime - e));
     }
   }
 
@@ -209,5 +226,13 @@ function deriveBounds(
 
 // -- Exports -------------------------------------------------------------------
 
-export { deriveBounds, isFiniteWord, resolveStretchTargets, STRETCH_EPS, trackWords };
-export type { StretchAnchor, StretchClampOptions, StretchSelectionRef };
+export {
+  deriveBounds,
+  isFiniteWord,
+  resolveStretchTargets,
+  selectedFiniteWords,
+  selectionExtremes,
+  STRETCH_EPS,
+  trackWords,
+};
+export type { StretchAnchor, StretchClampOptions, StretchSelectionRef, StretchTargets };

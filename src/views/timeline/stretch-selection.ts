@@ -4,6 +4,7 @@ import {
   STRETCH_EPS,
   type StretchClampOptions,
   type StretchSelectionRef,
+  type StretchTargets,
   deriveBounds,
   resolveStretchTargets,
   trackWords,
@@ -16,30 +17,13 @@ interface StretchResult {
   updates: Array<{ id: string; updates: Partial<LyricLine> }>;
 }
 
-// -- Public API ----------------------------------------------------------------
+// -- Mapping -------------------------------------------------------------------
 
-// Maps the selected words (and any line-synced rows riding along) affinely
-// around the anchor: newX = anchorTime + (x - anchorTime) * k. The requested
-// factor is clamped to the feasible interval derived from non-selected
-// neighbours, minWordDuration and the audio bounds.
-function stretchSelections(
-  rawLines: LyricLine[],
-  selections: ReadonlyArray<StretchSelectionRef>,
-  requestedFactor: number,
-  options: StretchClampOptions,
-): StretchResult {
-  const noop: StretchResult = { appliedFactor: 1, updates: [] };
-  if (!Number.isFinite(requestedFactor) || requestedFactor <= 0) return noop;
-
-  const targets = resolveStretchTargets(rawLines, selections);
-  if (!targets) return noop;
-  const bounds = deriveBounds(targets, options);
-  if (!bounds) return noop;
-
-  const k = Math.min(Math.max(requestedFactor, bounds.kLo), bounds.kHi);
-  if (!Number.isFinite(k) || Math.abs(k - 1) < STRETCH_EPS) return noop;
-
-  const mapTime = (x: number) => bounds.anchorTime + (x - bounds.anchorTime) * k;
+// Applies the affine map newX = anchorTime + (x - anchorTime) * k to already
+// resolved targets. Pure geometry, no resolve and no clamp, so a drag can call
+// it every frame with only k changing.
+function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: number): StretchResult["updates"] {
+  const mapTime = (x: number) => anchorTime + (x - anchorTime) * k;
 
   // Merge all track updates of one line into a single entry so
   // updateLinesWithHistory never receives duplicate ids.
@@ -71,9 +55,34 @@ function stretchSelections(
     });
   }
 
-  return { appliedFactor: k, updates: [...updatesByLine.values()] };
+  return [...updatesByLine.values()];
+}
+
+// -- Public API ----------------------------------------------------------------
+
+// Maps the selected words (and any line-synced rows riding along) affinely
+// around the anchor. The requested factor is clamped to the feasible interval
+// derived from non-selected neighbours, minWordDuration and the audio bounds.
+function stretchSelections(
+  rawLines: LyricLine[],
+  selections: ReadonlyArray<StretchSelectionRef>,
+  requestedFactor: number,
+  options: StretchClampOptions,
+): StretchResult {
+  const noop: StretchResult = { appliedFactor: 1, updates: [] };
+  if (!Number.isFinite(requestedFactor) || requestedFactor <= 0) return noop;
+
+  const targets = resolveStretchTargets(rawLines, selections);
+  if (!targets) return noop;
+  const bounds = deriveBounds(targets, options);
+  if (!bounds) return noop;
+
+  const k = Math.min(Math.max(requestedFactor, bounds.kLo), bounds.kHi);
+  if (!Number.isFinite(k) || Math.abs(k - 1) < STRETCH_EPS) return noop;
+
+  return { appliedFactor: k, updates: mapStretchTargets(targets, k, bounds.anchorTime) };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { stretchSelections };
+export { mapStretchTargets, stretchSelections };

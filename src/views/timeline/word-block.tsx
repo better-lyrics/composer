@@ -26,6 +26,8 @@ interface WordBlockProps {
   rightHighlighted?: boolean;
   leftConjoined?: boolean;
   rightConjoined?: boolean;
+  showLeftGrip?: boolean;
+  showRightGrip?: boolean;
   onClick: (e: React.MouseEvent) => void;
   onResizeStart: (edge: "left" | "right", startX: number) => void;
   onEdgeHover?: (edge: "left" | "right", hovering: boolean) => void;
@@ -62,6 +64,8 @@ const WordBlock: React.FC<WordBlockProps> = ({
   rightHighlighted,
   leftConjoined,
   rightConjoined,
+  showLeftGrip,
+  showRightGrip,
   onClick,
   onResizeStart,
   onEdgeHover,
@@ -160,11 +164,16 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute left-0 top-0 bottom-0 w-2 z-10 hover:bg-composer-text/10",
-          syllablePosition === "middle" || syllablePosition === "last" || leftConjoined
-            ? "cursor-col-resize"
-            : "cursor-ew-resize",
-          leftHighlighted && "bg-composer-text/10",
+          "absolute left-0 top-0 bottom-0 w-2 z-20",
+          showLeftGrip
+            ? "cursor-ew-resize rounded-l-md bg-composer-accent"
+            : [
+                "z-10 hover:bg-composer-text/10",
+                syllablePosition === "middle" || syllablePosition === "last" || leftConjoined
+                  ? "cursor-col-resize"
+                  : "cursor-ew-resize",
+                leftHighlighted && "bg-composer-text/10",
+              ],
         )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}
@@ -180,11 +189,16 @@ const WordBlock: React.FC<WordBlockProps> = ({
         aria-orientation="vertical"
         aria-hidden="true"
         className={cn(
-          "absolute right-0 top-0 bottom-0 w-2 z-10 hover:bg-composer-text/10",
-          syllablePosition === "first" || syllablePosition === "middle" || rightConjoined
-            ? "cursor-col-resize"
-            : "cursor-ew-resize",
-          rightHighlighted && "bg-composer-text/10",
+          "absolute right-0 top-0 bottom-0 w-2 z-20",
+          showRightGrip
+            ? "cursor-ew-resize rounded-r-md bg-composer-accent"
+            : [
+                "z-10 hover:bg-composer-text/10",
+                syllablePosition === "first" || syllablePosition === "middle" || rightConjoined
+                  ? "cursor-col-resize"
+                  : "cursor-ew-resize",
+                rightHighlighted && "bg-composer-text/10",
+              ],
         )}
         onMouseDown={handleResizeStart}
         onPointerDown={(e) => e.stopPropagation()}

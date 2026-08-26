@@ -5,7 +5,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { selfKey } from "@/views/timeline/snap";
 import { planStretchDrag } from "@/views/timeline/stretch-drag";
-import { stretchSelections } from "@/views/timeline/stretch-selection";
+import { mapStretchTargets, stretchSelections } from "@/views/timeline/stretch-selection";
 import { STRETCH_EPS } from "@/views/timeline/stretch-targets";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -103,6 +103,12 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
 
   const tryStart = useCallback(
     ({ lineId, type, wordIndex, edge, startX }: StretchDragArgs): boolean => {
+      // A second pointerdown before the first gesture finished (multi-touch,
+      // stuck pointer) tears the first gesture down first, so the snapshot below
+      // captures committed state, not the prior gesture's transient preview.
+      cleanupRef.current?.();
+      cleanupRef.current = null;
+
       const snapshotLines = useProjectStore.getState().lines;
       const selection = useTimelineStore.getState().selectedWords;
       const options = {
@@ -112,14 +118,8 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);
       if (!plan) return false;
 
-      // A second pointerdown before the first gesture finished (multi-touch,
-      // stuck pointer) must tear down the first gesture first — same re-entry
-      // guard as use-timeline-dnd.
-      cleanupRef.current?.();
-      cleanupRef.current = null;
-
       const zoom = useTimelineStore.getState().zoom;
-      const { anchor, anchorTime, edgeTime, minFactor, maxFactor } = plan;
+      const { anchor, anchorTime, edgeTime, minFactor, maxFactor, targets } = plan;
       const selfIds = new Set(selection.map((s) => selfKey(s.lineId, s.wordIndex, s.type)));
 
       // Factor of distances from the anchor implied by a dragged-edge time.
@@ -152,8 +152,14 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       let lastWritten: LyricLine[] | null = null;
 
       function preview(k: number): void {
-        const result = stretchSelections(snapshotLines, selection, k, { ...options, anchor });
-        lastWritten = applyStretchUpdates(snapshotLines, result.updates);
+        // An external writer (undo, import, project clear) replaced lines since
+        // our last preview: abandon so continued dragging never clobbers it.
+        if (lastWritten !== null && useProjectStore.getState().lines !== lastWritten) {
+          finish(false);
+          return;
+        }
+        const updates = mapStretchTargets(targets, k, anchorTime);
+        lastWritten = applyStretchUpdates(snapshotLines, updates);
         writePreviewLines(lastWritten);
       }
 

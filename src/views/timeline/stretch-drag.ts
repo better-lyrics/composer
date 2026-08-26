@@ -5,9 +5,11 @@ import {
   type StretchAnchor,
   type StretchClampOptions,
   type StretchSelectionRef,
+  type StretchTargets,
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
+  selectionExtremes,
   trackWords,
 } from "@/views/timeline/stretch-targets";
 
@@ -28,6 +30,8 @@ interface StretchDragPlan {
   edgeTime: number;
   minFactor: number;
   maxFactor: number;
+  // Resolved once here; the drag remaps these every frame instead of re-resolving.
+  targets: StretchTargets;
 }
 
 // -- Public API ----------------------------------------------------------------
@@ -46,19 +50,7 @@ function planStretchDrag(
   const targets = resolveStretchTargets(rawLines, selections);
   if (!targets) return null;
 
-  let count = 0;
-  let w0 = Number.POSITIVE_INFINITY;
-  let w1 = Number.NEGATIVE_INFINITY;
-  for (const track of targets.tracks.values()) {
-    const words = trackWords(track);
-    for (const idx of track.indices) {
-      const word = words[idx];
-      if (!isFiniteWord(word)) continue;
-      count++;
-      if (word.begin < w0) w0 = word.begin;
-      if (word.end > w1) w1 = word.end;
-    }
-  }
+  const { t0: w0, t1: w1, count } = selectionExtremes(targets);
   // One block is a plain resize; line-synced rows never add a grip.
   if (count < 2) return null;
 
@@ -86,6 +78,7 @@ function planStretchDrag(
     edgeTime,
     minFactor: bounds.kLo,
     maxFactor: bounds.kHi,
+    targets,
   };
 }
 
