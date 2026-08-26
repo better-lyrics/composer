@@ -189,6 +189,12 @@ describe("convertViaParser", () => {
       expect(first.lines.map(({ id, ...rest }) => rest)).toEqual(second.lines.map(({ id, ...rest }) => rest));
     });
 
+    it("names the default agent Lead in the emitted TTML", () => {
+      const result = convertViaParser(LRC_CONVERSION, { input: ELRC_INPUT, filename: "input.lrc" });
+
+      expect(expectConverted(result).ttml).toContain("<ttm:name>Lead</ttm:name>");
+    });
+
     it("leaves the conversion config untouched", () => {
       const conversion: ParserConversion = { ...LRC_CONVERSION };
       convertViaParser(conversion, { input: ELRC_INPUT, filename: "input.lrc" });
