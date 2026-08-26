@@ -406,12 +406,23 @@ describe("isQrcTitleLine", () => {
 
 describe("readSingerMarker", () => {
   it("reads a name from a fullwidth-colon marker", () => {
-    expect(readSingerMarker("The Weeknd：")).toBe("The Weeknd");
-    expect(readSingerMarker("Fox the Fox：")).toBe("Fox the Fox");
+    expect(readSingerMarker("The Weeknd：")).toEqual(["The Weeknd"]);
+    expect(readSingerMarker("Fox the Fox：")).toEqual(["Fox the Fox"]);
   });
 
   it("reads a name from an ASCII-colon marker", () => {
-    expect(readSingerMarker("The Weeknd:")).toBe("The Weeknd");
+    expect(readSingerMarker("The Weeknd:")).toEqual(["The Weeknd"]);
+  });
+
+  it("reads every performer a slash-separated marker names", () => {
+    expect(readSingerMarker("Drake/Travis Scott：")).toEqual(["Drake", "Travis Scott"]);
+    expect(readSingerMarker("Big Hawk/Swae Lee/Travis Scott：")).toEqual(["Big Hawk", "Swae Lee", "Travis Scott"]);
+  });
+
+  it("keeps a period a performer name carries, inside it or at its end", () => {
+    expect(readSingerMarker("will.i.am：")).toEqual(["will.i.am"]);
+    expect(readSingerMarker("Ph.D：")).toEqual(["Ph.D"]);
+    expect(readSingerMarker("Wait.：")).toEqual(["Wait."]);
   });
 
   describe("edge cases", () => {
@@ -424,12 +435,36 @@ describe("readSingerMarker", () => {
     });
 
     it("accepts a name right on the length bound", () => {
-      expect(readSingerMarker(`${"a".repeat(40)}：`)).toBe("a".repeat(40));
+      expect(readSingerMarker(`${"a".repeat(40)}：`)).toEqual(["a".repeat(40)]);
+    });
+
+    it("bounds the length of each performer rather than of the marker", () => {
+      const two = `${"a".repeat(40)}/${"b".repeat(40)}`;
+      expect(readSingerMarker(`${two}：`)).toEqual(["a".repeat(40), "b".repeat(40)]);
+      expect(readSingerMarker(`Drake/${"a".repeat(41)}：`)).toBeNull();
+    });
+
+    it("bounds how many performers one marker may name", () => {
+      const eight = Array.from({ length: 8 }, (_, index) => `P${index}`);
+      expect(readSingerMarker(`${eight.join("/")}：`)).toEqual(eight);
+      expect(readSingerMarker(`${[...eight, "P8"].join("/")}：`)).toBeNull();
+    });
+
+    it("names a performer once however often one marker repeats them", () => {
+      expect(readSingerMarker("Drake/Drake：")).toEqual(["Drake"]);
+      expect(readSingerMarker("Drake/DRAKE：")).toEqual(["Drake"]);
+      expect(readSingerMarker("Drake/Travis Scott/Drake：")).toEqual(["Drake", "Travis Scott"]);
     });
 
     it("rejects a bare colon", () => {
       expect(readSingerMarker("：")).toBeNull();
       expect(readSingerMarker("  ：")).toBeNull();
+    });
+
+    it("rejects a marker whose slashes name nobody", () => {
+      expect(readSingerMarker("/：")).toBeNull();
+      expect(readSingerMarker("///：")).toBeNull();
+      expect(readSingerMarker(" / ：")).toBeNull();
     });
 
     it("rejects a line that does not end in a colon", () => {
@@ -439,20 +474,56 @@ describe("readSingerMarker", () => {
 
     it("rejects a name that carries a second colon", () => {
       expect(readSingerMarker("Verse 1：The Weeknd：")).toBeNull();
+      expect(readSingerMarker("Drake/Verse 1：Travis Scott：")).toBeNull();
     });
 
-    it("rejects every flavour of sentence punctuation", () => {
-      for (const name of ["Wait.", "Wait,", "Wait!", "Wait?", "Wait;", "等。", "等，", "等！", "等？"]) {
+    it("rejects every flavour of sentence punctuation the period aside", () => {
+      for (const name of ["Wait,", "Wait!", "Wait?", "Wait;", "等。", "等，", "等！", "等？"]) {
         expect(readSingerMarker(`${name}：`)).toBeNull();
       }
     });
 
     it("accepts a short CJK performer name", () => {
-      expect(readSingerMarker("周杰倫：")).toBe("周杰倫");
+      expect(readSingerMarker("周杰倫：")).toEqual(["周杰倫"]);
+      expect(readSingerMarker("周杰倫/方文山：")).toEqual(["周杰倫", "方文山"]);
     });
 
-    it("trims whitespace around the marker and the name", () => {
-      expect(readSingerMarker("  The Weeknd  ：  ")).toBe("The Weeknd");
+    it("trims whitespace around the marker and around each performer", () => {
+      expect(readSingerMarker("  The Weeknd  ：  ")).toEqual(["The Weeknd"]);
+      expect(readSingerMarker("  Drake /  Travis Scott ：")).toEqual(["Drake", "Travis Scott"]);
+    });
+
+    it("drops empty performers from doubled or trailing slashes", () => {
+      expect(readSingerMarker("Drake//Travis Scott：")).toEqual(["Drake", "Travis Scott"]);
+      expect(readSingerMarker("Drake/：")).toEqual(["Drake"]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("never returns an empty or whitespace-only performer name", () => {
+      const performers = readSingerMarker("Drake/ /Travis Scott//Swae Lee：");
+      expect(performers).toHaveLength(3);
+      for (const performer of performers ?? []) {
+        expect(performer.trim().length).toBeGreaterThan(0);
+      }
+    });
+
+    it("returns a fresh array the caller may keep", () => {
+      const first = readSingerMarker("Drake/Travis Scott：");
+      const second = readSingerMarker("Drake/Travis Scott：");
+      expect(first).toEqual(second);
+      expect(first).not.toBe(second);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: reads the SICKO MODE marker whose performer name is an initialism", () => {
+      expect(readSingerMarker("Travis Scott/The Notorious B.I.G.：")).toEqual(["Travis Scott", "The Notorious B.I.G."]);
+    });
+
+    it("regression: refuses to read a slash-heavy line as a fifty-strong group", () => {
+      const many = Array.from({ length: 50 }, (_, index) => `P${index}`).join("/");
+      expect(readSingerMarker(`${many}：`)).toBeNull();
     });
   });
 

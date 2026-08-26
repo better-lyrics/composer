@@ -110,12 +110,12 @@ const WANDERLUST_QRC = `<?xml version="1.0" encoding="utf-8"?>
 </QrcInfos>`;
 
 /**
- * The opening of the QRC document QQ Music serves for Travis Scott "SICKO MODE",
- * captured live from lyrics-api.boidu.dev/qq/getLyrics on 2026-08-26. Verbatim
- * apart from two cuts: the "Drake：" singer marker that follows the credits, and
- * every lyric line past the second. Credits it with the agent-noun prefixes
- * ("Lyricist：", "Composer：") rather than the "X by" forms, over a list of
- * mixed-case complete names.
+ * The QRC document QQ Music serves for Travis Scott "SICKO MODE", captured live
+ * from lyrics-api.boidu.dev/qq/getLyrics on 2026-08-26. Verbatim apart from the
+ * lyric lines: all ten singer markers are kept in document order, each followed
+ * by one or two of the lines it marks. Credits it with the agent-noun
+ * prefixes ("Lyricist：", "Composer：") rather than the "X by" forms, over a list
+ * of mixed-case complete names, and names its singers one and several at a time.
  */
 const SICKO_MODE_QRC = `<?xml version="1.0" encoding="utf-8"?>
 <QrcInfos>
@@ -129,8 +129,27 @@ const SICKO_MODE_QRC = `<?xml version="1.0" encoding="utf-8"?>
 [0,1730]SICKO(0,240) (240,48)MODE(288,192) (480,48)((528,48)Explicit(576,385))(961,48) (1009,48)-(1057,48) (1105,48)Travis(1153,288) (1441,48)Scott(1489,241)
 [1737,3403]Lyricist：(1737,217)Jacques (1954,201)Webster/(2155,190)Aubrey (2345,208)Graham/(2553,176)Chauncey (2729,226)Hollis/(2955,216)Ozan (3171,190)Yildirim/(3361,192)Cydel (3553,192)Young/(3745,200)Mirsad (3945,200)Dervic/(4145,208)BryTavious (4353,176)Chambers/(4529,217)Mike (4746,191)Dean(4937,203)
 [5140,13381]Composer：(5140,168)Jacques (5308,181)Webster/(5489,194)Aubrey (5683,174)Graham/(5857,184)Chauncey (6041,184)Hollis/(6225,209)Ozan (6434,187)Yildirim/(6621,180)Cydel (6801,200)Young/(7001,179)Mirsad (7180,214)Dervic/(7394,199)BryTavious (7593,249)Chambers/(7842,263)Mike (8105,304)Dean(8409,1036)
+[18521,1952]Drake：(18521,1952)
 [20473,7278]Astro (20473,422)yeah(24007,233)
 [27751,2778]Sun (27751,27)is (27778,255)down (28033,409)freezin' (29050,367)cold(29417,361)
+[59461,3880]Travis (59461,185)Scott/(59646,186)The (59832,181)Notorious (60013,123)B.(60136,295)I.(60431,224)G.：(60655,829)
+[63341,3734]Woo (63341,68)made (64521,200)this (64721,199)here (64920,240)with (65160,176)all (65336,226)the (65562,166)ice (65728,253)on (65981,217)in (66198,199)the (66397,200)booth(66597,230)
+[97885,665]Big (97885,501)Hawk/(98386,32)Swae (98418,33)Lee/(98451,33)Travis (98484,34)Scott：(98518,32)
+[98550,2081]Some-(98550,33)some-(98583,33)some (98616,33)someone (98649,104)said(98753,282)
+[112593,982]Travis (112593,176)Scott/(112769,169)Swae (112938,184)Lee/(113122,161)Luke：(113283,1)
+[116829,3338]Stacey (116829,647)Dash (117476,464)most (117940,216)of (118156,200)these (118356,216)girls (118572,208)ain't (118780,192)got (118972,192)a (119164,192)clue(119356,81)
+[159812,720]Big (159812,200)Hawk/(160012,184)Swae (160196,168)Lee：(160364,168)
+[160532,343]Someone (160532,168)said(160700,175)
+[168650,12390]Drake/(168650,240)Travis (168890,224)Scott：(169114,394)
+[181040,1640]Yeah(181040,267)
+[188840,1338]Drake/(188840,224)Travis (189064,193)Scott：(189257,121)
+[190178,1993]She's (190178,201)in (190379,175)love (190554,145)with (190699,191)who (190890,169)I (191059,192)am(191251,224)
+[205833,433]Drake/(205833,136)Travis (205969,144)Scott：(206113,153)
+[206266,1348]Slept (206266,162)through (206428,208)the (206636,176)flight (206812,304)ayy(207116,202)
+[250667,1472]Drake/(250667,256)Travis (250923,433)Scott：(251356,783)
+[252139,1952]She's (252139,201)in (252340,191)love (252531,184)with (252715,184)who (252899,186)I (253085,175)am(253260,231)
+[268917,311]Travis (268917,159)Scott：(269076,152)
+[269228,3382]Yeah (269228,281)passed (269509,217)the (269726,207)dawgs (269933,203)a (270136,212)celly (270348,303)sendin' (270651,216)texts (270867,573)ain't (271440,224)sendin' (271664,200)kites (271864,339)yeah(272203,334)
 "/>
 </LyricInfo>
 </QrcInfos>`;

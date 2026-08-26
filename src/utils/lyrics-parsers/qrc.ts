@@ -120,16 +120,24 @@ function agentIdAt(index: number): string {
   return `v${index + 1}`;
 }
 
-// Markers are hand-authored, so casing drifts within one document. The key is
-// folded; the display name stays as the document first wrote it.
-function ensureAgent(name: string, agents: Agent[], byName: Map<string, Agent>): Agent {
-  const key = name.toLowerCase();
-  const existing = byName.get(key);
+// A line carries one agent id, so a combination is an agent of its own, keyed by its sorted
+// case-folded members joined on the slash no member can contain: casing drift and a reordering
+// both resolve to one agent, while the display name keeps the order the document first wrote.
+function ensureAgent(performers: string[], agents: Agent[], byKey: Map<string, Agent>): Agent {
+  const key = performers
+    .map((performer) => performer.toLowerCase())
+    .toSorted()
+    .join("/");
+  const existing = byKey.get(key);
   if (existing) return existing;
 
-  const agent: Agent = { id: agentIdAt(agents.length), type: "person", name };
+  const agent: Agent = {
+    id: agentIdAt(agents.length),
+    type: performers.length > 1 ? "group" : "person",
+    name: performers.join(", "),
+  };
   agents.push(agent);
-  byName.set(key, agent);
+  byKey.set(key, agent);
   return agent;
 }
 
@@ -139,7 +147,7 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
   const lines: LooseLine[] = [];
   const creditsByKey = new Map<string, string>();
   const agents: Agent[] = [];
-  const agentsByName = new Map<string, Agent>();
+  const agentsByKey = new Map<string, Agent>();
   let currentAgentId = agentIdAt(0);
 
   for (const line of parsed) {
@@ -157,14 +165,14 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
     }
     if (isQrcTitleLine(line.plainText, headerMetadata)) continue;
 
-    const singer = readSingerMarker(line.plainText);
-    if (singer !== null) {
+    const performers = readSingerMarker(line.plainText);
+    if (performers !== null) {
       // Lines already emitted predate every marker, so they belong to an unnamed
       // voice rather than to the first singer the document happens to announce.
       if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
-        ensureAgent(DEFAULT_AGENT_NAME, agents, agentsByName);
+        ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
       }
-      currentAgentId = ensureAgent(singer, agents, agentsByName).id;
+      currentAgentId = ensureAgent(performers, agents, agentsByKey).id;
       continue;
     }
 

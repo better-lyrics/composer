@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
 import { useSettingsStore } from "@/stores/settings";
@@ -21,8 +22,38 @@ const CHINESE_CREDIT_PREFIXES = [
   ["制作人", "qrcProducer"],
   ["製作人", "qrcProducer"],
 ] as const;
+// The ten markers SICKO_MODE_QRC carries name seven distinct combinations.
+const SICKO_MODE_AGENTS: Agent[] = [
+  { id: "v1", type: "person", name: "Drake" },
+  { id: "v2", type: "group", name: "Travis Scott, The Notorious B.I.G." },
+  { id: "v3", type: "group", name: "Big Hawk, Swae Lee, Travis Scott" },
+  { id: "v4", type: "group", name: "Travis Scott, Swae Lee, Luke" },
+  { id: "v5", type: "group", name: "Big Hawk, Swae Lee" },
+  { id: "v6", type: "group", name: "Drake, Travis Scott" },
+  { id: "v7", type: "person", name: "Travis Scott" },
+];
+const SICKO_MODE_AGENT_IDS = ["v1", "v1", "v2", "v3", "v4", "v5", "v6", "v6", "v6", "v6", "v7"];
 
 // -- Helpers ------------------------------------------------------------------
+
+// Every lyric line SICKO_MODE_QRC keeps, in document order. QQ tagged
+// "Some-some-some" as syllables of one token, so split characters land there.
+function sickoModeLyrics(): string[] {
+  const splitChar = getSplitCharacter();
+  return [
+    "Astro yeah",
+    "Sun is down freezin' cold",
+    "Woo made this here with all the ice on in the booth",
+    `Some-${splitChar}some-${splitChar}some someone said`,
+    "Stacey Dash most of these girls ain't got a clue",
+    "Someone said",
+    "Yeah",
+    "She's in love with who I am",
+    "Slept through the flight ayy",
+    "She's in love with who I am",
+    "Yeah passed the dawgs a celly sendin' texts ain't sendin' kites yeah",
+  ];
+}
 
 function withoutLineId(line: LyricLine): Omit<LyricLine, "id"> {
   const { id, ...rest } = line;
@@ -210,7 +241,7 @@ describe("parseQrc", () => {
 
     it("drops an agent-noun credit line and the title line from the lyrics", () => {
       const result = parseQrc(SICKO_MODE_QRC);
-      expect(result.lines.map((line) => line.text)).toEqual(["Astro yeah", "Sun is down freezin' cold"]);
+      expect(result.lines.map((line) => line.text)).toEqual(sickoModeLyrics());
     });
 
     it("drops a credit line that names nobody without inventing an empty entry", () => {
@@ -359,6 +390,103 @@ describe("parseQrc", () => {
       expect(result.agents).toBeUndefined();
       expect(result.lines).toEqual([]);
       expect(result.metadata.extra?.qrcLyricsBy).toBe("TESFAYE/ABEL");
+    });
+
+    it("mints one group agent for a marker that names several performers", () => {
+      const result = parseQrc("[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+    });
+
+    it("names every singer combination SICKO MODE marks", () => {
+      expect(parseQrc(SICKO_MODE_QRC).agents).toEqual(SICKO_MODE_AGENTS);
+    });
+
+    it("attributes every SICKO MODE line to the combination marked before it", () => {
+      const result = parseQrc(SICKO_MODE_QRC);
+      expect(result.lines.map((line) => line.agentId)).toEqual(SICKO_MODE_AGENT_IDS);
+    });
+
+    it("shares one agent between every repeat of a combination", () => {
+      const result = parseQrc(SICKO_MODE_QRC);
+      const duo = result.agents?.filter((agent) => agent.name === "Drake, Travis Scott");
+      expect(duo).toHaveLength(1);
+      expect(result.lines.filter((line) => line.agentId === duo?.[0].id)).toHaveLength(4);
+    });
+
+    it("treats combinations that differ only in case as one singer", () => {
+      const result = parseQrc(
+        "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]DRAKE/TRAVIS SCOTT：(3000,500)\n[4000,500]Two(4000,500)",
+      );
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+    });
+
+    it("treats a reordered combination as the same singer", () => {
+      const result = parseQrc(
+        "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Travis Scott/Drake：(3000,500)\n[4000,500]Two(4000,500)",
+      );
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+    });
+
+    it("keeps two combinations apart when only the split points differ", () => {
+      const result = parseQrc(
+        "[1000,500]Drake Travis/Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Drake/Travis Scott：(3000,500)\n[4000,500]Two(4000,500)",
+      );
+      expect(result.agents).toEqual([
+        { id: "v1", type: "group", name: "Drake Travis, Scott" },
+        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("gives lines before a combination marker the default voice", () => {
+      const result = parseQrc(
+        "[1000,500]Intro (1000,500)\n[2000,500]Drake/Travis Scott：(2000,500)\n[3000,500]Verse(3000,500)",
+      );
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
+        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("keeps a solo marker apart from a combination that names the same performer", () => {
+      const result = parseQrc(
+        "[1000,500]Drake：(1000,500)\n[2000,500]One(2000,500)\n[3000,500]Drake/Travis Scott：(3000,500)\n[4000,500]Two(4000,500)",
+      );
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: "Drake" },
+        { id: "v2", type: "group", name: "Drake, Travis Scott" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("reads a combination QQ tagged one word at a time", () => {
+      const result = parseQrc("[1000,500]Drake/(1000,150)Travis (1150,150)Scott：(1300,200)\n[2000,500]Hi(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
+    });
+
+    describe("regressions", () => {
+      it("regression: reads a marker whose performer name is an initialism instead of keeping it as a lyric", () => {
+        const result = parseQrc(SICKO_MODE_QRC);
+        expect(result.lines.map((line) => line.text)).not.toContain("Travis Scott/The Notorious B.I.G.：");
+        expect(result.agents).toContainEqual({
+          id: "v2",
+          type: "group",
+          name: "Travis Scott, The Notorious B.I.G.",
+        });
+      });
+
+      it("regression: never leaves a marker line in the lyrics of a document that marks its singers", () => {
+        const texts = parseQrc(SICKO_MODE_QRC).lines.map((line) => line.text);
+        expect(texts).not.toHaveLength(0);
+        for (const text of texts) {
+          expect(text.endsWith("：")).toBe(false);
+        }
+      });
     });
   });
 

@@ -9,9 +9,11 @@ const CREDIT_PREFIX_REGEX =
 const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
 const LATIN_LETTER_REGEX = /[a-z]/i;
 const MARKER_MAX_NAME_LENGTH = 40;
+const MARKER_MAX_PERFORMERS = 8;
 const TRAILING_COLON_REGEX = /[:：]$/;
 const COLON_REGEX = /[:：]/;
-const SENTENCE_PUNCTUATION_REGEX = /[.,!?;。，！？]/;
+// The ASCII period is absent on purpose: an initialism carries one, as in "The Notorious B.I.G.".
+const MARKER_REJECTED_PUNCTUATION_REGEX = /[,!?;。，！？]/;
 const FALLBACK_CREDIT_KEY = "qrcCredits";
 const CREDIT_EXTRA_KEYS = new Map([
   ["lyrics", "qrcLyricsBy"],
@@ -62,6 +64,16 @@ function parseHeaderTags(lyricContent: string): HeaderTags {
   return { metadata, offsetSeconds };
 }
 
+// -- Slash lists --------------------------------------------------------------
+
+// QQ delimits its lists with a slash; what a slash means is the caller's business.
+function splitSlashList(value: string): string[] {
+  return value
+    .split("/")
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+}
+
 // -- Credits ------------------------------------------------------------------
 
 function isCreditLine(text: string): boolean {
@@ -98,10 +110,7 @@ function titleCaseIfAllCaps(token: string): string {
 // QQ writes SURNAME/GIVENNAME only in all caps, so the casing of the list as a whole says which
 // convention is in force. Off that convention, both re-casing a name and pairing one invent people.
 function decodeCredits(value: string): string[] {
-  const tokens = value
-    .split("/")
-    .map((token) => token.trim())
-    .filter((token) => token.length > 0);
+  const tokens = splitSlashList(value);
 
   const latinTokens = tokens.filter((token) => LATIN_LETTER_REGEX.test(token));
   const allCapsConvention = latinTokens.length > 0 && latinTokens.every(isAllCapsLatinToken);
@@ -131,14 +140,28 @@ function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
 
 // -- Singer markers -----------------------------------------------------------
 
-function readSingerMarker(text: string): string | null {
+function dedupeIgnoringCase(names: string[]): string[] {
+  const byFoldedName = new Map<string, string>();
+  for (const name of names) {
+    const key = name.toLowerCase();
+    if (!byFoldedName.has(key)) byFoldedName.set(key, name);
+  }
+  return [...byFoldedName.values()];
+}
+
+// The length bound is per performer: a duet marker is no less a marker for being twice as long.
+// The count bound replaces the ceiling that per-performer lengths alone no longer impose.
+function readSingerMarker(text: string): string[] | null {
   const trimmed = text.trim();
   if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
 
-  const name = trimmed.slice(0, -1).trim();
-  if (name.length === 0 || name.length > MARKER_MAX_NAME_LENGTH) return null;
-  if (SENTENCE_PUNCTUATION_REGEX.test(name) || COLON_REGEX.test(name)) return null;
-  return name;
+  const body = trimmed.slice(0, -1);
+  if (MARKER_REJECTED_PUNCTUATION_REGEX.test(body) || COLON_REGEX.test(body)) return null;
+
+  const performers = dedupeIgnoringCase(splitSlashList(body));
+  if (performers.length === 0 || performers.length > MARKER_MAX_PERFORMERS) return null;
+  if (performers.some((performer) => performer.length > MARKER_MAX_NAME_LENGTH)) return null;
+  return performers;
 }
 
 // -- Exports ------------------------------------------------------------------
