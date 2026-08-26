@@ -2,7 +2,7 @@ import type { SyncType } from "@/domain/lyrics-search/sync-type";
 
 // -- Types --------------------------------------------------------------------
 
-type ProviderName = "lrclib" | "binimum" | "boidu-lyrics" | "qq";
+type ProviderName = "lrclib" | "binimum" | "boidu-lyrics" | "portato";
 
 type LyricsSearchPayload =
   | { kind: "lrc"; synced: string | null; plain: string | null }

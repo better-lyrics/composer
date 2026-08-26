@@ -34,7 +34,7 @@ describe("ImportSection", () => {
     for (const format of SUPPORTED_LYRICS_FORMATS) {
       expect(screen.container.textContent).toContain(`${format.label} (${format.description})`);
     }
-    expect(screen.container.textContent).toContain(".qrc (QQ Music word timing)");
+    expect(screen.container.textContent).toContain(".qrc (Better Lyrics Portato word timing)");
   });
 
   it("names every registered search provider in the search description", async () => {
@@ -48,7 +48,7 @@ describe("ImportSection", () => {
   it("joins the provider list with an Oxford comma", async () => {
     const screen = await render(<ImportSection />);
     expect(findSearchListItem(screen.container).textContent).toContain(
-      "queries LRCLib, Binimum, Better Lyrics, and QQ Music in parallel",
+      "queries LRCLib, Binimum, Better Lyrics, and Better Lyrics Portato in parallel",
     );
   });
 

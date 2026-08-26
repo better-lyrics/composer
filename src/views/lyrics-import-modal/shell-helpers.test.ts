@@ -51,15 +51,15 @@ describe("syntheticFilenameForResult", () => {
   });
 
   it("names a qrc payload with a .qrc extension", () => {
-    const result = buildResult({ source: "qq", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
-    expect(syntheticFilenameForResult(result)).toBe("qq-42.qrc");
+    const result = buildResult({ source: "portato", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
+    expect(syntheticFilenameForResult(result)).toBe("portato-42.qrc");
     expect(syntheticFilenameForResult(result)).toMatch(/\.qrc$/);
   });
 });
 
 describe("payloadToContent", () => {
   it("returns the raw QRC body for a qrc payload", async () => {
-    const result = buildResult({ source: "qq", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
+    const result = buildResult({ source: "portato", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
     const content = await payloadToContent(result, new AbortController().signal);
     expect(content).toBe(WANDERLUST_QRC);
   });
@@ -96,7 +96,7 @@ describe("payloadToContent", () => {
     });
 
     it("returns an empty qrc body verbatim rather than falling through to a fetch", async () => {
-      const result = buildResult({ source: "qq", payload: { kind: "qrc", raw: "" } });
+      const result = buildResult({ source: "portato", payload: { kind: "qrc", raw: "" } });
       expect(await payloadToContent(result, new AbortController().signal)).toBe("");
     });
   });
@@ -104,7 +104,7 @@ describe("payloadToContent", () => {
   describe("invariants", () => {
     it("never mutates the payload it reads", async () => {
       const payload = { kind: "qrc", raw: WANDERLUST_QRC } as const;
-      const result = buildResult({ source: "qq", payload });
+      const result = buildResult({ source: "portato", payload });
       await payloadToContent(result, new AbortController().signal);
       expect(payload).toEqual({ kind: "qrc", raw: WANDERLUST_QRC });
     });
@@ -112,7 +112,7 @@ describe("payloadToContent", () => {
     it("resolves a local payload without touching the network signal", async () => {
       const controller = new AbortController();
       controller.abort();
-      const result = buildResult({ source: "qq", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
+      const result = buildResult({ source: "portato", payload: { kind: "qrc", raw: WANDERLUST_QRC } });
       expect(await payloadToContent(result, controller.signal)).toBe(WANDERLUST_QRC);
     });
   });

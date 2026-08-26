@@ -6,11 +6,11 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 
 // -- Constants ----------------------------------------------------------------
 
-const QQ_BASE_URL = "https://lyrics-api.boidu.dev/qq/getLyrics";
+const PORTATO_BASE_URL = "https://lyrics-api.boidu.dev/qq/getLyrics";
 const ID_PREFIX = "qq-";
-const SOURCE_LABEL = "QQ Music";
+const SOURCE_LABEL = "Better Lyrics Portato";
 const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
-const RATE_LIMIT_MESSAGE = "QQ Music rate limit reached. Try again in a moment.";
+const RATE_LIMIT_MESSAGE = "Better Lyrics Portato rate limit reached. Try again in a moment.";
 
 // -- Types --------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ function canSearch(query: LyricsSearchQuery): boolean {
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {
-  const url = new URL(QQ_BASE_URL);
+  const url = new URL(PORTATO_BASE_URL);
   url.searchParams.set("song", (query.track ?? "").trim());
   url.searchParams.set("artist", (query.artist ?? "").trim());
   if (hasNonEmptyString(query.album)) url.searchParams.set("album", query.album.trim());
@@ -46,7 +46,7 @@ function buildResult(query: LyricsSearchQuery, qrc: string): LyricsSearchResult 
 
   return {
     id: `${ID_PREFIX}${track}-${artist}`.toLowerCase().replace(/\s+/g, "-"),
-    source: "qq",
+    source: "portato",
     sourceLabel: SOURCE_LABEL,
     syncType: detectQrcSyncType(qrc),
     track,
@@ -74,10 +74,10 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     if (response.status === 404) return [];
     // A rate limit is not a miss: reporting it as "no results" would tell the user the lyrics do not exist.
     if (response.status === 429) {
-      throw new LyricsSearchError("qq", RATE_LIMIT_MESSAGE);
+      throw new LyricsSearchError("portato", RATE_LIMIT_MESSAGE);
     }
     if (!response.ok) {
-      throw new LyricsSearchError("qq", `${SOURCE_LABEL} returned ${response.status}`);
+      throw new LyricsSearchError("portato", `${SOURCE_LABEL} returned ${response.status}`);
     }
 
     const body = (await response.json()) as QqLyricsResponse;
@@ -87,14 +87,14 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
   } catch (error) {
     if (isAbortError(error)) return [];
     if (error instanceof LyricsSearchError) throw error;
-    throw new LyricsSearchError("qq", `${SOURCE_LABEL} request failed`, error);
+    throw new LyricsSearchError("portato", `${SOURCE_LABEL} request failed`, error);
   }
 }
 
 // -- Provider -----------------------------------------------------------------
 
-const qqProvider: LyricsSearchProvider = {
-  name: "qq",
+const portatoProvider: LyricsSearchProvider = {
+  name: "portato",
   sourceLabel: SOURCE_LABEL,
   canSearch,
   search,
@@ -102,4 +102,4 @@ const qqProvider: LyricsSearchProvider = {
 
 // -- Exports ------------------------------------------------------------------
 
-export { qqProvider };
+export { portatoProvider };

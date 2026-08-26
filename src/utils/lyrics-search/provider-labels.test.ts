@@ -45,20 +45,20 @@ describe("formatProviderName", () => {
   });
 
   it("reads the label straight off the registered provider rather than a list of its own", () => {
-    const label = withProviders([stubProvider("qq", "Late Arrival")], () => formatProviderName("qq"));
+    const label = withProviders([stubProvider("portato", "Late Arrival")], () => formatProviderName("portato"));
     expect(label).toBe("Late Arrival");
   });
 
   describe("edge cases", () => {
     it("falls back to the raw provider id when the registry holds no such provider", () => {
       withProviders([], () => {
-        expect(formatProviderName("qq")).toBe("qq");
+        expect(formatProviderName("portato")).toBe("portato");
       });
     });
 
     it("takes the first match when two providers share an id", () => {
-      const result = withProviders([stubProvider("qq", "First"), stubProvider("qq", "Second")], () =>
-        formatProviderName("qq"),
+      const result = withProviders([stubProvider("portato", "First"), stubProvider("portato", "Second")], () =>
+        formatProviderName("portato"),
       );
       expect(result).toBe("First");
     });
@@ -77,7 +77,7 @@ describe("formatProviderName", () => {
     });
 
     it("is stable across calls", () => {
-      expect(formatProviderName("qq")).toBe(formatProviderName("qq"));
+      expect(formatProviderName("portato")).toBe(formatProviderName("portato"));
     });
 
     it("keeps a stable identity so passing it as a prop does not churn renders", () => {
@@ -97,15 +97,16 @@ describe("providerLabelsProse", () => {
   });
 
   it("joins the registered providers with an Oxford comma", () => {
-    expect(providerLabelsProse()).toBe("LRCLib, Binimum, Better Lyrics, and QQ Music");
+    expect(providerLabelsProse()).toBe("LRCLib, Binimum, Better Lyrics, and Better Lyrics Portato");
   });
 
   describe("edge cases", () => {
     it("joins two providers with a bare and", () => {
-      const prose = withProviders([stubProvider("lrclib", "LRCLib"), stubProvider("qq", "QQ Music")], () =>
-        providerLabelsProse(),
+      const prose = withProviders(
+        [stubProvider("lrclib", "LRCLib"), stubProvider("portato", "Better Lyrics Portato")],
+        () => providerLabelsProse(),
       );
-      expect(prose).toBe("LRCLib and QQ Music");
+      expect(prose).toBe("LRCLib and Better Lyrics Portato");
     });
 
     it("names a lone provider on its own", () => {
@@ -122,12 +123,12 @@ describe("providerLabelsProse", () => {
           stubProvider("lrclib", "LRCLib"),
           stubProvider("binimum", "Binimum"),
           stubProvider("boidu-lyrics", "Better Lyrics"),
-          stubProvider("qq", "QQ Music"),
-          stubProvider("qq", "Another"),
+          stubProvider("portato", "Better Lyrics Portato"),
+          stubProvider("portato", "Another"),
         ],
         () => providerLabelsProse(),
       );
-      expect(prose).toBe("LRCLib, Binimum, Better Lyrics, QQ Music, and Another");
+      expect(prose).toBe("LRCLib, Binimum, Better Lyrics, Better Lyrics Portato, and Another");
     });
   });
 

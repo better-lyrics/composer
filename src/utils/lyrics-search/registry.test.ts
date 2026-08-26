@@ -24,8 +24,8 @@ describe("getProviders", () => {
     expect(Array.isArray(providers)).toBe(true);
   });
 
-  it("registers every built-in provider, with QQ Music last", () => {
-    expect(getProviders().map((provider) => provider.name)).toEqual(["lrclib", "binimum", "boidu-lyrics", "qq"]);
+  it("registers every built-in provider, with Better Lyrics Portato last", () => {
+    expect(getProviders().map((provider) => provider.name)).toEqual(["lrclib", "binimum", "boidu-lyrics", "portato"]);
   });
 
   it("labels every built-in provider", () => {

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectQrcSyncType } from "@/domain/lyrics-search/sync-type";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { qqProvider } from "@/utils/lyrics-search/providers/qq";
+import { portatoProvider } from "@/utils/lyrics-search/providers/portato";
 import { LyricsSearchError } from "@/utils/lyrics-search/types";
 
 // -- Network gating -----------------------------------------------------------
@@ -55,85 +55,89 @@ const describeOnline = SKIP_NETWORK ? describe.skip : describe;
 
 // -- canSearch (pure predicate, never touches the network) --------------------
 
-describe("qqProvider.canSearch", () => {
+describe("portatoProvider.canSearch", () => {
   const TRACK_AND_ARTIST = { track: "Wanderlust", artist: "The Weeknd" } as const;
 
   it("returns true with the full query", () => {
-    expect(qqProvider.canSearch(CACHED_QUERY)).toBe(true);
+    expect(portatoProvider.canSearch(CACHED_QUERY)).toBe(true);
   });
 
   it("returns true with track, artist and album", () => {
-    expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)" })).toBe(true);
+    expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)" })).toBe(true);
   });
 
   it("returns true with track, artist and duration", () => {
-    expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 307 })).toBe(true);
+    expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 307 })).toBe(true);
   });
 
   describe("narrowing to what the endpoint can answer", () => {
     it("returns false with only a track and an artist", () => {
-      expect(qqProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
+      expect(portatoProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
     });
 
     it("returns false when album is whitespace and duration is absent", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   " })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   " })).toBe(false);
     });
 
     it("returns false when a videoId is the only extra field", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, videoId: "vlrC-y1I3go" })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, videoId: "vlrC-y1I3go" })).toBe(false);
     });
 
     it("returns true when album is whitespace but duration is usable", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   ", durationSec: 307 })).toBe(true);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, album: "   ", durationSec: 307 })).toBe(true);
     });
   });
 
   describe("duration guard", () => {
     it("returns false for a zero duration with no album", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 0 })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 0 })).toBe(false);
     });
 
     it("returns false for a negative duration with no album", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: -5 })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: -5 })).toBe(false);
     });
 
     it("returns false for NaN with no album", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.NaN })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.NaN })).toBe(false);
     });
 
     it("returns false for Infinity with no album", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.POSITIVE_INFINITY })).toBe(false);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: Number.POSITIVE_INFINITY })).toBe(false);
     });
 
     it("accepts a fractional duration that the URL builder rounds", () => {
-      expect(qqProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 306.4 })).toBe(true);
+      expect(portatoProvider.canSearch({ ...TRACK_AND_ARTIST, durationSec: 306.4 })).toBe(true);
     });
 
     it("still passes on an unusable duration when an album is present", () => {
       const query = { ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)", durationSec: Number.NaN };
-      expect(qqProvider.canSearch(query)).toBe(true);
+      expect(portatoProvider.canSearch(query)).toBe(true);
     });
   });
 
   describe("required fields", () => {
     it("returns false when the query is empty", () => {
-      expect(qqProvider.canSearch({})).toBe(false);
+      expect(portatoProvider.canSearch({})).toBe(false);
     });
 
     it("returns false when track is missing", () => {
-      expect(qqProvider.canSearch({ artist: "The Weeknd", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(false);
+      expect(portatoProvider.canSearch({ artist: "The Weeknd", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(
+        false,
+      );
     });
 
     it("returns false when artist is missing", () => {
-      expect(qqProvider.canSearch({ track: "Wanderlust", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(false);
+      expect(portatoProvider.canSearch({ track: "Wanderlust", album: "Kiss Land (Deluxe)", durationSec: 307 })).toBe(
+        false,
+      );
     });
 
     it("returns false when track is whitespace only", () => {
-      expect(qqProvider.canSearch({ track: "   ", artist: "The Weeknd", durationSec: 307 })).toBe(false);
+      expect(portatoProvider.canSearch({ track: "   ", artist: "The Weeknd", durationSec: 307 })).toBe(false);
     });
 
     it("returns false when artist is whitespace only", () => {
-      expect(qqProvider.canSearch({ track: "Wanderlust", artist: "  \t ", durationSec: 307 })).toBe(false);
+      expect(portatoProvider.canSearch({ track: "Wanderlust", artist: "  \t ", durationSec: 307 })).toBe(false);
     });
   });
 
@@ -141,20 +145,20 @@ describe("qqProvider.canSearch", () => {
     it("does not mutate the query it inspects", () => {
       const query = { ...TRACK_AND_ARTIST, album: "Kiss Land (Deluxe)", durationSec: 307 };
       const snapshot = { ...query };
-      qqProvider.canSearch(query);
+      portatoProvider.canSearch(query);
       expect(query).toEqual(snapshot);
     });
 
     it("agrees with search: a query it rejects resolves to [] without a request", async () => {
-      expect(qqProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
-      await expect(qqProvider.search(TRACK_AND_ARTIST, new AbortController().signal)).resolves.toEqual([]);
+      expect(portatoProvider.canSearch(TRACK_AND_ARTIST)).toBe(false);
+      await expect(portatoProvider.search(TRACK_AND_ARTIST, new AbortController().signal)).resolves.toEqual([]);
     });
   });
 });
 
 // -- Tests --------------------------------------------------------------------
 
-describeOnline("qqProvider", () => {
+describeOnline("portatoProvider", () => {
   beforeAll(async () => {
     isOnline = await probeOnline();
     if (!isOnline) {
@@ -163,11 +167,13 @@ describeOnline("qqProvider", () => {
     }
     // One shared fetch for every happy-path assertion, because the window allows only 15 requests.
     try {
-      cachedResults = await qqProvider.search(CACHED_QUERY, new AbortController().signal);
+      cachedResults = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
     } catch (error) {
       if (isRateLimitError(error)) {
         isRateLimited = true;
-        console.warn("[qq.test] QQ Music rate limit reached: happy-path assertions will be skipped at runtime.");
+        console.warn(
+          "[qq.test] Better Lyrics Portato rate limit reached: happy-path assertions will be skipped at runtime.",
+        );
         return;
       }
       throw error;
@@ -196,9 +202,9 @@ describeOnline("qqProvider", () => {
   // -- Metadata --------------------------------------------------------------
 
   describe("metadata", () => {
-    it("identifies as qq with the QQ Music source label", () => {
-      expect(qqProvider.name).toBe("qq");
-      expect(qqProvider.sourceLabel).toBe("QQ Music");
+    it("identifies as qq with the Better Lyrics Portato source label", () => {
+      expect(portatoProvider.name).toBe("portato");
+      expect(portatoProvider.sourceLabel).toBe("Better Lyrics Portato");
     });
   });
 
@@ -206,13 +212,13 @@ describeOnline("qqProvider", () => {
 
   describe("search cached happy path", () => {
     it(
-      "returns exactly one result identified as QQ Music",
+      "returns exactly one result identified as Better Lyrics Portato",
       () => {
         const result = cachedResult();
         if (result === null) return;
         expect(cachedResults).toHaveLength(1);
-        expect(result.source).toBe("qq");
-        expect(result.sourceLabel).toBe("QQ Music");
+        expect(result.source).toBe("portato");
+        expect(result.sourceLabel).toBe("Better Lyrics Portato");
       },
       NETWORK_TEST_TIMEOUT_MS,
     );
@@ -269,7 +275,7 @@ describeOnline("qqProvider", () => {
         if (skipIfOffline() || isRateLimited) return;
         const controller = new AbortController();
         try {
-          expect(await qqProvider.search(UNMATCHABLE_QUERY, controller.signal)).toEqual([]);
+          expect(await portatoProvider.search(UNMATCHABLE_QUERY, controller.signal)).toEqual([]);
         } catch (error) {
           if (isRateLimitError(error)) return;
           throw error;
@@ -285,7 +291,7 @@ describeOnline("qqProvider", () => {
     it("resolves to [] when called with a pre-aborted signal", async () => {
       const controller = new AbortController();
       controller.abort();
-      const results = await qqProvider.search(CACHED_QUERY, controller.signal);
+      const results = await portatoProvider.search(CACHED_QUERY, controller.signal);
       expect(results).toEqual([]);
     });
 
@@ -294,7 +300,7 @@ describeOnline("qqProvider", () => {
       async () => {
         if (skipIfOffline() || isRateLimited) return;
         const controller = new AbortController();
-        const pending = qqProvider.search(CACHED_QUERY, controller.signal);
+        const pending = portatoProvider.search(CACHED_QUERY, controller.signal);
         controller.abort();
         const results = await pending;
         expect(results).toEqual([]);
@@ -308,13 +314,13 @@ describeOnline("qqProvider", () => {
   describe("when canSearch returns false", () => {
     it("returns [] immediately and does not fire a request when artist is missing", async () => {
       const controller = new AbortController();
-      const results = await qqProvider.search({ track: "Wanderlust" }, controller.signal);
+      const results = await portatoProvider.search({ track: "Wanderlust" }, controller.signal);
       expect(results).toEqual([]);
     });
 
     it("returns [] immediately when both track and artist are whitespace", async () => {
       const controller = new AbortController();
-      const results = await qqProvider.search({ track: " ", artist: " " }, controller.signal);
+      const results = await portatoProvider.search({ track: " ", artist: " " }, controller.signal);
       expect(results).toEqual([]);
     });
   });
@@ -323,8 +329,8 @@ describeOnline("qqProvider", () => {
 
   describe("LyricsSearchError contract", () => {
     it("constructs a LyricsSearchError with provider 'qq'", () => {
-      const error = new LyricsSearchError("qq", "boom");
-      expect(error.provider).toBe("qq");
+      const error = new LyricsSearchError("portato", "boom");
+      expect(error.provider).toBe("portato");
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });

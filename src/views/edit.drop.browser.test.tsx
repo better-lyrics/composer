@@ -6,7 +6,7 @@ import { EditPanel } from "@/views/edit";
 
 // -- Helpers ------------------------------------------------------------------
 
-/** The on-disk QRC document uses CRLF, so drop the bytes exactly as QQ Music serves them. */
+/** The on-disk QRC document uses CRLF, so drop the bytes exactly as Better Lyrics Portato serves them. */
 const WANDERLUST_QRC_CRLF = WANDERLUST_QRC.replace(/\n/g, "\r\n");
 
 function getEditPanel(): HTMLElement {
