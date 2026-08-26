@@ -1,11 +1,13 @@
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
 import { IconArrowDown } from "@tabler/icons-react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
+import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -43,6 +45,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const appliedPlaybackRateRef = useRef(1);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
   const resumeWakeRef = useRef<number | null>(null);
+  const reducedMotion = useReducedMotion();
 
   const clearResumeWake = useCallback(() => {
     if (resumeWakeRef.current === null) return;
@@ -134,17 +137,24 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   return (
     <div className="relative flex flex-col flex-1 min-h-0">
       <braccato-lyrics ref={setElement} className="block flex-1 mx-auto w-full max-w-3xl px-6" />
-      {isAutoscrollPaused ? (
-        <Button
-          variant="secondary"
-          hasIcon
-          onClick={resumeAutoscroll}
-          className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 shadow-2xl backdrop-blur-md"
-        >
-          <IconArrowDown className="size-4" />
-          Resume autoscroll
-        </Button>
-      ) : null}
+      <AnimatePresence>
+        {isAutoscrollPaused ? (
+          <m.div
+            key="resume-autoscroll"
+            variants={reducedMotion ? centeredFadeVariants : centeredSlideUpVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            transition={springSnappy}
+            className="absolute bottom-6 left-1/2 z-10"
+          >
+            <Button variant="secondary" hasIcon onClick={resumeAutoscroll} className="shadow-2xl backdrop-blur-md">
+              <IconArrowDown className="size-4" />
+              Resume autoscroll
+            </Button>
+          </m.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 };

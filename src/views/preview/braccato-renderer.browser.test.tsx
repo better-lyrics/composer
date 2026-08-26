@@ -13,20 +13,25 @@ import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 // -- Constants -----------------------------------------------------------------
 
 // The browser project has no Tailwind plugin, so the utilities that float the affordance over the
-// lyrics are installed by hand next to braccato's own `.blyrics-container` rule, which carries the
-// z-index: 1 the affordance has to clear, and next to the scroller rule from src/index.css.
+// lyrics are installed by hand. Motion owns the affordance transform, so without the absolute box to
+// shrink-wrap it the centring `-50%` would drag it half the page width off screen.
+const AFFORDANCE_POSITION_CSS = [
+  POSITION_UTILITIES_CSS,
+  ".bottom-6{bottom:1.5rem}",
+  ".left-1\\/2{left:50%}",
+  ".z-10{z-index:10}",
+].join("\n");
+
+// Braccato's own `.blyrics-container` rule carries the z-index: 1 the affordance has to clear, and
+// the scroller rule comes from src/index.css.
 const RESUME_AFFORDANCE_LAYOUT_CSS = [
   braccatoLyricsCss,
-  POSITION_UTILITIES_CSS,
+  AFFORDANCE_POSITION_CSS,
   "braccato-lyrics{display:block;overflow-y:auto}",
   ".flex{display:flex}",
   ".flex-col{flex-direction:column}",
   ".flex-1{flex:1 1 0%}",
   ".min-h-0{min-height:0}",
-  ".bottom-6{bottom:1.5rem}",
-  ".left-1\\/2{left:50%}",
-  ".-translate-x-1\\/2{translate:-50% 0}",
-  ".z-10{z-index:10}",
 ].join("\n");
 
 // PreviewPanel hands the renderer a bounded flex column; without one the lyrics run past the
@@ -57,14 +62,18 @@ function lineTexts(el: BraccatoLyricsElement): string[] {
 
 let disposeWiring: (() => void) | null = null;
 let probe: FrameProbe;
+let positionStyles: HTMLStyleElement | null = null;
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
   probe = createFrameProbe();
+  positionStyles = installStyleSheet(AFFORDANCE_POSITION_CSS);
 });
 
 afterEach(() => {
   probe.dispose();
+  positionStyles?.remove();
+  positionStyles = null;
   disposeWiring?.();
   disposeWiring = null;
   for (const el of document.querySelectorAll("#composer-audio")) {

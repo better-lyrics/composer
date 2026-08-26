@@ -23,6 +23,20 @@ const slideUpVariants: Variants = {
   exit: { opacity: 0, y: 8 },
 };
 
+// The x holds the centring a `left-1/2` element would take from `-translate-x-1/2`, which motion
+// overwrites the moment it owns the transform.
+const centeredSlideUpVariants: Variants = {
+  hidden: { opacity: 0, x: "-50%", y: 8 },
+  visible: { opacity: 1, x: "-50%", y: 0 },
+  exit: { opacity: 0, x: "-50%", y: 8 },
+};
+
+const centeredFadeVariants: Variants = {
+  hidden: { opacity: 0, x: "-50%" },
+  visible: { opacity: 1, x: "-50%" },
+  exit: { opacity: 0, x: "-50%" },
+};
+
 // -- Sync Carousel (vertical, direction-aware, instant) ----------------------
 
 const syncCarouselTransition: Transition = {
@@ -117,6 +131,8 @@ const accordionVariants: Variants = {
 export {
   springSnappy,
   slideUpVariants,
+  centeredSlideUpVariants,
+  centeredFadeVariants,
   syncCarouselTransition,
   syncPulseVariants,
   buildGroupPingVariants,
