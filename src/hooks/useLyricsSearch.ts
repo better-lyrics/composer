@@ -116,6 +116,8 @@ function useLyricsSearch(query: LyricsSearchQuery, options?: UseLyricsSearchOpti
     const syncDiff = SYNC_PRECISION_RANK[a.syncType] - SYNC_PRECISION_RANK[b.syncType];
     if (syncDiff !== 0) return syncDiff;
     if (expected === undefined || !Number.isFinite(expected)) return 0;
+    if (a.durationSec === undefined) return b.durationSec === undefined ? 0 : 1;
+    if (b.durationSec === undefined) return -1;
     return Math.abs(a.durationSec - expected) - Math.abs(b.durationSec - expected);
   });
 

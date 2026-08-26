@@ -439,7 +439,7 @@ function makeResultFull(
   id: string,
   source: ProviderName,
   syncType: LyricsSearchResult["syncType"],
-  durationSec: number,
+  durationSec?: number,
 ): LyricsSearchResult {
   return {
     id,
@@ -530,6 +530,95 @@ describe("useLyricsSearch sort order", () => {
     await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
 
     expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b"]);
+
+    await h.unmount();
+  });
+
+  it("sorts a result with no duration last within its sync-type bucket", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("unknown", "lrclib", "line"),
+          makeResultFull("far", "lrclib", "line", 400),
+          makeResultFull("exact", "lrclib", "line", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["exact", "far", "unknown"]);
+
+    await h.unmount();
+  });
+
+  it("keeps two results with no duration in their natural order", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [makeResultFull("unknown-a", "lrclib", "line"), makeResultFull("unknown-b", "lrclib", "line")],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 2);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["unknown-a", "unknown-b"]);
+
+    await h.unmount();
+  });
+
+  it("keeps a mixed list of known and unknown durations deterministic across buckets", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("line-unknown", "lrclib", "line"),
+          makeResultFull("syllable-far", "lrclib", "syllable", 200),
+          makeResultFull("line-exact", "lrclib", "line", 355),
+          makeResultFull("syllable-unknown", "lrclib", "syllable"),
+          makeResultFull("syllable-exact", "lrclib", "syllable", 355),
+        ],
+      }),
+    );
+    const h = createHarness({
+      query: { track: "hi" },
+      options: { debounceMs: 0, expectedDurationSec: 355 },
+    });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 5);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual([
+      "syllable-exact",
+      "syllable-far",
+      "syllable-unknown",
+      "line-exact",
+      "line-unknown",
+    ]);
+
+    await h.unmount();
+  });
+
+  it("keeps every unknown-duration result when no expectedDurationSec is provided", async () => {
+    track(
+      fakeProviderFactory({
+        name: "lrclib",
+        results: [
+          makeResultFull("a", "lrclib", "line"),
+          makeResultFull("b", "lrclib", "line", 200),
+          makeResultFull("c", "lrclib", "line"),
+        ],
+      }),
+    );
+    const h = createHarness({ query: { track: "hi" }, options: { debounceMs: 0 } });
+    await waitUntil(() => (h.result.current?.results.length ?? 0) === 3);
+
+    expect(h.result.current?.results.map((r) => r.id)).toEqual(["a", "b", "c"]);
 
     await h.unmount();
   });

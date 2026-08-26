@@ -197,6 +197,79 @@ describe("ResultRow duration match", () => {
   });
 });
 
+// -- Unknown duration ---------------------------------------------------------
+
+describe("ResultRow unknown duration", () => {
+  it("renders no duration at all when the result carries none", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toMatch(/\d+:\d{2}/);
+  });
+
+  it("renders neither a duration nor a delta when an expected duration is provided", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toMatch(/\d+:\d{2}/);
+    expect(row.textContent).not.toMatch(/[+−]\d+s/);
+    expect(row.querySelector('[title="Matches your duration"]')).toBeNull();
+    expect(row.querySelector('[title^="Off by"]')).toBeNull();
+  });
+
+  it("still renders the track, artist, sync badge and source label", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    await expect.element(screen.getByText("Queen ・ A Night at the Opera")).toBeInTheDocument();
+    await expect.element(screen.getByText("Line")).toBeInTheDocument();
+    await expect.element(screen.getByText("LRCLib")).toBeInTheDocument();
+  });
+
+  it("stays selectable without a duration", async () => {
+    let selects = 0;
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        onHover={noop}
+        onSelect={() => selects++}
+      />,
+    );
+    await screen.getByRole("option").click();
+    expect(selects).toBe(1);
+  });
+});
+
 // -- Interaction --------------------------------------------------------------
 
 describe("ResultRow interaction", () => {

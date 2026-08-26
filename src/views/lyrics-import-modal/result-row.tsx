@@ -21,6 +21,7 @@ interface ResultRowProps {
 }
 
 type DurationMatch =
+  | { kind: "unknown" }
   | { kind: "neutral" }
   | { kind: "exact" }
   | { kind: "close"; delta: number }
@@ -28,7 +29,8 @@ type DurationMatch =
 
 // -- Helpers ------------------------------------------------------------------
 
-function describeDurationMatch(actual: number, expected: number | undefined): DurationMatch {
+function describeDurationMatch(actual: number | undefined, expected: number | undefined): DurationMatch {
+  if (actual === undefined) return { kind: "unknown" };
   if (expected === undefined || !Number.isFinite(expected)) return { kind: "neutral" };
   const delta = Math.round(actual) - Math.round(expected);
   const abs = Math.abs(delta);
@@ -51,10 +53,11 @@ function joinArtistAlbum(artist: string, album: string | undefined): string {
 
 interface DurationDisplayProps {
   match: DurationMatch;
-  actualSec: number;
+  actualSec: number | undefined;
 }
 
 const DurationDisplay: React.FC<DurationDisplayProps> = ({ match, actualSec }) => {
+  if (match.kind === "unknown" || actualSec === undefined) return null;
   const text = formatDuration(actualSec);
   if (match.kind === "exact") {
     return (

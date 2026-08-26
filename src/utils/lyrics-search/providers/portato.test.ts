@@ -250,13 +250,18 @@ describeOnline("portatoProvider", () => {
       expect(parsed.lines.some((line) => (line.words?.length ?? 0) > 0)).toBe(true);
     });
 
-    it("echoes the query back onto the result", () => {
+    it("echoes the track, artist and album back onto the result", () => {
       const result = cachedResult();
       if (result === null) return;
       expect(result.track).toBe(CACHED_QUERY.track);
       expect(result.artist).toBe(CACHED_QUERY.artist);
       expect(result.album).toBe(CACHED_QUERY.album);
-      expect(result.durationSec).toBe(CACHED_QUERY.durationSec);
+    });
+
+    it("reports no duration, because the endpoint returns none", () => {
+      const result = cachedResult();
+      if (result === null) return;
+      expect(result.durationSec).toBeUndefined();
     });
 
     it("uses a stable qq- prefixed id", () => {

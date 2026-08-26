@@ -52,7 +52,6 @@ function buildResult(query: LyricsSearchQuery, qrc: string): LyricsSearchResult 
     track,
     artist,
     album: hasNonEmptyString(query.album) ? query.album.trim() : undefined,
-    durationSec: hasUsableDuration(query.durationSec) ? Math.round(query.durationSec) : 0,
     payload,
   };
 }

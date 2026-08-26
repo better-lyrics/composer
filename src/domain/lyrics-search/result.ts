@@ -18,7 +18,7 @@ interface LyricsSearchResult {
   track: string;
   artist: string;
   album?: string;
-  durationSec: number;
+  durationSec?: number;
   payload: LyricsSearchPayload;
 }
 

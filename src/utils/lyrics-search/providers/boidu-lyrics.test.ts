@@ -193,6 +193,18 @@ describeOnline("boiduLyricsProvider", () => {
     );
 
     it(
+      "reports no duration, because the endpoint returns none",
+      async () => {
+        if (skipIfOffline()) return;
+        const controller = new AbortController();
+        const results = await boiduLyricsProvider.search(CACHED_QUERY, controller.signal);
+        if (results.length === 0) return;
+        expect(results[0].durationSec).toBeUndefined();
+      },
+      NETWORK_TEST_TIMEOUT_MS,
+    );
+
+    it(
       "leaves album undefined when not supplied",
       async () => {
         if (skipIfOffline()) return;

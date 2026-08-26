@@ -47,7 +47,6 @@ function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult
     track: (query.track ?? "").trim(),
     artist: (query.artist ?? "").trim(),
     album: hasNonEmptyString(query.album) ? query.album.trim() : undefined,
-    durationSec: Math.round(query.durationSec as number),
     payload,
   };
 }
