@@ -1,5 +1,10 @@
 import { useCallback, useRef } from "react";
-import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
+import { toast } from "sonner";
+import {
+  isSupportedLyricsFile,
+  LYRICS_FILE_ACCEPT_ATTRIBUTE,
+  UNSUPPORTED_LYRICS_FILE_MESSAGE,
+} from "@/domain/lyrics-file/supported-formats";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -56,6 +61,11 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
       const file = e.target.files?.[0];
       e.target.value = "";
       if (!file) return;
+      // accept= is only a dialog hint: an OS picker set to all files reaches here.
+      if (!isSupportedLyricsFile(file.name)) {
+        toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
+        return;
+      }
       const content = await file.text();
       const parsed = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
       await importParsedLyrics(parsed, {

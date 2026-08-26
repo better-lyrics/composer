@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { Toaster } from "sonner";
 import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -139,6 +140,33 @@ describe("useDualClickImport · file pick wiring", () => {
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBeGreaterThan(0);
     expect(input.value).toBe("");
+  });
+
+  it("refuses a picked .png, leaving the project untouched and naming the supported formats", async () => {
+    useProjectStore.setState({ lines: [] });
+    await render(
+      <>
+        <Toaster />
+        <Harness onOpen={() => {}} />
+      </>,
+    );
+    const input = getHiddenFileInput();
+
+    dispatchFileChange(input, new File(["binary"], "cover.png", { type: "image/png" }));
+
+    await expect.poll(() => document.body.textContent).toMatch(/Unsupported file type\. Use .*\.qrc/);
+    expect(useProjectStore.getState().lines).toHaveLength(0);
+    expect(useImportModalStore.getState().lastImportResult).toBeNull();
+  });
+
+  it("still accepts a .qrc file picked past an OS dialog set to all files", async () => {
+    useProjectStore.setState({ lines: [] });
+    await render(<Harness onOpen={() => {}} />);
+    const input = getHiddenFileInput();
+
+    dispatchFileChange(input, new File([WANDERLUST_QRC], "wanderlust.qrc", { type: "application/octet-stream" }));
+
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(84);
   });
 
   it("ignores a change event with no files attached (does not throw, does not touch project)", async () => {
