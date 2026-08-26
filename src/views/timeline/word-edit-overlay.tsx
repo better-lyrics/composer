@@ -1,3 +1,4 @@
+import { cancelNextFrame, nextFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
@@ -50,19 +51,19 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
 
     if (findAndPosition()) return;
 
-    const raf = requestAnimationFrame(() => {
+    const frame = nextFrame(() => {
       if (!findAndPosition()) clearEditingWord();
     });
-    return () => cancelAnimationFrame(raf);
+    return () => cancelNextFrame(frame);
   }, [lineId, wordIndex, type, word, scrollContainerRef, clearEditingWord]);
 
   useEffect(() => {
     if (!pos) return;
-    const raf = requestAnimationFrame(() => {
+    const frame = nextFrame(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
     });
-    return () => cancelAnimationFrame(raf);
+    return () => cancelNextFrame(frame);
   }, [pos]);
 
   const handleCommit = useCallback(

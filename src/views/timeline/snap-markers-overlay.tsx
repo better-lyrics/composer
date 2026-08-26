@@ -1,6 +1,7 @@
 import { AnimatePresence } from "motion/react";
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef } from "react";
 import { snapPointTimes } from "@/domain/snap-point/model";
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { SnapMarkerPin } from "@/views/timeline/snap-marker-pin";
@@ -51,26 +52,23 @@ const SnapMarkersOverlay: React.FC<SnapMarkersOverlayProps> = ({ scrollContainer
   }, [showOnsets, vocalOnsetSnapPoints, customSnapPoints, draggingTime, zoom, thresholdPx]);
 
   const layerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const applyTransform = () => {
+  const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
+  const isVisible = visibleOnsetCount > 0 || customSnapPoints.length > 0 || markerMode;
+
+  useFrameLoop(
+    () => {
       const layer = layerRef.current;
       if (layer) {
         const scrollLeft = scrollContainerRef.current?.scrollLeft ?? useTimelineStore.getState().scrollLeft;
         layer.style.transform = `translate3d(${GUTTER_WIDTH - scrollLeft}px, 0, 0)`;
       }
-      rafRef.current = requestAnimationFrame(applyTransform);
-    };
+    },
+    "snap-markers-overlay",
+    isVisible,
+  );
 
-    applyTransform();
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [scrollContainerRef]);
-
-  const visibleOnsetCount = showOnsets ? vocalOnsetSnapPoints.length : 0;
-  if (visibleOnsetCount === 0 && customSnapPoints.length === 0 && !markerMode) return null;
+  if (!isVisible) return null;
 
   return (
     <div

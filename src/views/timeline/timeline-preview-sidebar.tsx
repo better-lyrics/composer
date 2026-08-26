@@ -1,3 +1,4 @@
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
@@ -7,7 +8,7 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { getTimingState } from "@/views/timeline/timeline-preview-sidebar-activity";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -155,72 +156,59 @@ const TimelinePreviewSidebar: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const granularity = useProjectStore((s) => s.granularity);
   const containerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   const lastScrolledLineRef = useRef<number>(-1);
 
-  // Animation loop - queries DOM directly on each frame for reliability
-  useEffect(() => {
-    const update = () => {
-      const container = containerRef.current;
-      if (!container) {
-        rafRef.current = requestAnimationFrame(update);
-        return;
+  // Queries DOM directly on each frame for reliability
+  useFrameLoop(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const audioEl = useAudioStore.getState().audioElement;
+    const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+    let currentLineIdx = -1;
+
+    const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
+    for (const el of wordEls) {
+      const begin = Number.parseFloat(el.dataset.wordBegin ?? "0");
+      const end = Number.parseFloat(el.dataset.wordEnd ?? "0");
+      const lineIdx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
+
+      const { isActive, progress } = getTimingState(begin, end, currentTime);
+      el.style.clipPath = `inset(0 ${(1 - progress) * 100}% 0 0)`;
+
+      if (isActive && lineIdx > currentLineIdx) {
+        currentLineIdx = lineIdx;
       }
+    }
 
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-      let currentLineIdx = -1;
+    const lineEls = container.querySelectorAll<HTMLElement>("[data-line-begin]");
+    for (const el of lineEls) {
+      const begin = Number.parseFloat(el.dataset.lineBegin ?? "0");
+      const end = Number.parseFloat(el.dataset.lineEnd ?? "0");
+      const { isActive, isComplete } = getTimingState(begin, end, currentTime);
+      const style = el.style;
 
-      const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
-      for (const el of wordEls) {
-        const begin = Number.parseFloat(el.dataset.wordBegin ?? "0");
-        const end = Number.parseFloat(el.dataset.wordEnd ?? "0");
-        const lineIdx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
-
-        const { isActive, progress } = getTimingState(begin, end, currentTime);
-        el.style.clipPath = `inset(0 ${(1 - progress) * 100}% 0 0)`;
-
-        if (isActive && lineIdx > currentLineIdx) {
-          currentLineIdx = lineIdx;
-        }
+      if (isActive) {
+        style.opacity = "1";
+      } else if (isComplete) {
+        style.opacity = "0.6";
+      } else {
+        style.opacity = "0.3";
       }
+    }
 
-      const lineEls = container.querySelectorAll<HTMLElement>("[data-line-begin]");
+    // Auto-scroll to current line
+    if (currentLineIdx !== -1 && currentLineIdx !== lastScrolledLineRef.current) {
       for (const el of lineEls) {
-        const begin = Number.parseFloat(el.dataset.lineBegin ?? "0");
-        const end = Number.parseFloat(el.dataset.lineEnd ?? "0");
-        const { isActive, isComplete } = getTimingState(begin, end, currentTime);
-        const style = el.style;
-
-        if (isActive) {
-          style.opacity = "1";
-        } else if (isComplete) {
-          style.opacity = "0.6";
-        } else {
-          style.opacity = "0.3";
+        const idx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
+        if (idx === currentLineIdx) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          lastScrolledLineRef.current = currentLineIdx;
+          break;
         }
       }
-
-      // Auto-scroll to current line
-      if (currentLineIdx !== -1 && currentLineIdx !== lastScrolledLineRef.current) {
-        for (const el of lineEls) {
-          const idx = Number.parseInt(el.dataset.lineIdx ?? "-1", 10);
-          if (idx === currentLineIdx) {
-            el.scrollIntoView({ behavior: "smooth", block: "center" });
-            lastScrolledLineRef.current = currentLineIdx;
-            break;
-          }
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
+    }
+  }, "timeline-preview-sidebar");
 
   const hasSyncedContent = lines.some((line) => effectiveBounds(line) !== null);
 
@@ -233,11 +221,14 @@ const TimelinePreviewSidebar: React.FC = () => {
   }
 
   return (
-    <div className="w-64 border-l border-composer-border bg-composer-bg-dark flex flex-col overflow-hidden">
+    <div
+      ref={containerRef}
+      className="w-64 border-l border-composer-border bg-composer-bg-dark flex flex-col overflow-hidden"
+    >
       <div className="px-3 py-2 border-b border-composer-border text-xs font-medium text-composer-text-muted">
         Preview
       </div>
-      <Scroll viewportRef={containerRef} className="flex-1 py-2">
+      <Scroll className="flex-1 py-2">
         {lines.map((line, index) => (
           <MiniPreviewLine key={line.id} line={line} lineIndex={index} granularity={granularity} />
         ))}

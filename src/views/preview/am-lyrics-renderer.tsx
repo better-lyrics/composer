@@ -1,4 +1,5 @@
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
+import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import type { AmLyrics as AmLyricsElement } from "@uimaxbai/am-lyrics";
 import { useEffect, useRef, useState } from "react";
@@ -64,6 +65,9 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
 
     container.appendChild(el);
     elementRef.current = el;
+    // The element arrives once the registration import resolves, long after the
+    // mount wake expired, so the first frame that can address it has to be asked for.
+    wake();
 
     const injectHideStyle = () => {
       if (!el.shadowRoot) return;
@@ -96,9 +100,13 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     el.songDurationMs = durationSeconds * 1000;
   }, [durationSeconds]);
 
-  useRendererAudioSync(elementRef, (el, audio) => {
-    el.currentTime = audio.currentTime * 1000;
-  });
+  useRendererAudioSync(
+    elementRef,
+    (el, audio) => {
+      el.currentTime = audio.currentTime * 1000;
+    },
+    "am-lyrics-renderer",
+  );
 
   return <div ref={containerRef} className="flex flex-col flex-1 min-h-0" />;
 };

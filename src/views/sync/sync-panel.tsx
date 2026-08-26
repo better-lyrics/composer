@@ -1,3 +1,4 @@
+import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
@@ -74,7 +75,6 @@ const SyncPanel: React.FC = () => {
   const [isHolding, setIsHolding] = useState(false);
   const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const rafRef = useRef<number | null>(null);
   const heldKeyCodeRef = useRef<string | null>(null);
   const holdPointerIdRef = useRef<number | null>(null);
 
@@ -149,19 +149,11 @@ const SyncPanel: React.FC = () => {
     }
   }, [lines, updateLine]);
 
-  // RAF animation loop for smooth word progress updates (reads audioElement.currentTime directly)
-  useEffect(() => {
-    if (!editMode) {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      return;
-    }
-
-    const update = () => {
+  // Smooth word progress updates (reads audioElement.currentTime directly)
+  useFrameLoop(
+    () => {
       const container = scrollContainerRef.current;
-      if (!container) {
-        rafRef.current = requestAnimationFrame(update);
-        return;
-      }
+      if (!container) return;
 
       const audioEl = useAudioStore.getState().audioElement;
       const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
@@ -185,15 +177,10 @@ const SyncPanel: React.FC = () => {
 
         el.style.width = `${progress * 100}%`;
       }
-
-      rafRef.current = requestAnimationFrame(update);
-    };
-
-    rafRef.current = requestAnimationFrame(update);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-  }, [editMode]);
+    },
+    "sync-panel",
+    editMode,
+  );
 
   const totalWords = useMemo(() => getTotalWords(lines), [lines]);
   const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);

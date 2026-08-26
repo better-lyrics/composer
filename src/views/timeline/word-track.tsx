@@ -1,5 +1,6 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { nextFrame } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
@@ -218,7 +219,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
 
         if (dragged) {
           justResizedRef.current = true;
-          requestAnimationFrame(() => {
+          nextFrame(() => {
             justResizedRef.current = false;
           });
         }

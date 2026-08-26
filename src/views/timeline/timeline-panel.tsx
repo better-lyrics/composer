@@ -34,6 +34,7 @@ import {
   type SyllablePosition,
 } from "@/domain/word/syllable-groups";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
+import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
@@ -176,6 +177,7 @@ const TimelinePanel: React.FC = () => {
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
+  useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
 
   const lastDistributedDurationRef = useRef<number | null>(null);
 
@@ -431,89 +433,92 @@ const TimelinePanel: React.FC = () => {
         handleDragCancel();
       }}
     >
-      <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-        <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
-        <GroupingSuggestionsBanner />
-        <ExplicitSuggestionsBanner />
+      {/* display: contents so the mask root adds a query anchor without a layout box. */}
+      <div data-timeline-mask-root className="contents">
+        <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
+          <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
+          <GroupingSuggestionsBanner />
+          <ExplicitSuggestionsBanner />
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex flex-col flex-1 overflow-hidden">
-            <div
-              ref={contentRef}
-              data-timeline-scroll-host
-              className="relative flex-1 flex flex-col overflow-hidden isolate"
-            >
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex flex-col flex-1 overflow-hidden">
               <div
-                ref={scrollContainerRef}
-                role="application"
-                aria-label="Timeline"
-                data-scroll-container
-                className="flex-1 overflow-auto overscroll-none static! z-[unset] overflow-anchor-none"
-                onScroll={handleScroll}
-                onMouseDown={handleMouseDown}
-                onAuxClick={(e) => e.preventDefault()}
-                onKeyDown={(e) => {
-                  if (e.key === " " || e.key === "Enter") {
-                    e.preventDefault();
-                  }
-                }}
+                ref={contentRef}
+                data-timeline-scroll-host
+                className="relative flex-1 flex flex-col overflow-hidden isolate"
               >
-                <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24">
-                    <title>Music Icon</title>
-                    <path
-                      fill="currentColor"
-                      d="M10 21q-1.65 0-2.825-1.175T6 17t1.175-2.825T10 13q.575 0 1.063.138t.937.412V4q0-.425.288-.712T13 3h4q.425 0 .713.288T18 4v2q0 .425-.288.713T17 7h-3v10q0 1.65-1.175 2.825T10 21"
-                    />
-                  </svg>
-                </div>
-                <TimelineWaveform />
+                <div
+                  ref={scrollContainerRef}
+                  role="application"
+                  aria-label="Timeline"
+                  data-scroll-container
+                  className="flex-1 overflow-auto overscroll-none static! z-[unset] overflow-anchor-none"
+                  onScroll={handleScroll}
+                  onMouseDown={handleMouseDown}
+                  onAuxClick={(e) => e.preventDefault()}
+                  onKeyDown={(e) => {
+                    if (e.key === " " || e.key === "Enter") {
+                      e.preventDefault();
+                    }
+                  }}
+                >
+                  <div className="absolute grid place-items-center text-xs text-composer-text-muted top-0 left-0 z-100 w-12 h-20 border-b border-r-2 border-composer-border bg-composer-bg shadow-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 24 24">
+                      <title>Music Icon</title>
+                      <path
+                        fill="currentColor"
+                        d="M10 21q-1.65 0-2.825-1.175T6 17t1.175-2.825T10 13q.575 0 1.063.138t.937.412V4q0-.425.288-.712T13 3h4q.425 0 .713.288T18 4v2q0 .425-.288.713T17 7h-3v10q0 1.65-1.175 2.825T10 21"
+                      />
+                    </svg>
+                  </div>
+                  <TimelineWaveform />
 
-                <TimelineRows scrollContainerRef={scrollContainerRef} />
+                  <TimelineRows scrollContainerRef={scrollContainerRef} />
+                </div>
+
+                <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
+
+                <SnapGuideline />
+
+                <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} />
+
+                {marqueeRect && <MarqueeSelection rect={marqueeRect} scrollContainerRef={scrollContainerRef} />}
+
+                {pasteMode.status === "preview" && (
+                  <PastePreview clipboard={pasteMode.clipboard} scrollContainerRef={scrollContainerRef} />
+                )}
+
+                {editingWord && (
+                  <WordEditOverlay
+                    lineId={editingWord.lineId}
+                    wordIndex={editingWord.wordIndex}
+                    type={editingWord.type}
+                    scrollContainerRef={scrollContainerRef}
+                  />
+                )}
               </div>
 
-              <TimelinePlayhead containerHeight={contentHeight} scrollContainerRef={scrollContainerRef} />
-
-              <SnapGuideline />
-
-              <SnapMarkersOverlay scrollContainerRef={scrollContainerRef} />
-
-              {marqueeRect && <MarqueeSelection rect={marqueeRect} scrollContainerRef={scrollContainerRef} />}
-
-              {pasteMode.status === "preview" && (
-                <PastePreview clipboard={pasteMode.clipboard} scrollContainerRef={scrollContainerRef} />
-              )}
-
-              {editingWord && (
-                <WordEditOverlay
-                  lineId={editingWord.lineId}
-                  wordIndex={editingWord.wordIndex}
-                  type={editingWord.type}
-                  scrollContainerRef={scrollContainerRef}
-                />
-              )}
+              <TimelineInfoPanel />
             </div>
 
-            <TimelineInfoPanel />
+            <Activity mode={previewSidebarOpen ? "visible" : "hidden"}>
+              <TimelinePreviewSidebar />
+            </Activity>
           </div>
-
-          <Activity mode={previewSidebarOpen ? "visible" : "hidden"}>
-            <TimelinePreviewSidebar />
-          </Activity>
         </div>
-      </div>
 
-      <DragOverlay dropAnimation={null}>
-        {activeDrag && dragCells && (
-          <DragGhost
-            cells={dragCells.cells}
-            anchorWidth={dragCells.anchorWidth}
-            anchorHeight={dragCells.anchorHeight}
-            color={dragColor}
-            isSnapped={ghostSnapped}
-          />
-        )}
-      </DragOverlay>
+        <DragOverlay dropAnimation={null}>
+          {activeDrag && dragCells && (
+            <DragGhost
+              cells={dragCells.cells}
+              anchorWidth={dragCells.anchorWidth}
+              anchorHeight={dragCells.anchorHeight}
+              color={dragColor}
+              isSnapped={ghostSnapped}
+            />
+          )}
+        </DragOverlay>
+      </div>
 
       <TimelineContextMenu />
       <TimelineSyllableSplitter />

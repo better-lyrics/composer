@@ -221,6 +221,10 @@ braccato-lyrics .blyrics-container {
     -webkit-mask-size: 50vw 100%;
     mask-repeat: repeat;
     -webkit-mask-repeat: repeat;
+  }
+
+  /* Gated: Blink cannot composite mask-position, so an always-on sweep repaints every frame at opacity 0. */
+  &[data-sweeping]::before {
     animation: waveform-loading-sweep 1.8s linear infinite;
   }
 }
