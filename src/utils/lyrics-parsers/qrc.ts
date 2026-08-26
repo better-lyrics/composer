@@ -3,6 +3,7 @@ import type { Agent } from "@/domain/agent/model";
 import { reconcileLine, type LooseLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { matchAllLineHeaders, matchAllWordTags, stripWordTags } from "@/domain/lyrics-file/qrc-syntax";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { WordTiming } from "@/domain/word/timing";
 import {
@@ -20,8 +21,6 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
-const LINE_HEADER_REGEX = /\[(\d+),(\d+)\]/g;
-const WORD_TAG_REGEX = /\((\d+),(\d+)\)/g;
 const DEFAULT_AGENT_NAME = DEFAULT_AGENTS[0].name;
 
 // -- Types --------------------------------------------------------------------
@@ -73,7 +72,7 @@ function toSeconds(beginMs: string, durationMs: string): { begin: number; end: n
 function parseWords(body: string): QrcLineBody {
   const words: WordTiming[] = [];
   let cursor = 0;
-  for (const match of body.matchAll(WORD_TAG_REGEX)) {
+  for (const match of matchAllWordTags(body)) {
     const { begin, end } = toSeconds(match[1], match[2]);
     words.push({ text: body.slice(cursor, match.index), begin, end });
     cursor = match.index + match[0].length;
@@ -82,7 +81,7 @@ function parseWords(body: string): QrcLineBody {
 }
 
 function tokenizeLines(lyricContent: string): QrcLine[] {
-  const headers = [...lyricContent.matchAll(LINE_HEADER_REGEX)];
+  const headers = matchAllLineHeaders(lyricContent);
   const splitChar = getSplitCharacter();
   return headers.map((header, index) => {
     const bodyEnd = headers[index + 1]?.index ?? lyricContent.length;
@@ -92,7 +91,7 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
     // Text trailing the last tag has no timing of its own, so the line drops to
     // line timing rather than dropping that text.
     if (words.length === 0 || residue.trim().length > 0) {
-      const text = body.replace(WORD_TAG_REGEX, "").trim();
+      const text = stripWordTags(body).trim();
       return { begin, end, words: [], text, plainText: text };
     }
     return {

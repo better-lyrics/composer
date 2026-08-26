@@ -1,3 +1,5 @@
+import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
+
 // -- Types --------------------------------------------------------------------
 
 type SyncType = "syllable" | "word" | "line" | "unsynced";
@@ -6,8 +8,6 @@ type SyncType = "syllable" | "word" | "line" | "unsynced";
 
 const LRC_LINE_TIMESTAMP_REGEX = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/;
 const LRC_INLINE_WORD_TAG_REGEX = /<(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?>/;
-const QRC_LINE_HEADER_REGEX = /\[\d+,\d+\]/;
-const QRC_WORD_TAG_REGEX = /\(\d+,\d+\)/;
 
 // -- LRC ----------------------------------------------------------------------
 

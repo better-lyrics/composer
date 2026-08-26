@@ -1,10 +1,8 @@
+import { QRC_LINE_HEADER_REGEX } from "@/domain/lyrics-file/qrc-syntax";
+
 // -- Types --------------------------------------------------------------------
 
 type LyricsFileType = "txt" | "lrc" | "srt" | "ttml" | "qrc" | "unknown";
-
-// -- Constants ----------------------------------------------------------------
-
-const QRC_LINE_HEADER_REGEX = /\[\d+,\d+\]/;
 
 // -- Detection ----------------------------------------------------------------
 
