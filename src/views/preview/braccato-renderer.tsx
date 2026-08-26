@@ -84,24 +84,25 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     [resumeAutoscroll],
   );
 
-  const setElement = useCallback(
-    (el: BraccatoLyricsElement | null) => {
-      elementRef.current = el;
-      if (!el) return;
-      el.theme = braccatoTheme;
-      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-      el.lyrics = latestLyricsRef.current;
-      el.addEventListener("braccato:line-click", handleLineClick);
-      el.addEventListener("scroll", handleScroll, { passive: true });
-      return () => {
-        el.removeEventListener("braccato:line-click", handleLineClick);
-        el.removeEventListener("scroll", handleScroll);
-        clearResumeWake();
-        elementRef.current = null;
-      };
-    },
-    [handleScroll, handleLineClick, clearResumeWake],
-  );
+  const setElement = useCallback((el: BraccatoLyricsElement | null) => {
+    elementRef.current = el;
+    if (!el) return;
+    el.theme = braccatoTheme;
+    el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+    el.lyrics = latestLyricsRef.current;
+  }, []);
+
+  useEffect(() => {
+    const el = elementRef.current;
+    if (!el) return;
+    el.addEventListener("braccato:line-click", handleLineClick);
+    el.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      el.removeEventListener("braccato:line-click", handleLineClick);
+      el.removeEventListener("scroll", handleScroll);
+      clearResumeWake();
+    };
+  }, [handleLineClick, handleScroll, clearResumeWake]);
 
   useEffect(() => {
     // The element upgrades once the registration import resolves, long after the mount
