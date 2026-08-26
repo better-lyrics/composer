@@ -2,6 +2,7 @@ import { LYRICS_FORMATS_DESCRIBED, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
 
 // -- Importing ----------------------------------------------------------------
 
@@ -92,9 +93,9 @@ const ImportSection: React.FC = () => (
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>
-          <strong>Search</strong>: queries LRCLib, Binimum, and Better Lyrics in parallel. Type a track or paste a video
-          ID; artist, album, and duration narrow the results. Each row shows its sync precision (syllable, word, line,
-          or unsynced) and how close its duration is to your project's.
+          <strong>Search</strong>: queries {providerLabelsProse()} in parallel. Type a track or paste a video ID;
+          artist, album, and duration narrow the results. Each row shows its sync precision (syllable, word, line, or
+          unsynced) and how close its duration is to your project's.
         </li>
         <li>
           <strong>Paste</strong>: drop in raw lyrics. Use <span className={INLINE_CODE}>|</span> to split syllables
