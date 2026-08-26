@@ -1,6 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectQrcSyncType } from "@/domain/lyrics-search/sync-type";
+import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { portatoProvider } from "@/utils/lyrics-search/providers/portato";
 import { LyricsSearchError } from "@/utils/lyrics-search/types";
@@ -339,5 +340,29 @@ describeOnline("portatoProvider", () => {
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });
+  });
+});
+
+// -- Result mapping (stubbed transport, never reaches the network) ------------
+
+describe("portatoProvider result mapping", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("reports no duration even though the query carried one", async () => {
+    vi.stubGlobal(
+      "fetch",
+      async (): Promise<Response> =>
+        new Response(JSON.stringify({ lyrics: WANDERLUST_QRC, provider: "qq" }), {
+          headers: { "content-type": "application/json" },
+        }),
+    );
+
+    const results = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
+
+    expect(results).toHaveLength(1);
+    expect(CACHED_QUERY.durationSec).toBe(307);
+    expect(results[0].durationSec).toBeUndefined();
   });
 });
