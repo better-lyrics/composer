@@ -1,3 +1,4 @@
+import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectLrcSyncType, type SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
@@ -84,7 +85,7 @@ function mapResponseToResult(response: LrcLibResponse): LyricsSearchResult | nul
     track: response.trackName,
     artist: response.artistName,
     album,
-    durationSec: Math.round(response.duration),
+    durationSec: toUsableDurationSec(response.duration),
     payload,
   };
 }

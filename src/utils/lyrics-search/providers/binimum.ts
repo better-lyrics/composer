@@ -1,3 +1,4 @@
+import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
@@ -78,7 +79,7 @@ function mapResponseToResult(result: BinimumSearchResult): LyricsSearchResult {
     track: result.track_name,
     artist: result.artist_name,
     album,
-    durationSec: Math.round(result.duration),
+    durationSec: toUsableDurationSec(result.duration),
     payload,
   };
 }
