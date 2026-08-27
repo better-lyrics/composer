@@ -22,6 +22,22 @@ const CHINESE_CREDIT_PREFIXES = [
   ["制作人", "qrcProducer"],
   ["製作人", "qrcProducer"],
 ] as const;
+const PRODUCTION_CREDIT_PREFIXES = [
+  ["混音", "qrcMixing"],
+  ["吉他", "qrcGuitar"],
+  ["和声", "qrcHarmony"],
+  ["和音", "qrcHarmony"],
+  ["录音", "qrcRecording"],
+  ["演唱", "qrcVocals"],
+  ["原唱", "qrcOriginalVocals"],
+  ["翻唱", "qrcCoverVocals"],
+  ["后期", "qrcPostProduction"],
+  ["策划", "qrcPlanning"],
+  ["伴奏", "qrcAccompaniment"],
+  ["美工", "qrcArtwork"],
+  ["海报", "qrcArtwork"],
+  ["旁白", "qrcNarration"],
+] as const;
 // The ten markers SICKO_MODE_QRC carries name seven distinct combinations.
 const SICKO_MODE_AGENTS: Agent[] = [
   { id: "v1", type: "person", name: "Drake" },
@@ -276,6 +292,30 @@ describe("parseQrc", () => {
       }
     });
 
+    it("keeps a production or performance credit out of the lyrics and out of the songwriters", () => {
+      for (const [prefix, extraKey] of PRODUCTION_CREDIT_PREFIXES) {
+        const result = parseQrc(perCharacterQrcLine(1000, `${prefix}：方文山`));
+        expect(result.lines).toEqual([]);
+        expect(result.metadata.extra?.[extraKey]).toBe("方文山");
+        expect(result.metadata.songwriters).toBeUndefined();
+      }
+    });
+
+    it("credits a writer named by a CJK role noun the parser does not spell out", () => {
+      const result = parseQrc(perCharacterQrcLine(1000, "填词：方文山"));
+      expect(result.lines).toEqual([]);
+      expect(result.metadata.extra?.qrcLyricist).toBe("方文山");
+      expect(result.metadata.songwriters).toEqual(["方文山"]);
+    });
+
+    it("keeps the writers of a document that also credits its production", () => {
+      const result = parseQrc(
+        [perCharacterQrcLine(1000, "作词：方文山"), perCharacterQrcLine(3000, "混音：黄俊郎")].join("\n"),
+      );
+      expect(result.metadata.songwriters).toEqual(["方文山"]);
+      expect(result.metadata.extra).toEqual({ qrcLyricist: "方文山", qrcMixing: "黄俊郎" });
+    });
+
     describe("regressions", () => {
       it("regression: decodes a wrapped credit list whose wrap falls between a surname and its given name", () => {
         const result = parseQrc(WRAPPED_MID_PAIR_QRC);
@@ -469,6 +509,70 @@ describe("parseQrc", () => {
       expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
     });
 
+    it("reads a marker written inline with the lyric it introduces", () => {
+      const result = parseQrc("[1000,1000]Drake：Some (1000,500)lyric(1500,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
+      expect(result.lines.map((line) => line.text)).toEqual(["Some lyric"]);
+      expect(result.lines[0].agentId).toBe("v1");
+    });
+
+    it("keeps the timing of every word an inline marker leaves behind", () => {
+      const result = parseQrc("[1000,1000]Drake：Some (1000,500)lyric(1500,500)");
+      expect(result.lines[0].words).toEqual([
+        { text: "Some ", begin: 1, end: 1.5 },
+        { text: "lyric", begin: 1.5, end: 2 },
+      ]);
+    });
+
+    it("drops the whole syllable an inline marker consumes when nothing follows the colon in it", () => {
+      const result = parseQrc("[1000,1000]Drake：(1000,500)Some lyric(1500,500)");
+      expect(result.lines[0].words).toEqual([{ text: "Some lyric", begin: 1.5, end: 2 }]);
+    });
+
+    it("mints one group agent for an inline marker that names several performers", () => {
+      const result = parseQrc("[1000,1000]Drake/Travis Scott：Yeah (1000,500)ayy(1500,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.text)).toEqual(["Yeah ayy"]);
+    });
+
+    it("shares one agent between an inline marker and the whole-line marker naming the same singers", () => {
+      const result = parseQrc(
+        "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,1000]Travis Scott/Drake：Two (3000,500)three(3500,500)",
+      );
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
+    });
+
+    it("gives lines before the first inline marker the default voice", () => {
+      const result = parseQrc("[1000,500]Intro (1000,500)\n[2000,1000]Drake：Verse (2000,500)two(2500,500)");
+      expect(result.agents).toEqual([
+        { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
+        { id: "v2", type: "person", name: "Drake" },
+      ]);
+      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
+    });
+
+    it("reads an inline marker on a line QQ never split into words", () => {
+      const result = parseQrc("[1000,2500]Drake：No word tags here");
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
+      expect(result.lines[0].text).toBe("No word tags here");
+      expect(result.lines[0].begin).toBe(1);
+      expect(result.lines[0].end).toBe(3.5);
+    });
+
+    it("mints a group agent for the name QQ gives the whole cast", () => {
+      for (const name of ["合", "合唱", "ALL", "all"]) {
+        const result = parseQrc(`[1000,500]${name}：(1000,500)\n[2000,500]One(2000,500)`);
+        expect(result.agents).toEqual([{ id: "v1", type: "group", name }]);
+        expect(result.lines.map((line) => line.agentId)).toEqual(["v1"]);
+      }
+    });
+
+    it("keeps an ordinary solo performer a person", () => {
+      const result = parseQrc("[1000,500]Allison：(1000,500)\n[2000,500]One(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Allison" }]);
+    });
+
     describe("regressions", () => {
       it("regression: reads a marker whose performer name is an initialism instead of keeping it as a lyric", () => {
         const result = parseQrc(SICKO_MODE_QRC);
@@ -523,6 +627,93 @@ describe("parseQrc", () => {
       const result = parseQrc("[1000,500]\n[2000,500]Bye(2000,500)");
       expect(result.lines).toHaveLength(1);
       expect(result.lines[0].text).toBe("Bye");
+    });
+
+    it("keeps a lyric whose colon follows more text than a performer name", () => {
+      const long = "a".repeat(21);
+      const result = parseQrc(`[1000,1000]${long}：Some (1000,500)lyric(1500,500)`);
+      expect(result.agents).toBeUndefined();
+      expect(result.lines.map((line) => line.text)).toEqual([`${long}：Some lyric`]);
+    });
+
+    it("keeps a lyric clause that ends in a colon mid-line", () => {
+      const result = parseQrc("[1000,1000]Wait, listen：I (1000,500)said(1500,500)");
+      expect(result.agents).toBeUndefined();
+      expect(result.lines.map((line) => line.text)).toEqual(["Wait, listen：I said"]);
+    });
+
+    it("drops the whitespace syllables an inline marker leaves at the head of a line", () => {
+      const result = parseQrc("[1000,1500]Drake： (1000,300) (1300,200)Some(1500,500)");
+      expect(result.lines[0].words).toEqual([{ text: "Some", begin: 1.5, end: 2 }]);
+    });
+
+    it("rebuilds the split characters of a CJK lyric an inline marker introduces", () => {
+      const splitChar = getSplitCharacter();
+      const result = parseQrc("[1000,1500]合：我(1000,500)们(1500,500)走(2000,500)");
+      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "合" }]);
+      expect(result.lines[0].text).toBe(`我${splitChar}们${splitChar}走`);
+      expect(result.lines[0].words?.map((word) => word.text)).toEqual(["我", "们", "走"]);
+    });
+  });
+
+  describe("zero durations", () => {
+    it("stretches a line that declares no duration to the next line's start", () => {
+      const result = parseQrc("[1000,0]No word tags here\n[3000,500]Next(3000,500)");
+      expect(result.lines[0].begin).toBe(1);
+      expect(result.lines[0].end).toBe(3);
+    });
+
+    it("stretches a final word that declares no duration to the next line's start", () => {
+      const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)\n[3000,500]Next(3000,500)");
+      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 3 });
+    });
+
+    it("stretches the last line of a document to the song duration", () => {
+      const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)", 5);
+      expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 5 });
+    });
+
+    it("stretches the last line-synced line of a document to the song duration", () => {
+      const result = parseQrc("[1000,0]No word tags here", 5);
+      expect(result.lines[0].end).toBe(5);
+    });
+
+    describe("edge cases", () => {
+      it("leaves a zero duration alone when no song duration is known", () => {
+        const result = parseQrc("[1000,500]Hi (1000,250)there(1250,0)");
+        expect(result.lines[0].words?.at(-1)).toEqual({ text: "there", begin: 1.25, end: 1.25 });
+      });
+
+      it("leaves a zero duration alone when the next line starts no later", () => {
+        const result = parseQrc("[3000,0]First\n[1000,500]Second(1000,500)");
+        expect(result.lines[0].end).toBe(3);
+      });
+
+      it("leaves a zero duration alone when the song is shorter than the line", () => {
+        const result = parseQrc("[9000,0]Late line", 5);
+        expect(result.lines[0].end).toBe(9);
+      });
+
+      it("leaves a word that declares a duration untouched", () => {
+        const result = parseQrc("[1000,500]Hi (1000,250)there(1250,250)\n[3000,500]Next(3000,500)");
+        expect(result.lines[0].words?.at(-1)?.end).toBe(1.5);
+      });
+
+      it("leaves a zero-duration word that is not the last one untouched", () => {
+        const result = parseQrc("[1000,500]Hi (1000,0)there(1250,250)\n[3000,500]Next(3000,500)");
+        expect(result.lines[0].words?.[0]).toEqual({ text: "Hi ", begin: 1, end: 1 });
+      });
+
+      it("reads the next line's start through a marker line", () => {
+        const result = parseQrc("[1000,0]No word tags here\n[2000,500]Drake：(2000,500)\n[3000,500]Next(3000,500)");
+        expect(result.lines[0].end).toBe(2);
+      });
+
+      it("shifts a backfilled end by the header offset like every other time", () => {
+        const result = parseQrc("[offset:1000]\n[1000,0]No word tags here\n[3000,500]Next(3000,500)");
+        expect(result.lines[0].begin).toBe(2);
+        expect(result.lines[0].end).toBe(4);
+      });
     });
   });
 

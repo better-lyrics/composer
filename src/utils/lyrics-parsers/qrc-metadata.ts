@@ -4,33 +4,87 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 
 const MS_PER_SECOND = 1000;
 const HEADER_TAG_REGEX = /\[([a-z]+):([^\]]*)\]/gi;
-const CREDIT_PREFIX_REGEX =
-  /^(lyrics|composed|arranged|produced|written)\s*by\s*[:：]|^(lyricist|composer|arranger|producer|作词|作曲|编曲|編曲|制作人|製作人)\s*[:：]/i;
 const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
 const LATIN_LETTER_REGEX = /[a-z]/i;
 const MARKER_MAX_NAME_LENGTH = 40;
+// Half the whole-line bound. A line that is nothing but "Name：" can only be a
+// marker, so it may be generous; an inline marker competes with lyric text that
+// happens to carry a colon, so only a name-sized run before one reads as a name.
+const MARKER_MAX_INLINE_NAME_LENGTH = 20;
 const MARKER_MAX_PERFORMERS = 8;
 const TRAILING_COLON_REGEX = /[:：]$/;
 const COLON_REGEX = /[:：]/;
 // The ASCII period is absent on purpose: an initialism carries one, as in "The Notorious B.I.G.".
 const MARKER_REJECTED_PUNCTUATION_REGEX = /[,!?;。，！？]/;
+const WHITESPACE_REGEX = /\s+/g;
 const FALLBACK_CREDIT_KEY = "qrcCredits";
-const CREDIT_EXTRA_KEYS = new Map([
-  ["lyrics", "qrcLyricsBy"],
-  ["composed", "qrcComposedBy"],
-  ["arranged", "qrcArrangedBy"],
-  ["produced", "qrcProducedBy"],
-  ["written", "qrcWrittenBy"],
+const GROUP_PERFORMER_NAMES = new Set(["合", "合唱", "all"]);
+const CREDIT_KEYS_BY_PREFIX = new Map([
+  ["lyricsby", "qrcLyricsBy"],
+  ["composedby", "qrcComposedBy"],
+  ["arrangedby", "qrcArrangedBy"],
+  ["producedby", "qrcProducedBy"],
+  ["writtenby", "qrcWrittenBy"],
   ["lyricist", "qrcLyricsBy"],
   ["composer", "qrcComposedBy"],
   ["arranger", "qrcArrangedBy"],
   ["producer", "qrcProducedBy"],
+  ["mixing", "qrcMixing"],
+  ["mastering", "qrcMastering"],
+  ["vocal", "qrcVocals"],
+  ["vocals", "qrcVocals"],
+  ["guitar", "qrcGuitar"],
+  ["bass", "qrcBass"],
+  ["drums", "qrcDrums"],
   ["作词", "qrcLyricist"],
   ["作曲", "qrcComposer"],
   ["编曲", "qrcArranger"],
   ["編曲", "qrcArranger"],
   ["制作人", "qrcProducer"],
   ["製作人", "qrcProducer"],
+  ["混音", "qrcMixing"],
+  ["录音", "qrcRecording"],
+  ["錄音", "qrcRecording"],
+  ["和音", "qrcHarmony"],
+  ["吉他", "qrcGuitar"],
+  ["演唱", "qrcVocals"],
+  ["原唱", "qrcOriginalVocals"],
+  ["翻唱", "qrcCoverVocals"],
+  ["后期", "qrcPostProduction"],
+  ["後期", "qrcPostProduction"],
+  ["策划", "qrcPlanning"],
+  ["策劃", "qrcPlanning"],
+  ["伴奏", "qrcAccompaniment"],
+  ["美工", "qrcArtwork"],
+  ["海报", "qrcArtwork"],
+  ["海報", "qrcArtwork"],
+  ["旁白", "qrcNarration"],
+]);
+// QQ names a CJK role after its head noun, so a prefix nothing above spells out
+// is still that role when it ends in one. Bounded because only a role noun is
+// this short: without the bound any lyric clause ending in 词 reads as a credit.
+const CREDIT_SUFFIX_MAX_LENGTH = 4;
+const CREDIT_KEYS_BY_SUFFIX = new Map([
+  ["词", "qrcLyricist"],
+  ["詞", "qrcLyricist"],
+  ["曲", "qrcComposer"],
+  ["声", "qrcHarmony"],
+  ["聲", "qrcHarmony"],
+  ["音", FALLBACK_CREDIT_KEY],
+]);
+// Authorship, and nothing else. A mixing or guitar credit names a real
+// contributor, so the line is read and kept, but calling them a songwriter is a
+// claim the document never made.
+const WRITING_CREDIT_KEYS = new Set([
+  "qrcLyricsBy",
+  "qrcComposedBy",
+  "qrcArrangedBy",
+  "qrcProducedBy",
+  "qrcWrittenBy",
+  "qrcLyricist",
+  "qrcComposer",
+  "qrcArranger",
+  "qrcProducer",
 ]);
 
 // -- Types --------------------------------------------------------------------
@@ -38,6 +92,11 @@ const CREDIT_EXTRA_KEYS = new Map([
 interface HeaderTags {
   metadata: Partial<ProjectMetadata>;
   offsetSeconds: number;
+}
+
+interface InlineSingerMarker {
+  performers: string[];
+  colonIndex: number;
 }
 
 // -- Header tags --------------------------------------------------------------
@@ -76,17 +135,38 @@ function splitSlashList(value: string): string[] {
 
 // -- Credits ------------------------------------------------------------------
 
-function isCreditLine(text: string): boolean {
-  return CREDIT_PREFIX_REGEX.test(text.trim());
+// Everything before the first colon, with its spacing and casing normalised away.
+// Taking the whole run is what anchors the match: "Song lyrics by：X" reads as
+// the prefix "songlyricsby", which names no role.
+function creditRoleKey(text: string): string | null {
+  const colonIndex = text.search(COLON_REGEX);
+  if (colonIndex === -1) return null;
+
+  const prefix = text.slice(0, colonIndex).replace(WHITESPACE_REGEX, "").toLowerCase();
+  if (prefix.length === 0) return null;
+
+  const named = CREDIT_KEYS_BY_PREFIX.get(prefix);
+  if (named !== undefined) return named;
+  if (prefix.length > CREDIT_SUFFIX_MAX_LENGTH) return null;
+
+  for (const [suffix, key] of CREDIT_KEYS_BY_SUFFIX) {
+    if (prefix.endsWith(suffix)) return key;
+  }
+  return null;
 }
 
-// The fallback catches a prefix added to CREDIT_PREFIX_REGEX but not to
-// CREDIT_EXTRA_KEYS, so a new prefix degrades to a generic key instead of
-// silently dropping the credit.
+function isCreditLine(text: string): boolean {
+  return creditRoleKey(text) !== null;
+}
+
+// The fallback keeps a credit whose role has no name of its own out of the
+// lyrics and in metadata, rather than dropping it.
 function creditExtraKey(text: string): string {
-  const match = CREDIT_PREFIX_REGEX.exec(text.trim());
-  const prefix = match?.[1] ?? match?.[2] ?? "";
-  return CREDIT_EXTRA_KEYS.get(prefix.toLowerCase()) ?? FALLBACK_CREDIT_KEY;
+  return creditRoleKey(text) ?? FALLBACK_CREDIT_KEY;
+}
+
+function isWritingCreditKey(key: string): boolean {
+  return WRITING_CREDIT_KEYS.has(key);
 }
 
 function creditValue(text: string): string {
@@ -129,7 +209,7 @@ function decodeCredits(value: string): string[] {
 // -- Title line ---------------------------------------------------------------
 
 function normalizeTitleLine(text: string): string {
-  return text.replace(/\s+/g, "").toLowerCase();
+  return text.replace(WHITESPACE_REGEX, "").toLowerCase();
 }
 
 function isQrcTitleLine(text: string, tags: Partial<ProjectMetadata>): boolean {
@@ -151,17 +231,35 @@ function dedupeIgnoringCase(names: string[]): string[] {
 
 // The length bound is per performer: a duet marker is no less a marker for being twice as long.
 // The count bound replaces the ceiling that per-performer lengths alone no longer impose.
-function readSingerMarker(text: string): string[] | null {
-  const trimmed = text.trim();
-  if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
-
-  const body = trimmed.slice(0, -1);
+function readPerformers(body: string, maxNameLength: number): string[] | null {
   if (MARKER_REJECTED_PUNCTUATION_REGEX.test(body) || COLON_REGEX.test(body)) return null;
 
   const performers = dedupeIgnoringCase(splitSlashList(body));
   if (performers.length === 0 || performers.length > MARKER_MAX_PERFORMERS) return null;
-  if (performers.some((performer) => performer.length > MARKER_MAX_NAME_LENGTH)) return null;
+  if (performers.some((performer) => performer.length > maxNameLength)) return null;
   return performers;
+}
+
+function readSingerMarker(text: string): string[] | null {
+  const trimmed = text.trim();
+  if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
+  return readPerformers(trimmed.slice(0, -1), MARKER_MAX_NAME_LENGTH);
+}
+
+// QQ also writes a marker inline, with the colon landing mid-syllable and the
+// lyric it introduces following on the same line. The colon index is reported
+// rather than the lyric, because the caller has to cut the same point out of a
+// word array whose timing must survive the cut.
+function readInlineSingerMarker(text: string): InlineSingerMarker | null {
+  const colonIndex = text.search(COLON_REGEX);
+  if (colonIndex === -1) return null;
+
+  const performers = readPerformers(text.slice(0, colonIndex), MARKER_MAX_INLINE_NAME_LENGTH);
+  return performers === null ? null : { performers, colonIndex };
+}
+
+function isGroupPerformerName(name: string): boolean {
+  return GROUP_PERFORMER_NAMES.has(name.toLowerCase());
 }
 
 // -- Exports ------------------------------------------------------------------
@@ -171,8 +269,11 @@ export {
   creditValue,
   decodeCredits,
   isCreditLine,
+  isGroupPerformerName,
   isQrcTitleLine,
+  isWritingCreditKey,
   MS_PER_SECOND,
   parseHeaderTags,
+  readInlineSingerMarker,
   readSingerMarker,
 };

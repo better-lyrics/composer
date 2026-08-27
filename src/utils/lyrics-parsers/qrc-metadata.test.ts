@@ -5,14 +5,44 @@ import {
   creditValue,
   decodeCredits,
   isCreditLine,
+  isGroupPerformerName,
   isQrcTitleLine,
+  isWritingCreditKey,
   parseHeaderTags,
+  readInlineSingerMarker,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 
 // -- Constants ----------------------------------------------------------------
 
 const WANDERLUST_TAGS = { title: "Wanderlust", artists: ["The Weeknd"] };
+const PRODUCTION_PREFIXES_CJK = [
+  "混音",
+  "吉他",
+  "和声",
+  "和音",
+  "录音",
+  "演唱",
+  "原唱",
+  "翻唱",
+  "后期",
+  "策划",
+  "伴奏",
+  "美工",
+  "海报",
+  "旁白",
+];
+const WRITING_CREDIT_KEYS = [
+  "qrcLyricsBy",
+  "qrcComposedBy",
+  "qrcArrangedBy",
+  "qrcProducedBy",
+  "qrcWrittenBy",
+  "qrcLyricist",
+  "qrcComposer",
+  "qrcArranger",
+  "qrcProducer",
+];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -120,6 +150,31 @@ describe("isCreditLine", () => {
     expect(isCreditLine("Producer：Quincy Jones")).toBe(true);
   });
 
+  it("matches the CJK production and performance prefixes", () => {
+    for (const prefix of PRODUCTION_PREFIXES_CJK) {
+      expect(isCreditLine(`${prefix}：方文山`)).toBe(true);
+    }
+  });
+
+  it("matches the English production and performance prefixes", () => {
+    for (const prefix of ["Mixing", "Mastering", "Vocal", "Vocals", "Guitar", "Bass", "Drums"]) {
+      expect(isCreditLine(`${prefix}：Mike Dean`)).toBe(true);
+    }
+  });
+
+  it("matches a CJK role named only by its head noun", () => {
+    expect(isCreditLine("词：方文山")).toBe(true);
+    expect(isCreditLine("曲：周杰倫")).toBe(true);
+    expect(isCreditLine("填词：方文山")).toBe(true);
+    expect(isCreditLine("配音：方文山")).toBe(true);
+  });
+
+  it("matches the traditional form of a CJK prefix", () => {
+    for (const prefix of ["詞", "後期", "錄音", "策劃", "海報", "和聲"]) {
+      expect(isCreditLine(`${prefix}：方文山`)).toBe(true);
+    }
+  });
+
   describe("edge cases", () => {
     it("matches the remaining English prefixes", () => {
       expect(isCreditLine("Arranged by：X")).toBe(true);
@@ -178,6 +233,20 @@ describe("isCreditLine", () => {
       expect(isCreditLine("")).toBe(false);
       expect(isCreditLine("   ")).toBe(false);
     });
+
+    it("does not match a CJK role word that is not at the start", () => {
+      expect(isCreditLine("这首歌的作词：X")).toBe(false);
+    });
+
+    it("does not match a performer name that ends in no role noun", () => {
+      expect(isCreditLine("周杰倫：")).toBe(false);
+      expect(isCreditLine("合唱：")).toBe(false);
+    });
+
+    it("does not match a line whose colon opens it", () => {
+      expect(isCreditLine("：X")).toBe(false);
+      expect(isCreditLine("  ：X")).toBe(false);
+    });
   });
 });
 
@@ -220,6 +289,122 @@ describe("creditExtraKey", () => {
 
     it("falls back to a generic key rather than losing the credit", () => {
       expect(creditExtraKey("Nothing here")).toBe("qrcCredits");
+    });
+
+    it("derives a key from a CJK production or performance prefix", () => {
+      expect(creditExtraKey("混音：X")).toBe("qrcMixing");
+      expect(creditExtraKey("吉他：X")).toBe("qrcGuitar");
+      expect(creditExtraKey("和声：X")).toBe("qrcHarmony");
+      expect(creditExtraKey("和音：X")).toBe("qrcHarmony");
+      expect(creditExtraKey("录音：X")).toBe("qrcRecording");
+      expect(creditExtraKey("演唱：X")).toBe("qrcVocals");
+      expect(creditExtraKey("原唱：X")).toBe("qrcOriginalVocals");
+      expect(creditExtraKey("翻唱：X")).toBe("qrcCoverVocals");
+      expect(creditExtraKey("后期：X")).toBe("qrcPostProduction");
+      expect(creditExtraKey("策划：X")).toBe("qrcPlanning");
+      expect(creditExtraKey("伴奏：X")).toBe("qrcAccompaniment");
+      expect(creditExtraKey("旁白：X")).toBe("qrcNarration");
+    });
+
+    it("files graphic design and poster credits under one artwork key", () => {
+      expect(creditExtraKey("美工：X")).toBe("qrcArtwork");
+      expect(creditExtraKey("海报：X")).toBe("qrcArtwork");
+    });
+
+    it("derives a key from an English production or performance prefix", () => {
+      expect(creditExtraKey("Mixing：X")).toBe("qrcMixing");
+      expect(creditExtraKey("Mastering：X")).toBe("qrcMastering");
+      expect(creditExtraKey("Vocal：X")).toBe("qrcVocals");
+      expect(creditExtraKey("Vocals：X")).toBe("qrcVocals");
+      expect(creditExtraKey("Guitar：X")).toBe("qrcGuitar");
+      expect(creditExtraKey("Bass：X")).toBe("qrcBass");
+      expect(creditExtraKey("Drums：X")).toBe("qrcDrums");
+    });
+
+    it("files a CJK role and its head noun under one key", () => {
+      expect(creditExtraKey("词：X")).toBe(creditExtraKey("作词：X"));
+      expect(creditExtraKey("曲：X")).toBe(creditExtraKey("作曲：X"));
+      expect(creditExtraKey("填词：X")).toBe("qrcLyricist");
+      expect(creditExtraKey("詞：X")).toBe("qrcLyricist");
+      expect(creditExtraKey("和聲：X")).toBe("qrcHarmony");
+    });
+
+    it("keeps an arranger apart from a composer though both end in the same noun", () => {
+      expect(creditExtraKey("编曲：X")).toBe("qrcArranger");
+      expect(creditExtraKey("編曲：X")).toBe("qrcArranger");
+      expect(creditExtraKey("作曲：X")).toBe("qrcComposer");
+    });
+
+    it("falls back to a generic key for a role noun it cannot name", () => {
+      expect(creditExtraKey("配音：X")).toBe("qrcCredits");
+    });
+  });
+});
+
+describe("isWritingCreditKey", () => {
+  it("counts every lyricist, composer, arranger and producer key as a writing credit", () => {
+    for (const key of WRITING_CREDIT_KEYS) {
+      expect(isWritingCreditKey(key)).toBe(true);
+    }
+  });
+
+  it("does not count a production or performance key as a writing credit", () => {
+    for (const key of [
+      "qrcMixing",
+      "qrcMastering",
+      "qrcVocals",
+      "qrcOriginalVocals",
+      "qrcCoverVocals",
+      "qrcGuitar",
+      "qrcBass",
+      "qrcDrums",
+      "qrcHarmony",
+      "qrcRecording",
+      "qrcPostProduction",
+      "qrcPlanning",
+      "qrcAccompaniment",
+      "qrcArtwork",
+      "qrcNarration",
+    ]) {
+      expect(isWritingCreditKey(key)).toBe(false);
+    }
+  });
+
+  describe("edge cases", () => {
+    it("does not count the generic fallback key as a writing credit", () => {
+      expect(isWritingCreditKey("qrcCredits")).toBe(false);
+    });
+
+    it("does not count a key that is no credit at all", () => {
+      expect(isWritingCreditKey("qrcTranscriber")).toBe(false);
+      expect(isWritingCreditKey("")).toBe(false);
+    });
+  });
+});
+
+describe("isGroupPerformerName", () => {
+  it("reads the names QQ writes for the whole cast", () => {
+    expect(isGroupPerformerName("合")).toBe(true);
+    expect(isGroupPerformerName("合唱")).toBe(true);
+    expect(isGroupPerformerName("ALL")).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("reads the name whatever its case", () => {
+      expect(isGroupPerformerName("all")).toBe(true);
+      expect(isGroupPerformerName("All")).toBe(true);
+      expect(isGroupPerformerName("aLL")).toBe(true);
+    });
+
+    it("does not read a name that merely starts with one", () => {
+      expect(isGroupPerformerName("Allison")).toBe(false);
+      expect(isGroupPerformerName("合唱团")).toBe(false);
+    });
+
+    it("does not read an ordinary performer name", () => {
+      expect(isGroupPerformerName("Drake")).toBe(false);
+      expect(isGroupPerformerName("周杰倫")).toBe(false);
+      expect(isGroupPerformerName("")).toBe(false);
     });
   });
 });
@@ -530,6 +715,99 @@ describe("readSingerMarker", () => {
     it("rejects an empty line", () => {
       expect(readSingerMarker("")).toBeNull();
       expect(readSingerMarker("   ")).toBeNull();
+    });
+  });
+});
+
+describe("readInlineSingerMarker", () => {
+  it("reads a name that a lyric follows on the same line", () => {
+    expect(readInlineSingerMarker("Drake：Some lyric")).toEqual({ performers: ["Drake"], colonIndex: 5 });
+    expect(readInlineSingerMarker("Drake:Some lyric")).toEqual({ performers: ["Drake"], colonIndex: 5 });
+  });
+
+  it("reads every performer a slash-separated inline marker names", () => {
+    expect(readInlineSingerMarker("Drake/Travis Scott：Some lyric")).toEqual({
+      performers: ["Drake", "Travis Scott"],
+      colonIndex: 18,
+    });
+  });
+
+  it("reports the colon of the marker, not a later one in the lyric", () => {
+    expect(readInlineSingerMarker("Drake：a：b")).toEqual({ performers: ["Drake"], colonIndex: 5 });
+  });
+
+  describe("edge cases", () => {
+    it("reads a name right on the inline length bound", () => {
+      expect(readInlineSingerMarker(`${"a".repeat(20)}：lyric`)?.performers).toEqual(["a".repeat(20)]);
+    });
+
+    it("bounds an inline name more tightly than a whole-line one", () => {
+      const name = "a".repeat(21);
+      expect(readInlineSingerMarker(`${name}：lyric`)).toBeNull();
+      expect(readSingerMarker(`${name}：`)).toEqual([name]);
+    });
+
+    it("bounds the length of each performer rather than of the marker", () => {
+      const two = `${"a".repeat(20)}/${"b".repeat(20)}`;
+      expect(readInlineSingerMarker(`${two}：lyric`)?.performers).toHaveLength(2);
+      expect(readInlineSingerMarker(`Drake/${"a".repeat(21)}：lyric`)).toBeNull();
+    });
+
+    it("bounds how many performers one inline marker may name", () => {
+      const eight = Array.from({ length: 8 }, (_, index) => `P${index}`);
+      expect(readInlineSingerMarker(`${eight.join("/")}：lyric`)?.performers).toEqual(eight);
+      expect(readInlineSingerMarker(`${[...eight, "P8"].join("/")}：lyric`)).toBeNull();
+    });
+
+    it("rejects a lyric clause that happens to carry a colon", () => {
+      expect(readInlineSingerMarker("And then she said, listen to me: I am here")).toBeNull();
+      expect(readInlineSingerMarker("Wait! I said：no")).toBeNull();
+    });
+
+    it("names a performer once however often one inline marker repeats them", () => {
+      expect(readInlineSingerMarker("Drake/DRAKE：lyric")?.performers).toEqual(["Drake"]);
+    });
+
+    it("trims whitespace around each performer", () => {
+      expect(readInlineSingerMarker("  Drake /  Travis Scott ：lyric")?.performers).toEqual(["Drake", "Travis Scott"]);
+    });
+
+    it("reads an inline marker whose lyric is a single character", () => {
+      expect(readInlineSingerMarker("合：走")).toEqual({ performers: ["合"], colonIndex: 1 });
+    });
+
+    it("still reads a whole-line marker, which the caller resolves first", () => {
+      expect(readInlineSingerMarker("Drake：")).toEqual({ performers: ["Drake"], colonIndex: 5 });
+    });
+  });
+
+  describe("invariants", () => {
+    it("never reports a colon index the name does not precede", () => {
+      const marker = readInlineSingerMarker("Drake/Travis Scott：Some lyric");
+      expect(marker?.colonIndex).toBeGreaterThan(0);
+    });
+
+    it("returns a fresh result the caller may keep", () => {
+      const first = readInlineSingerMarker("Drake：lyric");
+      const second = readInlineSingerMarker("Drake：lyric");
+      expect(first).toEqual(second);
+      expect(first).not.toBe(second);
+    });
+  });
+
+  describe("error paths", () => {
+    it("rejects a line with no colon at all", () => {
+      expect(readInlineSingerMarker("Some lyric")).toBeNull();
+      expect(readInlineSingerMarker("")).toBeNull();
+    });
+
+    it("rejects a line whose colon opens it", () => {
+      expect(readInlineSingerMarker("：lyric")).toBeNull();
+      expect(readInlineSingerMarker("  ：lyric")).toBeNull();
+    });
+
+    it("rejects a marker whose slashes name nobody", () => {
+      expect(readInlineSingerMarker("///：lyric")).toBeNull();
     });
   });
 });

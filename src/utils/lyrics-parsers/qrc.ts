@@ -11,9 +11,12 @@ import {
   creditValue,
   decodeCredits,
   isCreditLine,
+  isGroupPerformerName,
   isQrcTitleLine,
+  isWritingCreditKey,
   MS_PER_SECOND,
   parseHeaderTags,
+  readInlineSingerMarker,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
@@ -104,6 +107,24 @@ function tokenizeLines(lyricContent: string): QrcLine[] {
   });
 }
 
+// QQ writes a zero duration where it means "until whatever comes next", so a
+// line or a final word that declares none runs to the next line in the document,
+// and the last line of all runs to the end of the song.
+function backfillZeroDurations(lines: QrcLine[], songEnd?: number): QrcLine[] {
+  return lines.map((line, index) => {
+    const nextBegin = lines[index + 1]?.begin ?? songEnd;
+    if (nextBegin === undefined) return line;
+
+    if (line.words.length === 0) {
+      return line.end === line.begin && nextBegin > line.begin ? { ...line, end: nextBegin } : line;
+    }
+
+    const lastWord = line.words.at(-1);
+    if (lastWord === undefined || lastWord.end !== lastWord.begin || nextBegin <= lastWord.begin) return line;
+    return { ...line, words: [...line.words.slice(0, -1), { ...lastWord, end: nextBegin }] };
+  });
+}
+
 function shiftQrcLine(line: QrcLine, offsetSeconds: number): QrcLine {
   const shift = (seconds: number) => Math.max(0, seconds + offsetSeconds);
   return {
@@ -133,12 +154,48 @@ function ensureAgent(performers: string[], agents: Agent[], byKey: Map<string, A
 
   const agent: Agent = {
     id: agentIdAt(agents.length),
-    type: performers.length > 1 ? "group" : "person",
+    type: performers.length > 1 || isGroupPerformerName(performers[0]) ? "group" : "person",
     name: performers.join(", "),
   };
   agents.push(agent);
   byKey.set(key, agent);
   return agent;
+}
+
+function dropLeadingBlanks(words: WordTiming[]): WordTiming[] {
+  const start = words.findIndex((word) => word.text.trim().length > 0);
+  if (start === -1) return [];
+
+  const kept = words.slice(start);
+  const trimmed = kept[0].text.trimStart();
+  return trimmed === kept[0].text ? kept : [{ ...kept[0], text: trimmed }, ...kept.slice(1)];
+}
+
+// A syllable the marker only partly covers keeps its own timing: where inside it
+// the singer stopped and the lyric started is not something the document records.
+function wordsAfterColon(words: WordTiming[], colonIndex: number): WordTiming[] {
+  let consumed = 0;
+  for (let index = 0; index < words.length; index++) {
+    const wordEnd = consumed + words[index].text.length;
+    if (wordEnd > colonIndex) {
+      const remainder = words[index].text.slice(colonIndex - consumed + 1);
+      const tail = words.slice(index + 1);
+      return dropLeadingBlanks(remainder.length > 0 ? [{ ...words[index], text: remainder }, ...tail] : tail);
+    }
+    consumed = wordEnd;
+  }
+  return [];
+}
+
+function lyricAfterMarker(line: QrcLine, colonIndex: number, agentId: string): LooseLine | null {
+  if (line.words.length === 0) {
+    const text = line.text.slice(colonIndex + 1).trim();
+    return text.length === 0 ? null : { id: generateLineId(), text, agentId, begin: line.begin, end: line.end };
+  }
+
+  const words = wordsAfterColon(line.words, colonIndex);
+  if (words.length === 0) return null;
+  return { id: generateLineId(), text: reconstructLineText(words, getSplitCharacter()), agentId, words };
 }
 
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
@@ -149,6 +206,15 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
   const agents: Agent[] = [];
   const agentsByKey = new Map<string, Agent>();
   let currentAgentId = agentIdAt(0);
+
+  // Lines already emitted predate every marker, so they belong to an unnamed
+  // voice rather than to the first singer the document happens to announce.
+  const markSinger = (performers: string[]): string => {
+    if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
+      ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
+    }
+    return ensureAgent(performers, agents, agentsByKey).id;
+  };
 
   for (const line of parsed) {
     if (line.text.length === 0) continue;
@@ -167,12 +233,15 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
 
     const performers = readSingerMarker(line.plainText);
     if (performers !== null) {
-      // Lines already emitted predate every marker, so they belong to an unnamed
-      // voice rather than to the first singer the document happens to announce.
-      if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
-        ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
-      }
-      currentAgentId = ensureAgent(performers, agents, agentsByKey).id;
+      currentAgentId = markSinger(performers);
+      continue;
+    }
+
+    const inlineMarker = readInlineSingerMarker(line.plainText);
+    if (inlineMarker !== null) {
+      currentAgentId = markSinger(inlineMarker.performers);
+      const lyric = lyricAfterMarker(line, inlineMarker.colonIndex, currentAgentId);
+      if (lyric !== null) lines.push(lyric);
       continue;
     }
 
@@ -188,6 +257,7 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
   const songwriters = new Set<string>();
   for (const [key, creditList] of creditsByKey) {
     extra[key] = creditList;
+    if (!isWritingCreditKey(key)) continue;
     for (const name of decodeCredits(creditList)) songwriters.add(name);
   }
 
@@ -199,12 +269,13 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
 
 // -- QRC Parser ---------------------------------------------------------------
 
-function parseQrc(content: string): ParseResult {
+function parseQrc(content: string, fallbackDuration?: number): ParseResult {
   const lyricContent = extractLyricContent(content);
   const header = parseHeaderTags(lyricContent);
   const tokenized = tokenizeLines(lyricContent);
-  const parsed =
+  const shifted =
     header.offsetSeconds === 0 ? tokenized : tokenized.map((line) => shiftQrcLine(line, header.offsetSeconds));
+  const parsed = backfillZeroDurations(shifted, fallbackDuration);
   const { lines, metadata, agents } = partitionQrcLines(parsed, header.metadata);
 
   const reconciledLines = lines.map(reconcileLine);
