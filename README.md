@@ -139,3 +139,9 @@ Composer is dual-licensed.
 The open-source license is [AGPL-3.0](LICENSE). You are free to use, modify, and self-host Composer under its terms.
 
 A commercial license is also available. It removes the AGPL copyleft obligations and covers commercial use of Composer's output, such as a record label or distributor publishing generated lyrics as part of a release. For commercial or enterprise licensing, reach out to composer@boidu.dev.
+
+## Contributors
+
+<a href="https://github.com/better-lyrics/composer/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=better-lyrics/composer" />
+</a>
