@@ -68,19 +68,17 @@ const CREDIT_KEYS_BY_SUFFIX = new Map([
   ["聲", "qrcHarmony"],
   ["音", FALLBACK_CREDIT_KEY],
 ]);
-// Authorship, and nothing else. A mixing or guitar credit names a real
-// contributor, so the line is read and kept, but calling them a songwriter is a
-// claim the document never made.
+// Authorship, and nothing else: songwriters exports as a songwriter claim. A
+// producer, mixer or guitarist is a real contributor whose line is read and kept
+// in extra, but naming them a writer is a claim the document never made.
 const WRITING_CREDIT_KEYS = new Set([
   "qrcLyricsBy",
   "qrcComposedBy",
   "qrcArrangedBy",
-  "qrcProducedBy",
   "qrcWrittenBy",
   "qrcLyricist",
   "qrcComposer",
   "qrcArranger",
-  "qrcProducer",
 ]);
 
 // -- Types --------------------------------------------------------------------

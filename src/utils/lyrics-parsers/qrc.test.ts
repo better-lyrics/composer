@@ -19,10 +19,10 @@ const CHINESE_CREDIT_PREFIXES = [
   ["作曲", "qrcComposer"],
   ["编曲", "qrcArranger"],
   ["編曲", "qrcArranger"],
-  ["制作人", "qrcProducer"],
-  ["製作人", "qrcProducer"],
 ] as const;
 const PRODUCTION_CREDIT_PREFIXES = [
+  ["制作人", "qrcProducer"],
+  ["製作人", "qrcProducer"],
   ["混音", "qrcMixing"],
   ["吉他", "qrcGuitar"],
   ["和声", "qrcHarmony"],
@@ -299,6 +299,17 @@ describe("parseQrc", () => {
         expect(result.metadata.extra?.[extraKey]).toBe("方文山");
         expect(result.metadata.songwriters).toBeUndefined();
       }
+    });
+
+    it("keeps a producer in metadata without claiming they wrote the song", () => {
+      const result = parseQrc(
+        "[1000,500]Lyrics by：(1000,250)Michael J. Jackson(1250,250)\n[2000,500]Produced by：(2000,250)Quincy Jones(2250,250)",
+      );
+      expect(result.metadata.extra).toEqual({
+        qrcLyricsBy: "Michael J. Jackson",
+        qrcProducedBy: "Quincy Jones",
+      });
+      expect(result.metadata.songwriters).toEqual(["Michael J. Jackson"]);
     });
 
     it("credits a writer named by a CJK role noun the parser does not spell out", () => {

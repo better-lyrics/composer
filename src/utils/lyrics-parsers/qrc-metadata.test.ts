@@ -35,12 +35,10 @@ const WRITING_CREDIT_KEYS = [
   "qrcLyricsBy",
   "qrcComposedBy",
   "qrcArrangedBy",
-  "qrcProducedBy",
   "qrcWrittenBy",
   "qrcLyricist",
   "qrcComposer",
   "qrcArranger",
-  "qrcProducer",
 ];
 
 // -- Tests --------------------------------------------------------------------
@@ -341,10 +339,15 @@ describe("creditExtraKey", () => {
 });
 
 describe("isWritingCreditKey", () => {
-  it("counts every lyricist, composer, arranger and producer key as a writing credit", () => {
+  it("counts every lyricist, composer and arranger key as a writing credit", () => {
     for (const key of WRITING_CREDIT_KEYS) {
       expect(isWritingCreditKey(key)).toBe(true);
     }
+  });
+
+  it("does not count a producer as a writer of the song", () => {
+    expect(isWritingCreditKey("qrcProducedBy")).toBe(false);
+    expect(isWritingCreditKey("qrcProducer")).toBe(false);
   });
 
   it("does not count a production or performance key as a writing credit", () => {
@@ -370,6 +373,11 @@ describe("isWritingCreditKey", () => {
   });
 
   describe("edge cases", () => {
+    it("counts a written by credit as authorship though a produced by credit is not", () => {
+      expect(isWritingCreditKey("qrcWrittenBy")).toBe(true);
+      expect(isWritingCreditKey("qrcProducedBy")).toBe(false);
+    });
+
     it("does not count the generic fallback key as a writing credit", () => {
       expect(isWritingCreditKey("qrcCredits")).toBe(false);
     });
