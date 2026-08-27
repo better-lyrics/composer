@@ -1,19 +1,28 @@
 import type { LyricLine } from "@/domain/line/model";
-import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+
+// -- Constants ----------------------------------------------------------------
+
+const PAYLOAD_EXTENSIONS: Record<LyricsSearchPayload["kind"], string> = {
+  lrc: "lrc",
+  ttml: "ttml",
+  qrc: "qrc",
+  "deferred-ttml": "ttml",
+};
 
 function wrapTextAsParseResult(lines: LyricLine[]): ParseResult {
   return { lines, metadata: {}, hasTimingData: false };
 }
 
 function syntheticFilenameForResult(result: LyricsSearchResult): string {
-  const ext = result.payload.kind === "lrc" ? "lrc" : "ttml";
-  return `${result.source}-${result.id}.${ext}`;
+  return `${result.source}-${result.id}.${PAYLOAD_EXTENSIONS[result.payload.kind]}`;
 }
 
 async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal): Promise<string | null> {
   if (result.payload.kind === "ttml") return result.payload.xml;
   if (result.payload.kind === "lrc") return result.payload.synced ?? result.payload.plain;
+  if (result.payload.kind === "qrc") return result.payload.raw;
 
   const response = await fetch(result.payload.fetchUrl, { signal });
   if (!response.ok) {
@@ -24,10 +33,6 @@ async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal)
   return text;
 }
 
-function isAbortError(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { isAbortError, payloadToContent, syntheticFilenameForResult, wrapTextAsParseResult };
+export { payloadToContent, syntheticFilenameForResult, wrapTextAsParseResult };

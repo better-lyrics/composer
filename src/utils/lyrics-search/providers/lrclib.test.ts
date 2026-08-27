@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { LyricsSearchError } from "@/utils/lyrics-search/types";
 import { lrclibProvider } from "@/utils/lyrics-search/providers/lrclib";
 
@@ -309,5 +309,55 @@ describeOnline("lrclibProvider", () => {
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });
+  });
+});
+
+// -- Duration mapping (stubbed transport, never reaches the network) ----------
+
+describe("lrclibProvider duration mapping", () => {
+  const SEARCH_HIT = {
+    id: 3396226,
+    trackName: "Bohemian Rhapsody",
+    artistName: "Queen",
+    albumName: "A Night at the Opera",
+    instrumental: false,
+    plainLyrics: "Is this the real life?",
+    syncedLyrics: "[00:00.00] Is this the real life?",
+  } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubSearchBody(body: unknown): void {
+    vi.stubGlobal(
+      "fetch",
+      async (): Promise<Response> =>
+        new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
+    );
+  }
+
+  async function searchWithDuration(hit: Record<string, unknown>): Promise<number | undefined> {
+    stubSearchBody([hit]);
+    const results = await lrclibProvider.search({ track: "Bohemian Rhapsody" }, new AbortController().signal);
+    expect(results).toHaveLength(1);
+    return results[0].durationSec;
+  }
+
+  it("rounds a usable duration to whole seconds", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 354.6 })).toBe(355);
+  });
+
+  it("reports no duration when the response omits the field", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends null", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: null })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends a non-numeric value", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: "355" })).toBeUndefined();
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 0 })).toBeUndefined();
   });
 });

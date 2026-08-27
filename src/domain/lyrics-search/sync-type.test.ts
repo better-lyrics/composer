@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { detectLrcSyncType, detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
+import { detectLrcSyncType, detectQrcSyncType, detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
+import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 
 // -- detectLrcSyncType --------------------------------------------------------
 
@@ -165,5 +166,83 @@ describe("detectTtmlSyncType", () => {
   it("returns line for malformed-but-recoverable XML with only <p begin>", () => {
     const xml = `<tt><body><div><p begin="00:01.000" end="00:02.000">x</p></div></body></tt>`;
     expect(detectTtmlSyncType(xml)).toBe("line");
+  });
+});
+
+// -- detectQrcSyncType --------------------------------------------------------
+
+describe("detectQrcSyncType", () => {
+  it("returns word when word tags are present", () => {
+    expect(detectQrcSyncType(WANDERLUST_QRC)).toBe("word");
+  });
+
+  it("returns word for a bare QRC body with word tags", () => {
+    expect(detectQrcSyncType("[34059,2299]Is (34059,130)it (34189,2170)")).toBe("word");
+  });
+
+  it("returns line when only line headers are present", () => {
+    expect(detectQrcSyncType("[34059,2299]Is it so hard")).toBe("line");
+  });
+
+  it("returns unsynced for content with no QRC timing at all", () => {
+    expect(detectQrcSyncType("Is it so hard")).toBe("unsynced");
+    expect(detectQrcSyncType("")).toBe("unsynced");
+  });
+
+  it("ignores header tags when deciding", () => {
+    expect(detectQrcSyncType("[ti:Song]\r\n[ar:Artist]\r\n[offset:0]")).toBe("unsynced");
+  });
+
+  describe("edge cases", () => {
+    it("returns unsynced for whitespace-only input", () => {
+      expect(detectQrcSyncType("   \r\n\t  \n")).toBe("unsynced");
+    });
+
+    it("returns word when only some lines carry word tags", () => {
+      const content = "[1000,500]No word tags here\r\n[2000,500]Hi (2000,500)";
+      expect(detectQrcSyncType(content)).toBe("word");
+    });
+
+    it("returns unsynced for word tags with no line header to anchor them", () => {
+      expect(detectQrcSyncType("Is (34059,130)it (34189,120)")).toBe("unsynced");
+    });
+
+    it("reads a QRC body still wrapped in its XML envelope", () => {
+      const document = '<QrcInfos><LyricInfo LyricContent="[1000,500]Hi (1000,500)"/></QrcInfos>';
+      expect(detectQrcSyncType(document)).toBe("word");
+    });
+
+    it("does not read LRC timestamps as QRC timing", () => {
+      expect(detectQrcSyncType("[00:12.34]Hello world")).toBe("unsynced");
+      expect(detectQrcSyncType("[00:12,34]Hello world")).toBe("unsynced");
+      expect(detectQrcSyncType("[00:12.34]<00:12.34>Hello <00:12.80>world")).toBe("unsynced");
+    });
+
+    it("does not read TTML timing as QRC timing", () => {
+      const xml = '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000">x</p></div></body></tt>';
+      expect(detectQrcSyncType(xml)).toBe("unsynced");
+    });
+  });
+
+  describe("invariants", () => {
+    it("never reports syllable, since QRC tags are word or character level", () => {
+      const documents = [WANDERLUST_QRC, "[1000,500]Hi (1000,500)", "[1000,500]Hi", ""];
+      for (const document of documents) expect(detectQrcSyncType(document)).not.toBe("syllable");
+    });
+
+    it("returns the same verdict for the same content every time", () => {
+      expect(detectQrcSyncType(WANDERLUST_QRC)).toBe(detectQrcSyncType(WANDERLUST_QRC));
+    });
+  });
+
+  describe("error paths", () => {
+    it("does not throw on a truncated QRC document", () => {
+      expect(() => detectQrcSyncType('<QrcInfos><LyricInfo LyricContent="[1000,500]Hi')).not.toThrow();
+    });
+
+    it("does not throw on an unbalanced header", () => {
+      expect(() => detectQrcSyncType("[1000,")).not.toThrow();
+      expect(detectQrcSyncType("[1000,")).toBe("unsynced");
+    });
   });
 });

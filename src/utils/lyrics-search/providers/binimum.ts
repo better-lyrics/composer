@@ -1,6 +1,9 @@
+import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
+import { isAbortError } from "@/utils/abort-error";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -31,10 +34,6 @@ interface BinimumSearchResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 function hasTrackAndArtist(query: LyricsSearchQuery): boolean {
   return hasNonEmptyString(query.track) && hasNonEmptyString(query.artist);
 }
@@ -63,12 +62,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   return url;
 }
 
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
-}
-
 function deriveSyncType(timingType: string): SyncType {
   if (VALID_TIMING_TYPES.has(timingType as SyncType)) return timingType as SyncType;
   return "line";
@@ -86,7 +79,7 @@ function mapResponseToResult(result: BinimumSearchResult): LyricsSearchResult {
     track: result.track_name,
     artist: result.artist_name,
     album,
-    durationSec: Math.round(result.duration),
+    durationSec: toUsableDurationSec(result.duration),
     payload,
   };
 }

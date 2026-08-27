@@ -1,3 +1,5 @@
+import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
+
 // -- Types --------------------------------------------------------------------
 
 type SyncType = "syllable" | "word" | "line" | "unsynced";
@@ -77,7 +79,15 @@ function detectTtmlSyncTypeViaRegex(xml: string): SyncType {
   return "unsynced";
 }
 
+// -- QRC ----------------------------------------------------------------------
+
+function detectQrcSyncType(content: string): SyncType {
+  if (!content || !content.trim()) return "unsynced";
+  if (!QRC_LINE_HEADER_REGEX.test(content)) return "unsynced";
+  return QRC_WORD_TAG_REGEX.test(content) ? "word" : "line";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { detectLrcSyncType, detectTtmlSyncType };
+export { detectLrcSyncType, detectQrcSyncType, detectTtmlSyncType };
 export type { SyncType };

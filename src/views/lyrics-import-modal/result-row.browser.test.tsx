@@ -197,6 +197,83 @@ describe("ResultRow duration match", () => {
   });
 });
 
+// -- Absent duration ----------------------------------------------------------
+
+describe("ResultRow without a usable duration", () => {
+  it("renders no duration at all when the result carries none", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toMatch(/\d+:\d{2}/);
+  });
+
+  it("renders neither a duration nor a delta when an expected duration is provided", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toMatch(/\d+:\d{2}/);
+    expect(row.textContent).not.toMatch(/[+−]\d+s/);
+    expect(screen.getByTitle("Matches your duration").query()).toBeNull();
+    expect(screen.getByTitle(/^Off by/).query()).toBeNull();
+  });
+
+  it("still renders the track, artist, sync badge and source label", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: undefined })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    await expect.element(screen.getByText("Queen ・ A Night at the Opera")).toBeInTheDocument();
+    await expect.element(screen.getByText("Line")).toBeInTheDocument();
+    await expect.element(screen.getByText("LRCLib")).toBeInTheDocument();
+  });
+
+  it("renders nothing rather than the 0:00 sentinel for a non-finite duration", async () => {
+    const screen = await render(
+      <ResultRow
+        result={buildResult({ durationSec: Number.NaN })}
+        isHovered={false}
+        isFocused={false}
+        isSelecting={false}
+        expectedDurationSec={355}
+        onHover={noop}
+        onSelect={noop}
+      />,
+    );
+    await expect.element(screen.getByText("Bohemian Rhapsody")).toBeInTheDocument();
+    const row = screen.getByRole("option").element();
+    expect(row.textContent).not.toContain("0:00");
+    expect(row.textContent).not.toContain("NaN");
+    expect(screen.getByTitle(/^Off by/).query()).toBeNull();
+  });
+});
+
 // -- Interaction --------------------------------------------------------------
 
 describe("ResultRow interaction", () => {

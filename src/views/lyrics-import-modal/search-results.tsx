@@ -17,7 +17,7 @@ interface SearchResultsProps {
   listboxRef?: React.Ref<HTMLDivElement>;
   onHover: (index: number) => void;
   onSelect: (result: LyricsSearchResult) => void;
-  providerDisplayName: (name: string) => string;
+  providerDisplayName: (name: ProviderName) => string;
 }
 
 // -- Constants ----------------------------------------------------------------

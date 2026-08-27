@@ -8,4 +8,11 @@ describe("LandingFooter", () => {
     expect(screen.container.querySelector("footer")).not.toBeNull();
     expect(screen.container.querySelectorAll("a").length).toBeGreaterThan(0);
   });
+
+  it("links every converter page", async () => {
+    const screen = await render(<LandingFooter />, { withRouter: true });
+    for (const path of ["/lrc-to-ttml", "/srt-to-ttml", "/qrc-to-ttml"]) {
+      expect(screen.container.querySelector(`a[href="${path}"]`), `missing footer link for ${path}`).not.toBeNull();
+    }
+  });
 });

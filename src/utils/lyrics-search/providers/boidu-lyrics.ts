@@ -1,5 +1,8 @@
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
+import { isAbortError } from "@/utils/abort-error";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
@@ -16,17 +19,11 @@ interface BoiduLyricsResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
 function canSearch(query: LyricsSearchQuery): boolean {
   return (
     hasNonEmptyString(query.track) &&
     hasNonEmptyString(query.artist) &&
-    typeof query.durationSec === "number" &&
-    Number.isFinite(query.durationSec) &&
-    query.durationSec > 0 &&
+    hasUsableDuration(query.durationSec) &&
     hasNonEmptyString(query.videoId)
   );
 }
@@ -41,12 +38,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   return url;
 }
 
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
-}
-
 function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult {
   const payload: LyricsSearchPayload = { kind: "ttml", xml: ttml };
   return {
@@ -57,7 +48,6 @@ function buildResult(query: LyricsSearchQuery, ttml: string): LyricsSearchResult
     track: (query.track ?? "").trim(),
     artist: (query.artist ?? "").trim(),
     album: hasNonEmptyString(query.album) ? query.album.trim() : undefined,
-    durationSec: Math.round(query.durationSec as number),
     payload,
   };
 }

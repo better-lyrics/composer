@@ -1,3 +1,4 @@
+import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { cn } from "@/utils/cn";
 import { formatDuration } from "@/views/lyrics-import-modal/duration-input-utils";
@@ -29,7 +30,7 @@ type DurationMatch =
 // -- Helpers ------------------------------------------------------------------
 
 function describeDurationMatch(actual: number, expected: number | undefined): DurationMatch {
-  if (expected === undefined || !Number.isFinite(expected)) return { kind: "neutral" };
+  if (!hasUsableDuration(expected)) return { kind: "neutral" };
   const delta = Math.round(actual) - Math.round(expected);
   const abs = Math.abs(delta);
   if (abs === 0) return { kind: "exact" };
@@ -50,11 +51,12 @@ function joinArtistAlbum(artist: string, album: string | undefined): string {
 // -- Sub-components -----------------------------------------------------------
 
 interface DurationDisplayProps {
-  match: DurationMatch;
   actualSec: number;
+  expectedSec: number | undefined;
 }
 
-const DurationDisplay: React.FC<DurationDisplayProps> = ({ match, actualSec }) => {
+const DurationDisplay: React.FC<DurationDisplayProps> = ({ actualSec, expectedSec }) => {
+  const match = describeDurationMatch(actualSec, expectedSec);
   const text = formatDuration(actualSec);
   if (match.kind === "exact") {
     return (
@@ -102,7 +104,6 @@ const ResultRow: React.FC<ResultRowProps> = ({
   onSelect,
 }) => {
   const isActive = isHovered || isFocused;
-  const match = describeDurationMatch(result.durationSec, expectedDurationSec);
 
   const selectIfIdle = () => {
     if (isSelecting) return;
@@ -132,7 +133,9 @@ const ResultRow: React.FC<ResultRowProps> = ({
       </span>
 
       <span className="flex items-center gap-1.5 shrink-0">
-        <DurationDisplay match={match} actualSec={result.durationSec} />
+        {hasUsableDuration(result.durationSec) ? (
+          <DurationDisplay actualSec={result.durationSec} expectedSec={expectedDurationSec} />
+        ) : null}
         <SyncTypeBadge syncType={result.syncType} sourceLabel={result.sourceLabel} />
         {isSelecting ? (
           <IconLoader2 size={12} className="animate-spin text-composer-accent-text" aria-label="Loading" />

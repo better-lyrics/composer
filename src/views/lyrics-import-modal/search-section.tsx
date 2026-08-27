@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
 import { useImportModalStore } from "@/stores/import-modal-store";
+import { formatProviderName } from "@/utils/lyrics-search/provider-labels";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
@@ -34,14 +35,6 @@ interface InputState {
   videoId: string;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const PROVIDER_DISPLAY_NAMES: Record<string, string> = {
-  lrclib: "LRCLib",
-  binimum: "Binimum",
-  "boidu-lyrics": "Better Lyrics",
-};
-
 // -- Helpers ------------------------------------------------------------------
 
 function buildInitialInputState(prefill: LyricsSearchQuery | null): InputState {
@@ -63,10 +56,6 @@ function buildQuery(inputs: InputState, isrc: string | undefined): LyricsSearchQ
     videoId: inputs.videoId.trim() || undefined,
     isrc,
   };
-}
-
-function formatProviderName(name: string): string {
-  return PROVIDER_DISPLAY_NAMES[name] ?? name;
 }
 
 // -- Component ----------------------------------------------------------------

@@ -1,6 +1,12 @@
 import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+import {
+  isSupportedLyricsFile,
+  LYRICS_FILE_ACCEPT_ATTRIBUTE,
+  LYRICS_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_FILE_MESSAGE,
+} from "@/domain/lyrics-file/supported-formats";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 
@@ -12,12 +18,6 @@ interface UploadSectionProps {
   onSwitchToPaste: () => void;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const ACCEPTED_EXTENSIONS = /\.(txt|lrc|srt|ttml|xml)$/i;
-const ACCEPTED_FILE_INPUT = ".txt,.lrc,.srt,.ttml,.xml";
-const UNSUPPORTED_TYPE_MESSAGE = "Unsupported file type. Use .txt .lrc .srt .ttml";
-
 // -- Component ----------------------------------------------------------------
 
 const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch, onSwitchToPaste }) => {
@@ -26,8 +26,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
   const acceptFile = useCallback(
     (file: File) => {
-      if (!ACCEPTED_EXTENSIONS.test(file.name)) {
-        toast.error(UNSUPPORTED_TYPE_MESSAGE);
+      if (!isSupportedLyricsFile(file.name)) {
+        toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
         return;
       }
       void onFile(file);
@@ -111,13 +111,15 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
         <div className="text-[11.5px] text-composer-text-muted">
           or <span className="text-composer-accent-text underline decoration-composer-accent/40">click to browse</span>
         </div>
-        <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">.txt .lrc .srt .ttml</div>
+        <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">
+          {LYRICS_FORMATS_COMPACT}
+        </div>
       </button>
       <input
         ref={fileInputRef}
         type="file"
         aria-label="Import lyrics file"
-        accept={ACCEPTED_FILE_INPUT}
+        accept={LYRICS_FILE_ACCEPT_ATTRIBUTE}
         onChange={handleInputChange}
         className="sr-only"
       />
@@ -127,4 +129,4 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
 // -- Exports ------------------------------------------------------------------
 
-export { ACCEPTED_EXTENSIONS, UNSUPPORTED_TYPE_MESSAGE, UploadSection };
+export { UploadSection };

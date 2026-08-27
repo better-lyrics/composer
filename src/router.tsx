@@ -58,6 +58,12 @@ const routes: RouteRecord[] = [
     errorElement,
   },
   {
+    path: "/qrc-to-ttml",
+    lazy: async () => ({ Component: (await import("@/pages/converters/qrc-to-ttml")).default }),
+    entry: "src/pages/converters/qrc-to-ttml.tsx",
+    errorElement,
+  },
+  {
     path: "/guides",
     lazy: async () => ({ Component: (await import("@/pages/guides/guides-index")).default }),
     entry: "src/pages/guides/guides-index.tsx",

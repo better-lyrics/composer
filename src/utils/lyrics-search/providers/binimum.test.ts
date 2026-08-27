@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { binimumProvider } from "@/utils/lyrics-search/providers/binimum";
 import { LyricsSearchError } from "@/utils/lyrics-search/types";
 
@@ -272,5 +272,58 @@ describeOnline("binimumProvider", () => {
       expect(error.message).toBe("boom");
       expect(error.name).toBe("LyricsSearchError");
     });
+  });
+});
+
+// -- Duration mapping (stubbed transport, never reaches the network) ----------
+
+describe("binimumProvider duration mapping", () => {
+  const SEARCH_HIT = {
+    id: "0a1b2c3d",
+    track_name: "Bohemian Rhapsody",
+    artist_name: "Queen",
+    album_name: "A Night at the Opera",
+    isrc: "GBUM71029604",
+    timing_type: "line",
+    lyricsUrl: "https://lyrics-storage.binimum.org/0a1b2c3d.ttml",
+  } as const;
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function stubSearchBody(body: unknown): void {
+    vi.stubGlobal(
+      "fetch",
+      async (): Promise<Response> =>
+        new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } }),
+    );
+  }
+
+  async function searchWithDuration(hit: Record<string, unknown>): Promise<number | undefined> {
+    stubSearchBody({ total: 1, source: "binimum", results: [hit] });
+    const results = await binimumProvider.search(
+      { track: "Bohemian Rhapsody", artist: "Queen" },
+      new AbortController().signal,
+    );
+    expect(results).toHaveLength(1);
+    return results[0].durationSec;
+  }
+
+  it("rounds a usable duration to whole seconds", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 354.6 })).toBe(355);
+  });
+
+  it("reports no duration when the response omits the field", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends null", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: null })).toBeUndefined();
+  });
+
+  it("reports no duration when the response sends a non-numeric value", async () => {
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: "355" })).toBeUndefined();
+    expect(await searchWithDuration({ ...SEARCH_HIT, duration: 0 })).toBeUndefined();
   });
 });
