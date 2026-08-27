@@ -28,11 +28,10 @@
 }
 
 /* Only a word held past blyrics-long-word-threshold glows. */
-.blyrics--word::after {
+.blyrics-word-highlight {
   --blyrics-glow-color: color(display-p3 1 1 1 / 0.0001);
 }
 
-.blyrics--word[data-long-word]::after,
-.blyrics--word[data-long-word] > .blyrics-word-highlight {
+.blyrics-word-highlight[data-long-word] {
   --blyrics-glow-color: color(display-p3 1 1 1 / 1);
 }

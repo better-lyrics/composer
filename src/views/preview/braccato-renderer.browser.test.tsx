@@ -236,7 +236,9 @@ describe("BraccatoRenderer", () => {
     expect(backgroundLine?.textContent).toContain("ahh");
     expect(el.querySelector(".blyrics-line-main")?.textContent).not.toContain("ooh");
 
-    const backgroundWords = [...el.querySelectorAll(".blyrics--word.blyrics-background-lyric")];
+    const backgroundWords = [
+      ...el.querySelectorAll(".blyrics--word.blyrics-background-lyric:not(.blyrics-word-highlight)"),
+    ];
     expect(backgroundWords.map((word) => word.textContent)).toEqual(["ooh", "ahh"]);
   });
 
