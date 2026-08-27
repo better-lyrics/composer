@@ -127,6 +127,8 @@ interface HistoryActions {
 
 interface LineActions {
   setLines: (lines: LyricLine[]) => void;
+  // See the JSDoc on the implementation in lines-slice.ts before using this.
+  setTransientLines: (lines: LyricLine[]) => void;
   setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
   updateLineWithHistory: (
