@@ -9,7 +9,6 @@ import {
   isQrcTitleLine,
   isWritingCreditKey,
   parseHeaderTags,
-  readInlineSingerMarker,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 
@@ -715,99 +714,6 @@ describe("readSingerMarker", () => {
     it("rejects an empty line", () => {
       expect(readSingerMarker("")).toBeNull();
       expect(readSingerMarker("   ")).toBeNull();
-    });
-  });
-});
-
-describe("readInlineSingerMarker", () => {
-  it("reads a name that a lyric follows on the same line", () => {
-    expect(readInlineSingerMarker("Drake：Some lyric")).toEqual({ performers: ["Drake"], colonIndex: 5 });
-    expect(readInlineSingerMarker("Drake:Some lyric")).toEqual({ performers: ["Drake"], colonIndex: 5 });
-  });
-
-  it("reads every performer a slash-separated inline marker names", () => {
-    expect(readInlineSingerMarker("Drake/Travis Scott：Some lyric")).toEqual({
-      performers: ["Drake", "Travis Scott"],
-      colonIndex: 18,
-    });
-  });
-
-  it("reports the colon of the marker, not a later one in the lyric", () => {
-    expect(readInlineSingerMarker("Drake：a：b")).toEqual({ performers: ["Drake"], colonIndex: 5 });
-  });
-
-  describe("edge cases", () => {
-    it("reads a name right on the inline length bound", () => {
-      expect(readInlineSingerMarker(`${"a".repeat(20)}：lyric`)?.performers).toEqual(["a".repeat(20)]);
-    });
-
-    it("bounds an inline name more tightly than a whole-line one", () => {
-      const name = "a".repeat(21);
-      expect(readInlineSingerMarker(`${name}：lyric`)).toBeNull();
-      expect(readSingerMarker(`${name}：`)).toEqual([name]);
-    });
-
-    it("bounds the length of each performer rather than of the marker", () => {
-      const two = `${"a".repeat(20)}/${"b".repeat(20)}`;
-      expect(readInlineSingerMarker(`${two}：lyric`)?.performers).toHaveLength(2);
-      expect(readInlineSingerMarker(`Drake/${"a".repeat(21)}：lyric`)).toBeNull();
-    });
-
-    it("bounds how many performers one inline marker may name", () => {
-      const eight = Array.from({ length: 8 }, (_, index) => `P${index}`);
-      expect(readInlineSingerMarker(`${eight.join("/")}：lyric`)?.performers).toEqual(eight);
-      expect(readInlineSingerMarker(`${[...eight, "P8"].join("/")}：lyric`)).toBeNull();
-    });
-
-    it("rejects a lyric clause that happens to carry a colon", () => {
-      expect(readInlineSingerMarker("And then she said, listen to me: I am here")).toBeNull();
-      expect(readInlineSingerMarker("Wait! I said：no")).toBeNull();
-    });
-
-    it("names a performer once however often one inline marker repeats them", () => {
-      expect(readInlineSingerMarker("Drake/DRAKE：lyric")?.performers).toEqual(["Drake"]);
-    });
-
-    it("trims whitespace around each performer", () => {
-      expect(readInlineSingerMarker("  Drake /  Travis Scott ：lyric")?.performers).toEqual(["Drake", "Travis Scott"]);
-    });
-
-    it("reads an inline marker whose lyric is a single character", () => {
-      expect(readInlineSingerMarker("合：走")).toEqual({ performers: ["合"], colonIndex: 1 });
-    });
-
-    it("still reads a whole-line marker, which the caller resolves first", () => {
-      expect(readInlineSingerMarker("Drake：")).toEqual({ performers: ["Drake"], colonIndex: 5 });
-    });
-  });
-
-  describe("invariants", () => {
-    it("never reports a colon index the name does not precede", () => {
-      const marker = readInlineSingerMarker("Drake/Travis Scott：Some lyric");
-      expect(marker?.colonIndex).toBeGreaterThan(0);
-    });
-
-    it("returns a fresh result the caller may keep", () => {
-      const first = readInlineSingerMarker("Drake：lyric");
-      const second = readInlineSingerMarker("Drake：lyric");
-      expect(first).toEqual(second);
-      expect(first).not.toBe(second);
-    });
-  });
-
-  describe("error paths", () => {
-    it("rejects a line with no colon at all", () => {
-      expect(readInlineSingerMarker("Some lyric")).toBeNull();
-      expect(readInlineSingerMarker("")).toBeNull();
-    });
-
-    it("rejects a line whose colon opens it", () => {
-      expect(readInlineSingerMarker("：lyric")).toBeNull();
-      expect(readInlineSingerMarker("  ：lyric")).toBeNull();
-    });
-
-    it("rejects a marker whose slashes name nobody", () => {
-      expect(readInlineSingerMarker("///：lyric")).toBeNull();
     });
   });
 });

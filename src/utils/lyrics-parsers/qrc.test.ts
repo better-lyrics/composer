@@ -509,57 +509,6 @@ describe("parseQrc", () => {
       expect(result.agents?.[0].name).not.toContain(getSplitCharacter());
     });
 
-    it("reads a marker written inline with the lyric it introduces", () => {
-      const result = parseQrc("[1000,1000]Drake：Some (1000,500)lyric(1500,500)");
-      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
-      expect(result.lines.map((line) => line.text)).toEqual(["Some lyric"]);
-      expect(result.lines[0].agentId).toBe("v1");
-    });
-
-    it("keeps the timing of every word an inline marker leaves behind", () => {
-      const result = parseQrc("[1000,1000]Drake：Some (1000,500)lyric(1500,500)");
-      expect(result.lines[0].words).toEqual([
-        { text: "Some ", begin: 1, end: 1.5 },
-        { text: "lyric", begin: 1.5, end: 2 },
-      ]);
-    });
-
-    it("drops the whole syllable an inline marker consumes when nothing follows the colon in it", () => {
-      const result = parseQrc("[1000,1000]Drake：(1000,500)Some lyric(1500,500)");
-      expect(result.lines[0].words).toEqual([{ text: "Some lyric", begin: 1.5, end: 2 }]);
-    });
-
-    it("mints one group agent for an inline marker that names several performers", () => {
-      const result = parseQrc("[1000,1000]Drake/Travis Scott：Yeah (1000,500)ayy(1500,500)");
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.text)).toEqual(["Yeah ayy"]);
-    });
-
-    it("shares one agent between an inline marker and the whole-line marker naming the same singers", () => {
-      const result = parseQrc(
-        "[1000,500]Drake/Travis Scott：(1000,500)\n[2000,500]One(2000,500)\n[3000,1000]Travis Scott/Drake：Two (3000,500)three(3500,500)",
-      );
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "Drake, Travis Scott" }]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v1"]);
-    });
-
-    it("gives lines before the first inline marker the default voice", () => {
-      const result = parseQrc("[1000,500]Intro (1000,500)\n[2000,1000]Drake：Verse (2000,500)two(2500,500)");
-      expect(result.agents).toEqual([
-        { id: "v1", type: "person", name: DEFAULT_AGENTS[0].name },
-        { id: "v2", type: "person", name: "Drake" },
-      ]);
-      expect(result.lines.map((line) => line.agentId)).toEqual(["v1", "v2"]);
-    });
-
-    it("reads an inline marker on a line QQ never split into words", () => {
-      const result = parseQrc("[1000,2500]Drake：No word tags here");
-      expect(result.agents).toEqual([{ id: "v1", type: "person", name: "Drake" }]);
-      expect(result.lines[0].text).toBe("No word tags here");
-      expect(result.lines[0].begin).toBe(1);
-      expect(result.lines[0].end).toBe(3.5);
-    });
-
     it("mints a group agent for the name QQ gives the whole cast", () => {
       for (const name of ["合", "合唱", "ALL", "all"]) {
         const result = parseQrc(`[1000,500]${name}：(1000,500)\n[2000,500]One(2000,500)`);
@@ -629,30 +578,11 @@ describe("parseQrc", () => {
       expect(result.lines[0].text).toBe("Bye");
     });
 
-    it("keeps a lyric whose colon follows more text than a performer name", () => {
-      const long = "a".repeat(21);
-      const result = parseQrc(`[1000,1000]${long}：Some (1000,500)lyric(1500,500)`);
+    it("keeps a lyric that carries a colon instead of reading a singer out of it", () => {
+      const result = parseQrc("[1000,1000]Baby：I (1000,500)need you(1500,500)");
       expect(result.agents).toBeUndefined();
-      expect(result.lines.map((line) => line.text)).toEqual([`${long}：Some lyric`]);
-    });
-
-    it("keeps a lyric clause that ends in a colon mid-line", () => {
-      const result = parseQrc("[1000,1000]Wait, listen：I (1000,500)said(1500,500)");
-      expect(result.agents).toBeUndefined();
-      expect(result.lines.map((line) => line.text)).toEqual(["Wait, listen：I said"]);
-    });
-
-    it("drops the whitespace syllables an inline marker leaves at the head of a line", () => {
-      const result = parseQrc("[1000,1500]Drake： (1000,300) (1300,200)Some(1500,500)");
-      expect(result.lines[0].words).toEqual([{ text: "Some", begin: 1.5, end: 2 }]);
-    });
-
-    it("rebuilds the split characters of a CJK lyric an inline marker introduces", () => {
-      const splitChar = getSplitCharacter();
-      const result = parseQrc("[1000,1500]合：我(1000,500)们(1500,500)走(2000,500)");
-      expect(result.agents).toEqual([{ id: "v1", type: "group", name: "合" }]);
-      expect(result.lines[0].text).toBe(`我${splitChar}们${splitChar}走`);
-      expect(result.lines[0].words?.map((word) => word.text)).toEqual(["我", "们", "走"]);
+      expect(result.lines.map((line) => line.text)).toEqual(["Baby：I need you"]);
+      expect(result.lines[0].agentId).toBe("v1");
     });
   });
 

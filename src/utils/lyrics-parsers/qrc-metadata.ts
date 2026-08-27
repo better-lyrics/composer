@@ -7,10 +7,6 @@ const HEADER_TAG_REGEX = /\[([a-z]+):([^\]]*)\]/gi;
 const CREDIT_VALUE_REGEX = /[:：]\s*(.*)$/s;
 const LATIN_LETTER_REGEX = /[a-z]/i;
 const MARKER_MAX_NAME_LENGTH = 40;
-// Half the whole-line bound. A line that is nothing but "Name：" can only be a
-// marker, so it may be generous; an inline marker competes with lyric text that
-// happens to carry a colon, so only a name-sized run before one reads as a name.
-const MARKER_MAX_INLINE_NAME_LENGTH = 20;
 const MARKER_MAX_PERFORMERS = 8;
 const TRAILING_COLON_REGEX = /[:：]$/;
 const COLON_REGEX = /[:：]/;
@@ -92,11 +88,6 @@ const WRITING_CREDIT_KEYS = new Set([
 interface HeaderTags {
   metadata: Partial<ProjectMetadata>;
   offsetSeconds: number;
-}
-
-interface InlineSingerMarker {
-  performers: string[];
-  colonIndex: number;
 }
 
 // -- Header tags --------------------------------------------------------------
@@ -231,31 +222,17 @@ function dedupeIgnoringCase(names: string[]): string[] {
 
 // The length bound is per performer: a duet marker is no less a marker for being twice as long.
 // The count bound replaces the ceiling that per-performer lengths alone no longer impose.
-function readPerformers(body: string, maxNameLength: number): string[] | null {
+function readSingerMarker(text: string): string[] | null {
+  const trimmed = text.trim();
+  if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
+
+  const body = trimmed.slice(0, -1);
   if (MARKER_REJECTED_PUNCTUATION_REGEX.test(body) || COLON_REGEX.test(body)) return null;
 
   const performers = dedupeIgnoringCase(splitSlashList(body));
   if (performers.length === 0 || performers.length > MARKER_MAX_PERFORMERS) return null;
-  if (performers.some((performer) => performer.length > maxNameLength)) return null;
+  if (performers.some((performer) => performer.length > MARKER_MAX_NAME_LENGTH)) return null;
   return performers;
-}
-
-function readSingerMarker(text: string): string[] | null {
-  const trimmed = text.trim();
-  if (!TRAILING_COLON_REGEX.test(trimmed)) return null;
-  return readPerformers(trimmed.slice(0, -1), MARKER_MAX_NAME_LENGTH);
-}
-
-// QQ also writes a marker inline, with the colon landing mid-syllable and the
-// lyric it introduces following on the same line. The colon index is reported
-// rather than the lyric, because the caller has to cut the same point out of a
-// word array whose timing must survive the cut.
-function readInlineSingerMarker(text: string): InlineSingerMarker | null {
-  const colonIndex = text.search(COLON_REGEX);
-  if (colonIndex === -1) return null;
-
-  const performers = readPerformers(text.slice(0, colonIndex), MARKER_MAX_INLINE_NAME_LENGTH);
-  return performers === null ? null : { performers, colonIndex };
 }
 
 function isGroupPerformerName(name: string): boolean {
@@ -274,6 +251,5 @@ export {
   isWritingCreditKey,
   MS_PER_SECOND,
   parseHeaderTags,
-  readInlineSingerMarker,
   readSingerMarker,
 };

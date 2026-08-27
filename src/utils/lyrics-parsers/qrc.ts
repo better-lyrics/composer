@@ -16,7 +16,6 @@ import {
   isWritingCreditKey,
   MS_PER_SECOND,
   parseHeaderTags,
-  readInlineSingerMarker,
   readSingerMarker,
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
@@ -162,42 +161,6 @@ function ensureAgent(performers: string[], agents: Agent[], byKey: Map<string, A
   return agent;
 }
 
-function dropLeadingBlanks(words: WordTiming[]): WordTiming[] {
-  const start = words.findIndex((word) => word.text.trim().length > 0);
-  if (start === -1) return [];
-
-  const kept = words.slice(start);
-  const trimmed = kept[0].text.trimStart();
-  return trimmed === kept[0].text ? kept : [{ ...kept[0], text: trimmed }, ...kept.slice(1)];
-}
-
-// A syllable the marker only partly covers keeps its own timing: where inside it
-// the singer stopped and the lyric started is not something the document records.
-function wordsAfterColon(words: WordTiming[], colonIndex: number): WordTiming[] {
-  let consumed = 0;
-  for (let index = 0; index < words.length; index++) {
-    const wordEnd = consumed + words[index].text.length;
-    if (wordEnd > colonIndex) {
-      const remainder = words[index].text.slice(colonIndex - consumed + 1);
-      const tail = words.slice(index + 1);
-      return dropLeadingBlanks(remainder.length > 0 ? [{ ...words[index], text: remainder }, ...tail] : tail);
-    }
-    consumed = wordEnd;
-  }
-  return [];
-}
-
-function lyricAfterMarker(line: QrcLine, colonIndex: number, agentId: string): LooseLine | null {
-  if (line.words.length === 0) {
-    const text = line.text.slice(colonIndex + 1).trim();
-    return text.length === 0 ? null : { id: generateLineId(), text, agentId, begin: line.begin, end: line.end };
-  }
-
-  const words = wordsAfterColon(line.words, colonIndex);
-  if (words.length === 0) return null;
-  return { id: generateLineId(), text: reconstructLineText(words, getSplitCharacter()), agentId, words };
-}
-
 // Peels the non-lyric content QQ mixes into the lyrics off in one walk: the
 // credits block, the title line and the singer markers.
 function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMetadata>): QrcPartition {
@@ -206,15 +169,6 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
   const agents: Agent[] = [];
   const agentsByKey = new Map<string, Agent>();
   let currentAgentId = agentIdAt(0);
-
-  // Lines already emitted predate every marker, so they belong to an unnamed
-  // voice rather than to the first singer the document happens to announce.
-  const markSinger = (performers: string[]): string => {
-    if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
-      ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
-    }
-    return ensureAgent(performers, agents, agentsByKey).id;
-  };
 
   for (const line of parsed) {
     if (line.text.length === 0) continue;
@@ -233,15 +187,12 @@ function partitionQrcLines(parsed: QrcLine[], headerMetadata: Partial<ProjectMet
 
     const performers = readSingerMarker(line.plainText);
     if (performers !== null) {
-      currentAgentId = markSinger(performers);
-      continue;
-    }
-
-    const inlineMarker = readInlineSingerMarker(line.plainText);
-    if (inlineMarker !== null) {
-      currentAgentId = markSinger(inlineMarker.performers);
-      const lyric = lyricAfterMarker(line, inlineMarker.colonIndex, currentAgentId);
-      if (lyric !== null) lines.push(lyric);
+      // Lines already emitted predate every marker, so they belong to an unnamed
+      // voice rather than to the first singer the document happens to announce.
+      if (agents.length === 0 && lines.length > 0 && DEFAULT_AGENT_NAME) {
+        ensureAgent([DEFAULT_AGENT_NAME], agents, agentsByKey);
+      }
+      currentAgentId = ensureAgent(performers, agents, agentsByKey).id;
       continue;
     }
 
