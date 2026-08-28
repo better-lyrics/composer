@@ -1,14 +1,14 @@
+import { wireFrameLoop } from "@/lib/frame-loop-wiring";
+import { useAudioStore } from "@/stores/audio";
+import { POSITION_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
+import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
+import { settleFrames, stepFrames } from "@/test/frame-steps";
+import { render } from "@/test/render";
+import { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
+import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
 import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { wireFrameLoop } from "@/lib/frame-loop-wiring";
-import { useAudioStore } from "@/stores/audio";
-import { installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
-import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
-import { settleFrames, stepFrames } from "@/test/frame-steps";
-import { render } from "@/test/render";
-import { buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
-import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -240,6 +240,18 @@ describe("BraccatoRenderer", () => {
       ...el.querySelectorAll(".blyrics--word.blyrics-background-lyric:not(.blyrics-word-highlight)"),
     ];
     expect(backgroundWords.map((word) => word.textContent)).toEqual(["ooh", "ahh"]);
+  });
+
+  it("shows transliterations and translations from the TTML sidecars", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildAlternateLanguageTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    await expect.poll(() => el.querySelector(".blyrics--romanized")?.textContent).toContain("annyeong");
+    expect(el.querySelector(".blyrics--romanized")?.textContent).toContain("sesang");
+    await expect.poll(() => el.querySelector(".blyrics--translated")?.textContent).toContain("Hello world");
   });
 
   it("applies the composer theme, keeping its scroll ratio and long-word glow", async () => {

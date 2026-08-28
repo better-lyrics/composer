@@ -1,13 +1,16 @@
+import { getAgentColor } from "@/domain/agent/colors";
+import { getLanguageDisplayLine } from "@/domain/language/display";
+import { hasLexicalBoundaryAfter } from "@/domain/language/transliteration-format";
+import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
+import type { LyricLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { getAgentColor } from "@/domain/agent/colors";
-import type { LyricLine } from "@/domain/line/model";
 import { Scroll } from "@/ui/scroll";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { getTimingState } from "@/views/timeline/timeline-preview-sidebar-activity";
-import { effectiveBounds } from "@/domain/line/bounds";
 import { useRef } from "react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -60,6 +63,49 @@ const BgWordsRow: React.FC<{
   </div>
 );
 
+const TransliterationRow: React.FC<{
+  text?: string;
+  words?: WordTiming[];
+  wordTexts?: string[];
+  timing: { begin: number; end: number } | null;
+  lineIndex: number;
+  alignmentClass: string;
+  background?: boolean;
+}> = ({ text, words, wordTexts, timing, lineIndex, alignmentClass, background = false }) => {
+  const content = text?.trim();
+  if (!content) return null;
+
+  const timedWords = words?.length
+    ? words.map((word, index) => {
+        const displayText = wordTexts?.[index] ?? word.transliteration ?? word.text;
+        const addSpace = hasLexicalBoundaryAfter(words, index) && !displayText.endsWith(" ");
+        return (
+          <WordWithProgress
+            key={`${word.begin}-${word.end}-${index}`}
+            text={addSpace ? `${displayText} ` : displayText}
+            begin={word.begin}
+            end={word.end}
+            lineIndex={lineIndex}
+          />
+        );
+      })
+    : null;
+
+  return (
+    <div
+      data-preview-transliteration={background ? "background" : "main"}
+      className={`flex flex-wrap ${alignmentClass} mt-0.5 ${background ? "text-[10px]" : "text-xs"}`}
+    >
+      {timedWords ??
+        (timing ? (
+          <WordWithProgress text={content} begin={timing.begin} end={timing.end} lineIndex={lineIndex} />
+        ) : (
+          <span className="text-composer-text-muted">{content}</span>
+        ))}
+    </div>
+  );
+};
+
 const MiniPreviewLine: React.FC<{
   line: LyricLine;
   lineIndex: number;
@@ -71,6 +117,7 @@ const MiniPreviewLine: React.FC<{
     alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
   const agentColor = getAgentColor(line.agentId);
   const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+  const transliteratedLine = getLanguageDisplayLine(line, "transliteration");
 
   const AgentDotLeft = (
     <span
@@ -89,6 +136,27 @@ const MiniPreviewLine: React.FC<{
   const bgWords = line.backgroundWords?.length ? (
     <BgWordsRow backgroundWords={line.backgroundWords} lineIndex={lineIndex} alignmentClass={alignmentClass} />
   ) : null;
+  const transliteration = (
+    <TransliterationRow
+      text={line.transliteration?.text ? transliteratedLine.text : undefined}
+      words={granularity === "word" ? transliteratedLine.words : undefined}
+      wordTexts={transliteratedLine.wordTexts}
+      timing={timing}
+      lineIndex={lineIndex}
+      alignmentClass={alignmentClass}
+    />
+  );
+  const backgroundTransliteration = (
+    <TransliterationRow
+      text={line.transliteration?.backgroundText ? transliteratedLine.backgroundText : undefined}
+      words={granularity === "word" ? transliteratedLine.backgroundWords : undefined}
+      wordTexts={transliteratedLine.backgroundWordTexts}
+      timing={bgBounds(line) ?? timing}
+      lineIndex={lineIndex}
+      alignmentClass={alignmentClass}
+      background
+    />
+  );
 
   if (granularity === "line") {
     return (
@@ -115,7 +183,9 @@ const MiniPreviewLine: React.FC<{
           </span>
           {alignment === "right" && AgentDotRight}
         </div>
+        {transliteration}
         {bgWords}
+        {backgroundTransliteration}
       </div>
     );
   }
@@ -147,7 +217,9 @@ const MiniPreviewLine: React.FC<{
             ))}
         {alignment === "right" && AgentDotRight}
       </div>
+      {transliteration}
       {bgWords}
+      {backgroundTransliteration}
     </div>
   );
 };

@@ -57,6 +57,38 @@ describe("SyncPanel", () => {
     expect(screen.container.textContent).toContain("Like");
   });
 
+  it("uses canonical timed-word transliterations when line segments cannot be realigned", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File(["audio"], "song.mp3") } });
+    useProjectStore.setState({
+      activeTab: "sync",
+      granularity: "word",
+      lines: [
+        {
+          id: "canonical-words",
+          agentId: "v1",
+          text: "한국 노래",
+          words: [
+            { text: "한국 ", transliteration: "hanguk", begin: 0, end: 1 },
+            { text: "노래", transliteration: "norae", begin: 1, end: 2 },
+          ],
+          transliteration: {
+            language: "ko-Latn",
+            text: "hanguknorae",
+            segments: [{ original: "한국 노래", transliteration: "hanguknorae" }],
+            origin: "import",
+            sourceFingerprint: "test",
+          },
+        },
+      ],
+    });
+    useTimelineStore.setState({ textVariant: "transliteration" });
+
+    const screen = await render(<SyncPanel />);
+
+    await expect.element(screen.getByText("hanguk", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("norae", { exact: true })).toBeInTheDocument();
+  });
+
   it("toggles the Edit button label between Edit and Done", async () => {
     loadSyncableProject();
     const screen = await render(<SyncPanel />);

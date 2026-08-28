@@ -71,6 +71,41 @@ function buildBackgroundVocalTtml(): string {
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
 }
 
+/** One synced Korean line with a timed transliteration and an English translation. */
+function buildAlternateLanguageTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-language",
+      text: "안녕 세상",
+      words: [
+        { text: "안녕 ", begin: 2, end: 4 },
+        { text: "세상", begin: 4, end: 6 },
+      ],
+    }),
+  ];
+  lines[0].words?.forEach((word, index) => {
+    word.transliteration = index === 0 ? "annyeong" : "sesang";
+  });
+  lines[0].transliteration = {
+    language: "ko-Latn",
+    text: "annyeong sesang",
+    segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
+    origin: "manual",
+    sourceFingerprint: "preview-fixture",
+  };
+  lines[0].translations = {
+    en: {
+      language: "en",
+      text: "Hello world",
+      origin: "manual",
+      sourceFingerprint: "preview-fixture",
+    },
+  };
+
+  const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { buildBackgroundVocalTtml, buildSyncedTtml };
+export { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildSyncedTtml };

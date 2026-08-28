@@ -10,10 +10,12 @@ import {
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
+type SyllableDisplay = "spaces" | "dashes";
+
 function alignTransliterationToWords(
   words: WordTiming[],
   segments: TransliterationSegment[],
-  syllableDisplay: "spaces" | "dashes" = "spaces",
+  syllableDisplay: SyllableDisplay = "spaces",
 ): WordTiming[] {
   if (words.length === 0 || segments.length === 0) return words;
   const romanGroups = transliterationWordGroups(segments.map((segment) => segment.transliteration).join(" "));
@@ -77,16 +79,23 @@ function alignTransliterationToWords(
   return result;
 }
 
-function withAlignedTransliteration(line: LyricLine): LyricLine {
+function withAlignedTransliteration(line: LyricLine, syllableDisplay: SyllableDisplay = "spaces"): LyricLine {
   const track = line.transliteration;
   if (!track) return line;
+  const mainSegments = track.segments.length ? track.segments : [{ original: line.text, transliteration: track.text }];
+  const backgroundSegments = track.backgroundSegments?.length
+    ? track.backgroundSegments
+    : line.backgroundText && track.backgroundText
+      ? [{ original: line.backgroundText, transliteration: track.backgroundText }]
+      : undefined;
   return {
     ...line,
-    ...(line.words ? { words: alignTransliterationToWords(line.words, track.segments) } : {}),
-    ...(line.backgroundWords && track.backgroundSegments
-      ? { backgroundWords: alignTransliterationToWords(line.backgroundWords, track.backgroundSegments) }
+    ...(line.words ? { words: alignTransliterationToWords(line.words, mainSegments, syllableDisplay) } : {}),
+    ...(line.backgroundWords && backgroundSegments
+      ? { backgroundWords: alignTransliterationToWords(line.backgroundWords, backgroundSegments, syllableDisplay) }
       : {}),
   } as LyricLine;
 }
 
 export { alignTransliterationToWords, withAlignedTransliteration };
+export type { SyllableDisplay };

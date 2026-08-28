@@ -1,4 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
+import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
@@ -28,7 +29,6 @@ import {
   hasLineTiming,
 } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
-import { syncDisplayLine } from "@/views/sync/display-text";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { TimingDisplay } from "@/views/sync/timing-display";
@@ -57,7 +57,7 @@ const SyncPanel: React.FC = () => {
   const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
   const hasTransliteration = useMemo(() => lines.some((line) => !!line.transliteration?.text), [lines]);
   const displayLines = useMemo(
-    () => lines.map((line) => ({ ...line, ...syncDisplayLine(line, textVariant) })),
+    () => lines.map((line) => ({ ...line, ...getLanguageDisplayLine(line, textVariant) })),
     [lines, textVariant],
   );
 

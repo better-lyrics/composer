@@ -49,6 +49,11 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     if (!container) return;
 
     const el = document.createElement("am-lyrics") as AmLyricsElement;
+    // am-lyrics parses our iTunes sidecars, but keeps both alternate tracks
+    // behind controls in its built-in header. Composer hides that header, so
+    // enable the tracks directly before the TTML is parsed.
+    Reflect.set(el, "showRomanization", true);
+    Reflect.set(el, "showTranslation", true);
     el.ttml = latestTtmlRef.current;
     el.songDurationMs = latestDurationMsRef.current;
     el.className = "block flex-1 mx-auto w-full max-w-3xl px-6";
