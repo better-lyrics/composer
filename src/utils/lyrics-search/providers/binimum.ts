@@ -2,6 +2,7 @@ import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
+import { isClientError } from "@/utils/lyrics-search/http-status";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
@@ -11,6 +12,7 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 const BINIMUM_BASE_URL = "https://lyrics-api.binimum.org/";
 const ID_PREFIX = "binimum-";
 const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
+const LOG_PREFIX = "[Binimum]";
 const VALID_TIMING_TYPES: ReadonlySet<SyncType> = new Set<SyncType>(["syllable", "word", "line"]);
 
 // -- Types --------------------------------------------------------------------
@@ -99,9 +101,9 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
     if (signal.aborted) return [];
     if (response.status === 404) return [];
-    if (response.status === 400) return [];
-    if (response.status >= 500) {
-      throw new LyricsSearchError("binimum", `Binimum search returned ${response.status}`);
+    if (isClientError(response.status)) {
+      console.warn(LOG_PREFIX, `search returned ${response.status}, treating as no results`);
+      return [];
     }
     if (!response.ok) {
       throw new LyricsSearchError("binimum", `Binimum search returned ${response.status}`);

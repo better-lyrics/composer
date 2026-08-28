@@ -2,6 +2,7 @@ import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectLrcSyncType, type SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
+import { isClientError } from "@/utils/lyrics-search/http-status";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
@@ -12,6 +13,7 @@ const SEARCH_PATH = "/api/search";
 const GET_PATH = "/api/get";
 const ID_PREFIX = "lrclib-";
 const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
+const LOG_PREFIX = "[LRCLib]";
 
 // -- Types --------------------------------------------------------------------
 
@@ -97,8 +99,9 @@ async function fetchSearch(query: LyricsSearchQuery, signal: AbortSignal): Promi
     headers: { "User-Agent": USER_AGENT },
   });
   if (response.status === 404) return [];
-  if (response.status >= 500) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/search returned ${response.status}`);
+  if (isClientError(response.status)) {
+    console.warn(LOG_PREFIX, `/api/search returned ${response.status}, treating as no results`);
+    return [];
   }
   if (!response.ok) {
     throw new LyricsSearchError("lrclib", `LRCLib /api/search returned ${response.status}`);
@@ -114,8 +117,9 @@ async function fetchGet(query: LyricsSearchQuery, signal: AbortSignal): Promise<
     headers: { "User-Agent": USER_AGENT },
   });
   if (response.status === 404) return null;
-  if (response.status >= 500) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/get returned ${response.status}`);
+  if (isClientError(response.status)) {
+    console.warn(LOG_PREFIX, `/api/get returned ${response.status}, treating as no results`);
+    return null;
   }
   if (!response.ok) {
     throw new LyricsSearchError("lrclib", `LRCLib /api/get returned ${response.status}`);

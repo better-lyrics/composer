@@ -2,6 +2,7 @@ import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectQrcSyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
+import { isClientError } from "@/utils/lyrics-search/http-status";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
@@ -10,6 +11,7 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 const PORTATO_BASE_URL = "https://lyrics-api.boidu.dev/qq/getLyrics";
 const ID_PREFIX = "qq-";
 const SOURCE_LABEL = "Better Lyrics Portato";
+const LOG_PREFIX = "[Portato]";
 const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 const RATE_LIMIT_MESSAGE = "Better Lyrics Portato rate limit reached. Try again in a moment.";
 
@@ -75,6 +77,10 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     // A rate limit is not a miss: reporting it as "no results" would tell the user the lyrics do not exist.
     if (response.status === 429) {
       throw new LyricsSearchError("portato", RATE_LIMIT_MESSAGE);
+    }
+    if (isClientError(response.status)) {
+      console.warn(LOG_PREFIX, `getLyrics returned ${response.status}, treating as no results`);
+      return [];
     }
     if (!response.ok) {
       throw new LyricsSearchError("portato", `${SOURCE_LABEL} returned ${response.status}`);
