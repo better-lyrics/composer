@@ -65,7 +65,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           label="Transliteration"
           value={line.transliteration?.text ?? ""}
           placeholder="Generated automatically when available"
-          stale={line.transliteration?.stale}
+          stale={line.transliteration ? line.transliteration.sourceFingerprint !== fingerprint : false}
           error={validateTransliterationAlignment(line.text, line.transliteration?.text ?? "", line.words)}
           pasteKind="transliteration"
           onChange={(value) =>
@@ -91,7 +91,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
               key={language}
               label={languageNames.get(language) ?? language}
               value={track?.text ?? ""}
-              stale={track?.stale}
+              stale={track ? track.sourceFingerprint !== fingerprint : false}
               pasteKind="translation"
               pasteLanguage={language}
               onChange={(value) => {

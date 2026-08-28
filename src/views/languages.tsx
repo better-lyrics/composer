@@ -90,6 +90,9 @@ const LanguagesPanel: React.FC = () => {
             transliteration = undefined;
           } else if (currentRoman && currentRoman.sourceFingerprint !== fingerprint) {
             transliteration = { ...currentRoman, stale: true };
+          } else if (currentRoman?.stale) {
+            const { stale: _stale, ...freshRoman } = currentRoman;
+            transliteration = freshRoman;
           }
 
           const translations = { ...(line.translations ?? {}) };
@@ -107,6 +110,9 @@ const LanguagesPanel: React.FC = () => {
               };
             } else if (current && current.sourceFingerprint !== fingerprint) {
               translations[pair.language] = { ...current, stale: true };
+            } else if (current?.stale) {
+              const { stale: _stale, ...freshTranslation } = current;
+              translations[pair.language] = freshTranslation;
             }
           }
           updates.push({ id: line.id, updates: { transliteration, translations } });

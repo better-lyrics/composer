@@ -1,3 +1,4 @@
+import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { useProjectStore } from "@/stores/project";
 import { LanguagesPanel } from "@/views/languages";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -61,6 +62,44 @@ describe("LanguagesPanel", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBe(true);
     await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("manual romanization");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Manual translation");
+  });
+
+  it("does not mark language tracks stale when syllable splitting only adds structural markers", async () => {
+    const sourceFingerprint = languageSourceFingerprint("to-do");
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "to-|do",
+        agentId: "v1",
+        words: [
+          { text: "to-", begin: 0, end: 0.5, transliteration: "to", syllableGroupId: "group" },
+          { text: "do", begin: 0.5, end: 1, transliteration: "do", syllableGroupId: "group" },
+        ],
+        transliteration: {
+          language: "en-Latn",
+          text: "to-do",
+          segments: [{ original: "to-do", transliteration: "to-do" }],
+          origin: "manual",
+          sourceFingerprint,
+          stale: true,
+        },
+        translations: {
+          en: {
+            language: "en",
+            text: "to-do",
+            origin: "manual",
+            sourceFingerprint,
+            stale: true,
+          },
+        },
+      },
+    ]);
+
+    await render(<LanguagesPanel />);
+
+    expect(document.body.textContent).not.toContain("Needs review");
+    await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBeUndefined();
+    expect(useProjectStore.getState().lines[0].translations?.en.stale).toBeUndefined();
   });
 
   it("lets the user override the detected source language", async () => {

@@ -1,5 +1,7 @@
+import { stripSplitCharacter } from "@/utils/split-character";
+
 function languageSourceFingerprint(text: string, backgroundText?: string): string {
-  const value = `${text}\u0000${backgroundText ?? ""}`;
+  const value = `${stripSplitCharacter(text)}\u0000${backgroundText ? stripSplitCharacter(backgroundText) : ""}`;
   let hash = 2166136261;
   for (let i = 0; i < value.length; i++) {
     hash ^= value.charCodeAt(i);

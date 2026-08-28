@@ -110,7 +110,7 @@ function useTimelineSyllableSplitterState({
       }
     }
 
-    if (word.transliteration && transliterationSplitPoints && newWords.length > 0 && !newWords[0].transliteration) {
+    if (word.transliteration && transliterationSplitPoints && newWords.length > 0) {
       const romanParts = splitWordIntoSyllables({
         word: { ...word, text: word.transliteration, transliteration: undefined },
         splitPoints: transliterationSplitPoints,

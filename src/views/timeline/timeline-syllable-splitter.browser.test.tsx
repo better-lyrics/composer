@@ -1,12 +1,15 @@
 import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("TimelineSyllableSplitter", () => {
+  beforeEach(() => useAudioStore.getState().reset());
+
   it("renders nothing initially (no target word selected)", async () => {
     await render(<TimelineSyllableSplitter />);
     expect(document.querySelector("dialog")).toBeNull();
@@ -225,5 +228,36 @@ describe("TimelineSyllableSplitter", () => {
       "ldan",
       "eun",
     ]);
+  });
+
+  it("splits a dash-delimited transliteration when the playhead sets the timing boundary", async () => {
+    const line: LyricLine = {
+      id: "line-dash-split",
+      agentId: "v1",
+      text: "to-do",
+      words: [{ text: "to-do", begin: 0, end: 1, transliteration: "to do" }],
+      transliteration: {
+        language: "en-Latn",
+        text: "to-do",
+        segments: [{ original: "to-do", transliteration: "to-do" }],
+        origin: "google",
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    useAudioStore.getState().setCurrentTime(0.5);
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-syllable"));
+
+    await screen.getByRole("button", { name: "Original dash boundary 3" }).click();
+    await screen.getByRole("button", { name: "Split Word" }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(2);
+    const result = useProjectStore.getState().lines[0];
+    expect(result.words?.map((word) => word.transliteration)).toEqual(["to", "do"]);
+    expect(result.transliteration?.text).toBe("to-do");
   });
 });
