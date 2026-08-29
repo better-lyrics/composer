@@ -1,12 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { TabBar } from "@/ui/tab-bar";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
+import { TabBar } from "@/ui/tab-bar";
+import { beforeEach, describe, expect, it } from "vitest";
 
 const TAB_NAME_REGEX = {
   Import: /^Import/,
   Edit: /^Edit/,
+  Languages: /^Languages/,
   Sync: /^Sync/,
   Timeline: /^Timeline/,
   Preview: /^Preview/,
@@ -14,6 +15,11 @@ const TAB_NAME_REGEX = {
 } as const;
 
 describe("TabBar", () => {
+  beforeEach(() => {
+    useProjectStore.getState().reset();
+    useSettingsStore.getState().resetToDefaults();
+  });
+
   it("renders one button per tab", async () => {
     const screen = await render(<TabBar />);
     await Promise.all(
@@ -47,5 +53,30 @@ describe("TabBar", () => {
     useSettingsStore.setState({ showShortcutHints: true });
     const screen = await render(<TabBar />);
     expect(screen.container.querySelectorAll("button > span > span").length).toBeGreaterThan(0);
+  });
+
+  it("shows the number of lines needing language review on the Languages tab", async () => {
+    useSettingsStore.setState({ showShortcutHints: false });
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "changed lyric",
+        agentId: "v1",
+        transliteration: {
+          language: "ko-Latn",
+          text: "romanization",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint: "old-source",
+        },
+      },
+    ]);
+
+    const screen = await render(<TabBar />);
+    const warning = screen.container.querySelector("[data-language-review-count]");
+
+    expect(warning).not.toBeNull();
+    expect(warning?.textContent).toContain("1");
+    await expect.element(screen.getByLabelText("1 line needs language review")).toBeInTheDocument();
   });
 });

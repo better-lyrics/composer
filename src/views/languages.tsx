@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
+import { getLanguageReviewItems } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
@@ -9,6 +10,7 @@ import { Scroll } from "@/ui/scroll";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
+import { LanguageReviewSummary } from "@/views/languages/review-summary";
 import { TransliterationHelp } from "@/views/languages/transliteration-help";
 import { IconLanguage, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -59,7 +61,6 @@ const LanguagesPanel: React.FC = () => {
             googleLanguageProvider.translate(bgInputs, language, controller.signal),
           ]),
         ]);
-
         const romanMainById = new Map(romanMain.lines.map((result) => [result.id, result]));
         const romanBgById = new Map(romanBg.lines.map((result) => [result.id, result]));
         const translationPairs = requestedTargets.map((language, index) => ({
@@ -67,7 +68,6 @@ const LanguagesPanel: React.FC = () => {
           main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result.text])),
           bg: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result.text])),
         }));
-
         const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
         for (const line of lines) {
           const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
@@ -94,7 +94,6 @@ const LanguagesPanel: React.FC = () => {
             const { stale: _stale, ...freshRoman } = currentRoman;
             transliteration = freshRoman;
           }
-
           const translations = { ...(line.translations ?? {}) };
           for (const pair of translationPairs) {
             const current = translations[pair.language];
@@ -144,6 +143,7 @@ const LanguagesPanel: React.FC = () => {
 
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
+  const reviewItems = getLanguageReviewItems(lines);
 
   useEffect(() => {
     if (!targets.includes(nextTarget)) return;
@@ -266,6 +266,7 @@ const LanguagesPanel: React.FC = () => {
 
       <Scroll className="flex-1">
         <div className="flex flex-col gap-3 p-6">
+          <LanguageReviewSummary items={reviewItems} languageNames={languageName} />
           {lines.map((line, index) => (
             <LanguageLineEditor
               key={line.id}

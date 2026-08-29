@@ -62,6 +62,10 @@ describe("LanguagesPanel", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBe(true);
     await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("manual romanization");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Manual translation");
+    const summary = screen.container.querySelector("[data-language-review-summary]");
+    expect(summary?.textContent).toContain("1 line needs review");
+    expect(summary?.textContent).toContain("Line 1");
+    expect(summary?.textContent).toContain("Transliteration · English");
   });
 
   it("does not mark language tracks stale when syllable splitting only adds structural markers", async () => {
