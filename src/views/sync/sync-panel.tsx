@@ -35,7 +35,7 @@ import { TimingDisplay } from "@/views/sync/timing-display";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { m } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -290,6 +290,10 @@ const SyncPanel: React.FC = () => {
     setIsHolding(false);
   }, [isHolding, handleHoldEnd]);
 
+  const performKeyboardTap = useEffectEvent(performTap);
+  const beginKeyboardHold = useEffectEvent(beginHold);
+  const endKeyboardHold = useEffectEvent(endHold);
+
   const handleTapPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
       e.preventDefault();
@@ -331,6 +335,7 @@ const SyncPanel: React.FC = () => {
     }
   }, [showGestureCircles, isHolding, endHold]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "sync") return;
@@ -354,13 +359,13 @@ const SyncPanel: React.FC = () => {
       switch (matched) {
         case "sync.tap":
           e.preventDefault();
-          performTap();
+          performKeyboardTap();
           break;
         case "sync.holdSync":
           e.preventDefault();
           if (editMode || isHolding) return;
           heldKeyCodeRef.current = e.code;
-          beginHold();
+          beginKeyboardHold();
           break;
         case "sync.nudgeLeft":
           e.preventDefault();
@@ -384,14 +389,14 @@ const SyncPanel: React.FC = () => {
       if (e.code === heldKeyCodeRef.current) {
         e.preventDefault();
         heldKeyCodeRef.current = null;
-        endHold();
+        endKeyboardHold();
       }
     };
 
     const handleBlur = () => {
       if (isHolding) {
         heldKeyCodeRef.current = null;
-        endHold();
+        endKeyboardHold();
       }
     };
 
@@ -403,19 +408,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [
-    activeTab,
-    performTap,
-    beginHold,
-    endHold,
-    undo,
-    redo,
-    handleNudgeLastSynced,
-    editMode,
-    isHolding,
-    hasTransliteration,
-    toggleTextVariant,
-  ]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
 
   const showScrollableView = !isPlaying || editMode;
 

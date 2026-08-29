@@ -97,13 +97,14 @@ function generateTTML({
     parts.push(`${ind(3)}</composer:groups>`);
   }
 
-  const translationLanguages = new Set(
-    keyedLines.flatMap(({ line }) =>
-      Object.entries(line.translations ?? {})
-        .filter(([, track]) => shouldEmitAlternate(line.text, track.text, omitMatchingAlternates))
-        .map(([language]) => language),
-    ),
-  );
+  const translationLanguages = new Set<string>();
+  for (const { line } of keyedLines) {
+    for (const [language, track] of Object.entries(line.translations ?? {})) {
+      if (shouldEmitAlternate(line.text, track.text, omitMatchingAlternates)) {
+        translationLanguages.add(language);
+      }
+    }
+  }
   const transliterationLines = keyedLines.filter(({ line }) =>
     shouldEmitAlternate(line.text, line.transliteration?.text, omitMatchingAlternates),
   );

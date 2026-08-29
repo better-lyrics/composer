@@ -81,7 +81,7 @@ const TransliterationRow: React.FC<{
         const addSpace = hasLexicalBoundaryAfter(words, index) && !displayText.endsWith(" ");
         return (
           <WordWithProgress
-            key={`${word.begin}-${word.end}-${index}`}
+            key={`${word.begin}-${word.end}-${word.text}`}
             text={addSpace ? `${displayText} ` : displayText}
             begin={word.begin}
             end={word.end}
