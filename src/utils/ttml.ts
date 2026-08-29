@@ -1,11 +1,5 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
-import { withAlignedTransliteration } from "@/domain/language/align";
-import {
-  hasLexicalBoundaryAfter,
-  transliterationSyllables,
-  transliterationWordGroups,
-} from "@/domain/language/transliteration-format";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -13,64 +7,14 @@ import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { formatTime } from "@/utils/format-time";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { renderTranslationContent, renderTransliterationContent } from "@/utils/ttml-alternate-content";
+import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
 
 const APPLE_LYRIC_NS = "http://music.apple.com/lyric-ttml-internal";
 
 // -- Helpers ------------------------------------------------------------------
-
-function escapeXml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;");
-}
-
-function escapeXmlAttribute(str: string): string {
-  return escapeXml(str).replace(/"/g, "&quot;");
-}
-
-function emitWordSpan(word: { text: string; begin: number; end: number; explicit?: true }, text: string): string {
-  const explicitAttr = word.explicit ? ' composer:explicit="true"' : "";
-  return `<span begin="${formatTime(word.begin)}" end="${formatTime(word.end)}"${explicitAttr}>${escapeXml(text)}</span>`;
-}
-
-function emitTransliterationSpans(
-  word: { text: string; begin: number; end: number; explicit?: true },
-  text: string,
-): string {
-  const tokens = text
-    .trim()
-    .split(/[-\u2010-\u2015\s]+/)
-    .filter(Boolean);
-  if (tokens.length <= 1) return emitWordSpan(word, tokens[0] ?? "");
-  const totalCharacters = tokens.reduce((sum, token) => sum + token.length, 0);
-  const duration = word.end - word.begin;
-  let consumedCharacters = 0;
-  return tokens
-    .map((token, index) => {
-      const begin = word.begin + duration * (consumedCharacters / totalCharacters);
-      consumedCharacters += token.length;
-      const end =
-        index === tokens.length - 1 ? word.end : word.begin + duration * (consumedCharacters / totalCharacters);
-      return emitWordSpan({ ...word, begin, end }, token);
-    })
-    .join(" ");
-}
-
-function emitAlignedTransliteration(words: NonNullable<LyricLine["words"]>): string {
-  let content = "";
-  for (let index = 0; index < words.length; index++) {
-    const word = words[index];
-    content += emitTransliterationSpans(word, word.transliteration?.trim() || word.text.trimEnd());
-    if (index < words.length - 1) content += hasLexicalBoundaryAfter(words, index) ? "  " : " ";
-  }
-  return content;
-}
-
-function emitUntimedTransliteration(text: string): string {
-  return transliterationWordGroups(text)
-    .map((word) => transliterationSyllables(word).join(" "))
-    .join("  ");
-}
 
 function comparableRenderedText(text: string): string {
   return stripSplitCharacter(text).normalize().replace(/\s+/g, " ").trim();
@@ -172,10 +116,9 @@ function generateTTML({
         for (const { line, key } of keyedLines) {
           const track = line.translations?.[language];
           if (track?.text && shouldEmitAlternate(line.text, track.text, omitMatchingAlternates)) {
-            const background = track.backgroundText
-              ? `<span ttm:role="x-bg">${escapeXml(track.backgroundText)}</span>`
-              : "";
-            parts.push(`${ind(6)}<text for="${key}">${escapeXml(track.text)}${background}</text>`);
+            parts.push(
+              `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.text, track.backgroundText)}</text>`,
+            );
           }
         }
         parts.push(`${ind(5)}</translation>`);
@@ -191,24 +134,8 @@ function generateTTML({
       parts.push(`${ind(4)}<transliterations>`);
       for (const [language, languageLines] of byLanguage) {
         parts.push(`${ind(5)}<transliteration xml:lang="${escapeXml(language)}">`);
-        for (const { line: rawLine, key } of languageLines) {
-          const line = withAlignedTransliteration(rawLine);
-          let content = "";
-          if (line.words?.some((word) => word.transliteration)) {
-            content = emitAlignedTransliteration(line.words);
-          } else {
-            content = escapeXml(emitUntimedTransliteration(line.transliteration!.text));
-          }
-          if (line.transliteration?.backgroundText) {
-            let bg = "";
-            if (line.backgroundWords?.some((word) => word.transliteration)) {
-              bg = emitAlignedTransliteration(line.backgroundWords);
-            } else {
-              bg = escapeXml(emitUntimedTransliteration(line.transliteration.backgroundText));
-            }
-            content += `<span ttm:role="x-bg">${bg}</span>`;
-          }
-          parts.push(`${ind(6)}<text for="${key}">${content}</text>`);
+        for (const { line, key } of languageLines) {
+          parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line)}</text>`);
         }
         parts.push(`${ind(5)}</transliteration>`);
       }

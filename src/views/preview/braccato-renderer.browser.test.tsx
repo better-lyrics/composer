@@ -5,6 +5,7 @@ import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import {
+  buildAlternateBackgroundLanguageTtml,
   buildAlternateLanguageTtml,
   buildBackgroundVocalTtml,
   buildMatchingAlternateLanguageTtml,
@@ -257,6 +258,21 @@ describe("BraccatoRenderer", () => {
     await expect.poll(() => el.querySelector(".blyrics--romanized")?.textContent).toContain("annyeong");
     expect(el.querySelector(".blyrics--romanized")?.textContent).toContain("sesang");
     await expect.poll(() => el.querySelector(".blyrics--translated")?.textContent).toContain("Hello world");
+  });
+
+  it("spaces alternate-language background vocals inside a foreground pause", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildAlternateBackgroundLanguageTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    await expect
+      .poll(() => el.querySelector(".blyrics--romanized")?.textContent?.replace(/\s+/g, " "))
+      .toContain("annyeong oh sesang");
+    await expect
+      .poll(() => el.querySelector(".blyrics--translated")?.textContent?.replace(/\s+/g, " "))
+      .toContain("Hello Oh world");
   });
 
   it("does not show alternate tracks that match the main text", async () => {

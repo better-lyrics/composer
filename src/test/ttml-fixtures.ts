@@ -106,6 +106,46 @@ function buildAlternateLanguageTtml(): string {
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
 }
 
+/** One synced Korean line whose alternate-language background vocal falls in a foreground pause. */
+function buildAlternateBackgroundLanguageTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-language-background",
+      text: "안녕 세상",
+      words: [
+        { text: "안녕 ", begin: 2, end: 3 },
+        { text: "세상", begin: 4, end: 6 },
+      ],
+      backgroundText: "오",
+      backgroundWords: [{ text: "오", begin: 3.2, end: 3.8 }],
+    }),
+  ];
+  lines[0].words![0].transliteration = "annyeong";
+  lines[0].words![1].transliteration = "sesang";
+  lines[0].backgroundWords![0].transliteration = "oh";
+  lines[0].transliteration = {
+    language: "ko-Latn",
+    text: "annyeong sesang",
+    backgroundText: "oh",
+    segments: [{ original: "안녕 세상", transliteration: "annyeong sesang" }],
+    backgroundSegments: [{ original: "오", transliteration: "oh" }],
+    origin: "manual",
+    sourceFingerprint: "preview-background-fixture",
+  };
+  lines[0].translations = {
+    en: {
+      language: "en",
+      text: "Hello world",
+      backgroundText: "Oh",
+      origin: "manual",
+      sourceFingerprint: "preview-background-fixture",
+    },
+  };
+
+  const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+}
+
 /** One synced line whose alternate tracks are identical to the main text. */
 function buildMatchingAlternateLanguageTtml(): string {
   const lines = [
@@ -148,4 +188,10 @@ function buildMatchingAlternateLanguageTtml(): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildMatchingAlternateLanguageTtml, buildSyncedTtml };
+export {
+  buildAlternateBackgroundLanguageTtml,
+  buildAlternateLanguageTtml,
+  buildBackgroundVocalTtml,
+  buildMatchingAlternateLanguageTtml,
+  buildSyncedTtml,
+};

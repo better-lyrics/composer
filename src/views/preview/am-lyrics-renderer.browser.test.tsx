@@ -2,7 +2,12 @@ import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { addGlobalAllowedConsolePattern } from "@/test/console-guard";
 import { render } from "@/test/render";
-import { buildAlternateLanguageTtml, buildMatchingAlternateLanguageTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
+import {
+  buildAlternateBackgroundLanguageTtml,
+  buildAlternateLanguageTtml,
+  buildMatchingAlternateLanguageTtml,
+  buildSyncedTtml,
+} from "@/test/ttml-fixtures";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -191,6 +196,28 @@ describe("AmLyricsRenderer", () => {
     await expect
       .poll(() => el.shadowRoot?.querySelector(".lyrics-translation-container")?.textContent)
       .toContain("Hello world");
+  });
+
+  it("spaces alternate-language background vocals inside a foreground pause", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildAlternateBackgroundLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await expect
+      .poll(() =>
+        [...(el.shadowRoot?.querySelectorAll(".lyrics-syllable.transliteration") ?? [])]
+          .map((node) => node.textContent?.trim())
+          .join(" ")
+          .replace(/\s+/g, " "),
+      )
+      .toContain("annyeong oh sesang");
+    await expect
+      .poll(() => el.shadowRoot?.querySelector(".lyrics-translation-container")?.textContent?.replace(/\s+/g, " "))
+      .toContain("Hello Oh world");
   });
 
   it("does not show alternate tracks that match the main text", async () => {

@@ -51,7 +51,43 @@ describe("TTML alternate-language sidecars", () => {
     expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');
     expect(ttml).toContain('<transliteration xml:lang="ja-Latn">');
     expect(ttml).toContain(">kyou</span> <span");
-    expect(ttml).toContain('<text for="L1">Today<span ttm:role="x-bg">Sky</span></text>');
+    expect(ttml).toContain('<text for="L1">Today <span ttm:role="x-bg">Sky</span></text>');
+    expect(ttml).toMatch(/>hi<\/span> <span ttm:role="x-bg">/);
+  });
+
+  it("places alternate background text first when it begins before the foreground", () => {
+    const line = languageLine();
+    line.backgroundWords = [{ text: "空", begin: 0.5, end: 0.9, transliteration: "sora" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+
+    expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky </span>Today</text>');
+    expect(ttml).toMatch(
+      /<text for="L1"><span ttm:role="x-bg"><span[^>]*>sora<\/span> <\/span><span[^>]*>kyou<\/span>/,
+    );
+  });
+
+  it("places alternate background text in a foreground timing break", () => {
+    const line = languageLine();
+    line.text = "今 日";
+    line.words = [
+      { text: "今 ", begin: 1, end: 1.4, transliteration: "kyou" },
+      { text: "日", begin: 2, end: 2.5, transliteration: "hi" },
+    ];
+    line.backgroundWords = [{ text: "空", begin: 1.6, end: 1.9, transliteration: "sora" }];
+    line.translations!.en.text = "Right now";
+    line.transliteration!.text = "kyou hi";
+    line.transliteration!.segments = [{ original: "今 日", transliteration: "kyou hi" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+
+    expect(ttml).toContain('<text for="L1">Right <span ttm:role="x-bg">Sky </span>now</text>');
+    expect(ttml).toMatch(
+      /<text for="L1"><span[^>]*>kyou<\/span> <span ttm:role="x-bg"><span[^>]*>sora<\/span> <\/span><span[^>]*>hi<\/span>/,
+    );
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("Right now");
+    expect(parsed.translations?.en.backgroundText).toBe("Sky");
   });
 
   it("round-trips main and background alternate text", () => {
