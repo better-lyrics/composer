@@ -106,6 +106,46 @@ function buildAlternateLanguageTtml(): string {
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
 }
 
+/** One synced line whose alternate tracks are identical to the main text. */
+function buildMatchingAlternateLanguageTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-matching-language",
+      text: "same line",
+      words: [
+        { text: "same ", begin: 2, end: 4 },
+        { text: "line", begin: 4, end: 6 },
+      ],
+    }),
+  ];
+  for (const word of lines[0].words ?? []) word.transliteration = word.text.trim();
+  lines[0].transliteration = {
+    language: "en-Latn",
+    text: "same line",
+    segments: [{ original: "same line", transliteration: "same line" }],
+    origin: "manual",
+    sourceFingerprint: "matching-preview-fixture",
+  };
+  lines[0].translations = {
+    en: {
+      language: "en",
+      text: "same line",
+      origin: "manual",
+      sourceFingerprint: "matching-preview-fixture",
+    },
+  };
+
+  const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({
+    metadata,
+    agents,
+    lines,
+    groups: [],
+    granularity: "word",
+    omitMatchingAlternates: true,
+  });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildSyncedTtml };
+export { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildMatchingAlternateLanguageTtml, buildSyncedTtml };

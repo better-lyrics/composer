@@ -72,6 +72,15 @@ function emitUntimedTransliteration(text: string): string {
     .join("  ");
 }
 
+function comparableRenderedText(text: string): string {
+  return stripSplitCharacter(text).normalize().replace(/\s+/g, " ").trim();
+}
+
+function shouldEmitAlternate(mainText: string, alternateText: string | undefined, omitMatchingAlternates: boolean) {
+  if (!alternateText?.trim()) return false;
+  return !omitMatchingAlternates || comparableRenderedText(mainText) !== comparableRenderedText(alternateText);
+}
+
 // -- Generator ----------------------------------------------------------------
 
 interface TTMLOptions {
@@ -82,9 +91,19 @@ interface TTMLOptions {
   granularity: "line" | "word";
   minify?: boolean;
   duration?: number;
+  omitMatchingAlternates?: boolean;
 }
 
-function generateTTML({ metadata, agents, lines, groups, granularity, minify = false, duration }: TTMLOptions): string {
+function generateTTML({
+  metadata,
+  agents,
+  lines,
+  groups,
+  granularity,
+  minify = false,
+  duration,
+  omitMatchingAlternates = false,
+}: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
@@ -134,8 +153,16 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
     parts.push(`${ind(3)}</composer:groups>`);
   }
 
-  const translationLanguages = new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})));
-  const transliterationLines = keyedLines.filter(({ line }) => !!line.transliteration?.text);
+  const translationLanguages = new Set(
+    keyedLines.flatMap(({ line }) =>
+      Object.entries(line.translations ?? {})
+        .filter(([, track]) => shouldEmitAlternate(line.text, track.text, omitMatchingAlternates))
+        .map(([language]) => language),
+    ),
+  );
+  const transliterationLines = keyedLines.filter(({ line }) =>
+    shouldEmitAlternate(line.text, line.transliteration?.text, omitMatchingAlternates),
+  );
   if (translationLanguages.size > 0 || transliterationLines.length > 0) {
     parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
     if (translationLanguages.size > 0) {
@@ -144,7 +171,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
         parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
           const track = line.translations?.[language];
-          if (track?.text) {
+          if (track?.text && shouldEmitAlternate(line.text, track.text, omitMatchingAlternates)) {
             const background = track.backgroundText
               ? `<span ttm:role="x-bg">${escapeXml(track.backgroundText)}</span>`
               : "";

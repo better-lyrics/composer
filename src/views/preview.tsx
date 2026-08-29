@@ -1,3 +1,4 @@
+import { effectiveBounds } from "@/domain/line/bounds";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -6,7 +7,6 @@ import { EmptyState } from "@/ui/empty-state";
 import { generateTTML } from "@/utils/ttml";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
-import { effectiveBounds } from "@/domain/line/bounds";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -30,7 +30,7 @@ const PreviewPanel: React.FC = () => {
 
   const ttmlString = useMemo(() => {
     if (!hasSyncedContent) return null;
-    return generateTTML({ metadata, agents, lines, groups, granularity, duration });
+    return generateTTML({ metadata, agents, lines, groups, granularity, duration, omitMatchingAlternates: true });
   }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
 
   if (!source) {

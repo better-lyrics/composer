@@ -2,7 +2,7 @@ import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { addGlobalAllowedConsolePattern } from "@/test/console-guard";
 import { render } from "@/test/render";
-import { buildAlternateLanguageTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
+import { buildAlternateLanguageTtml, buildMatchingAlternateLanguageTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
@@ -191,5 +191,18 @@ describe("AmLyricsRenderer", () => {
     await expect
       .poll(() => el.shadowRoot?.querySelector(".lyrics-translation-container")?.textContent)
       .toContain("Hello world");
+  });
+
+  it("does not show alternate tracks that match the main text", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildMatchingAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    expect(el.shadowRoot?.querySelector(".lyrics-syllable.transliteration")).toBeNull();
+    expect(el.shadowRoot?.querySelector(".lyrics-translation-container")).toBeNull();
   });
 });

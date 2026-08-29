@@ -80,4 +80,40 @@ describe("TTML alternate-language sidecars", () => {
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
     expect(parsed.transliteration?.text).toBe("kyou-hi wa");
   });
+
+  it("can omit alternate tracks that match the rendered main text", () => {
+    const line = languageLine();
+    line.text = "今|日";
+    line.translations!.en.text = "今日";
+    line.transliteration!.text = "今日";
+
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [line],
+      granularity: "word",
+      omitMatchingAlternates: true,
+    });
+
+    expect(ttml).not.toContain("<translations>");
+    expect(ttml).not.toContain("<transliterations>");
+  });
+
+  it("keeps alternate tracks with any visible text difference", () => {
+    const line = languageLine();
+    line.text = "Today";
+    line.translations!.en.text = "today";
+    line.transliteration!.text = "To-day";
+
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [line],
+      granularity: "word",
+      omitMatchingAlternates: true,
+    });
+
+    expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');
+    expect(ttml).toContain('<transliteration xml:lang="ja-Latn">');
+  });
 });

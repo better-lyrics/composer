@@ -4,7 +4,12 @@ import { POSITION_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
-import { buildAlternateLanguageTtml, buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
+import {
+  buildAlternateLanguageTtml,
+  buildBackgroundVocalTtml,
+  buildMatchingAlternateLanguageTtml,
+  buildSyncedTtml,
+} from "@/test/ttml-fixtures";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
 import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
@@ -252,6 +257,17 @@ describe("BraccatoRenderer", () => {
     await expect.poll(() => el.querySelector(".blyrics--romanized")?.textContent).toContain("annyeong");
     expect(el.querySelector(".blyrics--romanized")?.textContent).toContain("sesang");
     await expect.poll(() => el.querySelector(".blyrics--translated")?.textContent).toContain("Hello world");
+  });
+
+  it("does not show alternate tracks that match the main text", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildMatchingAlternateLanguageTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+
+    expect(el.querySelector(".blyrics--romanized")).toBeNull();
+    expect(el.querySelector(".blyrics--translated")).toBeNull();
   });
 
   it("applies the composer theme, keeping its scroll ratio and long-word glow", async () => {
