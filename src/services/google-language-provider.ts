@@ -1,5 +1,6 @@
 import type { TransliterationSegment } from "@/domain/language/model";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
+import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type {
   LanguageProvider,
   TranslationBatchResult,
@@ -7,7 +8,6 @@ import type {
 } from "@/services/language-provider";
 
 const API = "https://translate.googleapis.com/translate_a/single";
-const DASHES = /[-\u2010-\u2015]+/g;
 const translationCache = new Map<string, { text: string | null; detectedLanguage: string }>();
 const transliterationCache = new Map<
   string,
@@ -15,7 +15,7 @@ const transliterationCache = new Map<
 >();
 
 function normalizeGoogleTransliteration(value: string): string {
-  return value.replace(DASHES, "-").replace(/\s+/g, " ").trim();
+  return normalizeTransliterationForEditing(value);
 }
 
 function endpoint(params: Record<string, string>): string {

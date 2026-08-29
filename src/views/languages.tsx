@@ -1,5 +1,6 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
+import { pastedRows } from "@/domain/language/paste-import";
 import { getLanguageReviewItems } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { googleLanguageProvider } from "@/services/google-language-provider";
@@ -158,9 +159,7 @@ const LanguagesPanel: React.FC = () => {
       delete translations[language];
       return [{ id: line.id, updates: { translations } }];
     });
-    if (updates.length > 0) {
-      updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
-    }
+    if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
     setTargets((all) => all.filter((item) => item !== language));
   };
 
@@ -185,7 +184,7 @@ const LanguagesPanel: React.FC = () => {
       data-tour="languages-panel"
       onPasteCapture={(event) => {
         const text = event.clipboardData.getData("text/plain");
-        if (text.replace(/\r\n?/g, "\n").split("\n").length <= 3) return;
+        if (pastedRows(text).length <= 3) return;
         event.preventDefault();
         const field = (event.target as HTMLElement).closest<HTMLElement>("[data-language-import-kind]");
         const kind = field?.dataset.languageImportKind === "translation" ? "translation" : "transliteration";
