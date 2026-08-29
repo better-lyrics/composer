@@ -230,6 +230,28 @@ describe("TimelineSyllableSplitter", () => {
     ]);
   });
 
+  it("shows an inferred transliteration split at a space as selected", async () => {
+    const line: LyricLine = {
+      id: "line-inferred-space-split",
+      agentId: "v1",
+      text: "붙어있던",
+      words: [{ text: "붙어있던", transliteration: "but eoissdeon", begin: 0, end: 1 }],
+    };
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+    });
+    const screen = await render(<TimelineSyllableSplitter />);
+    window.dispatchEvent(new Event("timeline:split-syllable"));
+    await expect.element(screen.getByRole("heading", { name: /Split "붙어있던"/ })).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Original split point 1" }).click();
+
+    await expect
+      .element(screen.getByRole("button", { name: "Transliteration space boundary 4" }))
+      .toHaveAttribute("aria-pressed", "true");
+    expect(document.body.textContent).not.toContain("must have the same number of segments");
+  });
+
   it("splits a dash-delimited transliteration when the playhead sets the timing boundary", async () => {
     const line: LyricLine = {
       id: "line-dash-split",

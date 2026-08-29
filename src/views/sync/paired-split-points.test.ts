@@ -19,6 +19,12 @@ describe("paired split points", () => {
     expect(second).toEqual(emptyState());
   });
 
+  it("normalizes an inferred transliteration split to the visible space boundary", () => {
+    const selected = togglePrimarySplitPoint(emptyState(), 1, "붙어있던", "but eoissdeon");
+
+    expect(selected).toEqual({ splitPoints: [1], transliterationSplitPoints: [4] });
+  });
+
   it("preserves manually selected transliteration boundaries when inference would collide", () => {
     const state: PairedSplitPoints = {
       splitPoints: [1],

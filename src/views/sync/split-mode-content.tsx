@@ -1,5 +1,6 @@
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
+import { isDashSeparator, isUntimedSeparator, isWhitespaceSeparator } from "@/views/sync/split-separators";
 import { IconMinus, IconSpace } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -30,10 +31,6 @@ interface SplitPickerProps {
   label?: string;
 }
 
-const isWhitespace = (char: string) => /\s/.test(char);
-const isDash = (char: string) => /[-\u2010-\u2015]/.test(char);
-const isUntimedSeparator = (char: string) => isWhitespace(char) || isDash(char);
-
 // -- Components ---------------------------------------------------------------
 
 const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, label }) => {
@@ -50,14 +47,19 @@ const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, labe
             while (separatorEnd < value.length && isUntimedSeparator(value[separatorEnd])) separatorEnd++;
             if (idx === 0 || separatorEnd === value.length) return null;
             const active = selectedPoints.has(separatorEnd);
-            const space = isWhitespace(char);
+            const space = isWhitespaceSeparator(char);
             return (
               <button
                 // biome-ignore lint/suspicious/noArrayIndexKey: separator position is stable
                 key={idx}
                 type="button"
                 aria-label={`${label ?? "Text"} ${space ? "space" : "dash"} boundary ${separatorEnd}`}
-                title={`${space ? "Space" : "Dash"} is untimed — click once to split here`}
+                aria-pressed={active}
+                title={
+                  active
+                    ? `${space ? "Space" : "Dash"} boundary selected — click to remove`
+                    : `${space ? "Space" : "Dash"} is untimed — click once to split here`
+                }
                 onClick={() => onToggle(separatorEnd)}
                 className={cn(
                   "w-8 h-8 flex items-center group justify-center mx-1 rounded-md transition-colors cursor-pointer",
@@ -66,9 +68,9 @@ const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, labe
               >
                 {space ? (
                   <IconSpace className={cn("size-5", active ? "text-white" : "text-composer-text-tertiary")} />
-                ) : (
+                ) : isDashSeparator(char) ? (
                   <IconMinus className={cn("size-5", active ? "text-white" : "text-composer-text-tertiary")} />
-                )}
+                ) : null}
               </button>
             );
           }
@@ -82,6 +84,7 @@ const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, labe
                 <button
                   type="button"
                   aria-label={`${label ?? "Text"} split point ${idx + 1}`}
+                  aria-pressed={active}
                   onClick={() => onToggle(idx + 1)}
                   className={cn(
                     "w-4 h-8 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer",

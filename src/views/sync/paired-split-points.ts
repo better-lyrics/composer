@@ -1,3 +1,5 @@
+import { normalizeSplitPointAtSeparator } from "@/views/sync/split-separators";
+
 interface PairedSplitPoints {
   splitPoints: number[];
   transliterationSplitPoints: number[];
@@ -20,9 +22,13 @@ function togglePrimarySplitPoint(
   const transliterationLength = transliteration.trim().length;
   if (sourceLength === 0 || transliterationLength < 2) return { ...state, splitPoints };
 
-  const inferred = splitPoints.map((point) =>
-    Math.max(1, Math.min(transliterationLength - 1, Math.round((point / sourceLength) * transliterationLength))),
-  );
+  const inferred = splitPoints.map((point) => {
+    const proportionalPoint = Math.max(
+      1,
+      Math.min(transliterationLength - 1, Math.round((point / sourceLength) * transliterationLength)),
+    );
+    return normalizeSplitPointAtSeparator(transliteration.trim(), proportionalPoint);
+  });
   return new Set(inferred).size === inferred.length
     ? { splitPoints, transliterationSplitPoints: inferred }
     : { ...state, splitPoints };
