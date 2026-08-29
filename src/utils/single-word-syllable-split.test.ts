@@ -10,6 +10,7 @@ describe("splitWordIntoSyllables", () => {
     });
     expect(result.map((word) => word.text)).toEqual(["今", "日"]);
     expect(result.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(result[0].transliterationJoinerAfter).toBe("");
     expect(result[0].end).toBe(result[1].begin);
   });
   it("removes untimed spaces at selected transliteration boundaries", () => {
@@ -19,6 +20,34 @@ describe("splitWordIntoSyllables", () => {
       transliterationSplitPoints: [5, 9],
     });
     expect(result.map((word) => word.transliteration)).toEqual(["geol", "eum", "eun"]);
+    expect(result.map((word) => word.transliterationJoinerAfter)).toEqual([" ", " ", undefined]);
+  });
+
+  it("preserves dash separators for a later merge", () => {
+    const result = splitWordIntoSyllables({
+      word: { text: "to-do", transliteration: "to-do", begin: 0, end: 1 },
+      splitPoints: [3],
+      transliterationSplitPoints: [3],
+    });
+
+    expect(result.map((word) => word.transliteration)).toEqual(["to", "do"]);
+    expect(result[0].transliterationJoinerAfter).toBe("-");
+  });
+
+  it("moves an outer transliteration separator to the last fragment of a nested split", () => {
+    const firstSplit = splitWordIntoSyllables({
+      word: { text: "abcd", transliteration: "ab cd", begin: 0, end: 1 },
+      splitPoints: [2],
+      transliterationSplitPoints: [3],
+    });
+    const nested = splitWordIntoSyllables({
+      word: firstSplit[0],
+      splitPoints: [1],
+      transliterationSplitPoints: [1],
+      reuseGroupId: true,
+    });
+
+    expect(nested.map((word) => word.transliterationJoinerAfter)).toEqual(["", " "]);
   });
   it("trims trailing space before computing per-character durations", () => {
     const result = splitWordIntoSyllables({
