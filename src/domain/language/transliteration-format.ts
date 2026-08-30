@@ -40,6 +40,17 @@ function timingWordGroups(words: WordTiming[]): TimingWordGroup[] {
   return result;
 }
 
+function timingLexicalWordGroups(words: WordTiming[]): TimingWordGroup[] {
+  const result: TimingWordGroup[] = [];
+  let startIndex = 0;
+  for (let index = 0; index < words.length; index++) {
+    if (!words[index].text.endsWith(" ") && index < words.length - 1) continue;
+    result.push({ words: words.slice(startIndex, index + 1), startIndex });
+    startIndex = index + 1;
+  }
+  return result;
+}
+
 function sourceWordCount(originalText: string): number {
   return originalText.trim().split(/\s+/).filter(Boolean).length;
 }
@@ -51,7 +62,10 @@ function validateTransliterationAlignment(
 ): string | null {
   if (!transliteration.trim()) return null;
   const romanGroups = transliterationWordGroups(transliteration);
-  const sourceGroups = words?.length ? timingWordGroups(words) : [];
+  // Syllable group IDs can legitimately change inside one displayed word. The
+  // transliteration's space-separated groups follow lexical boundaries instead,
+  // which are encoded by trailing spaces in the timing text.
+  const sourceGroups = words?.length ? timingLexicalWordGroups(words) : [];
   const expectedWords = sourceWordCount(originalText);
   if (romanGroups.length !== expectedWords) {
     return `Expected ${expectedWords} word ${expectedWords === 1 ? "group" : "groups"}, found ${romanGroups.length}. Use spaces between words.`;
@@ -65,7 +79,11 @@ function validateTransliterationAlignment(
       lexicalIndex += lexicalWordsInGroup;
       continue;
     }
-    const syllables = transliterationSyllables(romanGroups[lexicalIndex]).length;
+    const romanGroup = romanGroups[lexicalIndex];
+    if (romanGroup === undefined) {
+      return "Timed word boundaries do not align with the transliteration word groups.";
+    }
+    const syllables = transliterationSyllables(romanGroup).length;
     if (syllables !== slots) {
       return `Word ${lexicalIndex + 1} has ${slots} timed syllables, but ${syllables} dash-separated syllables.`;
     }
