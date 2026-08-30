@@ -1,13 +1,11 @@
-import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
+import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { IconMusicExclamation, IconSearch } from "@tabler/icons-react";
 import { ResultRow } from "@/views/lyrics-import-modal/result-row";
-import type { LyricsSearchError } from "@/utils/lyrics-search/types";
 
 // -- Types --------------------------------------------------------------------
 
 interface SearchResultsProps {
   results: LyricsSearchResult[];
-  errors: Map<ProviderName, LyricsSearchError>;
   isFetching: boolean;
   hasQuery: boolean;
   focusedIndex: number;
@@ -17,7 +15,6 @@ interface SearchResultsProps {
   listboxRef?: React.Ref<HTMLDivElement>;
   onHover: (index: number) => void;
   onSelect: (result: LyricsSearchResult) => void;
-  providerDisplayName: (name: ProviderName) => string;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -28,7 +25,6 @@ const SKELETON_ROW_COUNT = 3;
 
 const SearchResults: React.FC<SearchResultsProps> = ({
   results,
-  errors,
   isFetching,
   hasQuery,
   focusedIndex,
@@ -38,18 +34,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   listboxRef,
   onHover,
   onSelect,
-  providerDisplayName,
 }) => {
-  if (errors.size > 0 && results.length === 0 && !isFetching) {
-    return (
-      <div className="flex flex-col items-center gap-1.5 py-8 text-center" role="alert">
-        <span className="text-xs text-composer-error-text">
-          {[...errors.values()].map((err) => `${providerDisplayName(err.provider)}: ${err.message}`).join(" ・ ")}
-        </span>
-        <span className="text-[11px] text-composer-text-muted">Try adjusting your search.</span>
-      </div>
-    );
-  }
   if (results.length > 0) {
     return (
       // react-doctor-disable-next-line react-doctor/prefer-tag-over-role

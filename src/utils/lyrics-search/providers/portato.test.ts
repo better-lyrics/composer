@@ -13,7 +13,6 @@ const SKIP_NETWORK = process.env.SKIP_NETWORK_TESTS === "1";
 const ONLINE_PROBE_URL = "https://lyrics-api.boidu.dev/";
 const ONLINE_PROBE_TIMEOUT_MS = 5000;
 const NETWORK_TEST_TIMEOUT_MS = 30000;
-const RATE_LIMIT_MESSAGE_FRAGMENT = "rate limit";
 
 const CACHED_QUERY = {
   track: "Wanderlust",
@@ -32,11 +31,6 @@ const UNMATCHABLE_QUERY = {
 
 let isOnline = true;
 let cachedResults: LyricsSearchResult[] = [];
-let isRateLimited = false;
-
-function isRateLimitError(error: unknown): boolean {
-  return error instanceof LyricsSearchError && error.message.toLowerCase().includes(RATE_LIMIT_MESSAGE_FRAGMENT);
-}
 
 async function probeOnline(): Promise<boolean> {
   if (SKIP_NETWORK) return false;
@@ -167,24 +161,12 @@ describeOnline("portatoProvider", () => {
       return;
     }
     // One shared fetch for every happy-path assertion, because the window allows only 15 requests.
-    try {
-      cachedResults = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
-    } catch (error) {
-      if (isRateLimitError(error)) {
-        isRateLimited = true;
-        console.warn(
-          "[qq.test] Better Lyrics Portato rate limit reached: happy-path assertions will be skipped at runtime.",
-        );
-        return;
-      }
-      throw error;
-    }
+    cachedResults = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
   }, ONLINE_PROBE_TIMEOUT_MS + NETWORK_TEST_TIMEOUT_MS);
 
   afterAll(() => {
     isOnline = true;
     cachedResults = [];
-    isRateLimited = false;
   });
 
   function skipIfOffline(): boolean {
@@ -192,7 +174,7 @@ describeOnline("portatoProvider", () => {
   }
 
   function cachedResult(): LyricsSearchResult | null {
-    if (!isOnline || isRateLimited) return null;
+    if (!isOnline) return null;
     if (cachedResults.length === 0) {
       console.warn("[qq.test] Cached query returned empty (cache miss); skipping assertions.");
       return null;
@@ -278,14 +260,9 @@ describeOnline("portatoProvider", () => {
     it(
       "returns [] for an unmatchable query rather than throwing",
       async () => {
-        if (skipIfOffline() || isRateLimited) return;
+        if (skipIfOffline()) return;
         const controller = new AbortController();
-        try {
-          expect(await portatoProvider.search(UNMATCHABLE_QUERY, controller.signal)).toEqual([]);
-        } catch (error) {
-          if (isRateLimitError(error)) return;
-          throw error;
-        }
+        expect(await portatoProvider.search(UNMATCHABLE_QUERY, controller.signal)).toEqual([]);
       },
       NETWORK_TEST_TIMEOUT_MS,
     );
@@ -304,7 +281,7 @@ describeOnline("portatoProvider", () => {
     it(
       "resolves to [] when the signal aborts mid-fetch",
       async () => {
-        if (skipIfOffline() || isRateLimited) return;
+        if (skipIfOffline()) return;
         const controller = new AbortController();
         const pending = portatoProvider.search(CACHED_QUERY, controller.signal);
         controller.abort();
@@ -367,9 +344,9 @@ describe("portatoProvider result mapping", () => {
   });
 });
 
-// -- 4xx status handling (stubbed transport) ----------------------------------
+// -- 4xx/5xx status handling (stubbed transport) ------------------------------
 
-describe("portatoProvider 4xx handling", () => {
+describe("portatoProvider 4xx/5xx handling", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -379,7 +356,7 @@ describe("portatoProvider 4xx handling", () => {
     vi.stubGlobal("fetch", async (): Promise<Response> => new Response("body", { status }));
   }
 
-  it.each([400, 401, 403, 422])("returns [] without throwing on %i", async (status) => {
+  it.each([400, 401, 403, 422, 429, 500, 503])("returns [] without throwing on %i", async (status) => {
     stubStatus(status);
     const results = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
     expect(results).toEqual([]);
@@ -400,15 +377,19 @@ describe("portatoProvider 4xx handling", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("still throws a rate-limit error on 429, not treated as no results", async () => {
+  it("treats a 429 rate limit as no results, warns, and does not throw", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     stubStatus(429);
-    await expect(portatoProvider.search(CACHED_QUERY, new AbortController().signal)).rejects.toThrow(/rate limit/i);
+    const results = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 
-  it("still throws a LyricsSearchError on 5xx", async () => {
+  it("returns [] and warns on 5xx instead of throwing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     stubStatus(503);
-    await expect(portatoProvider.search(CACHED_QUERY, new AbortController().signal)).rejects.toBeInstanceOf(
-      LyricsSearchError,
-    );
+    const results = await portatoProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 });

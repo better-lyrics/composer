@@ -315,9 +315,9 @@ describe("boiduLyricsProvider result mapping", () => {
   });
 });
 
-// -- 4xx status handling (stubbed transport) ----------------------------------
+// -- 4xx/5xx status handling (stubbed transport) ------------------------------
 
-describe("boiduLyricsProvider 4xx handling", () => {
+describe("boiduLyricsProvider 4xx/5xx handling", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
@@ -327,7 +327,7 @@ describe("boiduLyricsProvider 4xx handling", () => {
     vi.stubGlobal("fetch", async (): Promise<Response> => new Response("body", { status }));
   }
 
-  it.each([400, 401, 403, 422, 429])("returns [] without throwing on %i", async (status) => {
+  it.each([400, 401, 403, 422, 429, 500, 503])("returns [] without throwing on %i", async (status) => {
     stubStatus(status);
     const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
     expect(results).toEqual([]);
@@ -348,10 +348,11 @@ describe("boiduLyricsProvider 4xx handling", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("still throws a LyricsSearchError on 5xx", async () => {
+  it("returns [] and warns on 5xx instead of throwing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     stubStatus(503);
-    await expect(boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal)).rejects.toBeInstanceOf(
-      LyricsSearchError,
-    );
+    const results = await boiduLyricsProvider.search(CACHED_QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 });

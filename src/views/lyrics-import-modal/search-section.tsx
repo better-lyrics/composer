@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { useLyricsSearch } from "@/hooks/useLyricsSearch";
 import { useImportModalStore } from "@/stores/import-modal-store";
-import { formatProviderName } from "@/utils/lyrics-search/provider-labels";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
@@ -77,7 +76,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
 
   const query = useMemo(() => buildQuery(inputs, isrcRef.current), [inputs]);
   const effectiveExpectedDuration = expectedDurationSec ?? parseDurationInput(inputs.duration);
-  const { results, isFetching, errors } = useLyricsSearch(query, {
+  const { results, isFetching } = useLyricsSearch(query, {
     expectedDurationSec: effectiveExpectedDuration,
   });
 
@@ -209,11 +208,9 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           <span className="text-[11px] text-composer-text-muted">
             {isFetching && results.length === 0
               ? "Searching"
-              : errors.size > 0 && results.length === 0
-                ? "Search failed"
-                : results.length === 0
-                  ? "No results"
-                  : `${results.length} result${results.length === 1 ? "" : "s"}`}
+              : results.length === 0
+                ? "No results"
+                : `${results.length} result${results.length === 1 ? "" : "s"}`}
           </span>
           <button
             type="button"
@@ -228,7 +225,6 @@ const SearchSection: React.FC<SearchSectionProps> = ({
       <div className="flex flex-col gap-1.5 p-1.5 bg-composer-input border border-composer-border rounded-xl min-h-[192px] max-h-[256px] overflow-y-auto">
         <SearchResults
           results={results}
-          errors={errors}
           isFetching={isFetching}
           hasQuery={Boolean(query.track || query.videoId || query.isrc)}
           focusedIndex={focusedIndex}
@@ -238,7 +234,6 @@ const SearchSection: React.FC<SearchSectionProps> = ({
           listboxRef={listboxRef}
           onHover={setHoveredIndex}
           onSelect={handleSelectResult}
-          providerDisplayName={formatProviderName}
         />
       </div>
 
