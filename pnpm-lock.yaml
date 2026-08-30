@@ -12,8 +12,8 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0
       '@braccato/parsers':
-        specifier: ^0.2.0
-        version: 0.2.0
+        specifier: ^0.2.1
+        version: 0.2.1
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -365,8 +365,8 @@ packages:
   '@braccato/core@1.3.0':
     resolution: {integrity: sha512-86OqpXxnRl2itmAyleC6gHi9v3nRN8lD1oxKtTFrAXhYrM2c4DCScJvSNboYdizR7/hPmOiiUiG+uPJJwEhIFg==}
 
-  '@braccato/parsers@0.2.0':
-    resolution: {integrity: sha512-vHdNv7t1DQnKw7tWTc/AfrGsK/nHLiihqM/xLm0gbTE+iN9WNKsupQ/jAeheQHaQQzZNCYnZicnXb5cxiXjqwg==}
+  '@braccato/parsers@0.2.1':
+    resolution: {integrity: sha512-Yzmj6KlPkGd2NXMQUSvm9NV2oZuJrGwf2xk5aOXCOazty6wgivXrOqtXQoOejAkzgiCUpnDeNFza6wd8rYHrow==}
 
   '@braccato/types@1.0.0':
     resolution: {integrity: sha512-BHrCdJ5Uuc8IYJJqKT/4ULHkkbL8lk6KtAhfrx8bh3gC/huYwLDTBtOQAQSMriu3yMhV7TSvDd8L0loB5b1oeA==}
@@ -2993,7 +2993,7 @@ snapshots:
     dependencies:
       '@braccato/types': 1.0.0
 
-  '@braccato/parsers@0.2.0':
+  '@braccato/parsers@0.2.1':
     dependencies:
       '@braccato/types': 1.0.0
       fast-xml-parser: 5.10.1
