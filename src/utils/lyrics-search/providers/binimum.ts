@@ -10,7 +10,6 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 
 const BINIMUM_BASE_URL = "https://lyrics-api.binimum.org/";
 const ID_PREFIX = "binimum-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 const VALID_TIMING_TYPES: ReadonlySet<SyncType> = new Set<SyncType>(["syllable", "word", "line"]);
 
 // -- Types --------------------------------------------------------------------
@@ -92,10 +91,7 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
   try {
     const url = buildSearchUrl(query);
-    const response = await fetch(url.toString(), {
-      signal,
-      headers: { "User-Agent": USER_AGENT },
-    });
+    const response = await fetch(url.toString(), { signal });
 
     if (signal.aborted) return [];
     if (response.status === 404) return [];

@@ -10,7 +10,6 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 const PORTATO_BASE_URL = "https://lyrics-api.boidu.dev/qq/getLyrics";
 const ID_PREFIX = "qq-";
 const SOURCE_LABEL = "Better Lyrics Portato";
-const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
 const RATE_LIMIT_MESSAGE = "Better Lyrics Portato rate limit reached. Try again in a moment.";
 
 // -- Types --------------------------------------------------------------------
@@ -65,10 +64,7 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
   try {
     const url = buildSearchUrl(query);
-    const response = await fetch(url.toString(), {
-      signal,
-      headers: { "User-Agent": USER_AGENT },
-    });
+    const response = await fetch(url.toString(), { signal });
 
     if (signal.aborted) return [];
     if (response.status === 404) return [];
