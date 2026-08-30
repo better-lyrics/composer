@@ -38,7 +38,7 @@
     "lit": "^3.3.3",
     "motion": "^12.43.0",
     "music-metadata": "^11.15.0",
-    "nanoid": "^5.1.16",
+    "nanoid": "^6.0.1",
     "node-diff3": "^3.2.1",
     "obscenity": "^0.4.6",
     "onnxruntime-web": "^1.27.0",
