@@ -36,7 +36,7 @@
     "diff": "^9.0.0",
     "driver.js": "^1.8.0",
     "lit": "^3.3.3",
-    "motion": "^12.43.0",
+    "motion": "^13.1.1",
     "music-metadata": "^11.15.0",
     "nanoid": "^6.0.1",
     "node-diff3": "^3.2.1",
