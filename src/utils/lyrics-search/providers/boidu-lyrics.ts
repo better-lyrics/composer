@@ -2,6 +2,7 @@ import { hasUsableDuration } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectTtmlSyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
+import { isClientError } from "@/utils/lyrics-search/http-status";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
 import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
@@ -9,6 +10,7 @@ import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } 
 
 const BOIDU_BASE_URL = "https://lyrics-api.boidu.dev/getLyrics";
 const ID_PREFIX = "boidu-lyrics-";
+const LOG_PREFIX = "[BetterLyrics]";
 
 // -- Types --------------------------------------------------------------------
 
@@ -62,10 +64,10 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     const response = await fetch(url.toString(), { signal });
 
     if (signal.aborted) return [];
-    if (response.status === 401) return [];
     if (response.status === 404) return [];
-    if (response.status >= 500) {
-      throw new LyricsSearchError("boidu-lyrics", `Better Lyrics returned ${response.status}`);
+    if (isClientError(response.status)) {
+      console.warn(LOG_PREFIX, `getLyrics returned ${response.status}, treating as no results`);
+      return [];
     }
     if (!response.ok) {
       throw new LyricsSearchError("boidu-lyrics", `Better Lyrics returned ${response.status}`);
