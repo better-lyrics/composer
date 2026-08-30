@@ -2,10 +2,9 @@ import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
-import { isClientError } from "@/utils/lyrics-search/http-status";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
-import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import type { LyricsSearchProvider, LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -97,12 +96,9 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
     if (signal.aborted) return [];
     if (response.status === 404) return [];
-    if (isClientError(response.status)) {
+    if (!response.ok) {
       console.warn(LOG_PREFIX, `search returned ${response.status}, treating as no results`);
       return [];
-    }
-    if (!response.ok) {
-      throw new LyricsSearchError("binimum", `Binimum search returned ${response.status}`);
     }
 
     const body = (await response.json()) as BinimumSearchResponse;
@@ -116,8 +112,8 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     return mapped;
   } catch (error) {
     if (isAbortError(error)) return [];
-    if (error instanceof LyricsSearchError) throw error;
-    throw new LyricsSearchError("binimum", "Binimum search request failed", error);
+    console.warn(LOG_PREFIX, "search request failed, treating as no results", error);
+    return [];
   }
 }
 

@@ -177,7 +177,7 @@ describe("SearchSection search lifecycle", () => {
     await expect.element(screen.getByText("Title 2")).toBeInTheDocument();
   });
 
-  it("renders an inline error when the provider rejects", async () => {
+  it("shows the no-matches state when a provider fails, never an error screen", async () => {
     const screen = await render(
       withQueryClient(
         <SearchSection
@@ -191,8 +191,8 @@ describe("SearchSection search lifecycle", () => {
     await expect.poll(() => currentProvider?.pending.length ?? 0).toBeGreaterThan(0);
     const entry = currentProvider!.pending[currentProvider!.pending.length - 1];
     entry.reject(new LyricsSearchError("lrclib", "Provider blew up"));
-    await expect.element(screen.getByText(/LRCLib/)).toBeInTheDocument();
-    await expect.element(screen.getByText(/Provider blew up/)).toBeInTheDocument();
+    await expect.element(screen.getByText("No matches")).toBeInTheDocument();
+    expect(screen.getByText(/Provider blew up/).elements().length).toBe(0);
   });
 
   it("shows a no-matches state when the provider resolves empty for a typed query", async () => {

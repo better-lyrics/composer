@@ -2,9 +2,8 @@ import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { detectLrcSyncType, type SyncType } from "@/domain/lyrics-search/sync-type";
 import { isAbortError } from "@/utils/abort-error";
-import { isClientError } from "@/utils/lyrics-search/http-status";
 import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
-import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import type { LyricsSearchProvider, LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -95,12 +94,9 @@ async function fetchSearch(query: LyricsSearchQuery, signal: AbortSignal): Promi
   const url = buildSearchUrl(query);
   const response = await fetch(url.toString(), { signal });
   if (response.status === 404) return [];
-  if (isClientError(response.status)) {
+  if (!response.ok) {
     console.warn(LOG_PREFIX, `/api/search returned ${response.status}, treating as no results`);
     return [];
-  }
-  if (!response.ok) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/search returned ${response.status}`);
   }
   const body = (await response.json()) as LrcLibResponse[];
   return Array.isArray(body) ? body : [];
@@ -110,12 +106,9 @@ async function fetchGet(query: LyricsSearchQuery, signal: AbortSignal): Promise<
   const url = buildGetUrl(query);
   const response = await fetch(url.toString(), { signal });
   if (response.status === 404) return null;
-  if (isClientError(response.status)) {
+  if (!response.ok) {
     console.warn(LOG_PREFIX, `/api/get returned ${response.status}, treating as no results`);
     return null;
-  }
-  if (!response.ok) {
-    throw new LyricsSearchError("lrclib", `LRCLib /api/get returned ${response.status}`);
   }
   const body = (await response.json()) as LrcLibResponse;
   return body;
@@ -170,8 +163,8 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
 function handleSearchRejection(reason: unknown): LrcLibResponse[] {
   if (isAbortError(reason)) return [];
-  if (reason instanceof LyricsSearchError) throw reason;
-  throw new LyricsSearchError("lrclib", "LRCLib /api/search request failed", reason);
+  console.warn(LOG_PREFIX, "/api/search request failed, treating as no results", reason);
+  return [];
 }
 
 function handleGetRejection(_reason: unknown): LrcLibResponse | null {

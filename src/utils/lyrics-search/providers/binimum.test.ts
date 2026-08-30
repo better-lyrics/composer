@@ -332,9 +332,9 @@ describe("binimumProvider duration mapping", () => {
   });
 });
 
-// -- 4xx status handling (stubbed transport) ----------------------------------
+// -- 4xx/5xx status handling (stubbed transport) ------------------------------
 
-describe("binimumProvider 4xx handling", () => {
+describe("binimumProvider 4xx/5xx handling", () => {
   const QUERY = { track: "Bohemian Rhapsody", artist: "Queen" } as const;
 
   afterEach(() => {
@@ -346,7 +346,7 @@ describe("binimumProvider 4xx handling", () => {
     vi.stubGlobal("fetch", async (): Promise<Response> => new Response("body", { status }));
   }
 
-  it.each([400, 401, 403, 422, 429])("returns [] without throwing on %i", async (status) => {
+  it.each([400, 401, 403, 422, 429, 500, 503])("returns [] without throwing on %i", async (status) => {
     stubStatus(status);
     const results = await binimumProvider.search(QUERY, new AbortController().signal);
     expect(results).toEqual([]);
@@ -367,8 +367,11 @@ describe("binimumProvider 4xx handling", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("still throws a LyricsSearchError on 5xx", async () => {
+  it("returns [] and warns on 5xx instead of throwing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     stubStatus(503);
-    await expect(binimumProvider.search(QUERY, new AbortController().signal)).rejects.toBeInstanceOf(LyricsSearchError);
+    const results = await binimumProvider.search(QUERY, new AbortController().signal);
+    expect(results).toEqual([]);
+    expect(warn).toHaveBeenCalled();
   });
 });
