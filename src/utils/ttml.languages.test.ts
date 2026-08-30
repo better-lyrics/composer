@@ -117,7 +117,7 @@ describe("TTML alternate-language sidecars", () => {
     expect(parsed.transliteration?.text).toBe("kyou-hi wa");
   });
 
-  it("can omit alternate tracks that match the rendered main text", () => {
+  it("keeps matching alternate tracks in the exported TTML for renderers to filter", () => {
     const line = languageLine();
     line.text = "今|日";
     line.translations!.en.text = "今日";
@@ -128,14 +128,13 @@ describe("TTML alternate-language sidecars", () => {
       agents,
       lines: [line],
       granularity: "word",
-      omitMatchingAlternates: true,
     });
 
-    expect(ttml).not.toContain("<translations>");
-    expect(ttml).not.toContain("<transliterations>");
+    expect(ttml).toContain("<translations>");
+    expect(ttml).toContain("<transliterations>");
   });
 
-  it("keeps alternate tracks with any visible text difference", () => {
+  it("keeps case and punctuation variants in the exported TTML", () => {
     const line = languageLine();
     line.text = "Today";
     line.translations!.en.text = "today";
@@ -146,7 +145,6 @@ describe("TTML alternate-language sidecars", () => {
       agents,
       lines: [line],
       granularity: "word",
-      omitMatchingAlternates: true,
     });
 
     expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');

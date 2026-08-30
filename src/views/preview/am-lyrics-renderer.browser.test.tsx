@@ -229,7 +229,42 @@ describe("AmLyricsRenderer", () => {
     const el = await waitForAmLyrics(screen.container);
     await waitForLyrics(el);
 
-    expect(el.shadowRoot?.querySelector(".lyrics-syllable.transliteration")).toBeNull();
-    expect(el.shadowRoot?.querySelector(".lyrics-translation-container")).toBeNull();
+    await expect
+      .poll(() =>
+        el.shadowRoot
+          ?.querySelector(".lyrics-syllable.transliteration")
+          ?.hasAttribute("data-composer-matching-alternate"),
+      )
+      .toBe(true);
+    expect(
+      el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(true);
+  });
+
+  it("shows alternate tracks again when updated TTML differs from the main text", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildMatchingAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+    await expect.poll(() => el.shadowRoot?.querySelector("[data-composer-matching-alternate]") !== null).toBe(true);
+
+    await screen.rerender(
+      <AmLyricsRenderer ttmlString={buildAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+
+    await expect
+      .poll(() => el.shadowRoot?.querySelector(".lyrics-syllable.transliteration")?.textContent?.trim())
+      .toBe("annyeong");
+    expect(
+      el.shadowRoot
+        ?.querySelector(".lyrics-syllable.transliteration")
+        ?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(false);
+    expect(
+      el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(false);
   });
 });

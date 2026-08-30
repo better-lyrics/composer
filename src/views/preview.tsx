@@ -1,37 +1,22 @@
-import { effectiveBounds } from "@/domain/line/bounds";
+import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { generateTTML } from "@/utils/ttml";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
-import { useMemo } from "react";
 
 // -- Components ---------------------------------------------------------------
 
 const PreviewPanel: React.FC = () => {
-  const lines = useProjectStore((s) => s.lines);
-  const agents = useProjectStore((s) => s.agents);
-  const groups = useProjectStore((s) => s.groups);
-  const metadata = useProjectStore((s) => s.metadata);
-  const granularity = useProjectStore((s) => s.granularity);
-  const duration = useAudioStore((s) => s.duration);
+  const { content: ttmlString, duration, lineCount, syncedLineCount } = useExportTtml();
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const renderer = useSettingsStore((s) => s.previewRenderer);
 
-  const hasSyncedContent = useMemo(() => {
-    return lines.some((line) => effectiveBounds(line) !== null);
-  }, [lines]);
-
-  const ttmlString = useMemo(() => {
-    if (!hasSyncedContent) return null;
-    return generateTTML({ metadata, agents, lines, groups, granularity, duration, omitMatchingAlternates: true });
-  }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
+  const hasSyncedContent = syncedLineCount > 0;
 
   if (!source) {
     return (
@@ -41,7 +26,7 @@ const PreviewPanel: React.FC = () => {
     );
   }
 
-  if (lines.length === 0) {
+  if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
         <EmptyState message="No lyrics to preview" hint="Add lyrics in the Edit tab first" />
@@ -49,7 +34,7 @@ const PreviewPanel: React.FC = () => {
     );
   }
 
-  if (!hasSyncedContent || !ttmlString) {
+  if (!hasSyncedContent) {
     return (
       <div className="flex flex-col flex-1 p-4">
         <EmptyState message="No synced content" hint="Sync lyrics in the Sync tab first" />

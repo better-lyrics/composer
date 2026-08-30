@@ -1,3 +1,4 @@
+import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -47,13 +48,13 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
     const line = renderer.lines[index];
     if (!line || lyric.isInstrumental) continue;
 
-    if (lyric.romanization) {
+    if (lyric.romanization && !alternateMatchesMainText(lyric.romanization, lyric.words)) {
       injectRomanization(el.ownerDocument, line.lyricElement, line, lyric.romanization, lyric.timedRomanization);
       decorated = true;
     }
 
     const translation = lyric.translation?.text ?? Object.values(lyric.translations ?? {})[0];
-    if (translation) {
+    if (translation && !alternateMatchesMainText(translation, lyric.words)) {
       injectTranslation(el.ownerDocument, line.lyricElement, translation);
       decorated = true;
     }

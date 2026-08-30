@@ -16,15 +16,6 @@ const APPLE_LYRIC_NS = "http://music.apple.com/lyric-ttml-internal";
 
 // -- Helpers ------------------------------------------------------------------
 
-function comparableRenderedText(text: string): string {
-  return stripSplitCharacter(text).normalize().replace(/\s+/g, " ").trim();
-}
-
-function shouldEmitAlternate(mainText: string, alternateText: string | undefined, omitMatchingAlternates: boolean) {
-  if (!alternateText?.trim()) return false;
-  return !omitMatchingAlternates || comparableRenderedText(mainText) !== comparableRenderedText(alternateText);
-}
-
 // -- Generator ----------------------------------------------------------------
 
 interface TTMLOptions {
@@ -35,19 +26,9 @@ interface TTMLOptions {
   granularity: "line" | "word";
   minify?: boolean;
   duration?: number;
-  omitMatchingAlternates?: boolean;
 }
 
-function generateTTML({
-  metadata,
-  agents,
-  lines,
-  groups,
-  granularity,
-  minify = false,
-  duration,
-  omitMatchingAlternates = false,
-}: TTMLOptions): string {
+function generateTTML({ metadata, agents, lines, groups, granularity, minify = false, duration }: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
@@ -100,14 +81,12 @@ function generateTTML({
   const translationLanguages = new Set<string>();
   for (const { line } of keyedLines) {
     for (const [language, track] of Object.entries(line.translations ?? {})) {
-      if (shouldEmitAlternate(line.text, track.text, omitMatchingAlternates)) {
+      if (track.text.trim()) {
         translationLanguages.add(language);
       }
     }
   }
-  const transliterationLines = keyedLines.filter(({ line }) =>
-    shouldEmitAlternate(line.text, line.transliteration?.text, omitMatchingAlternates),
-  );
+  const transliterationLines = keyedLines.filter(({ line }) => line.transliteration?.text.trim());
   if (translationLanguages.size > 0 || transliterationLines.length > 0) {
     parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
     if (translationLanguages.size > 0) {
@@ -116,7 +95,7 @@ function generateTTML({
         parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
           const track = line.translations?.[language];
-          if (track?.text && shouldEmitAlternate(line.text, track.text, omitMatchingAlternates)) {
+          if (track?.text.trim()) {
             parts.push(
               `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.text, track.backgroundText)}</text>`,
             );

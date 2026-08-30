@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useUIStore } from "@/stores/ui";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Setup --------------------------------------------------------------------
 
 beforeEach(() => {
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
+  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, ttmlEditState: null });
 });
 
 // -- Tests --------------------------------------------------------------------
@@ -63,6 +63,23 @@ describe("useUIStore", () => {
       useUIStore.getState().clearHighlight();
       expect(useUIStore.getState().settingsHighlight).toBeNull();
       expect(useUIStore.getState().settingsOpen).toBe(false);
+    });
+  });
+
+  describe("setTtmlEditState", () => {
+    it("stores TTML edits where Export and Preview can share them", () => {
+      useUIStore.getState().setTtmlEditState({ source: "generated", content: "edited" });
+
+      expect(useUIStore.getState().ttmlEditState).toEqual({ source: "generated", content: "edited" });
+    });
+
+    it("supports updates based on the current edit", () => {
+      useUIStore.getState().setTtmlEditState({ source: "generated", content: "first edit" });
+      useUIStore
+        .getState()
+        .setTtmlEditState((current) => (current === null ? null : { ...current, content: "second edit" }));
+
+      expect(useUIStore.getState().ttmlEditState?.content).toBe("second edit");
     });
   });
 

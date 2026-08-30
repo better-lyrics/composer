@@ -158,18 +158,20 @@ function buildMatchingAlternateLanguageTtml(): string {
       ],
     }),
   ];
-  for (const word of lines[0].words ?? []) word.transliteration = word.text.trim();
+  for (const [index, word] of (lines[0].words ?? []).entries()) {
+    word.transliteration = index === 0 ? "Same," : "LINE!";
+  }
   lines[0].transliteration = {
     language: "en-Latn",
-    text: "same line",
-    segments: [{ original: "same line", transliteration: "same line" }],
+    text: "Same, LINE!",
+    segments: [{ original: "same line", transliteration: "Same, LINE!" }],
     origin: "manual",
     sourceFingerprint: "matching-preview-fixture",
   };
   lines[0].translations = {
     en: {
       language: "en",
-      text: "same line",
+      text: "SAME, LINE!",
       origin: "manual",
       sourceFingerprint: "matching-preview-fixture",
     },
@@ -182,7 +184,6 @@ function buildMatchingAlternateLanguageTtml(): string {
     lines,
     groups: [],
     granularity: "word",
-    omitMatchingAlternates: true,
   });
 }
 
