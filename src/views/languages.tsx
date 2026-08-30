@@ -1,7 +1,7 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { pastedRows } from "@/domain/language/paste-import";
-import { getLanguageReviewItems } from "@/domain/language/review";
+import { languageSourceText } from "@/domain/language/source-text";
 import type { LyricLine } from "@/domain/line/model";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
@@ -11,7 +11,7 @@ import { Scroll } from "@/ui/scroll";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
-import { LanguageReviewSummary } from "@/views/languages/review-summary";
+import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { TransliterationHelp } from "@/views/languages/transliteration-help";
 import { IconLanguage, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -49,8 +49,8 @@ const LanguagesPanel: React.FC = () => {
         const mainInputs: Array<{ id: string; text: string }> = [];
         const bgInputs: Array<{ id: string; text: string }> = [];
         for (const line of lines) {
-          const text = line.text.trim();
-          const backgroundText = line.backgroundText?.trim();
+          const text = languageSourceText(line.text);
+          const backgroundText = line.backgroundText ? languageSourceText(line.backgroundText) : undefined;
           if (text) mainInputs.push({ id: line.id, text });
           if (backgroundText) bgInputs.push({ id: line.id, text: backgroundText });
         }
@@ -144,8 +144,6 @@ const LanguagesPanel: React.FC = () => {
 
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
-  const reviewItems = getLanguageReviewItems(lines);
-
   useEffect(() => {
     if (!targets.includes(nextTarget)) return;
     const next = LANGUAGE_OPTIONS.find(([code]) => !targets.includes(code));
@@ -265,7 +263,7 @@ const LanguagesPanel: React.FC = () => {
 
       <Scroll className="flex-1">
         <div className="flex flex-col gap-3 p-6">
-          <LanguageReviewSummary items={reviewItems} languageNames={languageName} />
+          <LanguageStatusSummaries lines={lines} languageNames={languageName} />
           {lines.map((line, index) => (
             <LanguageLineEditor
               key={line.id}

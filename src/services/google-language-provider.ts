@@ -1,6 +1,9 @@
 import type { TransliterationSegment } from "@/domain/language/model";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
-import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
+import {
+  fitTransliterationToSourceWords,
+  normalizeTransliterationForEditing,
+} from "@/domain/language/transliteration-format";
 import type {
   LanguageProvider,
   TranslationBatchResult,
@@ -14,8 +17,9 @@ const transliterationCache = new Map<
   { text: string | null; detectedLanguage: string; segments: TransliterationSegment[] }
 >();
 
-function normalizeGoogleTransliteration(value: string): string {
-  return normalizeTransliterationForEditing(value);
+function normalizeGoogleTransliteration(value: string, sourceText?: string): string {
+  const normalized = normalizeTransliterationForEditing(value);
+  return sourceText ? fitTransliterationToSourceWords(sourceText, normalized) : normalized;
 }
 
 function endpoint(params: Record<string, string>): string {
@@ -81,7 +85,9 @@ async function transliterateOne(text: string, sourceLanguage: string, signal?: A
   const segments: TransliterationSegment[] = unpairedRomanization
     ? [{ original: text, transliteration: unpairedRomanization }]
     : pairedSegments;
-  const joined = normalizeGoogleTransliteration(segments.map((segment) => segment.transliteration).join(" "));
+  const rawJoined = normalizeGoogleTransliteration(segments.map((segment) => segment.transliteration).join(" "));
+  const joined = normalizeGoogleTransliteration(rawJoined, text);
+  if (joined !== rawJoined) segments.splice(0, segments.length, { original: text, transliteration: joined });
   const result = {
     text: joined && joined.localeCompare(text, undefined, { sensitivity: "accent" }) !== 0 ? joined : null,
     detectedLanguage,

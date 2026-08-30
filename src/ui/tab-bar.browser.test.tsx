@@ -79,4 +79,33 @@ describe("TabBar", () => {
     expect(warning?.textContent).toContain("1");
     await expect.element(screen.getByLabelText("1 line needs language review")).toBeInTheDocument();
   });
+
+  it("shows the number of lines with alignment errors on the Languages tab", async () => {
+    useSettingsStore.setState({ showShortcutHints: false });
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "가|나",
+        agentId: "v1",
+        words: [
+          { text: "가", begin: 0, end: 0.5, syllableGroupId: "group" },
+          { text: "나", begin: 0.5, end: 1, syllableGroupId: "group" },
+        ],
+        transliteration: {
+          language: "ko-Latn",
+          text: "gana",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint: "current",
+        },
+      },
+    ]);
+
+    const screen = await render(<TabBar />);
+    const error = screen.container.querySelector("[data-language-error-count]");
+
+    expect(error).not.toBeNull();
+    expect(error?.textContent).toContain("1");
+    await expect.element(screen.getByLabelText("1 line has a language alignment error")).toBeInTheDocument();
+  });
 });

@@ -35,6 +35,47 @@ describe("LanguagesPanel", () => {
     expect(useProjectStore.getState().metadata.language).toBe("ja");
   });
 
+  it("does not send structural syllable markers to automatic language generation", async () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "今|は 当|然",
+        backgroundText: "風|だ",
+        backgroundTextSource: "manual",
+        agentId: "v1",
+      },
+    ]);
+    const requestedText: string[] = [];
+    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      const text = url.searchParams.get("q") ?? "";
+      requestedText.push(text);
+      const romanization = url.searchParams.getAll("dt").includes("rm");
+      const generated = text === "今は 当然" ? (romanization ? "ima wa tōzen desu" : "Now, of course") : "kaze da";
+      const data = romanization
+        ? [
+            [
+              [text, text, null, null],
+              [null, null, generated, generated],
+            ],
+            null,
+            "ja",
+          ]
+        : [[[generated, text]], null, "ja"];
+      return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+    });
+
+    const screen = await render(<LanguagesPanel />);
+
+    await expect
+      .element(screen.getByRole("textbox", { name: "Transliteration", exact: true }))
+      .toHaveValue("ima-wa tōzen-desu");
+    await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).toHaveValue("Now, of course");
+    expect(requestedText).toHaveLength(4);
+    expect(requestedText.every((text) => !text.includes("|"))).toBe(true);
+    expect(new Set(requestedText)).toEqual(new Set(["今は 当然", "風だ"]));
+  });
+
   it("preserves manual alternate text during automatic generation", async () => {
     useProjectStore.getState().setLines([
       {
@@ -104,6 +145,39 @@ describe("LanguagesPanel", () => {
     expect(document.body.textContent).not.toContain("Needs review");
     await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBeUndefined();
     expect(useProjectStore.getState().lines[0].translations?.en.stale).toBeUndefined();
+  });
+
+  it("summarizes transliteration alignment errors and links them to their lines", async () => {
+    const sourceFingerprint = languageSourceFingerprint("가|나");
+    useProjectStore.getState().setLines([
+      {
+        id: "l1",
+        text: "가|나",
+        agentId: "v1",
+        words: [
+          { text: "가", begin: 0, end: 0.5, syllableGroupId: "group" },
+          { text: "나", begin: 0.5, end: 1, syllableGroupId: "group" },
+        ],
+        transliteration: {
+          language: "ko-Latn",
+          text: "gana",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint,
+        },
+      },
+    ]);
+
+    const screen = await render(<LanguagesPanel />);
+
+    const summary = screen.container.querySelector("[data-language-alignment-error-summary]");
+    expect(summary?.textContent).toContain("1 line has an alignment error");
+    expect(summary?.textContent).toContain("Line 1");
+    expect(summary?.textContent).toContain("Transliteration");
+    await expect
+      .element(screen.getByText("Original word 1 is split into 2 timed syllables", { exact: false }))
+      .toBeInTheDocument();
+    await expect.element(screen.getByText("Error", { exact: true })).toBeInTheDocument();
   });
 
   it("lets the user override the detected source language", async () => {

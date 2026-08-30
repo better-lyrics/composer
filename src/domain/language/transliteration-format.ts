@@ -24,6 +24,30 @@ function transliterationForTimeline(value: string): string {
   return normalizeTransliterationForEditing(value).replace(DASHES, " ");
 }
 
+function fitTransliterationToSourceWords(sourceText: string, transliteration: string): string {
+  const sourceGroups = sourceWordGroups(sourceText);
+  const romanGroups = transliterationWordGroups(transliteration);
+  if (sourceGroups.length === 0 || romanGroups.length <= sourceGroups.length) return transliteration;
+
+  const totalSourceLength = sourceGroups.reduce((sum, group) => sum + [...group].length, 0);
+  let sourceLength = 0;
+  let romanIndex = 0;
+  return sourceGroups
+    .map((group, index) => {
+      sourceLength += [...group].length;
+      const groupsRemaining = sourceGroups.length - index - 1;
+      const idealEnd = Math.round((sourceLength / totalSourceLength) * romanGroups.length);
+      const end =
+        groupsRemaining === 0
+          ? romanGroups.length
+          : Math.min(romanGroups.length - groupsRemaining, Math.max(romanIndex + 1, idealEnd));
+      const fitted = romanGroups.slice(romanIndex, end).join("-");
+      romanIndex = end;
+      return fitted;
+    })
+    .join(" ");
+}
+
 function timingWordGroups(words: WordTiming[]): TimingWordGroup[] {
   const result: TimingWordGroup[] = [];
   let index = 0;
@@ -51,8 +75,12 @@ function timingLexicalWordGroups(words: WordTiming[]): TimingWordGroup[] {
   return result;
 }
 
+function sourceWordGroups(originalText: string): string[] {
+  return originalText.trim().split(/\s+/).filter(Boolean);
+}
+
 function sourceWordCount(originalText: string): number {
-  return originalText.trim().split(/\s+/).filter(Boolean).length;
+  return sourceWordGroups(originalText).length;
 }
 
 function validateTransliterationAlignment(
@@ -85,7 +113,7 @@ function validateTransliterationAlignment(
     }
     const syllables = transliterationSyllables(romanGroup).length;
     if (syllables !== slots) {
-      return `Word ${lexicalIndex + 1} has ${slots} timed syllables, but ${syllables} dash-separated syllables.`;
+      return `Original word ${lexicalIndex + 1} is split into ${slots} timed syllables, but its transliteration has ${syllables} dash-separated ${syllables === 1 ? "syllable" : "syllables"}.`;
     }
     lexicalIndex += lexicalWordsInGroup;
   }
@@ -103,7 +131,9 @@ function hasLexicalBoundaryAfter(words: WordTiming[], index: number): boolean {
 
 export {
   hasLexicalBoundaryAfter,
+  fitTransliterationToSourceWords,
   normalizeTransliterationForEditing,
+  sourceWordGroups,
   sourceWordCount,
   timingWordGroups,
   transliterationForTimeline,

@@ -11,6 +11,10 @@ describe("Google transliteration normalization", () => {
   it("collapses repeated separators and whitespace", () => {
     expect(normalizeGoogleTransliteration("  ni--hao   ma ")).toBe("ni-hao ma");
   });
+
+  it("fits Google token boundaries to Composer source-word boundaries", () => {
+    expect(normalizeGoogleTransliteration("ima wa tōzen desu", "今は 当然")).toBe("ima-wa tōzen-desu");
+  });
 });
 
 describe("Google transliteration script fallback", () => {
