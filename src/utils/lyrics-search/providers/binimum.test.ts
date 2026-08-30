@@ -10,6 +10,9 @@ const ONLINE_PROBE_TIMEOUT_MS = 5000;
 const NETWORK_TEST_TIMEOUT_MS = 30000;
 const TTML_URL_REGEX = /^https:\/\/lyrics-storage\.binimum\.org\/.+\.ttml$/;
 
+// Binimum sits behind Cloudflare bot protection that 403s datacenter IPs (CI); a browser reaches it fine, so a block is an unavailable-for-tests signal, not a product failure.
+const BOT_BLOCK_STATUSES: ReadonlySet<number> = new Set([401, 403, 429]);
+
 let isOnline = true;
 
 async function probeOnline(): Promise<boolean> {
@@ -18,6 +21,7 @@ async function probeOnline(): Promise<boolean> {
   const timer = setTimeout(() => controller.abort(), ONLINE_PROBE_TIMEOUT_MS);
   try {
     const response = await fetch(ONLINE_PROBE_URL, { signal: controller.signal });
+    if (BOT_BLOCK_STATUSES.has(response.status)) return false;
     return response.status < 500;
   } catch {
     return false;
