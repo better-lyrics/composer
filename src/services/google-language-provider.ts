@@ -72,11 +72,11 @@ function responseParts(data: unknown[]): unknown[][] {
   return Array.isArray(data[0]) ? (data[0] as unknown[][]).filter(Array.isArray) : [];
 }
 
-async function translateOne(text: string, targetLanguage: string, signal?: AbortSignal) {
-  const key = `${targetLanguage}\u0000${text}`;
+async function translateOne(text: string, targetLanguage: string, sourceLanguage: string, signal?: AbortSignal) {
+  const key = `${sourceLanguage}\u0000${targetLanguage}\u0000${text}`;
   const cached = translationCache.get(key);
   if (cached) return cached;
-  const data = await fetchJson(endpoint({ sl: "auto", tl: targetLanguage, q: text }), signal);
+  const data = await fetchJson(endpoint({ sl: sourceLanguage, tl: targetLanguage, q: text }), signal);
   const translated = responseParts(data)
     .map((part) => (typeof part[0] === "string" ? part[0] : ""))
     .join("")
@@ -155,8 +155,9 @@ async function settleWithLimit<T, R>(items: T[], worker: (item: T) => Promise<R>
 
 const googleLanguageProvider: LanguageProvider = {
   id: "google-gtx",
-  async translate(lines, targetLanguage, signal): Promise<TranslationBatchResult> {
-    const results = await settleWithLimit(lines, (line) => translateOne(line.text, targetLanguage, signal));
+  async translate(lines, targetLanguage, sourceLanguage, signal): Promise<TranslationBatchResult> {
+    const source = sourceLanguage || "auto";
+    const results = await settleWithLimit(lines, (line) => translateOne(line.text, targetLanguage, source, signal));
     return {
       detectedLanguage: results.find((result) => result?.detectedLanguage)?.detectedLanguage ?? "",
       lines: lines.map((line, index) => ({ id: line.id, text: results[index]?.text ?? null })),

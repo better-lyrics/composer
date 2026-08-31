@@ -29,7 +29,12 @@ interface TransliterationBatchResult {
 
 interface LanguageProvider {
   id: string;
-  translate(lines: LanguageLineInput[], targetLanguage: string, signal?: AbortSignal): Promise<TranslationBatchResult>;
+  translate(
+    lines: LanguageLineInput[],
+    targetLanguage: string,
+    sourceLanguage?: string,
+    signal?: AbortSignal,
+  ): Promise<TranslationBatchResult>;
   transliterate(
     lines: LanguageLineInput[],
     sourceLanguage?: string,

@@ -38,6 +38,41 @@ describe("LanguagesPanel", () => {
     expect(useProjectStore.getState().metadata.language).toBe("ja");
   });
 
+  it("replaces an edited translation on a mixed-script line when regenerating all", async () => {
+    const sourceText = '꽉 찬 내 to-|do list, I say, "What are those?"';
+    const generatedEnglish = "My to-do list is full, I say, “What are those?”";
+    useProjectStore.getState().setMetadata({ language: "ko" });
+    useProjectStore.getState().setLines([{ id: "mixed-regeneration", text: sourceText, agentId: "v1" }]);
+    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      expect(url.searchParams.get("sl")).toBe("ko");
+      const source = url.searchParams.get("q") ?? "";
+      const romanization = url.searchParams.getAll("dt").includes("rm");
+      const generated = romanization ? "kkwak chan nae to-do list" : generatedEnglish;
+      const data = romanization
+        ? [
+            [
+              [source, source, null, null],
+              [null, null, generated, generated],
+            ],
+            null,
+            "ko",
+          ]
+        : [[[generated, source]], null, "ko"];
+      return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+    });
+
+    const screen = await render(<LanguagesPanel />);
+    const english = screen.getByRole("textbox", { name: "English" });
+    await expect.element(english).toHaveValue(generatedEnglish);
+    await english.fill(`${generatedEnglish} test`);
+    await expect.element(english).toHaveValue(`${generatedEnglish} test`);
+
+    await screen.getByRole("button", { name: "Regenerate all" }).click();
+
+    await expect.element(english).toHaveValue(generatedEnglish);
+  });
+
   it("does not send structural syllable markers to automatic language generation", async () => {
     useProjectStore.getState().setLines([
       {
@@ -222,6 +257,69 @@ describe("LanguagesPanel", () => {
     await expect.element(source).toHaveValue("ja");
     await source.selectOptions("ko");
     await expect.poll(() => useProjectStore.getState().metadata.language).toBe("ko");
+  });
+
+  it("selectively regenerates transliteration or individual translations", async () => {
+    const text = "選択再生成";
+    const fingerprint = languageSourceFingerprint(text);
+    useProjectStore.getState().setMetadata({ language: "ja" });
+    useProjectStore.getState().setLines([
+      {
+        id: "selective-regeneration",
+        text,
+        agentId: "v1",
+        transliteration: {
+          language: "ja-Latn",
+          text: "Edited reading",
+          segments: [{ original: text, transliteration: "Edited reading" }],
+          origin: "manual",
+          sourceFingerprint: fingerprint,
+        },
+        translations: {
+          en: {
+            language: "en",
+            text: "Edited English",
+            origin: "manual",
+            sourceFingerprint: fingerprint,
+          },
+          es: {
+            language: "es",
+            text: "Edited Spanish",
+            origin: "manual",
+            sourceFingerprint: fingerprint,
+          },
+        },
+      },
+    ]);
+    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      const romanization = url.searchParams.getAll("dt").includes("rm");
+      const target = url.searchParams.get("tl");
+      const generated = romanization ? "sentaku-saisei" : target === "es" ? "Español generado" : "Generated English";
+      const data = romanization
+        ? [
+            [
+              [text, text, null, null],
+              [null, null, generated, generated],
+            ],
+            null,
+            "ja",
+          ]
+        : [[[generated, text]], null, "ja"];
+      return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
+    });
+
+    const screen = await render(<LanguagesPanel />);
+    await expect.element(screen.getByRole("textbox", { name: "Spanish" })).toHaveValue("Edited Spanish");
+
+    await screen.getByRole("button", { name: "Choose what to regenerate" }).click();
+    await screen.getByRole("checkbox", { name: "Transliteration" }).click();
+    await screen.getByRole("checkbox", { name: "English" }).click();
+    await screen.getByRole("button", { name: "Regenerate selected" }).click();
+
+    await expect.element(screen.getByRole("textbox", { name: "Spanish" })).toHaveValue("Español generado");
+    await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Edited English");
+    await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("Edited reading");
   });
 
   it("preselects the translation language from the field receiving a multiline paste", async () => {

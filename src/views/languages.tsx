@@ -1,6 +1,3 @@
-import { alignTrackToLine } from "@/domain/language/align";
-import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { TransliterationTrack } from "@/domain/language/model";
 import { pastedRows } from "@/domain/language/paste-import";
 import { languageSourceText } from "@/domain/language/source-text";
 import type { LyricLine } from "@/domain/line/model";
@@ -9,12 +6,14 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
+import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
+import { RegenerateLanguageControl } from "@/views/languages/regenerate-language-control";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { TransliterationHelp } from "@/views/languages/transliteration-help";
-import { IconLanguage, IconRefresh, IconX } from "@tabler/icons-react";
+import { IconLanguage, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 const LanguagesPanel: React.FC = () => {
@@ -39,7 +38,12 @@ const LanguagesPanel: React.FC = () => {
   const abortRef = useRef<AbortController | null>(null);
   const sourceLanguage = metadata.language || "auto";
   const generate = useCallback(
-    async (requestedTargets: string[], force = false, requestedSource = sourceLanguage) => {
+    async (
+      requestedTargets: string[],
+      force = false,
+      requestedSource = sourceLanguage,
+      includeTransliteration = true,
+    ) => {
       if (lines.length === 0 || isGenerating) return;
       abortRef.current?.abort();
       const controller = new AbortController();
@@ -54,77 +58,44 @@ const LanguagesPanel: React.FC = () => {
           if (text) mainInputs.push({ id: line.id, text });
           if (backgroundText) bgInputs.push({ id: line.id, text: backgroundText });
         }
-        const [romanMain, romanBg, ...translationResults] = await Promise.all([
-          googleLanguageProvider.transliterate(mainInputs, requestedSource, controller.signal),
-          googleLanguageProvider.transliterate(bgInputs, requestedSource, controller.signal),
-          ...requestedTargets.flatMap((language) => [
-            googleLanguageProvider.translate(mainInputs, language, controller.signal),
-            googleLanguageProvider.translate(bgInputs, language, controller.signal),
-          ]),
+        const [romanizationResults, translationResults] = await Promise.all([
+          includeTransliteration
+            ? Promise.all([
+                googleLanguageProvider.transliterate(mainInputs, requestedSource, controller.signal),
+                googleLanguageProvider.transliterate(bgInputs, requestedSource, controller.signal),
+              ])
+            : Promise.resolve(null),
+          Promise.all(
+            requestedTargets.flatMap((language) => [
+              googleLanguageProvider.translate(mainInputs, language, requestedSource, controller.signal),
+              googleLanguageProvider.translate(bgInputs, language, requestedSource, controller.signal),
+            ]),
+          ),
         ]);
-        const romanMainById = new Map(romanMain.lines.map((result) => [result.id, result]));
-        const romanBgById = new Map(romanBg.lines.map((result) => [result.id, result]));
+        const romanMain = romanizationResults?.[0];
+        const romanBg = romanizationResults?.[1];
+        const transliterationGeneration = romanMain
+          ? {
+              language: romanMain.language,
+              main: new Map(romanMain.lines.map((result) => [result.id, result])),
+              background: new Map(romanBg?.lines.map((result) => [result.id, result]) ?? []),
+            }
+          : undefined;
         const translationPairs = requestedTargets.map((language, index) => ({
           language,
           main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result.text])),
-          bg: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result.text])),
+          background: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result.text])),
         }));
-        const updates: Array<{ id: string; updates: Partial<LyricLine> }> = [];
-        for (const line of lines) {
-          const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
-          const currentRoman = line.transliteration;
-          const mayReplaceRoman = force || !currentRoman || currentRoman.origin === "google";
-          const romanResult = romanMainById.get(line.id);
-          const bgResult = romanBgById.get(line.id);
-          let transliteration: TransliterationTrack | undefined = currentRoman;
-          if (mayReplaceRoman && romanResult?.text) {
-            transliteration = {
-              language: romanMain.language,
-              text: romanResult.text,
-              backgroundText: bgResult?.text ?? undefined,
-              segments: romanResult.segments,
-              backgroundSegments: bgResult?.segments,
-              origin: "google",
-              sourceFingerprint: fingerprint,
-            };
-          } else if (mayReplaceRoman && currentRoman?.origin === "google") {
-            transliteration = undefined;
-          } else if (currentRoman && currentRoman.sourceFingerprint !== fingerprint) {
-            transliteration = { ...currentRoman, stale: true };
-          } else if (currentRoman?.stale) {
-            const { stale: _stale, ...freshRoman } = currentRoman;
-            transliteration = freshRoman;
-          }
-          const translations = { ...(line.translations ?? {}) };
-          for (const pair of translationPairs) {
-            const current = translations[pair.language];
-            const mayReplace = force || !current || current.origin === "google";
-            const text = pair.main.get(line.id);
-            if (mayReplace && text) {
-              translations[pair.language] = {
-                language: pair.language,
-                text,
-                backgroundText: pair.bg.get(line.id) ?? undefined,
-                origin: "google",
-                sourceFingerprint: fingerprint,
-              };
-            } else if (current && current.sourceFingerprint !== fingerprint) {
-              translations[pair.language] = { ...current, stale: true };
-            } else if (current?.stale) {
-              const { stale: _stale, ...freshTranslation } = current;
-              translations[pair.language] = freshTranslation;
-            }
-          }
-          updates.push({
-            id: line.id,
-            updates: {
-              ...(transliteration ? alignTrackToLine(line, transliteration) : { transliteration: undefined }),
-              translations,
-            },
-          });
-        }
+        const updates: Array<{ id: string; updates: Partial<LyricLine> }> = lines.map((line) => ({
+          id: line.id,
+          updates: generatedLanguageUpdates(line, {
+            force,
+            transliteration: transliterationGeneration,
+            translations: translationPairs,
+          }),
+        }));
         updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
-        const detected = romanMain.detectedLanguage || translationResults[0]?.detectedLanguage;
+        const detected = romanMain?.detectedLanguage || translationResults[0]?.detectedLanguage;
         if (!metadata.language && detected && detected !== "auto") setMetadata({ language: detected });
       } catch (error) {
         if ((error as Error).name !== "AbortError") toast.error("Some language content could not be generated");
@@ -226,10 +197,15 @@ const LanguagesPanel: React.FC = () => {
           >
             Add translation
           </Button>
-          <Button hasIcon variant="primary" disabled={isGenerating} onClick={() => void generate(targets, true)}>
-            <IconRefresh className={`size-4 ${isGenerating ? "animate-spin" : ""}`} />
-            {isGenerating ? "Generating…" : "Regenerate"}
-          </Button>
+          <RegenerateLanguageControl
+            isGenerating={isGenerating}
+            translations={targets}
+            languageNames={languageName}
+            onRegenerateAll={() => void generate(targets, true)}
+            onRegenerateSelection={(selection) =>
+              void generate(selection.translations, true, sourceLanguage, selection.transliteration)
+            }
+          />
         </div>
       </div>
 

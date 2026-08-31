@@ -52,3 +52,21 @@ describe("Google transliteration script fallback", () => {
     expect(result.lines[0].text).toBe("but eo-issdeon");
   });
 });
+
+describe("Google translation source language", () => {
+  it("uses the selected source language for mixed-script lines", async () => {
+    const sourceText = '꽉 찬 내 to-do list, I say, "What are those?"';
+    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
+      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
+      expect(url.searchParams.get("sl")).toBe("ko");
+      expect(url.searchParams.get("tl")).toBe("en");
+      return new Response(
+        JSON.stringify([[["My to-do list is full, I say, “What are those?”", sourceText]], null, "ko"]),
+      );
+    });
+
+    const result = await googleLanguageProvider.translate([{ id: "mixed", text: sourceText }], "en", "ko");
+
+    expect(result.lines[0].text).toBe("My to-do list is full, I say, “What are those?”");
+  });
+});
