@@ -169,6 +169,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         </div>
         <div
           ref={setMainDropRef}
+          data-line-index={lineIndex}
+          data-track="word"
           className={cn(
             "transition-colors relative",
             !hasMainWords && "opacity-50",
@@ -241,6 +243,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         {hasBgWords ? (
           <div
             ref={setBgDropRef}
+            data-line-index={lineIndex}
+            data-track="bg"
             className={cn(
               "relative opacity-70 transition-colors border-t border-composer-border/50",
               isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
@@ -261,6 +265,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         ) : (
           <div
             ref={setBgDropRef}
+            data-line-index={lineIndex}
+            data-track="bg"
             className={cn(
               "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30 cursor-pointer",
               isOverBg
