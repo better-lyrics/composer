@@ -1,3 +1,4 @@
+import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { pastedRows } from "@/domain/language/paste-import";
@@ -16,7 +17,6 @@ import { TransliterationHelp } from "@/views/languages/transliteration-help";
 import { IconLanguage, IconRefresh, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-
 const LanguagesPanel: React.FC = () => {
   const lines = useProjectStore((state) => state.lines);
   const metadata = useProjectStore((state) => state.metadata);
@@ -115,7 +115,13 @@ const LanguagesPanel: React.FC = () => {
               translations[pair.language] = freshTranslation;
             }
           }
-          updates.push({ id: line.id, updates: { transliteration, translations } });
+          updates.push({
+            id: line.id,
+            updates: {
+              ...(transliteration ? alignTrackToLine(line, transliteration) : { transliteration: undefined }),
+              translations,
+            },
+          });
         }
         updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
         const detected = romanMain.detectedLanguage || translationResults[0]?.detectedLanguage;
@@ -128,7 +134,6 @@ const LanguagesPanel: React.FC = () => {
     },
     [isGenerating, lines, metadata.language, setMetadata, sourceLanguage, updateLinesWithHistory],
   );
-
   useEffect(() => {
     if (activeTab !== "languages") {
       generatedOnEntry.current = false;
@@ -139,9 +144,7 @@ const LanguagesPanel: React.FC = () => {
     generatedOnEntry.current = true;
     void generate(targets);
   }, [activeTab, generate, lines.length, targets]);
-
   useEffect(() => () => abortRef.current?.abort(), []);
-
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   useEffect(() => {
@@ -149,7 +152,6 @@ const LanguagesPanel: React.FC = () => {
     const next = LANGUAGE_OPTIONS.find(([code]) => !targets.includes(code));
     if (next) setNextTarget(next[0]);
   }, [nextTarget, targets]);
-
   const removeTarget = (language: string) => {
     const updates = lines.flatMap((line) => {
       if (!line.translations?.[language]) return [];
@@ -160,7 +162,6 @@ const LanguagesPanel: React.FC = () => {
     if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
     setTargets((all) => all.filter((item) => item !== language));
   };
-
   const changeSourceLanguage = (language: string) => {
     const selected = language || "auto";
     setMetadata({ language: language || undefined });
@@ -294,4 +295,5 @@ const LanguagesPanel: React.FC = () => {
     </div>
   );
 };
+
 export { LanguagesPanel };

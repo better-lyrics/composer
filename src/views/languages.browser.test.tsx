@@ -1,4 +1,7 @@
+import { alignTrackToLine, mappedTransliteration } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import type { TransliterationTrack } from "@/domain/language/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { LanguagesPanel } from "@/views/languages";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -30,7 +33,7 @@ describe("LanguagesPanel", () => {
 
   it("automatically generates editable English and normalized transliteration content on entry", async () => {
     const screen = await render(<LanguagesPanel />);
-    await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("kon-nichiwa");
+    await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("kon nichiwa");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Hello");
     expect(useProjectStore.getState().metadata.language).toBe("ja");
   });
@@ -69,7 +72,7 @@ describe("LanguagesPanel", () => {
 
     await expect
       .element(screen.getByRole("textbox", { name: "Transliteration", exact: true }))
-      .toHaveValue("ima-wa tōzen-desu");
+      .toHaveValue("ima  wa  tōzen  desu");
     await expect.element(screen.getByRole("textbox", { name: "English", exact: true })).toHaveValue("Now, of course");
     expect(requestedText).toHaveLength(4);
     expect(requestedText.every((text) => !text.includes("|"))).toBe(true);
@@ -160,7 +163,7 @@ describe("LanguagesPanel", () => {
         ],
         transliteration: {
           language: "ko-Latn",
-          text: "gana",
+          text: "g",
           segments: [],
           origin: "manual",
           sourceFingerprint,
@@ -175,9 +178,42 @@ describe("LanguagesPanel", () => {
     expect(summary?.textContent).toContain("Line 1");
     expect(summary?.textContent).toContain("Transliteration");
     await expect
-      .element(screen.getByText("Original word 1 is split into 2 timed syllables", { exact: false }))
+      .element(screen.getByText("Original word 1 has more timed parts", { exact: false }))
       .toBeInTheDocument();
     await expect.element(screen.getByText("Error", { exact: true })).toBeInTheDocument();
+  });
+
+  it("lets a reviewable inferred mapping be confirmed in the focused alignment editor", async () => {
+    const line: LyricLine = {
+      id: "l1",
+      text: "붙|어|있|던",
+      agentId: "v1",
+      words: ["붙", "어", "있", "던"].map((text, index) => ({
+        text,
+        begin: index * 0.25,
+        end: (index + 1) * 0.25,
+        syllableGroupId: "group",
+      })),
+    };
+    const track: TransliterationTrack = {
+      language: "ko-Latn",
+      text: "but eoissdeon",
+      segments: [{ original: "붙어있던", transliteration: "but eoissdeon" }],
+      origin: "manual",
+      sourceFingerprint: languageSourceFingerprint(line.text),
+    };
+    useProjectStore.getState().setLines([reconcileLine({ ...line, ...alignTrackToLine(line, track) })]);
+
+    const screen = await render(<LanguagesPanel />);
+    await expect.element(screen.getByText("Review", { exact: true })).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Align timing" }).click();
+    await expect.element(screen.getByRole("dialog", { name: "Align transliteration" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("combobox", { name: "Original word to align" })).toHaveValue("0");
+    await screen.getByRole("button", { name: "Save alignment" }).click();
+
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
+    expect(mappedTransliteration(saved.words ?? [])).toBe("but eoissdeon");
   });
 
   it("lets the user override the detected source language", async () => {

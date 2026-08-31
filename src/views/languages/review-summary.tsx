@@ -28,7 +28,7 @@ const LanguageReviewSummary: React.FC<LanguageReviewSummaryProps> = ({ items, la
             {items.length} {items.length === 1 ? "line needs" : "lines need"} review
           </h3>
           <p className="mt-0.5 text-xs leading-5 text-composer-text-secondary">
-            The source lyrics changed. Check these alternate-language fields before exporting.
+            Check these alternate-language fields and confirm any inferred timing before exporting.
           </p>
         </div>
       </div>

@@ -59,14 +59,28 @@ describe("mergeSyllableGroupIntoWord", () => {
       text: "일|단|은",
       agentId: "v1",
       words: [
-        { text: "일", transliteration: "i", begin: 0, end: 0.3, syllableGroupId: "g1" },
-        { text: "단", transliteration: "ldan", begin: 0.3, end: 0.6, syllableGroupId: "g1" },
+        {
+          text: "일",
+          transliteration: "i",
+          transliterationJoinerAfter: "",
+          begin: 0,
+          end: 0.3,
+          syllableGroupId: "g1",
+        },
+        {
+          text: "단",
+          transliteration: "ldan",
+          transliterationJoinerAfter: " ",
+          begin: 0.3,
+          end: 0.6,
+          syllableGroupId: "g1",
+        },
         { text: "은", transliteration: "eun", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
       ],
       transliteration: {
         language: "ko-Latn",
-        text: "i-ldan-eun",
-        segments: [{ original: "일단은", transliteration: "i-ldan-eun" }],
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
         origin: "manual",
         sourceFingerprint: "test",
       },
@@ -76,9 +90,9 @@ describe("mergeSyllableGroupIntoWord", () => {
     useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
 
     const merged = useProjectStore.getState().lines[0];
-    expect(merged.words).toEqual([{ text: "일단은", transliteration: "i ldan eun", begin: 0, end: 0.9 }]);
+    expect(merged.words).toEqual([{ text: "일단은", transliteration: "ildan eun", begin: 0, end: 0.9 }]);
     expect(merged.text).toBe("일단은");
-    expect(merged.transliteration?.text).toBe("i-ldan-eun");
+    expect(merged.transliteration?.text).toBe("ildan eun");
   });
 
   it("restores an unseparated transliteration without adding a space", () => {

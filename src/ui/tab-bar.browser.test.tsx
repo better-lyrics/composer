@@ -93,7 +93,7 @@ describe("TabBar", () => {
         ],
         transliteration: {
           language: "ko-Latn",
-          text: "gana",
+          text: "g",
           segments: [],
           origin: "manual",
           sourceFingerprint: "current",

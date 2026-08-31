@@ -203,8 +203,8 @@ describe("TimelineSyllableSplitter", () => {
       words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
       transliteration: {
         language: "ko-Latn",
-        text: "ildan-eun",
-        segments: [{ original: "일단은", transliteration: "ildan-eun" }],
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
         origin: "google" as const,
         sourceFingerprint: "source",
       },
@@ -222,12 +222,11 @@ describe("TimelineSyllableSplitter", () => {
     await screen.getByRole("button", { name: "Transliteration split point 1" }).click();
     await screen.getByRole("button", { name: "Split Word" }).click();
 
-    await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.text).toBe("i-ldan-eun");
-    expect(useProjectStore.getState().lines[0].words?.map((word) => word.transliteration)).toEqual([
-      "i",
-      "ldan",
-      "eun",
-    ]);
+    await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(3);
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.text).toBe("ildan eun");
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
 
   it("shows an inferred transliteration split at a space as selected", async () => {
@@ -252,12 +251,12 @@ describe("TimelineSyllableSplitter", () => {
     expect(document.body.textContent).not.toContain("must have the same number of segments");
   });
 
-  it("splits a dash-delimited transliteration when the playhead sets the timing boundary", async () => {
+  it("preserves a literal transliteration dash when the playhead sets the timing boundary", async () => {
     const line: LyricLine = {
       id: "line-dash-split",
       agentId: "v1",
       text: "to-do",
-      words: [{ text: "to-do", begin: 0, end: 1, transliteration: "to do" }],
+      words: [{ text: "to-do", begin: 0, end: 1, transliteration: "to-do" }],
       transliteration: {
         language: "en-Latn",
         text: "to-do",

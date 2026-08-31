@@ -14,7 +14,7 @@ function languageLine(): LyricLine {
     text: "今日",
     agentId: "v1",
     words: [
-      { text: "今", begin: 1, end: 1.5, transliteration: "kyou" },
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
       { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
     ],
     backgroundText: "空",
@@ -31,7 +31,7 @@ function languageLine(): LyricLine {
     },
     transliteration: {
       language: "ja-Latn",
-      text: "kyou-hi",
+      text: "kyou hi",
       backgroundText: "sora",
       segments: [
         { original: "今", transliteration: "kyou" },
@@ -95,26 +95,59 @@ describe("TTML alternate-language sidecars", () => {
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
     expect(parsed.translations?.en.text).toBe("Today");
     expect(parsed.translations?.en.backgroundText).toBe("Sky");
-    expect(parsed.transliteration?.text).toBe("kyou-hi");
+    expect(parsed.transliteration?.text).toBe("kyou hi");
     expect(parsed.transliteration?.backgroundText).toBe("sora");
     expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
   });
 
-  it("exports dashes as untimed syllable spaces and word boundaries as two spaces", () => {
+  it("exports pronunciation spaces as untimed text and word boundaries as two spaces", () => {
     const line = languageLine();
     line.text = "今日 は";
     line.words = [
-      { text: "今日 ", begin: 1, end: 2, transliteration: "kyou hi" },
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
+      { text: "日 ", begin: 1.5, end: 2, transliteration: "hi", transliterationJoinerAfter: "  " },
       { text: "は", begin: 2, end: 2.5, transliteration: "wa" },
     ];
-    line.transliteration!.text = "kyou-hi wa";
-    line.transliteration!.segments = [{ original: "今日 は", transliteration: "kyou-hi wa" }];
+    line.transliteration!.text = "kyou hi  wa";
+    line.transliteration!.segments = [{ original: "今日 は", transliteration: "kyou hi  wa" }];
     const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
     expect(ttml).toContain(">kyou</span> <span begin=");
     expect(ttml).toMatch(/>hi<\/span> {2}<span[^>]*>wa<\/span>/);
     expect(ttml).not.toMatch(/<span[^>]*>kyou hi<\/span>/);
     const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
-    expect(parsed.transliteration?.text).toBe("kyou-hi wa");
+    expect(parsed.transliteration?.text).toBe("kyou hi  wa");
+  });
+
+  it("keeps an invisible timing boundary out of the rendered transliteration", () => {
+    const line = languageLine();
+    line.words = [
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "" },
+      { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
+    ];
+    line.transliteration!.text = "kyouhi";
+    line.transliteration!.segments = [{ original: "今日", transliteration: "kyouhi" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toMatch(/>kyou<\/span><span[^>]*>hi<\/span>/);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.text).toBe("kyouhi");
+    expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(parsed.words?.[0].transliterationJoinerAfter).toBe("");
+  });
+
+  it("renders a literal dash as untimed text without assigning it to either timing slot", () => {
+    const line = languageLine();
+    line.text = "to-do";
+    line.words = [
+      { text: "to-", begin: 1, end: 1.5, transliteration: "to", transliterationJoinerAfter: "-" },
+      { text: "do", begin: 1.5, end: 2, transliteration: "do" },
+    ];
+    line.transliteration!.language = "en-Latn";
+    line.transliteration!.text = "to-do";
+    line.transliteration!.segments = [{ original: "to-do", transliteration: "to-do" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toMatch(/>to<\/span>-<span[^>]*>do<\/span>/);
   });
 
   it("keeps matching alternate tracks in the exported TTML for renderers to filter", () => {

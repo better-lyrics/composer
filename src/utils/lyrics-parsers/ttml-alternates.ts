@@ -1,8 +1,10 @@
-import { alignTransliterationToWords } from "@/domain/language/align";
+import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationSegment } from "@/domain/language/model";
-import { timingWordGroups } from "@/domain/language/transliteration-format";
+import { normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { WordTiming } from "@/domain/word/timing";
+import { parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
 
 const ITUNES_NS = "http://music.apple.com/lyric-ttml-internal";
 const XML_NS = "http://www.w3.org/XML/1998/namespace";
@@ -23,17 +25,44 @@ function textWithoutBackground(element: Element): string {
   return text.trim();
 }
 
-function decodeTransliterationText(rawText: string, expectedWordGroups: number): string {
-  const raw = rawText.trim();
-  if (!raw) return "";
-  const groups = raw
-    .split(/\s{2,}/)
-    .map((group) => group.trim())
-    .filter(Boolean);
-  if (groups.length === expectedWordGroups || expectedWordGroups === 1) {
-    return groups.map((group) => group.replace(/\s+/g, "-")).join(" ");
+function decodeTransliterationText(rawText: string): string {
+  return normalizeTransliterationForEditing(rawText);
+}
+
+function directTimedSpans(element: Element): Element[] {
+  return directChildren(element, "span").filter((span) => span.hasAttribute("begin"));
+}
+
+function mappedWordsFromSpans(words: WordTiming[] | undefined, text: string, spans: Element[]): WordTiming[] | null {
+  if (!words || words.length !== spans.length || spans.length === 0) return null;
+  const fragments = spans.map((span) => span.textContent?.trim() ?? "");
+  if (fragments.some((fragment) => !fragment)) return null;
+  const timingMatches = words.every((word, index) => {
+    const span = spans[index];
+    const begin = parseTtmlTimestamp(span.getAttribute("begin") ?? "");
+    const end = parseTtmlTimestamp(span.getAttribute("end") ?? "");
+    return Math.abs(word.begin - begin) < 0.002 && Math.abs(word.end - end) < 0.002;
+  });
+  if (!timingMatches) return null;
+
+  let cursor = 0;
+  const joiners: string[] = [];
+  for (let index = 0; index < fragments.length; index++) {
+    const start = text.indexOf(fragments[index], cursor);
+    if (start < cursor || (index === 0 && text.slice(0, start).trim())) return null;
+    if (index > 0) joiners.push(text.slice(cursor, start));
+    cursor = start + fragments[index].length;
   }
-  return raw.replace(/\s+/g, " ");
+  if (text.slice(cursor).trim()) return null;
+
+  return words.map((word, index) => {
+    const { transliterationJoinerAfter: _joiner, ...withoutJoiner } = word;
+    return {
+      ...withoutJoiner,
+      transliteration: fragments[index],
+      ...(index < words.length - 1 ? { transliterationJoinerAfter: joiners[index] } : {}),
+    };
+  });
 }
 
 function parseTranslations(
@@ -92,39 +121,34 @@ function parseTransliterations(root: Element, lines: LyricLine[], lineIndexByKey
       const line = lines[index];
       const background =
         Array.from(textElement.getElementsByTagName("span")).find((span) => role(span) === "x-bg") ?? null;
-      const text = decodeTransliterationText(
-        textWithoutBackground(textElement),
-        line.words?.length ? timingWordGroups(line.words).length : line.text.trim().split(/\s+/).filter(Boolean).length,
-      );
+      const text = decodeTransliterationText(textWithoutBackground(textElement));
       const backgroundText = background
-        ? decodeTransliterationText(
-            background.textContent ?? "",
-            line.backgroundWords?.length
-              ? timingWordGroups(line.backgroundWords).length
-              : line.backgroundText?.trim().split(/\s+/).filter(Boolean).length || 1,
-          ) || undefined
+        ? decodeTransliterationText(background.textContent ?? "") || undefined
         : undefined;
+      const mappedWords = mappedWordsFromSpans(line.words, text, directTimedSpans(textElement));
+      const mappedBackgroundWords = backgroundText
+        ? mappedWordsFromSpans(line.backgroundWords, backgroundText, background ? directTimedSpans(background) : [])
+        : null;
       const segments: TransliterationSegment[] = [{ original: line.text, transliteration: text }];
       const backgroundSegments =
         backgroundText && line.backgroundText
           ? [{ original: line.backgroundText, transliteration: backgroundText }]
           : undefined;
-      lines[index] = reconcileLine({
+      const track = {
+        language,
+        text,
+        backgroundText,
+        segments,
+        backgroundSegments,
+        origin: "import",
+        sourceFingerprint: languageSourceFingerprint(line.text, line.backgroundText),
+      } as const;
+      const mappedLine = reconcileLine({
         ...line,
-        ...(line.words ? { words: alignTransliterationToWords(line.words, segments) } : {}),
-        ...(line.backgroundWords && backgroundSegments
-          ? { backgroundWords: alignTransliterationToWords(line.backgroundWords, backgroundSegments) }
-          : {}),
-        transliteration: {
-          language,
-          text,
-          backgroundText,
-          segments,
-          backgroundSegments,
-          origin: "import",
-          sourceFingerprint: languageSourceFingerprint(line.text, line.backgroundText),
-        },
+        ...(mappedWords ? { words: mappedWords } : {}),
+        ...(mappedBackgroundWords ? { backgroundWords: mappedBackgroundWords } : {}),
       });
+      lines[index] = reconcileLine({ ...mappedLine, ...alignTrackToLine(mappedLine, track) });
     }
   }
 }

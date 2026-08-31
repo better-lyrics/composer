@@ -1,4 +1,4 @@
-import { validateTransliterationAlignment } from "@/domain/language/transliteration-format";
+import { validateTransliterationAlignment } from "@/domain/language/align";
 import type { LyricLine } from "@/domain/line/model";
 
 type LanguageAlignmentErrorField = "transliteration" | "background-transliteration";

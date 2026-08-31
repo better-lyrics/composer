@@ -1,4 +1,4 @@
-import { type SyllableDisplay, withAlignedTransliteration } from "@/domain/language/align";
+import { withAlignedTransliteration } from "@/domain/language/align";
 import { normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -33,6 +33,13 @@ function displayText(word: WordTiming): string {
   return word.transliteration || word.text.trimEnd();
 }
 
+function displayAlignedText(words: WordTiming[], index: number, fallback: string): string {
+  const word = words[index];
+  const text = word.transliteration ?? fallback;
+  if (index === words.length - 1) return text;
+  return `${text}${word.transliterationJoinerAfter ?? (word.text.endsWith(" ") ? "  " : " ")}`;
+}
+
 function displayTrackTexts(
   originalText: string,
   alignedWords: WordTiming[] | undefined,
@@ -46,11 +53,7 @@ function displayTrackTexts(
   if (coversFullTrack) {
     const canUseSourceFallbackByIndex = alignedWords.length === sourceTexts.length;
     return alignedWords.map((word, index) =>
-      word.transliteration
-        ? word.transliteration
-        : canUseSourceFallbackByIndex
-          ? sourceTexts[index]
-          : word.text.trimEnd(),
+      displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text.trimEnd()),
     );
   }
 
@@ -63,20 +66,12 @@ function displayTrackTexts(
   );
   const canUseSourceFallbackByIndex = alignedWords.length === coveredSourceSlots;
   const timedTexts = alignedWords.map((word, index) =>
-    word.transliteration
-      ? word.transliteration
-      : canUseSourceFallbackByIndex
-        ? sourceTexts[index]
-        : word.text.trimEnd(),
+    displayAlignedText(alignedWords, index, canUseSourceFallbackByIndex ? sourceTexts[index] : word.text.trimEnd()),
   );
   return [...timedTexts, ...sourceTexts.slice(coveredSourceSlots)];
 }
 
-function getLanguageDisplayLine(
-  line: LyricLine,
-  variant: LanguageTextVariant,
-  syllableDisplay: SyllableDisplay = "dashes",
-): LanguageDisplayLine {
+function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): LanguageDisplayLine {
   if (variant === "original" || !line.transliteration?.text) {
     return {
       text: line.text,
@@ -86,14 +81,13 @@ function getLanguageDisplayLine(
     };
   }
 
-  const alignedLine = withAlignedTransliteration(line, syllableDisplay);
+  const alignedLine = withAlignedTransliteration(line);
   const sourceLine = withAlignedTransliteration(
     reconcileLine({
       ...line,
       words: sourceSlots(line.text),
       ...(line.backgroundText ? { backgroundWords: sourceSlots(line.backgroundText) } : {}),
     }),
-    syllableDisplay,
   );
 
   return {

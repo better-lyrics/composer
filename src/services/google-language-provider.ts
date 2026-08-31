@@ -1,9 +1,6 @@
 import type { TransliterationSegment } from "@/domain/language/model";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
-import {
-  fitTransliterationToSourceWords,
-  normalizeTransliterationForEditing,
-} from "@/domain/language/transliteration-format";
+import { DASHES, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type {
   LanguageProvider,
   TranslationBatchResult,
@@ -11,15 +8,46 @@ import type {
 } from "@/services/language-provider";
 
 const API = "https://translate.googleapis.com/translate_a/single";
+const LITERAL_DASH_MARKER = "\uE000";
+const SOFT_SEPARATOR_MARKER = "\uE003";
 const translationCache = new Map<string, { text: string | null; detectedLanguage: string }>();
 const transliterationCache = new Map<
   string,
   { text: string | null; detectedLanguage: string; segments: TransliterationSegment[] }
 >();
 
-function normalizeGoogleTransliteration(value: string, sourceText?: string): string {
-  const normalized = normalizeTransliterationForEditing(value);
-  return sourceText ? fitTransliterationToSourceWords(sourceText, normalized) : normalized;
+interface ProtectedLiteralDashes {
+  text: string;
+  dashes: string[];
+}
+
+function protectLiteralDashes(value: string): ProtectedLiteralDashes {
+  const dashes: string[] = [];
+  return {
+    text: value.replace(DASHES, (dash) => {
+      dashes.push(dash);
+      return LITERAL_DASH_MARKER;
+    }),
+    dashes,
+  };
+}
+
+function markerCount(value: string): number {
+  return [...value].filter((character) => character === LITERAL_DASH_MARKER).length;
+}
+
+function restoreLiteralDashes(value: string, dashes: string[]): string | null {
+  if (markerCount(value) !== dashes.length) return null;
+  let index = 0;
+  return value.replace(new RegExp(`\\s*${LITERAL_DASH_MARKER}\\s*`, "g"), () => dashes[index++]);
+}
+
+function normalizeGoogleTransliteration(value: string): string {
+  return value
+    .trim()
+    .replace(/\s*[-\u2010-\u2015]+\s*/g, SOFT_SEPARATOR_MARKER)
+    .replace(/\s+/g, "  ")
+    .replace(new RegExp(SOFT_SEPARATOR_MARKER, "g"), " ");
 }
 
 function endpoint(params: Record<string, string>): string {
@@ -65,29 +93,22 @@ async function transliterateOne(text: string, sourceLanguage: string, signal?: A
   const key = `${sourceLanguage}\u0000${text}`;
   const cached = transliterationCache.get(key);
   if (cached) return cached;
-  const data = await fetchJson(romanizationEndpoint(sourceLanguage || "auto", text), signal);
+  const protectedSource = protectLiteralDashes(text);
+  const data = await fetchJson(romanizationEndpoint(sourceLanguage || "auto", protectedSource.text), signal);
   const detectedLanguage = typeof data[2] === "string" ? data[2] : sourceLanguage;
   const parts = responseParts(data);
-  const unpairedRomanizationParts: string[] = [];
-  const pairedSegments: TransliterationSegment[] = [];
+  const romanizationParts: string[] = [];
   for (const part of parts) {
     const raw = typeof part[3] === "string" ? part[3] : typeof part[2] === "string" ? part[2] : "";
-    const transliteration = normalizeGoogleTransliteration(raw);
-    if (typeof part[1] !== "string") {
-      if (transliteration) unpairedRomanizationParts.push(transliteration);
-      continue;
-    }
-    if (part[1] && transliteration) pairedSegments.push({ original: part[1], transliteration });
+    if (raw) romanizationParts.push(raw);
   }
-  const unpairedRomanization = normalizeGoogleTransliteration(unpairedRomanizationParts.join(""));
-  // Google commonly returns the original and its `dt=rm` romanization as
-  // separate entries, with no original-text field on the romanization entry.
-  const segments: TransliterationSegment[] = unpairedRomanization
-    ? [{ original: text, transliteration: unpairedRomanization }]
-    : pairedSegments;
-  const rawJoined = normalizeGoogleTransliteration(segments.map((segment) => segment.transliteration).join(" "));
-  const joined = normalizeGoogleTransliteration(rawJoined, text);
-  if (joined !== rawJoined) segments.splice(0, segments.length, { original: text, transliteration: joined });
+  const rawJoined = romanizationParts.join("");
+  const normalized = normalizeGoogleTransliteration(rawJoined);
+  const restored = restoreLiteralDashes(normalized, protectedSource.dashes);
+  // The endpoint is undocumented. If a marker does not round-trip, preserve
+  // Google's punctuation instead of guessing which dash was literal.
+  const joined = restored ?? normalizeTransliterationForEditing(rawJoined);
+  const segments: TransliterationSegment[] = joined ? [{ original: text, transliteration: joined }] : [];
   const result = {
     text: joined && joined.localeCompare(text, undefined, { sensitivity: "accent" }) !== 0 ? joined : null,
     detectedLanguage,

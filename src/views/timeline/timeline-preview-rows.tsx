@@ -1,4 +1,3 @@
-import { hasLexicalBoundaryAfter } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import type { FC } from "react";
@@ -56,11 +55,10 @@ const TransliterationRow: FC<{
   const timedWords = words?.length
     ? words.map((word, index) => {
         const displayText = wordTexts?.[index] ?? word.transliteration ?? word.text;
-        const addSpace = hasLexicalBoundaryAfter(words, index) && !displayText.endsWith(" ");
         return (
           <WordWithProgress
             key={`${word.begin}-${word.end}-${word.text}`}
-            text={addSpace ? `${displayText} ` : displayText}
+            text={displayText}
             begin={word.begin}
             end={word.end}
             lineIndex={lineIndex}

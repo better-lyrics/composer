@@ -84,6 +84,6 @@ describe("TimelinePreviewSidebar", () => {
       (word) => word.textContent,
     );
 
-    expect(romanizedWords).toEqual(["hanguk ", "norae"]);
+    expect(romanizedWords).toEqual(["hanguk", "norae"]);
   });
 });

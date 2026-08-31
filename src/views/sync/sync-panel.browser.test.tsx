@@ -37,8 +37,8 @@ describe("SyncPanel", () => {
           text: "걸음은 Like",
           transliteration: {
             language: "ko-Latn",
-            text: "geol-eum-eun Like",
-            segments: [{ original: "걸음은 Like", transliteration: "geol-eum-eun Like" }],
+            text: "geol eum eun  Like",
+            segments: [{ original: "걸음은 Like", transliteration: "geol eum eun  Like" }],
             origin: "google",
             sourceFingerprint: "test",
           },
@@ -53,7 +53,7 @@ describe("SyncPanel", () => {
     await toggle.click();
 
     await expect.element(screen.getByRole("button", { name: /Transliteration/ })).toBeInTheDocument();
-    expect(screen.container.textContent).toContain("geol-eum-eun");
+    expect(screen.container.textContent).toContain("geol eum eun");
     expect(screen.container.textContent).toContain("Like");
   });
 

@@ -227,8 +227,8 @@ describe("useSyncHandlers.handleSplitWord", () => {
       words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
       transliteration: {
         language: "ko-Latn",
-        text: "ildan-eun",
-        segments: [{ original: "일단은", transliteration: "ildan-eun" }],
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
         origin: "google" as const,
         sourceFingerprint: "source",
       },
@@ -238,13 +238,27 @@ describe("useSyncHandlers.handleSplitWord", () => {
 
     await act(() => {
       result.current.handleSplitWord(0, 0, [
-        { text: "일", begin: 0, end: 0.3, transliteration: "i", syllableGroupId: "group" },
-        { text: "단", begin: 0.3, end: 0.6, transliteration: "ldan", syllableGroupId: "group" },
+        {
+          text: "일",
+          begin: 0,
+          end: 0.3,
+          transliteration: "i",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "group",
+        },
+        {
+          text: "단",
+          begin: 0.3,
+          end: 0.6,
+          transliteration: "ldan",
+          transliterationJoinerAfter: " ",
+          syllableGroupId: "group",
+        },
         { text: "은", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
       ]);
     });
 
-    expect(useProjectStore.getState().lines[0].transliteration?.text).toBe("i-ldan-eun");
+    expect(useProjectStore.getState().lines[0].transliteration?.text).toBe("ildan eun");
   });
 });
 

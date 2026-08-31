@@ -1,7 +1,7 @@
+import { alignTrackToLine, validateTransliterationAlignment } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationTrack } from "@/domain/language/model";
 import { alignPastedLanguageLines } from "@/domain/language/paste-import";
-import { validateTransliterationAlignment } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -79,7 +79,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
           origin: "import",
           sourceFingerprint,
         };
-        updates.push({ id: line.id, updates: { transliteration } });
+        updates.push({ id: line.id, updates: alignTrackToLine(line, transliteration) });
         return;
       }
       const translations = {
@@ -184,7 +184,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
           {(alignment.warning || errorCount > 0) && (
             <div className="px-5 py-2 text-xs border-b bg-amber-500/10 border-amber-500/20 text-amber-200">
               {errorCount > 0
-                ? `${errorCount} transliteration ${errorCount === 1 ? "line has" : "lines have"} word or syllable boundary mismatches.`
+                ? `${errorCount} transliteration ${errorCount === 1 ? "line needs" : "lines need"} timing alignment.`
                 : alignment.warning}
             </div>
           )}

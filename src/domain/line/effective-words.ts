@@ -23,7 +23,7 @@ function withEffectiveWords(line: LyricLine): LyricLine {
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
     const effectiveLine = withEffectiveWords(line);
-    const display = getLanguageDisplayLine(effectiveLine, "transliteration", "spaces");
+    const display = getLanguageDisplayLine(effectiveLine, "transliteration");
     return {
       ...effectiveLine,
       ...(display.words ? { words: display.words } : {}),

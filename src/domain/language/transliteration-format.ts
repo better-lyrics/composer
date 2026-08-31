@@ -7,63 +7,49 @@ interface TimingWordGroup {
   startIndex: number;
 }
 
-function normalizeTransliterationForEditing(value: string): string {
-  return value.replace(DASHES, "-").replace(/\s+/g, " ").trim();
+interface TransliterationSlice {
+  text: string;
+  joinerAfter?: string;
 }
 
+interface SeparatorRegion {
+  start: number;
+  end: number;
+}
+
+function normalizeSpaceRun(run: string): string {
+  return [...run].length > 1 ? "  " : " ";
+}
+
+/** Preserve Composer's visible one-space/two-space reading convention. */
+function normalizeTransliterationForEditing(value: string): string {
+  return value.replace(/\s+/g, normalizeSpaceRun).trim();
+}
+
+/** Double spaces delimit romanized words; single spaces remain inside them. */
 function transliterationWordGroups(value: string): string[] {
   const normalized = normalizeTransliterationForEditing(value);
-  return normalized ? normalized.split(" ") : [];
+  return normalized ? normalized.split(twoSpaceSeparatorPattern()).filter(Boolean) : [];
 }
 
-function transliterationSyllables(value: string): string[] {
-  return value.split("-").filter(Boolean);
+function twoSpaceSeparatorPattern(): RegExp {
+  return / {2}/g;
 }
 
-function transliterationForTimeline(value: string): string {
-  return normalizeTransliterationForEditing(value).replace(DASHES, " ");
+function twoSpaceSeparatorRegions(value: string): SeparatorRegion[] {
+  return [...value.matchAll(twoSpaceSeparatorPattern())].map((match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
 }
 
-function fitTransliterationToSourceWords(sourceText: string, transliteration: string): string {
-  const sourceGroups = sourceWordGroups(sourceText);
-  const romanGroups = transliterationWordGroups(transliteration);
-  if (sourceGroups.length === 0 || romanGroups.length <= sourceGroups.length) return transliteration;
-
-  const totalSourceLength = sourceGroups.reduce((sum, group) => sum + [...group].length, 0);
-  let sourceLength = 0;
-  let romanIndex = 0;
-  return sourceGroups
-    .map((group, index) => {
-      sourceLength += [...group].length;
-      const groupsRemaining = sourceGroups.length - index - 1;
-      const idealEnd = Math.round((sourceLength / totalSourceLength) * romanGroups.length);
-      const end =
-        groupsRemaining === 0
-          ? romanGroups.length
-          : Math.min(romanGroups.length - groupsRemaining, Math.max(romanIndex + 1, idealEnd));
-      const fitted = romanGroups.slice(romanIndex, end).join("-");
-      romanIndex = end;
-      return fitted;
-    })
-    .join(" ");
+/** Visible pronunciation units. These are hints, never timing boundaries. */
+function transliterationPronunciationParts(value: string): string[] {
+  const normalized = normalizeTransliterationForEditing(value);
+  return normalized ? normalized.split(/ +/).filter(Boolean) : [];
 }
 
-function timingWordGroups(words: WordTiming[]): TimingWordGroup[] {
-  const result: TimingWordGroup[] = [];
-  let index = 0;
-  while (index < words.length) {
-    const startIndex = index;
-    const id = words[index].syllableGroupId;
-    index++;
-    if (id !== undefined) {
-      while (index < words.length && words[index].syllableGroupId === id && !words[index - 1].text.endsWith(" "))
-        index++;
-    }
-    result.push({ words: words.slice(startIndex, index), startIndex });
-  }
-  return result;
-}
-
+/** Source spaces are the canonical lexical boundaries, independent of group IDs. */
 function timingLexicalWordGroups(words: WordTiming[]): TimingWordGroup[] {
   const result: TimingWordGroup[] = [];
   let startIndex = 0;
@@ -83,62 +69,61 @@ function sourceWordCount(originalText: string): number {
   return sourceWordGroups(originalText).length;
 }
 
-function validateTransliterationAlignment(
-  originalText: string,
-  transliteration: string,
-  words?: WordTiming[],
-): string | null {
-  if (!transliteration.trim()) return null;
-  const romanGroups = transliterationWordGroups(transliteration);
-  // Syllable group IDs can legitimately change inside one displayed word. The
-  // transliteration's space-separated groups follow lexical boundaries instead,
-  // which are encoded by trailing spaces in the timing text.
-  const sourceGroups = words?.length ? timingLexicalWordGroups(words) : [];
-  const expectedWords = sourceWordCount(originalText);
-  if (romanGroups.length !== expectedWords) {
-    return `Expected ${expectedWords} word ${expectedWords === 1 ? "group" : "groups"}, found ${romanGroups.length}. Use spaces between words.`;
+function leadingUntimedSeparator(value: string): string {
+  return value.match(/^[-\u2010-\u2015\s]+/)?.[0] ?? "";
+}
+
+function trailingUntimedSeparator(value: string): string {
+  return value.match(/[-\u2010-\u2015\s]+$/)?.[0] ?? "";
+}
+
+function withoutEdgeUntimedSeparators(value: string): string {
+  const leading = leadingUntimedSeparator(value);
+  const trailing = trailingUntimedSeparator(value.slice(leading.length));
+  return value.slice(leading.length, trailing.length > 0 ? value.length - trailing.length : value.length);
+}
+
+/**
+ * Split visible reading text without consuming spaces or punctuation as timing
+ * slots. A separator adjacent to a boundary is restored as its exact joiner.
+ */
+function splitTransliterationAtBoundaries(value: string, boundaries: number[]): TransliterationSlice[] {
+  const points = boundaries.toSorted((a, b) => a - b);
+  const raw: string[] = [];
+  let start = 0;
+  for (const point of points) {
+    if (point < start || point > value.length) continue;
+    raw.push(value.slice(start, point));
+    start = point;
   }
-  let lexicalIndex = 0;
-  for (const sourceGroup of sourceGroups) {
-    const sourceText = sourceGroup.words.map((word) => word.text).join("");
-    const lexicalWordsInGroup = Math.max(1, sourceWordCount(sourceText));
-    const slots = sourceGroup.words.length;
-    if (slots <= 1 || lexicalWordsInGroup !== 1) {
-      lexicalIndex += lexicalWordsInGroup;
-      continue;
-    }
-    const romanGroup = romanGroups[lexicalIndex];
-    if (romanGroup === undefined) {
-      return "Timed word boundaries do not align with the transliteration word groups.";
-    }
-    const syllables = transliterationSyllables(romanGroup).length;
-    if (syllables !== slots) {
-      return `Original word ${lexicalIndex + 1} is split into ${slots} timed syllables, but its transliteration has ${syllables} dash-separated ${syllables === 1 ? "syllable" : "syllables"}.`;
-    }
-    lexicalIndex += lexicalWordsInGroup;
-  }
-  return null;
+  raw.push(value.slice(start));
+
+  return raw.map((part, index) => {
+    const leading = leadingUntimedSeparator(part);
+    const trailing = trailingUntimedSeparator(part);
+    const contentEnd = trailing.length > 0 ? part.length - trailing.length : part.length;
+    const text = part.slice(leading.length, contentEnd);
+    if (index === raw.length - 1) return { text };
+    const nextLeading = leadingUntimedSeparator(raw[index + 1]);
+    return { text, joinerAfter: trailing + nextLeading };
+  });
 }
 
 function hasLexicalBoundaryAfter(words: WordTiming[], index: number): boolean {
-  if (index >= words.length - 1) return false;
-  if (words[index].text.endsWith(" ")) return true;
-  const id = words[index].syllableGroupId;
-  const nextId = words[index + 1].syllableGroupId;
-  if (id !== undefined || nextId !== undefined) return id !== nextId;
-  return words[index].text.endsWith(" ");
+  return index < words.length - 1 && words[index].text.endsWith(" ");
 }
 
 export {
+  DASHES,
   hasLexicalBoundaryAfter,
-  fitTransliterationToSourceWords,
+  leadingUntimedSeparator,
   normalizeTransliterationForEditing,
-  sourceWordGroups,
   sourceWordCount,
-  timingWordGroups,
-  transliterationForTimeline,
-  transliterationSyllables,
+  splitTransliterationAtBoundaries,
+  timingLexicalWordGroups,
+  trailingUntimedSeparator,
+  transliterationPronunciationParts,
   transliterationWordGroups,
-  validateTransliterationAlignment,
+  twoSpaceSeparatorRegions,
+  withoutEdgeUntimedSeparators,
 };
-export type { TimingWordGroup };

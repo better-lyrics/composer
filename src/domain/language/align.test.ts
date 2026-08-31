@@ -1,73 +1,46 @@
-import { alignTransliterationToWords } from "@/domain/language/align";
+import { mappedTransliteration, planTransliterationAlignment } from "@/domain/language/align";
 import { describe, expect, it } from "vitest";
 
 describe("transliteration alignment", () => {
-  it("pairs provider segments with the existing canonical timing slots", () => {
+  it("maps explicit pronunciation and word spaces to timing slots", () => {
     const words = [
-      { text: "今", begin: 1, end: 1.5 },
-      { text: "日", begin: 1.5, end: 2 },
-    ];
-    const result = alignTransliterationToWords(words, [
-      { original: "今", transliteration: "kyou" },
-      { original: "日", transliteration: "hi" },
-    ]);
-    expect(result).toEqual([
-      { ...words[0], transliteration: "kyou" },
-      { ...words[1], transliteration: "hi" },
-    ]);
-  });
-
-  it("maps spaces to source words without proportional guessing", () => {
-    const words = [
-      { text: "걸음은 ", begin: 0, end: 0.5 },
-      { text: "Like ", begin: 0.5, end: 1 },
-      { text: "a ", begin: 1, end: 1.2 },
-      { text: "dance", begin: 1.2, end: 2 },
-    ];
-    expect(
-      alignTransliterationToWords(words, [
-        { original: "걸음은 Like a dance", transliteration: "geol-eum-eun Like a dance" },
-      ]).map((word) => word.transliteration),
-    ).toEqual(["geol eum eun", "Like", "a", "dance"]);
-  });
-
-  it("maps dash-separated syllables to split timing slots", () => {
-    const words = [
-      { text: "걸", begin: 0, end: 0.2, syllableGroupId: "g" },
-      { text: "음", begin: 0.2, end: 0.4, syllableGroupId: "g" },
-      { text: "은 ", begin: 0.4, end: 0.6, syllableGroupId: "g" },
+      { text: "걸", begin: 0, end: 0.2 },
+      { text: "음", begin: 0.2, end: 0.4 },
+      { text: "은 ", begin: 0.4, end: 0.6 },
       { text: "Like", begin: 0.6, end: 1 },
     ];
-    expect(
-      alignTransliterationToWords(words, [{ original: "걸음은 Like", transliteration: "geol-eum-eun Like" }]).map(
-        (word) => word.transliteration,
-      ),
-    ).toEqual(["geol", "eum", "eun", "Like"]);
+    const plan = planTransliterationAlignment(words, "geol eum eun  Like");
+    expect(plan.status).toBe("inferred");
+    expect(plan.words.map((word) => word.transliteration)).toEqual(["geol", "eum", "eun", "Like"]);
+    expect(plan.words.slice(0, -1).map((word) => word.transliterationJoinerAfter)).toEqual([" ", " ", "  "]);
   });
 
-  it("leaves timing slots untouched when word boundaries do not match", () => {
+  it("allows Google word spaces inside an unspaced original group", () => {
+    const words = [{ text: "こんにちは世界", begin: 0, end: 2 }];
+    const plan = planTransliterationAlignment(words, "Kon'nichiwa  sekai");
+    expect(plan.status).toBe("inferred");
+    expect(plan.words[0].transliteration).toBe("Kon'nichiwa  sekai");
+  });
+
+  it("keeps a proportional mapping as reviewable rather than changing display text", () => {
+    const words = ["붙", "어", "있", "던"].map((text, index) => ({ text, begin: index, end: index + 1 }));
+    const plan = planTransliterationAlignment(words, "but eoissdeon");
+    expect(plan.status).toBe("needs-review");
+    expect(mappedTransliteration(plan.words)).toBe("but eoissdeon");
+  });
+
+  it("reports an unresolved mapping when there are too few graphemes", () => {
+    const words = ["가", "나", "다"].map((text, index) => ({ text, begin: index, end: index + 1 }));
+    expect(planTransliterationAlignment(words, "a").status).toBe("unresolved");
+  });
+
+  it("preserves an existing confirmed mapping", () => {
     const words = [
-      { text: "하나 ", begin: 0, end: 0.5 },
-      { text: "둘", begin: 0.5, end: 1 },
+      { text: "今", begin: 0, end: 1, transliteration: "kyou", transliterationJoinerAfter: "" },
+      { text: "日", begin: 1, end: 2, transliteration: "hi" },
     ];
-    expect(alignTransliterationToWords(words, [{ original: "하나 둘", transliteration: "hana" }])).toEqual(words);
-  });
-
-  it("allows one timing slot to carry several lexical word groups", () => {
-    const words = [{ text: "걸음은 Like a dance", begin: 0, end: 2 }];
-    expect(
-      alignTransliterationToWords(words, [
-        { original: "걸음은 Like a dance", transliteration: "geol-eum-eun Like a dance" },
-      ])[0].transliteration,
-    ).toBe("geol eum eun Like a dance");
-  });
-
-  it("aligns the timed prefix of a partially synced line", () => {
-    const words = [{ text: "걸음은 ", begin: 0, end: 1 }];
-    expect(
-      alignTransliterationToWords(words, [
-        { original: "걸음은 Like a dance", transliteration: "geol-eum-eun Like a dance" },
-      ])[0].transliteration,
-    ).toBe("geol eum eun");
+    const plan = planTransliterationAlignment(words, "kyouhi");
+    expect(plan.status).toBe("confirmed");
+    expect(plan.words).toBe(words);
   });
 });

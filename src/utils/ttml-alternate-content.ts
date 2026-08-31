@@ -1,10 +1,6 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
 import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
-import {
-  hasLexicalBoundaryAfter,
-  transliterationSyllables,
-  transliterationWordGroups,
-} from "@/domain/language/transliteration-format";
+import { hasLexicalBoundaryAfter, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
@@ -42,37 +38,20 @@ function renderTranslationContent(line: LyricLine, text: string, backgroundText?
 }
 
 function emitTransliterationSpans(word: WordTiming, text: string): string {
-  const tokens = text
-    .trim()
-    .split(/[-\u2010-\u2015\s]+/)
-    .filter(Boolean);
-  if (tokens.length <= 1) return emitWordSpan(word, tokens[0] ?? "");
-  const totalCharacters = tokens.reduce((sum, token) => sum + token.length, 0);
-  const duration = word.end - word.begin;
-  let consumedCharacters = 0;
-  return tokens
-    .map((token, index) => {
-      const begin = word.begin + duration * (consumedCharacters / totalCharacters);
-      consumedCharacters += token.length;
-      const end =
-        index === tokens.length - 1 ? word.end : word.begin + duration * (consumedCharacters / totalCharacters);
-      return emitWordSpan({ ...word, begin, end }, token);
-    })
-    .join(" ");
+  return emitWordSpan(word, text.trim());
 }
 
 function alignedTransliterationChunks(words: WordTiming[]): string[] {
   return words.map((word, index) => {
     const content = emitTransliterationSpans(word, word.transliteration?.trim() || word.text.trimEnd());
     if (index === words.length - 1) return content;
-    return `${content}${hasLexicalBoundaryAfter(words, index) ? "  " : " "}`;
+    const joiner = word.transliterationJoinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
+    return `${content}${escapeXml(joiner)}`;
   });
 }
 
 function emitUntimedTransliteration(text: string): string {
-  return transliterationWordGroups(text)
-    .map((word) => transliterationSyllables(word).join(" "))
-    .join("  ");
+  return normalizeTransliterationForEditing(text);
 }
 
 function transliterationChunks(line: LyricLine, background = false): string[] {

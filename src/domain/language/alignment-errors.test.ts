@@ -21,8 +21,8 @@ describe("getLanguageAlignmentErrorItems", () => {
         backgroundTextSource: "manual",
         transliteration: {
           language: "ko-Latn",
-          text: "gana",
-          backgroundText: "dara",
+          text: "g",
+          backgroundText: "d",
           segments: [],
           origin: "manual",
           sourceFingerprint: "current",
@@ -38,13 +38,11 @@ describe("getLanguageAlignmentErrorItems", () => {
         errors: [
           {
             field: "transliteration",
-            message:
-              "Original word 1 is split into 2 timed syllables, but its transliteration has 1 dash-separated syllable.",
+            message: "Original word 1 has more timed parts than its transliteration can safely map.",
           },
           {
             field: "background-transliteration",
-            message:
-              "Original word 1 is split into 2 timed syllables, but its transliteration has 1 dash-separated syllable.",
+            message: "Original word 1 has more timed parts than its transliteration can safely map.",
           },
         ],
       },
@@ -64,7 +62,7 @@ describe("getLanguageAlignmentErrorItems", () => {
         ],
         transliteration: {
           language: "ko-Latn",
-          text: "ga-na",
+          text: "ga na",
           segments: [],
           origin: "manual",
           sourceFingerprint: "current",

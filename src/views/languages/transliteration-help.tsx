@@ -14,13 +14,13 @@ const TransliterationHelp: React.FC = () => (
     <div className="w-80 p-4 select-text">
       <p className="mb-2 text-sm font-medium">Transliteration boundaries</p>
       <p className="text-xs leading-5 text-composer-text-secondary">
-        Use a dash between syllables in one source word, and a space between source words.
+        Use one space for a pronunciation break and two spaces for a wider romanized word break.
       </p>
       <code className="block p-2 mt-3 text-xs border rounded-md bg-composer-input border-composer-border">
-        geol-eum-eun Like a dance
+        geol eum eun&nbsp;&nbsp;Like&nbsp;&nbsp;a&nbsp;&nbsp;dance
       </code>
       <p className="mt-3 text-xs leading-5 text-composer-text-muted">
-        Dashes are not exported or timed. TTML uses one untimed space between syllables and two between words.
+        Spaces are visible but untimed. Dashes are literal text. Timing boundaries are set separately with Align timing.
       </p>
     </div>
   </Popover>

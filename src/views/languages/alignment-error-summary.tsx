@@ -28,7 +28,7 @@ const LanguageAlignmentErrorSummary: React.FC<LanguageAlignmentErrorSummaryProps
             {items.length === 1 ? "1 line has an alignment error" : `${items.length} lines have alignment errors`}
           </h3>
           <p className="mt-0.5 text-xs leading-5 text-composer-text-secondary">
-            Match each original timing split with a dash-separated transliteration syllable.
+            Correct incomplete transliteration text first, then use Align timing to confirm its timing map.
           </p>
         </div>
       </div>

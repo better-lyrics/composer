@@ -1,6 +1,7 @@
 import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
+import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -13,7 +14,7 @@ import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/s
 type SavedAudioSource = { kind: "file"; name: string } | { kind: "youtube"; videoId: string };
 
 interface SavedProject {
-  version: 1 | 2;
+  version: 1 | 2 | 3;
   savedAt: number;
   metadata: ProjectMetadata;
   agents: Agent[];
@@ -53,7 +54,7 @@ async function saveCurrentProject(
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
-    version: 2,
+    version: 3,
     savedAt: Date.now(),
     metadata,
     agents,
@@ -74,8 +75,9 @@ async function saveCurrentProject(
 
 async function loadCurrentProject(): Promise<SavedProject | undefined> {
   const project = await getFromStore<SavedProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
-  if (project?.version === 1) {
-    project.version = 2;
+  if (project && project.version < 3) {
+    if (Array.isArray(project.lines)) project.lines = project.lines.map(migrateLegacyTransliterationLine);
+    project.version = 3;
     await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
   }
   return project;
@@ -130,7 +132,7 @@ function exportProjectToFile(
   audioFileName?: string,
 ): void {
   const project: SavedProject = {
-    version: 2,
+    version: 3,
     savedAt: Date.now(),
     metadata,
     agents,
@@ -159,17 +161,17 @@ async function importProjectFromFile(file: File): Promise<SavedProject> {
   const text = await file.text();
   const project = JSON.parse(text) as SavedProject;
 
-  if (project.version !== 1 && project.version !== 2) {
+  if (project.version !== 1 && project.version !== 2 && project.version !== 3) {
     throw new Error(`Unsupported project version: ${project.version}`);
   }
 
   if (!project.syllableSplitDefaults) {
     project.syllableSplitDefaults = DEFAULT_SYLLABLE_SPLIT_DEFAULTS;
   }
-  // V2 adds optional translation/transliteration fields to lyric lines. V1
-  // lines are already structurally valid, so migration only updates the
-  // envelope version and preserves the original lyric objects verbatim.
-  project.version = 2;
+  if (project.version < 3 && Array.isArray(project.lines)) {
+    project.lines = project.lines.map(migrateLegacyTransliterationLine);
+  }
+  project.version = 3;
 
   return project;
 }

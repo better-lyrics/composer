@@ -14,7 +14,12 @@ function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
   const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
   const tracks: LanguageReviewTrack[] = [];
 
-  if (line.transliteration && line.transliteration.sourceFingerprint !== fingerprint) {
+  if (
+    line.transliteration &&
+    (line.transliteration.sourceFingerprint !== fingerprint ||
+      line.transliteration.alignmentStatus === "needs-review" ||
+      line.transliteration.backgroundAlignmentStatus === "needs-review")
+  ) {
     tracks.push({ kind: "transliteration" });
   }
   for (const [language, translation] of Object.entries(line.translations ?? {})) {

@@ -1,4 +1,5 @@
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
+import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
@@ -111,12 +112,21 @@ function useTimelineSyllableSplitterState({
     }
 
     if (word.transliteration && transliterationSplitPoints && newWords.length > 0) {
-      const romanParts = splitWordIntoSyllables({
-        word: { ...word, text: word.transliteration, transliteration: undefined },
-        splitPoints: transliterationSplitPoints,
-      }).map((part) => part.text.trimEnd());
+      const romanParts = splitTransliterationAtBoundaries(word.transliteration.trim(), transliterationSplitPoints);
       if (romanParts.length === newWords.length) {
-        newWords = newWords.map((part, index) => ({ ...part, transliteration: romanParts[index] }));
+        newWords = newWords.map((part, index) => {
+          const { transliterationJoinerAfter: _joiner, ...withoutJoiner } = part;
+          const slice = romanParts[index];
+          return {
+            ...withoutJoiner,
+            transliteration: slice.text,
+            ...(index < romanParts.length - 1
+              ? { transliterationJoinerAfter: slice.joinerAfter ?? "" }
+              : word.transliterationJoinerAfter !== undefined
+                ? { transliterationJoinerAfter: word.transliterationJoinerAfter }
+                : {}),
+          };
+        });
       }
     }
 

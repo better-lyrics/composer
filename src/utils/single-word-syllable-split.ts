@@ -1,3 +1,8 @@
+import {
+  leadingUntimedSeparator,
+  trailingUntimedSeparator,
+  withoutEdgeUntimedSeparators,
+} from "@/domain/language/transliteration-format";
 import type { WordTiming } from "@/domain/word/timing";
 import { distributeTiming } from "@/utils/syllable-utils";
 import { splitSourceWord } from "@/utils/word-timing";
@@ -26,12 +31,12 @@ function splitParts(text: string, splitPoints: number[]): { parts: string[]; joi
   }
   rawParts.push(text.slice(start));
   const joiners = rawParts.slice(0, -1).map((part, index) => {
-    const trailing = part.match(/[-\u2010-\u2015\s]+$/)?.[0] ?? "";
-    const leading = rawParts[index + 1].match(/^[-\u2010-\u2015\s]+/)?.[0] ?? "";
+    const trailing = trailingUntimedSeparator(part);
+    const leading = leadingUntimedSeparator(rawParts[index + 1]);
     return trailing + leading;
   });
   return {
-    parts: rawParts.map((part) => part.replace(/^[-\u2010-\u2015\s]+|[-\u2010-\u2015\s]+$/g, "")),
+    parts: rawParts.map(withoutEdgeUntimedSeparators),
     joiners,
   };
 }
