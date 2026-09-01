@@ -1,7 +1,7 @@
-import type { DriveStep } from "driver.js";
 import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
+import { type SimpleTab, useProjectStore } from "@/stores/project";
 import { MOD_KEY } from "@/utils/platform";
+import type { DriveStep } from "driver.js";
 
 // -- Types --------------------------------------------------------------------
 
@@ -14,8 +14,8 @@ interface GatedStep {
 
 // -- Helpers ------------------------------------------------------------------
 
-function switchTab(tabId: string) {
-  useProjectStore.getState().setActiveTab(tabId as "import" | "edit" | "sync" | "timeline" | "preview" | "export");
+function switchTab(tabId: SimpleTab) {
+  useProjectStore.getState().setActiveTab(tabId);
 }
 
 const BEST_PRACTICES_STEP_TITLE = "One thing before you do this for real";
@@ -89,7 +89,19 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("edit"),
     },
-    // 5: Sync tab
+    // 5: Languages tab
+    {
+      element: () => document.querySelector('[data-tour="languages-panel"]') as Element,
+      popover: {
+        title: "Translate and transliterate",
+        description:
+          "Composer generates editable transliterations and translations here. Use the arrow beside Regenerate all to replace only the languages you choose. If a line shows Review, open Align timing and place the invisible boundaries that map its reading to the original timed parts.",
+        side: "bottom",
+        align: "center",
+      },
+      onHighlightStarted: () => switchTab("languages"),
+    },
+    // 6: Sync tab
     {
       element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
       popover: {
@@ -101,7 +113,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("sync"),
     },
-    // 6: GATED - wait for first line synced
+    // 7: GATED - wait for first line synced
     {
       element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
       popover: {
@@ -111,7 +123,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("sync"),
     },
-    // 7: Timeline tab
+    // 8: Timeline tab
     {
       element: () => document.querySelector('[data-tour="timeline-panel"]') as Element,
       popover: {
@@ -122,7 +134,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("timeline"),
     },
-    // 8: Preview tab
+    // 9: Preview tab
     {
       element: () => document.querySelector('[data-tour="preview-panel"]') as Element,
       popover: {
@@ -133,7 +145,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("preview"),
     },
-    // 9: Export tab
+    // 10: Export tab
     {
       element: () => document.querySelector('[data-tour="export-panel"]') as Element,
       popover: {
@@ -144,7 +156,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("export"),
     },
-    // 10: Best practices, ahead of the closing video
+    // 11: Best practices, ahead of the closing video
     {
       popover: {
         title: BEST_PRACTICES_STEP_TITLE,
@@ -157,7 +169,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
         onNextClick: () => onOpenBestPractices(),
       },
     },
-    // 11: Outro with video
+    // 12: Outro with video
     {
       popover: {
         title: "See a full walkthrough",
@@ -187,7 +199,7 @@ const TOUR_GATED_STEPS: GatedStep[] = [
     tabId: "edit",
   },
   {
-    stepIndex: 6,
+    stepIndex: 7,
     task: "Sync at least one line",
     gateCheck: gateFirstLineSynced,
     tabId: "sync",

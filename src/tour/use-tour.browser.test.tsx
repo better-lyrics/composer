@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { allowConsole } from "@/test/console-guard";
+import { createLine } from "@/test/factories";
+import { render } from "@/test/render";
 import { GuideCard } from "@/tour/guide-card";
 import { BEST_PRACTICES_STEP_TITLE, createTourSteps } from "@/tour/tour-steps";
 import { TOUR_RESUME_KEY, useTour } from "@/tour/use-tour";
-import { render } from "@/test/render";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
-import { createLine } from "@/test/factories";
-import { allowConsole } from "@/test/console-guard";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Harness ------------------------------------------------------------------
 
@@ -136,7 +136,8 @@ describe("useTour resume payload", () => {
 
   it("resumes an index written against the current step list", async () => {
     const steps = createTourSteps(() => {});
-    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: 9, stepCount: steps.length }));
+    const exportIndex = steps.findIndex((step) => step.popover?.title === "Export your TTML");
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: exportIndex, stepCount: steps.length }));
     const screen = await render(<HandoffHarness onOpen={() => {}} />);
 
     await screen.getByTestId("resume").click();
@@ -178,28 +179,28 @@ describe("useTour skipGuideCard", () => {
     const screen = await render(<TourHarness />);
 
     await screen.getByTestId("start").click();
-    await expect.poll(driverProgress).toBe("1 / 12");
+    await expect.poll(driverProgress).toBe("1 / 13");
     await clickNext();
-    await expect.poll(driverProgress).toBe("2 / 12");
+    await expect.poll(driverProgress).toBe("2 / 13");
     await clickNext();
     // Audio gate fails -> guide card replaces the popover.
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
 
-    // Skip audio guide -> step 3 Edit "Type or paste lyrics" (4/12).
+    // Skip audio guide -> step 3 Edit "Type or paste lyrics" (4/13).
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("4 / 12");
+    await expect.poll(driverProgress).toBe("4 / 13");
     await expect.poll(driverTitle).toBe("Type or paste lyrics");
 
     // Step 3 -> step 4 gated lyrics -> guide card.
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
 
-    // BUG: skip jumps back to step 3 (4/12) because the skip logic re-scans gates
+    // BUG: skip jumps back to step 3 (4/13) because the skip logic re-scans gates
     // and picks the first failing one (audio), not the one the user is currently on.
-    // FIX: skip advances to step 5 Sync (6/12).
+    // FIX: skip advances to step 5 Languages (6/13).
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("6 / 12");
-    await expect.poll(driverTitle).toBe("Sync your lyrics");
+    await expect.poll(driverProgress).toBe("6 / 13");
+    await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
   it("skipping the audio guide card lands on the Edit step", async () => {
@@ -208,29 +209,29 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("4 / 12");
+    await expect.poll(driverProgress).toBe("4 / 13");
     await expect.poll(driverTitle).toBe("Type or paste lyrics");
   });
 
-  it("skipping the lyrics guide card with audio loaded lands on the Sync step", async () => {
+  it("skipping the lyrics guide card with audio loaded lands on the Languages step", async () => {
     setAudioLoaded();
     const screen = await render(<TourHarness />);
 
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    // Audio gate passes -> driver auto-advances past step 2 to step 3 (Edit, 4/12).
-    await expect.poll(driverProgress).toBe("4 / 12");
+    // Audio gate passes -> driver auto-advances past step 2 to step 3 (Edit, 4/13).
+    await expect.poll(driverProgress).toBe("4 / 13");
 
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("6 / 12");
-    await expect.poll(driverTitle).toBe("Sync your lyrics");
+    await expect.poll(driverProgress).toBe("6 / 13");
+    await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
   it("skipping the sync guide card lands on the Timeline step", async () => {
@@ -241,29 +242,32 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 12");
+    await expect.poll(driverProgress).toBe("4 / 13");
     await clickNext();
-    // Lyrics gate passes -> auto-advance to step 5 Sync (6/12).
-    await expect.poll(driverProgress).toBe("6 / 12");
+    // Lyrics gate passes -> auto-advance to step 5 Languages (6/13).
+    await expect.poll(driverProgress).toBe("6 / 13");
+    await clickNext();
+    await expect.poll(driverProgress).toBe("7 / 13");
+    await expect.poll(driverTitle).toBe("Sync your lyrics");
     await clickNext();
     // Sync gate fails -> guide card replaces the popover.
-    await expect.poll(() => screen.container.textContent).toContain("Step 7 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 8 / 13");
 
     await screen.getByRole("button", { name: "Skip" }).click();
-    await expect.poll(driverProgress).toBe("8 / 12");
+    await expect.poll(driverProgress).toBe("9 / 13");
     await expect.poll(driverTitle).toBe("Fine-tune on the timeline");
   });
 
-  it("transitions from the lyrics guide card to the Sync step when lyrics get added", async () => {
+  it("transitions from the lyrics guide card to the Languages step when lyrics get added", async () => {
     setAudioLoaded();
     const screen = await render(<TourHarness />);
 
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 12");
+    await expect.poll(driverProgress).toBe("4 / 13");
     await clickNext();
-    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 12");
+    await expect.poll(() => screen.container.textContent).toContain("Step 5 / 13");
 
     // Populate lyrics. The gate poll detects the pass, flashes "Done!", then advances.
     setLyrics();
@@ -271,7 +275,8 @@ describe("useTour skipGuideCard", () => {
     await expect.poll(() => screen.container.textContent).toContain("Done!");
     // The advance is intentionally delayed by GATE_SUCCESS_DELAY (800ms) after "Done!",
     // so this needs more than the default 1000ms poll budget under load.
-    await expect.poll(driverProgress, { timeout: 4000 }).toBe("6 / 12");
+    await expect.poll(driverProgress, { timeout: 4000 }).toBe("6 / 13");
+    await expect.poll(driverTitle).toBe("Translate and transliterate");
   });
 
   it("does not show the sync guide card when the sync gate already passes", async () => {
@@ -282,11 +287,13 @@ describe("useTour skipGuideCard", () => {
     await screen.getByTestId("start").click();
     await clickNext();
     await clickNext();
-    await expect.poll(driverProgress).toBe("4 / 12");
+    await expect.poll(driverProgress).toBe("4 / 13");
     await clickNext();
-    await expect.poll(driverProgress).toBe("6 / 12");
+    await expect.poll(driverProgress).toBe("6 / 13");
     await clickNext();
-    // Sync gate passes -> driver auto-advances past step 6. Guide card never appears.
-    await expect.poll(() => screen.container.textContent?.includes("Step 7 / 12") ?? false).toBe(false);
+    await expect.poll(driverProgress).toBe("7 / 13");
+    await clickNext();
+    // Sync gate passes -> driver auto-advances past step 7. Guide card never appears.
+    await expect.poll(() => screen.container.textContent?.includes("Step 8 / 13") ?? false).toBe(false);
   });
 });
