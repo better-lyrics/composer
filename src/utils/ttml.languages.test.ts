@@ -5,7 +5,7 @@ import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
 
-const metadata: ProjectMetadata = { title: "Languages", artist: "", album: "", duration: 10, language: "ja" };
+const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };
 const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
 function languageLine(): LyricLine {
