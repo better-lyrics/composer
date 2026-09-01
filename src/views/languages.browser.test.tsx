@@ -243,6 +243,9 @@ describe("LanguagesPanel", () => {
     await expect.element(screen.getByText("Review", { exact: true })).toBeInTheDocument();
     await screen.getByRole("button", { name: "Align timing" }).click();
     await expect.element(screen.getByRole("dialog", { name: "Align transliteration" })).toBeInTheDocument();
+    const scrollRegion = document.querySelector<HTMLElement>("[data-transliteration-alignment-scroll-region]");
+    expect(scrollRegion).not.toBeNull();
+    expect(scrollRegion?.classList.contains("overflow-y-auto")).toBe(true);
     await expect.element(screen.getByRole("combobox", { name: "Original word to align" })).toHaveValue("0");
     await screen.getByRole("button", { name: "Save alignment" }).click();
 

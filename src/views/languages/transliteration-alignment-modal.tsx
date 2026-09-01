@@ -183,90 +183,98 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
   if (!track || !sourceWords?.length || !canonicalText || !group) return null;
 
   return (
-    <Modal isOpen onClose={onClose} title="Align transliteration" className="max-w-3xl" bodyClassName="p-0">
-      <div className="border-b border-composer-border bg-composer-bg-elevated px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium">Original word</p>
-            <p className="mt-1 text-xs text-composer-text-muted">
-              Place one invisible boundary for each transition between timed parts.
-            </p>
-          </div>
-          <select
-            aria-label="Original word to align"
-            value={groupIndex}
-            onChange={(event) => setGroupIndex(Number(event.target.value))}
-            className="h-9 max-w-xs rounded-md border border-composer-border bg-composer-input px-3 text-sm"
-          >
-            {groups.map((candidate, index) => (
-              <option key={candidate.startIndex} value={index}>
-                {index + 1}.{" "}
-                {candidate.words
-                  .map((word) => word.text)
-                  .join("")
-                  .trim()}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          {group.words.map((word, index) => (
-            <div
-              key={`${word.begin}-${word.end}-${word.text}`}
-              className="rounded-lg border border-composer-border bg-composer-input px-3 py-2"
-            >
-              <span className="mr-2 font-mono text-[10px] text-composer-text-muted">{index + 1}</span>
-              <span className="text-sm font-medium">{word.text.trimEnd()}</span>
-              <span className="ml-2 font-mono text-[10px] text-composer-text-muted">
-                {formatTime(word.begin)}–{formatTime(word.end)}
-              </span>
+    <Modal
+      isOpen
+      onClose={onClose}
+      title="Align transliteration"
+      className="max-h-[calc(100vh-2rem)] max-w-3xl flex flex-col"
+      bodyClassName="p-0 min-h-0 flex flex-1 flex-col"
+    >
+      <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="border-b border-composer-border bg-composer-bg-elevated px-5 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-medium">Original word</p>
+              <p className="mt-1 text-xs text-composer-text-muted">
+                Place one invisible boundary for each transition between timed parts.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-5 p-5">
-        <AlignmentPicker
-          value={reading}
-          points={points}
-          onToggle={(point) =>
-            setPointsByGroup((current) =>
-              current.map((groupPoints, index) =>
-                index === groupIndex
-                  ? groupPoints.includes(point)
-                    ? groupPoints.filter((candidate) => candidate !== point)
-                    : [...groupPoints, point].toSorted((a, b) => a - b)
-                  : groupPoints,
-              ),
-            )
-          }
-        />
-
-        <div className="rounded-xl border border-composer-border bg-composer-bg-elevated p-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-composer-text-muted">
-            Timing map
-          </p>
-          <div className="flex flex-wrap items-center gap-2">
+            <select
+              aria-label="Original word to align"
+              value={groupIndex}
+              onChange={(event) => setGroupIndex(Number(event.target.value))}
+              className="h-9 max-w-xs rounded-md border border-composer-border bg-composer-input px-3 text-sm"
+            >
+              {groups.map((candidate, index) => (
+                <option key={candidate.startIndex} value={index}>
+                  {index + 1}.{" "}
+                  {candidate.words
+                    .map((word) => word.text)
+                    .join("")
+                    .trim()}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             {group.words.map((word, index) => (
-              <div key={`${word.begin}-${word.end}-${word.text}`} className="flex items-center gap-2">
-                {index > 0 && <IconArrowRight className="size-3.5 text-composer-text-muted" />}
-                <span className="rounded-md bg-composer-button px-2.5 py-1.5 text-sm">
-                  <span className="mr-1.5 text-composer-text-muted">{word.text.trimEnd()}</span>
-                  <span className="font-medium">{slices[index]?.text || "—"}</span>
+              <div
+                key={`${word.begin}-${word.end}-${word.text}`}
+                className="rounded-lg border border-composer-border bg-composer-input px-3 py-2"
+              >
+                <span className="mr-2 font-mono text-[10px] text-composer-text-muted">{index + 1}</span>
+                <span className="text-sm font-medium">{word.text.trimEnd()}</span>
+                <span className="ml-2 font-mono text-[10px] text-composer-text-muted">
+                  {formatTime(word.begin)}–{formatTime(word.end)}
                 </span>
               </div>
             ))}
           </div>
         </div>
 
-        {!currentValid && (
-          <p className="text-sm text-composer-error">
-            Select {required} {required === 1 ? "boundary" : "boundaries"}; currently selected {points.length}.
-          </p>
-        )}
+        <div className="space-y-5 p-5">
+          <AlignmentPicker
+            value={reading}
+            points={points}
+            onToggle={(point) =>
+              setPointsByGroup((current) =>
+                current.map((groupPoints, index) =>
+                  index === groupIndex
+                    ? groupPoints.includes(point)
+                      ? groupPoints.filter((candidate) => candidate !== point)
+                      : [...groupPoints, point].toSorted((a, b) => a - b)
+                    : groupPoints,
+                ),
+              )
+            }
+          />
+
+          <div className="rounded-xl border border-composer-border bg-composer-bg-elevated p-4">
+            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-composer-text-muted">
+              Timing map
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              {group.words.map((word, index) => (
+                <div key={`${word.begin}-${word.end}-${word.text}`} className="flex items-center gap-2">
+                  {index > 0 && <IconArrowRight className="size-3.5 text-composer-text-muted" />}
+                  <span className="rounded-md bg-composer-button px-2.5 py-1.5 text-sm">
+                    <span className="mr-1.5 text-composer-text-muted">{word.text.trimEnd()}</span>
+                    <span className="font-medium">{slices[index]?.text || "—"}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {!currentValid && (
+            <p className="text-sm text-composer-error">
+              Select {required} {required === 1 ? "boundary" : "boundaries"}; currently selected {points.length}.
+            </p>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-composer-border bg-composer-bg-dark px-5 py-4">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-composer-border bg-composer-bg-dark px-5 py-4">
         <span className="text-xs text-composer-text-muted">
           Single gaps are pronunciation breaks; wider gaps are word breaks. Neither receives timing.
         </span>
