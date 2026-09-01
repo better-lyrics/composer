@@ -33,6 +33,19 @@ describe("preview renderer settings", () => {
   });
 });
 
+describe("audio pitch settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("preserves pitch by default and restores that default on reset", () => {
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
+    useSettingsStore.getState().set("preservePitch", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
+  });
+});
+
 describe("vocal model settings", () => {
   beforeEach(() => {
     useSettingsStore.setState({ ...DEFAULTS });

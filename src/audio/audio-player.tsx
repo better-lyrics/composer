@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Slider } from "@/ui/slider";
@@ -29,7 +30,9 @@ const RATE_STEP = 0.05;
 const PlaybackRateControl: React.FC<{
   rate: number;
   onChangeRate: (rate: number) => void;
-}> = ({ rate, onChangeRate }) => {
+  preservePitch: boolean;
+  onChangePreservePitch: (preservePitch: boolean) => void;
+}> = ({ rate, onChangeRate, preservePitch, onChangePreservePitch }) => {
   const handleSliderChange = useCallback(
     (value: number) => {
       onChangeRate(Math.round(value * 100) / 100);
@@ -75,6 +78,18 @@ const PlaybackRateControl: React.FC<{
           />
           <span className="font-mono text-xs text-composer-text-muted">{RATE_MAX}x</span>
         </div>
+        <label className="flex items-start gap-2.5 mt-3 pt-3 border-t cursor-pointer border-composer-border">
+          <input
+            type="checkbox"
+            checked={preservePitch}
+            onChange={(event) => onChangePreservePitch(event.target.checked)}
+            className="mt-0.5 size-3.5 rounded cursor-pointer accent-composer-accent"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="text-xs font-medium text-composer-text">Preserve pitch</span>
+            <span className="text-xs text-composer-text-muted">Prevents pitch from changing with speed.</span>
+          </span>
+        </label>
       </div>
     </Popover>
   );
@@ -138,12 +153,14 @@ const AudioPlayer: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const duration = useAudioStore((s) => s.duration);
   const playbackRate = useAudioStore((s) => s.playbackRate);
+  const preservePitch = useSettingsStore((s) => s.preservePitch);
   const volume = useAudioStore((s) => s.volume);
   const isMuted = useAudioStore((s) => s.isMuted);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const setPlaybackRate = useAudioStore((s) => s.setPlaybackRate);
   const setVolume = useAudioStore((s) => s.setVolume);
   const toggleMute = useAudioStore((s) => s.toggleMute);
+  const setSetting = useSettingsStore((s) => s.set);
 
   if (!source) return null;
 
@@ -160,7 +177,12 @@ const AudioPlayer: React.FC = () => {
       />
       <TimeDisplay current={currentTime} duration={duration} />
       <VolumeControl volume={volume} isMuted={isMuted} onChangeVolume={setVolume} onToggleMute={toggleMute} />
-      <PlaybackRateControl rate={playbackRate} onChangeRate={setPlaybackRate} />
+      <PlaybackRateControl
+        rate={playbackRate}
+        onChangeRate={setPlaybackRate}
+        preservePitch={preservePitch}
+        onChangePreservePitch={(value) => setSetting("preservePitch", value)}
+      />
       <VocalSeparationDropdown />
     </div>
   );

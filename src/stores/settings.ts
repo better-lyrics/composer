@@ -1,7 +1,7 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 // -- Types --------------------------------------------------------------------
 
@@ -30,6 +30,7 @@ const DEFAULT_COBALT_INSTANCE_ID = "default";
 
 interface SettingsState {
   defaultPlaybackRate: number;
+  preservePitch: boolean;
   rememberVolume: boolean;
   lastVolume: number;
   audioScrubPreview: boolean;
@@ -98,6 +99,7 @@ interface SettingsActions {
 
 const DEFAULTS: SettingsState = {
   defaultPlaybackRate: 0.75,
+  preservePitch: true,
   rememberVolume: true,
   lastVolume: 1,
   audioScrubPreview: true,
