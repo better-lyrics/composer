@@ -6,14 +6,7 @@ import { Slider } from "@/ui/slider";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
-import {
-  IconMusic,
-  IconPlayerPauseFilled,
-  IconPlayerPlayFilled,
-  IconVolume,
-  IconVolume2,
-  IconVolume3,
-} from "@tabler/icons-react";
+import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
 import { useCallback } from "react";
 
 // -- Components ---------------------------------------------------------------
@@ -86,14 +79,8 @@ const PlaybackRateControl: React.FC<{
           />
           <span className="font-mono text-xs text-composer-text-muted">{RATE_MAX}x</span>
         </div>
-        <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-composer-border">
-          <IconMusic
-            className={cn(
-              "size-4 shrink-0",
-              preservePitch ? "text-composer-accent-text" : "text-composer-text opacity-55",
-            )}
-          />
-          <div className="flex flex-1 flex-col gap-0.5 min-w-0">
+        <div className="flex items-center justify-between gap-2.5 mt-3 pt-3 border-t border-composer-border">
+          <div className="flex flex-col gap-0.5 min-w-0">
             <span className="text-sm text-composer-text">Preserve pitch</span>
             <span className="text-xs text-composer-text-muted">Keeps pitch steady when speed changes.</span>
           </div>
