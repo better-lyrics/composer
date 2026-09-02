@@ -35,6 +35,7 @@ const AudioEngine: React.FC = () => {
   const currentStem = useSeparationStore((s) => s.currentStem);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- teardown/clearSlowLoading run from the returned cleanup and revoke every listener, timer and object URL; the async setup() indirection hides that from static analysis
   useEffect(() => {
     if (!source) {
       registerAudioElement(null);

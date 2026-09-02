@@ -56,9 +56,9 @@ describe("AudioPlayer", () => {
     const screen = await render(<AudioPlayer />);
     await screen.getByRole("button", { name: /1\.00x/ }).click();
 
-    const checkbox = screen.getByRole("checkbox", { name: "Preserve pitch" });
-    await expect.element(checkbox).toBeChecked();
-    await checkbox.click();
+    const toggle = screen.getByRole("switch", { name: "Preserve pitch" });
+    await expect.element(toggle).toBeChecked();
+    await toggle.click();
 
     expect(useSettingsStore.getState().preservePitch).toBe(false);
     const persisted = JSON.parse(localStorage.getItem("composer-settings") ?? "{}") as {

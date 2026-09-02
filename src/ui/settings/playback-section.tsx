@@ -28,6 +28,11 @@ const PlaybackSection: React.FC = () => {
         }
       />
       <ToggleSetting
+        label="Preserve pitch"
+        description="Keep pitch steady when the playback speed changes."
+        settingKey="preservePitch"
+      />
+      <ToggleSetting
         label="Remember volume"
         description="Keep your volume level between sessions."
         settingKey="rememberVolume"
