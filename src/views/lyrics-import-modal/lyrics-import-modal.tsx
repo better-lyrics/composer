@@ -45,7 +45,7 @@ const LyricsImportModalShell: React.FC = () => {
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
   const [currentSection, setCurrentSection] = useState<ImportModalSection>(initialSection ?? "search");
-  const [pasteText, setPasteText] = useState("");
+  const [pasteText, setPasteText] = useState(initialSection === "paste" ? useImportModalStore.getState().body ?? "" : "");
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [selectingResultId, setSelectingResultId] = useState<string | null>(null);
   const [isModalDragOver, setIsModalDragOver] = useState(false);
