@@ -258,7 +258,10 @@ describe("useSyncHandlers.handleSplitWord", () => {
       ]);
     });
 
-    expect(useProjectStore.getState().lines[0].transliteration?.text).toBe("ildan eun");
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.text).toBe("ildan eun");
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
 });
 

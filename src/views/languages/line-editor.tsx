@@ -74,6 +74,13 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
   const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });
+  const clearTransliteration = () =>
+    update({
+      ...(line.transliteration
+        ? alignTrackToLine(line, { ...line.transliteration, text: "", backgroundText: undefined })
+        : {}),
+      transliteration: undefined,
+    });
 
   return (
     <section
@@ -131,8 +138,8 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
             ) : null
           }
           onChange={(value) => {
-            if (!value) {
-              update({ transliteration: undefined });
+            if (!value && !line.transliteration?.backgroundText) {
+              clearTransliteration();
               return;
             }
             update(
@@ -160,7 +167,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
               pasteLanguage={language}
               onChange={(value) => {
                 const translations = { ...(line.translations ?? {}) };
-                if (value)
+                if (value || track?.backgroundText)
                   translations[language] = {
                     language,
                     text: value,
@@ -200,11 +207,20 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
               }
               onChange={(value) => {
                 const current = line.transliteration;
-                if (!current) return;
+                if (!value && !current?.text) {
+                  clearTransliteration();
+                  return;
+                }
                 update(
                   alignTrackToLine(line, {
+                    language: `${sourceLanguage || "und"}-Latn`,
+                    text: "",
+                    segments: [],
                     ...current,
                     backgroundText: value,
+                    backgroundSegments: value.trim()
+                      ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
+                      : [],
                     origin: "manual",
                     sourceFingerprint: fingerprint,
                   }),
@@ -221,11 +237,18 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
                   pasteKind="translation"
                   pasteLanguage={language}
                   onChange={(value) => {
-                    if (!track) return;
+                    const translations = { ...line.translations };
+                    if (!value && !track?.text) {
+                      delete translations[language];
+                      update({ translations });
+                      return;
+                    }
                     update({
                       translations: {
-                        ...line.translations,
+                        ...translations,
                         [language]: {
+                          language,
+                          text: "",
                           ...track,
                           backgroundText: value,
                           origin: "manual",

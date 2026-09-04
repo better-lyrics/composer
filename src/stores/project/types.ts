@@ -32,6 +32,8 @@ interface HistoryEntry {
 
 interface MetadataState {
   metadata: ProjectMetadata;
+  /** In-memory identity for replacements, including files that reuse line IDs. */
+  projectSession: number;
 }
 
 interface AgentsState {
@@ -78,6 +80,7 @@ interface HistoryState {
 
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
+  startProjectSession: () => void;
   reset: () => void;
 }
 

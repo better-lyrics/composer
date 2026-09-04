@@ -220,7 +220,7 @@ describe("AmLyricsRenderer", () => {
       .toContain("Hello Oh world");
   });
 
-  it("does not show alternate tracks that match the main text", async () => {
+  it("hides matching alternate tracks and shows them again when updated TTML differs", async () => {
     useAudioStore.setState({ audioElement: new Audio() });
 
     const screen = await render(
@@ -228,7 +228,6 @@ describe("AmLyricsRenderer", () => {
     );
     const el = await waitForAmLyrics(screen.container);
     await waitForLyrics(el);
-
     await expect
       .poll(() =>
         el.shadowRoot
@@ -239,17 +238,6 @@ describe("AmLyricsRenderer", () => {
     expect(
       el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
     ).toBe(true);
-  });
-
-  it("shows alternate tracks again when updated TTML differs from the main text", async () => {
-    useAudioStore.setState({ audioElement: new Audio() });
-
-    const screen = await render(
-      <AmLyricsRenderer ttmlString={buildMatchingAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
-    );
-    const el = await waitForAmLyrics(screen.container);
-    await waitForLyrics(el);
-    await expect.poll(() => el.shadowRoot?.querySelector("[data-composer-matching-alternate]") !== null).toBe(true);
 
     await screen.rerender(
       <AmLyricsRenderer ttmlString={buildAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,

@@ -60,8 +60,10 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
   const setInstanceCollapsed = useTimelineStore((s) => s.setInstanceCollapsed);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const hasTransliteration = useMemo(() => lines.some((line) => !!line.transliteration?.text), [lines]);
-
+  const hasTransliteration = useMemo(
+    () => lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText)),
+    [lines],
+  );
   const hasUnexpandedLines = useMemo(() => lines.some((l) => !l.words?.length && l.text.trim().length > 0), [lines]);
 
   const instanceKeys = useMemo(() => {

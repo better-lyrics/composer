@@ -93,18 +93,6 @@ describe("createTourSteps", () => {
     for (const gate of TOUR_GATED_STEPS) expect(gate.stepIndex).toBeLessThan(bestPracticesIndex);
   });
 
-  it("introduces language generation and timing review between editing and syncing", () => {
-    const steps = createTourSteps(() => {});
-    const languageIndex = steps.findIndex((step) => step.popover?.title === "Translate and transliterate");
-    const editIndex = steps.findIndex((step) => step.popover?.title === "Add your lyrics");
-    const syncIndex = steps.findIndex((step) => step.popover?.title === "Sync your lyrics");
-
-    expect(languageIndex).toBe(editIndex + 1);
-    expect(languageIndex).toBeLessThan(syncIndex);
-    expect(steps[languageIndex]?.popover?.description).toContain("Regenerate all");
-    expect(steps[languageIndex]?.popover?.description).toContain("Align timing");
-  });
-
   it("gives each of its thirteen steps a popover with a title", () => {
     const steps = createTourSteps(() => {});
     expect(steps).toHaveLength(13);

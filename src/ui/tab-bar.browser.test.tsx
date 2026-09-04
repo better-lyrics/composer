@@ -73,11 +73,7 @@ describe("TabBar", () => {
     ]);
 
     const screen = await render(<TabBar />);
-    const warning = screen.container.querySelector("[data-language-review-count]");
-
-    expect(warning).not.toBeNull();
-    expect(warning?.textContent).toContain("1");
-    await expect.element(screen.getByLabelText("1 line needs language review")).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("1 line needs language review")).toHaveTextContent("1");
   });
 
   it("shows the number of lines with alignment errors on the Languages tab", async () => {
@@ -102,10 +98,6 @@ describe("TabBar", () => {
     ]);
 
     const screen = await render(<TabBar />);
-    const error = screen.container.querySelector("[data-language-error-count]");
-
-    expect(error).not.toBeNull();
-    expect(error?.textContent).toContain("1");
-    await expect.element(screen.getByLabelText("1 line has a language alignment error")).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("1 line has a language alignment error")).toHaveTextContent("1");
   });
 });

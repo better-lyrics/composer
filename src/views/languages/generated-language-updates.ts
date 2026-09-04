@@ -2,18 +2,19 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
-import type { TransliterationLineResult } from "@/services/language-provider";
+import type { TranslationLineResult, TransliterationLineResult } from "@/services/language-provider";
 
 interface TransliterationGeneration {
   language: string;
+  backgroundLanguage?: string;
   main: ReadonlyMap<string, TransliterationLineResult>;
   background: ReadonlyMap<string, TransliterationLineResult>;
 }
 
 interface TranslationGeneration {
   language: string;
-  main: ReadonlyMap<string, string | null>;
-  background: ReadonlyMap<string, string | null>;
+  main: ReadonlyMap<string, TranslationLineResult>;
+  background: ReadonlyMap<string, TranslationLineResult>;
 }
 
 interface GeneratedLanguageOptions {
@@ -29,18 +30,22 @@ function generatedLanguageUpdates(
   const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
   const updates: Partial<LyricLine> = {};
 
-  if (generatedRoman) {
+  const result = generatedRoman?.main.get(line.id);
+  const backgroundResult = generatedRoman?.background.get(line.id);
+  // Track metadata describes both sides. Commit them together so a failed
+  // request cannot erase content or make an older side appear freshly generated.
+  if (generatedRoman && !result?.failed && !backgroundResult?.failed) {
     const current = line.transliteration;
     const mayReplace = force || !current || current.origin === "google";
-    const result = generatedRoman.main.get(line.id);
-    const backgroundResult = generatedRoman.background.get(line.id);
     let transliteration: TransliterationTrack | undefined = current;
-    if (mayReplace && result?.text) {
+    if (mayReplace && (result?.text || backgroundResult?.text)) {
       transliteration = {
-        language: generatedRoman.language,
-        text: result.text,
+        language: result?.text
+          ? generatedRoman.language
+          : (generatedRoman.backgroundLanguage ?? generatedRoman.language),
+        text: result?.text ?? "",
         backgroundText: backgroundResult?.text ?? undefined,
-        segments: result.segments,
+        segments: result?.segments ?? [],
         backgroundSegments: backgroundResult?.segments,
         origin: "google",
         sourceFingerprint: fingerprint,
@@ -53,20 +58,29 @@ function generatedLanguageUpdates(
       const { stale: _stale, ...fresh } = current;
       transliteration = fresh;
     }
-    Object.assign(updates, transliteration ? alignTrackToLine(line, transliteration) : { transliteration: undefined });
+    if (transliteration) {
+      Object.assign(updates, alignTrackToLine(line, transliteration));
+    } else {
+      if (current) {
+        Object.assign(updates, alignTrackToLine(line, { ...current, text: "", backgroundText: undefined }));
+      }
+      updates.transliteration = undefined;
+    }
   }
 
   if (generatedTranslations.length > 0) {
     const translations = { ...(line.translations ?? {}) };
     for (const generated of generatedTranslations) {
+      const result = generated.main.get(line.id);
+      const backgroundResult = generated.background.get(line.id);
+      if (result?.failed || backgroundResult?.failed) continue;
       const current = translations[generated.language];
       const mayReplace = force || !current || current.origin === "google";
-      const text = generated.main.get(line.id);
-      if (mayReplace && text) {
+      if (mayReplace && (result?.text || backgroundResult?.text)) {
         translations[generated.language] = {
           language: generated.language,
-          text,
-          backgroundText: generated.background.get(line.id) ?? undefined,
+          text: result?.text ?? "",
+          backgroundText: backgroundResult?.text ?? undefined,
           origin: "google",
           sourceFingerprint: fingerprint,
         };

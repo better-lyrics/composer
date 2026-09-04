@@ -1,4 +1,4 @@
-import type { LinkGroup } from "@/domain/group/template";
+import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -114,25 +114,13 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
           ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : {}),
           ...(tplLine.words
             ? {
-                words: tplLine.words.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                  ...(w.transliteration ? { transliteration: w.transliteration } : {}),
-                })),
+                words: offsetTemplateWords(tplLine.words, instanceStart),
               }
             : {}),
           ...(tplLine.backgroundText !== undefined ? { backgroundText: tplLine.backgroundText } : {}),
           ...(tplLine.backgroundWords
             ? {
-                backgroundWords: tplLine.backgroundWords.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                  ...(w.transliteration ? { transliteration: w.transliteration } : {}),
-                })),
+                backgroundWords: offsetTemplateWords(tplLine.backgroundWords, instanceStart),
               }
             : {}),
           ...(tplLine.backgroundTextSource !== undefined ? { backgroundTextSource: tplLine.backgroundTextSource } : {}),

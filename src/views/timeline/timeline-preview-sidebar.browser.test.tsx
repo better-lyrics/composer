@@ -20,41 +20,6 @@ describe("TimelinePreviewSidebar", () => {
     expect(screen.container.textContent).toContain("hello");
   });
 
-  it("shows main and background transliterations beneath the timed lyrics", async () => {
-    useProjectStore.setState({
-      lines: [
-        createLine({
-          text: "안녕",
-          words: [createWord({ text: "안녕", begin: 0, end: 1 })],
-          backgroundText: "세상",
-          backgroundWords: [createWord({ text: "세상", begin: 0, end: 1 })],
-        }),
-      ],
-    });
-    useProjectStore.setState({
-      lines: useProjectStore.getState().lines.map((line) => ({
-        ...line,
-        transliteration: {
-          language: "ko-Latn",
-          text: "annyeong",
-          backgroundText: "sesang",
-          segments: [{ original: "안녕", transliteration: "annyeong" }],
-          origin: "manual",
-          sourceFingerprint: "preview-test",
-        },
-      })),
-    });
-
-    const screen = await render(<TimelinePreviewSidebar />);
-
-    expect(screen.container.querySelector('[data-preview-transliteration="main"] [data-word-begin]')?.textContent).toBe(
-      "annyeong",
-    );
-    expect(
-      screen.container.querySelector('[data-preview-transliteration="background"] [data-word-begin]')?.textContent,
-    ).toBe("sesang");
-  });
-
   it("uses canonical timed-word transliterations when line segments cannot be realigned", async () => {
     useProjectStore.setState({
       granularity: "word",

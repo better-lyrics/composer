@@ -1,32 +1,30 @@
 import { pastedRows } from "@/domain/language/paste-import";
-import { languageSourceText } from "@/domain/language/source-text";
-import type { LyricLine } from "@/domain/line/model";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
-import { generatedLanguageUpdates } from "@/views/languages/generated-language-updates";
+import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
+import { languageGenerationInputs } from "@/views/languages/generation-inputs";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
+import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
 import { RegenerateLanguageControl } from "@/views/languages/regenerate-language-control";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { TransliterationHelp } from "@/views/languages/transliteration-help";
+import { useLanguageTargets } from "@/views/languages/use-language-targets";
 import { IconLanguage, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 const LanguagesPanel: React.FC = () => {
   const lines = useProjectStore((state) => state.lines);
   const metadata = useProjectStore((state) => state.metadata);
+  const projectSession = useProjectStore((state) => state.projectSession);
   const activeTab = useProjectStore((state) => state.activeTab);
   const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const setMetadata = useProjectStore((state) => state.setMetadata);
-  const [targets, setTargets] = useState<string[]>(() => {
-    const found = new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})));
-    if (metadata.language !== "en") found.add("en");
-    return [...found];
-  });
+  const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, metadata, projectSession);
   const [nextTarget, setNextTarget] = useState("es");
   const [isGenerating, setIsGenerating] = useState(false);
   const [pasteImport, setPasteImport] = useState<{
@@ -44,20 +42,15 @@ const LanguagesPanel: React.FC = () => {
       requestedSource = sourceLanguage,
       includeTransliteration = true,
     ) => {
-      if (lines.length === 0 || isGenerating) return;
-      abortRef.current?.abort();
+      const startingState = useProjectStore.getState();
+      if (startingState.lines.length === 0 || abortRef.current) return;
+      const startingLines = new Map(startingState.lines.map((line) => [line.id, line]));
       const controller = new AbortController();
       abortRef.current = controller;
+      const { edits, stop } = watchGenerationEdits(startingLines, requestedTargets, controller.signal);
       setIsGenerating(true);
       try {
-        const mainInputs: Array<{ id: string; text: string }> = [];
-        const bgInputs: Array<{ id: string; text: string }> = [];
-        for (const line of lines) {
-          const text = languageSourceText(line.text);
-          const backgroundText = line.backgroundText ? languageSourceText(line.backgroundText) : undefined;
-          if (text) mainInputs.push({ id: line.id, text });
-          if (backgroundText) bgInputs.push({ id: line.id, text: backgroundText });
-        }
+        const { mainInputs, bgInputs } = languageGenerationInputs(startingState.lines);
         const [romanizationResults, translationResults] = await Promise.all([
           includeTransliteration
             ? Promise.all([
@@ -72,50 +65,78 @@ const LanguagesPanel: React.FC = () => {
             ]),
           ),
         ]);
+        const currentState = useProjectStore.getState();
+        if (
+          controller.signal.aborted ||
+          abortRef.current !== controller ||
+          currentState.activeTab !== "languages" ||
+          currentState.metadata.language !== startingState.metadata.language ||
+          currentState.projectSession !== startingState.projectSession
+        ) {
+          return;
+        }
+        if (
+          [...(romanizationResults ?? []), ...translationResults].some((batch) =>
+            batch.lines.some((result) => result.failed),
+          )
+        ) {
+          toast.error("Some language content could not be generated");
+        }
         const romanMain = romanizationResults?.[0];
         const romanBg = romanizationResults?.[1];
         const transliterationGeneration = romanMain
           ? {
               language: romanMain.language,
+              backgroundLanguage: romanBg?.language,
               main: new Map(romanMain.lines.map((result) => [result.id, result])),
               background: new Map(romanBg?.lines.map((result) => [result.id, result]) ?? []),
             }
           : undefined;
         const translationPairs = requestedTargets.map((language, index) => ({
           language,
-          main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result.text])),
-          background: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result.text])),
+          main: new Map(translationResults[index * 2].lines.map((result) => [result.id, result])),
+          background: new Map(translationResults[index * 2 + 1].lines.map((result) => [result.id, result])),
         }));
-        const updates: Array<{ id: string; updates: Partial<LyricLine> }> = lines.map((line) => ({
-          id: line.id,
-          updates: generatedLanguageUpdates(line, {
-            force,
-            transliteration: transliterationGeneration,
-            translations: translationPairs,
-          }),
-        }));
-        updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
+        const updates = mergeGeneratedLanguageUpdates(
+          startingLines,
+          currentState.lines,
+          targetsRef.current,
+          { force, transliteration: transliterationGeneration, translations: translationPairs },
+          edits,
+        );
+        if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
         const detected = romanMain?.detectedLanguage || translationResults[0]?.detectedLanguage;
-        if (!metadata.language && detected && detected !== "auto") setMetadata({ language: detected });
+        if (updates.length > 0 && !currentState.metadata.language && detected && detected !== "auto") {
+          setMetadata({ language: detected });
+        }
       } catch (error) {
         if ((error as Error).name !== "AbortError") toast.error("Some language content could not be generated");
       } finally {
-        if (abortRef.current === controller) setIsGenerating(false);
+        stop();
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setIsGenerating(false);
+        }
       }
     },
-    [isGenerating, lines, metadata.language, setMetadata, sourceLanguage, updateLinesWithHistory],
+    [setMetadata, sourceLanguage, targetsRef, updateLinesWithHistory],
   );
-  useEffect(() => {
-    if (activeTab !== "languages") {
+  // Activity tears down effects on hide, even without a render of the new tab.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Tab and project changes must cancel the previous generation lifecycle.
+  useEffect(
+    () => () => {
       generatedOnEntry.current = false;
       abortRef.current?.abort();
-      return;
-    }
-    if (generatedOnEntry.current || lines.length === 0) return;
+      abortRef.current = null;
+      setIsGenerating(false);
+    },
+    [activeTab, project],
+  );
+  useEffect(() => {
+    if (activeTab !== "languages" || generatedOnEntry.current || lines.length === 0) return;
     generatedOnEntry.current = true;
     void generate(targets);
   }, [activeTab, generate, lines.length, targets]);
-  useEffect(() => () => abortRef.current?.abort(), []);
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
   useEffect(() => {

@@ -1,6 +1,10 @@
 import type { TransliterationSegment } from "@/domain/language/model";
 import { containsNonLatin, detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { DASHES, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
+import {
+  parseGoogleTranslationResponse,
+  parseGoogleTransliterationResponse,
+} from "@/services/google-language-response";
 import type {
   LanguageProvider,
   TranslationBatchResult,
@@ -10,6 +14,13 @@ import type {
 const API = "https://translate.googleapis.com/translate_a/single";
 const LITERAL_DASH_MARKER = "\uE000";
 const SOFT_SEPARATOR_MARKER = "\uE003";
+// Keep project BCP 47 tags outside this boundary; Google uses region aliases.
+// https://docs.cloud.google.com/translate/docs/languages
+function googleLanguageCode(language: string): string {
+  if (language === "zh-Hans") return "zh-CN";
+  if (language === "zh-Hant") return "zh-TW";
+  return language;
+}
 const translationCache = new Map<string, { text: string | null; detectedLanguage: string }>();
 const transliterationCache = new Map<
   string,
@@ -62,14 +73,10 @@ function romanizationEndpoint(sourceLanguage: string, text: string): string {
   return `${API}?${query.toString()}`;
 }
 
-async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown[]> {
+async function fetchJson(url: string, signal?: AbortSignal): Promise<unknown> {
   const response = await fetch(url, { cache: "force-cache", signal });
   if (!response.ok) throw new Error(`Google Translate returned ${response.status}`);
-  return response.json() as Promise<unknown[]>;
-}
-
-function responseParts(data: unknown[]): unknown[][] {
-  return Array.isArray(data[0]) ? (data[0] as unknown[][]).filter(Array.isArray) : [];
+  return response.json();
 }
 
 async function translateOne(text: string, targetLanguage: string, sourceLanguage: string, signal?: AbortSignal) {
@@ -77,13 +84,10 @@ async function translateOne(text: string, targetLanguage: string, sourceLanguage
   const cached = translationCache.get(key);
   if (cached) return cached;
   const data = await fetchJson(endpoint({ sl: sourceLanguage, tl: targetLanguage, q: text }), signal);
-  const translated = responseParts(data)
-    .map((part) => (typeof part[0] === "string" ? part[0] : ""))
-    .join("")
-    .trim();
+  const { text: translated, detectedLanguage } = parseGoogleTranslationResponse(data);
   const result = {
     text: translated && translated.localeCompare(text, undefined, { sensitivity: "accent" }) !== 0 ? translated : null,
-    detectedLanguage: typeof data[2] === "string" ? data[2] : "",
+    detectedLanguage,
   };
   translationCache.set(key, result);
   return result;
@@ -95,14 +99,9 @@ async function transliterateOne(text: string, sourceLanguage: string, signal?: A
   if (cached) return cached;
   const protectedSource = protectLiteralDashes(text);
   const data = await fetchJson(romanizationEndpoint(sourceLanguage || "auto", protectedSource.text), signal);
-  const detectedLanguage = typeof data[2] === "string" ? data[2] : sourceLanguage;
-  const parts = responseParts(data);
-  const romanizationParts: string[] = [];
-  for (const part of parts) {
-    const raw = typeof part[3] === "string" ? part[3] : typeof part[2] === "string" ? part[2] : "";
-    if (raw) romanizationParts.push(raw);
-  }
-  const rawJoined = romanizationParts.join("");
+  const parsed = parseGoogleTransliterationResponse(data);
+  const detectedLanguage = parsed.detectedLanguage || sourceLanguage;
+  const rawJoined = parsed.text;
   const normalized = normalizeGoogleTransliteration(rawJoined);
   const restored = restoreLiteralDashes(normalized, protectedSource.dashes);
   // The endpoint is undocumented. If a marker does not round-trip, preserve
@@ -156,15 +155,20 @@ async function settleWithLimit<T, R>(items: T[], worker: (item: T) => Promise<R>
 const googleLanguageProvider: LanguageProvider = {
   id: "google-gtx",
   async translate(lines, targetLanguage, sourceLanguage, signal): Promise<TranslationBatchResult> {
-    const source = sourceLanguage || "auto";
-    const results = await settleWithLimit(lines, (line) => translateOne(line.text, targetLanguage, source, signal));
+    const source = googleLanguageCode(sourceLanguage || "auto");
+    const target = googleLanguageCode(targetLanguage);
+    const results = await settleWithLimit(lines, (line) => translateOne(line.text, target, source, signal));
     return {
       detectedLanguage: results.find((result) => result?.detectedLanguage)?.detectedLanguage ?? "",
-      lines: lines.map((line, index) => ({ id: line.id, text: results[index]?.text ?? null })),
+      lines: lines.map((line, index) => ({
+        id: line.id,
+        text: results[index]?.text ?? null,
+        ...(results[index] === null ? { failed: true } : {}),
+      })),
     };
   },
   async transliterate(lines, sourceLanguage, signal): Promise<TransliterationBatchResult> {
-    const source = sourceLanguage || "auto";
+    const source = googleLanguageCode(sourceLanguage || "auto");
     const results = await settleWithLimit(lines, (line) => transliterateWithFallback(line.text, source, signal));
     const languageCounts = new Map<string, number>();
     for (const result of results) {
@@ -182,6 +186,7 @@ const googleLanguageProvider: LanguageProvider = {
         id: line.id,
         text: results[index]?.text ?? null,
         segments: results[index]?.segments ?? [],
+        ...(results[index] === null ? { failed: true } : {}),
       })),
     };
   },

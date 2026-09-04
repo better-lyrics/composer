@@ -22,6 +22,23 @@ const line: LyricLine = {
 };
 
 describe("language display alignment", () => {
+  it("displays a background-only alternate while retaining the original foreground", () => {
+    const backgroundOnly: LyricLine = {
+      ...line,
+      text: "Hello",
+      words: [{ text: "Hello", begin: 1, end: 2, transliteration: "stale" }],
+      backgroundText: "空",
+      backgroundWords: [{ text: "空", begin: 1, end: 2 }],
+      transliteration: { ...line.transliteration!, text: "", backgroundText: "sora", segments: [] },
+    };
+    const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
+    expect(display.text).toBe("Hello");
+    expect(display.wordTexts).toBeUndefined();
+    expect(display.words?.[0].transliteration).toBeUndefined();
+    expect(display.backgroundText).toBe("sora");
+    expect(display.backgroundWordTexts).toEqual(["sora"]);
+  });
+
   it("keeps romanized syllables on their canonical source-word timing slot", () => {
     const display = getLanguageDisplayLine(line, "transliteration");
     expect(display.text).toBe("geol eum eun  Like  a  dance");

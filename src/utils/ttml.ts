@@ -81,12 +81,14 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
   const translationLanguages = new Set<string>();
   for (const { line } of keyedLines) {
     for (const [language, track] of Object.entries(line.translations ?? {})) {
-      if (track.text.trim()) {
+      if (track.text.trim() || track.backgroundText?.trim()) {
         translationLanguages.add(language);
       }
     }
   }
-  const transliterationLines = keyedLines.filter(({ line }) => line.transliteration?.text.trim());
+  const transliterationLines = keyedLines.filter(
+    ({ line }) => line.transliteration?.text.trim() || line.transliteration?.backgroundText?.trim(),
+  );
   if (translationLanguages.size > 0 || transliterationLines.length > 0) {
     parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
     if (translationLanguages.size > 0) {
@@ -95,7 +97,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
         parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
           const track = line.translations?.[language];
-          if (track?.text.trim()) {
+          if (track && (track.text.trim() || track.backgroundText?.trim())) {
             parts.push(
               `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.text, track.backgroundText)}</text>`,
             );

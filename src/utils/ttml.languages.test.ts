@@ -45,6 +45,25 @@ function languageLine(): LyricLine {
 }
 
 describe("TTML alternate-language sidecars", () => {
+  it.each(["word", "line"] as const)("round-trips background-only alternates with %s timing", (granularity) => {
+    const line = languageLine();
+    line.text = "Hello";
+    line.words = [{ text: "Hello", begin: 1, end: 2, transliteration: "stale" }];
+    line.transliteration!.text = "";
+    line.transliteration!.segments = [];
+    line.translations!.en.text = "";
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity });
+
+    expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky</span></text>');
+    expect(ttml).not.toContain("stale");
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.text).toBe("Hello");
+    expect(parsed.translations?.en).toMatchObject({ text: "", backgroundText: "Sky" });
+    expect(parsed.transliteration).toMatchObject({ text: "", backgroundText: "sora" });
+    expect(parsed.backgroundWords?.[0].transliteration).toBe("sora");
+  });
+
   it("emits line keys, translations, timed transliterations, and untimed spaces", () => {
     const ttml = generateTTML({ metadata, agents, lines: [languageLine()], granularity: "word" });
     expect(ttml).toContain('itunes:key="L1"');
@@ -154,7 +173,9 @@ describe("TTML alternate-language sidecars", () => {
     const line = languageLine();
     line.text = "今|日";
     line.translations!.en.text = "今日";
+    line.translations!.en.backgroundText = undefined;
     line.transliteration!.text = "今日";
+    line.transliteration!.backgroundText = undefined;
 
     const ttml = generateTTML({
       metadata,
@@ -163,15 +184,18 @@ describe("TTML alternate-language sidecars", () => {
       granularity: "word",
     });
 
-    expect(ttml).toContain("<translations>");
-    expect(ttml).toContain("<transliterations>");
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("今日");
+    expect(parsed.transliteration?.text).toBe("今日");
   });
 
   it("keeps case and punctuation variants in the exported TTML", () => {
     const line = languageLine();
     line.text = "Today";
     line.translations!.en.text = "today";
+    line.translations!.en.backgroundText = undefined;
     line.transliteration!.text = "To-day";
+    line.transliteration!.backgroundText = undefined;
 
     const ttml = generateTTML({
       metadata,
@@ -180,7 +204,8 @@ describe("TTML alternate-language sidecars", () => {
       granularity: "word",
     });
 
-    expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');
-    expect(ttml).toContain('<transliteration xml:lang="ja-Latn">');
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("today");
+    expect(parsed.transliteration?.text).toBe("To-day");
   });
 });

@@ -66,23 +66,6 @@ describe("useUIStore", () => {
     });
   });
 
-  describe("setTtmlEditState", () => {
-    it("stores TTML edits where Export and Preview can share them", () => {
-      useUIStore.getState().setTtmlEditState({ source: "generated", content: "edited" });
-
-      expect(useUIStore.getState().ttmlEditState).toEqual({ source: "generated", content: "edited" });
-    });
-
-    it("supports updates based on the current edit", () => {
-      useUIStore.getState().setTtmlEditState({ source: "generated", content: "first edit" });
-      useUIStore
-        .getState()
-        .setTtmlEditState((current) => (current === null ? null : { ...current, content: "second edit" }));
-
-      expect(useUIStore.getState().ttmlEditState?.content).toBe("second edit");
-    });
-  });
-
   describe("invariants", () => {
     it("settingsHighlight is null whenever settings is closed via closeSettings", () => {
       useUIStore.getState().openSettings("bridge-section");

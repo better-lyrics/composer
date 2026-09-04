@@ -73,12 +73,12 @@ describe("LanguagesPanel", () => {
     await expect.element(english).toHaveValue(generatedEnglish);
   });
 
-  it("does not send structural syllable markers to automatic language generation", async () => {
+  it("sends trimmed source text without structural syllable markers to automatic generation", async () => {
     useProjectStore.getState().setLines([
       {
         id: "l1",
-        text: "今|は 当|然",
-        backgroundText: "風|だ",
+        text: "  今|は 当|然  ",
+        backgroundText: "  風|だ  ",
         backgroundTextSource: "manual",
         agentId: "v1",
       },

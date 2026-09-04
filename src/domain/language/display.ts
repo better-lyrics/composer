@@ -72,7 +72,7 @@ function displayTrackTexts(
 }
 
 function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): LanguageDisplayLine {
-  if (variant === "original" || !line.transliteration?.text) {
+  if (variant === "original" || !line.transliteration) {
     return {
       text: line.text,
       backgroundText: line.backgroundText,
@@ -91,16 +91,19 @@ function getLanguageDisplayLine(line: LyricLine, variant: LanguageTextVariant): 
   );
 
   return {
-    text: normalizeTransliterationForEditing(line.transliteration.text),
+    text: line.transliteration.text ? normalizeTransliterationForEditing(line.transliteration.text) : line.text,
     backgroundText: line.transliteration.backgroundText
       ? normalizeTransliterationForEditing(line.transliteration.backgroundText)
       : line.backgroundText,
     words: alignedLine.words,
     backgroundWords: alignedLine.backgroundWords,
-    wordTexts: displayTrackTexts(line.text, alignedLine.words, sourceLine.words),
-    backgroundWordTexts: line.backgroundText
-      ? displayTrackTexts(line.backgroundText, alignedLine.backgroundWords, sourceLine.backgroundWords)
+    wordTexts: line.transliteration.text
+      ? displayTrackTexts(line.text, alignedLine.words, sourceLine.words)
       : undefined,
+    backgroundWordTexts:
+      line.backgroundText && line.transliteration.backgroundText
+        ? displayTrackTexts(line.backgroundText, alignedLine.backgroundWords, sourceLine.backgroundWords)
+        : undefined,
   };
 }
 

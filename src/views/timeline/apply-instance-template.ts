@@ -1,7 +1,6 @@
+import { type LineTemplate, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
-import type { LineTemplate, WordTemplate } from "@/domain/group/template";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -26,14 +25,6 @@ interface InstanceApplyResult<Reason extends string> {
 }
 
 // -- Functions -----------------------------------------------------------------
-
-function offsetWords(words: WordTemplate[], instanceStart: number): WordTiming[] {
-  return words.map((word) => ({
-    text: word.text,
-    begin: word.relativeBegin + instanceStart,
-    end: word.relativeEnd + instanceStart,
-  }));
-}
 
 // Stamps a group template onto the `template.length` rows starting at
 // `startIndex` as a fresh instance. Callers own eligibility: this overwrites
@@ -63,14 +54,16 @@ function applyInstanceTemplate({
         ? { begin: tplLine.relativeBegin + instanceStart }
         : { begin: undefined }),
       ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : { end: undefined }),
-      ...(tplLine.words ? { words: offsetWords(tplLine.words, instanceStart) } : { words: undefined }),
+      ...(tplLine.words ? { words: offsetTemplateWords(tplLine.words, instanceStart) } : { words: undefined }),
       ...(tplLine.backgroundText !== undefined
         ? { backgroundText: tplLine.backgroundText }
         : { backgroundText: undefined }),
       ...(tplLine.backgroundWords
-        ? { backgroundWords: offsetWords(tplLine.backgroundWords, instanceStart) }
+        ? { backgroundWords: offsetTemplateWords(tplLine.backgroundWords, instanceStart) }
         : { backgroundWords: undefined }),
       backgroundTextSource: tplLine.backgroundTextSource,
+      translations: tplLine.translations && structuredClone(tplLine.translations),
+      transliteration: tplLine.transliteration && structuredClone(tplLine.transliteration),
     });
   });
 

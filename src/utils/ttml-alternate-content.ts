@@ -1,4 +1,4 @@
-import { withAlignedTransliteration } from "@/domain/language/align";
+import { alignTrackToLine } from "@/domain/language/align";
 import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
 import { hasLexicalBoundaryAfter, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
@@ -17,6 +17,7 @@ function backgroundInsertionIndex(
 }
 
 function mergeBackgroundMarkup(mainChunks: string[], backgroundContent: string, insertionIndex: number): string {
+  if (mainChunks.length === 0) return `<span ttm:role="x-bg">${backgroundContent}</span>`;
   const before = mainChunks.slice(0, insertionIndex).join("").trimEnd();
   const after = mainChunks.slice(insertionIndex).join("").trimStart();
   if (!before) return `<span ttm:role="x-bg">${backgroundContent} </span>${after}`.trimEnd();
@@ -57,12 +58,20 @@ function emitUntimedTransliteration(text: string): string {
 function transliterationChunks(line: LyricLine, background = false): string[] {
   const words = background ? line.backgroundWords : line.words;
   const text = background ? line.transliteration?.backgroundText : line.transliteration?.text;
-  if (words?.some((word) => word.transliteration)) return alignedTransliterationChunks(words);
+  const alignmentStatus = background
+    ? line.transliteration?.backgroundAlignmentStatus
+    : line.transliteration?.alignmentStatus;
+  if (!text?.trim()) return [];
+  if (alignmentStatus !== "unresolved" && words?.some((word) => word.transliteration)) {
+    return alignedTransliterationChunks(words);
+  }
   return text ? [escapeXml(emitUntimedTransliteration(text))] : [];
 }
 
 function renderTransliterationContent(rawLine: LyricLine): string {
-  const line = withAlignedTransliteration(rawLine);
+  const line = rawLine.transliteration
+    ? ({ ...rawLine, ...alignTrackToLine(rawLine, rawLine.transliteration) } as LyricLine)
+    : rawLine;
   const mainChunks = transliterationChunks(line);
   if (!line.transliteration?.backgroundText?.trim()) return mainChunks.join("");
 

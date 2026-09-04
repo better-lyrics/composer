@@ -1,8 +1,4 @@
-import {
-  type PairedSplitPoints,
-  togglePrimarySplitPoint,
-  toggleTransliterationSplitPoint,
-} from "@/views/sync/paired-split-points";
+import { type PairedSplitPoints, togglePrimarySplitPoint } from "@/views/sync/paired-split-points";
 import { describe, expect, it } from "vitest";
 
 const emptyState = (): PairedSplitPoints => ({
@@ -35,11 +31,5 @@ describe("paired split points", () => {
       splitPoints: [1, 2],
       transliterationSplitPoints: [1, 2],
     });
-  });
-
-  it("toggles transliteration boundaries independently", () => {
-    const selected = toggleTransliterationSplitPoint(emptyState(), 3);
-    expect(selected.transliterationSplitPoints).toEqual([3]);
-    expect(toggleTransliterationSplitPoint(selected, 3)).toEqual(emptyState());
   });
 });

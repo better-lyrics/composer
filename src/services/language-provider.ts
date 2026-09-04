@@ -8,12 +8,15 @@ interface LanguageLineInput {
 interface TranslationLineResult {
   id: string;
   text: string | null;
+  /** A request failure, distinct from a successful result with no alternate text. */
+  failed?: boolean;
 }
 
 interface TransliterationLineResult {
   id: string;
   text: string | null;
   segments: TransliterationSegment[];
+  failed?: boolean;
 }
 
 interface TranslationBatchResult {

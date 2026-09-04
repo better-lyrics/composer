@@ -55,7 +55,10 @@ const SyncPanel: React.FC = () => {
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
   const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
-  const hasTransliteration = useMemo(() => lines.some((line) => !!line.transliteration?.text), [lines]);
+  const hasTransliteration = useMemo(
+    () => lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText)),
+    [lines],
+  );
   const displayLines = useMemo(
     () => lines.map((line) => ({ ...line, ...getLanguageDisplayLine(line, textVariant) })),
     [lines, textVariant],

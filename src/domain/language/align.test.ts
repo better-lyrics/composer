@@ -2,6 +2,15 @@ import { mappedTransliteration, planTransliterationAlignment } from "@/domain/la
 import { describe, expect, it } from "vitest";
 
 describe("transliteration alignment", () => {
+  it("removes cached fragments and joiners when alternate text is cleared", () => {
+    expect(
+      planTransliterationAlignment(
+        [{ text: "今日", begin: 1, end: 2, transliteration: "kyou", transliterationJoinerAfter: " " }],
+        "",
+      ).words,
+    ).toEqual([{ text: "今日", begin: 1, end: 2 }]);
+  });
+
   it("maps explicit pronunciation and word spaces to timing slots", () => {
     const words = [
       { text: "걸", begin: 0, end: 0.2 },

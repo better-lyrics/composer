@@ -31,24 +31,6 @@ describe("SyllableSplitter", () => {
     expect(splitButtons.length).toBeGreaterThan(2);
   });
 
-  it("renders one visible untimed boundary control for each transliteration space", async () => {
-    const screen = await render(
-      <SyllableSplitter
-        lineId="test-line"
-        type="word"
-        word={{ text: "걸음은", transliteration: "geol eum eun", begin: 0, end: 1 }}
-        wordIndex={0}
-        onSplit={() => {}}
-      />,
-    );
-    await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    const spaceBoundaries = document.querySelectorAll('button[aria-label^="Transliteration space boundary"]');
-    expect(spaceBoundaries).toHaveLength(2);
-    expect(spaceBoundaries[0].querySelector("svg")).not.toBeNull();
-    expect(document.querySelector('button[aria-label="Transliteration split point 4"]')).toBeNull();
-    expect(document.querySelector('button[aria-label="Transliteration split point 5"]')).toBeNull();
-  });
-
   it("shows an inferred split that lands on a transliteration space as selected", async () => {
     const screen = await render(
       <SyllableSplitter
@@ -60,6 +42,9 @@ describe("SyllableSplitter", () => {
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    expect(document.querySelectorAll('button[aria-label^="Transliteration space boundary"]')).toHaveLength(1);
+    expect(document.querySelector('button[aria-label="Transliteration split point 3"]')).toBeNull();
+    expect(document.querySelector('button[aria-label="Transliteration split point 4"]')).toBeNull();
     await screen.getByRole("button", { name: "Original split point 1" }).click();
 
     await expect

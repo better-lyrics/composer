@@ -126,7 +126,13 @@ function groupRegions(
 
 function planTransliterationAlignment(words: WordTiming[], rawText: string): TransliterationAlignmentPlan {
   const text = normalizeTransliterationForEditing(rawText);
-  if (!text || words.length === 0) return { words, status: "confirmed" };
+  if (!text) {
+    return {
+      words: words.map(({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word),
+      status: "confirmed",
+    };
+  }
+  if (words.length === 0) return { words, status: "confirmed" };
 
   const existing = mappedTransliteration(words);
   if (existing !== null && normalizeTransliterationForEditing(existing) === text) {
@@ -204,11 +210,11 @@ function withAlignedTransliteration(line: LyricLine): LyricLine {
     ...(line.words
       ? { words: planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text)).words }
       : {}),
-    ...(line.backgroundWords && track.backgroundText
+    ...(line.backgroundWords
       ? {
           backgroundWords: planTransliterationAlignment(
             line.backgroundWords,
-            timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText),
+            timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText ?? ""),
           ).words,
         }
       : {}),
@@ -219,18 +225,17 @@ function alignTrackToLine(line: LyricLine, track: TransliterationTrack): Partial
   const main = line.words?.length
     ? planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text))
     : null;
-  const background =
-    line.backgroundWords?.length && track.backgroundText
-      ? planTransliterationAlignment(
-          line.backgroundWords,
-          timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText),
-        )
-      : null;
+  const background = line.backgroundWords?.length
+    ? planTransliterationAlignment(
+        line.backgroundWords,
+        timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText ?? ""),
+      )
+    : null;
   return {
     transliteration: {
       ...track,
       alignmentStatus: main?.status ?? "confirmed",
-      ...(track.backgroundText ? { backgroundAlignmentStatus: background?.status ?? "confirmed" } : {}),
+      backgroundAlignmentStatus: track.backgroundText ? (background?.status ?? "confirmed") : undefined,
     },
     ...(main ? { words: main.words } : {}),
     ...(background ? { backgroundWords: background.words } : {}),

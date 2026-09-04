@@ -122,6 +122,12 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
     attachAudio();
     const screen = await render(<Harness />);
 
+    expect(screen.container.querySelector('[data-preview-transliteration="main"] [data-word-begin]')?.textContent).toBe(
+      "annyeong",
+    );
+    expect(
+      screen.container.querySelector('[data-preview-transliteration="background"] [data-word-begin]')?.textContent,
+    ).toBe("sesang");
     await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0));
     expect(transliterationSweep(screen.container, "background")).toBe(sweptTo(0));
 
