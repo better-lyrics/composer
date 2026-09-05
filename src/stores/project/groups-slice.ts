@@ -1,7 +1,7 @@
+import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import type { LinkGroup } from "@/domain/group/template";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -114,26 +114,18 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
           ...(tplLine.relativeEnd !== undefined ? { end: tplLine.relativeEnd + instanceStart } : {}),
           ...(tplLine.words
             ? {
-                words: tplLine.words.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                })),
+                words: offsetTemplateWords(tplLine.words, instanceStart),
               }
             : {}),
           ...(tplLine.backgroundText !== undefined ? { backgroundText: tplLine.backgroundText } : {}),
           ...(tplLine.backgroundWords
             ? {
-                backgroundWords: tplLine.backgroundWords.map((w) => ({
-                  text: w.text,
-                  begin: w.relativeBegin + instanceStart,
-                  end: w.relativeEnd + instanceStart,
-                  ...(w.explicit ? { explicit: true as const } : {}),
-                })),
+                backgroundWords: offsetTemplateWords(tplLine.backgroundWords, instanceStart),
               }
             : {}),
           ...(tplLine.backgroundTextSource !== undefined ? { backgroundTextSource: tplLine.backgroundTextSource } : {}),
+          ...(tplLine.translations ? { translations: structuredClone(tplLine.translations) } : {}),
+          ...(tplLine.transliteration ? { transliteration: structuredClone(tplLine.transliteration) } : {}),
         }),
       );
 

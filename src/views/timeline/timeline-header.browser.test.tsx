@@ -1,11 +1,12 @@
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { render } from "@/test/render";
 import { TimelineHeader } from "@/views/timeline/timeline-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { render } from "@/test/render";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
 
 describe("TimelineHeader", () => {
   it("renders the Timeline heading and core toolbar buttons", async () => {
@@ -19,6 +20,30 @@ describe("TimelineHeader", () => {
     const screen = await render(<TimelineHeader />);
     await screen.getByRole("button", { name: /Follow/ }).click();
     expect(useTimelineStore.getState().followEnabled).toBe(!initial);
+  });
+
+  it("enables the language button for transliterated lyrics and toggles its label", async () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "language-line",
+        agentId: "v1",
+        text: "今日",
+        transliteration: {
+          language: "ja-Latn",
+          text: "kyou",
+          segments: [{ original: "今日", transliteration: "kyou" }],
+          origin: "manual",
+          sourceFingerprint: "test",
+        },
+      },
+    ]);
+    useTimelineStore.setState({ textVariant: "original" });
+    const screen = await render(<TimelineHeader />);
+    const button = screen.getByRole("button", { name: /Original/ });
+    expect((button.element() as HTMLButtonElement).disabled).toBe(false);
+    await button.click();
+    await expect.element(screen.getByRole("button", { name: /Transliteration/ })).toBeInTheDocument();
+    useTimelineStore.setState({ textVariant: "original" });
   });
 
   it("does not render the Import button when onImportLyrics is omitted", async () => {

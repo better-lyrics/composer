@@ -1,5 +1,5 @@
 import { getLinkScope, isLinkedSibling } from "@/domain/group/linking";
-import { applyBackground, CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { CLEARED_BACKGROUND, applyBackground, manualBackgroundWordEdit } from "@/domain/line/background";
 import { applyMainWordEdit } from "@/domain/line/main-words";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -7,8 +7,8 @@ import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { computeByGroupId, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { getSplitCharacter } from "@/utils/split-character";
-import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 import { applySiblingWords } from "@/utils/word-diff";
+import { resolveOverlapsForward, trimTrailingSpaceFromLast } from "@/utils/word-spaces";
 
 // -- Types --------------------------------------------------------------------
 
@@ -22,6 +22,18 @@ type ExplicitTarget = { lineId: string; field: "words" | "backgroundWords"; word
 function writeFieldWords(line: LyricLine, field: "words" | "backgroundWords", words: WordTiming[]): LyricLine {
   if (field === "backgroundWords") return reconcileLine({ ...line, ...manualBackgroundWordEdit(words) });
   return reconcileLine({ ...line, words });
+}
+
+function mergedTransliteration(words: WordTiming[]): string | undefined {
+  const parts: string[] = [];
+  for (let index = 0; index < words.length; index++) {
+    const word = words[index];
+    const part = word.transliteration?.trim();
+    if (!part) return undefined;
+    if (index > 0) parts.push(words[index - 1].transliterationJoinerAfter ?? " ");
+    parts.push(part);
+  }
+  return parts.join("");
 }
 
 function expandTargetsToSyllableGroups(targets: ExplicitTarget[], linesById: Map<string, LyricLine>): ExplicitTarget[] {
@@ -157,16 +169,21 @@ function applyMergeSyllableGroup(
       let touched = false;
       for (let k = run.startIndex; k <= run.endIndex; k++) if (selected.has(k)) touched = true;
       if (touched) {
+        const runWords = lineWords.slice(run.startIndex, run.endIndex + 1);
         const first = lineWords[run.startIndex];
-        const { syllableGroupId: _drop, ...rest } = first;
+        const {
+          syllableGroupId: _drop,
+          transliteration: _firstTransliteration,
+          transliterationJoinerAfter: _firstTransliterationJoiner,
+          ...rest
+        } = first;
+        const transliteration = mergedTransliteration(runWords);
         collapsed.push({
           ...rest,
-          text: lineWords
-            .slice(run.startIndex, run.endIndex + 1)
-            .map((w) => w.text)
-            .join(""),
+          text: runWords.map((word) => word.text).join(""),
           begin: first.begin,
           end: lineWords[run.endIndex].end,
+          ...(transliteration ? { transliteration } : {}),
         });
         changed = true;
       } else {

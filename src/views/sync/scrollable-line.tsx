@@ -1,11 +1,11 @@
 import { getAgentColor } from "@/domain/agent/colors";
+import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { TimeNudgeInput } from "@/views/sync/time-nudge-input";
-import { WordRenderer, type WordHandlers } from "@/views/sync/word-renderer";
+import { type WordHandlers, WordRenderer } from "@/views/sync/word-renderer";
 import { IconLink } from "@tabler/icons-react";
 import { memo, useEffect, useMemo, useRef } from "react";
 
@@ -21,10 +21,14 @@ interface ScrollableLineLinkInfo {
 interface ScrollableLineProps {
   lineId: string;
   text: string;
+  displayText?: string;
+  displayWordTexts?: string[];
   lineNumber: number;
   isCurrent: boolean;
   agentId?: string;
   backgroundText?: string;
+  displayBackgroundText?: string;
+  displayBackgroundWordTexts?: string[];
   backgroundWords?: WordTiming[];
   words?: WordTiming[];
   lineBegin?: number;
@@ -54,10 +58,14 @@ interface ScrollableLineProps {
 const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   lineId,
   text,
+  displayText,
+  displayWordTexts,
   lineNumber,
   isCurrent,
   agentId,
   backgroundText,
+  displayBackgroundText,
+  displayBackgroundWordTexts,
   backgroundWords,
   words,
   lineBegin,
@@ -82,15 +90,19 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   onSetBgWordEndTime,
 }) => {
   const lineRef = useRef<HTMLDivElement>(null);
-  const wordTexts = useMemo(() => (words?.length ? words.map((w) => w.text) : splitIntoWords(text)), [text, words]);
+  const wordTexts = useMemo(
+    () => displayWordTexts ?? (words?.length ? words.map((w) => w.text) : splitIntoWords(text)),
+    [displayWordTexts, text, words],
+  );
   const bgWordTexts = useMemo(
     () =>
-      backgroundWords?.length
+      displayBackgroundWordTexts ??
+      (backgroundWords?.length
         ? backgroundWords.map((w) => w.text)
-        : backgroundText
-          ? splitIntoWords(backgroundText)
-          : [],
-    [backgroundText, backgroundWords],
+        : (displayBackgroundText ?? backgroundText)
+          ? splitIntoWords(displayBackgroundText ?? backgroundText ?? "")
+          : []),
+    [backgroundText, backgroundWords, displayBackgroundText, displayBackgroundWordTexts],
   );
 
   useEffect(() => {
@@ -100,24 +112,26 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
   }, [isCurrent]);
 
   const renderLineContent = () => {
-    const displayText = stripSplitCharacter(text);
+    const renderedText = stripSplitCharacter(displayText ?? text);
     if (editMode && lineBegin !== undefined && lineEnd !== undefined) {
       return (
         <span className="relative inline-block">
-          <span className="text-composer-text-muted">{displayText}</span>
+          <span className="text-composer-text-muted">{renderedText}</span>
           <span
             className="absolute inset-0 overflow-hidden text-composer-accent-text"
             data-word-begin={lineBegin}
             data-word-end={lineEnd}
             style={{ width: "0%" }}
           >
-            {displayText}
+            {renderedText}
           </span>
         </span>
       );
     }
     return (
-      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>{displayText}</span>
+      <span className={lineBegin !== undefined ? "text-composer-text-muted" : "text-composer-text"}>
+        {renderedText}
+      </span>
     );
   };
 
@@ -192,7 +206,12 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
             className="inline-flex flex-col items-center shrink-0"
           >
             <span className="w-full text-center text-sm text-composer-text-muted border-t border-l border-r border-composer-border rounded-t-lg px-1.5 leading-relaxed">
-              {group.originalWord}
+              {displayWordTexts
+                ? texts
+                    .slice(group.startIndex, group.endIndex + 1)
+                    .map((word) => word.trim())
+                    .join("-")
+                : group.originalWord}
             </span>
             <span className="inline-flex flex-nowrap gap-x-3 bg-composer-button/30 rounded-b-lg px-1.5 py-0.5 border border-composer-border">
               {texts.slice(group.startIndex, group.endIndex + 1).map((word, j) => {
@@ -315,10 +334,14 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
 const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
   return (
     prev.text === next.text &&
+    prev.displayText === next.displayText &&
+    prev.displayWordTexts === next.displayWordTexts &&
     prev.lineNumber === next.lineNumber &&
     prev.isCurrent === next.isCurrent &&
     prev.agentId === next.agentId &&
     prev.backgroundText === next.backgroundText &&
+    prev.displayBackgroundText === next.displayBackgroundText &&
+    prev.displayBackgroundWordTexts === next.displayBackgroundWordTexts &&
     prev.backgroundWords === next.backgroundWords &&
     prev.granularity === next.granularity &&
     prev.editMode === next.editMode &&

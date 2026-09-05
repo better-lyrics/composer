@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { SyllableSplitter } from "@/views/sync/syllable-splitter";
 import type { WordTiming } from "@/domain/word/timing";
 import { render } from "@/test/render";
+import { SyllableSplitter } from "@/views/sync/syllable-splitter";
+import { describe, expect, it } from "vitest";
 
 const SINGLE_CHAR: WordTiming = { text: "a", begin: 0, end: 1 };
 const MULTI_CHAR: WordTiming = { text: "hello", begin: 0, end: 1 };
@@ -29,6 +29,28 @@ describe("SyllableSplitter", () => {
     await expect.element(screen.getByText(/Click between letters/)).toBeInTheDocument();
     const splitButtons = document.querySelectorAll("button");
     expect(splitButtons.length).toBeGreaterThan(2);
+  });
+
+  it("shows an inferred split that lands on a transliteration space as selected", async () => {
+    const screen = await render(
+      <SyllableSplitter
+        lineId="test-line"
+        type="word"
+        word={{ text: "붙어있던", transliteration: "but eoissdeon", begin: 0, end: 1 }}
+        wordIndex={0}
+        onSplit={() => {}}
+      />,
+    );
+    await screen.getByRole("button", { name: /Split into syllables/i }).click();
+    expect(document.querySelectorAll('button[aria-label^="Transliteration space boundary"]')).toHaveLength(1);
+    expect(document.querySelector('button[aria-label="Transliteration split point 3"]')).toBeNull();
+    expect(document.querySelector('button[aria-label="Transliteration split point 4"]')).toBeNull();
+    await screen.getByRole("button", { name: "Original split point 1" }).click();
+
+    await expect
+      .element(screen.getByRole("button", { name: "Transliteration space boundary 4" }))
+      .toHaveAttribute("aria-pressed", "true");
+    expect(document.body.textContent).not.toContain("must have the same number of segments");
   });
 
   it("emits split words when a split point is toggled and Split Word is clicked", async () => {

@@ -4,6 +4,11 @@ import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
 import { findIdenticalWords } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
+import {
+  type PairedSplitPoints,
+  togglePrimarySplitPoint,
+  toggleTransliterationSplitPoint,
+} from "@/views/sync/paired-split-points";
 import { useCallback, useMemo, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -18,10 +23,12 @@ interface UseSyllableSplitterStateParams {
 
 interface UseSyllableSplitterStateResult {
   splitPoints: number[];
+  transliterationSplitPoints: number[];
   applyToAll: boolean;
   caseInsensitive: boolean;
   identicalCount: number;
   toggleSplit: (index: number) => void;
+  toggleTransliterationSplit: (index: number) => void;
   setApplyToAll: (next: boolean) => void;
   setCaseInsensitive: (next: boolean) => void;
   confirmSplit: (close: () => void) => Promise<void>;
@@ -38,8 +45,12 @@ function useSyllableSplitterState({
   onSplit,
 }: UseSyllableSplitterStateParams): UseSyllableSplitterStateResult {
   const initialDefaults = useProjectStore.getState().syllableSplitDefaults;
-  const [splitPoints, setSplitPoints] = useState<number[]>([]);
-  const [applyToAll, setApplyToAll] = useState(initialDefaults.applyToAll);
+  const [pairedSplitPoints, setPairedSplitPoints] = useState<PairedSplitPoints>({
+    splitPoints: [],
+    transliterationSplitPoints: [],
+  });
+  const { splitPoints, transliterationSplitPoints } = pairedSplitPoints;
+  const [applyToAll, setApplyToAll] = useState(word.transliteration ? false : initialDefaults.applyToAll);
   const [caseInsensitive, setCaseInsensitive] = useState(initialDefaults.caseInsensitive);
 
   const lines = useProjectStore((s) => s.lines);
@@ -52,14 +63,26 @@ function useSyllableSplitterState({
     [lines, lineId, wordIndex, type, caseInsensitive, splitPoints],
   );
 
-  const toggleSplit = useCallback((index: number) => {
-    setSplitPoints((prev) => (prev.includes(index) ? prev.filter((p) => p !== index) : [...prev, index]));
+  const toggleSplit = useCallback(
+    (index: number) => {
+      setPairedSplitPoints((current) => togglePrimarySplitPoint(current, index, word.text, word.transliteration));
+    },
+    [word.text, word.transliteration],
+  );
+
+  const toggleTransliterationSplit = useCallback((index: number) => {
+    setPairedSplitPoints((current) => toggleTransliterationSplitPoint(current, index));
   }, []);
 
   const splitSingleWord = useCallback(() => {
-    const newWords = splitWordIntoSyllables({ word, splitPoints, reuseGroupId: true });
+    const newWords = splitWordIntoSyllables({
+      word,
+      splitPoints,
+      transliterationSplitPoints,
+      reuseGroupId: true,
+    });
     onSplit(wordIndex, newWords);
-  }, [word, splitPoints, wordIndex, onSplit]);
+  }, [word, splitPoints, transliterationSplitPoints, wordIndex, onSplit]);
 
   const confirmSplit = useCallback(
     async (close: () => void) => {
@@ -75,13 +98,13 @@ function useSyllableSplitterState({
           splitPoints,
           caseInsensitive,
         });
-        setSplitPoints([]);
+        setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
         close();
         return;
       }
 
       splitSingleWord();
-      setSplitPoints([]);
+      setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
       close();
     },
     [
@@ -99,16 +122,18 @@ function useSyllableSplitterState({
   );
 
   const cancelSplit = useCallback((close: () => void) => {
-    setSplitPoints([]);
+    setPairedSplitPoints({ splitPoints: [], transliterationSplitPoints: [] });
     close();
   }, []);
 
   return {
     splitPoints,
+    transliterationSplitPoints,
     applyToAll,
     caseInsensitive,
     identicalCount,
     toggleSplit,
+    toggleTransliterationSplit,
     setApplyToAll,
     setCaseInsensitive,
     confirmSplit,

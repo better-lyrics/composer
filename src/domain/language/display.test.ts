@@ -1,0 +1,106 @@
+import { getLanguageDisplayLine } from "@/domain/language/display";
+import type { LyricLine } from "@/domain/line/model";
+import { describe, expect, it } from "vitest";
+
+const line: LyricLine = {
+  id: "mixed",
+  agentId: "v1",
+  text: "걸음은 Like a dance",
+  words: [
+    { text: "걸음은 ", begin: 0, end: 1 },
+    { text: "Like ", begin: 1, end: 2 },
+    { text: "a ", begin: 2, end: 3 },
+    { text: "dance", begin: 3, end: 4 },
+  ],
+  transliteration: {
+    language: "ko-Latn",
+    text: "geol eum eun  Like  a  dance",
+    segments: [{ original: "걸음은 Like a dance", transliteration: "geol eum eun  Like  a  dance" }],
+    origin: "google",
+    sourceFingerprint: "test",
+  },
+};
+
+describe("language display alignment", () => {
+  it("includes literal dashes in untimed Sync labels as well as timed foreground and background slots", () => {
+    const words = [
+      { text: "空", begin: 0, end: 1, transliteration: "so", transliterationJoinerAfter: "-" },
+      { text: "風", begin: 1, end: 2, transliteration: "ra" },
+    ];
+    const dashed: LyricLine = {
+      ...line,
+      text: "空|風",
+      words,
+      backgroundText: "空|風",
+      backgroundWords: words,
+      transliteration: { ...line.transliteration!, text: "so-ra", backgroundText: "so-ra" },
+    };
+    const before = structuredClone(dashed);
+    for (const candidate of [dashed, { ...dashed, words: [], backgroundWords: [] }]) {
+      const display = getLanguageDisplayLine(candidate, "transliteration");
+      expect(display.wordTexts).toEqual(["so-", "ra"]);
+      expect(display.backgroundWordTexts).toEqual(["so-", "ra"]);
+    }
+    expect(dashed).toEqual(before);
+  });
+
+  it("displays a background-only alternate while retaining the original foreground", () => {
+    const backgroundOnly: LyricLine = {
+      ...line,
+      text: "Hello",
+      words: [{ text: "Hello", begin: 1, end: 2, transliteration: "stale" }],
+      backgroundText: "空",
+      backgroundWords: [{ text: "空", begin: 1, end: 2 }],
+      transliteration: { ...line.transliteration!, text: "", backgroundText: "sora", segments: [] },
+    };
+    const display = getLanguageDisplayLine(backgroundOnly, "transliteration");
+    expect(display.text).toBe("Hello");
+    expect(display.wordTexts).toBeUndefined();
+    expect(display.words?.[0].transliteration).toBeUndefined();
+    expect(display.backgroundText).toBe("sora");
+    expect(display.backgroundWordTexts).toEqual(["sora"]);
+  });
+
+  it("keeps romanized syllables on their canonical source-word timing slot", () => {
+    const display = getLanguageDisplayLine(line, "transliteration");
+    expect(display.text).toBe("geol eum eun  Like  a  dance");
+    expect(display.wordTexts).toEqual(["geol eum eun  ", "Like  ", "a  ", "dance"]);
+    expect(display.words?.map((word) => word.text)).toEqual(line.words.map((word) => word.text));
+  });
+
+  it("returns canonical content in original mode", () => {
+    expect(getLanguageDisplayLine(line, "original")).toMatchObject({ text: line.text, words: line.words });
+  });
+
+  it("keeps all labels visible while only the timed prefix has timing", () => {
+    const partial = { ...line, words: line.words.slice(0, 1) } satisfies LyricLine;
+    const display = getLanguageDisplayLine(partial, "transliteration");
+    expect(display.wordTexts).toEqual(["geol eum eun", "Like", "a", "dance"]);
+    expect(display.words).toHaveLength(1);
+    expect(display.words?.[0].transliteration).toBe("geol eum eun");
+  });
+
+  it("uses canonical timed-word transliterations when provider segments cannot be realigned", () => {
+    const mismatched: LyricLine = {
+      id: "canonical-words",
+      agentId: "v1",
+      text: "한국 노래",
+      words: [
+        { text: "한국 ", transliteration: "hanguk", begin: 0, end: 1 },
+        { text: "노래", transliteration: "norae", begin: 1, end: 2 },
+      ],
+      transliteration: {
+        language: "ko-Latn",
+        text: "hanguknorae",
+        segments: [{ original: "한국 노래", transliteration: "hanguknorae" }],
+        origin: "import",
+        sourceFingerprint: "test",
+      },
+    };
+
+    const display = getLanguageDisplayLine(mismatched, "transliteration");
+
+    expect(display.wordTexts).toEqual(["hanguk", "norae"]);
+    expect(display.words?.map((word) => word.transliteration)).toEqual(["hanguk", "norae"]);
+  });
+});

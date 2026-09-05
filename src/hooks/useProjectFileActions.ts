@@ -1,10 +1,10 @@
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { clearCurrentProject, exportProjectToFile, importProjectFromFile } from "@/lib/persistence";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { useCallback } from "react";
 
 // -- Hook ---------------------------------------------------------------------
@@ -64,6 +64,7 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
 
       const project = await importProjectFromFile(file);
       const store = useProjectStore.getState();
+      store.startProjectSession();
       setMetadata(normalizeLoadedMetadata(project.metadata));
       setLines(project.lines);
       store.setGroups(project.groups ?? []);

@@ -24,6 +24,7 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       "@tabler/icons-react",
+      "@braccato/core",
       "@floating-ui/react",
       "overlayscrollbars-react",
       "motion/react",

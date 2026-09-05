@@ -1,14 +1,16 @@
-import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
-import { TTMLParser } from "@braccato/parsers";
-import { IconArrowDown } from "@tabler/icons-react";
-import { AnimatePresence, m, useReducedMotion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
+import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
+import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
+import { TTMLParser } from "@braccato/parsers";
+import { IconArrowDown } from "@tabler/icons-react";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -34,6 +36,31 @@ function ensureRegistered(): Promise<unknown> {
     console.error(LOG_PREFIX, "failed to register <braccato-lyrics>; preview will stay empty", error);
   });
   return registerPromise;
+}
+
+function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): void {
+  const renderer = el.renderer;
+  if (!renderer) return;
+
+  let decorated = false;
+  for (let index = 0; index < lyrics.length; index++) {
+    const lyric = lyrics[index];
+    const line = renderer.lines[index];
+    if (!line || lyric.isInstrumental) continue;
+
+    if (lyric.romanization && !alternateMatchesMainText(lyric.romanization, lyric.words)) {
+      injectRomanization(el.ownerDocument, line.lyricElement, line, lyric.romanization, lyric.timedRomanization);
+      decorated = true;
+    }
+
+    const translation = lyric.translation?.text ?? Object.values(lyric.translations ?? {})[0];
+    if (translation && !alternateMatchesMainText(translation, lyric.words)) {
+      injectTranslation(el.ownerDocument, line.lyricElement, translation);
+      decorated = true;
+    }
+  }
+
+  if (decorated) renderer.relayout();
 }
 
 // -- Component ----------------------------------------------------------------
@@ -84,25 +111,33 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     [resumeAutoscroll],
   );
 
+  const handleLyricsLoaded = useCallback((event: Event) => {
+    const el = event.currentTarget as BraccatoLyricsElement;
+    decorateAlternateTracks(el, latestLyricsRef.current);
+  }, []);
+
   const setElement = useCallback((el: BraccatoLyricsElement | null) => {
     elementRef.current = el;
     if (!el) return;
     el.theme = braccatoTheme;
     el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
     el.lyrics = latestLyricsRef.current;
+    decorateAlternateTracks(el, latestLyricsRef.current);
   }, []);
 
   useEffect(() => {
     const el = elementRef.current;
     if (!el) return;
     el.addEventListener("braccato:line-click", handleLineClick);
+    el.addEventListener("braccato:lyrics-loaded", handleLyricsLoaded);
     el.addEventListener("scroll", handleScroll, { passive: true });
     return () => {
       el.removeEventListener("braccato:line-click", handleLineClick);
+      el.removeEventListener("braccato:lyrics-loaded", handleLyricsLoaded);
       el.removeEventListener("scroll", handleScroll);
       clearResumeWake();
     };
-  }, [handleLineClick, handleScroll, clearResumeWake]);
+  }, [handleLineClick, handleLyricsLoaded, handleScroll, clearResumeWake]);
 
   useEffect(() => {
     // The element upgrades once the registration import resolves, long after the mount
@@ -113,7 +148,10 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   useEffect(() => {
     latestLyricsRef.current = lyrics;
     const element = elementRef.current;
-    if (element) element.lyrics = lyrics;
+    if (element) {
+      element.lyrics = lyrics;
+      decorateAlternateTracks(element, lyrics);
+    }
   }, [lyrics]);
 
   // Binding `source` would make braccato own the clock, and it only polls during

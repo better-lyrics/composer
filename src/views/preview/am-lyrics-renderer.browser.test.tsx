@@ -1,10 +1,15 @@
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { addGlobalAllowedConsolePattern } from "@/test/console-guard";
 import { render } from "@/test/render";
-import { buildSyncedTtml } from "@/test/ttml-fixtures";
+import {
+  buildAlternateBackgroundLanguageTtml,
+  buildAlternateLanguageTtml,
+  buildMatchingAlternateLanguageTtml,
+  buildSyncedTtml,
+} from "@/test/ttml-fixtures";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -170,5 +175,84 @@ describe("AmLyricsRenderer", () => {
     const el = await waitForAmLyrics(screen.container);
 
     await expect.poll(() => el.shadowRoot?.querySelector("style[data-composer-hide]") !== null).toBe(true);
+  });
+
+  it("shows transliterations and translations from the TTML sidecars", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await expect
+      .poll(() =>
+        [...(el.shadowRoot?.querySelectorAll(".lyrics-syllable.transliteration") ?? [])]
+          .map((node) => node.textContent?.trim())
+          .join(" "),
+      )
+      .toContain("annyeong sesang");
+    await expect
+      .poll(() => el.shadowRoot?.querySelector(".lyrics-translation-container")?.textContent)
+      .toContain("Hello world");
+  });
+
+  it("spaces alternate-language background vocals inside a foreground pause", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildAlternateBackgroundLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await expect
+      .poll(() =>
+        [...(el.shadowRoot?.querySelectorAll(".lyrics-syllable.transliteration") ?? [])]
+          .map((node) => node.textContent?.trim())
+          .join(" ")
+          .replace(/\s+/g, " "),
+      )
+      .toContain("annyeong oh sesang");
+    await expect
+      .poll(() => el.shadowRoot?.querySelector(".lyrics-translation-container")?.textContent?.replace(/\s+/g, " "))
+      .toContain("Hello Oh world");
+  });
+
+  it("hides matching alternate tracks and shows them again when updated TTML differs", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildMatchingAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+    await expect
+      .poll(() =>
+        el.shadowRoot
+          ?.querySelector(".lyrics-syllable.transliteration")
+          ?.hasAttribute("data-composer-matching-alternate"),
+      )
+      .toBe(true);
+    expect(
+      el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(true);
+
+    await screen.rerender(
+      <AmLyricsRenderer ttmlString={buildAlternateLanguageTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+
+    await expect
+      .poll(() => el.shadowRoot?.querySelector(".lyrics-syllable.transliteration")?.textContent?.trim())
+      .toBe("annyeong");
+    expect(
+      el.shadowRoot
+        ?.querySelector(".lyrics-syllable.transliteration")
+        ?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(false);
+    expect(
+      el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
+    ).toBe(false);
   });
 });

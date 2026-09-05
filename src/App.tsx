@@ -20,13 +20,14 @@ import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
-import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 import { HelpModal } from "@/ui/help-modal";
 import { SettingsModal } from "@/ui/settings-modal";
 import { TabBar } from "@/ui/tab-bar";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
 import { ImportPanel } from "@/views/import";
+import { LanguagesPanel } from "@/views/languages";
+import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
 import { PreviewPanel } from "@/views/preview";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
@@ -35,7 +36,7 @@ import { LazyMotion, domAnimation } from "motion/react";
 import { Activity, useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
 
-const TABS_WITH_PLAYER = ["import", "edit", "sync", "timeline", "preview"];
+const TABS_WITH_PLAYER = ["import", "edit", "languages", "sync", "timeline", "preview"];
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -130,6 +131,11 @@ const AppContent: React.FC = () => {
         <Activity mode={activeTab === "edit" ? "visible" : "hidden"}>
           <div className="absolute inset-0 flex flex-col">
             <EditPanel />
+          </div>
+        </Activity>
+        <Activity mode={activeTab === "languages" ? "visible" : "hidden"}>
+          <div className="absolute inset-0 flex flex-col">
+            <LanguagesPanel />
           </div>
         </Activity>
         <Activity mode={activeTab === "sync" ? "visible" : "hidden"}>

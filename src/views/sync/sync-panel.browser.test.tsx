@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-import { SyncPanel } from "@/views/sync/sync-panel";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
@@ -7,6 +5,9 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+import { SyncPanel } from "@/views/sync/sync-panel";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,6 +24,69 @@ describe("SyncPanel", () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(<SyncPanel />);
     await expect.element(screen.getByText("No audio loaded")).toBeInTheDocument();
+  });
+
+  it("toggles the Sync display between original and transliteration text", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File(["audio"], "song.mp3") } });
+    useProjectStore.setState({
+      activeTab: "sync",
+      lines: [
+        {
+          id: "mixed",
+          agentId: "v1",
+          text: "걸음은 Like",
+          transliteration: {
+            language: "ko-Latn",
+            text: "geol eum eun  Like",
+            segments: [{ original: "걸음은 Like", transliteration: "geol eum eun  Like" }],
+            origin: "google",
+            sourceFingerprint: "test",
+          },
+        },
+      ],
+    });
+    useTimelineStore.setState({ textVariant: "original" });
+
+    const screen = await render(<SyncPanel />);
+    const toggle = screen.getByRole("button", { name: /Original/ });
+    await expect.element(toggle).toBeEnabled();
+    await toggle.click();
+
+    await expect.element(screen.getByRole("button", { name: /Transliteration/ })).toBeInTheDocument();
+    expect(screen.container.textContent).toContain("geol eum eun");
+    expect(screen.container.textContent).toContain("Like");
+  });
+
+  it("uses canonical timed-word transliterations when line segments cannot be realigned", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File(["audio"], "song.mp3") } });
+    useProjectStore.setState({
+      activeTab: "sync",
+      granularity: "word",
+      lines: [
+        {
+          id: "canonical-words",
+          agentId: "v1",
+          text: "한국 노래",
+          words: [
+            { text: "한국 ", transliteration: "hanguk", begin: 0, end: 1 },
+            { text: "노래", transliteration: "norae", begin: 1, end: 2 },
+          ],
+          transliteration: {
+            language: "ko-Latn",
+            text: "hanguknorae",
+            segments: [{ original: "한국 노래", transliteration: "hanguknorae" }],
+            origin: "import",
+            sourceFingerprint: "test",
+          },
+        },
+      ],
+    });
+    useTimelineStore.setState({ textVariant: "transliteration" });
+
+    const screen = await render(<SyncPanel />);
+
+    await expect.element(screen.getByText("hanguk", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("norae", { exact: true })).toBeInTheDocument();
   });
 
   it("toggles the Edit button label between Edit and Done", async () => {

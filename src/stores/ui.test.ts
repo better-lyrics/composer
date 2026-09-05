@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useUIStore } from "@/stores/ui";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Setup --------------------------------------------------------------------
 
 beforeEach(() => {
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
+  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, ttmlEditState: null });
 });
 
 // -- Tests --------------------------------------------------------------------

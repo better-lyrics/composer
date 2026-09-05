@@ -1,14 +1,15 @@
-import { isWordSelected } from "@/domain/selection/identity";
+import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { nextFrame } from "@/lib/frame-loop";
-import { useAudioStore } from "@/stores/audio";
-import type { WordTiming } from "@/domain/word/timing";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
+import { isWordSelected } from "@/domain/selection/identity";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { computeSyllableGroups, getSyllablePositions } from "@/domain/word/syllable-groups";
+import type { WordTiming } from "@/domain/word/timing";
+import { nextFrame } from "@/lib/frame-loop";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { resizeGestureSelfIds } from "@/views/timeline/resize-self-ids";
@@ -75,6 +76,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const setSelectedWords = useTimelineStore((s) => s.setSelectedWords);
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
+  const textVariant = useTimelineStore((s) => s.textVariant);
 
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
@@ -417,7 +419,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
             lineIndex={lineIndex}
             wordIndex={wordIndex}
             trackType={trackType}
-            text={word.text}
+            text={
+              textVariant === "transliteration"
+                ? timedTransliterationSlice({
+                    text: word.transliteration || word.text,
+                    joinerAfter: wordIndex < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+                  }).text
+                : word.text
+            }
             begin={display.begin}
             end={display.end}
             color={color}
