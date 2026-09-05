@@ -24,19 +24,23 @@ function getAgentAlignment(agentId: string): "left" | "center" | "right" {
 
 // -- Components ---------------------------------------------------------------
 
-const MiniPreviewLine: React.FC<{
+interface PreviewOriginalRowProps {
   line: LyricLine;
   lineIndex: number;
   granularity: "line" | "word";
-}> = ({ line, lineIndex, granularity }) => {
-  const timing = effectiveBounds(line);
-  const alignment = getAgentAlignment(line.agentId);
-  const alignmentClass =
-    alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
-  const agentColor = getAgentColor(line.agentId);
-  const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
-  const transliteratedLine = getLanguageDisplayLine(line, "transliteration");
+  alignment: "left" | "center" | "right";
+  alignmentClass: string;
+}
 
+const PreviewOriginalRow: React.FC<PreviewOriginalRowProps> = ({
+  line,
+  lineIndex,
+  granularity,
+  alignment,
+  alignmentClass,
+}) => {
+  const timing = effectiveBounds(line);
+  const agentColor = getAgentColor(line.agentId);
   const AgentDotLeft = (
     <span
       className="inline-block size-1.5 mr-2 rounded-full"
@@ -51,6 +55,62 @@ const MiniPreviewLine: React.FC<{
   );
 
   const words = line.words ?? [];
+
+  if (granularity === "line") {
+    return (
+      <div className="flex items-center gap-2 text-sm font-medium">
+        {alignment === "left" && AgentDotLeft}
+        <span className="relative block truncate">
+          <span className="text-composer-text-muted">{stripSplitCharacter(line.text)}</span>
+          <span
+            className="absolute inset-0 text-composer-accent-text truncate"
+            data-word-begin={timing?.begin ?? 0}
+            data-word-end={timing?.end ?? 0}
+            data-line-idx={lineIndex}
+            style={{ clipPath: "inset(0 100% 0 0)" }}
+          >
+            {stripSplitCharacter(line.text)}
+          </span>
+        </span>
+        {alignment === "right" && AgentDotRight}
+      </div>
+    );
+  }
+  return (
+    <div className={`flex flex-wrap items-center text-sm font-medium ${alignmentClass}`}>
+      {alignment === "left" && AgentDotLeft}
+      {words.length > 0
+        ? words.map((word) => (
+            <WordWithProgress
+              key={`${word.begin}-${word.text}`}
+              text={word.text}
+              begin={word.begin}
+              end={word.end}
+              lineIndex={lineIndex}
+            />
+          ))
+        : splitIntoWords(line.text).map((word, idx) => (
+            <span key={`${idx}-${word}`} className="text-composer-text-muted">
+              {word}{" "}
+            </span>
+          ))}
+      {alignment === "right" && AgentDotRight}
+    </div>
+  );
+};
+
+const MiniPreviewLine: React.FC<{
+  line: LyricLine;
+  lineIndex: number;
+  granularity: "line" | "word";
+}> = ({ line, lineIndex, granularity }) => {
+  const timing = effectiveBounds(line);
+  const alignment = getAgentAlignment(line.agentId);
+  const alignmentClass =
+    alignment === "left" ? "justify-start" : alignment === "right" ? "justify-end" : "justify-center";
+  const textAlignClass = alignment === "left" ? "text-left" : alignment === "right" ? "text-right" : "text-center";
+  const transliteratedLine = getLanguageDisplayLine(line, "transliteration");
+
   const bgWords = line.backgroundWords?.length ? (
     <BgWordsRow backgroundWords={line.backgroundWords} lineIndex={lineIndex} alignmentClass={alignmentClass} />
   ) : null;
@@ -76,38 +136,6 @@ const MiniPreviewLine: React.FC<{
     />
   );
 
-  if (granularity === "line") {
-    return (
-      <div
-        className={`py-1.5 px-3 ${textAlignClass}`}
-        style={{ opacity: 0.3 }}
-        data-line-begin={timing?.begin ?? 0}
-        data-line-end={timing?.end ?? 0}
-        data-line-idx={lineIndex}
-      >
-        <div className="flex items-center gap-2 text-sm font-medium">
-          {alignment === "left" && AgentDotLeft}
-          <span className="relative block truncate">
-            <span className="text-composer-text-muted">{stripSplitCharacter(line.text)}</span>
-            <span
-              className="absolute inset-0 text-composer-accent-text truncate"
-              data-word-begin={timing?.begin ?? 0}
-              data-word-end={timing?.end ?? 0}
-              data-line-idx={lineIndex}
-              style={{ clipPath: "inset(0 100% 0 0)" }}
-            >
-              {stripSplitCharacter(line.text)}
-            </span>
-          </span>
-          {alignment === "right" && AgentDotRight}
-        </div>
-        {transliteration}
-        {bgWords}
-        {backgroundTransliteration}
-      </div>
-    );
-  }
-
   return (
     <div
       className={`py-1.5 px-3 ${textAlignClass}`}
@@ -116,25 +144,13 @@ const MiniPreviewLine: React.FC<{
       data-line-end={timing?.end ?? 0}
       data-line-idx={lineIndex}
     >
-      <div className={`flex flex-wrap items-center text-sm font-medium ${alignmentClass}`}>
-        {alignment === "left" && AgentDotLeft}
-        {words.length > 0
-          ? words.map((word) => (
-              <WordWithProgress
-                key={`${word.begin}-${word.text}`}
-                text={word.text}
-                begin={word.begin}
-                end={word.end}
-                lineIndex={lineIndex}
-              />
-            ))
-          : splitIntoWords(line.text).map((word, idx) => (
-              <span key={`${idx}-${word}`} className="text-composer-text-muted">
-                {word}{" "}
-              </span>
-            ))}
-        {alignment === "right" && AgentDotRight}
-      </div>
+      <PreviewOriginalRow
+        line={line}
+        lineIndex={lineIndex}
+        granularity={granularity}
+        alignment={alignment}
+        alignmentClass={alignmentClass}
+      />
       {transliteration}
       {bgWords}
       {backgroundTransliteration}

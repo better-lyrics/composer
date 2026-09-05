@@ -9,6 +9,7 @@ function mergeGeneratedLanguageUpdates(
   options: Parameters<typeof generatedLanguageUpdates>[1],
   edits: GenerationEdits,
 ): Array<{ id: string; updates: Partial<LyricLine> }> {
+  const targetLanguages = new Set(targets);
   return currentLines.flatMap((line) => {
     const original = startingLines.get(line.id);
     // Results belong to the submitted source. Do not stamp old results with the
@@ -24,7 +25,7 @@ function mergeGeneratedLanguageUpdates(
           : undefined,
       translations: options.translations.filter(
         ({ language }) =>
-          targets.includes(language) &&
+          targetLanguages.has(language) &&
           !edits.translations.get(line.id)?.has(language) &&
           original.translations?.[language] === line.translations?.[language],
       ),

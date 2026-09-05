@@ -1,6 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, projectSession: number) {
   const persisted = [...new Set(lines.flatMap((line) => Object.keys(line.translations ?? {})))];
@@ -30,7 +30,11 @@ function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, proje
     setContext(current);
   }
   const targetsRef = useRef(current.targets);
-  targetsRef.current = current.targets;
+  useLayoutEffect(() => {
+    // Only publish committed targets to asynchronous generation callbacks.
+    // A suspended or discarded render must not change the active request's targets.
+    targetsRef.current = current.targets;
+  }, [current.targets]);
   const setTargets = useCallback((value: string[] | ((previous: string[]) => string[])) => {
     const targets = typeof value === "function" ? value(targetsRef.current) : value;
     targetsRef.current = targets;

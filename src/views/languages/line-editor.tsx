@@ -5,48 +5,14 @@ import type { TranslationTrack, TransliterationSegment } from "@/domain/language
 import { getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { LanguageField as Field } from "@/views/languages/language-field";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
-import { useId, useState } from "react";
+import { useState } from "react";
 
 function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
   return value.trim() ? [{ original: line.text, transliteration: value.trim() }] : [];
 }
-
-const Field: React.FC<{
-  label: string;
-  value: string;
-  placeholder?: string;
-  stale?: boolean;
-  error?: string | null;
-  pasteKind?: "transliteration" | "translation";
-  pasteLanguage?: string;
-  action?: React.ReactNode;
-  onChange: (value: string) => void;
-}> = ({ label, value, placeholder, stale, error, pasteKind, pasteLanguage, action, onChange }) => {
-  const inputId = useId();
-  return (
-    <div className="flex flex-col gap-1 min-w-0">
-      <div className="flex min-h-5 items-center justify-between gap-2 text-xs text-composer-text-muted">
-        <span className="flex items-center gap-2">
-          <label htmlFor={inputId}>{label}</label>
-          {stale && <span className="text-amber-400">Needs review</span>}
-        </span>
-        {action}
-      </div>
-      <input
-        id={inputId}
-        value={value}
-        data-language-import-kind={pasteKind}
-        data-language-import-language={pasteLanguage}
-        placeholder={placeholder}
-        onChange={(event) => onChange(event.target.value)}
-        className={`h-9 px-3 font-mono text-sm border rounded-md bg-composer-input focus:outline-none ${error ? "border-red-500 focus:border-red-400" : "border-composer-border focus:border-composer-accent"}`}
-      />
-      {error && <span className="text-xs leading-4 text-red-400">{error}</span>}
-    </div>
-  );
-};
 
 interface LanguageLineEditorProps {
   line: LyricLine;
@@ -55,6 +21,104 @@ interface LanguageLineEditorProps {
   languageNames: ReadonlyMap<string, string>;
   sourceLanguage?: string;
 }
+
+interface BackgroundLanguageFieldsProps extends Omit<LanguageLineEditorProps, "index"> {
+  fingerprint: string;
+  error?: string;
+  update: (updates: Partial<LyricLine>) => void;
+  clearTransliteration: () => void;
+  onAlign: (field: AlignmentField) => void;
+}
+
+const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
+  line,
+  targets,
+  languageNames,
+  sourceLanguage,
+  fingerprint,
+  error,
+  update,
+  clearTransliteration,
+  onAlign,
+}) => (
+  <div className="mt-3 pl-4 border-l border-composer-border">
+    <p className="mb-2 text-xs text-composer-text-muted">Background: {line.backgroundText}</p>
+    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <Field
+        label="Background transliteration"
+        value={line.transliteration?.backgroundText ?? ""}
+        stale={line.transliteration?.backgroundAlignmentStatus === "needs-review"}
+        error={error}
+        pasteKind="transliteration"
+        action={
+          line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
+            <button
+              type="button"
+              onClick={() => onAlign("backgroundWords")}
+              className="rounded px-1.5 py-0.5 font-medium text-composer-accent-text hover:bg-composer-accent/10"
+            >
+              Align timing
+            </button>
+          ) : null
+        }
+        onChange={(value) => {
+          const current = line.transliteration;
+          if (!value && !current?.text) {
+            clearTransliteration();
+            return;
+          }
+          update(
+            alignTrackToLine(line, {
+              language: `${sourceLanguage || "und"}-Latn`,
+              text: "",
+              segments: [],
+              ...current,
+              backgroundText: value,
+              backgroundSegments: value.trim()
+                ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
+                : [],
+              origin: "manual",
+              sourceFingerprint: fingerprint,
+            }),
+          );
+        }}
+      />
+      {targets.map((language) => {
+        const track = line.translations?.[language];
+        return (
+          <Field
+            key={language}
+            label={`Background ${languageNames.get(language) ?? language}`}
+            value={track?.backgroundText ?? ""}
+            pasteKind="translation"
+            pasteLanguage={language}
+            onChange={(value) => {
+              const translations = { ...line.translations };
+              if (!value && !track?.text) {
+                delete translations[language];
+                update({ translations });
+                return;
+              }
+              update({
+                translations: {
+                  ...translations,
+                  [language]: {
+                    language,
+                    text: "",
+                    ...track,
+                    backgroundText: value,
+                    origin: "manual",
+                    sourceFingerprint: fingerprint,
+                  },
+                },
+              });
+            }}
+          />
+        );
+      })}
+    </div>
+  </div>
+);
 
 const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   line,
@@ -183,85 +247,17 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
         })}
       </div>
       {line.backgroundText && (
-        <div className="mt-3 pl-4 border-l border-composer-border">
-          <p className="mb-2 text-xs text-composer-text-muted">Background: {line.backgroundText}</p>
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            <Field
-              label="Background transliteration"
-              value={line.transliteration?.backgroundText ?? ""}
-              stale={line.transliteration?.backgroundAlignmentStatus === "needs-review"}
-              error={backgroundTransliterationError}
-              pasteKind="transliteration"
-              action={
-                line.backgroundWords?.length &&
-                line.transliteration?.backgroundText &&
-                !backgroundTransliterationError ? (
-                  <button
-                    type="button"
-                    onClick={() => setAlignmentField("backgroundWords")}
-                    className="rounded px-1.5 py-0.5 font-medium text-composer-accent-text hover:bg-composer-accent/10"
-                  >
-                    Align timing
-                  </button>
-                ) : null
-              }
-              onChange={(value) => {
-                const current = line.transliteration;
-                if (!value && !current?.text) {
-                  clearTransliteration();
-                  return;
-                }
-                update(
-                  alignTrackToLine(line, {
-                    language: `${sourceLanguage || "und"}-Latn`,
-                    text: "",
-                    segments: [],
-                    ...current,
-                    backgroundText: value,
-                    backgroundSegments: value.trim()
-                      ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
-                      : [],
-                    origin: "manual",
-                    sourceFingerprint: fingerprint,
-                  }),
-                );
-              }}
-            />
-            {targets.map((language) => {
-              const track = line.translations?.[language];
-              return (
-                <Field
-                  key={language}
-                  label={`Background ${languageNames.get(language) ?? language}`}
-                  value={track?.backgroundText ?? ""}
-                  pasteKind="translation"
-                  pasteLanguage={language}
-                  onChange={(value) => {
-                    const translations = { ...line.translations };
-                    if (!value && !track?.text) {
-                      delete translations[language];
-                      update({ translations });
-                      return;
-                    }
-                    update({
-                      translations: {
-                        ...translations,
-                        [language]: {
-                          language,
-                          text: "",
-                          ...track,
-                          backgroundText: value,
-                          origin: "manual",
-                          sourceFingerprint: fingerprint,
-                        },
-                      },
-                    });
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
+        <BackgroundLanguageFields
+          line={line}
+          targets={targets}
+          languageNames={languageNames}
+          sourceLanguage={sourceLanguage}
+          fingerprint={fingerprint}
+          error={backgroundTransliterationError}
+          update={update}
+          clearTransliteration={clearTransliteration}
+          onAlign={setAlignmentField}
+        />
       )}
       {alignmentField && (
         <TransliterationAlignmentModal line={line} field={alignmentField} onClose={() => setAlignmentField(null)} />

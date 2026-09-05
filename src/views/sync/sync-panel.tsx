@@ -6,17 +6,8 @@ import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut-bindings";
-import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import {
-  shimmerTransition,
-  shimmerVariants,
-  syncCarouselTransition,
-  syncPulseVariants,
-} from "@/utils/animationVariants";
+import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
   type SyncState,
@@ -31,9 +22,9 @@ import {
 import { readToken } from "@/utils/theme/read-token";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
-import { TimingDisplay } from "@/views/sync/timing-display";
+import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
+import { SyncHeader } from "@/views/sync/sync-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 import { m } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
@@ -54,7 +45,6 @@ const SyncPanel: React.FC = () => {
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
-  const showShortcutHints = useSettingsStore((s) => s.showShortcutHints);
   const hasTransliteration = useMemo(
     () => lines.some((line) => !!(line.transliteration?.text || line.transliteration?.backgroundText)),
     [lines],
@@ -437,72 +427,19 @@ const SyncPanel: React.FC = () => {
 
   return (
     <div data-tour="sync-panel" className="flex flex-col flex-1 overflow-hidden select-none">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div className="flex items-baseline gap-3">
-          <h2 className="text-lg font-medium">Sync</h2>
-          <span className="font-mono text-sm text-composer-text-muted tabular-nums">{progressText}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            hasIcon
-            size="sm"
-            variant={textVariant === "transliteration" ? "primary" : "ghost"}
-            disabled={!hasTransliteration}
-            onClick={toggleTextVariant}
-            title="Toggle original / transliteration text"
-          >
-            <IconLanguage className="size-4" />
-            {textVariant === "transliteration" ? "Transliteration" : "Original"}
-            {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleTextVariant")} />}
-          </Button>
-          <div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
-            <button
-              type="button"
-              onClick={() => handleGranularityChange("line")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                granularity === "line"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Line
-            </button>
-            <button
-              type="button"
-              onClick={() => handleGranularityChange("word")}
-              className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-                granularity === "word"
-                  ? "bg-composer-button text-composer-text"
-                  : "text-composer-text-muted hover:text-composer-text"
-              }`}
-            >
-              Word
-            </button>
-          </div>
-          <Button
-            hasIcon
-            variant={editMode ? "primary" : "secondary"}
-            onClick={handleToggleEdit}
-            title={editMode ? "Done editing, back to syncing" : "Edit timings (pauses playback)"}
-          >
-            {editMode ? <IconLock className="size-4" /> : <IconLockOpen className="size-4" />}
-            {editMode ? "Done" : "Edit"}
-          </Button>
-          {syncState.isActive && !editMode && (
-            <Button hasIcon onClick={handleReset}>
-              <IconRefresh className="size-4" />
-              Reset
-            </Button>
-          )}
-          {!syncState.isActive && !editMode && (
-            <Button hasIcon variant="primary" onClick={handleStartSync}>
-              <IconPlayerPlayFilled className="size-4" />
-              Start
-            </Button>
-          )}
-        </div>
-      </div>
+      <SyncHeader
+        progressText={progressText}
+        textVariant={textVariant}
+        hasTransliteration={hasTransliteration}
+        toggleTextVariant={toggleTextVariant}
+        granularity={granularity}
+        handleGranularityChange={handleGranularityChange}
+        editMode={editMode}
+        handleToggleEdit={handleToggleEdit}
+        isActive={syncState.isActive}
+        handleReset={handleReset}
+        handleStartSync={handleStartSync}
+      />
 
       {/* Main sync area */}
       {showScrollableView ? (
@@ -599,74 +536,26 @@ const SyncPanel: React.FC = () => {
         </div>
       )}
 
-      {/* Bottom panel */}
-      <div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
-        <div className="flex items-center justify-between h-14">
-          <TimingDisplay lastSyncedTime={lastSyncedTime} />
-
-          {!isComplete && editMode && (
-            <div className="text-sm text-composer-text-muted">
-              Editing timings ・ click a word to re-record, or press Done to sync
-            </div>
-          )}
-
-          {showGestureCircles && (
-            <div className="flex items-center gap-4">
-              {currentWord && (
-                <span className="text-xl font-medium text-composer-text">
-                  {displayLines[lineIndex]?.wordTexts?.[wordIndex] ?? currentWord}
-                </span>
-              )}
-              <div className="flex items-center gap-2">
-                <m.button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={getShortcutDescription("sync.holdSync")}
-                  aria-pressed={isHolding}
-                  onPointerDown={handleHoldPointerDown}
-                  onPointerUp={handleHoldPointerRelease}
-                  onPointerCancel={handleHoldPointerRelease}
-                  onPointerLeave={handleHoldPointerRelease}
-                  variants={syncPulseVariants}
-                  initial={false}
-                  animate={isHolding ? "pulse" : "idle"}
-                  transition={syncCarouselTransition}
-                  className={`flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none ${
-                    isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
-                  }`}
-                >
-                  <span className="text-xs font-medium text-composer-text-muted">
-                    {getEffectiveKeysArray("sync.holdSync")
-                      .map((k) => k.toUpperCase())
-                      .join(" ")}
-                  </span>
-                </m.button>
-                <m.button
-                  type="button"
-                  tabIndex={-1}
-                  aria-label={getShortcutDescription("sync.tap")}
-                  onPointerDown={handleTapPointerDown}
-                  variants={syncPulseVariants}
-                  initial={false}
-                  animate={showPulse ? "pulse" : "idle"}
-                  transition={syncCarouselTransition}
-                  className="flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none bg-composer-bg-elevated"
-                >
-                  <span className="text-xs font-medium text-composer-text-muted">
-                    {getEffectiveKeysArray("sync.tap")
-                      .map((k) => k.toUpperCase())
-                      .join(" ")}
-                  </span>
-                </m.button>
-              </div>
-            </div>
-          )}
-
-          {!isComplete && !editMode && !isPlaying && syncState.isActive && (
-            <div className="text-sm text-composer-text-muted">Paused ・ Click a line to jump, or play to continue</div>
-          )}
-        </div>
-      </div>
+      <SyncFooter
+        lastSyncedTime={lastSyncedTime}
+        isComplete={isComplete}
+        editMode={editMode}
+        isPlaying={isPlaying}
+        isActive={syncState.isActive}
+        gestureControls={
+          showGestureCircles && (
+            <SyncGestureControls
+              currentWord={currentWord}
+              displayWord={displayLines[lineIndex]?.wordTexts?.[wordIndex]}
+              isHolding={isHolding}
+              handleHoldPointerDown={handleHoldPointerDown}
+              handleHoldPointerRelease={handleHoldPointerRelease}
+              handleTapPointerDown={handleTapPointerDown}
+              showPulse={showPulse}
+            />
+          )
+        }
+      />
     </div>
   );
 };

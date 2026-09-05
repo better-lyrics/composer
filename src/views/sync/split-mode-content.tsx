@@ -109,6 +109,72 @@ const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, labe
   );
 };
 
+const SplitPreview: React.FC<Pick<SplitModeContentProps, "text" | "splitPoints">> = ({ text, splitPoints }) => {
+  const previewParts = useMemo(() => {
+    if (splitPoints.length === 0) return [text];
+    const sorted = splitPoints.toSorted((a, b) => a - b);
+    const result: string[] = [];
+    let lastIdx = 0;
+    for (const point of sorted) {
+      if (point > lastIdx && point < text.length) {
+        result.push(text.slice(lastIdx, point));
+        lastIdx = point;
+      }
+    }
+    result.push(text.slice(lastIdx));
+    return result;
+  }, [text, splitPoints]);
+
+  if (splitPoints.length === 0) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 text-sm text-composer-text-muted">
+      <span>Preview:</span>
+      <span className="font-medium text-composer-text">{previewParts.join(" · ")}</span>
+    </div>
+  );
+};
+
+const SplitApplyControls: React.FC<
+  Pick<
+    SplitModeContentProps,
+    | "applyToAll"
+    | "onApplyToAllChange"
+    | "caseInsensitive"
+    | "onCaseInsensitiveChange"
+    | "identicalCount"
+    | "sourceText"
+  >
+> = ({ applyToAll, onApplyToAllChange, caseInsensitive, onCaseInsensitiveChange, identicalCount, sourceText }) => (
+  <div className="flex flex-col gap-2">
+    <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
+      {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
+      <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
+      <span>Apply to all identical words</span>
+    </label>
+    <label
+      className={cn(
+        "flex items-center gap-2 select-none text-sm",
+        applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
+      )}
+    >
+      {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
+      <input
+        type="checkbox"
+        checked={applyToAll && caseInsensitive}
+        onChange={(e) => onCaseInsensitiveChange(e.target.checked)}
+        disabled={!applyToAll}
+      />
+      <span>Case-insensitive matching</span>
+    </label>
+    {applyToAll && identicalCount > 0 && (
+      <p className="text-sm text-composer-text-secondary">
+        This will also split {identicalCount} other "{sourceText}"{identicalCount === 1 ? "" : "s"}
+      </p>
+    )}
+    {applyToAll && identicalCount === 0 && <p className="text-sm text-composer-text-muted">No other matching words</p>}
+  </div>
+);
+
 const SplitModeContent: React.FC<SplitModeContentProps> = ({
   text,
   splitPoints,
@@ -126,21 +192,6 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
   secondarySplitPoints = [],
   onToggleSecondarySplit,
 }) => {
-  const previewParts = useMemo(() => {
-    if (splitPoints.length === 0) return [text];
-    const sorted = splitPoints.toSorted((a, b) => a - b);
-    const result: string[] = [];
-    let lastIdx = 0;
-    for (const point of sorted) {
-      if (point > lastIdx && point < text.length) {
-        result.push(text.slice(lastIdx, point));
-        lastIdx = point;
-      }
-    }
-    result.push(text.slice(lastIdx));
-    return result;
-  }, [text, splitPoints]);
-
   const confirmLabel = applyToAll && identicalCount > 0 ? "Split all" : "Split Word";
   const pairedValid = !secondaryText || splitPoints.length === secondarySplitPoints.length;
 
@@ -168,44 +219,17 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
         </p>
       )}
 
-      {splitPoints.length > 0 && (
-        <div className="flex items-center justify-center gap-2 text-sm text-composer-text-muted">
-          <span>Preview:</span>
-          <span className="font-medium text-composer-text">{previewParts.join(" · ")}</span>
-        </div>
-      )}
+      <SplitPreview text={text} splitPoints={splitPoints} />
 
       {showApplyControls && (
-        <div className="flex flex-col gap-2">
-          <label className="flex items-center gap-2 cursor-pointer select-none text-sm">
-            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-            <input type="checkbox" checked={applyToAll} onChange={(e) => onApplyToAllChange(e.target.checked)} />
-            <span>Apply to all identical words</span>
-          </label>
-          <label
-            className={cn(
-              "flex items-center gap-2 select-none text-sm",
-              applyToAll ? "cursor-pointer" : "opacity-50 cursor-not-allowed",
-            )}
-          >
-            {/* react-doctor-disable-next-line react-doctor/control-has-associated-label */}
-            <input
-              type="checkbox"
-              checked={applyToAll && caseInsensitive}
-              onChange={(e) => onCaseInsensitiveChange(e.target.checked)}
-              disabled={!applyToAll}
-            />
-            <span>Case-insensitive matching</span>
-          </label>
-          {applyToAll && identicalCount > 0 && (
-            <p className="text-sm text-composer-text-secondary">
-              This will also split {identicalCount} other "{sourceText}"{identicalCount === 1 ? "" : "s"}
-            </p>
-          )}
-          {applyToAll && identicalCount === 0 && (
-            <p className="text-sm text-composer-text-muted">No other matching words</p>
-          )}
-        </div>
+        <SplitApplyControls
+          applyToAll={applyToAll}
+          onApplyToAllChange={onApplyToAllChange}
+          caseInsensitive={caseInsensitive}
+          onCaseInsensitiveChange={onCaseInsensitiveChange}
+          identicalCount={identicalCount}
+          sourceText={sourceText}
+        />
       )}
 
       <div className="flex items-center justify-end gap-2 pt-2">

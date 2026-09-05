@@ -10,8 +10,8 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { cn } from "@/utils/cn";
 import { MOD_KEY } from "@/utils/platform";
 import { convertLineToWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
-import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
+import { TimelineToggleButton, TimelineZoomControls } from "@/views/timeline/timeline-header-controls";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   IconArrowBarBoth,
   IconChevronsDown,
@@ -22,11 +22,9 @@ import {
   IconLayoutDistributeHorizontal,
   IconMagnet,
   IconMapPin,
-  IconMinus,
-  IconPlus,
   IconTextPlus,
 } from "@tabler/icons-react";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 interface TimelineHeaderProps {
   onImportLyrics?: () => void;
@@ -34,13 +32,6 @@ interface TimelineHeaderProps {
 }
 
 const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollContainerRef }) => {
-  const zoom = useTimelineStore((s) => s.zoom);
-  const storeZoomIn = useTimelineStore((s) => s.zoomIn);
-  const storeZoomOut = useTimelineStore((s) => s.zoomOut);
-  const fallbackRef = useRef<HTMLDivElement | null>(null);
-  const anchoredZoom = useTimelineZoom(scrollContainerRef ?? fallbackRef);
-  const zoomIn = scrollContainerRef ? anchoredZoom.zoomIn : storeZoomIn;
-  const zoomOut = scrollContainerRef ? anchoredZoom.zoomOut : storeZoomOut;
   const followEnabled = useTimelineStore((s) => s.followEnabled);
   const toggleFollow = useTimelineStore((s) => s.toggleFollow);
   const previewSidebarOpen = useTimelineStore((s) => s.previewSidebarOpen);
@@ -139,92 +130,73 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
     return () => window.removeEventListener("timeline:expand-all", handler);
   }, [handleExpandAll]);
 
-  const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
-
   return (
     <div className="flex items-center justify-between px-6 py-3 border-b border-composer-border">
       <h2 className="text-lg font-medium select-none">Timeline</h2>
 
       <div className="flex items-center gap-4">
-        <Button
-          variant={textVariant === "transliteration" ? "primary" : "ghost"}
-          size="sm"
+        <TimelineToggleButton
+          active={textVariant === "transliteration"}
+          label={textVariant === "transliteration" ? "Transliteration" : "Original"}
+          shortcut="timeline.toggleTextVariant"
           onClick={toggleTextVariant}
           disabled={!hasTransliteration}
-          hasIcon
-          className={cn(textVariant === "original" && "opacity-60")}
           title="Toggle original / transliteration labels"
         >
           <IconLanguage size={16} />
-          <span>{textVariant === "transliteration" ? "Transliteration" : "Original"}</span>
-          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleTextVariant")} />}
-        </Button>
+        </TimelineToggleButton>
         {/* Follow toggle */}
-        <Button
-          variant={followEnabled ? "primary" : "ghost"}
-          size="sm"
+        <TimelineToggleButton
+          active={followEnabled}
+          label="Follow"
+          shortcut="timeline.toggleFollow"
           onClick={toggleFollow}
-          hasIcon
-          className={cn(!followEnabled && "opacity-60")}
         >
           <IconFocusCentered size={16} />
-          <span>Follow</span>
-          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />}
-        </Button>
+        </TimelineToggleButton>
 
         {/* Rolling edit toggle */}
-        <Button
-          variant={rollingEditMode ? "primary" : "ghost"}
-          size="sm"
+        <TimelineToggleButton
+          active={rollingEditMode}
+          label="Rolling"
+          shortcut="timeline.toggleRollingEdit"
           onClick={toggleRollingEditMode}
-          hasIcon
-          className={cn(!rollingEditMode && "opacity-60")}
           title="Rolling edit: drag a shared word boundary and both words move together"
         >
           <IconArrowBarBoth size={16} />
-          <span>Rolling</span>
-          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleRollingEdit")} />}
-        </Button>
+        </TimelineToggleButton>
 
         {/* Preview sidebar toggle */}
-        <Button
-          variant={previewSidebarOpen ? "primary" : "ghost"}
-          size="sm"
+        <TimelineToggleButton
+          active={previewSidebarOpen}
+          label="Preview"
+          shortcut="timeline.togglePreview"
           onClick={togglePreviewSidebar}
-          hasIcon
-          className={cn(!previewSidebarOpen && "opacity-60")}
         >
           <IconEye size={16} />
-          <span>Preview</span>
-          {showHints && <InlineKeyBadge keys={getEffectiveKeysArray("timeline.togglePreview")} />}
-        </Button>
+        </TimelineToggleButton>
 
-        <Button
-          variant={snapEnabled ? "primary" : "ghost"}
-          size="sm"
-          hasIcon
-          className={cn(!snapEnabled && "opacity-60", isBypassing && "opacity-50")}
+        <TimelineToggleButton
+          active={snapEnabled}
+          label="Snap"
+          shortcut="timeline.toggleSnap"
           onClick={() => setSetting("timelineSnap", !snapEnabled)}
+          className={cn(isBypassing && "opacity-50")}
           title={`Snap${toggleSnapKeys.length ? ` (${toggleSnapKeys.join(" ")})` : ""} · hold ${MOD_KEY} to bypass`}
         >
           <IconMagnet size={16} />
-          <span>Snap</span>
-          {showHints && <InlineKeyBadge keys={toggleSnapKeys} />}
-        </Button>
+        </TimelineToggleButton>
 
         {/* Marker mode toggle */}
-        <Button
-          variant={markerMode ? "primary" : "ghost"}
-          size="sm"
+        <TimelineToggleButton
+          active={markerMode}
+          label="Marker"
+          shortcut="timeline.toggleMarkerMode"
           onClick={toggleMarkerMode}
-          hasIcon
-          className={cn(!markerMode && "opacity-60")}
           title={`Marker mode${toggleMarkerKeys.length ? ` (${toggleMarkerKeys.join(" ")})` : ""}`}
         >
           <IconMapPin size={16} />
-          <span>Marker</span>
-          {showHints && <InlineKeyBadge keys={toggleMarkerKeys} />}
-        </Button>
+        </TimelineToggleButton>
 
         {/* Import lyrics */}
         {onImportLyrics && (
@@ -260,36 +232,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
           </Button>
         )}
 
-        {/* Zoom controls */}
-        <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={zoomOut}
-            disabled={zoom <= MIN_ZOOM}
-            className="size-7"
-            title="Zoom out"
-            aria-label="Zoom out"
-          >
-            <IconMinus size={16} />
-          </Button>
-
-          <span className="w-12 text-center text-xs text-composer-text-muted select-none tabular-nums">
-            {zoomPercent}%
-          </span>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={zoomIn}
-            disabled={zoom >= MAX_ZOOM}
-            className="size-7"
-            title="Zoom in"
-            aria-label="Zoom in"
-          >
-            <IconPlus size={16} />
-          </Button>
-        </div>
+        <TimelineZoomControls scrollContainerRef={scrollContainerRef} />
       </div>
     </div>
   );
