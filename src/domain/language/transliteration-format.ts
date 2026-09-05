@@ -12,6 +12,12 @@ interface TransliterationSlice {
   joinerAfter?: string;
 }
 
+/** Display literal separator dashes with the preceding slot's timing, without changing stored mappings. */
+function timedTransliterationSlice({ text, joinerAfter = "" }: TransliterationSlice): TransliterationSlice {
+  const timedJoiner = /[-\u2010-\u2015]/.test(joinerAfter) ? joinerAfter.trimEnd() : "";
+  return { text: text + timedJoiner, joinerAfter: joinerAfter.slice(timedJoiner.length) };
+}
+
 interface SeparatorRegion {
   start: number;
   end: number;
@@ -87,7 +93,11 @@ function withoutEdgeUntimedSeparators(value: string): string {
  * Split visible reading text without consuming spaces or punctuation as timing
  * slots. A separator adjacent to a boundary is restored as its exact joiner.
  */
-function splitTransliterationAtBoundaries(value: string, boundaries: number[]): TransliterationSlice[] {
+function splitTransliterationAtBoundaries(
+  value: string,
+  boundaries: number[],
+  { preserveEdgeDashes = false }: { preserveEdgeDashes?: boolean } = {},
+): TransliterationSlice[] {
   const points = boundaries.toSorted((a, b) => a - b);
   const raw: string[] = [];
   let start = 0;
@@ -102,7 +112,14 @@ function splitTransliterationAtBoundaries(value: string, boundaries: number[]): 
     const leading = leadingUntimedSeparator(part);
     const trailing = trailingUntimedSeparator(part);
     const contentEnd = trailing.length > 0 ? part.length - trailing.length : part.length;
-    const text = part.slice(leading.length, contentEnd);
+    // The alignment editor works on already-visible text, including dashes
+    // imported inside timed spans. Keep those edges without changing preprocessing.
+    const prefix = preserveEdgeDashes && index === 0 ? leading.trimStart() : "";
+    const suffix =
+      preserveEdgeDashes && index === raw.length - 1 && !(index === 0 && leading.length === part.length)
+        ? trailing.trimEnd()
+        : "";
+    const text = prefix + part.slice(leading.length, contentEnd) + suffix;
     if (index === raw.length - 1) return { text };
     const nextLeading = leadingUntimedSeparator(raw[index + 1]);
     return { text, joinerAfter: trailing + nextLeading };
@@ -120,6 +137,7 @@ export {
   normalizeTransliterationForEditing,
   sourceWordCount,
   splitTransliterationAtBoundaries,
+  timedTransliterationSlice,
   timingLexicalWordGroups,
   trailingUntimedSeparator,
   transliterationPronunciationParts,
@@ -127,3 +145,4 @@ export {
   twoSpaceSeparatorRegions,
   withoutEdgeUntimedSeparators,
 };
+export type { TransliterationSlice };

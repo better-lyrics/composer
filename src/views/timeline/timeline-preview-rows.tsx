@@ -1,3 +1,4 @@
+import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import type { FC } from "react";
@@ -54,7 +55,12 @@ const TransliterationRow: FC<{
 
   const timedWords = words?.length
     ? words.map((word, index) => {
-        const displayText = wordTexts?.[index] ?? word.transliteration ?? word.text;
+        const displayText =
+          wordTexts?.[index] ??
+          timedTransliterationSlice({
+            text: word.transliteration ?? word.text,
+            joinerAfter: index < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+          }).text;
         return (
           <WordWithProgress
             key={`${word.begin}-${word.end}-${word.text}`}

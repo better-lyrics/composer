@@ -7,7 +7,8 @@ import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
-import { IconArrowRight, IconCheck, IconSpace } from "@tabler/icons-react";
+import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
+import { IconCheck, IconSpace } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 
 type AlignmentField = "words" | "backgroundWords";
@@ -136,7 +137,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
   const reading = group ? groupReading(group.words) : "";
   const points = pointsByGroup[groupIndex] ?? [];
   const required = Math.max(0, (group?.words.length ?? 1) - 1);
-  const slices = splitTransliterationAtBoundaries(reading, points);
+  const slices = splitTransliterationAtBoundaries(reading, points, { preserveEdgeDashes: true });
   const currentValid = points.length === required && slices.length === (group?.words.length ?? 0);
   const allValid =
     pointsByGroup.length === groups.length &&
@@ -148,7 +149,9 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
     for (let index = 0; index < groups.length; index++) {
       const current = groups[index];
       const currentReading = groupReading(current.words);
-      const currentSlices = splitTransliterationAtBoundaries(currentReading, pointsByGroup[index] ?? []);
+      const currentSlices = splitTransliterationAtBoundaries(currentReading, pointsByGroup[index] ?? [], {
+        preserveEdgeDashes: true,
+      });
       const outerJoiner = current.words[current.words.length - 1]?.transliterationJoinerAfter;
       for (let offset = 0; offset < current.words.length; offset++) {
         const wordIndex = current.startIndex + offset;
@@ -249,22 +252,15 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
             }
           />
 
-          <div className="rounded-xl border border-composer-border bg-composer-bg-elevated p-4">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-composer-text-muted">
-              Timing map
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {group.words.map((word, index) => (
-                <div key={`${word.begin}-${word.end}-${word.text}`} className="flex items-center gap-2">
-                  {index > 0 && <IconArrowRight className="size-3.5 text-composer-text-muted" />}
-                  <span className="rounded-md bg-composer-button px-2.5 py-1.5 text-sm">
-                    <span className="mr-1.5 text-composer-text-muted">{word.text.trimEnd()}</span>
-                    <span className="font-medium">{slices[index]?.text || "—"}</span>
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <TransliterationTimingMap
+            words={group.words}
+            slices={slices}
+            trailingJoiner={
+              group.startIndex + group.words.length < plannedWords.length
+                ? group.words.at(-1)?.transliterationJoinerAfter
+                : undefined
+            }
+          />
 
           {!currentValid && (
             <p className="text-sm text-composer-error">

@@ -154,7 +154,7 @@ describe("TTML alternate-language sidecars", () => {
     expect(parsed.words?.[0].transliterationJoinerAfter).toBe("");
   });
 
-  it("renders a literal dash as untimed text without assigning it to either timing slot", () => {
+  it("gives a literal dash the preceding syllable's timing without changing stored mappings", () => {
     const line = languageLine();
     line.text = "to-do";
     line.words = [
@@ -164,9 +164,45 @@ describe("TTML alternate-language sidecars", () => {
     line.transliteration!.language = "en-Latn";
     line.transliteration!.text = "to-do";
     line.transliteration!.segments = [{ original: "to-do", transliteration: "to-do" }];
+    const before = structuredClone(line);
 
     const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
-    expect(ttml).toMatch(/>to<\/span>-<span[^>]*>do<\/span>/);
+    expect(ttml).toContain(
+      '<text for="L1"><span begin="0:01.000" end="0:01.500">to-</span><span begin="0:01.500" end="0:02.000">do</span>',
+    );
+    expect(line).toEqual(before);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.text).toBe("to-do");
+    expect(parsed.words?.map(({ begin, end, transliteration }) => ({ begin, end, transliteration }))).toEqual([
+      { begin: 1, end: 1.5, transliteration: "to-" },
+      { begin: 1.5, end: 2, transliteration: "do" },
+    ]);
+  });
+
+  it.each(["—", " –  ", "--"])("times background dash joiner %j and preserves its visible spacing", (joiner) => {
+    const line = languageLine();
+    line.backgroundText = "空風";
+    line.backgroundWords = [
+      { text: "空", begin: 1.25, end: 1.5, transliteration: "sora", transliterationJoinerAfter: joiner },
+      { text: "風", begin: 1.5, end: 1.75, transliteration: "kaze" },
+    ];
+    line.transliteration!.backgroundText = `sora${joiner}kaze`;
+    const before = structuredClone(line);
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toContain(
+      `<span begin="0:01.250" end="0:01.500">sora${joiner.trimEnd()}</span>${joiner.slice(joiner.trimEnd().length)}<span begin="0:01.500" end="0:01.750">kaze</span>`,
+    );
+    expect(line).toEqual(before);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.backgroundText).toBe(`sora${joiner}kaze`);
+    expect(parsed.backgroundWords?.map(({ begin, end }) => ({ begin, end }))).toEqual([
+      { begin: 1.25, end: 1.5 },
+      { begin: 1.5, end: 1.75 },
+    ]);
+    // Re-exporting the imported, timed punctuation must not add or drop a dash.
+    const roundTrip = generateTTML({ metadata, agents, lines: [parsed], granularity: "word" });
+    expect(parseLyricsFile("song.ttml", roundTrip).lines[0].transliteration?.backgroundText).toBe(`sora${joiner}kaze`);
   });
 
   it("keeps matching alternate tracks in the exported TTML for renderers to filter", () => {

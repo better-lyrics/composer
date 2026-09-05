@@ -1,3 +1,4 @@
+import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
@@ -418,7 +419,14 @@ const WordTrack: React.FC<WordTrackProps> = ({
             lineIndex={lineIndex}
             wordIndex={wordIndex}
             trackType={trackType}
-            text={textVariant === "transliteration" ? word.transliteration || word.text : word.text}
+            text={
+              textVariant === "transliteration"
+                ? timedTransliterationSlice({
+                    text: word.transliteration || word.text,
+                    joinerAfter: wordIndex < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+                  }).text
+                : word.text
+            }
             begin={display.begin}
             end={display.end}
             color={color}

@@ -22,6 +22,28 @@ const line: LyricLine = {
 };
 
 describe("language display alignment", () => {
+  it("includes literal dashes in untimed Sync labels as well as timed foreground and background slots", () => {
+    const words = [
+      { text: "空", begin: 0, end: 1, transliteration: "so", transliterationJoinerAfter: "-" },
+      { text: "風", begin: 1, end: 2, transliteration: "ra" },
+    ];
+    const dashed: LyricLine = {
+      ...line,
+      text: "空|風",
+      words,
+      backgroundText: "空|風",
+      backgroundWords: words,
+      transliteration: { ...line.transliteration!, text: "so-ra", backgroundText: "so-ra" },
+    };
+    const before = structuredClone(dashed);
+    for (const candidate of [dashed, { ...dashed, words: [], backgroundWords: [] }]) {
+      const display = getLanguageDisplayLine(candidate, "transliteration");
+      expect(display.wordTexts).toEqual(["so-", "ra"]);
+      expect(display.backgroundWordTexts).toEqual(["so-", "ra"]);
+    }
+    expect(dashed).toEqual(before);
+  });
+
   it("displays a background-only alternate while retaining the original foreground", () => {
     const backgroundOnly: LyricLine = {
       ...line,

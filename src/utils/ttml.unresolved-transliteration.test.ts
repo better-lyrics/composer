@@ -48,7 +48,7 @@ describe("TTML unresolved transliteration", () => {
         expect(content).toMatch(/^x <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/);
         expect(content).not.toContain("kyou");
       } else {
-        expect(content).toMatch(/^<span[^>]+>kyou<\/span>-<span[^>]+>hi<\/span> <span ttm:role="x-bg">x<\/span>$/);
+        expect(content).toMatch(/^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg">x<\/span>$/);
         expect(content).not.toContain("sora");
       }
       expect(line).toEqual(before);
@@ -64,6 +64,8 @@ describe("TTML unresolved transliteration", () => {
       expect(parsed.transliteration?.backgroundText).toBe(line.transliteration!.backgroundText);
       const unaffectedWords = side === "main" ? parsed.backgroundWords : parsed.words;
       const originalWords = side === "main" ? line.backgroundWords : line.words;
+      // Timing is unchanged; the exported dash now round-trips as part of its
+      // preceding syllable rather than as an untimed joiner.
       expect(
         unaffectedWords?.map(({ begin, end, transliteration, transliterationJoinerAfter }) => ({
           begin,
@@ -72,11 +74,11 @@ describe("TTML unresolved transliteration", () => {
           transliterationJoinerAfter,
         })),
       ).toEqual(
-        originalWords?.map(({ begin, end, transliteration, transliterationJoinerAfter }) => ({
+        originalWords?.map(({ begin, end, transliteration, transliterationJoinerAfter }, index) => ({
           begin,
           end,
-          transliteration,
-          transliterationJoinerAfter,
+          transliteration: side === "background" && index === 0 ? `${transliteration}-` : transliteration,
+          transliterationJoinerAfter: side === "background" && index === 0 ? "" : transliterationJoinerAfter,
         })),
       );
     },
@@ -96,13 +98,13 @@ describe("TTML unresolved transliteration", () => {
     expect(renderTransliterationContent(line)).toBe('&amp; <span ttm:role="x-bg">&lt;</span>');
   });
 
-  it("retains exact valid timed mappings and joiners even when persisted status is unresolved", () => {
+  it("retains valid timing and visible punctuation even when persisted status is unresolved", () => {
     const line = lineWithMappings();
     line.transliteration!.alignmentStatus = "unresolved";
     line.transliteration!.backgroundAlignmentStatus = "unresolved";
 
     expect(renderTransliterationContent(line)).toMatch(
-      /^<span[^>]+>kyou<\/span>-<span[^>]+>hi<\/span> <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/,
+      /^<span[^>]+>kyou-<\/span><span[^>]+>hi<\/span> <span ttm:role="x-bg"><span[^>]+>ao<\/span><span[^>]+>sora<\/span><\/span>$/,
     );
   });
 });

@@ -1,5 +1,9 @@
 import { withAlignedTransliteration } from "@/domain/language/align";
-import { normalizeTransliterationForEditing, sourceWordCount } from "@/domain/language/transliteration-format";
+import {
+  normalizeTransliterationForEditing,
+  sourceWordCount,
+  timedTransliterationSlice,
+} from "@/domain/language/transliteration-format";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -29,15 +33,22 @@ function comparableText(value: string): string {
   return stripSplitCharacter(value).replace(/\s+/g, " ").trim();
 }
 
-function displayText(word: WordTiming): string {
-  return word.transliteration || word.text.trimEnd();
+function displayText(word: WordTiming, index: number, words: WordTiming[]): string {
+  return timedTransliterationSlice({
+    text: word.transliteration || word.text.trimEnd(),
+    joinerAfter: index < words.length - 1 ? word.transliterationJoinerAfter : undefined,
+  }).text;
 }
 
 function displayAlignedText(words: WordTiming[], index: number, fallback: string): string {
   const word = words[index];
   const text = word.transliteration ?? fallback;
   if (index === words.length - 1) return text;
-  return `${text}${word.transliterationJoinerAfter ?? (word.text.endsWith(" ") ? "  " : " ")}`;
+  const timed = timedTransliterationSlice({
+    text,
+    joinerAfter: word.transliterationJoinerAfter ?? (word.text.endsWith(" ") ? "  " : " "),
+  });
+  return `${timed.text}${timed.joinerAfter ?? ""}`;
 }
 
 function displayTrackTexts(

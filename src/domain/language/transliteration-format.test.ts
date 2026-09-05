@@ -1,6 +1,7 @@
 import {
   normalizeTransliterationForEditing,
   splitTransliterationAtBoundaries,
+  timedTransliterationSlice,
   timingLexicalWordGroups,
   transliterationPronunciationParts,
   transliterationWordGroups,
@@ -18,12 +19,42 @@ describe("transliteration display format", () => {
     expect(transliterationPronunciationParts(text)).toEqual(["but", "eoissdeon", "daeum"]);
   });
 
-  it("keeps visible separators outside timing fragments", () => {
+  it("preserves exact separator joiners in stored alignment slices", () => {
     expect(splitTransliterationAtBoundaries("but eo-issdeon", [4, 7])).toEqual([
       { text: "but", joinerAfter: " " },
       { text: "eo", joinerAfter: "-" },
       { text: "issdeon" },
     ]);
+  });
+
+  it.each(["-", "‐", "‑", "‒", "–", "—", "―", "--", " –  "])(
+    "assigns the visible %j separator to the preceding timed slice without changing storage",
+    (joinerAfter) => {
+      const stored = { text: "to", joinerAfter };
+      const timed = timedTransliterationSlice(stored);
+      expect(timed.text).toBe(`to${joinerAfter.trimEnd()}`);
+      expect(timed.text + timed.joinerAfter).toBe(`to${joinerAfter}`);
+      expect(timedTransliterationSlice(timed)).toEqual(timed);
+      expect(stored).toEqual({ text: "to", joinerAfter });
+    },
+  );
+
+  it("leaves gaps untimed and does not duplicate dashes already in a timed fragment", () => {
+    for (const joinerAfter of ["", " ", "  "]) {
+      expect(timedTransliterationSlice({ text: "to-", joinerAfter })).toEqual({ text: "to-", joinerAfter });
+    }
+  });
+
+  it("preserves already-visible edge dashes only when explicitly editing an existing alignment", () => {
+    expect(splitTransliterationAtBoundaries("-to-do-", [3])).toEqual([
+      { text: "to", joinerAfter: "-" },
+      { text: "do" },
+    ]);
+    expect(splitTransliterationAtBoundaries("-to-do-", [3], { preserveEdgeDashes: true })).toEqual([
+      { text: "-to", joinerAfter: "-" },
+      { text: "do-" },
+    ]);
+    expect(splitTransliterationAtBoundaries("-", [], { preserveEdgeDashes: true })).toEqual([{ text: "-" }]);
   });
 
   it("uses source spaces rather than syllable group IDs as lexical boundaries", () => {

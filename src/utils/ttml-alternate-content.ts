@@ -1,6 +1,10 @@
 import { alignTrackToLine } from "@/domain/language/align";
 import { type BackgroundPlacement, alternateBackgroundPlacement } from "@/domain/language/background-placement";
-import { hasLexicalBoundaryAfter, normalizeTransliterationForEditing } from "@/domain/language/transliteration-format";
+import {
+  hasLexicalBoundaryAfter,
+  normalizeTransliterationForEditing,
+  timedTransliterationSlice,
+} from "@/domain/language/transliteration-format";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
@@ -44,10 +48,11 @@ function emitTransliterationSpans(word: WordTiming, text: string): string {
 
 function alignedTransliterationChunks(words: WordTiming[]): string[] {
   return words.map((word, index) => {
-    const content = emitTransliterationSpans(word, word.transliteration?.trim() || word.text.trimEnd());
-    if (index === words.length - 1) return content;
+    const text = word.transliteration?.trim() || word.text.trimEnd();
+    if (index === words.length - 1) return emitTransliterationSpans(word, text);
     const joiner = word.transliterationJoinerAfter ?? (hasLexicalBoundaryAfter(words, index) ? "  " : " ");
-    return `${content}${escapeXml(joiner)}`;
+    const timed = timedTransliterationSlice({ text, joinerAfter: joiner });
+    return `${emitTransliterationSpans(word, timed.text)}${escapeXml(timed.joinerAfter ?? "")}`;
   });
 }
 
