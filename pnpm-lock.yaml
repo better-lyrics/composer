@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@braccato/core':
-        specifier: ^1.6.0
-        version: 1.6.0
+        specifier: ^1.6.2
+        version: 1.6.2
       '@braccato/parsers':
         specifier: ^0.2.1
         version: 0.2.1
@@ -362,8 +362,8 @@ packages:
   '@borewit/text-codec@0.2.2':
     resolution: {integrity: sha512-DDaRehssg1aNrH4+2hnj1B7vnUGEjU6OIlyRdkMd0aUdIUvKXrJfXsy8LVtXAy7DRvYVluWbMspsRhz2lcW0mQ==}
 
-  '@braccato/core@1.6.0':
-    resolution: {integrity: sha512-QbG/z55KIfNDPJMOc2z3TEmHJJSnVMZXHuDAWSMov/Uyl/Q5ATr76nm2U20+2l/hstcH1zh8UyzClMEQpJ4cHQ==}
+  '@braccato/core@1.6.2':
+    resolution: {integrity: sha512-uOmcUHjxyuLQNx+EIYp785Gs9tZhqsmSUj0OoA66K7xIv97fcElnyZGAhqWhFMWu87mMWVP1YsgGx/IEBafXew==}
 
   '@braccato/parsers@0.2.1':
     resolution: {integrity: sha512-Yzmj6KlPkGd2NXMQUSvm9NV2oZuJrGwf2xk5aOXCOazty6wgivXrOqtXQoOejAkzgiCUpnDeNFza6wd8rYHrow==}
@@ -3011,7 +3011,7 @@ snapshots:
 
   '@borewit/text-codec@0.2.2': {}
 
-  '@braccato/core@1.6.0':
+  '@braccato/core@1.6.2':
     dependencies:
       '@braccato/types': 1.0.0
 
