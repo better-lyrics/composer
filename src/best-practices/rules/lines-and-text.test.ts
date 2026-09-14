@@ -14,11 +14,12 @@ describe("LINES_AND_TEXT", () => {
     expect(LINES_AND_TEXT.id).toBe("lines-and-text");
   });
 
-  it("holds the three line and text rules in order", () => {
+  it("holds the four line and text rules in order", () => {
     expect(LINES_AND_TEXT.rules.map((r) => r.id)).toEqual([
       "one-breath-per-line",
       "sentence-case",
       "empty-instrumental",
+      "only-sung-is-a-line",
     ]);
   });
 
@@ -37,12 +38,14 @@ describe("LINES_AND_TEXT", () => {
     expect(ruleById(LINES_AND_TEXT, "one-breath-per-line").body).toHaveLength(2);
     expect(ruleById(LINES_AND_TEXT, "sentence-case").body).toHaveLength(1);
     expect(ruleById(LINES_AND_TEXT, "empty-instrumental").body).toHaveLength(2);
+    expect(ruleById(LINES_AND_TEXT, "only-sung-is-a-line").body).toHaveLength(2);
   });
 
   it("puts an aside on the sentence case rule alone", () => {
     expect(ruleById(LINES_AND_TEXT, "sentence-case").aside).toBeDefined();
     expect(ruleById(LINES_AND_TEXT, "one-breath-per-line").aside).toBeUndefined();
     expect(ruleById(LINES_AND_TEXT, "empty-instrumental").aside).toBeUndefined();
+    expect(ruleById(LINES_AND_TEXT, "only-sung-is-a-line").aside).toBeUndefined();
   });
 });
 
@@ -82,6 +85,18 @@ describe("LINES_AND_TEXT examples", () => {
       expect(renderedText(half)).toContain("The last line of the verse");
       expect(renderedText(half)).toContain("First line of the chorus");
     }
+  });
+
+  it("puts a section tag on the wrong side of the sung-lines rule", () => {
+    const example = withExample(ruleById(LINES_AND_TEXT, "only-sung-is-a-line"));
+    expect(renderedText(example.wrong)).toContain("[Chorus]");
+    expect(renderedText(example.wrong)).toContain("Where did you go, my love?");
+  });
+
+  it("keeps only the sung line on the right side of the sung-lines rule", () => {
+    const example = withExample(ruleById(LINES_AND_TEXT, "only-sung-is-a-line"));
+    expect(renderedText(example.right)).toContain("Where did you go, my love?");
+    expect(renderedText(example.right)).not.toContain("[Chorus]");
   });
 
   it("gives every rule in this group both halves of a comparison", () => {

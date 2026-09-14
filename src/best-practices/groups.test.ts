@@ -21,8 +21,8 @@ describe("BEST_PRACTICE_GROUPS", () => {
     ]);
   });
 
-  it("holds seventeen rules in total", () => {
-    expect(BEST_PRACTICE_GROUPS.flatMap((g) => g.rules)).toHaveLength(17);
+  it("holds nineteen rules in total", () => {
+    expect(BEST_PRACTICE_GROUPS.flatMap((g) => g.rules)).toHaveLength(19);
   });
 
   it("gives every rule a unique id", () => {
@@ -41,7 +41,7 @@ describe("BEST_PRACTICE_GROUPS", () => {
   });
 
   it("holds the rule counts each group was written with", () => {
-    expect(BEST_PRACTICE_GROUPS.map((group) => group.rules.length)).toEqual([3, 6, 4, 2, 2]);
+    expect(BEST_PRACTICE_GROUPS.map((group) => group.rules.length)).toEqual([4, 6, 4, 3, 2]);
   });
 
   it("registers the group objects the rule modules export, not copies of them", () => {

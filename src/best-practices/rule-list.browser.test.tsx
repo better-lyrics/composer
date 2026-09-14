@@ -46,7 +46,7 @@ describe("RuleList", () => {
 
   it("renders one card per rule", async () => {
     const screen = await render(<RuleList />);
-    expect(screen.container.querySelectorAll("article").length).toBe(17);
+    expect(screen.container.querySelectorAll("article").length).toBe(19);
   });
 
   it("orders the group headings the way the registry orders them", async () => {
