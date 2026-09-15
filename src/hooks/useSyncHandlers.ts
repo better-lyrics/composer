@@ -1,18 +1,7 @@
-import { useAudioStore } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
+import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { useSettingsStore } from "@/stores/settings";
-import { effectiveBounds } from "@/domain/line/bounds";
-import {
-  closeHeldWord,
-  commitHeldWord,
-  commitTappedWord,
-  type SyncState,
-  splitIntoWords,
-  splitIntoWordsWithMeta,
-} from "@/utils/sync-helpers";
 import {
   advanceSyncPosition,
   buildInitialWordUpdates,
@@ -23,9 +12,21 @@ import {
   triggerPulse,
   withBgSeedIfNeeded,
 } from "@/hooks/useSyncHandlers.helpers";
-import { nudgeBgWordBegin, setBgWordBegin, nudgeBgWordEnd, setBgWordEnd } from "@/utils/timing/bg-word-timing";
+import { useAudioStore } from "@/stores/audio";
+import { useConfirm } from "@/stores/confirm-store";
+import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
+import {
+  type SyncState,
+  closeHeldWord,
+  commitHeldWord,
+  commitTappedWord,
+  splitIntoWords,
+  splitIntoWordsWithMeta,
+} from "@/utils/sync-helpers";
+import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
-import { nudgeWordBegin, setWordBegin, nudgeWordEnd, setWordEnd } from "@/utils/timing/word-timing";
+import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -404,7 +405,12 @@ function useSyncHandlers({
         .map((w) => w.text)
         .join("")
         .trimEnd();
-      updateLineWithHistory(line.id, { words: updatedWords, text: newLineText });
+      const transliteration = reconcileTransliterationAfterSyllableSplit(line, "words", wordIdx, newWords);
+      updateLineWithHistory(line.id, {
+        words: updatedWords,
+        text: newLineText,
+        ...(transliteration ? { transliteration } : {}),
+      });
     },
     [lines, updateLineWithHistory],
   );

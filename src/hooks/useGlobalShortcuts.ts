@@ -1,8 +1,8 @@
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import type { Shortcut } from "@/hooks/useKeyboardShortcuts";
-import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useAudioStore } from "@/stores/audio";
 import type { SimpleTab } from "@/stores/project";
+import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useMemo } from "react";
 
 interface GlobalShortcutActions {
@@ -22,6 +22,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
     const settings = getEffectiveBinding("global.settings");
     const goToImport = getEffectiveBinding("global.goToImport");
     const goToEdit = getEffectiveBinding("global.goToEdit");
+    const goToLanguages = getEffectiveBinding("global.goToLanguages");
     const goToSync = getEffectiveBinding("global.goToSync");
     const goToTimeline = getEffectiveBinding("global.goToTimeline");
     const goToPreview = getEffectiveBinding("global.goToPreview");
@@ -29,6 +30,7 @@ function useGlobalShortcuts(actions: GlobalShortcutActions): void {
     return [
       { ...goToImport, action: () => setActiveTab("import"), description: "Go to Import" },
       { ...goToEdit, action: () => setActiveTab("edit"), description: "Go to Edit" },
+      { ...goToLanguages, action: () => setActiveTab("languages"), description: "Go to Languages" },
       { ...goToSync, action: () => setActiveTab("sync"), description: "Go to Sync" },
       { ...goToTimeline, action: () => setActiveTab("timeline"), description: "Go to Timeline" },
       { ...goToPreview, action: () => setActiveTab("preview"), description: "Go to Preview" },

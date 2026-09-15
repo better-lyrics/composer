@@ -1,6 +1,7 @@
+import { getLanguageDisplayLine } from "@/domain/language/display";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
 import { isLineSynced } from "@/domain/line/predicates";
+import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 
 // -- Functions ----------------------------------------------------------------
@@ -13,11 +14,21 @@ function effectiveWords(line: LyricLine): WordTiming[] {
   return [];
 }
 
+function withEffectiveWords(line: LyricLine): LyricLine {
+  if (!isLineSynced(line)) return line;
+  const { begin: _begin, end: _end, ...rest } = line;
+  return { ...rest, words: effectiveWords(line) };
+}
+
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
-    if (!isLineSynced(line)) return line;
-    const { begin, end, ...rest } = line;
-    return { ...rest, words: effectiveWords(line) };
+    const effectiveLine = withEffectiveWords(line);
+    const display = getLanguageDisplayLine(effectiveLine, "transliteration");
+    return {
+      ...effectiveLine,
+      ...(display.words ? { words: display.words } : {}),
+      ...(display.backgroundWords ? { backgroundWords: display.backgroundWords } : {}),
+    } as LyricLine;
   });
 }
 

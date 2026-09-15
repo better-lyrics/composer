@@ -8,6 +8,9 @@ import type { WordTiming } from "@/domain/word/timing";
 //                    set explicitly when user marks
 //   syllableGroupId  structural: inherited from bracket sibling in LCS new-slot;
 //                    copied from source in split; regenerated on alt-duplicate
+//   transliterationJoinerAfter
+//                    structural: assigned and transferred by syllable splitting;
+//                    consumed when the complete syllable group is merged
 //
 // When adding a new WordTiming field, decide its policy and update the relevant
 // factory below. Default policy ("rides along via spread") requires no factory

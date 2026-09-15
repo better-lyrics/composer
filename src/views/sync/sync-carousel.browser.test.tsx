@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { render } from "@/test/render";
+import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
+import { describe, expect, it } from "vitest";
 
 const LINES = [
   { id: "l1", text: "First line", begin: 0 },
@@ -26,6 +26,19 @@ describe("SyncCarousel", () => {
   it("switches to word granularity rendering when granularity='word'", async () => {
     const screen = await render(<SyncCarousel lines={WORD_LINES} lineIndex={0} wordIndex={1} granularity="word" />);
     expect(screen.container.textContent).toContain("alpha");
+  });
+
+  it("uses aligned transliteration labels without changing the word count", async () => {
+    const screen = await render(
+      <SyncCarousel
+        lines={[{ ...WORD_LINES[0], displayWordTexts: ["geol eum eun", "Like", "a"] }]}
+        lineIndex={0}
+        wordIndex={0}
+        granularity="word"
+      />,
+    );
+    expect(screen.container.textContent).toContain("geol eum eun");
+    expect(screen.container.textContent).not.toContain("alpha");
   });
 });
 

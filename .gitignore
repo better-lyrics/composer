@@ -155,3 +155,6 @@ htdemucs-onnx-out/
 
 # macOS
 .DS_Store
+
+# JetBrains IDEs
+.idea/
