@@ -75,7 +75,7 @@ describe("BestPracticesSection", () => {
 
   it("renders every rule card", async () => {
     const screen = await render(<BestPracticesSection />);
-    expect(screen.container.querySelectorAll("article").length).toBe(17);
+    expect(screen.container.querySelectorAll("article").length).toBe(19);
   });
 });
 

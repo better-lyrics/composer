@@ -1,4 +1,4 @@
-import { SyllableSample } from "@/best-practices/examples";
+import { LyricSample, SyllableSample } from "@/best-practices/examples";
 import type { RuleGroup } from "@/best-practices/model";
 
 // -- Rules ---------------------------------------------------------------------
@@ -41,6 +41,18 @@ const SYLLABLES: RuleGroup = {
       example: {
         wrong: <SyllableSample parts={["hell", "o"]} caption="Cut where the held vowel starts" />,
         right: <SyllableSample parts={["hel", "lo"]} caption="Cut on the syllable boundary" />,
+      },
+    },
+    {
+      id: "punctuate-repeats",
+      title: "A repeat gets punctuation, a held note doesn't",
+      body: [
+        'A word sung again shows in the text. Re-attacked syllables take a hyphen: "so-o-o", "I-I got". A repeat with an audible gap in front takes a comma: "I, I got".',
+        "A held note is the opposite. One long vowel, spelled straight, the length left to the timing. If the vowel never breaks, it's a hold and takes no punctuation.",
+      ],
+      example: {
+        wrong: <LyricSample lines={[{ main: "sooooo good" }, { main: "I I got it" }]} />,
+        right: <LyricSample lines={[{ main: "so-o-o good" }, { main: "I, I got it" }]} />,
       },
     },
   ],
