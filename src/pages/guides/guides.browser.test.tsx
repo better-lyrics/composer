@@ -65,7 +65,7 @@ describe("Lyric best practices guide", () => {
   it("renders the rule list rather than restating its copy", async () => {
     const screen = await render(<LyricBestPracticesContent />);
     const rules = BEST_PRACTICE_GROUPS.flatMap((group) => group.rules);
-    expect(rules).toHaveLength(17);
+    expect(rules).toHaveLength(19);
     for (const rule of rules) {
       await expect.element(screen.getByRole("heading", { name: rule.title, exact: true })).toBeInTheDocument();
     }

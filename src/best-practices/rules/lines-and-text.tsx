@@ -64,6 +64,18 @@ const LINES_AND_TEXT: RuleGroup = {
         ),
       },
     },
+    {
+      id: "only-sung-is-a-line",
+      title: "Only what's sung is a line",
+      body: [
+        "Lines hold sung words and nothing else. Section tags like [Verse] or [Chorus], stage directions, and producer notes were never sung, so none of them go on screen.",
+        'Same reason the instrumental stays empty. Better Lyrics draws whatever you hand it, so a line reading "[Chorus]" lights up mid-song as though someone sang the word.',
+      ],
+      example: {
+        wrong: <LyricSample lines={[{ main: "[Chorus]" }, { main: "Where did you go, my love?" }]} />,
+        right: <LyricSample lines={[{ main: "Where did you go, my love?" }]} />,
+      },
+    },
   ],
 };
 

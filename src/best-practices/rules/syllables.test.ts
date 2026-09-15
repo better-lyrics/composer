@@ -20,8 +20,8 @@ describe("SYLLABLES", () => {
     expect(SYLLABLES.id).toBe("syllables");
   });
 
-  it("holds the two syllable rules in order", () => {
-    expect(SYLLABLES.rules.map((r) => r.id)).toEqual(["split-on-stretch", "cut-on-boundary"]);
+  it("holds the three syllable rules in order", () => {
+    expect(SYLLABLES.rules.map((r) => r.id)).toEqual(["split-on-stretch", "cut-on-boundary", "punctuate-repeats"]);
   });
 
   it("gives every rule a title and at least one body paragraph", () => {
@@ -34,11 +34,13 @@ describe("SYLLABLES", () => {
   it("carries the paragraph counts the cards were written for", () => {
     expect(ruleById(SYLLABLES, "split-on-stretch").body).toHaveLength(2);
     expect(ruleById(SYLLABLES, "cut-on-boundary").body).toHaveLength(2);
+    expect(ruleById(SYLLABLES, "punctuate-repeats").body).toHaveLength(2);
   });
 
   it("puts an aside on the stretch rule alone", () => {
     expect(ruleById(SYLLABLES, "split-on-stretch").aside).toBeDefined();
     expect(ruleById(SYLLABLES, "cut-on-boundary").aside).toBeUndefined();
+    expect(ruleById(SYLLABLES, "punctuate-repeats").aside).toBeUndefined();
   });
 
   it("gives every rule both halves of a comparison", () => {
@@ -150,6 +152,19 @@ describe("SYLLABLES examples", () => {
     expect(cutMarkers(example.right)).toBe(1);
   });
 
+  it("spells the stretch and drops the punctuation on the wrong side of the repeat rule", () => {
+    const example = withExample(ruleById(SYLLABLES, "punctuate-repeats"));
+    expect(renderedText(example.wrong)).toContain("sooooo good");
+    expect(renderedText(example.wrong)).toContain("I I got it");
+  });
+
+  it("hyphenates the re-attack and commas the paused repeat on the right side", () => {
+    const example = withExample(ruleById(SYLLABLES, "punctuate-repeats"));
+    expect(renderedText(example.right)).toContain("so-o-o good");
+    expect(renderedText(example.right)).toContain("I, I got it");
+    expect(renderedText(example.right)).not.toContain("sooooo");
+  });
+
   it("keeps a stretched spelling out of every right-hand column", () => {
     for (const rule of SYLLABLES.rules) {
       expect(renderedText(withExample(rule).right)).not.toMatch(/(.)\1\1/);
@@ -236,6 +251,7 @@ describe("SYLLABLES invariants", () => {
       "one-breath-per-line",
       "sentence-case",
       "empty-instrumental",
+      "only-sung-is-a-line",
       "brackets",
       "one-bracket-pair",
       "ad-libs-are-backgrounds",
