@@ -217,6 +217,60 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
   });
 });
 
+describe("useSyncHandlers live audio time (issue #203)", () => {
+  function registerAudioAt(time: number): HTMLAudioElement {
+    const audioElement = document.createElement("audio");
+    useAudioStore.getState().registerAudioElement(audioElement);
+    audioElement.currentTime = time;
+    return audioElement;
+  }
+
+  it("regression: a word tap timestamps from the element's live currentTime, not the throttled store value", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+    const audioElement = registerAudioAt(1.234);
+
+    const { result, act } = await mountSyncHandlers({ initialCurrentTime: 1.0 });
+
+    await act(() => result.current.handleTap());
+
+    const begin = useProjectStore.getState().lines[0].words?.[0].begin;
+    expect(begin).toBe(audioElement.currentTime);
+    expect(begin).not.toBe(1.0);
+  });
+
+  it("regression: a line tap timestamps from the element's live currentTime", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Verse start" })]);
+    const audioElement = registerAudioAt(2.5);
+
+    const { result, act } = await mountSyncHandlers({ granularity: "line", initialCurrentTime: 2.25 });
+
+    await act(() => result.current.handleTap());
+
+    expect(useProjectStore.getState().lines[0].begin).toBe(audioElement.currentTime);
+  });
+
+  it("regression: a hold start timestamps from the element's live currentTime", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hold this line" })]);
+    const audioElement = registerAudioAt(3.75);
+
+    const { result, act } = await mountSyncHandlers({ initialCurrentTime: 3.5 });
+
+    await act(() => result.current.handleHoldStart());
+
+    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(audioElement.currentTime);
+  });
+
+  it("falls back to the prop time when no audio element is registered", async () => {
+    useProjectStore.getState().setLines([createLine({ id: "l0", text: "Hello world" })]);
+
+    const { result, act } = await mountSyncHandlers({ initialCurrentTime: 4.2 });
+
+    await act(() => result.current.handleTap());
+
+    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(4.2);
+  });
+});
+
 describe("useSyncHandlers.handleTap (line granularity)", () => {
   it("preserves text on both lines across line-granularity taps", async () => {
     useProjectStore
