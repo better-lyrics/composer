@@ -3,9 +3,13 @@ updates:
   - package-ecosystem: npm
     directory: "/"
     schedule:
-      interval: weekly
+      interval: daily
     groups:
-      # One PR a week for everything non-breaking. Majors still come in
+      # First match wins, so braccato gets its own PR, which auto-merges once CI is green.
+      braccato:
+        patterns: ["@braccato/*"]
+        update-types: [minor, patch]
+      # Everything else non-breaking in one PR. Majors still come in
       # individually so they can be reviewed on their own.
       minor-and-patch:
         patterns: ["*"]
