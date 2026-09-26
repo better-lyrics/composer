@@ -37,22 +37,27 @@ function splitMultiWordBgWords(bgWords: WordTiming[]): WordTiming[] | null {
 }
 
 function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: LyricLine[]): LineWordsUpdate[] {
-  const bgTargeted = new Map<string, boolean>();
-  for (const { lineId, type } of targets) bgTargeted.set(lineId, bgTargeted.get(lineId) === true || type === "bg");
+  const tracksByLine = new Map<string, Set<SplitTarget["type"]>>();
+  for (const { lineId, type } of targets) {
+    const tracks = tracksByLine.get(lineId) ?? new Set();
+    tracks.add(type);
+    tracksByLine.set(lineId, tracks);
+  }
 
   const rawLinesById = new Map<string, LyricLine>();
   for (const line of rawLines) rawLinesById.set(line.id, line);
 
   const updates: LineWordsUpdate[] = [];
-  for (const [id, includesBg] of bgTargeted) {
+  for (const [id, tracks] of tracksByLine) {
     const realLine = rawLinesById.get(id);
     if (!realLine) continue;
     const lineUpdates: Partial<LyricLine> = {};
-    if (isLineSynced(realLine)) {
+    if (tracks.has("word") && isLineSynced(realLine)) {
       const converted = convertLineToWord(realLine);
       if (converted.words) Object.assign(lineUpdates, { words: converted.words, begin: undefined, end: undefined });
     }
-    const splitBg = includesBg && realLine.backgroundWords ? splitMultiWordBgWords(realLine.backgroundWords) : null;
+    const splitBg =
+      tracks.has("bg") && realLine.backgroundWords ? splitMultiWordBgWords(realLine.backgroundWords) : null;
     if (splitBg) Object.assign(lineUpdates, manualBackgroundWordEdit(splitBg));
     if (Object.keys(lineUpdates).length > 0) updates.push({ id, updates: lineUpdates });
   }

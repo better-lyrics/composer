@@ -171,6 +171,22 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
     expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "ah"]);
   });
 
+  it("regression: a bg-only target leaves a line-synced main line untouched", () => {
+    const line: LyricLine = {
+      id: "L5",
+      text: "one two",
+      agentId: "v1",
+      begin: 0,
+      end: 2,
+      backgroundText: "ooh ah",
+      backgroundWords: [{ text: "ooh ah", begin: 0, end: 2 }],
+    };
+    const updates = computeSplitIntoWordsUpdates(bg("L5"), [line]);
+    expect(updates).toHaveLength(1);
+    expect("words" in updates[0].updates).toBe(false);
+    expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "ah"]);
+  });
+
   describe("edge cases", () => {
     it("skips a bg track that is already one word per word", () => {
       const line: LyricLine = {
