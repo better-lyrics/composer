@@ -1,7 +1,10 @@
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
-import { IconChevronDown, IconRefresh } from "@tabler/icons-react";
+import { cn } from "@/utils/cn";
+import { IconCheck, IconChevronDown, IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
+
+// -- Interfaces ---------------------------------------------------------------
 
 interface LanguageGenerationSelection {
   transliteration: boolean;
@@ -22,6 +25,20 @@ interface RegenerateSelectionMenuProps {
   onRegenerate: (selection: LanguageGenerationSelection) => void;
 }
 
+// -- Components ---------------------------------------------------------------
+
+const CheckRow: React.FC<{ label: string; checked: boolean; onChange: (checked: boolean) => void }> = ({
+  label,
+  checked,
+  onChange,
+}) => (
+  <label className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg text-sm text-composer-text cursor-pointer transition-colors hover:bg-composer-button has-[:focus-visible]:bg-composer-button">
+    <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} className="sr-only" />
+    <span className="flex-1">{label}</span>
+    <IconCheck aria-hidden="true" className={cn("size-3.5 text-composer-accent shrink-0", !checked && "invisible")} />
+  </label>
+);
+
 const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
   translations,
   languageNames,
@@ -31,67 +48,37 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
   const [selectedTranslations, setSelectedTranslations] = useState(() => new Set(translations));
   const selectedCount = Number(includeTransliteration) + selectedTranslations.size;
 
-  const toggleTranslation = (language: string) => {
+  const toggleTranslation = (language: string, checked: boolean) => {
     setSelectedTranslations((current) => {
       const next = new Set(current);
-      if (next.has(language)) next.delete(language);
-      else next.add(language);
+      if (checked) next.add(language);
+      else next.delete(language);
       return next;
     });
   };
 
   return (
-    <div className="w-72 p-2">
-      <div className="px-2 pt-1 pb-2">
-        <p className="text-sm font-medium text-composer-text">Choose what to regenerate</p>
-        <p className="mt-0.5 text-xs leading-relaxed text-composer-text-muted">
-          Only selected content will be replaced. Other edits stay untouched.
-        </p>
-      </div>
-
-      <div className="flex flex-col gap-0.5">
-        <label className="flex items-center gap-2.5 px-2 py-2 text-sm rounded-lg cursor-pointer text-composer-text hover:bg-composer-button">
-          <input
-            type="checkbox"
-            checked={includeTransliteration}
-            onChange={(event) => setIncludeTransliteration(event.target.checked)}
-            className="size-4 accent-composer-accent"
-          />
-          <span className="flex-1">Transliteration</span>
-        </label>
-
-        {translations.length > 0 && (
-          <>
-            <div className="mx-2 my-1 border-t border-composer-border" />
-            <p className="px-2 pt-1 pb-0.5 text-[11px] font-medium tracking-wide uppercase text-composer-text-muted">
-              Translations
-            </p>
-            {translations.map((language) => (
-              <label
-                key={language}
-                className="flex items-center gap-2.5 px-2 py-2 text-sm rounded-lg cursor-pointer text-composer-text hover:bg-composer-button"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTranslations.has(language)}
-                  onChange={() => toggleTranslation(language)}
-                  className="size-4 accent-composer-accent"
-                />
-                <span className="flex-1">{languageNames.get(language) ?? language}</span>
-              </label>
-            ))}
-          </>
-        )}
-      </div>
-
-      <div className="flex items-center justify-between gap-3 px-2 pt-2 mt-2 border-t border-composer-border">
-        <span className="text-xs tabular-nums text-composer-text-muted">
-          {selectedCount} {selectedCount === 1 ? "item" : "items"} selected
-        </span>
+    <div className="w-64 p-1 select-none">
+      <p className="px-2 pt-1.5 pb-1 text-xs text-composer-text-muted text-pretty">
+        Only checked tracks get replaced. Your other edits stay.
+      </p>
+      <CheckRow label="Transliteration" checked={includeTransliteration} onChange={setIncludeTransliteration} />
+      {translations.length > 0 && <div className="mx-2 my-1 border-t border-composer-border" />}
+      {translations.map((language) => (
+        <CheckRow
+          key={language}
+          label={languageNames.get(language) ?? language}
+          checked={selectedTranslations.has(language)}
+          onChange={(checked) => toggleTranslation(language, checked)}
+        />
+      ))}
+      <div className="p-1 pt-2 mt-1 border-t border-composer-border">
         <Button
           size="sm"
           variant="primary"
+          hasIcon
           disabled={selectedCount === 0}
+          className="w-full"
           onClick={() =>
             onRegenerate({
               transliteration: includeTransliteration,
@@ -99,7 +86,8 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
             })
           }
         >
-          Regenerate selected
+          <IconRefresh className="size-4" />
+          Regenerate {selectedCount} {selectedCount === 1 ? "track" : "tracks"}
         </Button>
       </div>
     </div>
@@ -115,7 +103,7 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
 }) => (
   <div className="flex items-center">
     <Button hasIcon variant="primary" disabled={isGenerating} onClick={onRegenerateAll} className="rounded-r-none">
-      <IconRefresh className={`size-4 ${isGenerating ? "animate-spin" : ""}`} />
+      <IconRefresh className={cn("size-4", isGenerating && "animate-spin")} />
       {isGenerating ? "Generating…" : "Regenerate all"}
     </Button>
     <Popover
@@ -145,6 +133,8 @@ const RegenerateLanguageControl: React.FC<RegenerateLanguageControlProps> = ({
     </Popover>
   </div>
 );
+
+// -- Exports ------------------------------------------------------------------
 
 export { RegenerateLanguageControl };
 export type { LanguageGenerationSelection };

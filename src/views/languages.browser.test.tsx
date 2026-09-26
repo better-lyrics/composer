@@ -217,7 +217,7 @@ describe("LanguagesPanel", () => {
     await expect
       .element(screen.getByText("Original word 1 has more timed parts", { exact: false }))
       .toBeInTheDocument();
-    await expect.element(screen.getByText("Error", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("Timing mismatch", { exact: true })).toBeInTheDocument();
   });
 
   it("lets a reviewable inferred mapping be confirmed in the focused alignment editor", async () => {
@@ -242,8 +242,8 @@ describe("LanguagesPanel", () => {
     useProjectStore.getState().setLines([reconcileLine({ ...line, ...alignTrackToLine(line, track) })]);
 
     const screen = await render(<LanguagesPanel />);
-    await expect.element(screen.getByText("Review", { exact: true })).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Align timing" }).click();
+    await expect.element(screen.getByText("Needs review", { exact: true })).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Align", exact: true }).click();
     await expect.element(screen.getByRole("dialog", { name: "Align transliteration" })).toBeInTheDocument();
     const scrollRegion = document.querySelector<HTMLElement>("[data-transliteration-alignment-scroll-region]");
     expect(scrollRegion).not.toBeNull();
@@ -338,7 +338,7 @@ describe("LanguagesPanel", () => {
     await screen.getByRole("button", { name: "Choose what to regenerate" }).click();
     await screen.getByRole("checkbox", { name: "Transliteration" }).click();
     await screen.getByRole("checkbox", { name: "English" }).click();
-    await screen.getByRole("button", { name: "Regenerate selected" }).click();
+    await screen.getByRole("button", { name: "Regenerate 1 track" }).click();
 
     await expect.element(screen.getByRole("textbox", { name: "Spanish" })).toHaveValue("Español generado");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Edited English");
