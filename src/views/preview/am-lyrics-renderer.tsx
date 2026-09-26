@@ -100,7 +100,10 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     // enable the tracks directly before the TTML is parsed.
     Reflect.set(el, "showRomanization", true);
     Reflect.set(el, "showTranslation", true);
-    el.setAttribute("no-auto-alternates", "");
+    // am-lyrics 1.7.1 has no public opt-out for automatic Google generation.
+    // Disable its processing hook on this instance: Composer owns generation,
+    // and the preview must only render the alternate text already in our TTML.
+    Reflect.set(el, "autoProcessLyrics", async () => undefined);
     el.ttml = latestTtmlRef.current;
     removeMatchingAlternatesAfterUpdate(el);
     el.songDurationMs = latestDurationMsRef.current;

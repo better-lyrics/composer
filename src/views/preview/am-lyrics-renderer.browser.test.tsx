@@ -9,7 +9,7 @@ import {
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
-import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -177,13 +177,28 @@ describe("AmLyricsRenderer", () => {
     await expect.poll(() => el.shadowRoot?.querySelector("style[data-composer-hide]") !== null).toBe(true);
   });
 
-  it("opts out of automatic alternate generation so only TTML sidecars show", async () => {
-    useAudioStore.setState({ audioElement: new Audio() });
-    const screen = await render(
-      <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
-    );
-    const el = await waitForAmLyrics(screen.container);
-    expect(el.hasAttribute("no-auto-alternates")).toBe(true);
+  it("renders and updates lyrics without generating missing alternate tracks", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Unexpected preview request"));
+    try {
+      useAudioStore.setState({ audioElement: new Audio() });
+      const screen = await render(
+        <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+      );
+      const el = await waitForAmLyrics(screen.container);
+      await waitForLyrics(el);
+      expect(fetchSpy).not.toHaveBeenCalled();
+
+      await screen.rerender(
+        <AmLyricsRenderer
+          ttmlString={buildSyncedTtml().replace("first", "updated")}
+          durationSeconds={SONG_DURATION_SECONDS}
+        />,
+      );
+      await expect.poll(() => firstLyricLine(el)?.textContent).toContain("updated line");
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+    }
   });
 
   it("shows transliterations and translations from the TTML sidecars", async () => {
