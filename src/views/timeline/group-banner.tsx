@@ -4,6 +4,7 @@ import { Button } from "@/ui/button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
+import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
 import { IconChevronDown, IconLink } from "@tabler/icons-react";
@@ -25,7 +26,6 @@ interface GroupBannerProps {
 // -- Constants -----------------------------------------------------------------
 
 const BANNER_MIN_WIDTH = 80;
-const DRAG_THRESHOLD_PX = 3;
 
 // -- Component -----------------------------------------------------------------
 

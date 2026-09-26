@@ -33,6 +33,19 @@ describe("preview renderer settings", () => {
   });
 });
 
+describe("audio pitch settings", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("preserves pitch by default and restores that default on reset", () => {
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
+    useSettingsStore.getState().set("preservePitch", false);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().preservePitch).toBe(true);
+  });
+});
+
 describe("vocal model settings", () => {
   beforeEach(() => {
     useSettingsStore.setState({ ...DEFAULTS });
@@ -58,9 +71,9 @@ describe("background vocal extraction settings", () => {
     expect(useSettingsStore.getState().mergeStandaloneBackgroundLines).toBe(true);
   });
 
-  it("defaults preserveBracketsOnExtraction to false", () => {
-    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(false);
-    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(false);
+  it("defaults preserveBracketsOnExtraction to true", () => {
+    expect(DEFAULTS.preserveBracketsOnExtraction).toBe(true);
+    expect(useSettingsStore.getState().preserveBracketsOnExtraction).toBe(true);
   });
 
   it("allows toggling preserveBracketsOnExtraction via set()", () => {
@@ -275,5 +288,43 @@ describe("timeline store reads header-toggle defaults at init", () => {
 
   it("initial rollingEditMode matches settings.defaultRollingEdit at the moment the store was created", () => {
     expect(useTimelineStore.getState().rollingEditMode).toBe(useSettingsStore.getState().defaultRollingEdit);
+  });
+});
+
+describe("re-record pre-roll setting", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to 1.5 seconds", () => {
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("can be changed via set()", () => {
+    useSettingsStore.getState().set("redoPreroll", 0.5);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0.5);
+  });
+
+  it("allows zero for an exact-begin seek", () => {
+    useSettingsStore.getState().set("redoPreroll", 0);
+    expect(useSettingsStore.getState().redoPreroll).toBe(0);
+  });
+
+  it("resetToDefaults restores the default pre-roll", () => {
+    useSettingsStore.getState().set("redoPreroll", 3);
+    useSettingsStore.getState().resetToDefaults();
+    expect(useSettingsStore.getState().redoPreroll).toBe(1.5);
+  });
+
+  it("migration backfills a missing pre-roll to the default", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(1.5);
+  });
+
+  it("migration preserves an explicitly set pre-roll", async () => {
+    const { migrateSettingsForTest } = await import("@/stores/settings");
+    const migrated = migrateSettingsForTest({ redoPreroll: 0.25 }, 5) as { redoPreroll: number };
+    expect(migrated.redoPreroll).toBe(0.25);
   });
 });

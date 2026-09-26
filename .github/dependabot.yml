@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+    groups:
+      # First match wins, so braccato gets its own PR, which auto-merges once CI is green.
+      braccato:
+        patterns: ["@braccato/*"]
+        update-types: [minor, patch]
+      # Everything else non-breaking in one PR. Majors still come in
+      # individually so they can be reviewed on their own.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+    ignore:
+      # vite-react-ssg imports react-router-dom/server.js and peers ^6.14.1.
+      # v7 removed that subpath, so any v7+ bump fails the SSG build.
+      - dependency-name: react-router-dom
+        versions: [">=7.0.0"]

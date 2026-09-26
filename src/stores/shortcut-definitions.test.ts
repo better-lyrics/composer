@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
 
 // -- Helpers ------------------------------------------------------------------
@@ -85,5 +86,26 @@ describe("SHORTCUT_DEFINITIONS", () => {
 
       expect(new Set(signatures).size).toBe(signatures.length);
     });
+  });
+});
+
+describe("getShortcutDescription", () => {
+  it("returns the registry description for a known shortcut", () => {
+    expect(getShortcutDescription("sync.tap")).toBe("Tap to sync");
+    expect(getShortcutDescription("sync.holdSync")).toBe("Hold to sync");
+  });
+
+  it("returns a description for every registered shortcut", () => {
+    for (const definition of SHORTCUT_DEFINITIONS) {
+      expect(getShortcutDescription(definition.id)).toBe(definition.description);
+    }
+  });
+
+  it("edge case: falls back to the id for an unknown shortcut", () => {
+    expect(getShortcutDescription("does.not.exist")).toBe("does.not.exist");
+  });
+
+  it("edge case: falls back to the id for an empty string", () => {
+    expect(getShortcutDescription("")).toBe("");
   });
 });

@@ -18,6 +18,8 @@ function switchTab(tabId: string) {
   useProjectStore.getState().setActiveTab(tabId as "import" | "edit" | "sync" | "timeline" | "preview" | "export");
 }
 
+const BEST_PRACTICES_STEP_TITLE = "One thing before you do this for real";
+
 const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="https://www.youtube.com/embed/to138zXZ0nc?rel=0" title="Composer demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups" allowfullscreen></iframe></div>`;
 
 // -- Gate checks --------------------------------------------------------------
@@ -31,7 +33,7 @@ const gateFirstLineSynced = () => {
 
 // -- Tour Steps ---------------------------------------------------------------
 
-function createTourSteps(): DriveStep[] {
+function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
   return [
     // 0: Welcome
     {
@@ -142,7 +144,20 @@ function createTourSteps(): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("export"),
     },
-    // 10: Outro with video
+    // 10: Best practices, ahead of the closing video
+    {
+      popover: {
+        title: BEST_PRACTICES_STEP_TITLE,
+        description:
+          "That's the tour. When you come back to sync an actual song, there's a short list of conventions worth reading first, mostly about where lines break and how backgrounds get written. Read them now, or carry on to the walkthrough video.",
+        popoverClass: "composer-tour composer-tour-modal",
+        showButtons: ["previous", "next", "close"],
+        nextBtnText: "Read them",
+        showProgress: false,
+        onNextClick: () => onOpenBestPractices(),
+      },
+    },
+    // 11: Outro with video
     {
       popover: {
         title: "See a full walkthrough",
@@ -181,5 +196,5 @@ const TOUR_GATED_STEPS: GatedStep[] = [
 
 // -- Exports ------------------------------------------------------------------
 
-export { createTourSteps, TOUR_GATED_STEPS };
+export { BEST_PRACTICES_STEP_TITLE, createTourSteps, TOUR_GATED_STEPS };
 export type { GatedStep };

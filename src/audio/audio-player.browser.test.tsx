@@ -1,8 +1,9 @@
-import { describe, expect, it } from "vitest";
 import { AudioPlayer } from "@/audio/audio-player";
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
+import { describe, expect, it } from "vitest";
 
 function setupAudioSource() {
   const file = createAudioFile("track.wav");
@@ -15,6 +16,7 @@ function setupAudioSource() {
     volume: 0.8,
     isMuted: false,
   });
+  useSettingsStore.setState({ preservePitch: true });
 }
 
 describe("AudioPlayer", () => {
@@ -47,6 +49,22 @@ describe("AudioPlayer", () => {
     await screen.getByRole("button", { name: /1\.00x/ }).click();
     await screen.getByRole("button", { name: "1.5x" }).click();
     expect(useAudioStore.getState().playbackRate).toBeCloseTo(1.5, 5);
+  });
+
+  it("remembers whether pitch is preserved when playback speed changes", async () => {
+    setupAudioSource();
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: /1\.00x/ }).click();
+
+    const toggle = screen.getByRole("switch", { name: "Preserve pitch" });
+    await expect.element(toggle).toBeChecked();
+    await toggle.click();
+
+    expect(useSettingsStore.getState().preservePitch).toBe(false);
+    const persisted = JSON.parse(localStorage.getItem("composer-settings") ?? "{}") as {
+      state?: { preservePitch?: boolean };
+    };
+    expect(persisted.state?.preservePitch).toBe(false);
   });
 
   it("opens the volume popover and toggles mute", async () => {

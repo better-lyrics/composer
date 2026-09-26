@@ -33,6 +33,15 @@ const SyncSection: React.FC = () => (
       step={0.01}
       format={(v) => `${(v * 1000).toFixed(0)}ms`}
     />
+    <SliderSetting
+      label="Re-record pre-roll"
+      description="How far before the selected line or word playback starts when re-recording in Sync."
+      settingKey="redoPreroll"
+      min={0}
+      max={5}
+      step={0.1}
+      format={(v) => `${(v * 1000).toFixed(0)}ms`}
+    />
     <SelectSetting
       label="Default granularity"
       description="Whether new projects start in word or line timing mode."

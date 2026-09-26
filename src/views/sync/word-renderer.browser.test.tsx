@@ -65,4 +65,69 @@ describe("WordRenderer", () => {
     const italic = screen.container.querySelector(".italic");
     expect(italic).not.toBeNull();
   });
+
+  // -- Re-record affordance ---------------------------------------------------
+
+  it("exposes a timed word as a re-record button", async () => {
+    const screen = await render(
+      <WordRenderer
+        lineId="test-line"
+        word="hello"
+        idx={2}
+        timing={{ text: "hello", begin: 1, end: 2 }}
+        allWords={[{ text: "hello", begin: 1, end: 2 }]}
+        handlers={{ onClickWord: () => {} }}
+        editMode={false}
+      />,
+    );
+    await expect.element(screen.getByTitle("Re-record from this word")).toBeInTheDocument();
+  });
+
+  it("reports its own index when clicked", async () => {
+    const clicked: number[] = [];
+    const screen = await render(
+      <WordRenderer
+        lineId="test-line"
+        word="hello"
+        idx={3}
+        timing={{ text: "hello", begin: 1, end: 2 }}
+        allWords={[{ text: "hello", begin: 1, end: 2 }]}
+        handlers={{ onClickWord: (idx) => clicked.push(idx) }}
+        editMode={false}
+      />,
+    );
+    await screen.getByTitle("Re-record from this word").click();
+    expect(clicked).toEqual([3]);
+  });
+
+  it("regression: leaves an untimed word non-interactive so a tap cannot desync the words array", async () => {
+    const screen = await render(
+      <WordRenderer
+        lineId="test-line"
+        word="hello"
+        idx={2}
+        timing={undefined}
+        allWords={undefined}
+        handlers={{ onClickWord: () => {} }}
+        editMode={false}
+      />,
+    );
+    expect(screen.container.querySelector("button")).toBeNull();
+  });
+
+  it("labels a background word as a jump rather than a re-record", async () => {
+    const screen = await render(
+      <WordRenderer
+        lineId="test-line"
+        word="(echo)"
+        idx={0}
+        timing={{ text: "(echo)", begin: 1, end: 2 }}
+        allWords={[{ text: "(echo)", begin: 1, end: 2 }]}
+        handlers={{ onClickWord: () => {} }}
+        isBackground
+        editMode={false}
+      />,
+    );
+    await expect.element(screen.getByTitle("Jump to this word")).toBeInTheDocument();
+  });
 });

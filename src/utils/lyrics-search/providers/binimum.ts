@@ -1,13 +1,16 @@
+import { toUsableDurationSec } from "@/domain/lyrics-search/duration";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
 import type { SyncType } from "@/domain/lyrics-search/sync-type";
-import { LyricsSearchError, type LyricsSearchProvider, type LyricsSearchQuery } from "@/utils/lyrics-search/types";
+import { isAbortError } from "@/utils/abort-error";
+import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
+import { hasNonEmptyString } from "@/utils/lyrics-search/query-guards";
+import type { LyricsSearchProvider, LyricsSearchQuery } from "@/utils/lyrics-search/types";
 
 // -- Constants ----------------------------------------------------------------
 
 const BINIMUM_BASE_URL = "https://lyrics-api.binimum.org/";
 const ID_PREFIX = "binimum-";
-const USER_AGENT = "Better Lyrics Composer (https://composer.betterlyrics.org)";
-const ISRC_REGEX = /^[A-Z]{2}[A-Z0-9]{3}\d{7}$/;
+const LOG_PREFIX = "[Binimum]";
 const VALID_TIMING_TYPES: ReadonlySet<SyncType> = new Set<SyncType>(["syllable", "word", "line"]);
 
 // -- Types --------------------------------------------------------------------
@@ -31,32 +34,18 @@ interface BinimumSearchResponse {
 
 // -- Helpers ------------------------------------------------------------------
 
-function hasNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-function normalizeIsrc(input: string | undefined): string | null {
-  if (!hasNonEmptyString(input)) return null;
-  const candidate = input.trim().toUpperCase();
-  return ISRC_REGEX.test(candidate) ? candidate : null;
-}
-
-function isValidIsrc(input: string | undefined): boolean {
-  return normalizeIsrc(input) !== null;
-}
-
 function hasTrackAndArtist(query: LyricsSearchQuery): boolean {
   return hasNonEmptyString(query.track) && hasNonEmptyString(query.artist);
 }
 
 function canSearch(query: LyricsSearchQuery): boolean {
   if (hasTrackAndArtist(query)) return true;
-  return isValidIsrc(query.isrc);
+  return hasNonEmptyString(query.isrc) && isValidIsrc(query.isrc);
 }
 
 function buildSearchUrl(query: LyricsSearchQuery): URL {
   const url = new URL(BINIMUM_BASE_URL);
-  const isrc = normalizeIsrc(query.isrc);
+  const isrc = hasNonEmptyString(query.isrc) ? normalizeIsrc(query.isrc) : undefined;
 
   if (isrc && !hasTrackAndArtist(query)) {
     url.searchParams.set("isrc", isrc);
@@ -71,12 +60,6 @@ function buildSearchUrl(query: LyricsSearchQuery): URL {
   }
   if (isrc) url.searchParams.set("isrc", isrc);
   return url;
-}
-
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") return true;
-  if (error instanceof Error && error.name === "AbortError") return true;
-  return false;
 }
 
 function deriveSyncType(timingType: string): SyncType {
@@ -96,7 +79,7 @@ function mapResponseToResult(result: BinimumSearchResult): LyricsSearchResult {
     track: result.track_name,
     artist: result.artist_name,
     album,
-    durationSec: Math.round(result.duration),
+    durationSec: toUsableDurationSec(result.duration),
     payload,
   };
 }
@@ -109,19 +92,13 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
 
   try {
     const url = buildSearchUrl(query);
-    const response = await fetch(url.toString(), {
-      signal,
-      headers: { "User-Agent": USER_AGENT },
-    });
+    const response = await fetch(url.toString(), { signal });
 
     if (signal.aborted) return [];
     if (response.status === 404) return [];
-    if (response.status === 400) return [];
-    if (response.status >= 500) {
-      throw new LyricsSearchError("binimum", `Binimum search returned ${response.status}`);
-    }
     if (!response.ok) {
-      throw new LyricsSearchError("binimum", `Binimum search returned ${response.status}`);
+      console.warn(LOG_PREFIX, `search returned ${response.status}, treating as no results`);
+      return [];
     }
 
     const body = (await response.json()) as BinimumSearchResponse;
@@ -135,8 +112,8 @@ async function search(query: LyricsSearchQuery, signal: AbortSignal): Promise<Ly
     return mapped;
   } catch (error) {
     if (isAbortError(error)) return [];
-    if (error instanceof LyricsSearchError) throw error;
-    throw new LyricsSearchError("binimum", "Binimum search request failed", error);
+    console.warn(LOG_PREFIX, "search request failed, treating as no results", error);
+    return [];
   }
 }
 

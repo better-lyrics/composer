@@ -1,28 +1,6 @@
-import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
-import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
+import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
 import { describe, expect, it } from "vitest";
-
-interface CapturedUpdate {
-  id: string;
-  updates: Partial<LyricLine>;
-  options?: { propagateToSiblings?: boolean };
-}
-
-function captureUpdates() {
-  const calls: CapturedUpdate[] = [];
-  const updateLineWithHistory = (
-    id: string,
-    updates: Partial<LyricLine>,
-    options?: { propagateToSiblings?: boolean },
-  ) => {
-    calls.push({ id, updates, options });
-  };
-  return { calls, updateLineWithHistory };
-}
-
-const wordsOps = createWordTimingOps({ getWords: (line) => line.words, updateKey: "words" });
-const bgOps = createWordTimingOps({ getWords: (line) => line.backgroundWords, updateKey: "backgroundWords" });
 
 describe("createWordTimingOps: early returns", () => {
   it("nudgeBegin no-ops when line missing", () => {
@@ -47,17 +25,6 @@ describe("createWordTimingOps: early returns", () => {
 });
 
 describe("createWordTimingOps: nudgeBegin / setBegin clamp", () => {
-  function makeLine() {
-    return createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
-  }
-
   it("nudgeBegin caps at prev word's end", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
     wordsOps.nudgeBegin([makeLine()], 0, 1, -5, updateLineWithHistory);
@@ -90,17 +57,6 @@ describe("createWordTimingOps: nudgeBegin / setBegin clamp", () => {
 });
 
 describe("createWordTimingOps: nudgeEnd / setEnd clamp", () => {
-  function makeLine() {
-    return createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
-  }
-
   it("nudgeEnd caps at next word's begin", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
     wordsOps.nudgeEnd([makeLine()], 0, 1, +5, updateLineWithHistory);
@@ -169,17 +125,10 @@ describe("createWordTimingOps: write contract", () => {
 
   it("does not mutate untouched words in the resulting array", () => {
     const { calls, updateLineWithHistory } = captureUpdates();
-    const line = createLine({
-      text: "a b c",
-      words: [
-        { text: "a", begin: 0, end: 1 },
-        { text: "b", begin: 1, end: 2 },
-        { text: "c", begin: 2, end: 3 },
-      ],
-    });
+    const line = makeLine();
     wordsOps.setBegin([line], 0, 1, 1.5, updateLineWithHistory);
     const out = calls[0].updates.words ?? [];
-    expect(out[0]).toEqual({ text: "a", begin: 0, end: 1 });
+    expect(out[0]).toEqual({ text: "a ", begin: 0, end: 1 });
     expect(out[2]).toEqual({ text: "c", begin: 2, end: 3 });
   });
 });

@@ -5,6 +5,7 @@ import { scrubStemRouter } from "@/audio/scrub-stem-router";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { useEffect, useRef } from "react";
 
 // -- Constants -----------------------------------------------------------------
@@ -21,6 +22,7 @@ const AudioEngine: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const playbackRate = useAudioStore((s) => s.playbackRate);
+  const preservePitch = useSettingsStore((s) => s.preservePitch);
   const volume = useAudioStore((s) => s.volume);
   const isMuted = useAudioStore((s) => s.isMuted);
   const audioElement = useAudioStore((s) => s.audioElement);
@@ -33,6 +35,7 @@ const AudioEngine: React.FC = () => {
   const currentStem = useSeparationStore((s) => s.currentStem);
   const stemUrls = useSeparationStore((s) => s.stemUrls);
 
+  // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- teardown/clearSlowLoading run from the returned cleanup and revoke every listener, timer and object URL; the async setup() indirection hides that from static analysis
   useEffect(() => {
     if (!source) {
       registerAudioElement(null);
@@ -123,6 +126,7 @@ const AudioEngine: React.FC = () => {
         isPlaying: initialIsPlaying,
       } = useAudioStore.getState();
       audio.playbackRate = initialPlaybackRate;
+      audio.preservesPitch = useSettingsStore.getState().preservePitch;
       audio.volume = initialVolume;
       audio.muted = initialIsMuted;
       audio.style.display = "none";
@@ -187,9 +191,10 @@ const AudioEngine: React.FC = () => {
     const audio = audioRef.current;
     if (!audio) return;
     audio.playbackRate = playbackRate;
+    audio.preservesPitch = preservePitch;
     audio.volume = volume;
     audio.muted = isMuted;
-  }, [playbackRate, volume, isMuted]);
+  }, [playbackRate, preservePitch, volume, isMuted]);
 
   useEffect(() => {
     const audio = audioElement;

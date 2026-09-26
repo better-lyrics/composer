@@ -5,6 +5,7 @@
 // look (the rgb values in src/index.css do not equal the shade formula).
 
 import type { Theme } from "@/domain/theme/model";
+import { DARK_NEGATIVE, DARK_POSITIVE, LIGHT_NEGATIVE, LIGHT_POSITIVE } from "@/domain/theme/mark-constants";
 import { DARK_ONSET, LIGHT_ONSET } from "@/domain/theme/onset-constants";
 import { DARK_SNAP, LIGHT_SNAP } from "@/domain/theme/snap-constants";
 
@@ -33,6 +34,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#f5a623",
       explicit: "#ff7a85",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#737476",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -62,6 +65,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#7a1f1c",
       warning: "#b9791a",
       explicit: "#d65560",
+      positive: LIGHT_POSITIVE,
+      negative: LIGHT_NEGATIVE,
       wave: "#c4c5ca",
       snap: LIGHT_SNAP,
       onset: LIGHT_ONSET,
@@ -91,6 +96,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffffff",
       warning: "#ffc24d",
       explicit: "#ff9aa3",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#9a9a9a",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -117,6 +124,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#e6a84d",
       explicit: "#ff8a93",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#3f5a78",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -143,6 +152,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe9e9",
       warning: "#d9a84d",
       explicit: "#ff8e8e",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#3e5a4c",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -169,6 +180,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#e0a84d",
       explicit: "#ff8a93",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#5e4452",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -195,6 +208,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffeaea",
       warning: "#cbb27a",
       explicit: "#d99a9a",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#555555",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -221,6 +236,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#e6c14d",
       explicit: "#ff8a93",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#5a4a38",
       snap: DARK_SNAP,
       onset: DARK_ONSET,
@@ -247,6 +264,8 @@ const COMPOSER_PRESETS: Theme[] = [
       "error-text": "#ffe5e5",
       warning: "#e6a84d",
       explicit: "#ff8a93",
+      positive: DARK_POSITIVE,
+      negative: DARK_NEGATIVE,
       wave: "#2f5450",
       snap: DARK_SNAP,
       onset: DARK_ONSET,

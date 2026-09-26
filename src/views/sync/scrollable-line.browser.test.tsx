@@ -36,4 +36,27 @@ describe("ScrollableLine", () => {
     const screen = await render(<ScrollableLine {...BASE_PROPS} text="" />);
     expect((screen.container.textContent ?? "").trim()).toBe(String(BASE_PROPS.lineNumber));
   });
+
+  it("clicking a word fires onClickWord with its index and does not bubble to the line onClick", async () => {
+    let lineClicks = 0;
+    let clickedWord = -1;
+    const screen = await render(
+      <ScrollableLine
+        {...BASE_PROPS}
+        words={[
+          { text: "Hello ", begin: 0, end: 0.5 },
+          { text: "world", begin: 0.5, end: 1 },
+        ]}
+        onClick={() => {
+          lineClicks++;
+        }}
+        onClickWord={(idx) => {
+          clickedWord = idx;
+        }}
+      />,
+    );
+    await screen.getByRole("button", { name: "world", exact: true }).click();
+    expect(clickedWord).toBe(1);
+    expect(lineClicks).toBe(0);
+  });
 });

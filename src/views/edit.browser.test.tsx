@@ -66,9 +66,9 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => previewMainTexts(screen.container)).toContain("Hello world");
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh");
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh)");
     expect(useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
   });
 
   it("merges a standalone parenthesis line into the line above on bulk extract", async () => {
@@ -83,9 +83,9 @@ describe("background vocal extraction", () => {
     await button.click();
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh yeah)");
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Real lyric line"]);
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("ooh yeah");
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toContain("(ooh yeah)");
   });
 
   it("pulls inline parentheses from a single line via the per-line popover action", async () => {
@@ -100,7 +100,7 @@ describe("background vocal extraction", () => {
     await pullButton.click();
 
     await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Hello world");
-    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("(ooh)");
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 
@@ -131,9 +131,9 @@ describe("background vocal extraction", () => {
     await expect
       .poll(() => useProjectStore.getState().lines.map((l) => l.text))
       .toEqual(["Hello world", "Second line"]);
-    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["ooh", "ah"]);
+    expect(useProjectStore.getState().lines.map((l) => l.backgroundText)).toEqual(["(ooh)", "(ah)"]);
     await expect.poll(() => previewMainTexts(screen.container)).toEqual(["Hello world", "Second line"]);
-    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["ooh", "ah"]);
+    await expect.poll(() => previewBackgroundTexts(screen.container)).toEqual(["(ooh)", "(ah)"]);
   });
 
   it("keeps parentheses in the text when pasting with the setting off", async () => {
@@ -282,5 +282,122 @@ describe("bulk line selection", () => {
     await targetGutter.click({ modifiers: ["Shift"] });
 
     await expect.poll(() => selectedRowTexts(screen.container).sort()).toEqual(["bravo", "charlie", "delta"]);
+  });
+});
+
+describe("regressions: hand edits keep sync", () => {
+  async function typeAtEndOfTextarea(text: string): Promise<void> {
+    const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await userEvent.keyboard(text);
+  }
+
+  it("regression: typing extra words into a line-synced line keeps its begin/end", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ id: "l1", text: "It hurts for me", begin: 107.9, end: 110.425 })],
+    });
+    await render(<EditPanel />);
+
+    await typeAtEndOfTextarea(" to wait");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("It hurts for me to wait");
+    const line = useProjectStore.getState().lines[0];
+    expect(line.begin).toBe(107.9);
+    expect(line.end).toBe(110.425);
+  });
+
+  it("regression: typing an extra word into a word-synced line keeps the other words' timing", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "Wish I could",
+          words: [
+            { text: "Wish ", begin: 1, end: 2 },
+            { text: "I ", begin: 2, end: 3 },
+            { text: "could", begin: 3, end: 4 },
+          ],
+        }),
+      ],
+    });
+    await render(<EditPanel />);
+
+    await typeAtEndOfTextarea(" now");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Wish I could now");
+    const words = useProjectStore.getState().lines[0].words ?? [];
+    expect(words.map((w) => w.text)).toEqual(["Wish ", "I ", "could ", "now"]);
+    expect(words.slice(0, 2)).toEqual([
+      { text: "Wish ", begin: 1, end: 2 },
+      { text: "I ", begin: 2, end: 3 },
+    ]);
+    expect(words[2].begin).toBe(3);
+    expect(words[3].end).toBe(4);
+  });
+
+  it("regression: adding a word to timed background vocals in the popover keeps their timing", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "Hello world",
+          words: [
+            { text: "Hello ", begin: 0, end: 1 },
+            { text: "world", begin: 1, end: 2 },
+          ],
+          backgroundText: "ooh ah",
+          backgroundWords: [
+            { text: "ooh ", begin: 0.5, end: 1 },
+            { text: "ah", begin: 1, end: 1.5 },
+          ],
+          backgroundTextSource: "manual",
+        }),
+      ],
+    });
+    const screen = await render(<EditPanel />);
+
+    await screen.getByRole("button", { name: "BG", exact: true }).click();
+    await screen.getByPlaceholder("ooh, ah, etc.").fill("ooh ah yeah");
+    await userEvent.keyboard("{Enter}");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh ah yeah");
+    const bg = useProjectStore.getState().lines[0].backgroundWords ?? [];
+    expect(bg.map((w) => w.text)).toEqual(["ooh ", "ah ", "yeah"]);
+    expect(bg[0]).toEqual({ text: "ooh ", begin: 0.5, end: 1 });
+    expect(bg[2].end).toBe(1.5);
+  });
+});
+
+describe("regressions: typing does not reshuffle duplicate lines", () => {
+  it("regression: typing on one line leaves a double-spaced chorus and its later repeat on their own timing", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "edit-me", text: "Always", begin: 1, end: 2 }),
+        createLine({
+          id: "chorus-1",
+          text: "Wish  I  could",
+          words: [
+            { text: "Wish  ", begin: 49, end: 50 },
+            { text: "I  ", begin: 50, end: 51 },
+            { text: "could", begin: 51, end: 52 },
+          ],
+        }),
+        createLine({ id: "chorus-2", text: "Wish I could", begin: 116, end: 118 }),
+      ],
+    });
+    await render(<EditPanel />);
+
+    const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange("Always".length, "Always".length);
+    await userEvent.keyboard(" yeah");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Always yeah");
+    const [, chorus1, chorus2] = useProjectStore.getState().lines;
+    expect(chorus1.id).toBe("chorus-1");
+    expect(chorus1.words?.map((w) => w.begin)).toEqual([49, 50, 51]);
+    expect(chorus2.id).toBe("chorus-2");
+    expect(chorus2.begin).toBe(116);
   });
 });

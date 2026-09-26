@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { installStyleSheet, WAVEFORM_SWEEP_ANIMATION, WAVEFORM_SWEEP_CSS } from "@/test/browser-css";
+import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useAudioStore } from "@/stores/audio";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createAudioFile } from "@/test/audio-fixtures";
+import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { readToken } from "@/utils/theme/read-token";
 import { TOKEN_VAR } from "@/domain/theme/model";
@@ -338,5 +339,120 @@ describe("TimelineWaveform loading dots", () => {
     setupWaveformAudio(30);
     await render(<TimelineWaveform />);
     expect(getDots()?.getAttribute("aria-hidden")).toBe("true");
+  });
+
+  describe("sweep lifecycle", () => {
+    let sweepStyles: HTMLStyleElement;
+
+    beforeAll(() => {
+      sweepStyles = installStyleSheet(WAVEFORM_SWEEP_CSS);
+      expect(sweepStyles.sheet?.cssRules.length).toBeGreaterThan(1);
+    });
+
+    afterAll(() => sweepStyles.remove());
+
+    function requireDots(): HTMLElement {
+      const dots = getDots();
+      if (!dots) throw new Error("loading dots layer not found");
+      return dots;
+    }
+
+    function sweepAnimationName(): string {
+      return getComputedStyle(requireDots(), "::before").animationName;
+    }
+
+    function nextFrame(): Promise<void> {
+      return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+    }
+
+    function setupPlayableAudio(durationSeconds: number): HTMLAudioElement {
+      const audio = new Audio();
+      audio.src = bufferToBlobUrl(makeSineBuffer(durationSeconds));
+      setupWaveformAudio(durationSeconds);
+      useAudioStore.setState({ audioElement: audio });
+      return audio;
+    }
+
+    it("sweeps while the loading layer is still visible", async () => {
+      setupWaveformAudio(30);
+      await render(<TimelineWaveform />);
+      expect(requireDots().style.opacity).toBe("1");
+      expect(sweepAnimationName()).toBe(WAVEFORM_SWEEP_ANIMATION);
+    });
+
+    it("keeps sweeping right after WaveSurfer becomes ready, because the layer is still fading out", async () => {
+      setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect
+        .poll(() => ({ opacity: requireDots().style.opacity, animation: sweepAnimationName() }), { timeout: 5000 })
+        .toEqual({ opacity: "0", animation: WAVEFORM_SWEEP_ANIMATION });
+    });
+
+    it("stops sweeping once the fade-out has finished", async () => {
+      setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots().style.opacity).toBe("0");
+    });
+
+    it("regression #174: never sweeps once settled and invisible", async () => {
+      setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      const sweptWhileSettled: number[] = [];
+      for (let frame = 0; frame < 30; frame++) {
+        await nextFrame();
+        if (sweepAnimationName() !== "none") sweptWhileSettled.push(frame);
+      }
+      expect(sweptWhileSettled).toEqual([]);
+      expect(requireDots().style.opacity).toBe("0");
+    });
+
+    it("regression: the loading layer is never unmounted across the whole ready-then-settle cycle", async () => {
+      setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots()).toBe(layer);
+    });
+
+    // A passive effect's lag is sub-frame, so a rAF sampler would miss it; sample per committed mutation.
+    it("regression #174: sweep is active in the commit the source changes, then stops again once resettled", async () => {
+      const audio = setupPlayableAudio(2);
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      const commits: { opacity: string; sweeping: boolean }[] = [];
+      const observer = new MutationObserver(() => {
+        commits.push({ opacity: layer.style.opacity, sweeping: layer.hasAttribute("data-sweeping") });
+      });
+      observer.observe(layer, { attributes: true, attributeFilter: ["style", "data-sweeping"] });
+
+      audio.src = bufferToBlobUrl(makeSineBuffer(3));
+      useAudioStore.setState({ duration: 3 });
+
+      try {
+        await expect.poll(() => commits.some((c) => c.opacity === "1"), { timeout: 5000 }).toBe(true);
+        for (let frame = 0; frame < 5; frame++) await nextFrame();
+      } finally {
+        observer.disconnect();
+      }
+
+      expect(commits.filter((c) => c.opacity === "1" && !c.sweeping)).toEqual([]);
+      expect(requireDots()).toBe(layer);
+
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+      expect(requireDots().style.opacity).toBe("0");
+    });
+
+    it("settle delay outlasts the fade-out transition it is paired with", async () => {
+      setupWaveformAudio(30);
+      await render(<TimelineWaveform />);
+      const fadeMs = Number(/duration-(\d+)/.exec(requireDots().className)?.[1]);
+      expect(fadeMs).toBeGreaterThan(0);
+      expect(FADE_SETTLE_MS).toBeGreaterThan(fadeMs);
+    });
   });
 });

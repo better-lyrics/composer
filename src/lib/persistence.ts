@@ -28,6 +28,7 @@ interface SavedProject {
   currentStem?: Stem;
   primingStripped?: boolean;
   customSnapPoints?: (SnapPoint | number)[];
+  hasUnexportedImport?: boolean;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -50,6 +51,7 @@ async function saveCurrentProject(
   currentStem: Stem,
   primingStripped: boolean,
   customSnapPoints: SnapPoint[],
+  hasUnexportedImport = false,
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -68,6 +70,7 @@ async function saveCurrentProject(
     currentStem,
     primingStripped,
     customSnapPoints,
+    hasUnexportedImport,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }

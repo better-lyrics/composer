@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Toaster } from "sonner";
+import { LYRICS_FILE_ACCEPT_ATTRIBUTE, SUPPORTED_LYRICS_FORMATS } from "@/domain/lyrics-file/supported-formats";
 import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
 import { render } from "@/test/render";
 
@@ -37,6 +38,21 @@ describe("UploadSection", () => {
     expect(document.body.textContent).toContain(".lrc");
     expect(document.body.textContent).toContain(".srt");
     expect(document.body.textContent).toContain(".ttml");
+    expect(document.body.textContent).toContain(".qrc");
+  });
+
+  it("advertises every supported format and never the alias extension", async () => {
+    await render(<UploadSection onFile={noop} onSwitchToSearch={noop} onSwitchToPaste={noop} />);
+    for (const format of SUPPORTED_LYRICS_FORMATS) {
+      expect(document.body.textContent).toContain(format.label);
+    }
+    expect(document.body.textContent).not.toContain(".xml");
+  });
+
+  it("offers every accepted extension to the native file picker", async () => {
+    await render(<UploadSection onFile={noop} onSwitchToSearch={noop} onSwitchToPaste={noop} />);
+    expect(getFileInput().accept).toBe(LYRICS_FILE_ACCEPT_ATTRIBUTE);
+    expect(getFileInput().accept).toContain(".qrc");
   });
 
   it("triggers the hidden file input click when the drop zone is clicked", async () => {
@@ -80,6 +96,27 @@ describe("UploadSection", () => {
     dispatchDragEvent(zone, "drop", [file]);
     expect(onFile).toHaveBeenCalledTimes(1);
     expect(onFile.mock.calls[0][0].name).toBe("song.lrc");
+  });
+
+  it("calls onFile with a dropped .qrc file", async () => {
+    const onFile = vi.fn();
+    await render(<UploadSection onFile={onFile} onSwitchToSearch={noop} onSwitchToPaste={noop} />);
+    const zone = getDropZone();
+    const file = new File(["[100,200]hi(100,200)"], "wanderlust.qrc", { type: "text/plain" });
+    dispatchDragEvent(zone, "drop", [file]);
+    expect(onFile).toHaveBeenCalledTimes(1);
+    expect(onFile.mock.calls[0][0].name).toBe("wanderlust.qrc");
+  });
+
+  it("names .qrc in the unsupported type toast", async () => {
+    await render(
+      <>
+        <Toaster />
+        <UploadSection onFile={noop} onSwitchToSearch={noop} onSwitchToPaste={noop} />
+      </>,
+    );
+    dispatchDragEvent(getDropZone(), "drop", [new File(["x"], "cover.png", { type: "image/png" })]);
+    await expect.poll(() => document.body.textContent).toMatch(/Unsupported file type\. Use .*\.qrc/);
   });
 
   it("does not call onFile for a .png file and surfaces a toast error", async () => {

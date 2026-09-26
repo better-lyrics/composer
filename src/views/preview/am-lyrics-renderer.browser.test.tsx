@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { addGlobalAllowedConsolePattern } from "@/test/console-guard";
 import { render } from "@/test/render";
@@ -32,6 +33,17 @@ function firstLyricLine(el: Element): HTMLElement | null {
   return el.shadowRoot?.querySelector<HTMLElement>(".lyrics-line:not(.lyrics-gap)") ?? null;
 }
 
+let disposeWiring: (() => void) | null = null;
+
+beforeEach(() => {
+  disposeWiring = wireFrameLoop();
+});
+
+afterEach(() => {
+  disposeWiring?.();
+  disposeWiring = null;
+});
+
 // -- Tests --------------------------------------------------------------------
 
 describe("AmLyricsRenderer", () => {
@@ -49,7 +61,7 @@ describe("AmLyricsRenderer", () => {
     const el = await waitForAmLyrics(screen.container);
     await waitForLyrics(el);
 
-    audio.currentTime = 14;
+    useAudioStore.getState().seekTo(14);
     await expect.poll(() => activeLineText(el)).toContain("second line");
   });
 
@@ -63,11 +75,27 @@ describe("AmLyricsRenderer", () => {
     const el = await waitForAmLyrics(screen.container);
     await waitForLyrics(el);
 
-    audio.currentTime = 14;
+    useAudioStore.getState().seekTo(14);
     await expect.poll(() => activeLineText(el)).toContain("second line");
 
-    audio.currentTime = 26;
+    useAudioStore.getState().seekTo(26);
     await expect.poll(() => activeLineText(el)).toContain("third line");
+  });
+
+  it("keeps following the clock while the timeline is scrubbed paused", async () => {
+    useAudioStore.setState({ audioElement: new Audio(), isPlaying: false });
+
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    useAudioStore.getState().seekTo(26);
+    await expect.poll(() => activeLineText(el)).toContain("third line");
+
+    useAudioStore.getState().seekTo(4);
+    await expect.poll(() => activeLineText(el)).toContain("first line");
   });
 
   it("tracks a newly registered audio element", async () => {
@@ -80,7 +108,7 @@ describe("AmLyricsRenderer", () => {
     const el = await waitForAmLyrics(screen.container);
     await waitForLyrics(el);
 
-    firstAudio.currentTime = 14;
+    useAudioStore.getState().seekTo(14);
     await expect.poll(() => activeLineText(el)).toContain("second line");
 
     const replacementAudio = new Audio();

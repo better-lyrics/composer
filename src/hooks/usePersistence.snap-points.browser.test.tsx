@@ -53,7 +53,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("regression: usePersistence hydrates saved customSnapPoints into the project store", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "with-markers", artist: "", album: "", duration: 0 },
+      { title: "with-markers", artists: [], album: "", duration: 0 },
       DEFAULT_AGENTS,
       [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],
@@ -80,7 +80,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
     const legacyRecord: SavedProject = {
       version: 1,
       savedAt: Date.now(),
-      metadata: { title: "legacy", artist: "", album: "", duration: 0 },
+      metadata: { title: "legacy", artists: [], album: "", duration: 0 },
       agents: DEFAULT_AGENTS,
       lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       groups: [],
@@ -106,7 +106,7 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("regression: a saved project's markers survive the audio-source clear fired during load", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "survives-load", artist: "", album: "", duration: 0 },
+      { title: "survives-load", artists: [], album: "", duration: 0 },
       DEFAULT_AGENTS,
       [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
       [],

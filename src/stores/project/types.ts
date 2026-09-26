@@ -32,6 +32,13 @@ interface HistoryEntry {
 
 interface MetadataState {
   metadata: ProjectMetadata;
+  hasUnexportedImport: boolean;
+}
+
+interface SongIdentity {
+  metadata: ProjectMetadata;
+  agents: Agent[];
+  hasUnexportedImport: boolean;
 }
 
 interface AgentsState {
@@ -78,6 +85,10 @@ interface HistoryState {
 
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
+  resetSongIdentity: (title: string) => void;
+  restoreSongIdentity: (identity: SongIdentity) => void;
+  markSongDetailsImported: () => void;
+  clearUnexportedImport: () => void;
   reset: () => void;
 }
 
@@ -127,6 +138,8 @@ interface HistoryActions {
 
 interface LineActions {
   setLines: (lines: LyricLine[]) => void;
+  // See the JSDoc on the implementation in lines-slice.ts before using this.
+  setTransientLines: (lines: LyricLine[]) => void;
   setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
   updateLineWithHistory: (
@@ -203,6 +216,7 @@ export type {
   SimpleTab,
   SyllableSplitDefaults,
   MetadataState,
+  SongIdentity,
   AgentsState,
   LinesState,
   GroupsState,

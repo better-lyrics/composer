@@ -1,4 +1,4 @@
-import { HEADING, INLINE_CODE, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 
 // -- TTML Standards -----------------------------------------------------------
 

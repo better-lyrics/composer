@@ -1,3 +1,4 @@
+import type { GuideSlug } from "@/pages/guides/slugs";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { PageHead } from "@/seo/page-head";
@@ -6,7 +7,7 @@ import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
 interface GuideListing {
-  slug: string;
+  slug: GuideSlug;
   title: string;
   description: string;
 }
@@ -51,6 +52,12 @@ const GUIDES: GuideListing[] = [
     slug: "lrc-to-ttml-conversion-guide",
     title: "LRC to TTML Conversion Guide",
     description: "Deep dive on converting plain LRC and enhanced LRC into clean TTML you can ship.",
+  },
+  {
+    slug: "lyric-best-practices",
+    title: "Lyric Best Practices for TTML",
+    description:
+      "Line breaks, background vocals, voice assignment, syllable splits. What good lyric files do that the spec never mentions.",
   },
 ];
 

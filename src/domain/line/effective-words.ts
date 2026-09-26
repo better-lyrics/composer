@@ -13,6 +13,10 @@ function effectiveWords(line: LyricLine): WordTiming[] {
   return [];
 }
 
+function effectiveTrackWords(line: LyricLine, type: "word" | "bg"): WordTiming[] | undefined {
+  return type === "word" ? effectiveWords(line) : line.backgroundWords;
+}
+
 function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
   return lines.map((line) => {
     if (!isLineSynced(line)) return line;
@@ -23,4 +27,4 @@ function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
 
 // -- Exports ------------------------------------------------------------------
 
-export { effectiveWords, getEffectiveLines };
+export { effectiveTrackWords, effectiveWords, getEffectiveLines };

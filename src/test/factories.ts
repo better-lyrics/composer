@@ -15,6 +15,7 @@ interface FactoryLineOptions {
   backgroundTextSource?: "extraction" | "manual";
   groupId?: string;
   instanceIdx?: number;
+  templateLineIdx?: number;
 }
 
 interface FactoryWordOptions {
@@ -61,6 +62,7 @@ function createLine(opts: FactoryLineOptions = {}): LyricLine {
     ...(opts.backgroundTextSource ? { backgroundTextSource: opts.backgroundTextSource } : {}),
     ...(opts.groupId ? { groupId: opts.groupId } : {}),
     ...(opts.instanceIdx !== undefined ? { instanceIdx: opts.instanceIdx } : {}),
+    ...(opts.templateLineIdx !== undefined ? { templateLineIdx: opts.templateLineIdx } : {}),
   });
 }
 

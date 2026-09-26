@@ -1,4 +1,5 @@
 import { AboutSection } from "@/ui/help-sections/about";
+import { BestPracticesSection } from "@/ui/help-sections/best-practices";
 import { EditSection } from "@/ui/help-sections/editing";
 import { ExportSection } from "@/ui/help-sections/exporting";
 import { GettingStartedSection } from "@/ui/help-sections/getting-started";
@@ -15,6 +16,7 @@ import { TtmlStandardsSection } from "@/ui/help-sections/ttml-standards";
 
 const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
   "getting-started": GettingStartedSection,
+  "best-practices": BestPracticesSection,
   "keyboard-shortcuts": KeyboardShortcutsSection,
   importing: ImportSection,
   editing: EditSection,

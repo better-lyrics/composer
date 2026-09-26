@@ -1,12 +1,15 @@
 import { useAudioStore } from "@/stores/audio";
+import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { useConfirm } from "@/stores/confirm-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { cn } from "@/utils/cn";
-import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
+import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -39,7 +42,6 @@ interface GhostWord {
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
-const BG_DROP_ZONE_HEIGHT = 24;
 const BG_BORDER = 1;
 
 // -- Component -----------------------------------------------------------------
@@ -73,7 +75,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       });
 
@@ -142,7 +143,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         if (match) {
           const group = useProjectStore.getState().groups.find((g) => g.id === match.groupId);
           const groupLabel = group?.label ?? "group";
-          const instanceCount = countInstances(lines, match.groupId);
+          const instanceCount = instanceIndicesOf(lines, match.groupId).length;
           const ok = await confirm({
             title: `Link as another ${groupLabel}?`,
             description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${instanceCount} instance${instanceCount === 1 ? "" : "s"}). Link as another instance, or paste as plain words?`,
@@ -163,7 +164,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       const firstEntry = clipboard.entries[0];
       const timeDelta = cursorTime - firstEntry.word.begin;
 
-      const hasOverlap = checkOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
+      const hasOverlap = pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
       if (hasOverlap) return;
 
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, duration });
@@ -198,7 +199,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       }),
     [lines, rowHeights, defaultRowHeight, collapsedInstances],
@@ -220,7 +220,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const firstEntry = clipboard.entries[0];
   const timeDelta = cursorTime - firstEntry.word.begin;
 
-  const hasOverlap = isInstancePaste ? false : checkOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
+  const hasOverlap = isInstancePaste ? false : pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
 
   const ghosts = computeGhosts(clipboard, targetLineIndex, timeDelta, lines, zoom, duration, layout, defaultRowHeight);
 
@@ -262,40 +262,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
 
 // -- Helpers -------------------------------------------------------------------
 
-function countInstances(lines: LyricLine[], groupId: string): number {
-  const seen = new Set<number>();
-  for (const line of lines) {
-    if (line.groupId === groupId && line.instanceIdx !== undefined) seen.add(line.instanceIdx);
-  }
-  return seen.size;
-}
-
-function checkOverlaps(
-  clipboard: ClipboardData,
-  targetLineIndex: number,
-  timeDelta: number,
-  lines: LyricLine[],
-  duration: number,
-): boolean {
-  for (const entry of clipboard.entries) {
-    const lineIdx = targetLineIndex + entry.lineOffset;
-    if (lineIdx < 0 || lineIdx >= lines.length) return true;
-
-    const newBegin = Math.max(0, entry.word.begin + timeDelta);
-    const newEnd = Math.min(duration, entry.word.end + timeDelta);
-    if (newEnd <= newBegin) return true;
-
-    const line = lines[lineIdx];
-    const wordsArray = entry.trackType === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray) continue;
-
-    for (const existing of wordsArray) {
-      if (boundsOverlap({ begin: newBegin, end: newEnd }, existing)) return true;
-    }
-  }
-  return false;
-}
-
 function computeGhosts(
   clipboard: ClipboardData,
   targetLineIndex: number,
@@ -328,15 +294,8 @@ function computeGhosts(
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
-      const wordsArray = isBg ? targetLine.backgroundWords : targetLine.words;
-      if (wordsArray) {
-        for (const existing of wordsArray) {
-          if (boundsOverlap({ begin: newBegin, end: newEnd }, existing)) {
-            overlaps = true;
-            break;
-          }
-        }
-      }
+      const existingWords = effectiveTrackWords(targetLine, isBg ? "bg" : "word") ?? [];
+      overlaps = existingWords.some((existing) => boundsOverlap({ begin: newBegin, end: newEnd }, existing));
     }
 
     let trackTop: number;
@@ -346,9 +305,8 @@ function computeGhosts(
       trackTop = layoutEnd;
       trackHeight = defaultRowHeight;
     } else {
-      const hasBg = !!(targetLine.backgroundWords && targetLine.backgroundWords.length > 0);
-      const bgHeight = hasBg ? (targetPos.height - 1) / 2 : BG_DROP_ZONE_HEIGHT;
-      const mainHeight = targetPos.height - 1 - bgHeight;
+      const mainHeight = targetPos.mainBottom - targetPos.top;
+      const bgHeight = bgTrackHeight(targetLine, mainHeight);
       if (isBg) {
         trackTop = targetPos.top + mainHeight + BG_BORDER;
         trackHeight = bgHeight;

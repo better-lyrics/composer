@@ -5,7 +5,7 @@ import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
 import { describe, expect, it } from "vitest";
 
-const baseMetadata: ProjectMetadata = { title: "Test", artist: "", album: "", duration: 60 };
+const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", duration: 60 };
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
 describe("ttml export · groups registry", () => {

@@ -36,6 +36,7 @@ interface BridgeAudio {
   title?: string;
   artist?: string;
   album?: string;
+  isrc?: string;
 }
 
 class BridgeError extends Error {
@@ -101,6 +102,7 @@ async function getAudioFromBridge(baseUrl: string, videoId: string, signal?: Abo
       title: decodeHeader(res.headers.get("x-track-title")),
       artist: decodeHeader(res.headers.get("x-track-artist")),
       album: decodeHeader(res.headers.get("x-track-album")),
+      isrc: decodeHeader(res.headers.get("x-track-isrc")),
     };
   } catch (err) {
     if (err instanceof BridgeError) throw err;

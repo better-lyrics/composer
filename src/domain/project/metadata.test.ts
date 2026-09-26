@@ -5,7 +5,7 @@ describe("ProjectMetadata", () => {
   it("preserves thumbnailForVideoId when set alongside thumbnailDataUrl", () => {
     const m: ProjectMetadata = {
       title: "T",
-      artist: "A",
+      artists: ["A"],
       album: "AL",
       duration: 0,
       thumbnailDataUrl: "data:image/png;base64,xyz",
@@ -16,7 +16,7 @@ describe("ProjectMetadata", () => {
   });
 
   it("omits thumbnailForVideoId by default", () => {
-    const m: ProjectMetadata = { title: "", artist: "", album: "", duration: 0 };
+    const m: ProjectMetadata = { title: "", artists: [], album: "", duration: 0 };
     expect(m.thumbnailForVideoId).toBeUndefined();
     expect(m.thumbnailDataUrl).toBeUndefined();
   });
@@ -26,7 +26,7 @@ describe("ProjectMetadata: persistence invariants", () => {
   it("round-trips both thumbnail fields through JSON (the persistence path uses JSON via IndexedDB)", () => {
     const original: ProjectMetadata = {
       title: "Never Gonna Give You Up",
-      artist: "Rick Astley",
+      artists: ["Rick Astley"],
       album: "Whenever You Need Somebody",
       duration: 213,
       thumbnailDataUrl: "data:image/png;base64,ABCD",
@@ -41,14 +41,14 @@ describe("ProjectMetadata: persistence invariants", () => {
   it("distinguishes the legacy persisted state (thumbnailDataUrl only) from the post-refactor state (both set)", () => {
     const legacy: ProjectMetadata = {
       title: "",
-      artist: "",
+      artists: [],
       album: "",
       duration: 0,
       thumbnailDataUrl: "data:image/png;base64,LEGACY",
     };
     const tagged: ProjectMetadata = {
       title: "",
-      artist: "",
+      artists: [],
       album: "",
       duration: 0,
       thumbnailDataUrl: "data:image/png;base64,LEGACY",

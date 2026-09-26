@@ -33,6 +33,14 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   setLines: (lines) => set({ lines, isDirty: true, isDirtySinceHistory: true }),
 
+  // Transient in-flight gesture preview: replaces lines WITHOUT touching
+  // history or dirty flags. The caller must hold the pre-gesture snapshot and
+  // either restore it or commit through an action with history before the
+  // gesture ends, and must verify (by array identity) that no other writer
+  // replaced lines mid-gesture. Reserved for drag previews (e.g. the timeline
+  // selection stretch) — never for durable edits.
+  setTransientLines: (lines) => set({ lines }),
+
   setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
 
   updateLine: (id, updates, options = {}) =>

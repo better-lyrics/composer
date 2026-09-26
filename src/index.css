@@ -1,6 +1,9 @@
 @import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Geist+Mono:wght@500;600&display=swap");
 @import "tailwindcss";
+@import "@braccato/core/styles/variables.css" layer(braccato-defaults);
+@import "@braccato/core/styles/lyrics.css";
+@import "@braccato/core/styles/instrumental.css";
 
 @theme {
   /* Background Colors */
@@ -39,7 +42,8 @@
   --color-composer-error-text: #ffe5e5;
   --color-composer-warning: #f5a623;
   --color-composer-explicit: #ff7a85;
-  --color-composer-onset: #4fd6c0;
+  --color-composer-positive: #4fd6c0;
+  --color-composer-negative: #f2777a;
 
   /* Waveform */
   --color-composer-wave: #737476;
@@ -69,6 +73,46 @@ body {
   font-family: var(--font-family-sans);
 }
 
+/* Braccato preview. These must stay on :root: variables.css derives the active
+   and inactive lyric colours from them there, so setting them lower never lands. */
+:root {
+  --blyrics-text-color: var(--color-composer-text);
+  --blyrics-inactive-opacity: 0.2;
+  --blyrics-font-family: "Satoshi", sans-serif;
+  --blyrics-font-size: 2.5rem;
+}
+
+/* The element is the scroller braccato autoscrolls, which is what centres the
+   active line. */
+braccato-lyrics {
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+braccato-lyrics::-webkit-scrollbar {
+  display: none;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling) {
+  scrollbar-color: color-mix(in srgb, var(--color-composer-text) 15%, transparent) transparent;
+  scrollbar-width: thin;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar {
+  display: block;
+  width: 6px;
+}
+
+braccato-lyrics:has(.blyrics-user-scrolling)::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-composer-text) 15%, transparent);
+  border-radius: 3px;
+}
+
+/* lyrics.css spends --blyrics-padding-bottom but hardcodes the top. */
+braccato-lyrics .blyrics-container {
+  padding-top: var(--blyrics-padding-top, 2rem);
+}
+
 /* Text selection */
 ::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
@@ -89,6 +133,11 @@ body {
 
 @utility overflow-anchor-none {
   overflow-anchor: none;
+}
+
+@utility tap-highlight-none {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
 }
 
 @utility snap-onset-line {
@@ -172,6 +221,10 @@ body {
     -webkit-mask-size: 50vw 100%;
     mask-repeat: repeat;
     -webkit-mask-repeat: repeat;
+  }
+
+  /* Gated: Blink cannot composite mask-position, so an always-on sweep repaints every frame at opacity 0. */
+  &[data-sweeping]::before {
     animation: waveform-loading-sweep 1.8s linear infinite;
   }
 }

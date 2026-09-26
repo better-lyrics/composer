@@ -81,4 +81,4 @@ function findInsertionSlot(
 
 // -- Exports -------------------------------------------------------------------
 
-export { trimTrailingSpaceFromLast, resolveOverlapsForward, findInsertionSlot };
+export { DEFAULT_MIN_WORD_DURATION, trimTrailingSpaceFromLast, resolveOverlapsForward, findInsertionSlot };

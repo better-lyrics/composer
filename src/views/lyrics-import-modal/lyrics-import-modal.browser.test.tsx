@@ -344,6 +344,6 @@ describe("LyricsImportModal settings integration", () => {
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
     const line = useProjectStore.getState().lines[0];
     expect(line.text).toBe("Hello");
-    expect(line.backgroundText).toBe("world");
+    expect(line.backgroundText).toBe("(world)");
   });
 });

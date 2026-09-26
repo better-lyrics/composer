@@ -13,6 +13,11 @@ describe("GettingStartedSection", () => {
     await expect.poll(() => screen.container.querySelectorAll("[data-inline-key-badge]").length).toBeGreaterThan(0);
   });
 
+  it("names every supported lyrics format in the drop-a-file step", async () => {
+    const screen = await render(<GettingStartedSection />);
+    expect(screen.container.textContent).toContain("lyrics file (.txt, .lrc, .srt, .ttml, .qrc)");
+  });
+
   it("sandboxes the embedded tutorial iframe", async () => {
     const screen = await render(<GettingStartedSection />);
     const iframe = screen.container.querySelector('iframe[title="Composer tutorial"]');

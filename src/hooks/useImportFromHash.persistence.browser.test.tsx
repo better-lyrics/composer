@@ -51,7 +51,7 @@ async function waitForBootSettled(): Promise<void> {
 
 function importedPayload() {
   return {
-    metadata: { title: IMPORTED_TITLE, artist: "", album: "", duration: 0 },
+    metadata: { title: IMPORTED_TITLE, artists: [], album: "", duration: 0 },
     agents: [IMPORTED_AGENT],
     lines: [IMPORTED_LINE],
     granularity: "word" as const,
@@ -62,7 +62,7 @@ function savedSnapshot(audioSource?: { kind: "youtube"; videoId: string } | { ki
   return {
     version: 1,
     savedAt: Date.now(),
-    metadata: { title: SAVED_TITLE, artist: "", album: "", duration: 0 },
+    metadata: { title: SAVED_TITLE, artists: [], album: "", duration: 0 },
     lines: [SAVED_LINE],
     agents: [SAVED_AGENT],
     granularity: "word" as const,
@@ -72,7 +72,7 @@ function savedSnapshot(audioSource?: { kind: "youtube"; videoId: string } | { ki
 
 // -- Tests --------------------------------------------------------------------
 
-describe("usePersistence + useImportFromHash — hash overrides persistence", () => {
+describe("usePersistence + useImportFromHash: hash overrides persistence", () => {
   beforeEach(() => {
     setQuery("");
     setHash("");
@@ -95,6 +95,16 @@ describe("usePersistence + useImportFromHash — hash overrides persistence", ()
     expect(state.metadata.title).toBe(IMPORTED_TITLE);
     expect(state.lines.map((l) => l.id)).toEqual([IMPORTED_LINE.id]);
     expect(state.agents[0]?.name).toBe(IMPORTED_AGENT.name);
+  });
+
+  it("marks the imported song details as not exported yet", async () => {
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload(importedPayload()));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
   });
 
   it("hash import lines survive even when persistence has different saved lines", async () => {
@@ -156,5 +166,18 @@ describe("usePersistence + useImportFromHash — hash overrides persistence", ()
     await waitForBootSettled();
 
     expect(useProjectStore.getState().granularity).toBe("word");
+  });
+
+  it("regression: a payload with null metadata is rejected and the saved project survives", async () => {
+    allowConsole(/Invalid import payload structure/);
+    await seedProject(savedSnapshot());
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload({ ...importedPayload(), metadata: null }));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    expect(useProjectStore.getState().metadata.title).toBe(SAVED_TITLE);
+    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual([SAVED_LINE.text]);
   });
 });

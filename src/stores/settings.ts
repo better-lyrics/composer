@@ -1,6 +1,7 @@
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { DEFAULT_MIN_WORD_DURATION } from "@/utils/word-spaces";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
 // -- Types --------------------------------------------------------------------
 
@@ -29,6 +30,7 @@ const DEFAULT_COBALT_INSTANCE_ID = "default";
 
 interface SettingsState {
   defaultPlaybackRate: number;
+  preservePitch: boolean;
   rememberVolume: boolean;
   lastVolume: number;
   audioScrubPreview: boolean;
@@ -48,6 +50,7 @@ interface SettingsState {
   nudgeAmount: number;
   defaultWordDuration: number;
   minWordDuration: number;
+  redoPreroll: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -67,6 +70,8 @@ interface SettingsState {
   confirmResetShortcuts: boolean;
   confirmGroupDissolution: boolean;
   confirmApplyToAllSyllableSplit: boolean;
+  confirmConformToGroup: boolean;
+  confirmClearImportedSongDetails: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
@@ -96,6 +101,7 @@ interface SettingsActions {
 
 const DEFAULTS: SettingsState = {
   defaultPlaybackRate: 0.75,
+  preservePitch: true,
   rememberVolume: true,
   lastVolume: 1,
   audioScrubPreview: true,
@@ -114,7 +120,8 @@ const DEFAULTS: SettingsState = {
 
   nudgeAmount: 0.05,
   defaultWordDuration: 0.3,
-  minWordDuration: 0.05,
+  minWordDuration: DEFAULT_MIN_WORD_DURATION,
+  redoPreroll: 1.5,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,
@@ -124,7 +131,7 @@ const DEFAULTS: SettingsState = {
   splitCharacter: "|",
   autoExtractBackgroundVocals: true,
   mergeStandaloneBackgroundLines: true,
-  preserveBracketsOnExtraction: false,
+  preserveBracketsOnExtraction: true,
 
   confirmReplaceProjectFromHash: true,
   confirmReplaceLyrics: true,
@@ -134,6 +141,8 @@ const DEFAULTS: SettingsState = {
   confirmResetShortcuts: true,
   confirmGroupDissolution: true,
   confirmApplyToAllSyllableSplit: true,
+  confirmConformToGroup: true,
+  confirmClearImportedSongDetails: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
@@ -155,7 +164,7 @@ const BUILTIN_COBALT_INSTANCE: CobaltInstance = {
   url: "https://cobalt.boidu.dev",
 };
 
-const SETTINGS_PERSIST_VERSION = 5;
+const SETTINGS_PERSIST_VERSION = 6;
 
 function migrateSettings(persistedState: unknown, version: number): unknown {
   if (!persistedState || typeof persistedState !== "object") return persistedState;
@@ -168,6 +177,10 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.defaultPreviewSidebar === undefined) next.defaultPreviewSidebar = false;
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
+  if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
+  // The key predates the default flip, so every old blob carries an explicit
+  // false that a plain undefined guard would never reach.
+  if (version < 6) next.preserveBracketsOnExtraction = true;
   return next;
 }
 
@@ -190,6 +203,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmResetShortcuts: state.confirmResetShortcuts,
           confirmGroupDissolution: state.confirmGroupDissolution,
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
+          confirmConformToGroup: state.confirmConformToGroup,
+          confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,

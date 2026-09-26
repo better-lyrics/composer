@@ -1,5 +1,6 @@
 import { detectFileType, type LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { parseLrc } from "@/utils/lyrics-parsers/lrc";
+import { parseQrc } from "@/utils/lyrics-parsers/qrc";
 import type { ParseResult, ParserFn } from "@/utils/lyrics-parsers/shared";
 import { parseSrt } from "@/utils/lyrics-parsers/srt";
 import { parseTtml } from "@/utils/lyrics-parsers/ttml";
@@ -12,6 +13,7 @@ const PARSERS: Record<Exclude<LyricsFileType, "unknown">, ParserFn> = {
   lrc: parseLrc,
   srt: parseSrt,
   ttml: parseTtml,
+  qrc: parseQrc,
 };
 
 // -- Main Parser --------------------------------------------------------------

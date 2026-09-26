@@ -1,5 +1,5 @@
 // -- Theme token model ---------------------------------------------------------
-// Single source of truth for the 31 --color-composer-* tokens, their derivation
+// Single source of truth for the 33 --color-composer-* tokens, their derivation
 // type, and the metadata the editor + deriver read. Mirrors src/index.css @theme.
 
 type Scheme = "dark" | "light";
@@ -32,6 +32,8 @@ type TokenKey =
   | "error-text"
   | "warning"
   | "explicit"
+  | "positive"
+  | "negative"
   | "wave"
   | "wave-progress"
   | "snap"
@@ -252,6 +254,8 @@ const TOKENS: TokenMeta[] = [
     quick: "Warning",
   },
   { key: "explicit", varName: "--color-composer-explicit", label: "Explicit", group: "Status", type: "seed" },
+  { key: "positive", varName: "--color-composer-positive", label: "Correct mark", group: "Status", type: "seed" },
+  { key: "negative", varName: "--color-composer-negative", label: "Incorrect mark", group: "Status", type: "seed" },
   { key: "wave", varName: "--color-composer-wave", label: "Waveform", group: "Waveform", type: "seed" },
   {
     key: "wave-progress",

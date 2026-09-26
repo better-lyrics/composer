@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { generateTTML } from "@/utils/ttml";
 
 describe("parseLyricsFile - TTML with undeclared namespaces (AMLL)", () => {
   it("parses an AMLL export that uses <amll:meta> without declaring xmlns:amll", () => {
@@ -123,5 +125,48 @@ describe("parseLyricsFile - TTML background provenance", () => {
     const result = parseLyricsFile("song.ttml", content);
     expect(result.lines[0].backgroundText).toBeUndefined();
     expect(result.lines[0].backgroundTextSource).toBeUndefined();
+  });
+});
+
+describe("parseLyricsFile - TTML language", () => {
+  const ttmlWith = (language?: string, metaEls = "") => {
+    const langAttr = language === undefined ? "" : ` xml:lang="${language}"`;
+    return `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xmlns:composer="https://composer.betterlyrics.org/ttml"${langAttr}><head><metadata><ttm:agent type="person" xml:id="v1"/>${metaEls}</metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Ola</span> <span begin="00:01.500" end="00:02.000">mundo</span></p></div></body></tt>`;
+  };
+  const languageOf = (content: string) => parseLyricsFile("song.ttml", content).metadata.language;
+
+  it("reads xml:lang from the root tt element", () => {
+    expect(languageOf(ttmlWith("ja"))).toBe("ja");
+  });
+
+  it("leaves the language undefined when the root has no xml:lang", () => {
+    expect(languageOf(ttmlWith())).toBeUndefined();
+  });
+
+  it("keeps a script subtag intact", () => {
+    expect(languageOf(ttmlWith("zh-Hant"))).toBe("zh-Hant");
+  });
+
+  describe("edge cases", () => {
+    it("treats an empty xml:lang as no language", () => {
+      expect(languageOf(ttmlWith(""))).toBeUndefined();
+    });
+
+    it("trims surrounding whitespace off the language", () => {
+      expect(languageOf(ttmlWith("  ja  "))).toBe("ja");
+    });
+  });
+
+  describe("invariants", () => {
+    it("lets the root xml:lang win over a composer:meta language key", () => {
+      expect(languageOf(ttmlWith("ko", '<composer:meta key="language" value="ja"/>'))).toBe("ko");
+    });
+
+    it("survives a parse, export and re-parse cycle", () => {
+      const first = parseLyricsFile("song.ttml", ttmlWith("pt-BR"));
+      const metadata: ProjectMetadata = { title: "", artists: [], album: "", duration: 0, ...first.metadata };
+      const exported = generateTTML({ metadata, agents: [], lines: first.lines, granularity: "word" });
+      expect(parseLyricsFile("song.ttml", exported).metadata.language).toBe("pt-BR");
+    });
   });
 });

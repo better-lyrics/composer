@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { PlaybackSection } from "@/ui/settings/playback-section";
+import { describe, expect, it } from "vitest";
 
 describe("PlaybackSection", () => {
   it("shows the formatted default playback rate", async () => {
@@ -29,6 +29,19 @@ describe("PlaybackSection", () => {
     const screen = await render(<PlaybackSection />);
     await screen.getByRole("switch", { name: "Audio scrub preview" }).click();
     await expect.poll(() => useSettingsStore.getState().audioScrubPreview).toBe(false);
+  });
+
+  it("renders the Preserve pitch toggle on by default", async () => {
+    const screen = await render(<PlaybackSection />);
+    const toggle = screen.getByRole("switch", { name: "Preserve pitch" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("flips Preserve pitch when its toggle is clicked", async () => {
+    useSettingsStore.setState({ preservePitch: true });
+    const screen = await render(<PlaybackSection />);
+    await screen.getByRole("switch", { name: "Preserve pitch" }).click();
+    await expect.poll(() => useSettingsStore.getState().preservePitch).toBe(false);
   });
 
   it("hides the Use current action when no audio is loaded", async () => {

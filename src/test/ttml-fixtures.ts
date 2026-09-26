@@ -11,8 +11,11 @@ import { generateTTML } from "@/utils/ttml";
  *
  * Windows: "first line here" 2-6s, "second line now" 12-18s, "third line ends"
  * 24-30s.
+ *
+ * `durationSeconds` becomes the document's `dur`, the only channel a song
+ * duration reaches a lyrics parser through.
  */
-function buildSyncedTtml(): string {
+function buildSyncedTtml(durationSeconds?: number): string {
   const lines = [
     createLine({
       id: "line-a",
@@ -43,9 +46,31 @@ function buildSyncedTtml(): string {
     }),
   ];
   const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word", duration: durationSeconds });
+}
+
+/** One word-synced line 2-6s carrying a background vocal over its second half. */
+function buildBackgroundVocalTtml(): string {
+  const lines = [
+    createLine({
+      id: "line-bg",
+      text: "first line here",
+      words: [
+        { text: "first ", begin: 2, end: 3 },
+        { text: "line ", begin: 3, end: 4 },
+        { text: "here", begin: 4, end: 6 },
+      ],
+      backgroundText: "ooh ahh",
+      backgroundWords: [
+        { text: "ooh ", begin: 4, end: 5 },
+        { text: "ahh", begin: 5, end: 6 },
+      ],
+    }),
+  ];
+  const { metadata, agents } = useProjectStore.getState();
   return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { buildSyncedTtml };
+export { buildBackgroundVocalTtml, buildSyncedTtml };

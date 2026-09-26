@@ -4,6 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { useCallback } from "react";
 
 // -- Hook ---------------------------------------------------------------------
@@ -63,7 +64,7 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
 
       const project = await importProjectFromFile(file);
       const store = useProjectStore.getState();
-      setMetadata(project.metadata);
+      setMetadata(normalizeLoadedMetadata(project.metadata));
       setLines(project.lines);
       store.setGroups(project.groups ?? []);
       store.setDismissedSuggestions(project.dismissedSuggestions ?? []);
@@ -72,6 +73,7 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
       store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
       setAgents(project.agents);
       store.setCustomSnapPoints(project.customSnapPoints ?? []);
+      store.markSongDetailsImported();
       markClean();
 
       if (fileInputRef.current) {

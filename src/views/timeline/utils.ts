@@ -1,15 +1,14 @@
 import { instanceBounds } from "@/domain/instance/bounds";
+import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import type { WordSelection } from "@/domain/selection/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
-import { findWordsAtTime } from "@/views/timeline/word-at-playhead";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -34,10 +33,6 @@ function distributeLinesTiming<T extends { id: string; text: string }>(
 }
 
 const formatTime = (seconds: number) => formatTimeBase(seconds, 2);
-
-function findWordAtTime(lines: LyricLine[], time: number): WordSelection | null {
-  return findWordsAtTime(lines, time)[0] ?? null;
-}
 
 interface GroupHeaderRow {
   kind: "group-header";
@@ -133,7 +128,6 @@ interface RowLayoutInput {
   defaultRowHeight: number;
   collapsedInstances: Record<string, boolean>;
   waveformHeight: number;
-  bgDropZoneHeight: number;
   groupHeaderHeight: number;
 }
 
@@ -157,7 +151,6 @@ function computeRowLayout({
   defaultRowHeight,
   collapsedInstances,
   waveformHeight,
-  bgDropZoneHeight,
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
   const lineTops = new Map<string, RowPosition>();
@@ -178,8 +171,7 @@ function computeRowLayout({
     if (isCollapsed) continue;
 
     const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-    const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
-    const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
+    const rowHeight = lineRowHeight(line, mainHeight);
     lineTops.set(line.id, { top: rowTop, height: rowHeight, mainBottom: rowTop + mainHeight });
     rowTop += rowHeight;
   }
@@ -427,7 +419,6 @@ export {
   distributeWordsInLine,
   distributeLinesTiming,
   formatTime,
-  findWordAtTime,
   getEffectiveRows,
   getWordsInInstance,
   computeRowLayout,

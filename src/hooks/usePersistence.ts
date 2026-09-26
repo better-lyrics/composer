@@ -12,6 +12,7 @@ import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
@@ -60,6 +61,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     useSeparationStore.getState().currentStem,
     projectState.primingStripped,
     projectState.customSnapPoints,
+    projectState.hasUnexportedImport,
   ];
 }
 
@@ -115,7 +117,7 @@ function usePersistence(): void {
           }
 
           const state = useProjectStore.getState();
-          state.setMetadata(project.metadata);
+          state.setMetadata(normalizeLoadedMetadata(project.metadata));
           state.setLines(safeLines);
           state.setGroups(project.groups ?? []);
           state.setGranularity(safeGranularity);
@@ -125,6 +127,7 @@ function usePersistence(): void {
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
           state.setPrimingStripped(project.primingStripped ?? false);
           state.setCustomSnapPoints(project.customSnapPoints ?? []);
+          if (project.hasUnexportedImport) state.markSongDetailsImported();
           state.markClean();
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });

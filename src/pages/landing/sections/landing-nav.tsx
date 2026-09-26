@@ -20,6 +20,9 @@ const LandingNav: React.FC = () => {
           <Link to="/srt-to-ttml" className="hover:text-composer-text">
             SRT to TTML
           </Link>
+          <Link to="/qrc-to-ttml" className="hover:text-composer-text">
+            QRC to TTML
+          </Link>
           <Link to="/guides" className="hover:text-composer-text">
             Guides
           </Link>

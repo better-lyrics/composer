@@ -1,9 +1,12 @@
+import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
+import { setWordBoundary } from "@/utils/timing/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { MOD_KEY } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -21,7 +24,7 @@ import { mergeWordText } from "@/utils/word-merge";
 import type { WordSelection } from "@/domain/selection/model";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -31,7 +34,6 @@ import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coo
 import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
-  findWordAtTime,
   getWordsInInstance,
   partitionNudgeSelections,
   shiftSelectionsTogether,
@@ -64,18 +66,6 @@ function currentInstanceFromSelection(
   return { groupId, instanceIdx };
 }
 
-function listInstancesOfGroup(lines: LyricLine[], groupId: string): number[] {
-  const set = new Set<number>();
-  for (const line of lines) {
-    if (line.groupId === groupId && line.instanceIdx !== undefined) set.add(line.instanceIdx);
-  }
-  return Array.from(set).sort((a, b) => a - b);
-}
-
-// -- Constants -----------------------------------------------------------------
-
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(
@@ -94,8 +84,11 @@ function useTimelineKeyboard(
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
       const fromPlayhead = !selectedWord;
-      const targetWord = selectedWord ?? findWordAtTime(lines, currentTime);
-      if (!targetWord) return;
+      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge);
+      if (!targetWord) {
+        toast(edge === "begin" ? "No word starts after the playhead" : "No word ends before the playhead");
+        return;
+      }
 
       const line = lines[targetWord.lineIndex];
       if (!line) return;
@@ -117,7 +110,6 @@ function useTimelineKeyboard(
           defaultRowHeight,
           collapsedInstances,
           waveformHeight: WAVEFORM_HEIGHT,
-          bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
         const pos = layout.lineTops.get(line.id);
@@ -153,26 +145,18 @@ function useTimelineKeyboard(
         }
       }
 
-      const updatedWords = [...wordsArray];
-
-      if (edge === "begin") {
-        const prevEnd = wordIndex > 0 ? wordsArray[wordIndex - 1].end : 0;
-        const maxBegin = word.end - useSettingsStore.getState().minWordDuration;
-        const clampedBegin = Math.max(prevEnd, Math.min(maxBegin, Math.max(0, currentTime)));
-        updatedWords[wordIndex] = { ...word, begin: clampedBegin };
-      } else {
-        const minEnd = word.begin + useSettingsStore.getState().minWordDuration;
-        const nextBegin = wordIndex < wordsArray.length - 1 ? wordsArray[wordIndex + 1].begin : duration;
-        const clampedEnd = Math.min(nextBegin, Math.max(minEnd, Math.min(duration, currentTime)));
-        updatedWords[wordIndex] = { ...word, end: clampedEnd };
-      }
-
-      const updateLineWithHistory = useProjectStore.getState().updateLineWithHistory;
-      if (targetWord.type === "word") {
-        updateLineWithHistory(line.id, { words: updatedWords }, { propagateToSiblings: false });
-      } else {
-        updateLineWithHistory(line.id, manualBackgroundWordEdit(updatedWords), { propagateToSiblings: false });
-      }
+      const setBoundaryOp = targetWord.type === "word" ? setWordBoundary : setBgWordBoundary;
+      setBoundaryOp({
+        lines,
+        lineIdx: targetWord.lineIndex,
+        wordIdx: wordIndex,
+        edge,
+        time: currentTime,
+        minDuration: useSettingsStore.getState().minWordDuration,
+        duration,
+        rolling: useTimelineStore.getState().rollingEditMode,
+        updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,
+      });
     },
     [lines, duration, scrollContainerRef],
   );
@@ -304,7 +288,6 @@ function useTimelineKeyboard(
               defaultRowHeight,
               collapsedInstances,
               waveformHeight: WAVEFORM_HEIGHT,
-              bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
             const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
@@ -458,8 +441,7 @@ function useTimelineKeyboard(
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
           e.preventDefault();
-          const lineIds = new Set(wSel.map((w) => w.lineId));
-          splitLinesIntoWords(lineIds, lines);
+          splitLinesIntoWords(wSel, lines);
           break;
         }
         case "timeline.expandAll": {
@@ -582,7 +564,7 @@ function useTimelineKeyboard(
             toast.error("Select words inside one instance first");
             break;
           }
-          const all = listInstancesOfGroup(projectLines, inst.groupId);
+          const all = instanceIndicesOf(projectLines, inst.groupId);
           if (all.length < 2) {
             toast.error("This group has only one instance");
             break;
@@ -619,7 +601,7 @@ function useTimelineKeyboard(
           const group = useProjectStore.getState().groups.find((g) => g.id === inst.groupId);
           if (!group) break;
           e.preventDefault();
-          const instanceCount = listInstancesOfGroup(projectLines, inst.groupId).length;
+          const instanceCount = instanceIndicesOf(projectLines, inst.groupId).length;
           void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount });
           break;
         }

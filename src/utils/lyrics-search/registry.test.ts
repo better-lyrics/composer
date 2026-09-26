@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { ProviderName } from "@/domain/lyrics-search/result";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
 import { getProviders, registerProviderForTests } from "@/utils/lyrics-search/registry";
 
 // -- Helpers ------------------------------------------------------------------
 
-function makeProvider(name: "lrclib" | "binimum" | "boidu-lyrics" = "lrclib"): LyricsSearchProvider {
+function makeProvider(name: ProviderName = "lrclib"): LyricsSearchProvider {
   return {
     name,
     sourceLabel: `Label for ${name}`,
@@ -21,6 +22,16 @@ describe("getProviders", () => {
   it("returns a readonly array", () => {
     const providers = getProviders();
     expect(Array.isArray(providers)).toBe(true);
+  });
+
+  it("registers every built-in provider, with Better Lyrics Portato last", () => {
+    expect(getProviders().map((provider) => provider.name)).toEqual(["lrclib", "binimum", "boidu-lyrics", "portato"]);
+  });
+
+  it("labels every built-in provider", () => {
+    for (const provider of getProviders()) {
+      expect(provider.sourceLabel.trim().length).toBeGreaterThan(0);
+    }
   });
 
   it("returns the baseline list when no additional providers are registered for tests", () => {

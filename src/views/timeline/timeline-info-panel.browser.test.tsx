@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
@@ -9,10 +9,22 @@ import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Helpers ------------------------------------------------------------------
 
-function selectFirstWordOf(lineId: string): void {
+function selectWordAt(lineId: string, wordIndex: number): void {
   useTimelineStore.setState({
-    selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "word" }],
+    selectedWords: [{ lineId, lineIndex: 0, wordIndex, type: "word" }],
   });
+}
+
+function flushPairLine() {
+  return createLine({
+    id: "l1",
+    text: "hello world",
+    words: [createWord({ text: "hello ", begin: 0, end: 1 }), createWord({ text: "world", begin: 1, end: 2 })],
+  });
+}
+
+function currentWords() {
+  return useProjectStore.getState().lines[0].words ?? [];
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -22,83 +34,6 @@ describe("TimelineInfoPanel", () => {
     useTimelineStore.setState({ selectedWords: [] });
     const screen = await render(<TimelineInfoPanel />);
     expect(screen.container.textContent?.trim() ?? "").toBe("");
-  });
-});
-
-describe("BackgroundTextEditor provenance", () => {
-  it("labels the background vocals input", async () => {
-    const line = createLine({
-      id: "l1",
-      text: "hello",
-      words: [createWord({ text: "hello", begin: 0, end: 1 })],
-    });
-    useProjectStore.setState({ lines: [line] });
-    selectFirstWordOf("l1");
-    const screen = await render(<TimelineInfoPanel />);
-
-    await screen.getByRole("button", { name: "Add BG" }).click();
-    await expect.element(screen.getByRole("textbox", { name: "Background vocals text" })).toBeInTheDocument();
-  });
-
-  it("stamps a manual provenance when adding background text", async () => {
-    const line = createLine({
-      id: "l1",
-      text: "hello",
-      words: [createWord({ text: "hello", begin: 0, end: 1 })],
-    });
-    useProjectStore.setState({ lines: [line] });
-    selectFirstWordOf("l1");
-    const screen = await render(<TimelineInfoPanel />);
-
-    await screen.getByRole("button", { name: "Add BG" }).click();
-    await screen.getByPlaceholder("Background vocals").fill("ooh");
-    await userEvent.keyboard("{Enter}");
-
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("ooh");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
-  });
-
-  it("flips an extraction-sourced background to manual when edited", async () => {
-    const line = createLine({
-      id: "l1",
-      text: "hello",
-      words: [createWord({ text: "hello", begin: 0, end: 1 })],
-      backgroundText: "ooh",
-      backgroundTextSource: "extraction",
-    });
-    useProjectStore.setState({ lines: [line] });
-    selectFirstWordOf("l1");
-    const screen = await render(<TimelineInfoPanel />);
-
-    await screen.getByRole("button", { name: "BG: ooh" }).click();
-    await screen.getByPlaceholder("Background vocals").fill("aah");
-    await userEvent.keyboard("{Enter}");
-
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBe("aah");
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("manual");
-  });
-
-  it("clears all three background fields when the editor is emptied", async () => {
-    const line = createLine({
-      id: "l1",
-      text: "hello",
-      words: [createWord({ text: "hello", begin: 0, end: 1 })],
-      backgroundText: "ooh",
-      backgroundTextSource: "extraction",
-    });
-    useProjectStore.setState({
-      lines: [{ ...line, backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] }],
-    });
-    selectFirstWordOf("l1");
-    const screen = await render(<TimelineInfoPanel />);
-
-    await screen.getByRole("button", { name: "BG: ooh" }).click();
-    await screen.getByPlaceholder("Background vocals").fill("");
-    await userEvent.keyboard("{Enter}");
-
-    await expect.poll(() => useProjectStore.getState().lines[0].backgroundText).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
-    expect(useProjectStore.getState().lines[0].backgroundTextSource).toBeUndefined();
   });
 });
 
@@ -148,5 +83,89 @@ describe("TimelineInfoPanel bg word retiming provenance", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.[0].begin).toBeCloseTo(0.4);
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
+  });
+});
+
+describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
+  it("moves the previous word's end with Set Begin when rolling over a flush boundary", async () => {
+    useAudioStore.setState({ currentTime: 1.4, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: true });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
+    expect(currentWords()[0].end).toBeCloseTo(1.4, 10);
+  });
+
+  it("moves the next word's begin with Set End when rolling over a flush boundary", async () => {
+    useAudioStore.setState({ currentTime: 1.4, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: true });
+    selectWordAt("l1", 0);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set End/ }).click();
+
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(1.4, 10);
+    expect(currentWords()[1].begin).toBeCloseTo(1.4, 10);
+  });
+
+  it("moves only the selected word when rolling edit is off", async () => {
+    useAudioStore.setState({ currentTime: 1.4, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: false });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
+    expect(currentWords()[0].end).toBe(1);
+  });
+
+  it("records a rolling edit as a single undo entry", async () => {
+    useAudioStore.setState({ currentTime: 1.4, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: true });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+    await expect.poll(() => currentWords()[0].end).toBeCloseTo(1.4, 10);
+    expect(useProjectStore.getState().history).toHaveLength(2);
+
+    useProjectStore.getState().undo();
+
+    expect(currentWords()[0].end).toBe(1);
+    expect(currentWords()[1].begin).toBe(1);
+  });
+
+  it("clamps Set Begin with the configured minimum word duration", async () => {
+    useSettingsStore.getState().set("minWordDuration", 0.2);
+    useAudioStore.setState({ currentTime: 99, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: false });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.8, 10);
+  });
+
+  it("clamps Set End with the configured minimum word duration", async () => {
+    useSettingsStore.getState().set("minWordDuration", 0.2);
+    useAudioStore.setState({ currentTime: 0, duration: 10 });
+    useProjectStore.setState({ lines: [flushPairLine()] });
+    useTimelineStore.setState({ rollingEditMode: false });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set End/ }).click();
+
+    await expect.poll(() => currentWords()[1].end).toBeCloseTo(1.2, 10);
   });
 });

@@ -92,7 +92,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
       if (tagLower === "ti" || tagLower === "title") {
         metadata.title = value.trim();
       } else if (tagLower === "ar" || tagLower === "artist") {
-        metadata.artist = value.trim();
+        metadata.artists = [value.trim()];
       } else if (tagLower === "al" || tagLower === "album") {
         metadata.album = value.trim();
       } else if (tagLower === "length") {

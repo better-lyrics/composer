@@ -3,10 +3,12 @@ import BackgroundVocalsContent from "@/pages/guides/content/background-vocals-in
 import AppleMusicSyncedLyricsContent from "@/pages/guides/content/how-to-make-apple-music-synced-lyrics";
 import KaraokeStyleLyricsContent from "@/pages/guides/content/karaoke-style-lyrics-guide";
 import LrcToTtmlConversionContent from "@/pages/guides/content/lrc-to-ttml-conversion-guide";
+import LyricBestPracticesContent from "@/pages/guides/content/lyric-best-practices";
 import MultiAgentDuetsContent from "@/pages/guides/content/multi-agent-lyrics-duets";
 import TtmlFileFormatSpecContent from "@/pages/guides/content/ttml-file-format-spec";
 import TtmlVsLrcContent from "@/pages/guides/content/ttml-vs-lrc";
 import WhatIsTtmlContent from "@/pages/guides/content/what-is-ttml";
+import type { GuideSlug } from "@/pages/guides/slugs";
 import { Navigate, useParams } from "react-router-dom";
 
 interface GuideEntry {
@@ -17,7 +19,7 @@ interface GuideEntry {
   Content: React.FC;
 }
 
-const GUIDE_ENTRIES: Record<string, GuideEntry> = {
+const GUIDE_ENTRIES: Record<GuideSlug, GuideEntry> = {
   "what-is-ttml": {
     title: "What is TTML?",
     description:
@@ -104,11 +106,26 @@ const GUIDE_ENTRIES: Record<string, GuideEntry> = {
     ],
     Content: LrcToTtmlConversionContent,
   },
+  "lyric-best-practices": {
+    title: "Lyric Best Practices for TTML",
+    description:
+      "Where to break a line, when a background vocal needs brackets, who owns a line two people sing, and how far to split a word. Seventeen rules for TTML lyrics, each with an example.",
+    datePublished: "2026-08-25",
+    related: [
+      { title: "Background Vocals in TTML", path: "/guides/background-vocals-in-ttml" },
+      { title: "Karaoke-Style Lyrics Guide", path: "/guides/karaoke-style-lyrics-guide" },
+    ],
+    Content: LyricBestPracticesContent,
+  },
 };
+
+function isGuideSlug(value: string): value is GuideSlug {
+  return value in GUIDE_ENTRIES;
+}
 
 const GuidePage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const entry = slug ? GUIDE_ENTRIES[slug] : undefined;
+  const entry = slug && isGuideSlug(slug) ? GUIDE_ENTRIES[slug] : undefined;
 
   if (!slug || !entry) {
     return <Navigate to="/guides" replace />;
@@ -123,4 +140,5 @@ const GuidePage: React.FC = () => {
   );
 };
 
+export { GUIDE_ENTRIES };
 export default GuidePage;

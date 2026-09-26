@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { decodeThemeCode } from "@/domain/theme/code";
 import { deriveTheme } from "@/domain/theme/derive";
+import { DARK_NEGATIVE, DARK_POSITIVE, LIGHT_NEGATIVE, LIGHT_POSITIVE } from "@/domain/theme/mark-constants";
 import type { Theme, ThemeId } from "@/domain/theme/model";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
 import { applyResolvedTheme } from "@/utils/theme/apply";
@@ -35,6 +36,31 @@ function makeRandomId(): string {
 
 function applyTheme(theme: Theme): void {
   applyResolvedTheme(deriveTheme(theme), theme.scheme);
+}
+
+// -- Migration ----------------------------------------------------------------
+
+const THEME_PERSIST_VERSION = 2;
+
+const MARK_DEFAULTS = {
+  dark: { positive: DARK_POSITIVE, negative: DARK_NEGATIVE },
+  light: { positive: LIGHT_POSITIVE, negative: LIGHT_NEGATIVE },
+};
+
+// v2 added the positive/negative seeds. Themes saved before then have no value
+// for either, and deriveTheme resolves a missing seed to magenta.
+function migrateTheme(persistedState: unknown, version: number): unknown {
+  if (version >= THEME_PERSIST_VERSION) return persistedState;
+  if (!persistedState || typeof persistedState !== "object") return persistedState;
+  const state = persistedState as Partial<ThemeState>;
+  if (!Array.isArray(state.customThemes)) return state;
+  return {
+    ...state,
+    customThemes: state.customThemes.map((theme) => ({
+      ...theme,
+      tokens: { ...MARK_DEFAULTS[theme.scheme === "light" ? "light" : "dark"], ...theme.tokens },
+    })),
+  };
 }
 
 // -- Store --------------------------------------------------------------------
@@ -82,7 +108,8 @@ const useThemeStore = create<ThemeState & ThemeActions>()(
     }),
     {
       name: "composer-theme",
-      version: 1,
+      version: THEME_PERSIST_VERSION,
+      migrate: migrateTheme,
       onRehydrateStorage: () => (state) => {
         if (state) state.setActiveTheme(state.activeThemeId);
       },

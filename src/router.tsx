@@ -1,16 +1,6 @@
 import { ErrorFallback } from "@/pages/error-fallback";
+import { GUIDE_SLUGS } from "@/pages/guides/slugs";
 import type { RouteRecord } from "vite-react-ssg";
-
-const GUIDE_SLUGS = [
-  "what-is-ttml",
-  "ttml-vs-lrc",
-  "ttml-file-format-spec",
-  "how-to-make-apple-music-synced-lyrics",
-  "karaoke-style-lyrics-guide",
-  "background-vocals-in-ttml",
-  "multi-agent-lyrics-duets",
-  "lrc-to-ttml-conversion-guide",
-] as const;
 
 const errorElement = <ErrorFallback />;
 
@@ -65,6 +55,12 @@ const routes: RouteRecord[] = [
     path: "/srt-to-ttml",
     lazy: async () => ({ Component: (await import("@/pages/converters/srt-to-ttml")).default }),
     entry: "src/pages/converters/srt-to-ttml.tsx",
+    errorElement,
+  },
+  {
+    path: "/qrc-to-ttml",
+    lazy: async () => ({ Component: (await import("@/pages/converters/qrc-to-ttml")).default }),
+    entry: "src/pages/converters/qrc-to-ttml.tsx",
     errorElement,
   },
   {

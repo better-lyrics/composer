@@ -1,5 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
-import { HEADING, PROSE } from "@/ui/help-sections/shared";
+import { HEADING, PROSE } from "@/ui/typography";
 
 // -- Editing Lyrics -----------------------------------------------------------
 
