@@ -147,7 +147,7 @@ describe("PasteImportModal", () => {
     await expect.element(screen.getByText("Match lines by hand")).toBeInTheDocument();
     expect(document.querySelector('[data-tone="warning"]')?.textContent).toContain("Match lines by hand");
     await expect
-      .element(screen.getByText("Pasted 2 lines for 3 lyric lines. Edit either side of the mapping before importing."))
+      .element(screen.getByText("You pasted 2 lines for 3 lyric lines. Fix the matches below before importing."))
       .toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Import 2 lines" })).toBeInTheDocument();
 
@@ -165,9 +165,7 @@ describe("PasteImportModal", () => {
       const screen = await render(<PasteImportModal {...props} />);
 
       await expect
-        .element(
-          screen.getByText("Pasted 0 lines for 2 lyric lines. Edit either side of the mapping before importing."),
-        )
+        .element(screen.getByText("You pasted 0 lines for 2 lyric lines. Fix the matches below before importing."))
         .toBeInTheDocument();
       await expect.element(screen.getByRole("button", { name: "Import 0 lines" })).toBeDisabled();
     });

@@ -31,7 +31,7 @@ function alignPastedLanguageLines(text: string, sourceLines: string[]): PasteAli
     mappedLines: sourceLines.map((_, index) => rows[index] ?? ""),
     pastedLineCount: rows.length,
     strategy: "manual",
-    warning: `Pasted ${rows.length} lines for ${sourceLines.length} lyric lines. Edit either side of the mapping before importing.`,
+    warning: `You pasted ${rows.length} lines for ${sourceLines.length} lyric lines. Fix the matches below before importing.`,
   };
 }
 

@@ -214,9 +214,7 @@ describe("LanguagesPanel", () => {
     await expect
       .element(screen.getByRole("button", { name: "Go to line 1: Transliteration" }))
       .toHaveTextContent("Line 1");
-    await expect
-      .element(screen.getByText("Original word 1 has more timed parts", { exact: false }))
-      .toBeInTheDocument();
+    await expect.element(screen.getByText("Word 1 has more timed syllables", { exact: false })).toBeInTheDocument();
     await expect.element(screen.getByText("Timing mismatch", { exact: true })).toBeInTheDocument();
   });
 

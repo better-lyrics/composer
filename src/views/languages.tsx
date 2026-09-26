@@ -85,7 +85,7 @@ const LanguagesPanel: React.FC = () => {
             batch.lines.some((result) => result.failed),
           )
         ) {
-          toast.error("Some language content could not be generated");
+          toast.error("Couldn't generate some lines. Try Regenerate.");
         }
         const romanMain = romanizationResults?.[0];
         const romanBg = romanizationResults?.[1];
@@ -115,7 +115,7 @@ const LanguagesPanel: React.FC = () => {
           setMetadata({ language: detected });
         }
       } catch (error) {
-        if ((error as Error).name !== "AbortError") toast.error("Some language content could not be generated");
+        if ((error as Error).name !== "AbortError") toast.error("Couldn't generate some lines. Try Regenerate.");
       } finally {
         stop();
         if (abortRef.current === controller) {

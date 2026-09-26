@@ -95,7 +95,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       popover: {
         title: "Translate and transliterate",
         description:
-          "Composer generates editable transliterations and translations here. Use the arrow beside Regenerate all to replace only the languages you choose. If a line shows Review, open Align timing and place the invisible boundaries that map its reading to the original timed parts.",
+          "Generate transliterations and translations, then edit them like any lyric. The arrow next to Regenerate all redoes only the languages you pick. If a line gets flagged, press Align and click where each syllable starts.",
         side: "bottom",
         align: "center",
       },
