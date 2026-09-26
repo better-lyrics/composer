@@ -1,5 +1,8 @@
 import { useCallback } from "react";
-import { useAudioStore } from "@/stores/audio";
+import { shallow } from "zustand/shallow";
+import type { ProjectMetadata } from "@/domain/project/metadata";
+import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
+import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 
 // -- Hook ---------------------------------------------------------------------
@@ -7,16 +10,55 @@ import { useProjectStore } from "@/stores/project";
 function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
   return useCallback((videoId: string) => {
     const audio = useAudioStore.getState();
-    const prevVideoId = audio.source?.type === "youtube" ? audio.source.videoId : null;
+    const previous = audio.source;
+    const prevVideoId = previous?.type === "youtube" ? previous.videoId : null;
     audio.setYouTubeSource(videoId);
 
     const project = useProjectStore.getState();
-    if (!project.metadata.title || prevVideoId !== videoId) {
-      project.setMetadata({ title: videoId });
+    if (previous == null || prevVideoId === videoId) {
+      if (!project.metadata.title || prevVideoId !== videoId) project.setMetadata({ title: videoId });
+      project.clearUnexportedImport();
+      return waitForYouTubeLoad(videoId);
     }
 
-    return waitForYouTubeLoad(videoId);
+    const loading = waitForYouTubeLoad(videoId);
+    let undoReset: (() => void) | null = null;
+    if (!project.hasUnexportedImport) {
+      undoReset = resetSongIdentityForVideo(videoId, previous);
+    } else {
+      void confirmClearImportedSongDetails().then((clear) => {
+        if (!matchesPending(useAudioStore.getState().source, videoId)) return;
+        if (clear) undoReset = resetSongIdentityForVideo(videoId, previous);
+        else useProjectStore.getState().clearUnexportedImport();
+      });
+    }
+    return loading.catch((error: unknown) => {
+      undoReset?.();
+      throw error;
+    });
   }, []);
+}
+
+function resetSongIdentityForVideo(videoId: string, previous: AudioSource): () => void {
+  const project = useProjectStore.getState();
+  const { metadata, agents, hasUnexportedImport } = project;
+  project.resetSongIdentity(videoId);
+  const resetState = useProjectStore.getState();
+  return () => {
+    const current = useProjectStore.getState();
+    const loadFellBackToPrevious = useAudioStore.getState().source === previous;
+    const untouchedSinceReset =
+      current.agents === resetState.agents &&
+      shallow(withoutThumbnailOf(current.metadata, videoId), resetState.metadata);
+    if (loadFellBackToPrevious && untouchedSinceReset) {
+      current.restoreSongIdentity({ metadata, agents, hasUnexportedImport });
+    }
+  };
+}
+
+function withoutThumbnailOf(metadata: ProjectMetadata, videoId: string): ProjectMetadata {
+  if (metadata.thumbnailForVideoId !== videoId) return metadata;
+  return { ...metadata, thumbnailDataUrl: undefined, thumbnailForVideoId: undefined };
 }
 
 function waitForYouTubeLoad(videoId: string): Promise<void> {

@@ -61,6 +61,7 @@ function buildSaveArgs(): ProjectSaveArgs | null {
     useSeparationStore.getState().currentStem,
     projectState.primingStripped,
     projectState.customSnapPoints,
+    projectState.hasUnexportedImport,
   ];
 }
 
@@ -126,6 +127,7 @@ function usePersistence(): void {
           state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
           state.setPrimingStripped(project.primingStripped ?? false);
           state.setCustomSnapPoints(project.customSnapPoints ?? []);
+          if (project.hasUnexportedImport) state.markSongDetailsImported();
           state.markClean();
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });

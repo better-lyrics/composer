@@ -4,6 +4,7 @@ import {
   REVEAL_MARGIN_PX,
   centerTimeScrollLeft,
   revealTimeScrollLeft,
+  elementXToTime,
   timeToX,
   xToTime,
 } from "@/views/timeline/coords";
@@ -36,6 +37,26 @@ describe("xToTime", () => {
   it("accounts for scrollLeft", () => {
     const rect = { left: 0 } as DOMRect;
     expect(xToTime(GUTTER_WIDTH, rect, 100, 200)).toBeCloseTo(2);
+  });
+});
+
+describe("elementXToTime", () => {
+  function elementAt(left: number): HTMLElement {
+    const element = document.createElement("div");
+    element.getBoundingClientRect = () => ({ left }) as DOMRect;
+    return element;
+  }
+
+  it("maps a clientX to seconds from the element's left edge", () => {
+    expect(elementXToTime(250, elementAt(50), 100)).toBeCloseTo(2);
+  });
+
+  it("returns zero at the element's left edge", () => {
+    expect(elementXToTime(50, elementAt(50), 100)).toBe(0);
+  });
+
+  it("scales with zoom", () => {
+    expect(elementXToTime(250, elementAt(50), 50)).toBeCloseTo(4);
   });
 });
 

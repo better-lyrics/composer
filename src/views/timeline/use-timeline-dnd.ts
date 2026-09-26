@@ -2,7 +2,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { resolveDropTarget } from "@/views/timeline/drag-end-resolution";
+import { hitTestTrack, resolveDropTarget } from "@/views/timeline/drag-end-resolution";
 import {
   applyCrossLineMove,
   applySameLineReorder,
@@ -30,7 +30,10 @@ function useTimelineDnd(lines: LyricLine[]) {
   const dragListenersCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    return () => dragListenersCleanupRef.current?.();
+    return () => {
+      dragListenersCleanupRef.current?.();
+      useTimelineStore.getState().setWordDragHover(null);
+    };
   }, []);
 
   const sensors = useSensors(
@@ -59,10 +62,12 @@ function useTimelineDnd(lines: LyricLine[]) {
       dragShiftRef.current = e.shiftKey;
       pointerXRef.current = e.clientX;
       pointerYRef.current = e.clientY;
+      useTimelineStore.getState().setWordDragHover(hitTestTrack(e.clientX, e.clientY));
     };
     const onKey = (e: KeyboardEvent) => {
       dragShiftRef.current = e.shiftKey;
     };
+    useTimelineStore.getState().setWordDragHover(hitTestTrack(pointerXRef.current, pointerYRef.current));
     window.addEventListener("pointermove", onPointer);
     document.addEventListener("keydown", onKey);
     document.addEventListener("keyup", onKey);
@@ -76,6 +81,7 @@ function useTimelineDnd(lines: LyricLine[]) {
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
       setActiveDrag(null);
+      useTimelineStore.getState().setWordDragHover(null);
       document.body.style.cursor = "";
 
       const isShiftDrag = dragShiftRef.current;
@@ -141,6 +147,7 @@ function useTimelineDnd(lines: LyricLine[]) {
 
   const handleDragCancel = useCallback(() => {
     setActiveDrag(null);
+    useTimelineStore.getState().setWordDragHover(null);
     document.body.style.cursor = "";
     dragListenersCleanupRef.current?.();
     dragListenersCleanupRef.current = null;

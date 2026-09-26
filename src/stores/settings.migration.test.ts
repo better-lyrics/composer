@@ -60,3 +60,16 @@ describe("preserveBracketsOnExtraction migration", () => {
     expect(DEFAULTS.preserveBracketsOnExtraction).toBe(true);
   });
 });
+
+describe("syllablesFollowRolling", () => {
+  it("stays off for an existing profile saved before the setting existed", async () => {
+    const { syllablesFollowRolling: _omitted, ...blobWithoutKey } = legacyBlob();
+    await rehydrateAt(6, blobWithoutKey);
+    expect(useSettingsStore.getState().syllablesFollowRolling).toBe(false);
+  });
+
+  it("keeps an opt-in across a rehydrate", async () => {
+    await rehydrateAt(6, legacyBlob({ syllablesFollowRolling: true }));
+    expect(useSettingsStore.getState().syllablesFollowRolling).toBe(true);
+  });
+});

@@ -44,6 +44,7 @@ interface SettingsState {
   timelineSnapThreshold: number;
   vocalOnsetSnap: boolean;
   snapPlayheadToPoints: boolean;
+  syllablesFollowRolling: boolean;
   timelineHorizontalScroll: boolean;
 
   nudgeAmount: number;
@@ -70,6 +71,7 @@ interface SettingsState {
   confirmGroupDissolution: boolean;
   confirmApplyToAllSyllableSplit: boolean;
   confirmConformToGroup: boolean;
+  confirmClearImportedSongDetails: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
@@ -113,6 +115,7 @@ const DEFAULTS: SettingsState = {
   timelineSnapThreshold: 12,
   vocalOnsetSnap: true,
   snapPlayheadToPoints: true,
+  syllablesFollowRolling: false,
   timelineHorizontalScroll: false,
 
   nudgeAmount: 0.05,
@@ -139,6 +142,7 @@ const DEFAULTS: SettingsState = {
   confirmGroupDissolution: true,
   confirmApplyToAllSyllableSplit: true,
   confirmConformToGroup: true,
+  confirmClearImportedSongDetails: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
@@ -200,6 +204,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmGroupDissolution: state.confirmGroupDissolution,
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
           confirmConformToGroup: state.confirmConformToGroup,
+          confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,

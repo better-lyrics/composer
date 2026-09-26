@@ -102,8 +102,8 @@ const TimelineSection: React.FC = () => (
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.setWordEnd")} /> to snap a word's start or end to the
           current playhead position. With <strong>Rolling</strong> on, moving an edge that sits flush against its
           neighbor carries that neighbor along, so the two stay joined. Flush syllables of one word stay joined whether
-          Rolling is on or off, just as they do when you drag the boundary. The <strong>Set Begin</strong> and{" "}
-          <strong>Set End</strong> buttons in the info panel do the same thing.
+          Rolling is on or off, just as they do when you drag the boundary, unless the setting below is on. The{" "}
+          <strong>Set Begin</strong> and <strong>Set End</strong> buttons in the info panel do the same thing.
         </li>
         <li>
           With nothing selected and the playhead resting in the space between two words, those same two keys reach for
@@ -158,8 +158,9 @@ const TimelineSection: React.FC = () => (
       <h4 className={HEADING}>Boundary dragging</h4>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
-          Two syllables that sit flush share one boundary: drag either edge and both move together, staying flush. Once
-          a gap opens between them, each edge drags on its own so you can resize a syllable without closing the gap.
+          Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
+          edge drags on its own. Turn on <strong>Syllables follow rolling edit</strong> in Settings to join them only
+          while Rolling is on.
         </li>
         <li>
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped

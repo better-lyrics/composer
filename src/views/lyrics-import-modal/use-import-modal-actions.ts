@@ -81,6 +81,8 @@ async function importParsedLyrics(parsed: ParseResult, ctx: ImportParsedLyricsCo
 
   reconcileAgents(ctx.agents, parsed.agents);
 
+  if (Object.keys(parsed.metadata).length > 0 || parsed.agents?.length) store.markSongDetailsImported();
+
   ctx.onResult?.(parsed, ctx.source);
 
   return true;

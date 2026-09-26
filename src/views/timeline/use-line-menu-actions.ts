@@ -2,7 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
+import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -85,12 +85,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   const handleSplitIntoWords = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return;
-    const { lineId } = contextMenu.target;
-
-    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds = selectedLineIds.has(lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [lineId];
-
-    splitLinesIntoWords(targetIds, lines);
+    splitLinesIntoWords(splitTargetsForMenu(contextMenu.target, selectedWords), lines);
     clearContextMenu();
   }, [contextMenu, selectedWords, lines, clearContextMenu]);
 

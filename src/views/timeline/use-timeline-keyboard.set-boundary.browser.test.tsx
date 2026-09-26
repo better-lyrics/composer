@@ -16,6 +16,11 @@ const FLUSH_WORDS = [
   { text: "world", begin: 1, end: 2 },
 ];
 
+const FLUSH_SYLLABLES = [
+  { text: "ev", begin: 0, end: 1 },
+  { text: "er", begin: 1, end: 2 },
+];
+
 async function armTimeline(options: {
   line: LyricLine;
   wordIndex: number;
@@ -93,6 +98,25 @@ describe("useTimelineKeyboard · set boundary to playhead", () => {
 
     await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
     expect(currentWords()[0].end).toBe(1);
+  });
+
+  it("moves only the selected syllable when syllables follow rolling edit and rolling edit is off", async () => {
+    useSettingsStore.setState({ syllablesFollowRolling: true });
+    await armTimeline({ line: createLine({ words: FLUSH_SYLLABLES }), wordIndex: 1, currentTime: 1.4, rolling: false });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
+    expect(currentWords()[0].end).toBe(1);
+  });
+
+  it("regression: rolls a flush syllable without rolling edit while the setting is off", async () => {
+    await armTimeline({ line: createLine({ words: FLUSH_SYLLABLES }), wordIndex: 1, currentTime: 1.4, rolling: false });
+
+    pressBoundaryKey("[");
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
+    expect(currentWords()[0].end).toBeCloseTo(1.4, 10);
   });
 
   it("records a rolling edit as a single undo entry", async () => {

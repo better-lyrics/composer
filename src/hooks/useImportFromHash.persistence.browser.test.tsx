@@ -97,6 +97,16 @@ describe("usePersistence + useImportFromHash: hash overrides persistence", () =>
     expect(state.agents[0]?.name).toBe(IMPORTED_AGENT.name);
   });
 
+  it("marks the imported song details as not exported yet", async () => {
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload(importedPayload()));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+  });
+
   it("hash import lines survive even when persistence has different saved lines", async () => {
     await seedProject(savedSnapshot());
     autoAcceptHashConfirm();

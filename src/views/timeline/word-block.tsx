@@ -21,6 +21,7 @@ interface WordBlockProps {
   isSelected: boolean;
   isExplicit?: boolean;
   syllablePosition?: SyllablePosition;
+  syllableEdgesJoin?: boolean;
   gapBefore?: boolean;
   leftHighlighted?: boolean;
   rightHighlighted?: boolean;
@@ -59,6 +60,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
   isSelected,
   isExplicit,
   syllablePosition = "none",
+  syllableEdgesJoin = true,
   gapBefore,
   leftHighlighted,
   rightHighlighted,
@@ -169,7 +171,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
             ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [
                 "hover:bg-composer-text/10",
-                syllablePosition === "middle" || syllablePosition === "last" || leftConjoined
+                (syllableEdgesJoin && (syllablePosition === "middle" || syllablePosition === "last")) || leftConjoined
                   ? "cursor-col-resize"
                   : "cursor-ew-resize",
                 leftHighlighted && "bg-composer-text/10",
@@ -195,7 +197,7 @@ const WordBlock: React.FC<WordBlockProps> = ({
             ? "cursor-ew-resize bg-composer-text/10 hover:bg-composer-text/20"
             : [
                 "hover:bg-composer-text/10",
-                syllablePosition === "first" || syllablePosition === "middle" || rightConjoined
+                (syllableEdgesJoin && (syllablePosition === "first" || syllablePosition === "middle")) || rightConjoined
                   ? "cursor-col-resize"
                   : "cursor-ew-resize",
                 rightHighlighted && "bg-composer-text/10",

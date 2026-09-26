@@ -34,6 +34,7 @@ interface SetBoundaryInput {
   time: number;
   minDuration: number;
   rolling: boolean;
+  syllablesFollowRolling: boolean;
   duration?: number;
   updateLineWithHistory: UpdateLineWithHistory;
 }
@@ -124,6 +125,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     time,
     minDuration,
     rolling,
+    syllablesFollowRolling,
     duration,
     updateLineWithHistory,
   }: SetBoundaryInput): void {
@@ -137,6 +139,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       wordIndex: wordIdx,
       edge,
       rollingEdit: rolling,
+      syllablesFollowRolling,
       syllablePositions: getSyllablePositions(words),
     });
     const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, duration });

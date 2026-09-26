@@ -22,8 +22,14 @@ interface SnapCtx {
   overlapCheck: ((shift: number) => boolean) | null;
 }
 
+interface SnapResolution {
+  shiftPx: number;
+  anchorTime: number | null;
+}
+
 interface UseTimelineSnap {
   dragSnapModifier: Modifier;
+  syncDragSnap: () => void;
   beginGesture: (args: BeginGestureArgs) => void;
   endGesture: () => void;
   computeShiftPx: (proposedDeltaPx: number, edgesAtStart: number[]) => number;
@@ -61,6 +67,7 @@ function useTimelineSnap(): UseTimelineSnap {
     leaderKey: "",
     overlapCheck: null,
   });
+  const pendingDragAnchorRef = useRef<number | null>(null);
 
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
@@ -88,10 +95,11 @@ function useTimelineSnap(): UseTimelineSnap {
     ctxRef.current.selfIds = new Set();
     ctxRef.current.leaderKey = "";
     ctxRef.current.overlapCheck = null;
+    pendingDragAnchorRef.current = null;
     writeSnappedLeader("", null);
   }, []);
 
-  const computeShiftPx = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): number => {
+  const resolveSnap = useCallback((proposedDeltaPx: number, edgesAtStart: number[]): SnapResolution => {
     const ctx = ctxRef.current;
     const settings = useSettingsStore.getState();
     const timeline = useTimelineStore.getState();
@@ -102,10 +110,7 @@ function useTimelineSnap(): UseTimelineSnap {
     const threshold = useSettingsStore.getState().timelineSnapThreshold;
     const bypassing = useTimelineStore.getState().isBypassing;
     const zoom = timeline.zoom;
-    if (!enabled || bypassing || ctx.anchors.length === 0) {
-      writeSnappedLeader(ctx.leaderKey, null);
-      return 0;
-    }
+    if (!enabled || bypassing || ctx.anchors.length === 0) return { shiftPx: 0, anchorTime: null };
     const deltaT = proposedDeltaPx / zoom;
     const proposedEdges = edgesAtStart.map((edge) => edge + deltaT);
     const overlapCheck = ctx.overlapCheck;
@@ -116,8 +121,21 @@ function useTimelineSnap(): UseTimelineSnap {
       threshold,
       overlapCheck: overlapCheck ? (shift) => overlapCheck(shift) : undefined,
     });
-    writeSnappedLeader(ctx.leaderKey, result.anchor ? result.anchor.t : null);
-    return result.shift * zoom;
+    return { shiftPx: result.shift * zoom, anchorTime: result.anchor ? result.anchor.t : null };
+  }, []);
+
+  const computeShiftPx = useCallback(
+    (proposedDeltaPx: number, edgesAtStart: number[]): number => {
+      const { shiftPx, anchorTime } = resolveSnap(proposedDeltaPx, edgesAtStart);
+      writeSnappedLeader(ctxRef.current.leaderKey, anchorTime);
+      return shiftPx;
+    },
+    [resolveSnap],
+  );
+
+  // dnd-kit runs modifiers while rendering, so the snapped leader is published from onDragMove instead.
+  const syncDragSnap = useCallback(() => {
+    writeSnappedLeader(ctxRef.current.leaderKey, pendingDragAnchorRef.current);
   }, []);
 
   const dragSnapModifier = useMemo<Modifier>(
@@ -125,14 +143,15 @@ function useTimelineSnap(): UseTimelineSnap {
       ({ transform, active }) => {
         const data = active?.data.current as { snap?: { edgesAtStart: number[] } } | undefined;
         if (!data?.snap) return transform;
-        const shiftPx = computeShiftPx(transform.x, data.snap.edgesAtStart);
+        const { shiftPx, anchorTime } = resolveSnap(transform.x, data.snap.edgesAtStart);
+        pendingDragAnchorRef.current = anchorTime;
         if (shiftPx === 0) return transform;
         return { ...transform, x: transform.x + shiftPx };
       },
-    [computeShiftPx],
+    [resolveSnap],
   );
 
-  return { dragSnapModifier, beginGesture, endGesture, computeShiftPx };
+  return { dragSnapModifier, beginGesture, endGesture, computeShiftPx, syncDragSnap };
 }
 
 // -- Exports ------------------------------------------------------------------

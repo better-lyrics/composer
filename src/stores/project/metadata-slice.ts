@@ -1,3 +1,5 @@
+import { withDefaultAgentNames } from "@/domain/agent/default-names";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
 import { createGroupsInitialState } from "@/stores/project/groups-slice";
@@ -19,6 +21,7 @@ function createMetadataInitialState(): MetadataState {
       album: "",
       duration: 0,
     },
+    hasUnexportedImport: false,
   };
 }
 
@@ -49,6 +52,21 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
   startProjectSession: () => set((state) => ({ projectSession: state.projectSession + 1 })),
 
   reset: () => set((state) => ({ ...createProjectInitialState(), projectSession: state.projectSession + 1 })),
+  resetSongIdentity: (title) =>
+    set((state) => ({
+      metadata: normalizeLoadedMetadata({ title }),
+      agents: withDefaultAgentNames(state.agents),
+      hasUnexportedImport: false,
+      isDirty: true,
+    })),
+
+  restoreSongIdentity: (identity) => set({ ...identity, isDirty: true }),
+
+  markSongDetailsImported: () => set({ hasUnexportedImport: true, isDirty: true }),
+
+  clearUnexportedImport: () =>
+    set((state) => (state.hasUnexportedImport ? { hasUnexportedImport: false, isDirty: true } : state)),
+
 });
 
 // -- Exports ------------------------------------------------------------------

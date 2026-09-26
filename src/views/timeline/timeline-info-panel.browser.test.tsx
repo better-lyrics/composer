@@ -126,6 +126,28 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
     expect(currentWords()[0].end).toBe(1);
   });
 
+  it("moves only the selected syllable when syllables follow rolling edit and rolling edit is off", async () => {
+    useAudioStore.setState({ currentTime: 1.4, duration: 10 });
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "l1",
+          text: "ever",
+          words: [createWord({ text: "ev", begin: 0, end: 1 }), createWord({ text: "er", begin: 1, end: 2 })],
+        }),
+      ],
+    });
+    useSettingsStore.setState({ syllablesFollowRolling: true });
+    useTimelineStore.setState({ rollingEditMode: false });
+    selectWordAt("l1", 1);
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => currentWords()[1].begin).toBeCloseTo(1.4, 10);
+    expect(currentWords()[0].end).toBe(1);
+  });
+
   it("records a rolling edit as a single undo entry", async () => {
     useAudioStore.setState({ currentTime: 1.4, duration: 10 });
     useProjectStore.setState({ lines: [flushPairLine()] });
