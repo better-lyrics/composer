@@ -72,7 +72,7 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].detached).toBe(true);
   });
 
-  it("clears words/begin/end on position-based typo fix (timing is invalid for new text)", () => {
+  it("spreads a position-based typo fix across the edited word's slot", () => {
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -82,7 +82,10 @@ describe("textToLyricLines · group attrs preservation", () => {
       },
     ];
     const result = textToLyricLines("I luv", "v1", existing);
-    expect(result[0].words).toBeUndefined();
+    expect(result[0].words).toEqual([
+      { text: "I ", begin: 0, end: 0.5 },
+      { text: "luv", begin: 0.5, end: 1 },
+    ]);
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
   });
@@ -166,7 +169,7 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].words?.[2].end).toBe(1.2);
   });
 
-  it("clears words when the edited word count differs", () => {
+  it("keeps untouched word timing when the edited word count differs", () => {
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -181,7 +184,11 @@ describe("textToLyricLines · group attrs preservation", () => {
     ];
     const result = textToLyricLines("I really love you", "v1", existing);
     expect(result[0].text).toBe("I really love you");
-    expect(result[0].words).toBeUndefined();
+    expect(result[0].words?.map((w) => w.text)).toEqual(["I ", "really ", "love ", "you"]);
+    expect(result[0].words?.slice(2)).toEqual([
+      { text: "love ", begin: 0.4, end: 0.8 },
+      { text: "you", begin: 0.8, end: 1.2 },
+    ]);
   });
 
   it("does NOT position-match across an insertion (typed line count > existing)", () => {

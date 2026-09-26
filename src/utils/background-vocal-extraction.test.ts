@@ -909,7 +909,7 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     expect(result[0].backgroundWords).toEqual([{ text: "ah", begin: 1.0, end: 1.5 }]);
   });
 
-  it("falls back to text-only when standalone word count does not match bg text", () => {
+  it("carries matching word timing when standalone word count does not match bg text", () => {
     const lines = [
       createLine({ id: "1", text: "Real line" }),
       createLine({
@@ -926,7 +926,10 @@ describe("extractBackgroundVocals: timing-aware standalone merge", () => {
     const result = extractBackgroundVocals(lines, { mergeStandaloneLines: true, preserveBrackets: false });
     expect(result).toHaveLength(1);
     expect(result[0].backgroundText).toBe("ooh yeah");
-    expect(result[0].backgroundWords).toBeUndefined();
+    expect(result[0].backgroundWords).toEqual([
+      { text: "ooh ", begin: 5.2, end: 5.6 },
+      { text: "yeah", begin: 5.6, end: 6.0 },
+    ]);
   });
 });
 
