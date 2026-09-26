@@ -16,6 +16,10 @@ function lineRowHeight(line: LyricLine, mainHeight: number): number {
   return mainHeight + bgTrackHeight(line, mainHeight) + ROW_BORDER;
 }
 
+function emptyBgRowHeight(mainHeight: number): number {
+  return mainHeight + BG_DROP_ZONE_HEIGHT + ROW_BORDER;
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { BG_DROP_ZONE_HEIGHT, BLOCK_INSET_PX, bgTrackHeight, lineRowHeight };
+export { BG_DROP_ZONE_HEIGHT, BLOCK_INSET_PX, bgTrackHeight, emptyBgRowHeight, lineRowHeight };

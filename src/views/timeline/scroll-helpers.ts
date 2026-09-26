@@ -5,8 +5,6 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
 
-// -- Constants -----------------------------------------------------------------
-
 // -- Functions -----------------------------------------------------------------
 
 function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {

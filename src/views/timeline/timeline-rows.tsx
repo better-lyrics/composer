@@ -7,7 +7,7 @@ import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { BG_DROP_ZONE_HEIGHT, lineRowHeight } from "@/views/timeline/row-geometry";
+import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
@@ -19,8 +19,6 @@ import { Virtuoso } from "react-virtuoso";
 interface TimelineRowsProps {
   scrollContainerRef: RefObject<HTMLDivElement | null>;
 }
-
-// -- Constants -----------------------------------------------------------------
 
 // -- Component -----------------------------------------------------------------
 
@@ -135,7 +133,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const getRowHeight = useCallback(
     (index: number) => {
       const row = visibleRows[index];
-      if (!row) return defaultRowHeight + BG_DROP_ZONE_HEIGHT + 1;
+      if (!row) return emptyBgRowHeight(defaultRowHeight);
       if (row.kind === "group-header") return GROUP_HEADER_HEIGHT;
       return lineRowHeight(row.line, rowHeights[row.line.id] ?? defaultRowHeight);
     },
@@ -186,7 +184,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
-        defaultItemHeight={defaultRowHeight + BG_DROP_ZONE_HEIGHT + 1}
+        defaultItemHeight={emptyBgRowHeight(defaultRowHeight)}
         increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
       />
     </div>

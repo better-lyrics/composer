@@ -66,8 +66,6 @@ function currentInstanceFromSelection(
   return { groupId, instanceIdx };
 }
 
-// -- Constants -----------------------------------------------------------------
-
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(

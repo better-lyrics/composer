@@ -106,7 +106,6 @@ const MAX_ZOOM = 500;
 const ZOOM_STEP = 20;
 const MIN_ROW_HEIGHT = 32;
 const MAX_ROW_HEIGHT = 120;
-const DEFAULT_ROW_HEIGHT = 44;
 
 // -- Store ---------------------------------------------------------------------
 
@@ -199,5 +198,5 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT, ZOOM_STEP };
+export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, ZOOM_STEP };
 export type { ContextMenuTarget, TrackHit };

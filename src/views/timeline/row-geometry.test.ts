@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createLine, createWord } from "@/test/factories";
-import { BG_DROP_ZONE_HEIGHT, bgTrackHeight, lineRowHeight } from "@/views/timeline/row-geometry";
+import { BG_DROP_ZONE_HEIGHT, bgTrackHeight, emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
 
 const withBg = () => createLine({ backgroundWords: [createWord({ text: "ooh", begin: 0, end: 1 })] });
 
@@ -35,6 +35,10 @@ describe("lineRowHeight", () => {
   });
 
   describe("invariants", () => {
+    it("matches emptyBgRowHeight for a line without background words", () => {
+      for (const main of [32, 44, 120]) expect(lineRowHeight(createLine(), main)).toBe(emptyBgRowHeight(main));
+    });
+
     it("always equals main height plus bgTrackHeight plus one", () => {
       for (const line of [createLine(), withBg()]) {
         for (const main of [32, 44, 60, 80, 120]) {
