@@ -1,20 +1,15 @@
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields } from "@/domain/line/background";
+import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
-import { useSettingsStore } from "@/stores/settings";
+import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
-import { stripSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
-import { findInsertionSlot } from "@/utils/word-spaces";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
+import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tracks";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
-import { useDroppable } from "@dnd-kit/core";
-import { IconPlus } from "@tabler/icons-react";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -36,117 +31,33 @@ interface LineRowProps {
   ) => void;
 }
 
-// -- Constants -----------------------------------------------------------------
+// -- Helpers -------------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
+type DraggedGroupShift = ReturnType<typeof useTimelineStore.getState>["draggedGroupShift"];
 
-// -- AddWordsButton ------------------------------------------------------------
-
-const SyncLineButton: React.FC<{ lineId: string; wordCount: number }> = ({ lineId, wordCount }) => {
-  const selectLineWords = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const currentTime = useAudioStore.getState().currentTime;
-      const wordDuration = useSettingsStore.getState().defaultWordDuration;
-      const lineDuration = Math.max(wordCount, 1) * wordDuration;
-
-      useProjectStore.getState().updateLineWithHistory(lineId, {
-        begin: currentTime,
-        end: currentTime + lineDuration,
-      });
-    },
-    [lineId, wordCount],
-  );
-
-  return (
-    <button
-      type="button"
-      onClick={selectLineWords}
-      className="shrink-0 flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium text-composer-text-muted hover:text-composer-text hover:bg-composer-button cursor-pointer transition-colors not-italic"
-    >
-      <IconPlus size={12} />
-      Place
-    </button>
-  );
-};
+function dragShiftPxFor(line: LyricLine, shift: DraggedGroupShift): number {
+  return shift && belongsToInstance(line, shift.groupId, shift.instanceIdx) ? shift.offsetPx : 0;
+}
 
 // -- Component -----------------------------------------------------------------
 
 const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWord, onUpdateBgWord }) => {
   const color = getAgentColor(line.agentId);
-  const groups = useProjectStore((s) => s.groups);
-  const groupColor = line.groupId ? groups.find((g) => g.id === line.groupId)?.color : undefined;
-  const displayText = stripSplitCharacter(line.text);
-  const hasBgWords = line.backgroundWords && line.backgroundWords.length > 0;
-  const hasMainWords = line.words && line.words.length > 0;
-
+  const groupColor = useProjectStore((s) => s.groups.find((g) => g.id === line.groupId)?.color);
   const rowHeight = useTimelineStore((s) => s.rowHeights[line.id] ?? s.defaultRowHeight);
-  const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
-  const setRowHeight = useTimelineStore((s) => s.setRowHeight);
-  const zoom = useTimelineStore((s) => s.zoom);
-  const dragShiftPx = useTimelineStore((s) =>
-    s.draggedGroupShift &&
-    line.groupId !== undefined &&
-    line.instanceIdx !== undefined &&
-    s.draggedGroupShift.groupId === line.groupId &&
-    s.draggedGroupShift.instanceIdx === line.instanceIdx
-      ? s.draggedGroupShift.offsetPx
-      : 0,
+  const dragShiftPx = useTimelineStore((s) => dragShiftPxFor(line, s.draggedGroupShift));
+  const shiftTransform = dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined;
+  const { isResizing, startResize, resetHeight } = useRowResize(line.id, rowHeight);
+
+  const hoveredTrack = useTimelineStore((s) =>
+    s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
   );
 
-  const [isResizing, setIsResizing] = useState(false);
-  const cleanupRef = useRef<(() => void) | null>(null);
-
-  // react-doctor-disable-next-line react-doctor/exhaustive-deps
-  useEffect(() => {
-    return () => {
-      cleanupRef.current?.();
-    };
-  }, []);
-
-  const { setNodeRef: setBgDropRef, isOver: isOverBg } = useDroppable({
-    id: `bg-drop-${line.id}`,
-    data: { lineId: line.id, lineIndex },
-  });
-
-  const { setNodeRef: setMainDropRef, isOver: isOverMain } = useDroppable({
-    id: `main-drop-${line.id}`,
-    data: { lineId: line.id, lineIndex },
-  });
-
-  const handleResizeStart = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
-      e.preventDefault();
-      setIsResizing(true);
-      const startY = e.clientY;
-      const startHeight = rowHeight;
-
-      const handleMouseMove = (moveEvent: MouseEvent) => {
-        const delta = moveEvent.clientY - startY;
-        setRowHeight(line.id, startHeight + delta);
-      };
-
-      const handleMouseUp = () => {
-        setIsResizing(false);
-        cleanupRef.current = null;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      cleanupRef.current = () => {
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
-      };
-
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    },
-    [line.id, rowHeight, setRowHeight],
-  );
+  const mainWords = line.words?.length ? line.words : null;
+  const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
 
   return (
-    <div className="relative flex">
+    <div data-timeline-row className="relative flex">
       <div
         className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] bg-composer-bg w-12 sticky left-0 z-60"
         style={{ borderRightColor: color }}
@@ -154,11 +65,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
         <GutterAgentPicker lineId={line.id} lineIndex={lineIndex} agentId={line.agentId} />
       </div>
 
-      <div className={cn("flex-1 border-b border-composer-border relative", hasMainWords && "overflow-hidden")}>
-        <div
-          className="absolute inset-0"
-          style={{ transform: dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined }}
-        >
+      <div className={cn("flex-1 border-b border-composer-border relative", mainWords && "overflow-hidden")}>
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>
           {groupColor && (
             <div
               aria-hidden
@@ -168,21 +76,20 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           )}
         </div>
         <div
-          ref={setMainDropRef}
           data-line-index={lineIndex}
           data-track="word"
           className={cn(
             "transition-colors relative",
-            !hasMainWords && "opacity-50",
-            isOverMain && "bg-composer-accent/10",
+            !mainWords && "opacity-50",
+            hoveredTrack === "word" && "bg-composer-accent/10",
           )}
-          style={{ transform: dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined }}
+          style={{ transform: shiftTransform }}
         >
-          {hasMainWords ? (
+          {mainWords ? (
             <WordTrack
               lineId={line.id}
               lineIndex={lineIndex}
-              words={line.words!}
+              words={mainWords}
               color={color}
               trackType="word"
               duration={duration}
@@ -190,71 +97,24 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               onUpdateWord={onUpdateWord}
             />
           ) : (
-            <div
-              className="relative cursor-pointer"
-              style={{ width: duration * zoom, height: rowHeight }}
-              onDoubleClick={(e) => {
-                const zoomPx = useTimelineStore.getState().zoom;
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                const time = (e.clientX - rect.left) / zoomPx;
-                const audioDuration = useAudioStore.getState().duration;
-                const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-                const slot = findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
-                if (!slot) return;
-                const newWord: WordTiming = {
-                  text: displayText.slice(0, 60) || "...",
-                  begin: slot.begin,
-                  end: slot.end,
-                };
-                useProjectStore.getState().updateLineWithHistory(line.id, {
-                  words: [newWord],
-                  text: newWord.text,
-                });
-                useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "word" });
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                const zoomPx = useTimelineStore.getState().zoom;
-                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                const time = (e.clientX - rect.left) / zoomPx;
-                useTimelineStore.getState().setContextMenu({
-                  x: e.clientX,
-                  y: e.clientY,
-                  target: { kind: "track", lineId: line.id, lineIndex, time, type: "word" },
-                });
-              }}
-            >
-              <div
-                className="sticky left-[48px] z-10 inline-flex items-center gap-2 px-3 text-xs text-composer-text-muted italic bg-composer-bg/80 backdrop-blur-sm"
-                style={{ height: rowHeight, maxWidth: "calc(100% - 48px)" }}
-              >
-                <span className="truncate pr-0.5">
-                  {displayText.slice(0, 60)}
-                  {displayText.length > 60 ? "..." : ""}
-                </span>
-                {displayText.length > 0 && (
-                  <SyncLineButton lineId={line.id} wordCount={splitIntoWordsWithMeta(line.text).parts.length} />
-                )}
-              </div>
-            </div>
+            <EmptyWordTrack line={line} lineIndex={lineIndex} duration={duration} rowHeight={rowHeight} />
           )}
         </div>
 
-        {hasBgWords ? (
+        {bgWords ? (
           <div
-            ref={setBgDropRef}
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
               "relative opacity-70 transition-colors border-t border-composer-border/50",
-              isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+              hoveredTrack === "bg" ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
             )}
-            style={{ transform: dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined }}
+            style={{ transform: shiftTransform }}
           >
             <WordTrack
               lineId={line.id}
               lineIndex={lineIndex}
-              words={line.backgroundWords!}
+              words={bgWords}
               color={color}
               trackType="bg"
               duration={duration}
@@ -263,50 +123,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             />
           </div>
         ) : (
-          <div
-            ref={setBgDropRef}
-            data-line-index={lineIndex}
-            data-track="bg"
-            className={cn(
-              "flex items-center px-2 text-xs font-mono truncate transition-colors border-t border-composer-border/30 cursor-pointer",
-              isOverBg
-                ? "bg-composer-accent/20 text-composer-text"
-                : "text-composer-text-muted/50 bg-composer-bg-elevated/25",
-            )}
-            style={{ height: BG_DROP_ZONE_HEIGHT }}
-            onDoubleClick={(e) => {
-              const zoom = useTimelineStore.getState().zoom;
-              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              const time = (e.clientX - rect.left) / zoom;
-              const audioDuration = useAudioStore.getState().duration;
-              const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-              const slot = findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
-              if (!slot) return;
-              const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
-              useProjectStore
-                .getState()
-                .updateLineWithHistory(
-                  line.id,
-                  backgroundFields({ text: newWord.text, words: [newWord], source: "manual" }),
-                );
-              useTimelineStore.getState().setEditingWord({ lineId: line.id, wordIndex: 0, type: "bg" });
-            }}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              const zoom = useTimelineStore.getState().zoom;
-              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-              const time = (e.clientX - rect.left) / zoom;
-              useTimelineStore.getState().setContextMenu({
-                x: e.clientX,
-                y: e.clientY,
-                target: { kind: "track", lineId: line.id, lineIndex, time, type: "bg" },
-              });
-            }}
-          >
-            {line.backgroundText
-              ? `${line.backgroundText.slice(0, 40)}${line.backgroundText.length > 40 ? "..." : ""}`
-              : "BG"}
-          </div>
+          <EmptyBgTrack line={line} lineIndex={lineIndex} isOver={hoveredTrack === "bg"} />
         )}
       </div>
 
@@ -318,8 +135,8 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           "absolute left-0 right-0 bottom-0 h-1 cursor-ns-resize hover:bg-composer-accent/30 transition-colors z-10",
           isResizing && "bg-composer-accent/50",
         )}
-        onMouseDown={handleResizeStart}
-        onDoubleClick={() => setRowHeight(line.id, defaultRowHeight)}
+        onMouseDown={startResize}
+        onDoubleClick={resetHeight}
       />
     </div>
   );

@@ -379,7 +379,7 @@ const EditPanel: React.FC = () => {
 
     let words: WordTiming[] | undefined;
     if (newBgText && target?.backgroundWords?.length) {
-      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText) ?? undefined;
+      words = remapWordTextsPreservingTiming(target.backgroundWords, newBgText);
     }
 
     useProjectStore

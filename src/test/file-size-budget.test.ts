@@ -32,7 +32,6 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   // zero-behaviour-change extraction).
   "views/timeline/timeline-context-menu.tsx",
   "views/sync/scrollable-line.tsx",
-  "views/timeline/line-row.tsx",
   // shortcut-definitions.ts is intentionally exempt: it is a flat declarative
   // list of keyboard shortcut definitions. Splitting it per scope would need
   // a re-export module (barrel files are banned here), which is negative value.

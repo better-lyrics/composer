@@ -1,13 +1,13 @@
 import type { LyricLine } from "@/domain/line/model";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { type TrackHit, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
 // -- Constants -----------------------------------------------------------------
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
-const BG_DROP_ZONE_HEIGHT = 24;
+const TRACK_SELECTOR = "[data-line-index][data-track]";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -29,8 +29,35 @@ interface ResolveDropTargetInput {
 // correct under any browser/OS scale. Each track tags itself with
 // data-line-index + data-track (line-row.tsx). Walking up from whatever paints
 // under the cursor finds the row the user is visually over.
-function hitTestRow(clientX: number, clientY: number): { lineIndex: number; track: "word" | "bg" } | null {
-  const el = document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-line-index][data-track]");
+function trackElementAt(clientX: number, clientY: number): HTMLElement | null {
+  const hit = document.elementFromPoint(clientX, clientY);
+  const track = hit?.closest<HTMLElement>(TRACK_SELECTOR);
+  if (track) return track;
+  const row = hit?.closest<HTMLElement>("[data-timeline-row]");
+  return row ? nearestTrackByY(row, clientY) : null;
+}
+
+// The gutter and resize strip sit over a row but outside its tracks, so resolve them by height.
+function nearestTrackByY(row: HTMLElement, clientY: number): HTMLElement | null {
+  let nearest: HTMLElement | null = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const track of row.querySelectorAll<HTMLElement>(TRACK_SELECTOR)) {
+    const { top, bottom } = track.getBoundingClientRect();
+    const distance = clientY < top ? top - clientY : clientY >= bottom ? clientY - bottom : 0;
+    if (distance < nearestDistance) {
+      nearest = track;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
+}
+
+function hasRenderedTracks(): boolean {
+  return document.querySelector(TRACK_SELECTOR) !== null;
+}
+
+function hitTestTrack(clientX: number, clientY: number): TrackHit | null {
+  const el = trackElementAt(clientX, clientY);
   if (!el) return null;
   const lineIndex = Number(el.dataset.lineIndex);
   const track = el.dataset.track;
@@ -58,18 +85,17 @@ function resolveViaLayoutModel(
     defaultRowHeight,
     collapsedInstances,
     waveformHeight: ROWS_START_Y,
-    bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   return getLineAndTrackAtY(cursorY, lines, layout);
 }
 
 function resolveDropTarget({ clientX, clientY, lines }: ResolveDropTargetInput): DropTarget | null {
-  const hit = hitTestRow(clientX, clientY) ?? resolveViaLayoutModel(clientY, lines);
+  const hit = hasRenderedTracks() ? hitTestTrack(clientX, clientY) : resolveViaLayoutModel(clientY, lines);
   if (!hit || hit.lineIndex < 0 || hit.lineIndex >= lines.length) return null;
   return { targetLineIndex: hit.lineIndex, targetTrack: hit.track };
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { resolveDropTarget };
+export { hitTestTrack, resolveDropTarget, trackElementAt };

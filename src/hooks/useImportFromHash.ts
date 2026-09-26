@@ -90,6 +90,7 @@ function useImportFromHash(): void {
             state.updateAgent(agent.id, agent);
           }
         }
+        state.markSongDetailsImported();
 
         window.history.replaceState(null, "", window.location.pathname + window.location.search);
         toast.success("Imported from converter");

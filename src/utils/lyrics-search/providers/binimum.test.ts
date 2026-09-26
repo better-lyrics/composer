@@ -8,7 +8,7 @@ const SKIP_NETWORK = process.env.SKIP_NETWORK_TESTS === "1";
 const ONLINE_PROBE_URL = "https://lyrics-api.binimum.org/?track=test&artist=test";
 const ONLINE_PROBE_TIMEOUT_MS = 5000;
 const NETWORK_TEST_TIMEOUT_MS = 30000;
-const TTML_URL_REGEX = /^https:\/\/lyrics-storage\.binimum\.org\/.+\.ttml$/;
+const TTML_URL_REGEX = /^https:\/\/lrc\.red\/s\/.+\.ttml$/;
 
 // Binimum sits behind Cloudflare bot protection that 403s datacenter IPs (CI); a browser reaches it fine, so a block is an unavailable-for-tests signal, not a product failure.
 const BOT_BLOCK_STATUSES: ReadonlySet<number> = new Set([401, 403, 429]);
@@ -301,7 +301,7 @@ describe("binimumProvider duration mapping", () => {
     album_name: "A Night at the Opera",
     isrc: "GBUM71029604",
     timing_type: "line",
-    lyricsUrl: "https://lyrics-storage.binimum.org/0a1b2c3d.ttml",
+    lyricsUrl: "https://lrc.red/s/GBUM71029604.ttml",
   } as const;
 
   afterEach(() => {

@@ -54,7 +54,7 @@ describe("reconcileMatchedTiming", () => {
     expect(result.words?.map((w) => w.text)).toEqual(["Dengar", "lah ", "rin", "du"]);
   });
 
-  it("clears word timing when the syllable count actually changes", () => {
+  it("keeps untouched syllable timing when the syllable count changes", () => {
     const line: LyricLine = {
       id: "L0",
       text: "Dengar|lah",
@@ -66,10 +66,12 @@ describe("reconcileMatchedTiming", () => {
     };
     const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
     expect(result.text).toBe("Dengar|lah|extra");
-    expect(result.words).toBeUndefined();
+    expect(result.words?.map((w) => w.text)).toEqual(["Dengar", "lah", "extra"]);
+    expect(result.words?.[0]).toEqual({ text: "Dengar", begin: 0, end: 0.5 });
+    expect(result.words?.[2].end).toBe(1);
   });
 
-  it("clears begin/end on a line-synced line whose text content actually changed", () => {
+  it("keeps begin/end on a line-synced line whose text content changed", () => {
     const line: LyricLine = {
       id: "L0",
       text: "Dengarlah rindu",
@@ -79,6 +81,29 @@ describe("reconcileMatchedTiming", () => {
     };
     const result = reconcileMatchedTiming(line, "Dengarlah rindu sayang");
     expect(result.text).toBe("Dengarlah rindu sayang");
+    expect(result.begin).toBe(1);
+    expect(result.end).toBe(2);
+    expect(result.words).toBeUndefined();
+  });
+
+  it("clears word timing when the line text is emptied", () => {
+    const line: LyricLine = {
+      id: "L0",
+      text: "Dengar|lah",
+      agentId: "v1",
+      words: [
+        { text: "Dengar", begin: 0, end: 0.5 },
+        { text: "lah", begin: 0.5, end: 1 },
+      ],
+    };
+    const result = reconcileMatchedTiming(line, "");
+    expect(result.text).toBe("");
+    expect(result.words).toBeUndefined();
+  });
+
+  it("clears begin/end when a line-synced line's text is emptied", () => {
+    const line: LyricLine = { id: "L0", text: "Dengarlah", agentId: "v1", begin: 1, end: 2 };
+    const result = reconcileMatchedTiming(line, "");
     expect(result.begin).toBeUndefined();
     expect(result.end).toBeUndefined();
   });
@@ -170,7 +195,7 @@ describe("reconcileMatchedTiming · edge cases", () => {
       backgroundWords: [{ text: "ooh", begin: 0.2, end: 0.8 }],
       backgroundTextSource: "extraction",
     };
-    const result = reconcileMatchedTiming(line, "Dengar|lah|extra");
+    const result = reconcileMatchedTiming(line, "");
     expect(result.backgroundText).toBe("ooh");
     expect(result.backgroundWords).toEqual([{ text: "ooh", begin: 0.2, end: 0.8 }]);
     expect(result.backgroundTextSource).toBe("extraction");
@@ -196,9 +221,56 @@ describe("reconcileMatchedTiming · edge cases", () => {
     expect(remapped.instanceIdx).toBe(0);
     expect(remapped.templateLineIdx).toBe(0);
 
-    const cleared = reconcileMatchedTiming(wordSynced, "totally different content here now");
+    const cleared = reconcileMatchedTiming(wordSynced, "");
     expect(cleared.groupId).toBe("g1");
     expect(cleared.instanceIdx).toBe(0);
     expect(cleared.templateLineIdx).toBe(0);
+  });
+});
+
+describe("reconcileMatchedTiming · regressions", () => {
+  it("regression: typing an extra word into a line-synced line keeps its sync", () => {
+    const line: LyricLine = { id: "L0", text: "It hurts for me", agentId: "v1", begin: 107.9, end: 110.425 };
+    const result = reconcileMatchedTiming(line, "It hurts for me to wait");
+    expect(result.begin).toBe(107.9);
+    expect(result.end).toBe(110.425);
+  });
+
+  it("regression: typing an extra word into a word-synced line keeps the other words' timing", () => {
+    const line: LyricLine = {
+      id: "L0",
+      text: "Wish I could",
+      agentId: "v1",
+      words: [
+        { text: "Wish ", begin: 1, end: 2 },
+        { text: "I ", begin: 2, end: 3 },
+        { text: "could", begin: 3, end: 4 },
+      ],
+    };
+    const result = reconcileMatchedTiming(line, "Wish I could get it");
+    expect(result.words?.slice(0, 2)).toEqual([
+      { text: "Wish ", begin: 1, end: 2 },
+      { text: "I ", begin: 2, end: 3 },
+    ]);
+    expect(result.words?.map((w) => w.text)).toEqual(["Wish ", "I ", "could ", "get ", "it"]);
+    expect(result.words?.[4].end).toBe(4);
+  });
+
+  it("regression: deleting a word from a word-synced line keeps the remaining timing exactly", () => {
+    const line: LyricLine = {
+      id: "L0",
+      text: "Wish I could",
+      agentId: "v1",
+      words: [
+        { text: "Wish ", begin: 1, end: 2 },
+        { text: "I ", begin: 2, end: 3 },
+        { text: "could", begin: 3, end: 4 },
+      ],
+    };
+    const result = reconcileMatchedTiming(line, "Wish could");
+    expect(result.words).toEqual([
+      { text: "Wish ", begin: 1, end: 2 },
+      { text: "could", begin: 3, end: 4 },
+    ]);
   });
 });

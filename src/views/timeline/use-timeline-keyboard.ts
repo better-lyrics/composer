@@ -66,10 +66,6 @@ function currentInstanceFromSelection(
   return { groupId, instanceIdx };
 }
 
-// -- Constants -----------------------------------------------------------------
-
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(
@@ -114,7 +110,6 @@ function useTimelineKeyboard(
           defaultRowHeight,
           collapsedInstances,
           waveformHeight: WAVEFORM_HEIGHT,
-          bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
         const pos = layout.lineTops.get(line.id);
@@ -293,7 +288,6 @@ function useTimelineKeyboard(
               defaultRowHeight,
               collapsedInstances,
               waveformHeight: WAVEFORM_HEIGHT,
-              bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
             const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
@@ -447,8 +441,7 @@ function useTimelineKeyboard(
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
           e.preventDefault();
-          const lineIds = new Set(wSel.map((w) => w.lineId));
-          splitLinesIntoWords(lineIds, lines);
+          splitLinesIntoWords(wSel, lines);
           break;
         }
         case "timeline.expandAll": {

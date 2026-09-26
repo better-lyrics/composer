@@ -72,7 +72,7 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].detached).toBe(true);
   });
 
-  it("clears words/begin/end on position-based typo fix (timing is invalid for new text)", () => {
+  it("spreads a position-based typo fix across the edited word's slot", () => {
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -82,7 +82,10 @@ describe("textToLyricLines · group attrs preservation", () => {
       },
     ];
     const result = textToLyricLines("I luv", "v1", existing);
-    expect(result[0].words).toBeUndefined();
+    expect(result[0].words).toEqual([
+      { text: "I ", begin: 0, end: 0.5 },
+      { text: "luv", begin: 0.5, end: 1 },
+    ]);
     expect(result[0].begin).toBeUndefined();
     expect(result[0].end).toBeUndefined();
   });
@@ -166,7 +169,7 @@ describe("textToLyricLines · group attrs preservation", () => {
     expect(result[0].words?.[2].end).toBe(1.2);
   });
 
-  it("clears words when the edited word count differs", () => {
+  it("keeps untouched word timing when the edited word count differs", () => {
     const existing: LyricLine[] = [
       {
         id: "L1",
@@ -181,7 +184,11 @@ describe("textToLyricLines · group attrs preservation", () => {
     ];
     const result = textToLyricLines("I really love you", "v1", existing);
     expect(result[0].text).toBe("I really love you");
-    expect(result[0].words).toBeUndefined();
+    expect(result[0].words?.map((w) => w.text)).toEqual(["I ", "really ", "love ", "you"]);
+    expect(result[0].words?.slice(2)).toEqual([
+      { text: "love ", begin: 0.4, end: 0.8 },
+      { text: "you", begin: 0.8, end: 1.2 },
+    ]);
   });
 
   it("does NOT position-match across an insertion (typed line count > existing)", () => {
@@ -399,5 +406,81 @@ describe("textToLyricLines · split-character timing preservation", () => {
     expect(result[1].id).toBe("L1");
     expect(result[1].text).toBe("Dengar|lah rindu yang menyik|sa i|ni");
     expect(result[1].words).toEqual(existing[1].words);
+  });
+});
+
+describe("textToLyricLines · whitespace-normalized matching", () => {
+  const doubleSpaced: LyricLine = {
+    id: "chorus-1",
+    text: "Wish  I  could",
+    agentId: "v1",
+    words: [
+      { text: "Wish  ", begin: 49, end: 50 },
+      { text: "I  ", begin: 50, end: 51 },
+      { text: "could", begin: 51, end: 52 },
+    ],
+  };
+  const singleSpaced: LyricLine = { id: "chorus-2", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };
+
+  it("regression: a double-spaced line keeps its own id and timing instead of stealing a later duplicate's", () => {
+    const result = textToLyricLines("Wish  I  could\nWish I could", "v1", [doubleSpaced, singleSpaced]);
+    expect(result.map((l) => l.id)).toEqual(["chorus-1", "chorus-2"]);
+    expect(result[0].words?.map((w) => w.begin)).toEqual([49, 50, 51]);
+    expect(result[1].begin).toBe(116);
+    expect(result[1].end).toBe(118);
+  });
+
+  it("regression: editing an unrelated line does not reshuffle duplicate lines", () => {
+    const other: LyricLine = { id: "other", text: "Always", agentId: "v1", begin: 1, end: 2 };
+    const result = textToLyricLines("Always yeah\nWish  I  could\nWish I could", "v1", [
+      other,
+      doubleSpaced,
+      singleSpaced,
+    ]);
+    expect(result.map((l) => l.id)).toEqual(["other", "chorus-1", "chorus-2"]);
+    expect(result[2].begin).toBe(116);
+  });
+
+  describe("edge cases", () => {
+    it("matches a line whose stored text has leading or trailing whitespace", () => {
+      const padded: LyricLine = { id: "p", text: " Hello  world ", agentId: "v1", begin: 3, end: 4 };
+      const result = textToLyricLines("Hello world", "v1", [padded]);
+      expect(result[0].id).toBe("p");
+      expect(result[0].begin).toBe(3);
+    });
+
+    it("still matches duplicates in document order when all are single-spaced", () => {
+      const a: LyricLine = { id: "a", text: "la la", agentId: "v1", begin: 1, end: 2 };
+      const b: LyricLine = { id: "b", text: "la la", agentId: "v1", begin: 5, end: 6 };
+      const result = textToLyricLines("la la\nla la", "v1", [a, b]);
+      expect(result.map((l) => l.id)).toEqual(["a", "b"]);
+    });
+  });
+});
+
+describe("textToLyricLines · in-place edits keep row identity", () => {
+  it("regression: correcting a line into a later duplicate's text does not steal that duplicate", () => {
+    const typo: LyricLine = { id: "typo", text: "Wish I coud", agentId: "v1", begin: 49, end: 52 };
+    const middle: LyricLine = { id: "mid", text: "Something else", agentId: "v1", begin: 60, end: 62 };
+    const later: LyricLine = { id: "later", text: "Wish I could", agentId: "v1", begin: 116, end: 118 };
+    const result = textToLyricLines("Wish I could\nSomething else\nWish I could", "v1", [typo, middle, later]);
+    expect(result.map((l) => l.id)).toEqual(["typo", "mid", "later"]);
+    expect(result[0].begin).toBe(49);
+    expect(result[2].begin).toBe(116);
+  });
+
+  it("still follows lines by text when a same-count paste reorders them", () => {
+    const a: LyricLine = { id: "a", text: "first", agentId: "v1", begin: 1, end: 2 };
+    const b: LyricLine = { id: "b", text: "second", agentId: "v1", begin: 3, end: 4 };
+    const result = textToLyricLines("second\nfirst", "v1", [a, b]);
+    expect(result.map((l) => l.id)).toEqual(["b", "a"]);
+  });
+
+  it("does not claim by position when the line count changed", () => {
+    const x1: LyricLine = { id: "x1", text: "X", agentId: "v1", begin: 1, end: 2 };
+    const x2: LyricLine = { id: "x2", text: "X", agentId: "v1", begin: 5, end: 6 };
+    const y: LyricLine = { id: "y", text: "Y", agentId: "v1", begin: 8, end: 9 };
+    const result = textToLyricLines("New\nX\nX\nY", "v1", [x1, x2, y]);
+    expect(result.slice(1).map((l) => l.id)).toEqual(["x1", "x2", "y"]);
   });
 });
