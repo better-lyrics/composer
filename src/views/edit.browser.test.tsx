@@ -368,3 +368,36 @@ describe("regressions: hand edits keep sync", () => {
     expect(bg[2].end).toBe(1.5);
   });
 });
+
+describe("regressions: typing does not reshuffle duplicate lines", () => {
+  it("regression: typing on one line leaves a double-spaced chorus and its later repeat on their own timing", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "edit-me", text: "Always", begin: 1, end: 2 }),
+        createLine({
+          id: "chorus-1",
+          text: "Wish  I  could",
+          words: [
+            { text: "Wish  ", begin: 49, end: 50 },
+            { text: "I  ", begin: 50, end: 51 },
+            { text: "could", begin: 51, end: 52 },
+          ],
+        }),
+        createLine({ id: "chorus-2", text: "Wish I could", begin: 116, end: 118 }),
+      ],
+    });
+    await render(<EditPanel />);
+
+    const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+    textarea.setSelectionRange("Always".length, "Always".length);
+    await userEvent.keyboard(" yeah");
+
+    await expect.poll(() => useProjectStore.getState().lines[0].text).toBe("Always yeah");
+    const [, chorus1, chorus2] = useProjectStore.getState().lines;
+    expect(chorus1.id).toBe("chorus-1");
+    expect(chorus1.words?.map((w) => w.begin)).toEqual([49, 50, 51]);
+    expect(chorus2.id).toBe("chorus-2");
+    expect(chorus2.begin).toBe(116);
+  });
+});
