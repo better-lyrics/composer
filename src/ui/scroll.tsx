@@ -13,6 +13,7 @@ interface ScrollProps {
   autoHide?: AutoHide;
   autoHideDelay?: number;
   viewportRef?: MutableRefObject<HTMLDivElement | null>;
+  onInitialized?: (viewport: HTMLDivElement) => void;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -23,6 +24,7 @@ const Scroll: React.FC<ScrollProps> = ({
   autoHide = "leave",
   autoHideDelay = 800,
   viewportRef,
+  onInitialized,
 }) => (
   <OverlayScrollbarsComponent
     defer
@@ -32,8 +34,9 @@ const Scroll: React.FC<ScrollProps> = ({
     }}
     events={{
       initialized: (instance) => {
-        if (!viewportRef) return;
-        viewportRef.current = instance.elements().viewport as HTMLDivElement;
+        const viewport = instance.elements().viewport as HTMLDivElement;
+        if (viewportRef) viewportRef.current = viewport;
+        onInitialized?.(viewport);
       },
       destroyed: () => {
         if (viewportRef) viewportRef.current = null;
