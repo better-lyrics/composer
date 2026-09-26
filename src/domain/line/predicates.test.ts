@@ -1,6 +1,6 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { hasAnyTiming, isLineSynced, isWordSynced } from "@/domain/line/predicates";
+import { hasAnyTiming, hasMainLyrics, isLineSynced, isWordSynced } from "@/domain/line/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -95,5 +95,39 @@ describe("hasAnyTiming", () => {
 
   it("returns false when only empty words and bgWords arrays", () => {
     expect(hasAnyTiming(line({ words: [], backgroundWords: [] }))).toBe(false);
+  });
+});
+
+describe("hasMainLyrics", () => {
+  const line = (text: string): LyricLine => ({ id: "l", text, agentId: "v1" });
+
+  it("is true for a line with words in its text", () => {
+    expect(hasMainLyrics(line("hello world"))).toBe(true);
+  });
+
+  it("is false for an empty line", () => {
+    expect(hasMainLyrics(line(""))).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("is false for whitespace-only text", () => {
+      expect(hasMainLyrics(line("   \t "))).toBe(false);
+    });
+
+    it("is false for text that is only split characters", () => {
+      expect(hasMainLyrics(line("|"))).toBe(false);
+    });
+
+    it("is true for a single syllable split with the split character", () => {
+      expect(hasMainLyrics(line("hel|lo"))).toBe(true);
+    });
+
+    it("is true for non-latin text", () => {
+      expect(hasMainLyrics(line("愛してる"))).toBe(true);
+    });
+
+    it("ignores background text", () => {
+      expect(hasMainLyrics({ ...line(""), backgroundText: "ooh" })).toBe(false);
+    });
   });
 });

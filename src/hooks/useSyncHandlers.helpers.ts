@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
-import { createInitialBgWords, splitIntoWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
+import { hasMainLyrics } from "@/domain/line/predicates";
+import { createInitialBgWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
 
@@ -47,7 +48,7 @@ function buildInitialWordUpdates(
 }
 
 function isSyncableLine(line: LyricLine | undefined): boolean {
-  return !!line && splitIntoWords(line.text).length > 0;
+  return !!line && hasMainLyrics(line);
 }
 
 function nextSyncableLineIndex(lines: LyricLine[], fromIndex: number): number {
