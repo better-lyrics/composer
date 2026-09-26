@@ -1,6 +1,9 @@
 import { DragOverlay } from "@dnd-kit/core";
+import type { LyricLine } from "@/domain/line/model";
 import type { SyllablePosition } from "@/domain/word/syllable-groups";
 import { cn } from "@/utils/cn";
+import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -11,6 +14,14 @@ interface DragGhostCell {
   width: number;
   height: number;
   syllablePosition: SyllablePosition;
+}
+
+interface DragGhostProps {
+  cells: DragGhostCell[];
+  anchorWidth: number;
+  anchorHeight: number;
+  color: string;
+  isSnapped: boolean;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -24,13 +35,7 @@ const GHOST_SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
 
 // -- Components ----------------------------------------------------------------
 
-const DragGhost: React.FC<{
-  cells: DragGhostCell[];
-  anchorWidth: number;
-  anchorHeight: number;
-  color: string;
-  isSnapped: boolean;
-}> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
+const DragGhost: React.FC<DragGhostProps> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
   <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
     {cells.map((cell) => (
       <div
@@ -61,6 +66,29 @@ const DragGhost: React.FC<{
   </div>
 );
 
+interface HoverSizedDragGhostProps extends DragGhostProps {
+  lines: LyricLine[];
+}
+
+function useHoveredTrackHeight(lines: LyricLine[]): number | null {
+  return useTimelineStore((s) => {
+    const hover = s.wordDragHover;
+    const line = hover ? lines[hover.lineIndex] : undefined;
+    if (!hover || !line) return null;
+    const mainHeight = s.rowHeights[line.id] ?? s.defaultRowHeight;
+    return hover.track === "word" ? mainHeight : bgTrackHeight(line, mainHeight);
+  });
+}
+
+const HoverSizedDragGhost: React.FC<HoverSizedDragGhostProps> = ({ lines, cells, anchorHeight, ...rest }) => {
+  const hoveredTrackHeight = useHoveredTrackHeight(lines);
+  if (cells.length !== 1 || hoveredTrackHeight === null) {
+    return <DragGhost cells={cells} anchorHeight={anchorHeight} {...rest} />;
+  }
+  const height = hoveredTrackHeight - BLOCK_INSET_PX * 2;
+  return <DragGhost cells={[{ ...cells[0], height }]} anchorHeight={height} {...rest} />;
+};
+
 // dnd-kit's overlay is a fixed box over the pointer; the drop target is hit-tested underneath it.
 const TimelineDragOverlay: React.FC<{ children?: React.ReactNode }> = ({ children }) => (
   <DragOverlay dropAnimation={null} className="pointer-events-none">
@@ -70,5 +98,5 @@ const TimelineDragOverlay: React.FC<{ children?: React.ReactNode }> = ({ childre
 
 // -- Exports -------------------------------------------------------------------
 
-export { DragGhost, TimelineDragOverlay };
+export { DragGhost, HoverSizedDragGhost, TimelineDragOverlay };
 export type { DragGhostCell };

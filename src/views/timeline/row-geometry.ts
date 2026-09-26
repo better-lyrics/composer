@@ -4,6 +4,7 @@ import type { LyricLine } from "@/domain/line/model";
 
 const BG_DROP_ZONE_HEIGHT = 24;
 const ROW_BORDER = 1;
+const BLOCK_INSET_PX = 4;
 
 // -- Functions -----------------------------------------------------------------
 
@@ -17,4 +18,4 @@ function lineRowHeight(line: LyricLine, mainHeight: number): number {
 
 // -- Exports -------------------------------------------------------------------
 
-export { BG_DROP_ZONE_HEIGHT, bgTrackHeight, lineRowHeight };
+export { BG_DROP_ZONE_HEIGHT, BLOCK_INSET_PX, bgTrackHeight, lineRowHeight };

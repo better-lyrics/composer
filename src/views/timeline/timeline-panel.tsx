@@ -26,7 +26,8 @@ import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sideba
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
+import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
+import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
   expandSelectionToGroupmates,
@@ -41,7 +42,7 @@ import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
-import { bgTrackHeight } from "@/views/timeline/row-geometry";
+import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { IconMusic } from "@tabler/icons-react";
@@ -110,7 +111,7 @@ const TimelinePanel: React.FC = () => {
 
   const { handlePanMouseDown } = useTimelinePan(scrollContainerRef);
   const { sensors, activeDrag, handleDragStart, handleDragEnd, handleDragCancel } = useTimelineDnd(effectiveLines);
-  const { dragSnapModifier, beginGesture, endGesture } = useTimelineSnap();
+  const { dragSnapModifier, beginGesture, endGesture, syncDragSnap } = useTimelineSnap();
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
   useSnapBypass({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
@@ -264,12 +265,12 @@ const TimelinePanel: React.FC = () => {
             left: 0,
             top: 0,
             width: w,
-            height: anchorHeight - 8,
+            height: anchorHeight - BLOCK_INSET_PX * 2,
             syllablePosition: "none" as SyllablePosition,
           },
         ],
         anchorWidth: w,
-        anchorHeight: anchorHeight - 8,
+        anchorHeight: anchorHeight - BLOCK_INSET_PX * 2,
       };
     }
 
@@ -296,7 +297,7 @@ const TimelinePanel: React.FC = () => {
       const cellLeft = word.begin * zoom - anchorLeft;
       const cellTop = (sel.type === "bg" ? rowBgTops[line.id] : rowTops[line.id]) - anchorTop;
       const cellWidth = Math.max((word.end - word.begin) * zoom, 4);
-      const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - 8;
+      const cellHeight = (sel.type === "bg" ? rowBgHeights[line.id] : rowMainHeights[line.id]) - BLOCK_INSET_PX * 2;
 
       return {
         text: word.text.trimEnd(),
@@ -309,7 +310,7 @@ const TimelinePanel: React.FC = () => {
     });
 
     const anchorW = Math.max((activeDrag.end - activeDrag.begin) * zoom, 4);
-    return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - 8 };
+    return { cells, anchorWidth: anchorW, anchorHeight: anchorHeight - BLOCK_INSET_PX * 2 };
   }, [activeDrag, zoom, effectiveLines]);
 
   if (!source) {
@@ -340,7 +341,8 @@ const TimelinePanel: React.FC = () => {
   return (
     <DndContext
       sensors={sensors}
-      modifiers={[dragSnapModifier]}
+      modifiers={[trackSnapModifier, dragSnapModifier]}
+      onDragMove={syncDragSnap}
       onDragStart={(e) => {
         handleDragStart(e);
         const data = e.active.data.current as
@@ -454,7 +456,8 @@ const TimelinePanel: React.FC = () => {
 
         <TimelineDragOverlay>
           {activeDrag && dragCells && (
-            <DragGhost
+            <HoverSizedDragGhost
+              lines={effectiveLines}
               cells={dragCells.cells}
               anchorWidth={dragCells.anchorWidth}
               anchorHeight={dragCells.anchorHeight}
