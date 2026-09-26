@@ -1,22 +1,28 @@
 import { pastedRows } from "@/domain/language/paste-import";
 import { googleLanguageProvider } from "@/services/google-language-provider";
 import { useProjectStore } from "@/stores/project";
-import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
+import { Select } from "@/ui/select";
 import { watchGenerationEdits } from "@/views/languages/generation-edit-guard";
 import { languageGenerationInputs } from "@/views/languages/generation-inputs";
 import { LANGUAGE_OPTIONS, SOURCE_LANGUAGE_OPTIONS } from "@/views/languages/language-options";
+import { LanguageTrackBar } from "@/views/languages/language-track-bar";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { mergeGeneratedLanguageUpdates } from "@/views/languages/merge-generated-language-updates";
 import { PasteImportModal } from "@/views/languages/paste-import-modal";
 import { RegenerateLanguageControl } from "@/views/languages/regenerate-language-control";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
-import { TransliterationHelp } from "@/views/languages/transliteration-help";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
-import { IconLanguage, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
+// -- Constants ----------------------------------------------------------------
+
+const SOURCE_SELECT_OPTIONS = SOURCE_LANGUAGE_OPTIONS.map(([value, label]) => ({ value, label }));
+
+// -- Component ----------------------------------------------------------------
+
 const LanguagesPanel: React.FC = () => {
   const lines = useProjectStore((state) => state.lines);
   const metadata = useProjectStore((state) => state.metadata);
@@ -25,7 +31,6 @@ const LanguagesPanel: React.FC = () => {
   const updateLinesWithHistory = useProjectStore((state) => state.updateLinesWithHistory);
   const setMetadata = useProjectStore((state) => state.setMetadata);
   const { targets, targetsRef, setTargets, project } = useLanguageTargets(lines, metadata, projectSession);
-  const [nextTarget, setNextTarget] = useState("es");
   const [isGenerating, setIsGenerating] = useState(false);
   const [pasteImport, setPasteImport] = useState<{
     text: string;
@@ -139,11 +144,6 @@ const LanguagesPanel: React.FC = () => {
   }, [activeTab, generate, lines.length, targets]);
   const languageName = useMemo(() => new Map<string, string>(LANGUAGE_OPTIONS), []);
   const availableLanguages = LANGUAGE_OPTIONS.filter(([code]) => !targets.includes(code));
-  useEffect(() => {
-    if (!targets.includes(nextTarget)) return;
-    const next = LANGUAGE_OPTIONS.find(([code]) => !targets.includes(code));
-    if (next) setNextTarget(next[0]);
-  }, [nextTarget, targets]);
   const removeTarget = (language: string) => {
     const updates = lines.flatMap((line) => {
       if (!line.translations?.[language]) return [];
@@ -154,6 +154,12 @@ const LanguagesPanel: React.FC = () => {
     if (updates.length > 0) updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
     setTargets((all) => all.filter((item) => item !== language));
   };
+  const addTarget = (language: string) => {
+    if (targets.includes(language)) return;
+    setTargets([...targets, language]);
+    void generate([language]);
+  };
+  const trackCount = targets.length + 1;
   const changeSourceLanguage = (language: string) => {
     const selected = language || "auto";
     setMetadata({ language: language || undefined });
@@ -166,7 +172,7 @@ const LanguagesPanel: React.FC = () => {
   };
 
   if (lines.length === 0) {
-    return <EmptyState message="No lyrics to translate" hint="Add lyrics in the Edit tab first" />;
+    return <EmptyState message="No lyrics to translate" hint="Add some in the Edit tab first." />;
   }
 
   return (
@@ -182,42 +188,28 @@ const LanguagesPanel: React.FC = () => {
         setPasteImport({
           text,
           kind,
-          language: field?.dataset.languageImportLanguage || nextTarget,
+          language: field?.dataset.languageImportLanguage || targets[0] || LANGUAGE_OPTIONS[0][0],
         });
       }}
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border">
-        <div>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-composer-border select-none">
+        <div className="flex items-baseline gap-3">
           <h2 className="text-lg font-medium">Languages</h2>
-          <p className="text-sm text-composer-text-muted">
-            Google-generated content stays editable and never adds another timing track.
-          </p>
+          <span className="font-mono text-sm text-composer-text-muted tabular-nums">
+            {lines.length} {lines.length === 1 ? "line" : "lines"} ・ {trackCount}{" "}
+            {trackCount === 1 ? "track" : "tracks"}
+          </span>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            aria-label="Translation language"
-            value={nextTarget}
-            disabled={availableLanguages.length === 0}
-            onChange={(event) => setNextTarget(event.target.value)}
-            className="h-9 px-2 text-sm border rounded-md bg-composer-input border-composer-border"
-          >
-            {availableLanguages.map(([code, name]) => (
-              <option value={code} key={code}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <Button
-            disabled={isGenerating || availableLanguages.length === 0 || targets.includes(nextTarget)}
-            onClick={() => {
-              if (targets.includes(nextTarget)) return;
-              const next = [...targets, nextTarget];
-              setTargets(next);
-              void generate([nextTarget]);
-            }}
-          >
-            Add translation
-          </Button>
+          <span className="text-sm text-composer-text-muted">Source</span>
+          <Select
+            aria-label="Source language"
+            value={metadata.language ?? ""}
+            disabled={isGenerating}
+            onChange={changeSourceLanguage}
+            options={SOURCE_SELECT_OPTIONS}
+            className="h-8"
+          />
           <RegenerateLanguageControl
             isGenerating={isGenerating}
             translations={targets}
@@ -229,39 +221,18 @@ const LanguagesPanel: React.FC = () => {
           />
         </div>
       </div>
-
-      <div className="flex items-center gap-2 px-6 py-2 border-b border-composer-border">
-        <IconLanguage className="size-4 text-composer-text-muted" />
-        <label className="flex items-center gap-2 text-sm text-composer-text-secondary">
-          <span>Source</span>
-          <select
-            aria-label="Source language"
-            value={metadata.language ?? ""}
-            disabled={isGenerating}
-            onChange={(event) => changeSourceLanguage(event.target.value)}
-            className="h-8 px-2 text-sm border rounded-md bg-composer-input border-composer-border"
-          >
-            {SOURCE_LANGUAGE_OPTIONS.map(([code, name]) => (
-              <option value={code} key={code || "auto"}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <TransliterationHelp />
-        {targets.map((language) => (
-          <span key={language} className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-composer-button">
-            {languageName.get(language) ?? language}
-            <button type="button" aria-label={`Remove ${language}`} onClick={() => removeTarget(language)}>
-              <IconX className="size-3" />
-            </button>
-          </span>
-        ))}
-      </div>
+      <LanguageTrackBar
+        targets={targets}
+        languageNames={languageName}
+        availableLanguages={availableLanguages}
+        disabled={isGenerating}
+        onAdd={addTarget}
+        onRemove={removeTarget}
+      />
 
       <Scroll className="flex-1">
-        <div className="flex flex-col gap-3 p-6">
-          <LanguageStatusSummaries lines={lines} languageNames={languageName} />
+        <LanguageStatusSummaries lines={lines} languageNames={languageName} />
+        <div className="mt-4 border-b border-composer-border">
           {lines.map((line, index) => (
             <LanguageLineEditor
               key={line.id}
@@ -292,5 +263,7 @@ const LanguagesPanel: React.FC = () => {
     </div>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { LanguagesPanel };

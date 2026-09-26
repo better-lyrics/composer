@@ -258,10 +258,28 @@ describe("LanguagesPanel", () => {
 
   it("lets the user override the detected source language", async () => {
     const screen = await render(<LanguagesPanel />);
-    const source = screen.getByRole("combobox", { name: "Source language" });
-    await expect.element(source).toHaveValue("ja");
-    await source.selectOptions("ko");
+    const source = screen.getByRole("button", { name: "Source language" });
+    await expect.element(source).toHaveTextContent("Japanese");
+    await source.click();
+    await screen.getByRole("option", { name: "Korean" }).click();
     await expect.poll(() => useProjectStore.getState().metadata.language).toBe("ko");
+  });
+
+  it("regression: disables the source picker while generation is running", async () => {
+    useProjectStore.getState().setLines([{ id: "regression-source-disable", text: "未使用の歌詞", agentId: "v1" }]);
+    const pending: Array<() => void> = [];
+    vi.stubGlobal(
+      "fetch",
+      () =>
+        new Promise<Response>((resolve) => {
+          pending.push(() => resolve(new Response(JSON.stringify([[["x", "y"]], null, "ja"]), { status: 200 })));
+        }),
+    );
+    const screen = await render(<LanguagesPanel />);
+    await expect.element(screen.getByRole("button", { name: "Source language" })).toBeDisabled();
+    await expect.poll(() => pending.length).toBeGreaterThan(0);
+    for (const resolve of pending.splice(0)) resolve();
+    await expect.element(screen.getByRole("button", { name: "Source language" })).toBeEnabled();
   });
 
   it("selectively regenerates transliteration or individual translations", async () => {

@@ -99,11 +99,11 @@ describe("language generation lifecycle", () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
     await expect.poll(() => pending.length).toBe(2);
-    await screen.getByRole("button", { name: "Remove en", exact: true }).click();
+    await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     await releaseRequests();
     await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
     expect(useProjectStore.getState().lines[0].translations?.en).toBeUndefined();
-    await expect.element(screen.getByRole("button", { name: "Remove en", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove English", exact: true })).not.toBeInTheDocument();
   });
 
   it("preserves text typed and then cleared while initial generation is pending", async () => {
@@ -170,7 +170,7 @@ describe("language generation lifecycle", () => {
     await expect.element(screen.getByRole("textbox", { name: "Spanish", exact: true })).toHaveValue("Hola");
     await expect.poll(() => requestedTargets.includes("es")).toBe(true);
     expect(requestedTargets).not.toContain("fr");
-    await expect.element(screen.getByRole("button", { name: "Remove fr", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove French", exact: true })).not.toBeInTheDocument();
   });
 
   it("keeps a translation target editable after its last stored translation is cleared", async () => {
@@ -179,7 +179,7 @@ describe("language generation lifecycle", () => {
     await expect.element(english).toHaveValue("Generated translation");
     await english.fill("");
     await expect.element(english).toHaveValue("");
-    await expect.element(screen.getByRole("button", { name: "Remove en", exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove English", exact: true })).toBeInTheDocument();
     await english.fill("Replacement manual translation");
     await expect.element(english).toHaveValue("Replacement manual translation");
   });
@@ -189,12 +189,13 @@ describe("language generation lifecycle", () => {
     await expect
       .element(screen.getByRole("textbox", { name: "English", exact: true }))
       .toHaveValue("Generated translation");
-    await screen.getByRole("button", { name: "Remove en", exact: true }).click();
+    await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     defer = true;
-    await screen.getByRole("button", { name: "Add translation", exact: true }).click();
+    await screen.getByRole("button", { name: "Add language", exact: true }).click();
+    await screen.getByRole("option", { name: "Spanish" }).click();
     await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().setActiveTab("edit");
-    await expect.element(screen.getByRole("button", { name: "Remove es", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     useProjectStore.getState().startProjectSession();
     useProjectStore.getState().setLines([{ id: "line", text: source, agentId: "v1" }]);
     await releaseRequests();
@@ -205,7 +206,7 @@ describe("language generation lifecycle", () => {
       .element(screen.getByRole("textbox", { name: "English", exact: true }))
       .toHaveValue("Generated translation");
     expect(requestedTargets).toEqual(["en"]);
-    await expect.element(screen.getByRole("button", { name: "Remove es", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
   });
 
   it("retains a removed default target and an empty selected target across Activity re-entry", async () => {
@@ -213,12 +214,13 @@ describe("language generation lifecycle", () => {
     await expect
       .element(screen.getByRole("textbox", { name: "English", exact: true }))
       .toHaveValue("Generated translation");
-    await screen.getByRole("button", { name: "Remove en", exact: true }).click();
+    await screen.getByRole("button", { name: "Remove English", exact: true }).click();
     defer = true;
-    await screen.getByRole("button", { name: "Add translation", exact: true }).click();
+    await screen.getByRole("button", { name: "Add language", exact: true }).click();
+    await screen.getByRole("option", { name: "Spanish" }).click();
     await expect.poll(() => pending.length).toBe(2);
     useProjectStore.getState().setActiveTab("edit");
-    await expect.element(screen.getByRole("button", { name: "Remove es", exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Remove Spanish", exact: true })).not.toBeInTheDocument();
     await releaseRequests();
     defer = false;
     requestedTargets = [];
