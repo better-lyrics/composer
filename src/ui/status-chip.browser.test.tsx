@@ -41,6 +41,25 @@ describe("StatusChip", () => {
     await expect.element(screen.getByLabelText("2 lines with a timing mismatch")).toHaveTextContent("2");
   });
 
+  it("exposes role img when aria-label is given", async () => {
+    const screen = await render(
+      <StatusChip tone="error" icon={IconAlertCircle} aria-label="2 lines with a timing mismatch">
+        2
+      </StatusChip>,
+    );
+    await expect.element(screen.getByRole("img", { name: "2 lines with a timing mismatch" })).toHaveTextContent("2");
+  });
+
+  it("has no role when aria-label is omitted", async () => {
+    const screen = await render(
+      <StatusChip tone="warning" icon={IconAlertTriangle}>
+        Needs review
+      </StatusChip>,
+    );
+    const chip = screen.getByText("Needs review").element();
+    expect(chip.hasAttribute("role")).toBe(false);
+  });
+
   describe("invariants", () => {
     it("hides the icon from assistive technology", async () => {
       const screen = await render(
