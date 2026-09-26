@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { type ClipboardStub, stubClipboard } from "@/test/clipboard";
 import { render } from "@/test/render";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
 
@@ -6,36 +7,6 @@ const EXPECTED_INSTALL_CMD =
   "curl -fsSL https://github.com/better-lyrics/composer-bridge/releases/latest/download/install.sh | sh";
 
 const RELEASES_URL = "https://github.com/better-lyrics/composer-bridge/releases/latest";
-
-// -- Clipboard stub -----------------------------------------------------------
-
-interface ClipboardStub {
-  writes: string[];
-  restore: () => void;
-}
-
-const stubClipboard = (): ClipboardStub => {
-  const writes: string[] = [];
-  const original = Object.getOwnPropertyDescriptor(Navigator.prototype, "clipboard");
-  Object.defineProperty(Navigator.prototype, "clipboard", {
-    configurable: true,
-    get: () => ({
-      writeText: async (text: string) => {
-        writes.push(text);
-      },
-    }),
-  });
-  return {
-    writes,
-    restore: () => {
-      if (original) {
-        Object.defineProperty(Navigator.prototype, "clipboard", original);
-      } else {
-        (Navigator.prototype as unknown as Record<string, unknown>).clipboard = undefined;
-      }
-    },
-  };
-};
 
 let clipboard: ClipboardStub;
 
