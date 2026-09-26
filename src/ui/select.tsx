@@ -3,7 +3,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { cn } from "@/utils/cn";
 import { IconCheck, IconChevronDown } from "@tabler/icons-react";
-import type { ReactElement } from "react";
+import { type ReactElement, cloneElement } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -22,7 +22,7 @@ interface SelectProps {
   placement?: Placement;
   className?: string;
   disabled?: boolean;
-  trigger?: ReactElement;
+  trigger?: ReactElement<{ disabled?: boolean }>;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -53,7 +53,7 @@ const Select: React.FC<SelectProps> = ({
   const showPlaceholder = !selected && placeholder !== undefined;
   const triggerLabel = selected?.label ?? placeholder ?? value;
 
-  const triggerElement = trigger ?? (
+  const triggerElement = (disabled && trigger ? cloneElement(trigger, { disabled }) : trigger) ?? (
     <button
       type="button"
       aria-label={ariaLabel}

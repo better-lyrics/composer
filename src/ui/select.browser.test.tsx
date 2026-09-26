@@ -128,6 +128,20 @@ describe("Select", () => {
     expect(selected).toBe("c");
   });
 
+  it("disables a custom trigger when the Select is disabled", async () => {
+    const screen = await render(
+      <Select
+        aria-label="Add letter"
+        value=""
+        onChange={() => {}}
+        options={OPTIONS}
+        disabled
+        trigger={<Button variant="ghost">Add letter</Button>}
+      />,
+    );
+    await expect.element(screen.getByRole("button", { name: "Add letter" })).toBeDisabled();
+  });
+
   describe("long lists", () => {
     const LONG_OPTIONS = Array.from({ length: 60 }, (_, index) => ({
       value: `o${index + 1}`,
