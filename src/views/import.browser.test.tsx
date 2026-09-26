@@ -46,6 +46,10 @@ function id3v2(frames: Array<[string, string]>): Uint8Array {
   return new Uint8Array([0x49, 0x44, 0x33, 3, 0, 0, ...synch(body.length), ...body]);
 }
 
+function audioDropZone(container: Element): HTMLLabelElement | null {
+  return container.querySelector<HTMLInputElement>("input[aria-label='Upload audio file']")?.closest("label") ?? null;
+}
+
 function dispatchDrop(target: Element, file: File) {
   const dataTransfer = new DataTransfer();
   dataTransfer.items.add(file);
@@ -349,7 +353,7 @@ describe("ImportPanel: audio tag capture", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
 
     const file = new File([new Uint8Array(8)], "My Untagged Song.wav", { type: "audio/wav" });
-    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
 
@@ -368,7 +372,7 @@ describe("ImportPanel: audio tag capture", () => {
       ["TSRC", "USQX91700001"],
     ]);
     const file = new File([bytes], "filename-fallback.mp3", { type: "audio/mpeg" });
-    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
 
@@ -385,7 +389,7 @@ describe("ImportPanel: audio tag capture", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
 
     const file = new File([new Uint8Array(8)], "No Tags Here.wav", { type: "audio/wav" });
-    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    const dropZone = audioDropZone(screen.container);
     if (dropZone) dispatchDrop(dropZone, file);
 
     expect(useProjectStore.getState().metadata.title).toBe("No Tags Here");
@@ -422,7 +426,7 @@ describe("ImportPanel: stale audio tag writes", () => {
     );
     const current = new File([id3v2([["TIT2", "Current Title"]])], "current.mp3", { type: "audio/mpeg" });
 
-    const dropZone = screen.container.querySelector("label[for='file-drop-input']");
+    const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
     if (dropZone) {
       dispatchDrop(dropZone, stale);
@@ -454,7 +458,7 @@ describe("ImportPanel: replacing the audio with a different song", () => {
   };
 
   function dropOnImportPanel(container: HTMLElement, file: File) {
-    const dropZone = container.querySelector("label[for='file-drop-input']");
+    const dropZone = audioDropZone(container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
   }

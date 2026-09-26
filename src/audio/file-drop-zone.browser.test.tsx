@@ -79,4 +79,39 @@ describe("FileDropZone", () => {
     const input = screen.container.querySelector("input[type='file']") as HTMLInputElement;
     expect(input.getAttribute("aria-label")).toBe("Upload audio file");
   });
+
+  describe("regressions", () => {
+    it("regression: clears the picked file so choosing the same file again fires change", async () => {
+      const received: string[] = [];
+      const screen = await render(
+        <FileDropZone accept="audio/*" onFileDrop={(file) => received.push(file.name)}>
+          <span>Drop here</span>
+        </FileDropZone>,
+      );
+      await screen.getByLabelText("Upload audio file").upload(createAudioFile("song.wav"));
+
+      expect(received).toEqual(["song.wav"]);
+      expect((screen.getByLabelText("Upload audio file").element() as HTMLInputElement).value).toBe("");
+    });
+
+    it("regression: two drop zones on one page each open their own file input", async () => {
+      const screen = await render(
+        <>
+          <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+            <span>First</span>
+          </FileDropZone>
+          <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+            <span>Second</span>
+          </FileDropZone>
+        </>,
+      );
+      const labels = [...screen.container.querySelectorAll("label")];
+      const inputIds = labels.map((label) => label.querySelector("input")?.id);
+
+      expect(new Set(inputIds).size).toBe(2);
+      for (const label of labels) {
+        expect(label.htmlFor).toBe(label.querySelector("input")?.id);
+      }
+    });
+  });
 });

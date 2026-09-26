@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ const ACCEPTED_AUDIO_TYPES = [
 
 const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, children }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const inputId = "file-drop-input";
+  const inputId = useId();
   const dragCountRef = useRef(0);
 
   const handleFile = useCallback(
@@ -80,6 +80,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, childre
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      e.target.value = "";
       if (file) {
         handleFile(file);
       }
