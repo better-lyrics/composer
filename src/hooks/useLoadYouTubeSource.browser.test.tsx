@@ -92,6 +92,34 @@ describe("useLoadYouTubeSource", () => {
       result.current(videoId).catch(() => {});
     }
 
+    it("regression: loading a different video resets the previous song's singer names", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      useProjectStore.setState({
+        metadata: previousSong,
+        agents: [
+          { id: "v1", type: "person", name: "April Harper Grey" },
+          { id: "v2", type: "person", name: "Guest" },
+        ],
+      });
+
+      await load(OTHER_VIDEO_ID);
+
+      expect(useProjectStore.getState().agents).toEqual([
+        { id: "v1", type: "person", name: "Lead" },
+        { id: "v2", type: "person" },
+      ]);
+    });
+
+    it("keeps singer names when the same video is loaded again", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
+      useProjectStore.setState({ metadata: previousSong, agents });
+
+      await load(VIDEO_ID);
+
+      expect(useProjectStore.getState().agents).toEqual(agents);
+    });
+
     it("regression: loading a different video clears the previous song's metadata", async () => {
       useAudioStore.getState().setYouTubeSource(VIDEO_ID);
       useProjectStore.setState({ metadata: previousSong });

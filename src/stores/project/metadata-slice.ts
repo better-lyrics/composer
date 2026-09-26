@@ -1,3 +1,4 @@
+import { withDefaultAgentNames } from "@/domain/agent/default-names";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
@@ -46,7 +47,12 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       isDirty: true,
     })),
 
-  resetMetadataForNewSource: (title) => set({ metadata: normalizeLoadedMetadata({ title }), isDirty: true }),
+  resetSongIdentity: (title) =>
+    set((state) => ({
+      metadata: normalizeLoadedMetadata({ title }),
+      agents: withDefaultAgentNames(state.agents),
+      isDirty: true,
+    })),
 
   reset: () => set(createProjectInitialState()),
 });

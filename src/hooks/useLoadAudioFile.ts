@@ -18,7 +18,7 @@ function useLoadAudioFile(): (file: File) => void {
     const project = useProjectStore.getState();
     const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong = previous != null && !(previous.type === "file" && previous.file === file);
-    if (replacesDifferentSong) project.resetMetadataForNewSource(title);
+    if (replacesDifferentSong) project.resetSongIdentity(title);
     else project.setMetadata({ title });
 
     void import("music-metadata")

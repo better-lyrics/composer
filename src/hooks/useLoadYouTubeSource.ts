@@ -13,7 +13,7 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
 
     const project = useProjectStore.getState();
     if (previous != null && prevVideoId !== videoId) {
-      project.resetMetadataForNewSource(videoId);
+      project.resetSongIdentity(videoId);
     } else if (!project.metadata.title || prevVideoId !== videoId) {
       project.setMetadata({ title: videoId });
     }
