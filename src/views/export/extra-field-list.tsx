@@ -1,5 +1,7 @@
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
+import { cn } from "@/utils/cn";
 import {
   duplicateKeyIds,
   isReservedExtraKey,
@@ -9,7 +11,6 @@ import {
   sameRecord,
   seedPairs,
 } from "@/views/export/extra-field-pairs";
-import { INPUT_STYLES } from "@/views/export/metadata-field-list";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
 
@@ -49,7 +50,7 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
               value={pair.key}
               placeholder="Key"
               onChange={(e) => handleEdit(pair.id, { key: e.target.value })}
-              className={INPUT_STYLES}
+              className={cn("flex-1", INPUT_STYLES)}
             />
             <input
               type="text"
@@ -57,7 +58,7 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
               value={pair.value}
               placeholder="Value"
               onChange={(e) => handleEdit(pair.id, { value: e.target.value })}
-              className={INPUT_STYLES}
+              className={cn("flex-1", INPUT_STYLES)}
             />
             <Button
               variant="ghost"

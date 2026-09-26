@@ -1,13 +1,10 @@
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
+import { cn } from "@/utils/cn";
 import { type Row, reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-rows";
 import { IconPlus, IconX } from "@tabler/icons-react";
 import { nanoid } from "nanoid";
-
-// -- Constants ----------------------------------------------------------------
-
-const INPUT_STYLES =
-  "flex-1 px-2 py-1.5 text-sm rounded-md cursor-text bg-composer-input border border-composer-border text-composer-text focus:outline-none focus:border-composer-accent";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -45,7 +42,7 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
             value={row.value}
             placeholder={placeholder}
             onChange={(e) => handleEdit(row.id, e.target.value)}
-            className={INPUT_STYLES}
+            className={cn("flex-1", INPUT_STYLES)}
           />
           <Button
             variant="ghost"
@@ -74,4 +71,4 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
 
 // -- Exports ------------------------------------------------------------------
 
-export { MetadataFieldList, INPUT_STYLES };
+export { MetadataFieldList };
