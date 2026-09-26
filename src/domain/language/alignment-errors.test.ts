@@ -38,11 +38,11 @@ describe("getLanguageAlignmentErrorItems", () => {
         errors: [
           {
             field: "transliteration",
-            message: "Original word 1 has more timed parts than its transliteration can safely map.",
+            message: "Word 1 has more timed syllables than the transliteration has parts.",
           },
           {
             field: "background-transliteration",
-            message: "Original word 1 has more timed parts than its transliteration can safely map.",
+            message: "Word 1 has more timed syllables than the transliteration has parts.",
           },
         ],
       },

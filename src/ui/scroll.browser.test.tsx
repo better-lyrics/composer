@@ -52,4 +52,18 @@ describe("Scroll", () => {
     );
     await expect.poll(() => observed).not.toBeNull();
   });
+
+  it("hands the viewport to onInitialized once OverlayScrollbars initializes", async () => {
+    let viewport: HTMLDivElement | null = null;
+    await render(
+      <Scroll
+        onInitialized={(element) => {
+          viewport = element;
+        }}
+      >
+        <p>Scrolled content</p>
+      </Scroll>,
+    );
+    await expect.poll(() => viewport?.textContent).toContain("Scrolled content");
+  });
 });

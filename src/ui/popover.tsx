@@ -21,11 +21,18 @@ interface PopoverProps {
   children: ReactNode | ((close: () => void) => ReactNode);
   placement?: Placement;
   offsetPx?: number;
+  hasPopup?: "dialog" | "listbox" | "menu";
 }
 
 // -- Component ----------------------------------------------------------------
 
-const Popover: React.FC<PopoverProps> = ({ trigger, children, placement = "bottom", offsetPx = 8 }) => {
+const Popover: React.FC<PopoverProps> = ({
+  trigger,
+  children,
+  placement = "bottom",
+  offsetPx = 8,
+  hasPopup = "dialog",
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const { refs, floatingStyles, context } = useFloating({
@@ -47,6 +54,7 @@ const Popover: React.FC<PopoverProps> = ({ trigger, children, placement = "botto
       {cloneElement(trigger, {
         ref: refs.setReference,
         ...getReferenceProps(),
+        "aria-haspopup": hasPopup,
       } as React.HTMLAttributes<HTMLElement> & { ref: typeof refs.setReference })}
 
       {isOpen && (

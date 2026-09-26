@@ -57,4 +57,22 @@ describe("Popover", () => {
     expect(closes).toBe(1);
     await expect.element(screen.getByRole("button", { name: "Dismiss" })).not.toBeInTheDocument();
   });
+
+  it("announces a dialog popup by default", async () => {
+    const screen = await render(
+      <Popover trigger={<button type="button">Open</button>}>
+        <p>Body</p>
+      </Popover>,
+    );
+    await expect.element(screen.getByRole("button", { name: "Open" })).toHaveAttribute("aria-haspopup", "dialog");
+  });
+
+  it("announces the popup kind it is given", async () => {
+    const screen = await render(
+      <Popover hasPopup="listbox" trigger={<button type="button">Open</button>}>
+        <p>Body</p>
+      </Popover>,
+    );
+    await expect.element(screen.getByRole("button", { name: "Open" })).toHaveAttribute("aria-haspopup", "listbox");
+  });
 });

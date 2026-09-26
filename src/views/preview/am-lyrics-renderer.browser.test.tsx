@@ -177,6 +177,15 @@ describe("AmLyricsRenderer", () => {
     await expect.poll(() => el.shadowRoot?.querySelector("style[data-composer-hide]") !== null).toBe(true);
   });
 
+  it("opts out of automatic alternate generation so only TTML sidecars show", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    expect(el.hasAttribute("no-auto-alternates")).toBe(true);
+  });
+
   it("shows transliterations and translations from the TTML sidecars", async () => {
     useAudioStore.setState({ audioElement: new Audio() });
 

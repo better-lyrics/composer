@@ -14,6 +14,8 @@ import {
   useRole,
 } from "@floating-ui/react";
 import type { Placement } from "@floating-ui/react";
+import { useModalStackStore } from "@/stores/modal-stack";
+import { cn } from "@/utils/cn";
 import { useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -35,6 +37,7 @@ const ARROW_SIZE = 4;
 const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top", delay = SHOW_DELAY }) => {
   const [isOpen, setIsOpen] = useState(false);
   const arrowRef = useRef(null);
+  const isInModal = useModalStackStore((state) => state.count > 0);
 
   const { refs, floatingStyles, context } = useFloating({
     open: isOpen,
@@ -62,7 +65,10 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
             ref={refs.setFloating}
             style={floatingStyles}
             {...getFloatingProps()}
-            className="z-50 w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded bg-composer-bg-dark text-composer-text shadow-lg"
+            className={cn(
+              "z-50 w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded text-composer-text shadow-lg",
+              isInModal ? "bg-composer-bg-elevated" : "bg-composer-bg-dark",
+            )}
           >
             {content}
             <FloatingArrow
@@ -70,7 +76,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
               context={context}
               width={ARROW_SIZE * 2}
               height={ARROW_SIZE}
-              className="fill-composer-bg-dark"
+              className={isInModal ? "fill-composer-bg-elevated" : "fill-composer-bg-dark"}
             />
           </div>
         </FloatingPortal>

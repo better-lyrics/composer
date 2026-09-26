@@ -1,10 +1,11 @@
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
+import { INPUT_STYLES } from "@/ui/input-styles";
 import { accordionTransition, accordionVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { isValidIsrc, normalizeIsrc } from "@/utils/isrc";
 import { ExtraFieldList } from "@/views/export/extra-field-list";
-import { INPUT_STYLES, MetadataFieldList } from "@/views/export/metadata-field-list";
+import { MetadataFieldList } from "@/views/export/metadata-field-list";
 import { IconChevronRight } from "@tabler/icons-react";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useId, useState } from "react";
@@ -65,7 +66,7 @@ const MetadataPanel: React.FC = () => {
                   value={metadata.title}
                   placeholder="Song title"
                   onChange={(e) => setMetadata({ title: e.target.value })}
-                  className={INPUT_STYLES}
+                  className={cn("flex-1", INPUT_STYLES)}
                 />
               </label>
 
@@ -77,7 +78,7 @@ const MetadataPanel: React.FC = () => {
                   value={metadata.album}
                   placeholder="Album name"
                   onChange={(e) => setMetadata({ album: e.target.value })}
-                  className={INPUT_STYLES}
+                  className={cn("flex-1", INPUT_STYLES)}
                 />
               </label>
 
@@ -90,7 +91,7 @@ const MetadataPanel: React.FC = () => {
                   value={isrcValue}
                   placeholder="e.g. USQX91700001"
                   onChange={(e) => handleIsrcChange(e.target.value)}
-                  className={INPUT_STYLES}
+                  className={cn("flex-1", INPUT_STYLES)}
                 />
                 {isrcInvalid && (
                   <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
@@ -108,7 +109,7 @@ const MetadataPanel: React.FC = () => {
                   value={metadata.language ?? ""}
                   placeholder="e.g. en, ja, pt-BR"
                   onChange={(e) => setMetadata({ language: e.target.value.trim() || undefined })}
-                  className={INPUT_STYLES}
+                  className={cn("flex-1", INPUT_STYLES)}
                 />
                 <span id={languageHintId} className="text-xs text-composer-text-muted select-none">
                   BCP-47 tag ・ leave blank to let players detect it

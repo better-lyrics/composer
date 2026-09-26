@@ -1,7 +1,7 @@
 import { Button } from "@/ui/button";
+import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
+import { separatorKinds } from "@/utils/split-separators";
 import { cn } from "@/utils/cn";
-import { isDashSeparator, isUntimedSeparator, isWhitespaceSeparator } from "@/views/sync/split-separators";
-import { IconMinus, IconSpace } from "@tabler/icons-react";
 import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -24,90 +24,11 @@ interface SplitModeContentProps {
   onToggleSecondarySplit?: (index: number) => void;
 }
 
-interface SplitPickerProps {
-  value: string;
-  points: number[];
-  onToggle: (index: number) => void;
-  label?: string;
-}
+// -- Constants ----------------------------------------------------------------
+
+const EMPTY_SPLIT_POINTS: number[] = [];
 
 // -- Components ---------------------------------------------------------------
-
-const SplitPicker: React.FC<SplitPickerProps> = ({ value, points, onToggle, label }) => {
-  const selectedPoints = useMemo(() => new Set(points), [points]);
-
-  return (
-    <div>
-      {label && <p className="mb-2 text-xs text-center text-composer-text-muted">{label}</p>}
-      <div className="flex flex-wrap items-center justify-center gap-0.5 py-4 text-2xl tracking-wide">
-        {value.split("").map((char, idx) => {
-          if (isUntimedSeparator(char)) {
-            if (idx > 0 && isUntimedSeparator(value[idx - 1])) return null;
-            let separatorEnd = idx + 1;
-            while (separatorEnd < value.length && isUntimedSeparator(value[separatorEnd])) separatorEnd++;
-            if (idx === 0 || separatorEnd === value.length) return null;
-            const active = selectedPoints.has(separatorEnd);
-            const space = isWhitespaceSeparator(char);
-            return (
-              <button
-                // biome-ignore lint/suspicious/noArrayIndexKey: separator position is stable
-                key={idx}
-                type="button"
-                aria-label={`${label ?? "Text"} ${space ? "space" : "dash"} boundary ${separatorEnd}`}
-                aria-pressed={active}
-                title={
-                  active
-                    ? `${space ? "Space" : "Dash"} boundary selected — click to remove`
-                    : `${space ? "Space" : "Dash"} is untimed — click once to split here`
-                }
-                onClick={() => onToggle(separatorEnd)}
-                className={cn(
-                  "w-8 h-8 flex items-center group justify-center mx-1 rounded-md transition-colors cursor-pointer",
-                  active ? "bg-composer-accent" : "bg-composer-button hover:bg-composer-button-hover",
-                )}
-              >
-                {space ? (
-                  <IconSpace className={cn("size-5", active ? "text-white" : "text-composer-text-tertiary")} />
-                ) : isDashSeparator(char) ? (
-                  <IconMinus className={cn("size-5", active ? "text-white" : "text-composer-text-tertiary")} />
-                ) : null}
-              </button>
-            );
-          }
-          const showBoundary = idx < value.length - 1 && !isUntimedSeparator(value[idx + 1]);
-          const active = selectedPoints.has(idx + 1);
-          return (
-            // biome-ignore lint/suspicious/noArrayIndexKey: character order is fixed
-            <span key={idx} className="flex items-center">
-              <span className="text-composer-text">{char}</span>
-              {showBoundary && (
-                <button
-                  type="button"
-                  aria-label={`${label ?? "Text"} split point ${idx + 1}`}
-                  aria-pressed={active}
-                  onClick={() => onToggle(idx + 1)}
-                  className={cn(
-                    "w-4 h-8 flex items-center group justify-center mx-0.5 rounded transition-colors cursor-pointer",
-                    active ? "bg-composer-accent" : "bg-composer-button hover:bg-composer-button-hover",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "text-sm font-bold",
-                      active ? "text-white" : "text-composer-text-tertiary group-hover:text-composer-text",
-                    )}
-                  >
-                    ⋮
-                  </span>
-                </button>
-              )}
-            </span>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 const SplitPreview: React.FC<Pick<SplitModeContentProps, "text" | "splitPoints">> = ({ text, splitPoints }) => {
   const previewParts = useMemo(() => {
@@ -189,7 +110,7 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
   sourceText,
   showApplyControls,
   secondaryText,
-  secondarySplitPoints = [],
+  secondarySplitPoints = EMPTY_SPLIT_POINTS,
   onToggleSecondarySplit,
 }) => {
   const confirmLabel = applyToAll && identicalCount > 0 ? "Split all" : "Split Word";
@@ -203,7 +124,8 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
         value={text}
         points={splitPoints}
         onToggle={onToggleSplit}
-        label={secondaryText ? "Original" : undefined}
+        label={secondaryText ? "Original" : "Text"}
+        caption={secondaryText ? "Original" : undefined}
       />
       {secondaryText && onToggleSecondarySplit && (
         <SplitPicker
@@ -211,11 +133,13 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
           points={secondarySplitPoints}
           onToggle={onToggleSecondarySplit}
           label="Transliteration"
+          caption="Transliteration"
         />
       )}
+      <SplitPickerLegend kinds={separatorKinds([text, secondaryText ?? ""])} />
       {!pairedValid && (
-        <p className="text-sm text-center text-composer-error">
-          Original and transliteration must have the same number of segments.
+        <p className="text-sm text-center text-composer-error-text select-text">
+          Both rows need the same number of parts.
         </p>
       )}
 

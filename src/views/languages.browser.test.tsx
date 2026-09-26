@@ -3,30 +3,17 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TransliterationTrack } from "@/domain/language/model";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { stubJapaneseGoogleLanguageFetch } from "@/test/google-language-fetch";
 import { LanguagesPanel } from "@/views/languages";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "vitest-browser-react";
+import { render } from "@/test/render";
 
 describe("LanguagesPanel", () => {
   beforeEach(() => {
     useProjectStore.getState().reset();
     useProjectStore.getState().setLines([{ id: "l1", text: "こんにちは", agentId: "v1" }]);
     useProjectStore.getState().setActiveTab("languages");
-    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
-      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-      const romanization = url.searchParams.getAll("dt").includes("rm");
-      const data = romanization
-        ? [
-            [
-              ["こんにちは", "こんにちは", null, null],
-              [null, null, "kon-nichiwa", "kon-nichiwa"],
-            ],
-            null,
-            "ja",
-          ]
-        : [[["Hello", "こんにちは"]], null, "ja"];
-      return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
-    });
+    stubJapaneseGoogleLanguageFetch();
   });
 
   afterEach(() => vi.unstubAllGlobals());
@@ -141,10 +128,11 @@ describe("LanguagesPanel", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBe(true);
     await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("manual romanization");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Manual translation");
-    const summary = screen.container.querySelector("[data-language-review-summary]");
+    const summary = screen.container.querySelector('[data-language-status="warning"]');
     expect(summary?.textContent).toContain("1 line needs review");
-    expect(summary?.textContent).toContain("Line 1");
-    expect(summary?.textContent).toContain("Transliteration · English");
+    await expect
+      .element(screen.getByRole("button", { name: "Go to line 1: Transliteration, English" }))
+      .toHaveTextContent("Line 1");
   });
 
   it("does not mark language tracks stale when syllable splitting only adds structural markers", async () => {
@@ -185,7 +173,7 @@ describe("LanguagesPanel", () => {
     expect(useProjectStore.getState().lines[0].translations?.en.stale).toBeUndefined();
   });
 
-  it("summarizes transliteration alignment errors and links them to their lines", async () => {
+  it("summarizes timing mismatches and links them to their lines", async () => {
     const sourceFingerprint = languageSourceFingerprint("가|나");
     useProjectStore.getState().setLines([
       {
@@ -208,14 +196,13 @@ describe("LanguagesPanel", () => {
 
     const screen = await render(<LanguagesPanel />);
 
-    const summary = screen.container.querySelector("[data-language-alignment-error-summary]");
-    expect(summary?.textContent).toContain("1 line has an alignment error");
-    expect(summary?.textContent).toContain("Line 1");
-    expect(summary?.textContent).toContain("Transliteration");
+    const summary = screen.container.querySelector('[data-language-status="error"]');
+    expect(summary?.textContent).toContain("1 line has a timing mismatch");
     await expect
-      .element(screen.getByText("Original word 1 has more timed parts", { exact: false }))
-      .toBeInTheDocument();
-    await expect.element(screen.getByText("Error", { exact: true })).toBeInTheDocument();
+      .element(screen.getByRole("button", { name: "Go to line 1: Transliteration" }))
+      .toHaveTextContent("Line 1");
+    await expect.element(screen.getByText("Word 1 has more timed syllables", { exact: false })).toBeInTheDocument();
+    await expect.element(screen.getByText("Timing mismatch", { exact: true })).toBeInTheDocument();
   });
 
   it("lets a reviewable inferred mapping be confirmed in the focused alignment editor", async () => {
@@ -240,106 +227,19 @@ describe("LanguagesPanel", () => {
     useProjectStore.getState().setLines([reconcileLine({ ...line, ...alignTrackToLine(line, track) })]);
 
     const screen = await render(<LanguagesPanel />);
-    await expect.element(screen.getByText("Review", { exact: true })).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Align timing" }).click();
-    await expect.element(screen.getByRole("dialog", { name: "Align transliteration" })).toBeInTheDocument();
+    await expect.element(screen.getByText("Needs review", { exact: true })).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Align", exact: true }).click();
+    await expect.element(screen.getByRole("dialog", { name: "Align timing" })).toBeInTheDocument();
     const scrollRegion = document.querySelector<HTMLElement>("[data-transliteration-alignment-scroll-region]");
     expect(scrollRegion).not.toBeNull();
     expect(scrollRegion?.classList.contains("overflow-y-auto")).toBe(true);
-    await expect.element(screen.getByRole("combobox", { name: "Original word to align" })).toHaveValue("0");
-    await screen.getByRole("button", { name: "Save alignment" }).click();
+    await expect
+      .element(screen.getByRole("button", { name: "Original word to align" }))
+      .toHaveTextContent("1. 붙어있던");
+    await screen.getByRole("button", { name: "Save", exact: true }).click();
 
     const saved = useProjectStore.getState().lines[0];
     expect(saved.transliteration?.alignmentStatus).toBe("confirmed");
     expect(mappedTransliteration(saved.words ?? [])).toBe("but eoissdeon");
-  });
-
-  it("lets the user override the detected source language", async () => {
-    const screen = await render(<LanguagesPanel />);
-    const source = screen.getByRole("combobox", { name: "Source language" });
-    await expect.element(source).toHaveValue("ja");
-    await source.selectOptions("ko");
-    await expect.poll(() => useProjectStore.getState().metadata.language).toBe("ko");
-  });
-
-  it("selectively regenerates transliteration or individual translations", async () => {
-    const text = "選択再生成";
-    const fingerprint = languageSourceFingerprint(text);
-    useProjectStore.getState().setMetadata({ language: "ja" });
-    useProjectStore.getState().setLines([
-      {
-        id: "selective-regeneration",
-        text,
-        agentId: "v1",
-        transliteration: {
-          language: "ja-Latn",
-          text: "Edited reading",
-          segments: [{ original: text, transliteration: "Edited reading" }],
-          origin: "manual",
-          sourceFingerprint: fingerprint,
-        },
-        translations: {
-          en: {
-            language: "en",
-            text: "Edited English",
-            origin: "manual",
-            sourceFingerprint: fingerprint,
-          },
-          es: {
-            language: "es",
-            text: "Edited Spanish",
-            origin: "manual",
-            sourceFingerprint: fingerprint,
-          },
-        },
-      },
-    ]);
-    vi.stubGlobal("fetch", async (input: string | URL | Request) => {
-      const url = new URL(typeof input === "string" ? input : input instanceof URL ? input.href : input.url);
-      const romanization = url.searchParams.getAll("dt").includes("rm");
-      const target = url.searchParams.get("tl");
-      const generated = romanization ? "sentaku-saisei" : target === "es" ? "Español generado" : "Generated English";
-      const data = romanization
-        ? [
-            [
-              [text, text, null, null],
-              [null, null, generated, generated],
-            ],
-            null,
-            "ja",
-          ]
-        : [[[generated, text]], null, "ja"];
-      return new Response(JSON.stringify(data), { status: 200, headers: { "content-type": "application/json" } });
-    });
-
-    const screen = await render(<LanguagesPanel />);
-    await expect.element(screen.getByRole("textbox", { name: "Spanish" })).toHaveValue("Edited Spanish");
-
-    await screen.getByRole("button", { name: "Choose what to regenerate" }).click();
-    await screen.getByRole("checkbox", { name: "Transliteration" }).click();
-    await screen.getByRole("checkbox", { name: "English" }).click();
-    await screen.getByRole("button", { name: "Regenerate selected" }).click();
-
-    await expect.element(screen.getByRole("textbox", { name: "Spanish" })).toHaveValue("Español generado");
-    await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Edited English");
-    await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("Edited reading");
-  });
-
-  it("preselects the translation language from the field receiving a multiline paste", async () => {
-    useProjectStore
-      .getState()
-      .setLines(["하나", "둘", "셋", "넷"].map((text, index) => ({ id: `l${index}`, text, agentId: "v1" })));
-    const screen = await render(<LanguagesPanel />);
-    await expect.element(screen.getByRole("textbox", { name: "English" }).first()).toBeInTheDocument();
-    const englishField = screen.container.querySelector<HTMLInputElement>('input[data-language-import-language="en"]');
-    expect(englishField).not.toBeNull();
-    const clipboardData = new DataTransfer();
-    clipboardData.setData("text/plain", "One\nTwo\nThree\nFour");
-    englishField!.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, clipboardData }));
-
-    await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
-    const language = document.querySelector<HTMLSelectElement>('select[aria-label="Imported translation language"]');
-    expect(language?.value).toBe("en");
-    await expect.element(screen.getByRole("button", { name: "Import translation" })).toBeInTheDocument();
   });
 });

@@ -4,6 +4,8 @@ import { useProjectStore } from "@/stores/project";
 import type { SimpleTab } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { StatusChip } from "@/ui/status-chip";
+import { cn } from "@/utils/cn";
 import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
 
 const TABS: { id: SimpleTab; label: string }[] = [
@@ -36,43 +38,40 @@ const TabBar: React.FC = () => {
             type="button"
             data-tour={`tab-${tab.id}`}
             onClick={() => setActiveTab(tab.id)}
-            className={`cursor-pointer px-4 py-3 text-sm font-medium transition-colors ${
+            className={cn(
+              "cursor-pointer px-4 py-3 text-sm font-medium transition-colors",
               isActive
                 ? "border-b-2 border-composer-accent text-composer-text"
-                : "text-composer-text-muted hover:text-composer-text-secondary"
-            }`}
+                : "text-composer-text-muted hover:text-composer-text-secondary",
+            )}
           >
             <span className="inline-flex items-center gap-1.5">
               {tab.label}
               {showLanguageError && (
-                <span
+                <StatusChip
+                  tone="error"
+                  icon={IconAlertCircle}
                   aria-label={
                     languageErrorCount === 1
-                      ? "1 line has a language alignment error"
-                      : `${languageErrorCount} lines have language alignment errors`
-                  }
-                  className="inline-flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full bg-red-400/15 py-0 pl-1 pr-1.5 text-[11px] font-semibold leading-none text-red-300 ring-1 ring-inset ring-red-400/35"
-                  data-language-error-count
-                  title={
-                    languageErrorCount === 1
-                      ? "1 line has an alignment error"
-                      : `${languageErrorCount} lines have alignment errors`
+                      ? "1 line with a timing mismatch"
+                      : `${languageErrorCount} lines with a timing mismatch`
                   }
                 >
-                  <IconAlertCircle aria-hidden="true" className="block size-3 shrink-0" />
-                  <span className="inline-flex items-center leading-none">{languageErrorCount}</span>
-                </span>
+                  {languageErrorCount}
+                </StatusChip>
               )}
               {showLanguageWarning && (
-                <span
-                  aria-label={`${languageReviewCount} ${languageReviewCount === 1 ? "line needs" : "lines need"} language review`}
-                  className="inline-flex h-5 min-w-5 items-center justify-center gap-0.5 rounded-full bg-amber-400/15 py-0 pl-1 pr-1.5 text-[11px] font-semibold leading-none text-amber-300 ring-1 ring-inset ring-amber-400/35"
-                  data-language-review-count
-                  title={`${languageReviewCount} ${languageReviewCount === 1 ? "line needs" : "lines need"} review`}
+                <StatusChip
+                  tone="warning"
+                  icon={IconAlertTriangle}
+                  aria-label={
+                    languageReviewCount === 1
+                      ? "1 line needs review in Languages"
+                      : `${languageReviewCount} lines need review in Languages`
+                  }
                 >
-                  <IconAlertTriangle aria-hidden="true" className="block size-3 shrink-0" />
-                  <span className="inline-flex items-center leading-none">{languageReviewCount}</span>
-                </span>
+                  {languageReviewCount}
+                </StatusChip>
               )}
             </span>
             {showHints && <InlineKeyBadge keys={["Mod", String(index + 1)]} />}

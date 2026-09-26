@@ -148,7 +148,7 @@ function planTransliterationAlignment(words: WordTiming[], rawText: string): Tra
     return {
       words,
       status: "unresolved",
-      message: "Composer could not map this transliteration to the original timed words.",
+      message: "This transliteration doesn't match the timed syllables.",
     };
   }
 
@@ -166,7 +166,7 @@ function planTransliterationAlignment(words: WordTiming[], rawText: string): Tra
       return {
         words,
         status: "unresolved",
-        message: `Original word ${groupIndex + 1} has more timed parts than its transliteration can safely map.`,
+        message: `Word ${groupIndex + 1} has more timed syllables than the transliteration has parts.`,
       };
     }
     exact &&= local.exact;
@@ -176,7 +176,7 @@ function planTransliterationAlignment(words: WordTiming[], rawText: string): Tra
 
   const slices = splitTransliterationAtBoundaries(text, allBoundaries);
   if (slices.length !== words.length) {
-    return { words, status: "unresolved", message: "The inferred transliteration mapping is incomplete." };
+    return { words, status: "unresolved", message: "Some syllables have no transliteration yet." };
   }
   return {
     words: applySlices(words, slices),
@@ -199,7 +199,7 @@ function validateTransliterationAlignment(
 ): string | null {
   if (!transliteration.trim() || !words?.length) return null;
   const plan = planTransliterationAlignment(words, transliteration);
-  return plan.status === "unresolved" ? (plan.message ?? "This transliteration needs a timing alignment.") : null;
+  return plan.status === "unresolved" ? (plan.message ?? "Press Align to match this to the timing.") : null;
 }
 
 function withAlignedTransliteration(line: LyricLine): LyricLine {

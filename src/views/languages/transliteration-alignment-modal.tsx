@@ -5,30 +5,25 @@ import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
-import { cn } from "@/utils/cn";
+import { Select } from "@/ui/select";
+import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
+import { separatorKinds } from "@/utils/split-separators";
 import { formatTime } from "@/utils/format-time";
 import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
-import { IconCheck, IconSpace } from "@tabler/icons-react";
+import { IconCheck } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
+
+// -- Types --------------------------------------------------------------------
 
 type AlignmentField = "words" | "backgroundWords";
 
-interface Grapheme {
-  text: string;
-  start: number;
-  end: number;
+interface TransliterationAlignmentModalProps {
+  line: LyricLine;
+  field: AlignmentField;
+  onClose: () => void;
 }
 
-const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-
-function graphemes(value: string): Grapheme[] {
-  const segments = [...GRAPHEME_SEGMENTER.segment(value)];
-  return segments.map((segment, index) => ({
-    text: segment.segment,
-    start: segment.index,
-    end: segments[index + 1]?.index ?? value.length,
-  }));
-}
+// -- Helpers ------------------------------------------------------------------
 
 function groupReading(words: WordTiming[]): string {
   return words
@@ -47,74 +42,7 @@ function groupBoundaryPoints(words: WordTiming[]): number[] {
   });
 }
 
-const AlignmentPicker: React.FC<{
-  value: string;
-  points: number[];
-  onToggle: (point: number) => void;
-}> = ({ value, points, onToggle }) => {
-  const selected = new Set(points);
-  const units = graphemes(value);
-  return (
-    <div className="flex flex-wrap items-center justify-center gap-y-3 rounded-xl border border-composer-border bg-composer-input/70 px-4 py-6 text-xl tracking-wide">
-      {units.map((unit, index) => {
-        const whitespace = /^\s+$/.test(unit.text);
-        if (whitespace) {
-          if (index > 0 && /^\s+$/.test(units[index - 1].text)) return null;
-          let endIndex = index;
-          while (endIndex + 1 < units.length && /^\s+$/.test(units[endIndex + 1].text)) endIndex++;
-          const end = units[endIndex].end;
-          const run = value.slice(unit.start, end);
-          return (
-            <button
-              key={`space-${unit.start}`}
-              type="button"
-              aria-label={`${run.length > 1 ? "Word" : "Pronunciation"} space boundary ${end}`}
-              aria-pressed={selected.has(end)}
-              onClick={() => onToggle(end)}
-              className={cn(
-                "mx-1 flex h-10 items-center justify-center rounded-lg border transition-colors",
-                run.length > 1 ? "w-14" : "w-9",
-                selected.has(end)
-                  ? "border-composer-accent bg-composer-accent text-white"
-                  : "border-composer-border bg-composer-button text-composer-text-muted hover:bg-composer-button-hover",
-              )}
-            >
-              <IconSpace className="size-5" />
-              {run.length > 1 && <span className="text-[9px] font-semibold uppercase tracking-wider">word</span>}
-            </button>
-          );
-        }
-        const boundary = unit.end;
-        const atEnd = index === units.length - 1;
-        return (
-          <span key={`${unit.start}-${unit.text}`} className="flex items-center">
-            <span>{unit.text}</span>
-            {!atEnd && !/^\s+$/.test(units[index + 1].text) && (
-              <button
-                type="button"
-                aria-label={`Alignment boundary ${boundary}`}
-                aria-pressed={selected.has(boundary)}
-                onClick={() => onToggle(boundary)}
-                className={cn(
-                  "mx-0.5 flex h-9 w-3 items-center justify-center rounded transition-colors",
-                  selected.has(boundary) ? "bg-composer-accent" : "bg-composer-button hover:bg-composer-button-hover",
-                )}
-              >
-                <span className={selected.has(boundary) ? "text-white" : "text-composer-text-tertiary"}>⋮</span>
-              </button>
-            )}
-          </span>
-        );
-      })}
-    </div>
-  );
-};
-
-interface TransliterationAlignmentModalProps {
-  line: LyricLine;
-  field: AlignmentField;
-  onClose: () => void;
-}
+// -- Component ----------------------------------------------------------------
 
 const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps> = ({ line, field, onClose }) => {
   const updateLine = useProjectStore((state) => state.updateLine);
@@ -142,6 +70,28 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
   const allValid =
     pointsByGroup.length === groups.length &&
     groups.every((candidate, index) => (pointsByGroup[index]?.length ?? 0) === candidate.words.length - 1);
+
+  const wordOptions = useMemo(
+    () =>
+      groups.map((candidate, index) => ({
+        value: String(index),
+        label: `${index + 1}. ${candidate.words
+          .map((word) => word.text)
+          .join("")
+          .trim()}`,
+      })),
+    [groups],
+  );
+  const togglePoint = (point: number) =>
+    setPointsByGroup((current) =>
+      current.map((groupPoints, index) =>
+        index === groupIndex
+          ? groupPoints.includes(point)
+            ? groupPoints.filter((candidate) => candidate !== point)
+            : [...groupPoints, point].toSorted((a, b) => a - b)
+          : groupPoints,
+      ),
+    );
 
   const save = () => {
     if (!track || !sourceWords || !allValid) return;
@@ -189,69 +139,44 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
     <Modal
       isOpen
       onClose={onClose}
-      title="Align transliteration"
+      title="Align timing"
       className="max-h-[calc(100vh-2rem)] max-w-3xl flex flex-col"
       bodyClassName="p-0 min-h-0 flex flex-1 flex-col"
     >
       <div data-transliteration-alignment-scroll-region className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        <div className="border-b border-composer-border bg-composer-bg-elevated px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-medium">Original word</p>
-              <p className="mt-1 text-xs text-composer-text-muted">
-                Place one invisible boundary for each transition between timed parts.
-              </p>
-            </div>
-            <select
+        <div className="flex flex-col gap-5 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-composer-text-secondary text-pretty select-none">
+              Click between letters where each timed syllable starts.
+            </p>
+            <Select
               aria-label="Original word to align"
-              value={groupIndex}
-              onChange={(event) => setGroupIndex(Number(event.target.value))}
-              className="h-9 max-w-xs rounded-md border border-composer-border bg-composer-input px-3 text-sm"
-            >
-              {groups.map((candidate, index) => (
-                <option key={candidate.startIndex} value={index}>
-                  {index + 1}.{" "}
-                  {candidate.words
-                    .map((word) => word.text)
-                    .join("")
-                    .trim()}
-                </option>
-              ))}
-            </select>
+              value={String(groupIndex)}
+              onChange={(next) => setGroupIndex(Number(next))}
+              options={wordOptions}
+              className="h-8 shrink-0"
+            />
           </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {group.words.map((word, index) => (
-              <div
+          <div className="flex flex-wrap gap-1.5">
+            {group.words.map((word) => (
+              <span
                 key={`${word.begin}-${word.end}-${word.text}`}
-                className="rounded-lg border border-composer-border bg-composer-input px-3 py-2"
+                className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-composer-button px-2.5 text-sm leading-7"
               >
-                <span className="mr-2 font-mono text-[10px] text-composer-text-muted">{index + 1}</span>
-                <span className="text-sm font-medium">{word.text.trimEnd()}</span>
-                <span className="ml-2 font-mono text-[10px] text-composer-text-muted">
-                  {formatTime(word.begin)}–{formatTime(word.end)}
+                <span className="select-text">{word.text.trimEnd()}</span>
+                <span className="font-mono text-[11px] text-composer-text-muted tabular-nums select-text">
+                  {formatTime(word.begin)} - {formatTime(word.end)}
                 </span>
-              </div>
+              </span>
             ))}
           </div>
-        </div>
-
-        <div className="space-y-5 p-5">
-          <AlignmentPicker
+          <SplitPicker
             value={reading}
             points={points}
-            onToggle={(point) =>
-              setPointsByGroup((current) =>
-                current.map((groupPoints, index) =>
-                  index === groupIndex
-                    ? groupPoints.includes(point)
-                      ? groupPoints.filter((candidate) => candidate !== point)
-                      : [...groupPoints, point].toSorted((a, b) => a - b)
-                    : groupPoints,
-                ),
-              )
-            }
+            onToggle={togglePoint}
+            label="Transliteration"
+            dashes="literal"
           />
-
           <TransliterationTimingMap
             words={group.words}
             slices={slices}
@@ -261,32 +186,29 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
                 : undefined
             }
           />
-
           {!currentValid && (
-            <p className="text-sm text-composer-error">
-              Select {required} {required === 1 ? "boundary" : "boundaries"}; currently selected {points.length}.
+            <p className="text-sm text-center text-composer-error-text select-text">
+              Pick {required} split {required === 1 ? "point" : "points"} ({points.length} so far).
             </p>
           )}
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-composer-border bg-composer-bg-dark px-5 py-4">
-        <span className="text-xs text-composer-text-muted">
-          Single gaps are pronunciation breaks; wider gaps are word breaks. Neither receives timing.
-        </span>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
+      <div className="flex shrink-0 items-center justify-between gap-3 border-t border-composer-border px-5 py-4">
+        <SplitPickerLegend kinds={separatorKinds([reading], "literal")} />
+        <div className="ml-auto flex gap-2 select-none">
+          <Button onClick={onClose}>Cancel</Button>
           <Button variant="primary" hasIcon disabled={!allValid} onClick={save}>
             <IconCheck className="size-4" />
-            Save alignment
+            Save
           </Button>
         </div>
       </div>
     </Modal>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { TransliterationAlignmentModal };
 export type { AlignmentField };

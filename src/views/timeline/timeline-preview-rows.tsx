@@ -2,6 +2,7 @@ import { timedTransliterationSlice } from "@/domain/language/transliteration-for
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import type { FC } from "react";
+import { cn } from "@/utils/cn";
 
 const WordWithProgress: FC<{
   text: string;
@@ -28,7 +29,7 @@ const BgWordsRow: FC<{
   lineIndex: number;
   alignmentClass: string;
 }> = ({ backgroundWords, lineIndex, alignmentClass }) => (
-  <div className={`flex flex-wrap items-center gap-y-0.5 text-xs font-medium mt-0.5 ${alignmentClass}`}>
+  <div className={cn("flex flex-wrap items-center gap-y-0.5 text-xs font-medium mt-0.5", alignmentClass)}>
     {backgroundWords.map((bgWord) => (
       <WordWithProgress
         key={`bg-${bgWord.begin}-${bgWord.text}`}
@@ -76,7 +77,7 @@ const TransliterationRow: FC<{
   return (
     <div
       data-preview-transliteration={background ? "background" : "main"}
-      className={`flex flex-wrap ${alignmentClass} mt-0.5 ${background ? "text-[10px]" : "text-xs"}`}
+      className={cn("flex flex-wrap mt-0.5", alignmentClass, background ? "text-[10px]" : "text-xs")}
     >
       {timedWords ??
         (timing ? (
