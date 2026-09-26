@@ -20,6 +20,7 @@ function createMetadataInitialState(): MetadataState {
       album: "",
       duration: 0,
     },
+    hasUnexportedImport: false,
   };
 }
 
@@ -51,10 +52,16 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => ({
       metadata: normalizeLoadedMetadata({ title }),
       agents: withDefaultAgentNames(state.agents),
+      hasUnexportedImport: false,
       isDirty: true,
     })),
 
-  restoreSongIdentity: ({ metadata, agents }) => set({ metadata, agents, isDirty: true }),
+  restoreSongIdentity: (identity) => set({ ...identity, isDirty: true }),
+
+  markSongDetailsImported: () => set({ hasUnexportedImport: true, isDirty: true }),
+
+  clearUnexportedImport: () =>
+    set((state) => (state.hasUnexportedImport ? { hasUnexportedImport: false, isDirty: true } : state)),
 
   reset: () => set(createProjectInitialState()),
 });

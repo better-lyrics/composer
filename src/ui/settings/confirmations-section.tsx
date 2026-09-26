@@ -53,6 +53,11 @@ const ConfirmationsSection: React.FC = () => {
           description="Show a warning before existing lines take on a group's text and timing."
           settingKey="confirmConformToGroup"
         />
+        <ToggleSetting
+          label="Confirm clearing imported song details"
+          description="Show a warning when a different song replaces imported song details that were never exported."
+          settingKey="confirmClearImportedSongDetails"
+        />
       </div>
     </div>
   );

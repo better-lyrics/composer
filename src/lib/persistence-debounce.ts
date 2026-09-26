@@ -28,6 +28,7 @@ type SaveArgs = [
   Stem,
   boolean,
   SnapPoint[],
+  boolean,
 ];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -48,6 +49,7 @@ function debouncedSave(
   currentStem: Stem,
   primingStripped: boolean,
   customSnapPoints: SnapPoint[],
+  hasUnexportedImport: boolean,
 ): void {
   pendingSaveArgs = [
     metadata,
@@ -62,6 +64,7 @@ function debouncedSave(
     currentStem,
     primingStripped,
     customSnapPoints,
+    hasUnexportedImport,
   ];
   if (saveTimeout) {
     clearTimeout(saveTimeout);

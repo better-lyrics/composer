@@ -70,6 +70,7 @@ interface SettingsState {
   confirmGroupDissolution: boolean;
   confirmApplyToAllSyllableSplit: boolean;
   confirmConformToGroup: boolean;
+  confirmClearImportedSongDetails: boolean;
   linkedDivergenceAction: LinkedDivergenceAction;
 
   previewRenderer: PreviewRenderer;
@@ -139,6 +140,7 @@ const DEFAULTS: SettingsState = {
   confirmGroupDissolution: true,
   confirmApplyToAllSyllableSplit: true,
   confirmConformToGroup: true,
+  confirmClearImportedSongDetails: true,
   linkedDivergenceAction: "ask",
 
   previewRenderer: "braccato",
@@ -200,6 +202,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()(
           confirmGroupDissolution: state.confirmGroupDissolution,
           confirmApplyToAllSyllableSplit: state.confirmApplyToAllSyllableSplit,
           confirmConformToGroup: state.confirmConformToGroup,
+          confirmClearImportedSongDetails: state.confirmClearImportedSongDetails,
           linkedDivergenceAction: state.linkedDivergenceAction,
           cobaltInstances: state.cobaltInstances,
           selectedCobaltInstanceId: state.selectedCobaltInstanceId,

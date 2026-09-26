@@ -83,12 +83,14 @@ const ExportPanel: React.FC = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    useProjectStore.getState().clearUnexportedImport();
   }, [exportContent, metadata.title]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent) return;
 
     await navigator.clipboard.writeText(exportContent);
+    useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [exportContent]);

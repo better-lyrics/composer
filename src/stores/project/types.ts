@@ -32,6 +32,13 @@ interface HistoryEntry {
 
 interface MetadataState {
   metadata: ProjectMetadata;
+  hasUnexportedImport: boolean;
+}
+
+interface SongIdentity {
+  metadata: ProjectMetadata;
+  agents: Agent[];
+  hasUnexportedImport: boolean;
 }
 
 interface AgentsState {
@@ -79,7 +86,9 @@ interface HistoryState {
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
   resetSongIdentity: (title: string) => void;
-  restoreSongIdentity: (identity: { metadata: ProjectMetadata; agents: Agent[] }) => void;
+  restoreSongIdentity: (identity: SongIdentity) => void;
+  markSongDetailsImported: () => void;
+  clearUnexportedImport: () => void;
   reset: () => void;
 }
 
@@ -207,6 +216,7 @@ export type {
   SimpleTab,
   SyllableSplitDefaults,
   MetadataState,
+  SongIdentity,
   AgentsState,
   LinesState,
   GroupsState,

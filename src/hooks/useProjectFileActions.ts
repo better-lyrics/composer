@@ -73,6 +73,7 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
       store.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
       setAgents(project.agents);
       store.setCustomSnapPoints(project.customSnapPoints ?? []);
+      store.markSongDetailsImported();
       markClean();
 
       if (fileInputRef.current) {
