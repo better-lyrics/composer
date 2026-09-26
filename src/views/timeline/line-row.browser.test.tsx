@@ -1,10 +1,11 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { HIT_TESTING_UTILITIES_CSS, installStyleSheet, POSITION_UTILITIES_CSS } from "@/test/browser-css";
 import { LineRow } from "@/views/timeline/line-row";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 
 describe("LineRow", () => {
@@ -153,5 +154,132 @@ describe("LineRow", () => {
     useSettingsStore.setState({ minWordDuration: 0.05 });
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
+  });
+
+  it("regression: double-clicking a BG zone that holds untimed bg text times that text instead of replacing it", async () => {
+    useAudioStore.setState({ duration: 30 });
+    const line = createLine({
+      id: "l1",
+      text: "hello world",
+      words: [createWord({ text: "hello", begin: 0, end: 1 })],
+      backgroundText: "ah ah",
+    });
+    useProjectStore.setState({ lines: [line] });
+    const screen = await render(
+      <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+      { dndContext: true },
+    );
+
+    const dropZone = Array.from(screen.container.querySelectorAll("div")).find(
+      (d) => d.textContent?.trim() === "ah ah",
+    );
+    expect(dropZone).toBeDefined();
+    dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ah ", "ah"]);
+    const after = useProjectStore.getState().lines[0];
+    expect(after.backgroundText).toBe("ah ah");
+    expect(after.backgroundWords?.[0].begin).toBeLessThan(after.backgroundWords?.[1].begin ?? 0);
+    expect(after.backgroundWords?.[1].end).toBeLessThanOrEqual(30);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+  });
+  describe("regressions", () => {
+    let layoutStyles: HTMLStyleElement[] = [];
+    beforeAll(() => {
+      layoutStyles = [installStyleSheet(POSITION_UTILITIES_CSS), installStyleSheet(HIT_TESTING_UTILITIES_CSS)];
+    });
+    afterAll(() => {
+      for (const style of layoutStyles) style.remove();
+    });
+
+    function hitTestedEvent(zone: Element, type: string) {
+      const rect = zone.getBoundingClientRect();
+      const x = rect.left + 20;
+      const y = rect.top + rect.height / 2;
+      document
+        .elementFromPoint(x, y)
+        ?.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, clientX: x, clientY: y }));
+    }
+
+    function renderLinkedRow() {
+      useAudioStore.setState({ duration: 30 });
+      const line = createLine({
+        id: "l1",
+        text: "hello",
+        words: [createWord({ text: "hello", begin: 0, end: 1 })],
+        backgroundText: "ooh ah",
+        groupId: "g1",
+        instanceIdx: 0,
+      });
+      useProjectStore.setState({ lines: [line], groups: [createGroup({ id: "g1" })] });
+      return render(
+        <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+        { dndContext: true },
+      );
+    }
+
+    it("regression: a real double-click on the empty BG zone reaches it past the group tint layer", async () => {
+      const screen = await renderLinkedRow();
+      const zone = screen.container.querySelector("[data-track='bg']");
+      if (!zone) throw new Error("missing bg zone");
+
+      hitTestedEvent(zone, "dblclick");
+
+      await expect
+        .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+        .toEqual(["ooh ", "ah"]);
+    });
+
+    it("regression: a real right-click on the empty BG zone opens its track menu", async () => {
+      const screen = await renderLinkedRow();
+      const zone = screen.container.querySelector("[data-track='bg']");
+      if (!zone) throw new Error("missing bg zone");
+
+      hitTestedEvent(zone, "contextmenu");
+
+      expect(useTimelineStore.getState().contextMenu?.target).toMatchObject({
+        kind: "track",
+        lineId: "l1",
+        type: "bg",
+      });
+    });
+  });
+
+  describe("row resize handle", () => {
+    it("resets the row height to the default on double-click", async () => {
+      const line = createLine({ id: "l1" });
+      useTimelineStore.setState({ rowHeights: { l1: 120 }, defaultRowHeight: 48 });
+      useProjectStore.setState({ lines: [line] });
+      const screen = await render(
+        <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+        { dndContext: true },
+      );
+
+      screen.container
+        .querySelector("[role='separator']")
+        ?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+      expect(useTimelineStore.getState().rowHeights.l1 ?? 48).toBe(48);
+    });
+
+    it("resizes the row while dragging the handle and stops on mouseup", async () => {
+      const line = createLine({ id: "l1" });
+      useTimelineStore.setState({ rowHeights: { l1: 60 } });
+      useProjectStore.setState({ lines: [line] });
+      const screen = await render(
+        <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+        { dndContext: true },
+      );
+      const handle = screen.container.querySelector("[role='separator']");
+
+      handle?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientY: 100 }));
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 130 }));
+      document.dispatchEvent(new MouseEvent("mouseup"));
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 200 }));
+
+      expect(useTimelineStore.getState().rowHeights.l1).toBe(90);
+    });
   });
 });

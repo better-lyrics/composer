@@ -438,3 +438,111 @@ describe("ImportPanel: stale audio tag writes", () => {
     expect(useProjectStore.getState().metadata.album).toBe("");
   });
 });
+
+// -- Replacing the song --------------------------------------------------------
+
+describe("ImportPanel: replacing the audio with a different song", () => {
+  const previousSong = {
+    title: "Lovefield",
+    artists: ["underscores"],
+    album: "U",
+    duration: 0,
+    isrc: "USQE92600028",
+    songwriters: ["April Harper Grey"],
+    extra: { producer: "someone" },
+    language: "en",
+  };
+
+  function dropOnImportPanel(container: HTMLElement, file: File) {
+    const dropZone = container.querySelector("label[for='file-drop-input']");
+    expect(dropZone).not.toBeNull();
+    if (dropZone) dispatchDrop(dropZone, file);
+  }
+
+  it("regression: an untagged replacement file clears the previous song's metadata", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.title).toBe("Other Song");
+    expect(metadata.artists).toEqual([]);
+    expect(metadata.album).toBe("");
+    expect(metadata.isrc).toBeUndefined();
+    expect(metadata.songwriters).toBeUndefined();
+    expect(metadata.extra).toBeUndefined();
+    expect(metadata.language).toBeUndefined();
+  });
+
+  it("fills the cleared metadata from the replacement file's tags", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    const bytes = id3v2([
+      ["TIT2", "New Title"],
+      ["TPE1", "New Artist"],
+    ]);
+    dropOnImportPanel(screen.container, new File([bytes], "new.mp3", { type: "audio/mpeg" }));
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("New Title");
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["New Artist"]);
+    expect(metadata.album).toBe("");
+    expect(metadata.isrc).toBeUndefined();
+    expect(metadata.songwriters).toBeUndefined();
+  });
+
+  it("regression: replacing the file resets the previous song's singer names", async () => {
+    useAudioStore.setState({ source: { type: "file", file: new File([new Uint8Array(8)], "Lovefield.wav") } });
+    useProjectStore.setState({
+      lines: [],
+      metadata: previousSong,
+      agents: [{ id: "v1", type: "person", name: "April Harper Grey" }],
+    });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+
+    expect(useProjectStore.getState().agents).toEqual([{ id: "v1", type: "person", name: "Lead" }]);
+  });
+
+  it("regression: dropping the same audio file again keeps the song's metadata and singer names", async () => {
+    const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
+    const sameFile = () => new File([new Uint8Array(8)], "Lovefield.wav", { type: "audio/wav", lastModified: 1000 });
+    useAudioStore.setState({ source: { type: "file", file: sameFile() } });
+    useProjectStore.setState({ lines: [], metadata: previousSong, agents });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, sameFile());
+
+    expect(useProjectStore.getState().metadata).toEqual(previousSong);
+    expect(useProjectStore.getState().agents).toEqual(agents);
+  });
+
+  it("keeps metadata entered before the first audio file is loaded", async () => {
+    useAudioStore.setState({ source: null });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Lovefield.wav", { type: "audio/wav" }));
+
+    const metadata = useProjectStore.getState().metadata;
+    expect(metadata.artists).toEqual(["underscores"]);
+    expect(metadata.isrc).toBe("USQE92600028");
+    expect(metadata.songwriters).toEqual(["April Harper Grey"]);
+  });
+
+  it("clears the previous song's metadata when a file replaces a YouTube source", async () => {
+    useAudioStore.setState({ source: { type: "youtube", videoId: "dQw4w9WgXcQ" } });
+    useProjectStore.setState({ lines: [], metadata: previousSong });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+
+    expect(useProjectStore.getState().metadata.artists).toEqual([]);
+    expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
+  });
+});

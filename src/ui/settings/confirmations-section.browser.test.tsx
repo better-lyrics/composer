@@ -41,4 +41,12 @@ describe("ConfirmationsSection", () => {
     toggle.click();
     expect(useSettingsStore.getState().confirmApplyToAllSyllableSplit).toBe(false);
   });
+
+  it("flips confirmClearImportedSongDetails when its toggle is clicked", async () => {
+    await render(<ConfirmationsSection />);
+    expect(useSettingsStore.getState().confirmClearImportedSongDetails).toBe(true);
+    const toggle = toggleForLabel("Confirm clearing imported song details");
+    toggle.click();
+    expect(useSettingsStore.getState().confirmClearImportedSongDetails).toBe(false);
+  });
 });

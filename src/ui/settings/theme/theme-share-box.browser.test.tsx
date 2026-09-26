@@ -3,6 +3,7 @@ import { encodeThemeCode } from "@/domain/theme/code";
 import type { Theme } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
 import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
+import { type ClipboardStub, stubClipboard } from "@/test/clipboard";
 import { render } from "@/test/render";
 
 // -- Fixtures ------------------------------------------------------------------
@@ -17,35 +18,6 @@ function draftFrom(id: string): Theme {
     base: id,
     scheme: base.scheme,
     tokens: { ...base.tokens },
-  };
-}
-
-interface ClipboardStub {
-  writes: string[];
-  restore: () => void;
-}
-
-function stubClipboard(writeText: (text: string) => Promise<void>): ClipboardStub {
-  const writes: string[] = [];
-  const original = Object.getOwnPropertyDescriptor(Navigator.prototype, "clipboard");
-  Object.defineProperty(Navigator.prototype, "clipboard", {
-    configurable: true,
-    get: () => ({
-      writeText: async (text: string) => {
-        writes.push(text);
-        await writeText(text);
-      },
-    }),
-  });
-  return {
-    writes,
-    restore: () => {
-      if (original) {
-        Object.defineProperty(Navigator.prototype, "clipboard", original);
-      } else {
-        (Navigator.prototype as unknown as Record<string, unknown>).clipboard = undefined;
-      }
-    },
   };
 }
 

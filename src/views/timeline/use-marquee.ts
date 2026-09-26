@@ -23,7 +23,6 @@ type MarqueeState = "idle" | "pending" | "active";
 // -- Constants -----------------------------------------------------------------
 
 const ACTIVATION_THRESHOLD = 5;
-const BG_DROP_ZONE_HEIGHT = 24;
 const AUTO_SCROLL_ZONE = 40;
 const AUTO_SCROLL_SPEED = 8;
 const AUTO_SCROLL_LABEL = "marquee-scroll";
@@ -104,7 +103,6 @@ function useMarquee(scrollContainerRef: RefObject<HTMLDivElement | null>) {
       defaultRowHeight,
       collapsedInstances,
       waveformHeight: WAVEFORM_HEIGHT,
-      bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 

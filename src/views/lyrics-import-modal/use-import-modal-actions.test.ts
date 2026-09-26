@@ -212,6 +212,33 @@ describe("importParsedLyrics metadata", () => {
     expect(useProjectStore.getState().metadata.title).toBe("Bohemian Rhapsody");
   });
 
+  it("marks the song details as imported when metadata comes with the lyrics", async () => {
+    await importParsedLyrics(parseResult({ metadata: { title: "Bohemian Rhapsody" } }), buildContext());
+    expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+  });
+
+  it("marks the song details as imported when singer names come with the lyrics", async () => {
+    const agents: Agent[] = [{ id: "v1", type: "person", name: "Freddie" }];
+    await importParsedLyrics(parseResult({ agents }), buildContext());
+    expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("does not mark song details for plain lyrics with no metadata or singers", async () => {
+      await importParsedLyrics(parseResult({ metadata: {} }), buildContext());
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
+    });
+
+    it("does not mark song details when the import is rejected", async () => {
+      useProjectStore.getState().setLines([lineFactory("existing", "Old")]);
+      await importParsedLyrics(
+        parseResult({ metadata: { title: "Bohemian Rhapsody" } }),
+        buildContext({ confirm: async () => false }),
+      );
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
+    });
+  });
+
   it("lands the language of an imported TTML in the store", async () => {
     const ttml = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="pt-BR"><head><metadata><ttm:agent type="person" xml:id="v1"/></metadata></head><body><div><p begin="00:01.000" end="00:02.000" ttm:agent="v1"><span begin="00:01.000" end="00:01.500">Ola</span> <span begin="00:01.500" end="00:02.000">mundo</span></p></div></body></tt>`;
     await importParsedLyrics(parseLyricsFile("song.ttml", ttml), buildContext());

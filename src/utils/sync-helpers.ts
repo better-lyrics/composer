@@ -148,6 +148,13 @@ function createInitialBgWords(backgroundText: string, begin: number, end?: numbe
   return distributeWordsInLine(backgroundText, begin, resolvedEnd);
 }
 
+function createBgWordsFromTextAt(line: LyricLine, begin: number, maxEnd: number): WordTiming[] | null {
+  if (!line.backgroundText || line.backgroundWords?.length) return null;
+  const naturalEnd = begin + splitIntoWords(line.backgroundText).length * DEFAULT_BG_WORD_DURATION;
+  const words = createInitialBgWords(line.backgroundText, begin, Math.min(maxEnd, naturalEnd));
+  return words.length > 0 ? words : null;
+}
+
 function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
   if (!line.backgroundText) return null;
   const timing = effectiveBounds(line);
@@ -205,6 +212,7 @@ export {
   commitHeldWord,
   commitTappedWord,
   createBgWordsFromLine,
+  createBgWordsFromTextAt,
   createInitialBgWords,
   distributeWordsInLine,
   getNudgeAmount,

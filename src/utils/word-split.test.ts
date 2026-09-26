@@ -36,3 +36,50 @@ describe("splitWordIntoWords", () => {
     expect(getSyllablePositions(line).slice(0, 2)).toEqual(["none", "none"]);
   });
 });
+
+describe("splitWordIntoWords · text containing spaces", () => {
+  const line = { text: "It hurts for me", begin: 10, end: 12 };
+
+  it("regression: splitting right before a space does not leave a leading space on the next word", () => {
+    const out = splitWordIntoWords(line, [2, 8]);
+    expect(out.map((w) => w.text)).toEqual(["It ", "hurts ", "for me"]);
+  });
+
+  it("regression: splitting right after a space does not leave a trailing double space", () => {
+    const out = splitWordIntoWords(line, [3, 9]);
+    expect(out.map((w) => w.text)).toEqual(["It ", "hurts ", "for me"]);
+  });
+
+  describe("edge cases", () => {
+    it("drops a whitespace-only part and gives its time to the previous word", () => {
+      const out = splitWordIntoWords(line, [2, 3]);
+      expect(out.map((w) => w.text)).toEqual(["It ", "hurts for me"]);
+      expect(out[0].begin).toBe(10);
+      expect(out[0].end).toBe(out[1].begin);
+      expect(out[1].end).toBe(12);
+    });
+
+    it("keeps the source trailing space on the final word", () => {
+      const out = splitWordIntoWords({ ...line, text: "It hurts " }, [2]);
+      expect(out.map((w) => w.text)).toEqual(["It ", "hurts "]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("covers the source span contiguously", () => {
+      const out = splitWordIntoWords(line, [2, 3, 8, 12]);
+      expect(out[0].begin).toBe(10);
+      expect(out[out.length - 1].end).toBe(12);
+      for (let i = 1; i < out.length; i++) expect(out[i].begin).toBe(out[i - 1].end);
+    });
+
+    it("never emits a word with leading or doubled whitespace", () => {
+      const out = splitWordIntoWords(line, [1, 2, 3, 4, 8, 9, 12, 13]);
+      for (const w of out) {
+        expect(w.text).not.toMatch(/^\s/);
+        expect(w.text).not.toMatch(/\s\s/);
+        expect(w.text.trim()).not.toBe("");
+      }
+    });
+  });
+});

@@ -1,4 +1,5 @@
 import { instanceBounds } from "@/domain/instance/bounds";
+import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
@@ -127,7 +128,6 @@ interface RowLayoutInput {
   defaultRowHeight: number;
   collapsedInstances: Record<string, boolean>;
   waveformHeight: number;
-  bgDropZoneHeight: number;
   groupHeaderHeight: number;
 }
 
@@ -151,7 +151,6 @@ function computeRowLayout({
   defaultRowHeight,
   collapsedInstances,
   waveformHeight,
-  bgDropZoneHeight,
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
   const lineTops = new Map<string, RowPosition>();
@@ -172,8 +171,7 @@ function computeRowLayout({
     if (isCollapsed) continue;
 
     const mainHeight = rowHeights[line.id] ?? defaultRowHeight;
-    const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
-    const rowHeight = mainHeight + (hasBg ? mainHeight : bgDropZoneHeight) + 1;
+    const rowHeight = lineRowHeight(line, mainHeight);
     lineTops.set(line.id, { top: rowTop, height: rowHeight, mainBottom: rowTop + mainHeight });
     rowTop += rowHeight;
   }

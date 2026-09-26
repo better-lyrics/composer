@@ -1,6 +1,7 @@
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -134,7 +135,7 @@ function useTimelineSyllableSplitterState({
     const line = currentLines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = effectiveTrackWords(line, type);
     if (!wordsArray) return;
 
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];

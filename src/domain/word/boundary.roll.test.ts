@@ -17,6 +17,7 @@ describe("shouldRollNeighbour", () => {
       wordIndex: 1,
       edge: "begin",
       rollingEdit: false,
+      syllablesFollowRolling: false,
       syllablePositions: PLAIN,
       ...overrides,
     });
@@ -47,6 +48,40 @@ describe("shouldRollNeighbour", () => {
     expect(roll({ wordIndex: 0, edge: "begin", syllablePositions: pair })).toBe(false);
     expect(roll({ wordIndex: 1, edge: "end", syllablePositions: pair })).toBe(false);
     expect(roll({ wordIndex: 1, edge: "end", syllablePositions: pair, rollingEdit: true })).toBe(true);
+  });
+
+  describe("syllables follow rolling edit", () => {
+    const followRolling = { syllablePositions: SYLLABLES, syllablesFollowRolling: true };
+
+    it("frees a flush syllable boundary when rolling edit is off", () => {
+      expect(roll(followRolling)).toBe(false);
+      expect(roll({ ...followRolling, edge: "end" })).toBe(false);
+    });
+
+    it("rolls a flush syllable boundary when rolling edit is on", () => {
+      expect(roll({ ...followRolling, rollingEdit: true })).toBe(true);
+      expect(roll({ ...followRolling, edge: "end", rollingEdit: true })).toBe(true);
+    });
+
+    it("leaves separate words unchanged", () => {
+      expect(roll({ syllablesFollowRolling: true })).toBe(false);
+      expect(roll({ syllablesFollowRolling: true, rollingEdit: true })).toBe(true);
+    });
+
+    it("still inverts with alt", () => {
+      expect(roll({ ...followRolling, altHeld: true })).toBe(true);
+      expect(roll({ ...followRolling, rollingEdit: true, altHeld: true })).toBe(false);
+    });
+
+    it("never rolls a gapped syllable boundary", () => {
+      expect(roll({ ...followRolling, words: gapped, rollingEdit: true })).toBe(false);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: syllables keep rolling without rolling edit while the setting is off", () => {
+      expect(roll({ syllablePositions: SYLLABLES, syllablesFollowRolling: false })).toBe(true);
+    });
   });
 
   describe("alt inversion", () => {
@@ -138,6 +173,7 @@ describe("shouldRollNeighbour", () => {
         wordIndex: 1,
         edge: "begin",
         rollingEdit: true,
+        syllablesFollowRolling: true,
         syllablePositions: positions,
         altHeld: true,
       });
@@ -148,16 +184,13 @@ describe("shouldRollNeighbour", () => {
     it("agrees on both sides of the same boundary", () => {
       for (const rollingEdit of [false, true]) {
         for (const altHeld of [false, true]) {
-          for (let i = 0; i < flush.length - 1; i++) {
-            const fromEnd = roll({ wordIndex: i, edge: "end", syllablePositions: SYLLABLES, rollingEdit, altHeld });
-            const fromBegin = roll({
-              wordIndex: i + 1,
-              edge: "begin",
-              syllablePositions: SYLLABLES,
-              rollingEdit,
-              altHeld,
-            });
-            expect(fromEnd).toBe(fromBegin);
+          for (const syllablesFollowRolling of [false, true]) {
+            for (let i = 0; i < flush.length - 1; i++) {
+              const shared = { syllablePositions: SYLLABLES, rollingEdit, altHeld, syllablesFollowRolling };
+              const fromEnd = roll({ ...shared, wordIndex: i, edge: "end" });
+              const fromBegin = roll({ ...shared, wordIndex: i + 1, edge: "begin" });
+              expect(fromEnd).toBe(fromBegin);
+            }
           }
         }
       }

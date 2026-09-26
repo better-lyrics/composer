@@ -34,6 +34,13 @@ interface MetadataState {
   metadata: ProjectMetadata;
   /** In-memory identity for replacements, including files that reuse line IDs. */
   projectSession: number;
+  hasUnexportedImport: boolean;
+}
+
+interface SongIdentity {
+  metadata: ProjectMetadata;
+  agents: Agent[];
+  hasUnexportedImport: boolean;
 }
 
 interface AgentsState {
@@ -81,6 +88,10 @@ interface HistoryState {
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
   startProjectSession: () => void;
+  resetSongIdentity: (title: string) => void;
+  restoreSongIdentity: (identity: SongIdentity) => void;
+  markSongDetailsImported: () => void;
+  clearUnexportedImport: () => void;
   reset: () => void;
 }
 
@@ -208,6 +219,7 @@ export type {
   SimpleTab,
   SyllableSplitDefaults,
   MetadataState,
+  SongIdentity,
   AgentsState,
   LinesState,
   GroupsState,

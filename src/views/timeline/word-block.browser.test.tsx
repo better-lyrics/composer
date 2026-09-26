@@ -225,6 +225,28 @@ describe("WordBlock", () => {
     expect(rightEdge.className).not.toContain("cursor-ew-resize");
   });
 
+  it("shows cursor-col-resize on syllable divider handles by default", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="middle" />, { dndContext: true });
+    expect(screen.container.querySelector('[data-edge="left"]')?.className).toContain("cursor-col-resize");
+    expect(screen.container.querySelector('[data-edge="right"]')?.className).toContain("cursor-col-resize");
+  });
+
+  it("shows cursor-ew-resize on unconjoined syllable dividers when syllable edges do not join", async () => {
+    const screen = await render(<WordBlock {...DEFAULT_PROPS} syllablePosition="middle" syllableEdgesJoin={false} />, {
+      dndContext: true,
+    });
+    expect(screen.container.querySelector('[data-edge="left"]')?.className).toContain("cursor-ew-resize");
+    expect(screen.container.querySelector('[data-edge="right"]')?.className).toContain("cursor-ew-resize");
+  });
+
+  it("shows cursor-col-resize on a conjoined syllable divider when syllable edges do not join", async () => {
+    const screen = await render(
+      <WordBlock {...DEFAULT_PROPS} syllablePosition="middle" syllableEdgesJoin={false} rightConjoined />,
+      { dndContext: true },
+    );
+    expect(screen.container.querySelector('[data-edge="right"]')?.className).toContain("cursor-col-resize");
+  });
+
   it("keeps cursor-ew-resize on a plain boundary handle when not conjoined", async () => {
     const screen = await render(<WordBlock {...DEFAULT_PROPS} />, { dndContext: true });
     const leftEdge = screen.container.querySelector('[data-edge="left"]') as HTMLElement;

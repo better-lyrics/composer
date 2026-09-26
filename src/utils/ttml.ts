@@ -1,4 +1,5 @@
 import type { Agent } from "@/domain/agent/model";
+import { hasMainLyrics } from "@/domain/line/predicates";
 import type { LinkGroup } from "@/domain/group/template";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -135,7 +136,7 @@ function generateTTML({ metadata, agents, lines, groups, granularity, minify = f
 
   for (const line of lines) {
     const timing = effectiveBounds(line);
-    if (!timing) continue;
+    if (!timing || (!hasMainLyrics(line) && !line.backgroundText?.trim())) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
     const lineKey = keyById.get(line.id);

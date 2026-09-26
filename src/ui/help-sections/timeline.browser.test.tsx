@@ -150,6 +150,17 @@ describe("TimelineSection", () => {
     expect(boundaryItem?.textContent).toContain("just as they do when you drag");
   });
 
+  it("documents the setting that makes syllables follow Rolling", async () => {
+    const screen = await render(<TimelineSection />);
+    const items = Array.from(screen.container.querySelectorAll("li"));
+    const boundaryItem = items.find((li) => li.textContent?.includes("snap a word's start or end"));
+    expect(boundaryItem?.textContent).toContain("unless the setting below is on");
+    const draggingItem = items.find((li) => li.textContent?.includes("Two flush syllables share one boundary"));
+    expect(draggingItem?.textContent).toContain(
+      "Turn on Syllables follow rolling edit in Settings to join them only while Rolling is on",
+    );
+  });
+
   it("drops the stale waveform double-click placement copy", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.textContent).not.toContain("double-click the waveform");

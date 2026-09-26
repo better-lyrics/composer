@@ -11,6 +11,7 @@ describe("createWordTimingOps: setBoundary", () => {
     edge: BoundaryEdge;
     time: number;
     rolling: boolean;
+    syllablesFollowRolling?: boolean;
     minDuration?: number;
     duration?: number;
     line?: LyricLine;
@@ -28,6 +29,7 @@ describe("createWordTimingOps: setBoundary", () => {
       time: boundaryCase.time,
       minDuration: boundaryCase.minDuration ?? 0.05,
       rolling: boundaryCase.rolling,
+      syllablesFollowRolling: boundaryCase.syllablesFollowRolling ?? false,
       ...(boundaryCase.duration !== undefined ? { duration: boundaryCase.duration } : {}),
       updateLineWithHistory,
     });
@@ -42,6 +44,49 @@ describe("createWordTimingOps: setBoundary", () => {
         { text: "b", begin: 1.5, end: 2.5 },
       ],
     });
+
+  describe("syllables follow rolling edit", () => {
+    const syllableLine = () =>
+      createLine({
+        text: "ever",
+        words: [
+          { text: "ev", begin: 0, end: 1 },
+          { text: "er", begin: 1, end: 2 },
+        ],
+      });
+
+    it("moves only the target syllable when rolling is off", () => {
+      const { words } = run({
+        line: syllableLine(),
+        wordIdx: 1,
+        edge: "begin",
+        time: 1.5,
+        rolling: false,
+        syllablesFollowRolling: true,
+      });
+      expect(words[1].begin).toBe(1.5);
+      expect(words[0]).toEqual({ text: "ev", begin: 0, end: 1 });
+    });
+
+    it("rolls the neighbouring syllable when rolling is on", () => {
+      const { words } = run({
+        line: syllableLine(),
+        wordIdx: 0,
+        edge: "end",
+        time: 1.5,
+        rolling: true,
+        syllablesFollowRolling: true,
+      });
+      expect(words[0].end).toBe(1.5);
+      expect(words[1].begin).toBe(1.5);
+    });
+
+    it("regression: rolls the neighbouring syllable without rolling while the setting is off", () => {
+      const { words } = run({ line: syllableLine(), wordIdx: 1, edge: "begin", time: 1.5, rolling: false });
+      expect(words[1].begin).toBe(1.5);
+      expect(words[0].end).toBe(1.5);
+    });
+  });
 
   it("moves only the target word when rolling is off", () => {
     const { words } = run({ wordIdx: 1, edge: "begin", time: 1.5, rolling: false });
@@ -152,6 +197,7 @@ describe("createWordTimingOps: setBoundary", () => {
         time: 1,
         minDuration: 0.05,
         rolling: true,
+        syllablesFollowRolling: false,
         updateLineWithHistory,
       });
       expect(calls).toHaveLength(0);
@@ -245,6 +291,7 @@ describe("setBoundary write shape vs mutateWord write shape", () => {
       time: 1.5,
       minDuration: 0.05,
       rolling: false,
+      syllablesFollowRolling: false,
       updateLineWithHistory,
     });
     return calls;

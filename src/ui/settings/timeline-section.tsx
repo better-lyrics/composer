@@ -71,6 +71,11 @@ const TimelineSection: React.FC = () => {
         settingKey="defaultRollingEdit"
       />
       <ToggleSetting
+        label="Syllables follow rolling edit"
+        description="Syllables of one word move together only in rolling edit mode, like separate words. When off, they always move together."
+        settingKey="syllablesFollowRolling"
+      />
+      <ToggleSetting
         label="Default preview sidebar"
         description="Open the preview sidebar by default."
         settingKey="defaultPreviewSidebar"

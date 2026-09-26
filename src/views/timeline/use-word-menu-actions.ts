@@ -6,6 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { mergeWordText } from "@/utils/word-merge";
+import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -90,6 +91,13 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const existingWords = type === "word" ? line.words : line.backgroundWords;
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, duration, minWordDuration);
     if (!slot) {
+      clearContextMenu();
+      return;
+    }
+
+    const timedText = type === "bg" ? createBgWordsFromTextAt(line, slot.begin, duration) : null;
+    if (timedText) {
+      updateLineWithHistory(lineId, manualBackgroundWordEdit(timedText));
       clearContextMenu();
       return;
     }

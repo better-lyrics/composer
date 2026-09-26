@@ -124,6 +124,7 @@ const TimelineInfoPanel: React.FC = () => {
         minDuration: useSettingsStore.getState().minWordDuration,
         duration,
         rolling: useTimelineStore.getState().rollingEditMode,
+        syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory,
       });
     },

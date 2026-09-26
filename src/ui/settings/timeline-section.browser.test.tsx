@@ -8,7 +8,7 @@ describe("TimelineSection", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<TimelineSection />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(7);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(8);
   });
 
   it("flips the default rolling edit setting when its toggle is clicked", async () => {
@@ -18,6 +18,15 @@ describe("TimelineSection", () => {
     await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();
     await expect.poll(() => useSettingsStore.getState().defaultRollingEdit).toBe(true);
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("starts with syllables following rolling edit off and flips it on when clicked", async () => {
+    const screen = await render(<TimelineSection />);
+    const toggle = screen.getByRole("switch", { name: "Syllables follow rolling edit" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect.poll(() => useSettingsStore.getState().syllablesFollowRolling).toBe(true);
     await expect.element(toggle).toHaveAttribute("aria-checked", "true");
   });
 

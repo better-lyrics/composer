@@ -1,6 +1,5 @@
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { getEffectiveLines } from "@/domain/line/effective-words";
-import { isLineSynced } from "@/domain/line/predicates";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
@@ -12,6 +11,7 @@ import {
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
 import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
+import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
 
@@ -140,20 +140,9 @@ function useContextMenuTargets() {
 
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
-    const target = contextMenu.target;
-
-    const selectedLineIds = new Set(selectedWords.map((w) => w.lineId));
-    const targetIds =
-      selectedLineIds.has(target.lineId) && selectedLineIds.size > 0 ? [...selectedLineIds] : [target.lineId];
-
-    const rawLinesById = new Map(rawLines.map((l) => [l.id, l] as const));
-    const lineSyncedIds = targetIds.filter((id) => {
-      const realLine = rawLinesById.get(id);
-      return realLine && isLineSynced(realLine);
-    });
-
-    if (lineSyncedIds.length === 0) return null;
-    return { count: lineSyncedIds.length };
+    const updates = computeSplitIntoWordsUpdates(splitTargetsForMenu(contextMenu.target, selectedWords), rawLines);
+    if (updates.length === 0) return null;
+    return { count: updates.length };
   }, [contextMenu, selectedWords, rawLines]);
 
   return {
