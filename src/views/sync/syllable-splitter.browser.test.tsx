@@ -42,15 +42,15 @@ describe("SyllableSplitter", () => {
       />,
     );
     await screen.getByRole("button", { name: /Split into syllables/i }).click();
-    expect(document.querySelectorAll('button[aria-label^="Transliteration space boundary"]')).toHaveLength(1);
+    expect(document.querySelectorAll('button[aria-label^="Transliteration pronunciation break"]')).toHaveLength(1);
     expect(document.querySelector('button[aria-label="Transliteration split point 3"]')).toBeNull();
     expect(document.querySelector('button[aria-label="Transliteration split point 4"]')).toBeNull();
     await screen.getByRole("button", { name: "Original split point 1" }).click();
 
     await expect
-      .element(screen.getByRole("button", { name: "Transliteration space boundary 4" }))
+      .element(screen.getByRole("button", { name: "Transliteration pronunciation break 4" }))
       .toHaveAttribute("aria-pressed", "true");
-    expect(document.body.textContent).not.toContain("must have the same number of segments");
+    expect(document.body.textContent).not.toContain("Both rows need the same number of parts");
   });
 
   it("emits split words when a split point is toggled and Split Word is clicked", async () => {

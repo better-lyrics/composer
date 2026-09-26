@@ -1,4 +1,4 @@
-const DASH_CHARACTERS = new Set(["-", "‐", "‑", "‒", "–", "—", "―"]);
+const DASH_CHARACTERS = new Set(["-", "\u2010", "\u2011", "\u2012", "\u2013", "\u2014", "\u2015"]);
 
 function isWhitespaceSeparator(char: string): boolean {
   return char.length > 0 && char.trim().length === 0;

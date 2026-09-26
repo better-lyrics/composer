@@ -1,4 +1,4 @@
-import { normalizeSplitPointAtSeparator } from "@/views/sync/split-separators";
+import { normalizeSplitPointAtSeparator } from "@/utils/split-separators";
 
 interface PairedSplitPoints {
   splitPoints: number[];
