@@ -357,9 +357,10 @@ describe("LanguagesPanel", () => {
     clipboardData.setData("text/plain", "One\nTwo\nThree\nFour");
     englishField!.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, clipboardData }));
 
-    await expect.element(screen.getByRole("dialog")).toBeInTheDocument();
-    const language = document.querySelector<HTMLSelectElement>('select[aria-label="Imported translation language"]');
-    expect(language?.value).toBe("en");
-    await expect.element(screen.getByRole("button", { name: "Import translation" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("dialog", { name: "Import pasted lines" })).toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Imported translation language" }))
+      .toHaveTextContent("English");
+    await expect.element(screen.getByRole("button", { name: "Import 4 lines" })).toBeInTheDocument();
   });
 });
