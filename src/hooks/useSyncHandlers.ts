@@ -5,7 +5,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
-import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, type SyncCursor } from "@/domain/sync/cursor";
+import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -15,14 +15,13 @@ import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpe
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
 interface UseSyncHandlersProps {
   lines: LyricLine[];
-  cursor: SyncCursor;
   syncState: SyncState;
   setSyncState: React.Dispatch<React.SetStateAction<SyncState>>;
   currentTime: number;
@@ -47,7 +46,6 @@ function triggerPulse(setShowPulse: (show: boolean) => void): void {
 
 function useSyncHandlers({
   lines,
-  cursor,
   syncState,
   setSyncState,
   currentTime,
@@ -61,6 +59,10 @@ function useSyncHandlers({
   const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
+  const cursor = useMemo(
+    () => resolveSyncCursor(lines, syncState.position, !!syncState.jumpedToPosition, granularity),
+    [lines, syncState.position, syncState.jumpedToPosition, granularity],
+  );
   const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
   const isComplete = isCursorPastEnd(lines, cursor);
@@ -81,9 +83,7 @@ function useSyncHandlers({
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
       });
       if (!commit) return false;
-      if (commit.lineUpdates.length > 0) {
-        updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
-      }
+      updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
       setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
       if (commit.clampedTo !== null) {
         toast(`Early tap snapped to ${formatTimeMs(commit.clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
@@ -328,6 +328,7 @@ function useSyncHandlers({
     handleSetBgWordTime,
     handleNudgeBgWordEnd,
     handleSetBgWordEndTime,
+    cursor,
     isComplete,
     currentLine,
     currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,

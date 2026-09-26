@@ -2,7 +2,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
-import { previousSlot, resolveSyncCursor, slotBounds } from "@/domain/sync/cursor";
+import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
@@ -89,10 +89,41 @@ const SyncPanel: React.FC = () => {
   const linesRef = useRef(lines);
   linesRef.current = lines;
 
-  const cursor = useMemo(
-    () => resolveSyncCursor(lines, syncState.position, !!syncState.jumpedToPosition, granularity),
-    [lines, syncState.position, syncState.jumpedToPosition, granularity],
-  );
+  const {
+    handleTap,
+    handleHoldStart,
+    handleHoldEnd: handleHoldEndRaw,
+    handleHoldTap,
+    handleReset,
+    handleStartSync,
+    handleJumpToLine,
+    handleJumpToWord,
+    handleJumpToBgWord,
+    handleNudgeWord,
+    handleSetWordTime,
+    handleNudgeWordEnd,
+    handleSetWordEndTime,
+    handleNudgeLine,
+    handleSetLineTime,
+    handleNudgeLastSynced,
+    handleSplitWord,
+    handleNudgeBgWord,
+    handleSetBgWordTime,
+    handleNudgeBgWordEnd,
+    handleSetBgWordEndTime,
+    cursor,
+    isComplete,
+    currentWord,
+  } = useSyncHandlers({
+    lines,
+    syncState,
+    setSyncState,
+    currentTime,
+    editMode,
+    granularity,
+    setShowPulse,
+    setIsPlaying,
+  });
   const cursorRef = useRef(cursor);
   cursorRef.current = cursor;
 
@@ -123,42 +154,6 @@ const SyncPanel: React.FC = () => {
   }, []);
 
   const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
-
-  const {
-    handleTap,
-    handleHoldStart,
-    handleHoldEnd: handleHoldEndRaw,
-    handleHoldTap,
-    handleReset,
-    handleStartSync,
-    handleJumpToLine,
-    handleJumpToWord,
-    handleJumpToBgWord,
-    handleNudgeWord,
-    handleSetWordTime,
-    handleNudgeWordEnd,
-    handleSetWordEndTime,
-    handleNudgeLine,
-    handleSetLineTime,
-    handleNudgeLastSynced,
-    handleSplitWord,
-    handleNudgeBgWord,
-    handleSetBgWordTime,
-    handleNudgeBgWordEnd,
-    handleSetBgWordEndTime,
-    isComplete,
-    currentWord,
-  } = useSyncHandlers({
-    lines,
-    cursor,
-    syncState,
-    setSyncState,
-    currentTime,
-    editMode,
-    granularity,
-    setShowPulse,
-    setIsPlaying,
-  });
 
   const handleHoldEnd = useCallback(() => {
     triggerRippleAtCurrentPosition();

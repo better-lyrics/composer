@@ -42,7 +42,6 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
       const state = props?.syncState ?? syncState;
       return useSyncHandlers({
         lines,
-        cursor: state.position,
         syncState: state,
         setSyncState,
         currentTime: props?.currentTime ?? startTime,
@@ -203,13 +202,14 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
         text: ORIGINAL_TEXT,
         words: [createWord({ text: "Hello ", begin: 0, end: 0.5 })],
       }),
-      createLine({ id: "l1", text: "Next line" }),
+      createLine({ id: "l1", text: "Next line", words: [createWord({ text: "Next ", begin: 3, end: 4 })] }),
     ]);
 
     const TAP_TIME = 1.25;
     const { result, act } = await mountSyncHandlers({
       initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
       initialCurrentTime: TAP_TIME,
+      granularity: "line",
     });
 
     await act(() => {
