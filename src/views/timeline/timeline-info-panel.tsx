@@ -199,13 +199,15 @@ const TimelineInfoPanel: React.FC = () => {
       )}
       <div className="flex items-center gap-2">
         <div className="size-2.5 rounded-full" style={{ backgroundColor: color }} />
-        <span className="text-sm text-composer-text-muted">Line {selectedWord.lineIndex + 1}</span>
+        <span className="text-sm text-composer-text-muted">
+          {selectedWord.type === "bg"
+            ? `Line ${selectedWord.lineIndex + 1} ・ Background`
+            : `Line ${selectedWord.lineIndex + 1}`}
+        </span>
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-composer-text">
-          {selectedWord.type === "bg" ? `(${selectedItem.text})` : selectedItem.text}
-        </span>
+        <span className="text-sm font-medium text-composer-text">{selectedItem.text}</span>
       </div>
 
       <div className="flex items-center gap-4 text-sm">

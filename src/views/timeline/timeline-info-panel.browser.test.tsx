@@ -37,6 +37,45 @@ describe("TimelineInfoPanel", () => {
   });
 });
 
+describe("TimelineInfoPanel selected word label", () => {
+  function lineWithBackground(backgroundWordText: string) {
+    return createLine({
+      id: "l1",
+      text: "Hello there",
+      words: [createWord({ text: "Hello there", begin: 1, end: 3 })],
+      backgroundText: backgroundWordText,
+      backgroundWords: [createWord({ text: backgroundWordText, begin: 3, end: 4 })],
+      backgroundTextSource: "manual",
+    });
+  }
+
+  it("regression: shows a bracketed background word once, as stored", async () => {
+    useAudioStore.setState({ duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBackground("(yeah)")] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    const screen = await render(<TimelineInfoPanel />);
+    await expect.element(screen.getByText("(yeah)", { exact: true })).toBeInTheDocument();
+    expect(screen.container.textContent).not.toContain("((yeah))");
+  });
+
+  it("labels a background word as background instead of inventing brackets", async () => {
+    useAudioStore.setState({ duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBackground("yeah")] });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "l1", lineIndex: 0, wordIndex: 0, type: "bg" }] });
+    const screen = await render(<TimelineInfoPanel />);
+    await expect.element(screen.getByText("Line 1 ・ Background")).toBeInTheDocument();
+    await expect.element(screen.getByText("yeah", { exact: true })).toBeInTheDocument();
+  });
+
+  it("keeps the plain line label for a main word", async () => {
+    useAudioStore.setState({ duration: 10 });
+    useProjectStore.setState({ lines: [lineWithBackground("(yeah)")] });
+    selectWordAt("l1", 0);
+    const screen = await render(<TimelineInfoPanel />);
+    await expect.element(screen.getByText("Line 1", { exact: true })).toBeInTheDocument();
+  });
+});
+
 describe("TimelineInfoPanel bg word retiming provenance", () => {
   function lineWithBg() {
     return createLine({
