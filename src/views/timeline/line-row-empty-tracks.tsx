@@ -29,7 +29,6 @@ interface EmptyBgTrackProps {
   line: LyricLine;
   lineIndex: number;
   isOver: boolean;
-  dropRef: (element: HTMLElement | null) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -140,9 +139,8 @@ const EmptyWordTrack: React.FC<EmptyWordTrackProps> = ({ line, lineIndex, durati
   );
 };
 
-const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver, dropRef }) => (
+const EmptyBgTrack: React.FC<EmptyBgTrackProps> = ({ line, lineIndex, isOver }) => (
   <div
-    ref={dropRef}
     data-line-index={lineIndex}
     data-track="bg"
     className={cn(

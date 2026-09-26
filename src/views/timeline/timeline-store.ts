@@ -18,6 +18,11 @@ interface ContextMenuState {
   target: ContextMenuTarget;
 }
 
+interface TrackHit {
+  lineIndex: number;
+  track: "word" | "bg";
+}
+
 interface EditingWord {
   lineId: string;
   wordIndex: number;
@@ -47,6 +52,7 @@ interface TimelineState {
   renamingGroupId: string | null;
   renamingInstanceIdx: number | null;
   draggedGroupShift: { groupId: string; instanceIdx: number; offsetPx: number } | null;
+  wordDragHover: TrackHit | null;
   isBypassing: boolean;
   snappedBlockId: string | null;
   snappedAnchorTime: number | null;
@@ -83,6 +89,7 @@ interface TimelineActions {
   setPingingGroupId: (groupId: string | null) => void;
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
+  setWordDragHover: (hover: TrackHit | null) => void;
   setIsBypassing: (v: boolean) => void;
   setSnappedBlockId: (id: string | null) => void;
   setSnappedAnchorTime: (t: number | null) => void;
@@ -128,6 +135,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     renamingGroupId: null,
     renamingInstanceIdx: null,
     draggedGroupShift: null,
+    wordDragHover: null,
     isBypassing: false,
     snappedBlockId: null,
     snappedAnchorTime: null,
@@ -171,6 +179,12 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     setRenamingGroupId: (renamingGroupId, renamingInstanceIdx = null) =>
       set({ renamingGroupId, renamingInstanceIdx: renamingGroupId === null ? null : renamingInstanceIdx }),
     setDraggedGroupShift: (draggedGroupShift) => set({ draggedGroupShift }),
+    setWordDragHover: (wordDragHover) =>
+      set((s) =>
+        s.wordDragHover?.lineIndex === wordDragHover?.lineIndex && s.wordDragHover?.track === wordDragHover?.track
+          ? s
+          : { wordDragHover },
+      ),
     setIsBypassing: (v) => set({ isBypassing: v }),
     setSnappedBlockId: (id) => set({ snappedBlockId: id }),
     setSnappedAnchorTime: (t) => set({ snappedAnchorTime: t }),
@@ -186,4 +200,4 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
 // -- Exports -------------------------------------------------------------------
 
 export { useTimelineStore, GUTTER_WIDTH, WAVEFORM_HEIGHT, MIN_ZOOM, MAX_ZOOM, DEFAULT_ROW_HEIGHT, ZOOM_STEP };
-export type { ContextMenuTarget };
+export type { ContextMenuTarget, TrackHit };

@@ -29,7 +29,7 @@ async function renderBgTrack(line: ReturnType<typeof createLine>, isOver = false
   useProjectStore.setState({ lines: [line] });
   const screen = await render(
     <div style={{ paddingLeft: TRACK_OFFSET_PX }}>
-      <EmptyBgTrack line={line} lineIndex={2} isOver={isOver} dropRef={() => {}} />
+      <EmptyBgTrack line={line} lineIndex={2} isOver={isOver} />
     </div>,
   );
   return firstElement(screen.container);

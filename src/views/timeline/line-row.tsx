@@ -9,7 +9,6 @@ import { EmptyBgTrack, EmptyWordTrack } from "@/views/timeline/line-row-empty-tr
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useRowResize } from "@/views/timeline/use-row-resize";
 import { WordTrack } from "@/views/timeline/word-track";
-import { useDroppable } from "@dnd-kit/core";
 import { memo } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -50,15 +49,9 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const shiftTransform = dragShiftPx !== 0 ? `translateX(${dragShiftPx}px)` : undefined;
   const { isResizing, startResize, resetHeight } = useRowResize(line.id, rowHeight);
 
-  const { setNodeRef: setBgDropRef, isOver: isOverBg } = useDroppable({
-    id: `bg-drop-${line.id}`,
-    data: { lineId: line.id, lineIndex },
-  });
-
-  const { setNodeRef: setMainDropRef, isOver: isOverMain } = useDroppable({
-    id: `main-drop-${line.id}`,
-    data: { lineId: line.id, lineIndex },
-  });
+  const hoveredTrack = useTimelineStore((s) =>
+    s.wordDragHover?.lineIndex === lineIndex ? s.wordDragHover.track : null,
+  );
 
   const mainWords = line.words?.length ? line.words : null;
   const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
@@ -83,13 +76,12 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
           )}
         </div>
         <div
-          ref={setMainDropRef}
           data-line-index={lineIndex}
           data-track="word"
           className={cn(
             "transition-colors relative",
             !mainWords && "opacity-50",
-            isOverMain && "bg-composer-accent/10",
+            hoveredTrack === "word" && "bg-composer-accent/10",
           )}
           style={{ transform: shiftTransform }}
         >
@@ -111,12 +103,11 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
 
         {bgWords ? (
           <div
-            ref={setBgDropRef}
             data-line-index={lineIndex}
             data-track="bg"
             className={cn(
               "relative opacity-70 transition-colors border-t border-composer-border/50",
-              isOverBg ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
+              hoveredTrack === "bg" ? "bg-composer-accent/10" : "bg-composer-bg-elevated/25",
             )}
             style={{ transform: shiftTransform }}
           >
@@ -132,7 +123,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
             />
           </div>
         ) : (
-          <EmptyBgTrack line={line} lineIndex={lineIndex} isOver={isOverBg} dropRef={setBgDropRef} />
+          <EmptyBgTrack line={line} lineIndex={lineIndex} isOver={hoveredTrack === "bg"} />
         )}
       </div>
 
