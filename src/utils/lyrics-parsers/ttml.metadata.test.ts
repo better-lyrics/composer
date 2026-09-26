@@ -60,3 +60,12 @@ describe("parseTtml metadata round-trip", () => {
     expect(out.album).toBe("Al");
   });
 });
+
+describe("parseTtml line timing", () => {
+  it('regression: a line-timed <p begin="0"> stays timed', () => {
+    const ttml =
+      '<?xml version="1.0" encoding="UTF-8"?><tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><body><div><p begin="0" end="2.5">Hello there</p></div></body></tt>';
+    const [line] = parseTtml(ttml).lines;
+    expect(line).toMatchObject({ text: "Hello there", begin: 0, end: 2.5 });
+  });
+});
