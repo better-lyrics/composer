@@ -1,5 +1,6 @@
 import { render } from "@/test/render";
 import { LanguageTrackBar } from "@/views/languages/language-track-bar";
+import { userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -105,6 +106,45 @@ describe("LanguageTrackBar", () => {
         />,
       );
       await expect.element(screen.getByRole("button", { name: "Remove xx" })).toBeInTheDocument();
+    });
+  });
+
+  describe("keyboard", () => {
+    it("removes a target with Enter", async () => {
+      const removed: string[] = [];
+      const screen = await render(
+        <LanguageTrackBar
+          targets={["en"]}
+          languageNames={NAMES}
+          availableLanguages={AVAILABLE}
+          disabled={false}
+          onAdd={() => {}}
+          onRemove={(language) => removed.push(language)}
+        />,
+      );
+      (screen.getByRole("button", { name: "Remove English" }).element() as HTMLButtonElement).focus();
+      await userEvent.keyboard("{Enter}");
+      expect(removed).toEqual(["en"]);
+    });
+
+    it("opens the add menu with Enter and closes it with Escape", async () => {
+      const added: string[] = [];
+      const screen = await render(
+        <LanguageTrackBar
+          targets={["en"]}
+          languageNames={NAMES}
+          availableLanguages={AVAILABLE}
+          disabled={false}
+          onAdd={(language) => added.push(language)}
+          onRemove={() => {}}
+        />,
+      );
+      (screen.getByRole("button", { name: "Add language" }).element() as HTMLButtonElement).focus();
+      await userEvent.keyboard("{Enter}");
+      await expect.element(screen.getByRole("option", { name: "French" })).toBeInTheDocument();
+      await userEvent.keyboard("{Escape}");
+      await expect.element(screen.getByRole("option", { name: "French" })).not.toBeInTheDocument();
+      expect(added).toEqual([]);
     });
   });
 });
