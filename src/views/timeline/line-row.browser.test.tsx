@@ -184,4 +184,39 @@ describe("LineRow", () => {
     expect(after.backgroundWords?.[1].end).toBeLessThanOrEqual(30);
     expect(useTimelineStore.getState().editingWord).toBeNull();
   });
+  describe("row resize handle", () => {
+    it("resets the row height to the default on double-click", async () => {
+      const line = createLine({ id: "l1" });
+      useTimelineStore.setState({ rowHeights: { l1: 120 }, defaultRowHeight: 48 });
+      useProjectStore.setState({ lines: [line] });
+      const screen = await render(
+        <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+        { dndContext: true },
+      );
+
+      screen.container
+        .querySelector("[role='separator']")
+        ?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
+
+      expect(useTimelineStore.getState().rowHeights.l1 ?? 48).toBe(48);
+    });
+
+    it("resizes the row while dragging the handle and stops on mouseup", async () => {
+      const line = createLine({ id: "l1" });
+      useTimelineStore.setState({ rowHeights: { l1: 60 } });
+      useProjectStore.setState({ lines: [line] });
+      const screen = await render(
+        <LineRow line={line} lineIndex={0} duration={5} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+        { dndContext: true },
+      );
+      const handle = screen.container.querySelector("[role='separator']");
+
+      handle?.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientY: 100 }));
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 130 }));
+      document.dispatchEvent(new MouseEvent("mouseup"));
+      document.dispatchEvent(new MouseEvent("mousemove", { clientY: 200 }));
+
+      expect(useTimelineStore.getState().rowHeights.l1).toBe(90);
+    });
+  });
 });
