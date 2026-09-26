@@ -1,29 +1,17 @@
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { hasAnyTiming } from "@/domain/line/predicates";
+import { shiftLineTiming } from "@/domain/line/shift";
+import { isSyncableLine } from "@/domain/line/sync-progress";
+import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
+import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, type SyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
-import {
-  advanceSyncPosition,
-  buildInitialWordUpdates,
-  isSyncableLine,
-  nextSyncableLineIndex,
-  prepareSyncWord,
-  prevSyncableLine,
-  triggerPulse,
-  withBgSeedIfNeeded,
-} from "@/hooks/useSyncHandlers.helpers";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import {
-  type SyncState,
-  closeHeldWord,
-  commitHeldWord,
-  commitTappedWord,
-  splitIntoWords,
-  splitIntoWordsWithMeta,
-} from "@/utils/sync-helpers";
+import { type SyncState, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
@@ -33,6 +21,7 @@ import { useCallback } from "react";
 
 interface UseSyncHandlersProps {
   lines: LyricLine[];
+  cursor: SyncCursor;
   syncState: SyncState;
   setSyncState: React.Dispatch<React.SetStateAction<SyncState>>;
   currentTime: number;
@@ -42,10 +31,18 @@ interface UseSyncHandlersProps {
   setIsPlaying: (playing: boolean) => void;
 }
 
+// -- Helpers --------------------------------------------------------------------
+
+function triggerPulse(setShowPulse: (show: boolean) => void): void {
+  setShowPulse(true);
+  setTimeout(() => setShowPulse(false), 100);
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useSyncHandlers({
   lines,
+  cursor,
   syncState,
   setSyncState,
   currentTime,
@@ -55,14 +52,13 @@ function useSyncHandlers({
   setIsPlaying,
 }: UseSyncHandlersProps) {
   const seekTo = useAudioStore((s) => s.seekTo);
-  const updateLine = useProjectStore((s) => s.updateLine);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
+  const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
-  const { lineIndex, wordIndex } = syncState.position;
+  const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
-  const prevLine = prevSyncableLine(lines, lineIndex);
-  const isComplete = lineIndex >= lines.length && lines.length > 0;
+  const isComplete = isCursorPastEnd(lines, cursor);
 
   // Store `currentTime` only advances on `timeupdate` (~4 Hz); read the element's
   // live clock so taps under that interval don't collide into zero-length syllables.
@@ -71,185 +67,42 @@ function useSyncHandlers({
     [currentTime],
   );
 
-  const handleTapWord = useCallback(() => {
-    const prepared = prepareSyncWord(lines, lineIndex, wordIndex, isComplete);
-    if (!prepared) return;
-    const { line, lineWords, textWithSpace } = prepared;
+  const runGesture = useCallback(
+    (gesture: SyncGesture): boolean => {
+      const commit = commitGesture(lines, gesture, {
+        cursor,
+        jumped: !!syncState.jumpedToPosition,
+        time: readTapTime(),
+        defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
+      });
+      if (!commit) return false;
+      if (commit.lineUpdates.length > 0) {
+        updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
+      }
+      setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
+      return true;
+    },
+    [lines, cursor, syncState.jumpedToPosition, readTapTime, updateLinesWithHistory, setSyncState],
+  );
 
-    const tapTime = readTapTime();
-    const fallbackEnd = tapTime + useSettingsStore.getState().defaultWordDuration;
-    const existingWords = line.words ?? [];
-
-    if (existingWords.length > 0) {
-      const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, tapTime, fallbackEnd);
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
-    } else {
-      const updates = buildInitialWordUpdates(line, textWithSpace, tapTime, fallbackEnd);
-      updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
-    }
-
-    if (wordIndex === 0 && !syncState.jumpedToPosition && prevLine?.words?.length) {
-      const prevWords = [...prevLine.words];
-      prevWords[prevWords.length - 1] = {
-        ...prevWords[prevWords.length - 1],
-        end: tapTime,
-      };
-      updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
-    }
-
-    triggerPulse(setShowPulse);
-    advanceSyncPosition(setSyncState, lines, lineIndex, wordIndex, lineWords.length);
-  }, [
-    lines,
-    lineIndex,
-    wordIndex,
-    readTapTime,
-    updateLine,
-    updateLineWithHistory,
-    isComplete,
-    prevLine,
-    setShowPulse,
-    setSyncState,
-    syncState.jumpedToPosition,
-  ]);
-
-  const handleTapLine = useCallback(() => {
-    if (lines.length === 0 || isComplete) return;
-
-    const line = lines[lineIndex];
-    if (!line) return;
-
-    const tapTime = readTapTime();
-
-    if (prevLine?.begin !== undefined && !syncState.jumpedToPosition) {
-      updateLine(prevLine.id, { end: tapTime }, { deriveText: false });
-    }
-
-    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: tapTime, end: tapTime }, line, tapTime);
-    updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
-
-    triggerPulse(setShowPulse);
-    setSyncState((prev) => ({
-      ...prev,
-      position: { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 },
-      jumpedToPosition: false,
-    }));
-  }, [
-    lines,
-    lineIndex,
-    readTapTime,
-    updateLine,
-    updateLineWithHistory,
-    isComplete,
-    prevLine,
-    setShowPulse,
-    setSyncState,
-    syncState.jumpedToPosition,
-  ]);
+  const handleTap = useCallback(() => {
+    if (runGesture(granularity === "word" ? "tap-word" : "tap-line")) triggerPulse(setShowPulse);
+  }, [runGesture, granularity, setShowPulse]);
 
   const handleHoldStart = useCallback(() => {
-    const prepared = prepareSyncWord(lines, lineIndex, wordIndex, isComplete);
-    if (!prepared) return;
-    const { line, textWithSpace } = prepared;
-
-    const tapTime = readTapTime();
-    const existingWords = line.words ?? [];
-
-    if (existingWords.length > 0) {
-      const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, tapTime);
-      updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
-    } else {
-      const updates = buildInitialWordUpdates(line, textWithSpace, tapTime, tapTime);
-      updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
-    }
-
-    if (wordIndex === 0 && prevLine?.words?.length) {
-      const prevWords = [...prevLine.words];
-      const lastPrevWord = prevWords[prevWords.length - 1];
-      if (lastPrevWord.end === lastPrevWord.begin) {
-        prevWords[prevWords.length - 1] = { ...lastPrevWord, end: tapTime };
-        updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
-      }
-    }
-  }, [lines, lineIndex, wordIndex, readTapTime, updateLine, updateLineWithHistory, isComplete, prevLine]);
+    runGesture("hold-start");
+  }, [runGesture]);
 
   const handleHoldEnd = useCallback(() => {
-    if (lines.length === 0 || isComplete) return;
-
-    const line = lines[lineIndex];
-    if (!line?.words?.length) return;
-
-    const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
-
-    const updatedWords = closeHeldWord(line.words, wordIndex, readTapTime());
-    updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
-
-    triggerPulse(setShowPulse);
-    advanceSyncPosition(setSyncState, lines, lineIndex, wordIndex, lineWords.length);
-  }, [lines, lineIndex, wordIndex, readTapTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
+    if (runGesture("hold-end")) triggerPulse(setShowPulse);
+  }, [runGesture, setShowPulse]);
 
   const handleHoldTap = useCallback(() => {
-    if (lines.length === 0 || isComplete) return;
-
-    const line = lines[lineIndex];
-    if (!line?.words?.length) return;
-
-    const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
-
-    const tapTime = readTapTime();
-    const closedWords = closeHeldWord(line.words, wordIndex, tapTime);
-
-    const nextWordIndex = wordIndex + 1;
-    const advancesToNextLine = nextWordIndex >= lineWords.length;
-
-    if (advancesToNextLine) {
-      updateLineWithHistory(line.id, { words: closedWords }, { deriveText: false, propagateToSiblings: false });
-
-      const nextLineIndex = nextSyncableLineIndex(lines, lineIndex);
-      const nextLine = lines[nextLineIndex];
-      if (nextLine) {
-        const { parts: nextLineWords, trailingSpace: nextTrailingSpace } = splitIntoWordsWithMeta(nextLine.text);
-        const nextWordText = nextLineWords[0];
-        if (nextWordText) {
-          const textWithSpace = nextTrailingSpace[0] ? `${nextWordText} ` : nextWordText;
-          const nextUpdates = buildInitialWordUpdates(nextLine, textWithSpace, tapTime, tapTime);
-          updateLineWithHistory(nextLine.id, nextUpdates, { deriveText: false, propagateToSiblings: false });
-        }
-      }
-
-      setSyncState((prev) => ({
-        ...prev,
-        position: { lineIndex: nextLineIndex, wordIndex: 0 },
-      }));
-    } else {
-      const nextWordText = lineWords[nextWordIndex];
-      const openedWords = nextWordText
-        ? commitHeldWord(
-            closedWords,
-            nextWordIndex,
-            trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText,
-            tapTime,
-          )
-        : closedWords;
-      updateLineWithHistory(line.id, { words: openedWords }, { deriveText: false, propagateToSiblings: false });
-
-      setSyncState((prev) => ({
-        ...prev,
-        position: { ...prev.position, wordIndex: nextWordIndex },
-      }));
-    }
-
-    triggerPulse(setShowPulse);
-  }, [lines, lineIndex, wordIndex, readTapTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
-
-  const handleTap = granularity === "word" ? handleTapWord : handleTapLine;
+    if (runGesture("hold-tap")) triggerPulse(setShowPulse);
+  }, [runGesture, setShowPulse]);
 
   const handleReset = useCallback(async () => {
-    const hasAnyTiming = lines.some(
-      (line) =>
-        line.words?.length || line.begin !== undefined || line.end !== undefined || line.backgroundWords?.length,
-    );
-    if (hasAnyTiming) {
+    if (lines.some(hasAnyTiming)) {
       const ok = await confirm({
         title: "Reset all sync timing?",
         description: "Clear every word and line timing in this project.",
@@ -275,7 +128,7 @@ function useSyncHandlers({
   }, [lines, setSyncState, confirm]);
 
   const handleStartSync = useCallback(() => {
-    const { lineIndex: cursorLine, wordIndex: cursorWord } = syncState.position;
+    const { lineIndex: cursorLine, wordIndex: cursorWord } = cursor;
     const startLine = isSyncableLine(lines[cursorLine]) ? cursorLine : nextSyncableLineIndex(lines, -1);
     const startWord = startLine === cursorLine ? cursorWord : 0;
     // Pressing play is how a re-record actually starts, so it has to carry the
@@ -288,7 +141,7 @@ function useSyncHandlers({
       jumpedToPosition: startLine === cursorLine ? prev.jumpedToPosition : false,
     }));
     setIsPlaying(true);
-  }, [lines, syncState.position, setIsPlaying, setSyncState]);
+  }, [lines, cursor, setIsPlaying, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so
@@ -385,25 +238,19 @@ function useSyncHandlers({
 
   const handleNudgeLastSynced = useCallback(
     (delta: number) => {
-      if (granularity === "line") {
-        for (let i = lines.length - 1; i >= 0; i--) {
-          if (lines[i].begin !== undefined) {
-            handleNudgeLine(i, delta);
-            return;
-          }
-        }
-      } else {
-        for (let i = lines.length - 1; i >= 0; i--) {
-          const line = lines[i];
-          if (line.words?.length) {
-            const lastWordIdx = line.words.length - 1;
-            handleNudgeWord(i, lastWordIdx, delta);
-            return;
-          }
-        }
+      const slot = previousSlot(lines, cursor, granularity);
+      if (!slot) return;
+      if (slot.wordIndex !== null) {
+        handleNudgeWord(slot.lineIndex, slot.wordIndex, delta);
+        return;
       }
+      const line = lines[slot.lineIndex];
+      updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta) }], {
+        deriveText: false,
+        propagateToSiblings: false,
+      });
     },
-    [granularity, lines, handleNudgeWord, handleNudgeLine],
+    [lines, cursor, granularity, handleNudgeWord, updateLinesWithHistory],
   );
 
   const handleSplitWord = useCallback(

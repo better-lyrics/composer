@@ -34,17 +34,21 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
   const playingCalls: boolean[] = [];
 
   const { result, rerender, act } = await renderHook(
-    (props?: HookProps) =>
-      useSyncHandlers({
-        lines: useProjectStore.getState().lines,
-        syncState: props?.syncState ?? syncState,
+    (props?: HookProps) => {
+      const lines = useProjectStore.getState().lines;
+      const state = props?.syncState ?? syncState;
+      return useSyncHandlers({
+        lines,
+        cursor: state.position,
+        syncState: state,
         setSyncState,
         currentTime: props?.currentTime ?? startTime,
         editMode: opts.editMode ?? false,
         granularity: opts.granularity ?? "word",
         setShowPulse: noopBool,
         setIsPlaying: (value) => playingCalls.push(value),
-      }),
+      });
+    },
     { initialProps: { syncState, currentTime: startTime } },
   );
 

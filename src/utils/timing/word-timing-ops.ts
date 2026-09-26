@@ -8,7 +8,7 @@ import type { WordTiming } from "@/domain/word/timing";
 type UpdateLineWithHistory = (
   id: string,
   updates: Partial<LyricLine>,
-  options?: { propagateToSiblings?: boolean },
+  options?: { deriveText?: boolean; propagateToSiblings?: boolean },
 ) => void;
 
 interface WordFieldConfig {
@@ -63,6 +63,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     updatedWords[wordIdx] = mutator({ word, prevWord: updatedWords[wordIdx - 1], nextWord: updatedWords[wordIdx + 1] });
 
     updateLineWithHistory(line.id, { [updateKey]: updatedWords } as Partial<LyricLine>, {
+      deriveText: false,
       propagateToSiblings: false,
     });
   }
@@ -156,7 +157,10 @@ function createWordTimingOps(config: WordFieldConfig) {
       if (rollNeighbour && next) updatedWords[wordIdx + 1] = { ...next, begin: clamped };
     }
 
-    updateLineWithHistory(line.id, buildBoundaryUpdate(updatedWords), { propagateToSiblings: false });
+    updateLineWithHistory(line.id, buildBoundaryUpdate(updatedWords), {
+      deriveText: false,
+      propagateToSiblings: false,
+    });
   }
 
   return { nudgeBegin, setBegin, nudgeEnd, setEnd, setBoundary };

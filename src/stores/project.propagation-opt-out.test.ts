@@ -2,9 +2,9 @@
  * @vitest-environment node
  */
 import type { LinkGroup } from "@/domain/group/template";
+import { commitGesture } from "@/domain/sync/commit-gesture";
 import type { WordTiming } from "@/domain/word/timing";
 import { useProjectStore } from "@/stores/project";
-import { commitTappedWord, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { nudgeLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, setWordBegin } from "@/utils/timing/word-timing";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -218,24 +218,30 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 });
 
 describe("instance resync · issue #96 reproduction", () => {
-  // Replays the tap-by-tap word resync that useSyncHandlers.handleTapWord
-  // performs, using the real commitTappedWord helper.
-  function tapResync(lineId: string, wordIndex: number, begin: number, end: number) {
-    const line = getLine(lineId);
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const text = trailingSpace[wordIndex] ? `${parts[wordIndex]} ` : parts[wordIndex];
-    const updated = commitTappedWord(line.words ?? [], wordIndex, text, begin, end);
-    useProjectStore
-      .getState()
-      .updateLineWithHistory(lineId, { words: updated }, { deriveText: false, propagateToSiblings: false });
+  // Replays the tap-by-tap word resync that useSyncHandlers.handleTap performs,
+  // using the real commitGesture owner. Every call site below uses a 0.3s
+  // duration (end - begin), so that is the fixed defaultWordDuration.
+  function tapResync(lineId: string, wordIndex: number, begin: number) {
+    const lines = useProjectStore.getState().lines;
+    const lineIndex = lines.findIndex((l) => l.id === lineId);
+    const commit = commitGesture(lines, "tap-word", {
+      cursor: { lineIndex, wordIndex },
+      jumped: false,
+      time: begin,
+      defaultWordDuration: 0.3,
+    });
+    useProjectStore.getState().updateLineWithHistory(lineId, commit?.lineUpdates[0].updates ?? {}, {
+      deriveText: false,
+      propagateToSiblings: false,
+    });
   }
 
   it("resyncing instance A word-by-word leaves instance B's timing untouched", () => {
     seedTwoWordSyncedInstances();
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
   });
@@ -243,9 +249,9 @@ describe("instance resync · issue #96 reproduction", () => {
   it("the resynced instance A keeps its full word set with the new timing", () => {
     seedTwoWordSyncedInstances();
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a0").words).toEqual([
       { text: "I ", begin: 0.5, end: 1.0 },
@@ -293,9 +299,9 @@ describe("instance resync · issue #96 reproduction", () => {
       ],
     });
 
-    tapResync("a0", 0, 0.5, 0.8);
-    tapResync("a0", 1, 1.0, 1.3);
-    tapResync("a0", 2, 1.5, 1.8);
+    tapResync("a0", 0, 0.5);
+    tapResync("a0", 1, 1.0);
+    tapResync("a0", 2, 1.5);
 
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);
     expect(getLine("a2").words).toEqual(cWords);
@@ -304,7 +310,7 @@ describe("instance resync · issue #96 reproduction", () => {
   it("a partial re-tap keeps the source's later words and leaves the sibling intact", () => {
     seedTwoWordSyncedInstances();
 
-    tapResync("a0", 0, 0.5, 0.8);
+    tapResync("a0", 0, 0.5);
 
     expect(getLine("a0").words).toHaveLength(3);
     expect(getLine("a0").words?.[0].begin).toBe(0.5);
@@ -316,11 +322,16 @@ describe("instance resync · issue #96 reproduction", () => {
     seedTwoWordSyncedInstances();
 
     // Regression guard for issue #96.
-    const line = getLine("a0");
-    const { parts, trailingSpace } = splitIntoWordsWithMeta(line.text);
-    const text = trailingSpace[0] ? `${parts[0]} ` : parts[0];
-    const updated = commitTappedWord(line.words ?? [], 0, text, 0.5, 0.8);
-    useProjectStore.getState().updateLineWithHistory("a0", { words: updated }, { deriveText: false });
+    const lines = useProjectStore.getState().lines;
+    const commit = commitGesture(lines, "tap-word", {
+      cursor: { lineIndex: 0, wordIndex: 0 },
+      jumped: false,
+      time: 0.5,
+      defaultWordDuration: 0.3,
+    });
+    useProjectStore.getState().updateLineWithHistory("a0", commit?.lineUpdates[0].updates ?? {}, {
+      deriveText: false,
+    });
 
     expect(getLine("a1").words).toHaveLength(3);
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);

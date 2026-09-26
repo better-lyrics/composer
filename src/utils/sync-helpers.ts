@@ -1,7 +1,7 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { enforceOrderAround } from "@/domain/word/order";
+import type { SyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -9,13 +9,8 @@ import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
 
-interface SyncPosition {
-  lineIndex: number;
-  wordIndex: number;
-}
-
 interface SyncState {
-  position: SyncPosition;
+  position: SyncCursor;
   isActive: boolean;
   // True when the cursor was placed by a jump rather than by advancing through
   // the song. Tapping the first word of a line closes the previous line so the
@@ -150,55 +145,9 @@ function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
   return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
 }
 
-// -- Tap and hold commit ------------------------------------------------------
-
-// Redo overwrites in place and keeps the tail; tapping past the end appends.
-function commitTappedWord(
-  existingWords: WordTiming[],
-  wordIndex: number,
-  text: string,
-  begin: number,
-  end: number,
-): WordTiming[] {
-  if (existingWords.length === 0) return [{ text, begin, end }];
-  if (wordIndex >= existingWords.length) {
-    const result = [...existingWords];
-    const lastIdx = result.length - 1;
-    result[lastIdx] = { ...result[lastIdx], end: begin };
-    result.push({ text, begin, end });
-    return result;
-  }
-  const result = [...existingWords];
-  result[wordIndex] = { ...result[wordIndex], text, begin, end };
-  if (wordIndex === 0) return enforceOrderAround(result, 0);
-
-  const previous = result[wordIndex - 1];
-  result[wordIndex - 1] = { ...previous, begin: Math.min(previous.begin, begin), end: begin };
-  return enforceOrderAround(enforceOrderAround(result, wordIndex), wordIndex - 1);
-}
-
-function commitHeldWord(existingWords: WordTiming[], wordIndex: number, text: string, begin: number): WordTiming[] {
-  if (existingWords.length === 0) return [{ text, begin, end: begin }];
-  if (wordIndex >= existingWords.length) return [...existingWords, { text, begin, end: begin }];
-  const result = [...existingWords];
-  result[wordIndex] = { ...result[wordIndex], text, begin, end: begin };
-  return enforceOrderAround(result, wordIndex);
-}
-
-function closeHeldWord(existingWords: WordTiming[], wordIndex: number, end: number): WordTiming[] {
-  if (existingWords.length === 0) return existingWords;
-  const target = Math.min(Math.max(wordIndex, 0), existingWords.length - 1);
-  const result = [...existingWords];
-  result[target] = { ...result[target], end };
-  return enforceOrderAround(result, target);
-}
-
 // -- Exports ------------------------------------------------------------------
 
 export {
-  closeHeldWord,
-  commitHeldWord,
-  commitTappedWord,
   createBgWordsFromLine,
   createBgWordsFromTextAt,
   createInitialBgWords,

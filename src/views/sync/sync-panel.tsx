@@ -2,6 +2,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { syncProgress } from "@/domain/line/sync-progress";
+import { previousSlot, resolveSyncCursor, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
@@ -83,11 +84,16 @@ const SyncPanel: React.FC = () => {
 
   const linesRef = useRef(lines);
   linesRef.current = lines;
-  const syncStateRef = useRef(syncState);
-  syncStateRef.current = syncState;
+
+  const cursor = useMemo(
+    () => resolveSyncCursor(lines, syncState.position, !!syncState.jumpedToPosition, granularity),
+    [lines, syncState.position, syncState.jumpedToPosition, granularity],
+  );
+  const cursorRef = useRef(cursor);
+  cursorRef.current = cursor;
 
   const triggerRippleAtCurrentPosition = useCallback(() => {
-    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = syncStateRef.current.position;
+    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursorRef.current;
     const lineId = linesRef.current[committedLineIndex]?.id;
     if (!lineId) return;
     setRippleTarget((prev) => ({
@@ -125,6 +131,7 @@ const SyncPanel: React.FC = () => {
     currentWord,
   } = useSyncHandlers({
     lines,
+    cursor,
     syncState,
     setSyncState,
     currentTime,
@@ -230,23 +237,12 @@ const SyncPanel: React.FC = () => {
     return -1;
   }, [lines, currentTime]);
 
-  const { lineIndex, wordIndex } = syncState.position;
-  const currentLine = lines[lineIndex];
-  const prevLine = lines[lineIndex - 1];
+  const { lineIndex, wordIndex } = cursor;
 
   const lastSyncedTime = useMemo(() => {
-    if (granularity === "line") {
-      if (prevLine?.begin !== undefined) return prevLine.begin;
-      return undefined;
-    }
-    if (!currentLine?.words?.length) {
-      if (prevLine?.words?.length) {
-        return prevLine.words[prevLine.words.length - 1]?.begin;
-      }
-      return undefined;
-    }
-    return currentLine.words[currentLine.words.length - 1]?.begin;
-  }, [granularity, currentLine?.words, prevLine?.words, prevLine?.begin]);
+    const slot = previousSlot(lines, cursor, granularity);
+    return slot ? slotBounds(lines, slot)?.begin : undefined;
+  }, [lines, cursor, granularity]);
 
   const performTap = useCallback(() => {
     if (editMode) return;
