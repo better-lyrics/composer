@@ -143,6 +143,45 @@ describe("TransliterationAlignmentModal", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
+      const words: WordTiming[] = [
+        { text: "밤", begin: 0, end: 0.5, transliteration: "bam", transliterationJoinerAfter: " " },
+        { text: "하", begin: 0.5, end: 1, transliteration: "ha", transliterationJoinerAfter: "  " },
+        { text: "늘", begin: 1, end: 1.5, transliteration: "neul" },
+      ];
+      const line: LyricLine = {
+        id: "bam-ha-neul",
+        agentId: "v1",
+        text: "밤하늘",
+        words,
+        transliteration: {
+          language: "ko-Latn",
+          text: "bam ha  neul",
+          segments: [],
+          origin: "manual",
+          sourceFingerprint: languageSourceFingerprint("밤하늘"),
+        },
+      };
+      useProjectStore.getState().setLines([line]);
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+
+      const pronunciationBreak = screen.getByRole("button", {
+        name: "Transliteration pronunciation break 4",
+        exact: true,
+      });
+      await expect.element(pronunciationBreak).toHaveAttribute("aria-pressed", "true");
+      await pronunciationBreak.click();
+      await expect.element(screen.getByRole("button", { name: "Save", exact: true })).toBeDisabled();
+      await pronunciationBreak.click();
+      await expect.element(pronunciationBreak).toHaveAttribute("aria-pressed", "true");
+
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
+      const saved = useProjectStore.getState().lines[0];
+      expect(saved.words).toEqual(words);
+    });
+  });
+
   describe("keyboard", () => {
     it("closes on Escape", async () => {
       const onClose = vi.fn();

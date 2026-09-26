@@ -41,7 +41,8 @@ describe("edge cases", () => {
     const screen = await render(
       <LanguageLineEditor line={line} index={0} targets={["en"]} languageNames={new Map([["en", "English"]])} />,
     );
-    expect(screen.container.querySelector("p")).toBeNull();
+    await expect.element(screen.getByText("Background", { exact: true })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("textbox", { name: "Background transliteration" })).not.toBeInTheDocument();
   });
 
   it("shows a timing mismatch chip and error tint when transliteration alignment fails", async () => {

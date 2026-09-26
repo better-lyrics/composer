@@ -106,6 +106,21 @@ describe("language generation lifecycle", () => {
     await expect.element(screen.getByRole("button", { name: "Remove English", exact: true })).not.toBeInTheDocument();
   });
 
+  it("regression: adding a language through Add language requests generation only for that target", async () => {
+    const screen = await render(<LanguagesPanel />);
+    await expect
+      .element(screen.getByRole("textbox", { name: "English", exact: true }))
+      .toHaveValue("Generated translation");
+    requestedTargets = [];
+    defer = true;
+    await screen.getByRole("button", { name: "Add language", exact: true }).click();
+    await screen.getByRole("option", { name: "Spanish" }).click();
+    await expect.poll(() => pending.length).toBeGreaterThan(0);
+    await releaseRequests();
+    await expect.element(screen.getByRole("button", { name: "Regenerate all", exact: true })).toBeEnabled();
+    expect(requestedTargets).toEqual(["es"]);
+  });
+
   it("preserves text typed and then cleared while initial generation is pending", async () => {
     defer = true;
     const screen = await render(<LanguagesPanel />);
