@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 
 describe("AgentManager", () => {
@@ -31,6 +32,29 @@ describe("AgentManager", () => {
     const screen = await render(<AgentManager />);
     await screen.getByRole("button", { name: /Add/ }).click();
     await expect.element(screen.getByRole("textbox", { name: "Custom agent name" })).toBeInTheDocument();
+  });
+
+  it("regression: deleting an agent reassigns its lines, and one undo restores both the agent and the lines", async () => {
+    useProjectStore.setState({
+      agents: [
+        { id: "v1", name: "Lead", type: "person" },
+        { id: "v3", name: "Carol", type: "person" },
+      ],
+    });
+    useProjectStore.getState().setLinesWithHistory([createLine({ id: "a", agentId: "v3" })]);
+    const screen = await render(<AgentManager />);
+
+    await screen.getByRole("button", { name: /v3/ }).click();
+    const trash = document.querySelector<HTMLButtonElement>("button:has(.tabler-icon-trash)");
+    if (!trash) throw new Error("no delete button in the agent popover");
+    trash.click();
+
+    await expect.poll(() => useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1"]);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+
+    useProjectStore.getState().undo();
+    expect(useProjectStore.getState().agents.map((agent) => agent.id)).toEqual(["v1", "v3"]);
+    expect(useProjectStore.getState().lines[0].agentId).toBe("v3");
   });
 
   it("changes an agent's type via the type select and persists on save", async () => {

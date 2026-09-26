@@ -1,19 +1,48 @@
+import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { LinkGroup } from "@/domain/group/template";
 import type { SnapPoint } from "@/domain/snap-point/model";
-import type { ProjectState } from "@/stores/project/types";
+import type { HistoryEntry, ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Constants ----------------------------------------------------------------
 
 const MAX_HISTORY_SIZE = 100;
 
+// -- Snapshots ----------------------------------------------------------------
+
+type SnapshotFields = Pick<HistoryEntry, "lines" | "groups" | "agents" | "customSnapPoints">;
+
+function snapshotEntry(fields: SnapshotFields): HistoryEntry {
+  return {
+    lines: structuredClone(fields.lines),
+    groups: structuredClone(fields.groups),
+    agents: structuredClone(fields.agents),
+    customSnapPoints: structuredClone(fields.customSnapPoints),
+    timestamp: Date.now(),
+  };
+}
+
+function restoreEntry(entry: HistoryEntry): SnapshotFields {
+  return {
+    lines: structuredClone(entry.lines),
+    groups: structuredClone(entry.groups),
+    agents: structuredClone(entry.agents),
+    customSnapPoints: structuredClone(entry.customSnapPoints),
+  };
+}
+
+function capHistory(history: HistoryEntry[]): HistoryEntry[] {
+  if (history.length > MAX_HISTORY_SIZE) history.shift();
+  return history;
+}
+
 // -- History Helper -----------------------------------------------------------
 
 function commitHistory(
   state: ProjectState,
-  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; customSnapPoints?: SnapPoint[] },
+  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; agents?: Agent[]; customSnapPoints?: SnapPoint[] },
   options: { deriveText?: boolean } = {},
 ) {
   const splitChar = getSplitCharacter();
@@ -23,29 +52,19 @@ function commitHistory(
       ? changes.lines.map((line) => withDerivedText(line, splitChar))
       : changes.lines
     : state.lines;
-  const nextGroups = changes.groups ?? state.groups;
-  const nextCustomSnapPoints = changes.customSnapPoints ?? state.customSnapPoints;
+  const next: SnapshotFields = {
+    lines: nextLines,
+    groups: changes.groups ?? state.groups,
+    agents: changes.agents ?? state.agents,
+    customSnapPoints: changes.customSnapPoints ?? state.customSnapPoints,
+  };
 
   const newHistory = state.history.slice(0, state.historyIndex + 1);
-  if (newHistory.length === 0 || state.isDirtySinceHistory) {
-    newHistory.push({
-      lines: structuredClone(state.lines),
-      groups: structuredClone(state.groups),
-      customSnapPoints: structuredClone(state.customSnapPoints),
-      timestamp: Date.now(),
-    });
-  }
-  newHistory.push({
-    lines: structuredClone(nextLines),
-    groups: structuredClone(nextGroups),
-    customSnapPoints: structuredClone(nextCustomSnapPoints),
-    timestamp: Date.now(),
-  });
-  if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
+  if (newHistory.length === 0 || state.isDirtySinceHistory) newHistory.push(snapshotEntry(state));
+  newHistory.push(snapshotEntry(next));
+  capHistory(newHistory);
   return {
-    lines: nextLines,
-    groups: nextGroups,
-    customSnapPoints: nextCustomSnapPoints,
+    ...next,
     isDirty: true,
     isDirtySinceHistory: false,
     history: newHistory,
@@ -58,21 +77,9 @@ function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineW
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   // Seed the pre-run baseline when a non-history mutation dirtied the store
   // before the run, otherwise undo would skip straight past it.
-  if (newHistory.length === 0 || baselineWasDirty) {
-    newHistory.push({
-      lines: structuredClone(baseline),
-      groups: structuredClone(state.groups),
-      customSnapPoints: structuredClone(state.customSnapPoints),
-      timestamp: Date.now(),
-    });
-  }
-  newHistory.push({
-    lines: structuredClone(state.lines),
-    groups: structuredClone(state.groups),
-    customSnapPoints: structuredClone(state.customSnapPoints),
-    timestamp: Date.now(),
-  });
-  if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
+  if (newHistory.length === 0 || baselineWasDirty) newHistory.push(snapshotEntry({ ...state, lines: baseline }));
+  newHistory.push(snapshotEntry(state));
+  capHistory(newHistory);
   return {
     isDirty: true,
     isDirtySinceHistory: false,
@@ -90,23 +97,46 @@ function commitSnapPointEdit(state: ProjectState, baseline: SnapPoint[]) {
   const newHistory = state.history.slice(0, state.historyIndex + 1);
   const top = newHistory[newHistory.length - 1];
   if (newHistory.length === 0 || !top || !snapPointsEqual(baseline, top.customSnapPoints)) {
-    newHistory.push({
-      lines: structuredClone(state.lines),
-      groups: structuredClone(state.groups),
-      customSnapPoints: structuredClone(baseline),
-      timestamp: Date.now(),
-    });
+    newHistory.push(snapshotEntry({ ...state, customSnapPoints: baseline }));
   }
-  newHistory.push({
-    lines: structuredClone(state.lines),
-    groups: structuredClone(state.groups),
-    customSnapPoints: structuredClone(state.customSnapPoints),
-    timestamp: Date.now(),
-  });
-  if (newHistory.length > MAX_HISTORY_SIZE) newHistory.shift();
+  newHistory.push(snapshotEntry(state));
+  capHistory(newHistory);
   return { isDirty: true, isDirtySinceHistory: false, history: newHistory, historyIndex: newHistory.length - 1 };
+}
+
+// Undo from a pending non-history edit first records that edit as its own
+// entry, so redo can return to it and nothing between entries is skipped.
+function undoState(state: ProjectState) {
+  const pending = state.isDirtySinceHistory && state.historyIndex >= 0;
+  if (!pending && state.historyIndex <= 0) return state;
+  const history = pending
+    ? capHistory([...state.history.slice(0, state.historyIndex + 1), snapshotEntry(state)])
+    : state.history;
+  const targetIndex = pending ? history.length - 2 : state.historyIndex - 1;
+  return {
+    ...restoreEntry(history[targetIndex]),
+    history,
+    historyIndex: targetIndex,
+    isDirty: true,
+    isDirtySinceHistory: false,
+  };
+}
+
+function redoState(state: ProjectState) {
+  if (state.historyIndex >= state.history.length - 1) return state;
+  const targetIndex = state.historyIndex + 1;
+  return {
+    ...restoreEntry(state.history[targetIndex]),
+    historyIndex: targetIndex,
+    isDirty: true,
+    isDirtySinceHistory: false,
+  };
+}
+
+function canUndoFrom(state: ProjectState): boolean {
+  return state.historyIndex > 0 || (state.isDirtySinceHistory && state.historyIndex >= 0);
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { commitHistory, commitPendingEdit, commitSnapPointEdit, MAX_HISTORY_SIZE };
+export { canUndoFrom, commitHistory, commitPendingEdit, commitSnapPointEdit, MAX_HISTORY_SIZE, redoState, undoState };

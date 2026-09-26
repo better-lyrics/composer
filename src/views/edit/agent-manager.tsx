@@ -218,19 +218,7 @@ const AddAgentPopover: React.FC = () => {
 
 const AgentManager: React.FC = () => {
   const agents = useProjectStore((s) => s.agents);
-  const removeAgent = useProjectStore((s) => s.removeAgent);
-  const lines = useProjectStore((s) => s.lines);
-  const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
-
-  const handleRemoveAgent = useCallback(
-    (agentId: string) => {
-      const fallbackId = agents.find((a) => a.id !== agentId)?.id ?? "v1";
-      const updatedLines = lines.map((line) => (line.agentId === agentId ? { ...line, agentId: fallbackId } : line));
-      setLinesWithHistory(updatedLines);
-      removeAgent(agentId);
-    },
-    [agents, lines, setLinesWithHistory, removeAgent],
-  );
+  const removeAgentWithHistory = useProjectStore((s) => s.removeAgentWithHistory);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -240,7 +228,7 @@ const AgentManager: React.FC = () => {
           key={agent.id}
           agent={agent}
           removable={agents.length > 1}
-          onRemove={() => handleRemoveAgent(agent.id)}
+          onRemove={() => removeAgentWithHistory(agent.id)}
         />
       ))}
       <AddAgentPopover />

@@ -318,7 +318,7 @@ describe("project snap points: drag = one undo step", () => {
     const topEntry = snapPoints([2]);
     useProjectStore.setState({
       customSnapPoints: snapPoints([5]),
-      history: [{ lines: [], groups: [], customSnapPoints: topEntry, timestamp: 1 }],
+      history: [{ lines: [], groups: [], agents: [], customSnapPoints: topEntry, timestamp: 1 }],
       historyIndex: 0,
       isDirty: true,
       isDirtySinceHistory: false,

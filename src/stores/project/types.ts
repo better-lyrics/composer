@@ -24,6 +24,7 @@ const DEFAULT_SYLLABLE_SPLIT_DEFAULTS: SyllableSplitDefaults = {
 interface HistoryEntry {
   lines: LyricLine[];
   groups: LinkGroup[];
+  agents: Agent[];
   customSnapPoints: SnapPoint[];
   timestamp: number;
 }
@@ -76,10 +77,10 @@ interface HistoryState {
   isDirty: boolean;
   history: HistoryEntry[];
   historyIndex: number;
-  // True when state.lines or state.groups has changed since the last history
-  // entry was written (e.g., per-keystroke setLines from the Edit textarea).
-  // The next history-aware mutator snapshots this state into history first
-  // so undo lands on the pending edit instead of skipping past it.
+  // True when any snapshotted state (lines, groups, agents) has changed since
+  // the last history entry was written (e.g., per-keystroke setLines from the
+  // Edit textarea). The next history-aware mutator, and undo itself, snapshot
+  // this state first so undo lands on the pending edit instead of skipping it.
   isDirtySinceHistory: boolean;
 }
 
@@ -98,7 +99,7 @@ interface MetadataActions {
 interface AgentActions {
   addAgent: (agent: Agent) => void;
   updateAgent: (id: string, updates: Partial<Agent>) => void;
-  removeAgent: (id: string) => void;
+  removeAgentWithHistory: (id: string) => void;
   setAgents: (agents: Agent[]) => void;
 }
 
@@ -226,6 +227,7 @@ export type {
   UiState,
   DismissalsState,
   SnapPointsState,
+  HistoryEntry,
   HistoryState,
   MetadataActions,
   AgentActions,

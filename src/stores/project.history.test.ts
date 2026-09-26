@@ -436,3 +436,128 @@ describe("commitPendingLineEdit · pre-dirty baseline seeding", () => {
     expect(useProjectStore.getState().historyIndex).toBe(indexBefore);
   });
 });
+
+// -- Undo with a pending non-history edit -------------------------------------
+
+describe("undo with a pending non-history edit", () => {
+  const texts = () => useProjectStore.getState().lines.map((line) => line.text);
+
+  describe("regressions", () => {
+    it("regression: undo after a non-history replace returns to the last committed state and redo returns to the replace", () => {
+      const store = useProjectStore.getState();
+      store.setLinesWithHistory([seedLine("a", { text: "Old" })]);
+      store.setLinesWithHistory([seedLine("a", { text: "Old edited" })]);
+      store.setLines([seedLine("n1", { text: "New A" }), seedLine("n2", { text: "New B" })]);
+
+      useProjectStore.getState().undo();
+      expect(texts()).toEqual(["Old edited"]);
+
+      useProjectStore.getState().redo();
+      expect(texts()).toEqual(["New A", "New B"]);
+    });
+
+    it("regression: undo after a non-history replace with a single committed entry keeps the lyrics", () => {
+      useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "Old" })]);
+      useProjectStore.getState().setLines([seedLine("n1", { text: "New" })]);
+
+      useProjectStore.getState().undo();
+
+      expect(texts()).toEqual(["Old"]);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("is a no-op when nothing has ever been committed", () => {
+      useProjectStore.getState().setLines([seedLine("a", { text: "Typed" })]);
+
+      useProjectStore.getState().undo();
+
+      expect(texts()).toEqual(["Typed"]);
+    });
+
+    it("reports canUndo while a pending edit sits on top of the oldest entry", () => {
+      useProjectStore.getState().setLinesWithHistory([seedLine("a", { text: "Old" })]);
+      useProjectStore.getState().undo();
+      expect(useProjectStore.getState().canUndo()).toBe(false);
+
+      useProjectStore.getState().setLines([seedLine("a", { text: "Typed" })]);
+
+      expect(useProjectStore.getState().canUndo()).toBe(true);
+    });
+  });
+
+  describe("invariants", () => {
+    it("drops the redo branch when the pending edit is snapshotted", () => {
+      const store = useProjectStore.getState();
+      store.setLinesWithHistory([seedLine("a", { text: "A" })]);
+      store.setLinesWithHistory([seedLine("a", { text: "B" })]);
+      useProjectStore.getState().undo();
+      useProjectStore.getState().setLines([seedLine("a", { text: "Typed" })]);
+
+      useProjectStore.getState().undo();
+      expect(texts()).toEqual(["A"]);
+      useProjectStore.getState().redo();
+      expect(texts()).toEqual(["Typed"]);
+      expect(useProjectStore.getState().canRedo()).toBe(false);
+    });
+  });
+});
+
+// -- Agents in history --------------------------------------------------------
+
+describe("agents in history", () => {
+  const agentIds = () => useProjectStore.getState().agents.map((agent) => agent.id);
+
+  describe("regressions", () => {
+    it("regression: undoing an agent removal restores the agent and the lines that used it together", () => {
+      const store = useProjectStore.getState();
+      store.addAgent({ id: "v3", type: "person", name: "Carol" });
+      store.setLinesWithHistory([seedLine("a", { agentId: "v3" }), seedLine("b", { agentId: "v1" })]);
+
+      useProjectStore.getState().removeAgentWithHistory("v3");
+      expect(agentIds()).not.toContain("v3");
+      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+
+      useProjectStore.getState().undo();
+      expect(agentIds()).toContain("v3");
+      expect(useProjectStore.getState().lines[0].agentId).toBe("v3");
+
+      useProjectStore.getState().redo();
+      expect(agentIds()).not.toContain("v3");
+      expect(useProjectStore.getState().lines[0].agentId).toBe("v1");
+    });
+  });
+
+  describe("happy paths", () => {
+    it("undoes an agent rename", () => {
+      useProjectStore.getState().setLinesWithHistory([seedLine("a")]);
+      useProjectStore.getState().updateAgent("v1", { name: "Renamed" });
+
+      useProjectStore.getState().undo();
+
+      expect(useProjectStore.getState().agents.find((agent) => agent.id === "v1")?.name).not.toBe("Renamed");
+    });
+  });
+
+  describe("invariants", () => {
+    it("never leaves a line pointing at an agent that is not in the list, across undo and redo", () => {
+      const store = useProjectStore.getState();
+      store.addAgent({ id: "v3", type: "person", name: "Carol" });
+      store.setLinesWithHistory([seedLine("a", { agentId: "v3" })]);
+      useProjectStore.getState().removeAgentWithHistory("v3");
+
+      for (const step of ["undo", "redo", "undo"] as const) {
+        useProjectStore.getState()[step]();
+        const { agents, lines } = useProjectStore.getState();
+        const known = new Set(agents.map((agent) => agent.id));
+        expect(lines.every((line) => !line.agentId || known.has(line.agentId))).toBe(true);
+      }
+    });
+
+    it("keeps at least one agent: removing the only agent is a no-op", () => {
+      useProjectStore.getState().setAgents([{ id: "v1", type: "person" }]);
+      useProjectStore.getState().removeAgentWithHistory("v1");
+      expect(agentIds()).toEqual(["v1"]);
+    });
+  });
+});
