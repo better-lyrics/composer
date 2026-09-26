@@ -158,6 +158,70 @@ describe("TimelineSyllableSplitter", () => {
     expect(document.querySelector('input[type="checkbox"]')).toBeNull();
   });
 
+  describe("regressions", () => {
+    it("regression: opens the split-word dialog for a line-synced line with no words array", async () => {
+      const line = createLine({ text: "It hurts for me", begin: 107.9, end: 110.4 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      await expect
+        .element(screen.getByRole("heading", { name: /Split "It hurts for me" into words/ }))
+        .toBeInTheDocument();
+    });
+
+    it("regression: splitting a line-synced line writes word timing inside the line bounds", async () => {
+      const line = createLine({ text: "It hurts", begin: 10, end: 12 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      await expect.element(screen.getByRole("heading", { name: /Split "It hurts" into words/ })).toBeInTheDocument();
+
+      await vi.waitFor(() => {
+        expect(document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8").length).toBeGreaterThan(0);
+      });
+      document.querySelectorAll<HTMLButtonElement>("button.w-4.h-8")[2].click();
+      await screen.getByRole("button", { name: "Split Word" }).click();
+
+      await vi.waitFor(() => {
+        expect(useProjectStore.getState().lines[0].words?.length).toBe(2);
+      });
+      const after = useProjectStore.getState().lines[0];
+      expect(after.words?.map((w) => w.text.trim())).toEqual(["It", "hurts"]);
+      expect(after.words?.[0].begin).toBe(10);
+      expect(after.words?.[1].end).toBe(12);
+      expect(after.begin).toBeUndefined();
+      expect(after.end).toBeUndefined();
+    });
+
+    it("regression: opens the split-syllable dialog for a line-synced line with no words array", async () => {
+      const line = createLine({ text: "forever", begin: 1, end: 2 });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      const screen = await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-syllable"));
+      await expect.element(screen.getByRole("heading", { name: /Split "forever"/ })).toBeInTheDocument();
+    });
+
+    it("regression: ignores the split-word event for an untimed line", async () => {
+      const line = createLine({ text: "no timing here" });
+      useProjectStore.setState({ lines: [line] });
+      useTimelineStore.setState({
+        selectedWords: [{ lineId: line.id, lineIndex: 0, wordIndex: 0, type: "word" }],
+      });
+      await render(<TimelineSyllableSplitter />);
+      window.dispatchEvent(new Event("timeline:split-word"));
+      expect(document.querySelector("dialog")).toBeNull();
+    });
+  });
+
   it("reconciles line.text from the new words array after a split", async () => {
     const line = createLine({
       text: "every",
