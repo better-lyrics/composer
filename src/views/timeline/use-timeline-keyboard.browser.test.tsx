@@ -28,6 +28,20 @@ describe("useTimelineKeyboard", () => {
     expect(useTimelineStore.getState().rollingEditMode).toBe(true);
   });
 
+  it("regression: holding the rolling edit key toggles it once instead of on every auto-repeat", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    expect(useTimelineStore.getState().rollingEditMode).toBe(false);
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "r", bubbles: true }));
+    for (let repeat = 0; repeat < 5; repeat++) {
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "r", repeat: true, bubbles: true }));
+    }
+
+    expect(useTimelineStore.getState().rollingEditMode).toBe(true);
+  });
+
   it("toggles marker mode on and off when the marker mode shortcut is pressed", async () => {
     useProjectStore.setState({ activeTab: "timeline" });
     expect(useTimelineStore.getState().markerMode).toBe(false);

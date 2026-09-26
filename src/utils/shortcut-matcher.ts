@@ -47,7 +47,7 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   const shortcuts = getShortcutsByScope(scope);
   for (const shortcut of shortcuts) {
     const binding = getEffectiveBinding(shortcut.id);
-    if (matchesBinding(event, binding)) return shortcut.id;
+    if (matchesBinding(event, binding)) return event.repeat && !shortcut.repeatable ? null : shortcut.id;
   }
   return null;
 }

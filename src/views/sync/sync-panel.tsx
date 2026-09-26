@@ -344,8 +344,6 @@ const SyncPanel: React.FC = () => {
         return;
       }
 
-      if (e.repeat) return;
-
       const matched = findMatchingShortcut(e, "sync");
       if (!matched) return;
 

@@ -16,6 +16,7 @@ interface ShortcutDefinition {
   scope: ShortcutScope;
   description: string;
   defaultBinding: ShortcutBinding;
+  repeatable?: true;
 }
 
 // -- Registry -----------------------------------------------------------------
@@ -242,12 +243,14 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Jump to previous instance of group",
     defaultBinding: { key: "j", mod: true },
+    repeatable: true,
   },
   {
     id: "timeline.jumpNextInstance",
     scope: "timeline",
     description: "Jump to next instance of group",
     defaultBinding: { key: "k", mod: true },
+    repeatable: true,
   },
   {
     id: "timeline.detachInstance",
@@ -284,12 +287,14 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Nudge selected words left",
     defaultBinding: { key: "ArrowLeft" },
+    repeatable: true,
   },
   {
     id: "timeline.nudgeRight",
     scope: "timeline",
     description: "Nudge selected words right",
     defaultBinding: { key: "ArrowRight" },
+    repeatable: true,
   },
   {
     id: "timeline.toggleExplicit",
@@ -332,24 +337,28 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "timeline",
     description: "Jump to previous snap point",
     defaultBinding: { key: "ArrowLeft", shift: true },
+    repeatable: true,
   },
   {
     id: "timeline.jumpNextSnapPoint",
     scope: "timeline",
     description: "Jump to next snap point",
     defaultBinding: { key: "ArrowRight", shift: true },
+    repeatable: true,
   },
   {
     id: "timeline.jumpPrevSnapPointFine",
     scope: "timeline",
     description: "Jump to previous snap point or onset",
     defaultBinding: { key: "ArrowLeft", shift: true, alt: true },
+    repeatable: true,
   },
   {
     id: "timeline.jumpNextSnapPointFine",
     scope: "timeline",
     description: "Jump to next snap point or onset",
     defaultBinding: { key: "ArrowRight", shift: true, alt: true },
+    repeatable: true,
   },
 ];
 
