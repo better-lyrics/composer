@@ -173,7 +173,10 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
             </StatusChip>
           </div>
           {(alignment.warning || errorCount > 0) && (
-            <div className="px-5 py-2 text-xs border-b border-composer-warning/20 bg-composer-warning/10 text-composer-warning select-text">
+            <div
+              role="alert"
+              className="px-5 py-2 text-xs border-b border-composer-warning/20 bg-composer-warning/10 text-composer-warning select-text"
+            >
               {errorCount > 0
                 ? `${errorCount} ${errorCount === 1 ? "line doesn't" : "lines don't"} fit the timing yet.`
                 : alignment.warning}

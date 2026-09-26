@@ -147,8 +147,8 @@ describe("PasteImportModal", () => {
     await expect.element(screen.getByText("Match lines by hand")).toBeInTheDocument();
     expect(document.querySelector('[data-tone="warning"]')?.textContent).toContain("Match lines by hand");
     await expect
-      .element(screen.getByText("You pasted 2 lines for 3 lyric lines. Fix the matches below before importing."))
-      .toBeInTheDocument();
+      .element(screen.getByRole("alert"))
+      .toHaveTextContent("You pasted 2 lines for 3 lyric lines. Fix the matches below before importing.");
     await expect.element(screen.getByRole("button", { name: "Import 2 lines" })).toBeInTheDocument();
 
     await screen.getByRole("textbox", { name: "Imported line 3" }).fill("C");
