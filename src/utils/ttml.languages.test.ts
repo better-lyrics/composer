@@ -1,0 +1,247 @@
+import type { Agent } from "@/domain/agent/model";
+import type { LyricLine } from "@/domain/line/model";
+import type { ProjectMetadata } from "@/domain/project/metadata";
+import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { generateTTML } from "@/utils/ttml";
+import { describe, expect, it } from "vitest";
+
+const metadata: ProjectMetadata = { title: "Languages", artists: [], album: "", duration: 10, language: "ja" };
+const agents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
+
+function languageLine(): LyricLine {
+  return {
+    id: "line-1",
+    text: "今日",
+    agentId: "v1",
+    words: [
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
+      { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
+    ],
+    backgroundText: "空",
+    backgroundWords: [{ text: "空", begin: 1.2, end: 1.8, transliteration: "sora" }],
+    backgroundTextSource: "manual",
+    translations: {
+      en: {
+        language: "en",
+        text: "Today",
+        backgroundText: "Sky",
+        origin: "manual",
+        sourceFingerprint: "test",
+      },
+    },
+    transliteration: {
+      language: "ja-Latn",
+      text: "kyou hi",
+      backgroundText: "sora",
+      segments: [
+        { original: "今", transliteration: "kyou" },
+        { original: "日", transliteration: "hi" },
+      ],
+      backgroundSegments: [{ original: "空", transliteration: "sora" }],
+      origin: "manual",
+      sourceFingerprint: "test",
+    },
+  };
+}
+
+describe("TTML alternate-language sidecars", () => {
+  it.each(["word", "line"] as const)("round-trips background-only alternates with %s timing", (granularity) => {
+    const line = languageLine();
+    line.text = "Hello";
+    line.words = [{ text: "Hello", begin: 1, end: 2, transliteration: "stale" }];
+    line.transliteration!.text = "";
+    line.transliteration!.segments = [];
+    line.translations!.en.text = "";
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity });
+
+    expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky</span></text>');
+    expect(ttml).not.toContain("stale");
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.text).toBe("Hello");
+    expect(parsed.translations?.en).toMatchObject({ text: "", backgroundText: "Sky" });
+    expect(parsed.transliteration).toMatchObject({ text: "", backgroundText: "sora" });
+    expect(parsed.backgroundWords?.[0].transliteration).toBe("sora");
+  });
+
+  it("emits line keys, translations, timed transliterations, and untimed spaces", () => {
+    const ttml = generateTTML({ metadata, agents, lines: [languageLine()], granularity: "word" });
+    expect(ttml).toContain('itunes:key="L1"');
+    expect(ttml).toContain('<translation xml:lang="en" type="subtitle">');
+    expect(ttml).toContain('<transliteration xml:lang="ja-Latn">');
+    expect(ttml).toContain(">kyou</span> <span");
+    expect(ttml).toContain('<text for="L1">Today <span ttm:role="x-bg">Sky</span></text>');
+    expect(ttml).toMatch(/>hi<\/span> <span ttm:role="x-bg">/);
+  });
+
+  it("places alternate background text first when it begins before the foreground", () => {
+    const line = languageLine();
+    line.backgroundWords = [{ text: "空", begin: 0.5, end: 0.9, transliteration: "sora" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+
+    expect(ttml).toContain('<text for="L1"><span ttm:role="x-bg">Sky </span>Today</text>');
+    expect(ttml).toMatch(
+      /<text for="L1"><span ttm:role="x-bg"><span[^>]*>sora<\/span> <\/span><span[^>]*>kyou<\/span>/,
+    );
+  });
+
+  it("places alternate background text in a foreground timing break", () => {
+    const line = languageLine();
+    line.text = "今 日";
+    line.words = [
+      { text: "今 ", begin: 1, end: 1.4, transliteration: "kyou" },
+      { text: "日", begin: 2, end: 2.5, transliteration: "hi" },
+    ];
+    line.backgroundWords = [{ text: "空", begin: 1.6, end: 1.9, transliteration: "sora" }];
+    line.translations!.en.text = "Right now";
+    line.transliteration!.text = "kyou hi";
+    line.transliteration!.segments = [{ original: "今 日", transliteration: "kyou hi" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+
+    expect(ttml).toContain('<text for="L1">Right <span ttm:role="x-bg">Sky </span>now</text>');
+    expect(ttml).toMatch(
+      /<text for="L1"><span[^>]*>kyou<\/span> <span ttm:role="x-bg"><span[^>]*>sora<\/span> <\/span><span[^>]*>hi<\/span>/,
+    );
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("Right now");
+    expect(parsed.translations?.en.backgroundText).toBe("Sky");
+  });
+
+  it("round-trips main and background alternate text", () => {
+    const ttml = generateTTML({ metadata, agents, lines: [languageLine()], granularity: "word" });
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("Today");
+    expect(parsed.translations?.en.backgroundText).toBe("Sky");
+    expect(parsed.transliteration?.text).toBe("kyou hi");
+    expect(parsed.transliteration?.backgroundText).toBe("sora");
+    expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+  });
+
+  it("exports pronunciation spaces as untimed text and word boundaries as two spaces", () => {
+    const line = languageLine();
+    line.text = "今日 は";
+    line.words = [
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: " " },
+      { text: "日 ", begin: 1.5, end: 2, transliteration: "hi", transliterationJoinerAfter: "  " },
+      { text: "は", begin: 2, end: 2.5, transliteration: "wa" },
+    ];
+    line.transliteration!.text = "kyou hi  wa";
+    line.transliteration!.segments = [{ original: "今日 は", transliteration: "kyou hi  wa" }];
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toContain(">kyou</span> <span begin=");
+    expect(ttml).toMatch(/>hi<\/span> {2}<span[^>]*>wa<\/span>/);
+    expect(ttml).not.toMatch(/<span[^>]*>kyou hi<\/span>/);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.text).toBe("kyou hi  wa");
+  });
+
+  it("keeps an invisible timing boundary out of the rendered transliteration", () => {
+    const line = languageLine();
+    line.words = [
+      { text: "今", begin: 1, end: 1.5, transliteration: "kyou", transliterationJoinerAfter: "" },
+      { text: "日", begin: 1.5, end: 2, transliteration: "hi" },
+    ];
+    line.transliteration!.text = "kyouhi";
+    line.transliteration!.segments = [{ original: "今日", transliteration: "kyouhi" }];
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toMatch(/>kyou<\/span><span[^>]*>hi<\/span>/);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.text).toBe("kyouhi");
+    expect(parsed.words?.map((word) => word.transliteration)).toEqual(["kyou", "hi"]);
+    expect(parsed.words?.[0].transliterationJoinerAfter).toBe("");
+  });
+
+  it("gives a literal dash the preceding syllable's timing without changing stored mappings", () => {
+    const line = languageLine();
+    line.text = "to-do";
+    line.words = [
+      { text: "to-", begin: 1, end: 1.5, transliteration: "to", transliterationJoinerAfter: "-" },
+      { text: "do", begin: 1.5, end: 2, transliteration: "do" },
+    ];
+    line.transliteration!.language = "en-Latn";
+    line.transliteration!.text = "to-do";
+    line.transliteration!.segments = [{ original: "to-do", transliteration: "to-do" }];
+    const before = structuredClone(line);
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toContain(
+      '<text for="L1"><span begin="0:01.000" end="0:01.500">to-</span><span begin="0:01.500" end="0:02.000">do</span>',
+    );
+    expect(line).toEqual(before);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.text).toBe("to-do");
+    expect(parsed.words?.map(({ begin, end, transliteration }) => ({ begin, end, transliteration }))).toEqual([
+      { begin: 1, end: 1.5, transliteration: "to-" },
+      { begin: 1.5, end: 2, transliteration: "do" },
+    ]);
+  });
+
+  it.each(["—", " –  ", "--"])("times background dash joiner %j and preserves its visible spacing", (joiner) => {
+    const line = languageLine();
+    line.backgroundText = "空風";
+    line.backgroundWords = [
+      { text: "空", begin: 1.25, end: 1.5, transliteration: "sora", transliterationJoinerAfter: joiner },
+      { text: "風", begin: 1.5, end: 1.75, transliteration: "kaze" },
+    ];
+    line.transliteration!.backgroundText = `sora${joiner}kaze`;
+    const before = structuredClone(line);
+
+    const ttml = generateTTML({ metadata, agents, lines: [line], granularity: "word" });
+    expect(ttml).toContain(
+      `<span begin="0:01.250" end="0:01.500">sora${joiner.trimEnd()}</span>${joiner.slice(joiner.trimEnd().length)}<span begin="0:01.500" end="0:01.750">kaze</span>`,
+    );
+    expect(line).toEqual(before);
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.transliteration?.backgroundText).toBe(`sora${joiner}kaze`);
+    expect(parsed.backgroundWords?.map(({ begin, end }) => ({ begin, end }))).toEqual([
+      { begin: 1.25, end: 1.5 },
+      { begin: 1.5, end: 1.75 },
+    ]);
+    // Re-exporting the imported, timed punctuation must not add or drop a dash.
+    const roundTrip = generateTTML({ metadata, agents, lines: [parsed], granularity: "word" });
+    expect(parseLyricsFile("song.ttml", roundTrip).lines[0].transliteration?.backgroundText).toBe(`sora${joiner}kaze`);
+  });
+
+  it("keeps matching alternate tracks in the exported TTML for renderers to filter", () => {
+    const line = languageLine();
+    line.text = "今|日";
+    line.translations!.en.text = "今日";
+    line.translations!.en.backgroundText = undefined;
+    line.transliteration!.text = "今日";
+    line.transliteration!.backgroundText = undefined;
+
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [line],
+      granularity: "word",
+    });
+
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("今日");
+    expect(parsed.transliteration?.text).toBe("今日");
+  });
+
+  it("keeps case and punctuation variants in the exported TTML", () => {
+    const line = languageLine();
+    line.text = "Today";
+    line.translations!.en.text = "today";
+    line.translations!.en.backgroundText = undefined;
+    line.transliteration!.text = "To-day";
+    line.transliteration!.backgroundText = undefined;
+
+    const ttml = generateTTML({
+      metadata,
+      agents,
+      lines: [line],
+      granularity: "word",
+    });
+
+    const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
+    expect(parsed.translations?.en.text).toBe("today");
+    expect(parsed.transliteration?.text).toBe("To-day");
+  });
+});

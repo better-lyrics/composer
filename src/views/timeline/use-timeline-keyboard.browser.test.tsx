@@ -1,12 +1,13 @@
-import { createRef } from "react";
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
-import { createLine, snapPoints } from "@/test/factories";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { snapPoints } from "@/test/factories";
+import { createLine } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { createRef } from "react";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 describe("useTimelineKeyboard", () => {
   it("toggles snap when the snap shortcut is pressed in the timeline scope", async () => {
@@ -96,6 +97,16 @@ describe("useTimelineKeyboard", () => {
     expect(useProjectStore.getState().customSnapPoints).toEqual([]);
 
     input.remove();
+  });
+
+  it("toggles original and transliteration labels when L is pressed", async () => {
+    useProjectStore.setState({ activeTab: "timeline" });
+    useTimelineStore.setState({ textVariant: "original" });
+    const scrollContainerRef = createRef<HTMLDivElement | null>();
+    await renderHook(() => useTimelineKeyboard(scrollContainerRef, [], 0));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "l", bubbles: true }));
+    expect(useTimelineStore.getState().textVariant).toBe("transliteration");
+    useTimelineStore.setState({ textVariant: "original" });
   });
 
   it("merges two space-separated words into one when the merge shortcut is pressed", async () => {

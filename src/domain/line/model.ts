@@ -1,3 +1,4 @@
+import type { TranslationTracks, TransliterationTrack } from "@/domain/language/model";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -13,6 +14,8 @@ interface LineFields {
   instanceIdx?: number;
   templateLineIdx?: number;
   detached?: boolean;
+  translations?: TranslationTracks;
+  transliteration?: TransliterationTrack;
 }
 
 // LyricLine is a discriminated union over its timing shape. The discriminant is

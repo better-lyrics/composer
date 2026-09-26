@@ -1,15 +1,24 @@
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceBounds } from "@/domain/instance/bounds";
+import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
+import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { effectiveBounds } from "@/domain/line/bounds";
+import type { LyricLine } from "@/domain/line/model";
+import { contiguousSelectionRun } from "@/domain/selection/contiguous";
+import type { WordSelection } from "@/domain/selection/model";
+import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import type { LyricLine } from "@/domain/line/model";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { MOD_KEY } from "@/utils/platform";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
-import { MOD_KEY } from "@/utils/platform";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { mergeWordText } from "@/utils/word-merge";
+import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
@@ -18,26 +27,16 @@ import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
-import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
-import { mergeWordText } from "@/utils/word-merge";
-import type { WordSelection } from "@/domain/selection/model";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { contiguousSelectionRun } from "@/domain/selection/contiguous";
-import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coords";
-import { effectiveBounds } from "@/domain/line/bounds";
 import {
   computeRowLayout,
   getWordsInInstance,
   partitionNudgeSelections,
   shiftSelectionsTogether,
 } from "@/views/timeline/utils";
+import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -352,6 +351,9 @@ function useTimelineKeyboard(
           useProjectStore.getState().addCustomSnapPoint(playheadTime);
           break;
         }
+        case "timeline.toggleTextVariant":
+          useTimelineStore.getState().toggleTextVariant();
+          break;
         case "timeline.setWordBegin":
           e.preventDefault();
           handleSetWordTiming("begin");

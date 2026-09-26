@@ -1,6 +1,6 @@
+import { BEST_PRACTICES_STEP_TITLE, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 import { type DriveStep, driver } from "driver.js";
 import { describe, expect, it } from "vitest";
-import { BEST_PRACTICES_STEP_TITLE, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -77,7 +77,7 @@ describe("createTourSteps", () => {
   });
 
   it("leaves the gated step indices untouched", () => {
-    expect(TOUR_GATED_STEPS.map((s) => s.stepIndex)).toEqual([2, 4, 6]);
+    expect(TOUR_GATED_STEPS.map((s) => s.stepIndex)).toEqual([2, 4, 7]);
   });
 
   it("keeps every gated index pointing at the step it was written to gate", () => {
@@ -93,9 +93,9 @@ describe("createTourSteps", () => {
     for (const gate of TOUR_GATED_STEPS) expect(gate.stepIndex).toBeLessThan(bestPracticesIndex);
   });
 
-  it("gives each of its twelve steps a popover with a title", () => {
+  it("gives each of its thirteen steps a popover with a title", () => {
     const steps = createTourSteps(() => {});
-    expect(steps).toHaveLength(12);
+    expect(steps).toHaveLength(13);
     for (const step of steps) expect(step.popover?.title?.trim().length ?? 0).toBeGreaterThan(0);
   });
 });

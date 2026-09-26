@@ -1,9 +1,10 @@
+import type { LyricLine } from "@/domain/line/model";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
-import { createBgWordsFromLine, type SyncState } from "@/utils/sync-helpers";
+import { type SyncState, createBgWordsFromLine } from "@/utils/sync-helpers";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
@@ -214,6 +215,53 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(lines[0].words?.[0].end).toBe(TAP_TIME);
     expect(lines[1].text).toBe("Next line");
     expect(lines[1].words).toHaveLength(1);
+  });
+});
+
+describe("useSyncHandlers.handleSplitWord", () => {
+  it("reconciles manually selected transliteration boundaries with the language track", async () => {
+    const line: LyricLine = {
+      id: "l0",
+      agentId: "v1",
+      text: "일단은",
+      words: [{ text: "일단은", begin: 0, end: 1, transliteration: "ildan eun" }],
+      transliteration: {
+        language: "ko-Latn",
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
+        origin: "google" as const,
+        sourceFingerprint: "source",
+      },
+    };
+    useProjectStore.getState().setLines([line]);
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleSplitWord(0, 0, [
+        {
+          text: "일",
+          begin: 0,
+          end: 0.3,
+          transliteration: "i",
+          transliterationJoinerAfter: "",
+          syllableGroupId: "group",
+        },
+        {
+          text: "단",
+          begin: 0.3,
+          end: 0.6,
+          transliteration: "ldan",
+          transliterationJoinerAfter: " ",
+          syllableGroupId: "group",
+        },
+        { text: "은", begin: 0.6, end: 1, transliteration: "eun", syllableGroupId: "group" },
+      ]);
+    });
+
+    const saved = useProjectStore.getState().lines[0];
+    expect(saved.transliteration?.text).toBe("ildan eun");
+    expect(saved.words?.map((word) => word.transliteration)).toEqual(["i", "ldan", "eun"]);
+    expect(saved.words?.map((word) => word.transliterationJoinerAfter)).toEqual(["", " ", undefined]);
   });
 });
 

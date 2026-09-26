@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { importProjectFromFile } from "@/lib/persistence";
+import { describe, expect, it } from "vitest";
 
 describe("persistence: syllableSplitDefaults", () => {
   it("round-trips syllableSplitDefaults through importProjectFromFile", async () => {
@@ -20,6 +20,7 @@ describe("persistence: syllableSplitDefaults", () => {
     const parsed = await importProjectFromFile(file);
 
     expect(parsed.syllableSplitDefaults).toEqual({ applyToAll: true, caseInsensitive: true });
+    expect(parsed.version).toBe(3);
   });
 
   it("fills in defaults when older project file is missing syllableSplitDefaults", async () => {

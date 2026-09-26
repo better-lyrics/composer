@@ -1,12 +1,8 @@
+import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
-import { effectiveBounds } from "@/domain/line/bounds";
-import { generateTTML } from "@/utils/ttml";
-import { rebaseTtmlEdits } from "@/utils/ttml-merge";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
@@ -21,53 +17,28 @@ import {
   IconUpload,
 } from "@tabler/icons-react";
 import { Highlight, themes } from "prism-react-renderer";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
-  const metadata = useProjectStore((s) => s.metadata);
-  const agents = useProjectStore((s) => s.agents);
-  const lines = useProjectStore((s) => s.lines);
-  const groups = useProjectStore((s) => s.groups);
-  const granularity = useProjectStore((s) => s.granularity);
-  const duration = useAudioStore((s) => s.duration);
+  const {
+    content: exportContent,
+    editedContent,
+    generatedContent: generatedTtml,
+    hasConflict,
+    lineCount,
+    setEditState,
+    syncedLineCount,
+    title,
+  } = useExportTtml();
 
   const [copied, setCopied] = useState(false);
-  const [editState, setEditState] = useState<{ source: string; content: string } | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions(fileInputRef);
 
-  const syncedLineCount = useMemo(() => lines.filter((line) => effectiveBounds(line) !== null).length, [lines]);
   const hasSyncedContent = syncedLineCount > 0;
-
-  const generatedTtml = useMemo(() => {
-    if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, groups, granularity, duration });
-  }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
-
-  const minifiedTtml = useMemo(() => {
-    if (!hasSyncedContent) return "";
-    return generateTTML({ metadata, agents, lines, groups, granularity, minify: true, duration });
-  }, [metadata, agents, lines, groups, granularity, duration, hasSyncedContent]);
-
-  const drift = editState !== null && editState.source !== generatedTtml;
-  const rebased = useMemo(
-    () => (editState !== null && drift ? rebaseTtmlEdits(editState.source, editState.content, generatedTtml) : null),
-    [editState, drift, generatedTtml],
-  );
-  const editedContent =
-    editState === null
-      ? null
-      : !drift
-        ? editState.content
-        : rebased?.status === "clean"
-          ? rebased.content
-          : editState.content;
-  const hasConflict = drift && rebased?.status === "conflict";
-  const displayContent = editedContent ?? generatedTtml;
-  const exportContent = editedContent ?? minifiedTtml;
 
   const handleDownload = useCallback(() => {
     if (!exportContent) return;
@@ -78,12 +49,12 @@ const ExportPanel: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${metadata.title || "lyrics"}.ttml`;
+    a.download = `${title || "lyrics"}.ttml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }, [exportContent, metadata.title]);
+  }, [exportContent, title]);
 
   const handleCopy = useCallback(async () => {
     if (!exportContent) return;
@@ -100,14 +71,14 @@ const ExportPanel: React.FC = () => {
   const handleRegenerate = useCallback(() => {
     setEditState(null);
     setIsEditing(false);
-  }, []);
+  }, [setEditState]);
 
   // Resolving a conflict rebases the edit onto the current output, which is what
   // makes the notice go away. It has to be a deliberate action: letting an
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
     setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
-  }, [generatedTtml]);
+  }, [generatedTtml, setEditState]);
 
   const handleEditContent = useCallback(
     (content: string) => {
@@ -116,7 +87,7 @@ const ExportPanel: React.FC = () => {
         return { source: generatedTtml, content };
       });
     },
-    [generatedTtml, hasConflict],
+    [generatedTtml, hasConflict, setEditState],
   );
 
   const projectFileInput = (
@@ -139,7 +110,7 @@ const ExportPanel: React.FC = () => {
     </>
   );
 
-  if (lines.length === 0) {
+  if (lineCount === 0) {
     return (
       <div className="flex flex-col flex-1 p-4">
         <EmptyState message="No lyrics to export" hint="Add lyrics in the Edit tab first" action={importAction} />
@@ -162,7 +133,7 @@ const ExportPanel: React.FC = () => {
         <div className="flex items-baseline gap-3">
           <h2 className="text-lg font-medium">Export</h2>
           <span className="text-sm text-composer-text-muted">
-            {syncedLineCount}/{lines.length} lines synced
+            {syncedLineCount}/{lineCount} lines synced
             {editedContent !== null && " · edited"}
           </span>
         </div>
@@ -214,10 +185,10 @@ const ExportPanel: React.FC = () => {
 
       {/* Preview / Editor */}
       {isEditing ? (
-        <TtmlEditor value={displayContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
+        <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
-          <Highlight theme={themes.nightOwl} code={displayContent} language="xml">
+          <Highlight theme={themes.nightOwl} code={exportContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre
                 className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"

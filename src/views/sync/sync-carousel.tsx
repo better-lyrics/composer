@@ -39,6 +39,8 @@ interface SyncCarouselProps {
   lines: Array<{
     id: string;
     text: string;
+    displayText?: string;
+    displayWordTexts?: string[];
     words?: WordTiming[];
     begin?: number;
   }>;
@@ -84,7 +86,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   onRippleComplete,
 }) => {
   const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
-  const lineWords = splitIntoWords(line.text);
+  const lineWords = line.displayWordTexts ?? splitIntoWords(line.text);
   return lineWords.map((word, widx) => {
     const isPrevLine = idx === lineIndex - 1;
     const holdActive = isHolding;
@@ -160,7 +162,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                     }}
                     transition={syncCarouselTransition}
                   >
-                    {stripSplitCharacter(line.text)}
+                    {stripSplitCharacter(line.displayText ?? line.text)}
                   </m.span>
                 ) : (
                   <WordGranularityLine

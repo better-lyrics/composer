@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
-import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -51,6 +51,10 @@ function wordSweep(root: HTMLElement, lineIndex: number): string | undefined {
   return root.querySelector<HTMLElement>(`[data-word-begin='${lineIndex * WORD_SECONDS}']`)?.style.clipPath;
 }
 
+function transliterationSweep(root: HTMLElement, track: "main" | "background"): string | undefined {
+  return root.querySelector<HTMLElement>(`[data-preview-transliteration='${track}'] [data-word-begin]`)?.style.clipPath;
+}
+
 function sweptTo(progress: number): string {
   return `inset(0px ${(1 - progress) * 100}% 0px 0px)`;
 }
@@ -89,6 +93,75 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
     audioElement.currentTime = 1;
 
     await expect.poll(() => wordSweep(screen.container, 0)).toBe(sweptTo(0.5));
+  });
+
+  it("sweeps main and background romanizations with their timed words", async () => {
+    const line = createLine({
+      text: "안녕",
+      words: [{ text: "안녕", begin: 0, end: 2 }],
+      backgroundText: "세상",
+      backgroundWords: [{ text: "세상", begin: 1, end: 3 }],
+    });
+    useProjectStore.setState({
+      granularity: "word",
+      lines: [
+        {
+          ...line,
+          transliteration: {
+            language: "ko-Latn",
+            text: "annyeong",
+            backgroundText: "sesang",
+            segments: [{ original: "안녕", transliteration: "annyeong" }],
+            backgroundSegments: [{ original: "세상", transliteration: "sesang" }],
+            origin: "manual",
+            sourceFingerprint: "preview-frame-test",
+          },
+        },
+      ],
+    });
+    attachAudio();
+    const screen = await render(<Harness />);
+
+    expect(screen.container.querySelector('[data-preview-transliteration="main"] [data-word-begin]')?.textContent).toBe(
+      "annyeong",
+    );
+    expect(
+      screen.container.querySelector('[data-preview-transliteration="background"] [data-word-begin]')?.textContent,
+    ).toBe("sesang");
+    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0));
+    expect(transliterationSweep(screen.container, "background")).toBe(sweptTo(0));
+
+    useAudioStore.getState().seekTo(1.5);
+
+    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0.75));
+    expect(transliterationSweep(screen.container, "background")).toBe(sweptTo(0.25));
+  });
+
+  it("sweeps a romanization across line-synced timing", async () => {
+    const line = createLine({ text: "안녕하세요", begin: 2, end: 6 });
+    useProjectStore.setState({
+      granularity: "line",
+      lines: [
+        {
+          ...line,
+          transliteration: {
+            language: "ko-Latn",
+            text: "annyeonghaseyo",
+            segments: [{ original: "안녕하세요", transliteration: "annyeonghaseyo" }],
+            origin: "manual",
+            sourceFingerprint: "preview-line-frame-test",
+          },
+        },
+      ],
+    });
+    attachAudio();
+    const screen = await render(<Harness />);
+
+    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0));
+
+    useAudioStore.getState().seekTo(4);
+
+    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0.5));
   });
 
   it("sweeps the word clip path after a seek while paused", async () => {

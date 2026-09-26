@@ -1,8 +1,9 @@
 /**
  * @vitest-environment node
  */
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => {
@@ -50,6 +51,73 @@ describe("mergeSyllableGroupIntoWord", () => {
     expect(words[0].begin).toBe(0);
     expect(words[0].end).toBe(0.9);
     expect(words[0].syllableGroupId).toBeUndefined();
+  });
+
+  it("rejoins every transliteration fragment when collapsing a syllable group", () => {
+    const line: LyricLine = {
+      id: "line-1",
+      text: "일|단|은",
+      agentId: "v1",
+      words: [
+        {
+          text: "일",
+          transliteration: "i",
+          transliterationJoinerAfter: "",
+          begin: 0,
+          end: 0.3,
+          syllableGroupId: "g1",
+        },
+        {
+          text: "단",
+          transliteration: "ldan",
+          transliterationJoinerAfter: " ",
+          begin: 0.3,
+          end: 0.6,
+          syllableGroupId: "g1",
+        },
+        { text: "은", transliteration: "eun", begin: 0.6, end: 0.9, syllableGroupId: "g1" },
+      ],
+      transliteration: {
+        language: "ko-Latn",
+        text: "ildan eun",
+        segments: [{ original: "일단은", transliteration: "ildan eun" }],
+        origin: "manual",
+        sourceFingerprint: "test",
+      },
+    };
+    useProjectStore.getState().setLines([line]);
+
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [1]);
+
+    const merged = useProjectStore.getState().lines[0];
+    expect(merged.words).toEqual([{ text: "일단은", transliteration: "ildan eun", begin: 0, end: 0.9 }]);
+    expect(merged.text).toBe("일단은");
+    expect(merged.transliteration?.text).toBe("ildan eun");
+  });
+
+  it("restores an unseparated transliteration without adding a space", () => {
+    const words = splitWordIntoSyllables({
+      word: { text: "今日", transliteration: "kyouhi", begin: 0, end: 1 },
+      splitPoints: [1],
+      transliterationSplitPoints: [4],
+    });
+    useProjectStore.getState().setLines([{ id: "line-1", text: "今|日", agentId: "v1", words }]);
+
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+
+    expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBe("kyouhi");
+  });
+
+  it("does not keep a partial transliteration when one fragment is missing", () => {
+    const line = seedGroupedLine();
+    if (!line.words) throw new Error("expected word-synced fixture");
+    line.words[0].transliteration = "beau";
+    line.words[2].transliteration = "ful";
+    useProjectStore.getState().setLines([line]);
+
+    useProjectStore.getState().mergeSyllableGroupIntoWord("line-1", "words", [0]);
+
+    expect(useProjectStore.getState().lines[0].words?.[0].transliteration).toBeUndefined();
   });
 
   it("collapses the whole group when only one syllable is selected", () => {
