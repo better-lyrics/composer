@@ -2,7 +2,10 @@ import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SegmentedControl } from "@/ui/segmented-control";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
+
+// -- Interfaces ---------------------------------------------------------------
 
 interface SyncHeaderProps {
   progressText: string;
@@ -17,6 +20,15 @@ interface SyncHeaderProps {
   handleReset: () => void;
   handleStartSync: () => void;
 }
+
+// -- Constants ----------------------------------------------------------------
+
+const GRANULARITY_OPTIONS = [
+  { value: "line", label: "Line" },
+  { value: "word", label: "Word" },
+] as const;
+
+// -- Components ---------------------------------------------------------------
 
 const SyncHeader: React.FC<SyncHeaderProps> = ({
   progressText,
@@ -51,30 +63,12 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
           {textVariant === "transliteration" ? "Transliteration" : "Original"}
           {showShortcutHints && <InlineKeyBadge keys={getEffectiveKeysArray("sync.toggleTextVariant")} />}
         </Button>
-        <div className="flex h-8 rounded-lg bg-composer-bg-elevated p-0.5">
-          <button
-            type="button"
-            onClick={() => handleGranularityChange("line")}
-            className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-              granularity === "line"
-                ? "bg-composer-button text-composer-text"
-                : "text-composer-text-muted hover:text-composer-text"
-            }`}
-          >
-            Line
-          </button>
-          <button
-            type="button"
-            onClick={() => handleGranularityChange("word")}
-            className={`px-3 text-sm rounded-md transition-colors cursor-pointer ${
-              granularity === "word"
-                ? "bg-composer-button text-composer-text"
-                : "text-composer-text-muted hover:text-composer-text"
-            }`}
-          >
-            Word
-          </button>
-        </div>
+        <SegmentedControl
+          aria-label="Timing granularity"
+          value={granularity}
+          options={GRANULARITY_OPTIONS}
+          onChange={handleGranularityChange}
+        />
         <Button
           hasIcon
           variant={editMode ? "primary" : "secondary"}
@@ -100,5 +94,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
     </div>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { SyncHeader };
