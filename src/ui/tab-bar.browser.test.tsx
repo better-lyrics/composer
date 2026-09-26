@@ -73,10 +73,10 @@ describe("TabBar", () => {
     ]);
 
     const screen = await render(<TabBar />);
-    await expect.element(screen.getByLabelText("1 line needs language review")).toHaveTextContent("1");
+    await expect.element(screen.getByLabelText("1 line needs review in Languages")).toHaveTextContent("1");
   });
 
-  it("shows the number of lines with alignment errors on the Languages tab", async () => {
+  it("shows the number of lines with a timing mismatch on the Languages tab", async () => {
     useSettingsStore.setState({ showShortcutHints: false });
     useProjectStore.getState().setLines([
       {
@@ -98,6 +98,6 @@ describe("TabBar", () => {
     ]);
 
     const screen = await render(<TabBar />);
-    await expect.element(screen.getByLabelText("1 line has a language alignment error")).toHaveTextContent("1");
+    await expect.element(screen.getByLabelText("1 line with a timing mismatch")).toHaveTextContent("1");
   });
 });
