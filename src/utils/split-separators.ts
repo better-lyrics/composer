@@ -18,4 +18,4 @@ function normalizeSplitPointAtSeparator(text: string, point: number): number {
   return normalized;
 }
 
-export { isDashSeparator, isUntimedSeparator, isWhitespaceSeparator, normalizeSplitPointAtSeparator };
+export { isDashSeparator, isWhitespaceSeparator, normalizeSplitPointAtSeparator };

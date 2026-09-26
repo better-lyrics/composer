@@ -5,7 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { LanguagesPanel } from "@/views/languages";
 import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render } from "vitest-browser-react";
+import { render } from "@/test/render";
 
 const source = "こんにちは";
 

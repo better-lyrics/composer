@@ -2,7 +2,7 @@ import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { useProjectStore } from "@/stores/project";
 import { LanguageLineEditor } from "@/views/languages/line-editor";
 import { beforeEach, describe, expect, it } from "vitest";
-import { render } from "vitest-browser-react";
+import { render } from "@/test/render";
 
 describe("regressions", () => {
   it("regression: marks a changed translation on its field and row without an accent border", async () => {

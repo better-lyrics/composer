@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
 import { Suspense, startTransition, useLayoutEffect, useState } from "react";
 import { expect, it, vi } from "vitest";
-import { render } from "vitest-browser-react";
+import { render } from "@/test/render";
 
 it("publishes only committed targets while preserving synchronous target changes", async () => {
   const initial: LyricLine[] = [{ id: "line", text: "Hello", agentId: "v1" }];
