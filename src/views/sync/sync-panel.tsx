@@ -8,6 +8,7 @@ import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -43,6 +44,8 @@ const SyncPanel: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
+  const audioElement = useAudioStore((s) => s.audioElement);
+  const seekTo = useAudioStore((s) => s.seekTo);
   const textVariant = useTimelineStore((s) => s.textVariant);
   const toggleTextVariant = useTimelineStore((s) => s.toggleTextVariant);
   const hasTransliteration = useMemo(
@@ -92,6 +95,21 @@ const SyncPanel: React.FC = () => {
   );
   const cursorRef = useRef(cursor);
   cursorRef.current = cursor;
+
+  const stopSessionAtSongEnd = useEffectEvent(() => {
+    setSyncState((prev) => ({ ...prev, isActive: false }));
+    const slot = previousSlot(lines, cursor, granularity);
+    const bounds = slot ? slotBounds(lines, slot) : null;
+    if (bounds) seekTo(Math.max(0, bounds.begin - useSettingsStore.getState().redoPreroll));
+  });
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
+  useEffect(() => {
+    if (!audioElement) return;
+    const handleEnded = () => stopSessionAtSongEnd();
+    audioElement.addEventListener("ended", handleEnded);
+    return () => audioElement.removeEventListener("ended", handleEnded);
+  }, [audioElement]);
 
   const triggerRippleAtCurrentPosition = useCallback(() => {
     const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursorRef.current;

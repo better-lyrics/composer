@@ -382,3 +382,25 @@ describe("early tap flag (P1)", () => {
     await expect.element(screen.getByText("Early tap snapped to 0:06.000")).toBeVisible();
   });
 });
+
+describe("song end stops the session (P2)", () => {
+  it("stops the session, keeps the cursor, and parks the playhead before the next slot", async () => {
+    load([createLine({ id: "l0", text: "a b" }), createLine({ id: "l1", text: "c d" })]);
+    const screen = await render(<SyncPanel />);
+    await tapAt(50);
+    await tapAt(51);
+    // Registered after the taps so they read the store clock, not the idle element's.
+    const element = new Audio();
+    useAudioStore.getState().registerAudioElement(element);
+    useAudioStore.setState({ isPlaying: false });
+    await settle();
+    element.dispatchEvent(new Event("ended"));
+    await settle();
+    expect(useAudioStore.getState().currentTime).toBeCloseTo(51 - 1.5);
+    await expect.element(screen.getByRole("button", { name: /start/i })).toBeVisible();
+    key({ key: " ", code: "Space" });
+    await settle();
+    await tapAt(52);
+    expect(wordTexts(1)).toEqual(["c "]);
+  });
+});

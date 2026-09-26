@@ -13,6 +13,15 @@ import { useEffect, useRef } from "react";
 const LOG_PREFIX = "[AudioEngine]";
 const SLOW_DECODE_MS = 800;
 
+// -- Helpers -------------------------------------------------------------------
+
+// A rejected play() (autoplay policy, undecodable source) must not leave the UI showing Pause.
+function playOrRevert(audio: HTMLAudioElement, setIsPlaying: (playing: boolean) => void): void {
+  audio.play().catch(() => {
+    if (audio.paused) setIsPlaying(false);
+  });
+}
+
 // -- Component -----------------------------------------------------------------
 
 const AudioEngine: React.FC = () => {
@@ -135,7 +144,7 @@ const AudioEngine: React.FC = () => {
       originalUrlRef.current = objectUrl;
       registerAudioElement(audio);
       if (stripped !== null) useProjectStore.getState().setPrimingStripped(stripped);
-      if (initialIsPlaying) audio.play().catch(() => undefined);
+      if (initialIsPlaying) playOrRevert(audio, setIsPlaying);
 
       const handleLoadedMetadata = () => setDuration(audio.duration);
       const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
@@ -181,11 +190,11 @@ const AudioEngine: React.FC = () => {
     if (!audio) return;
 
     if (isPlaying) {
-      audio.play().catch(() => undefined);
+      playOrRevert(audio, setIsPlaying);
     } else {
       audio.pause();
     }
-  }, [isPlaying]);
+  }, [isPlaying, setIsPlaying]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -214,8 +223,8 @@ const AudioEngine: React.FC = () => {
     audio.playbackRate = currentPlaybackRate;
     audio.volume = currentVolume;
     audio.muted = currentIsMuted;
-    if (wasPlaying) audio.play().catch(() => {});
-  }, [currentStem, stemUrls, audioElement]);
+    if (wasPlaying) playOrRevert(audio, setIsPlaying);
+  }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
     scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);

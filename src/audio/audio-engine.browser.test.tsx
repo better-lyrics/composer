@@ -296,4 +296,16 @@ describe("AudioEngine", () => {
     await waitFor(() => useAudioStore.getState().audioElement !== null, 5000);
     expect(useProjectStore.getState().primingStripped).toBe(true);
   });
+
+  it("regression T2: reverts isPlaying when the element refuses to play", async () => {
+    allowConsole(/audio decode failed|Audio error/);
+    allowConsole(/scrub-preview decode failed/);
+    await render(<AudioEngine />);
+    const broken = new File([new Uint8Array([1, 2, 3, 4])], "broken.mp3", { type: "audio/mpeg" });
+    useAudioStore.setState({ source: { type: "file", file: broken } });
+    await waitFor(() => useAudioStore.getState().audioElement !== null, 3000);
+    useAudioStore.getState().setIsPlaying(true);
+    await waitFor(() => useAudioStore.getState().isPlaying === false, 3000);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
 });
