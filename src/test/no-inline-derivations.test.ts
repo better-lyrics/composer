@@ -105,6 +105,16 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "BG_DROP_ZONE_HEIGHT / bgTrackHeight / lineRowHeight from @/views/timeline/row-geometry",
     ownerFile: "views/timeline/row-geometry.ts",
   },
+  {
+    name: "inline line timed check",
+    regex: /effectiveBounds\([^()]*\)\s*!==\s*null/,
+    use: "isLineTimed from @/domain/line/sync-progress",
+  },
+  {
+    name: "inline raw line begin check",
+    regex: /\?\.begin\s*!==\s*undefined/,
+    use: "isLineTimed from @/domain/line/sync-progress or isLineSynced from @/domain/line/predicates",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

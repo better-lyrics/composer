@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -335,5 +336,49 @@ describe("U3 completion while words are unsynced", () => {
     expect(lines()[0].words?.length).toBe(2);
     await settle();
     expect(screen.container.textContent).not.toContain("Sync complete!");
+  });
+});
+
+describe("end of lyrics", () => {
+  it("says Sync complete only when every syncable line is fully timed", async () => {
+    load([createLine({ id: "l0", text: "a b" })]);
+    const screen = await render(<SyncPanel />);
+    await tapAt(1);
+    await tapAt(2);
+    expect(screen.container.textContent).toContain("Sync complete!");
+  });
+
+  it("says lines still need timing when the cursor passed the end after a jump", async () => {
+    load(
+      [
+        createLine({ id: "l0", text: "a b" }),
+        createLine({ id: "l1", text: "c", words: [{ text: "c", begin: 9, end: 10 }] }),
+      ],
+      { playing: false },
+    );
+    const screen = await render(<SyncPanel />);
+    await screen.getByRole("button", { name: "c", exact: true }).click();
+    await settle();
+    key({ key: " ", code: "Space" });
+    await settle();
+    await tapAt(11);
+    expect(screen.container.textContent).not.toContain("Sync complete!");
+    expect(screen.container.textContent).toContain("Some lines still need timing");
+  });
+});
+
+describe("early tap flag (P1)", () => {
+  it("tells the user when a tap was snapped to the previous word", async () => {
+    load([createLine({ id: "l0", text: "a b c" })]);
+    const screen = await render(
+      <>
+        <Toaster />
+        <SyncPanel />
+      </>,
+    );
+    await tapAt(5);
+    await tapAt(6);
+    await tapAt(1);
+    await expect.element(screen.getByText("Early tap snapped to 0:06.000")).toBeVisible();
   });
 });

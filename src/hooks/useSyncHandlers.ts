@@ -11,11 +11,12 @@ import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { type SyncState, splitIntoWords } from "@/utils/sync-helpers";
+import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback } from "react";
+import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
@@ -30,6 +31,10 @@ interface UseSyncHandlersProps {
   setShowPulse: (show: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
 }
+
+// -- Constants ------------------------------------------------------------------
+
+const EARLY_TAP_TOAST_ID = "sync-early-tap";
 
 // -- Helpers --------------------------------------------------------------------
 
@@ -80,6 +85,9 @@ function useSyncHandlers({
         updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
       }
       setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
+      if (commit.clampedTo !== null) {
+        toast(`Early tap snapped to ${formatTimeMs(commit.clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
+      }
       return true;
     },
     [lines, cursor, syncState.jumpedToPosition, readTapTime, updateLinesWithHistory, setSyncState],

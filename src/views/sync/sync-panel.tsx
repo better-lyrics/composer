@@ -1,7 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
-import { syncProgress } from "@/domain/line/sync-progress";
+import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, resolveSyncCursor, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
@@ -194,6 +194,7 @@ const SyncPanel: React.FC = () => {
 
   const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
   const progressText = `${progress.done}/${progress.total}`;
+  const syncComplete = useMemo(() => isSyncComplete(lines), [lines]);
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {
@@ -491,26 +492,33 @@ const SyncPanel: React.FC = () => {
       ) : (
         <div className="flex flex-col items-center justify-center flex-1 px-8 py-12">
           {isComplete ? (
-            <div className="text-center">
-              {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
-              <m.div
-                className="mb-2 text-2xl font-medium"
-                variants={shimmerVariants}
-                initial="initial"
-                animate="animate"
-                transition={shimmerTransition}
-                style={{
-                  background: completeGradient,
-                  backgroundSize: "200% 100%",
-                  backgroundClip: "text",
-                  WebkitBackgroundClip: "text",
-                  color: "transparent",
-                }}
-              >
-                Sync complete!
-              </m.div>
-              <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
-            </div>
+            syncComplete ? (
+              <div className="text-center">
+                {/* react-doctor-disable-next-line react-doctor/no-gradient-text */}
+                <m.div
+                  className="mb-2 text-2xl font-medium"
+                  variants={shimmerVariants}
+                  initial="initial"
+                  animate="animate"
+                  transition={shimmerTransition}
+                  style={{
+                    background: completeGradient,
+                    backgroundSize: "200% 100%",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                  }}
+                >
+                  Sync complete!
+                </m.div>
+                <div className="text-composer-text-muted">Proceed to Preview to review your work</div>
+              </div>
+            ) : (
+              <div className="text-center">
+                <div className="mb-2 text-2xl font-medium text-composer-text">End of lyrics</div>
+                <div className="text-composer-text-muted">Some lines still need timing. Click one to sync it.</div>
+              </div>
+            )
           ) : (
             <SyncCarousel
               lines={displayLines}
