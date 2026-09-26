@@ -13,9 +13,13 @@ import { type AlignmentField, TransliterationAlignmentModal } from "@/views/lang
 import { IconAlertCircle, IconAlertTriangle, IconSeparatorVertical } from "@tabler/icons-react";
 import { useState } from "react";
 
+// -- Helpers ------------------------------------------------------------------
+
 function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
   return value.trim() ? [{ original: line.text, transliteration: value.trim() }] : [];
 }
+
+// -- Interfaces ---------------------------------------------------------------
 
 interface LanguageLineEditorProps {
   line: LyricLine;
@@ -257,5 +261,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
     </section>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { LanguageLineEditor };

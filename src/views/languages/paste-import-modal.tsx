@@ -15,6 +15,8 @@ import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@t
 import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
+// -- Interfaces ---------------------------------------------------------------
+
 interface PasteImportModalProps {
   isOpen: boolean;
   initialText: string;
@@ -39,6 +41,8 @@ const STRATEGY_LABEL = {
   compact: "Blank lines dropped",
   manual: "Match lines by hand",
 } as const;
+
+// -- Component ----------------------------------------------------------------
 
 const PasteImportModal: React.FC<PasteImportModalProps> = ({
   isOpen,
@@ -238,5 +242,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     </Modal>
   );
 };
+
+// -- Exports ------------------------------------------------------------------
 
 export { PasteImportModal };
