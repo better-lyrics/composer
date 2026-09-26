@@ -1,6 +1,5 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { cn } from "@/utils/cn";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
@@ -27,6 +26,7 @@ import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sideba
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { DragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import {
   expandSelectionToGroupmates,
@@ -45,65 +45,12 @@ import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { IconMusic } from "@tabler/icons-react";
-import { DndContext, DragOverlay } from "@dnd-kit/core";
+import { DndContext } from "@dnd-kit/core";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-// -- Components ----------------------------------------------------------------
-
-interface DragGhostCell {
-  text: string;
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  syllablePosition: SyllablePosition;
-}
-
-const GHOST_SYLLABLE_RADIUS: Record<SyllablePosition, string> = {
-  none: "rounded-xl",
-  first: "rounded-l-xl rounded-r-none",
-  middle: "rounded-none",
-  last: "rounded-r-xl rounded-l-none",
-};
-
-const DragGhost: React.FC<{
-  cells: DragGhostCell[];
-  anchorWidth: number;
-  anchorHeight: number;
-  color: string;
-  isSnapped: boolean;
-}> = ({ cells, anchorWidth, anchorHeight, color, isSnapped }) => (
-  <div className="relative" style={{ width: anchorWidth, height: anchorHeight }}>
-    {cells.map((cell) => (
-      <div
-        key={`${cell.left}-${cell.top}`}
-        data-word-block
-        data-syllable-position={cell.syllablePosition}
-        className={cn(
-          "absolute flex items-center justify-center text-xs text-composer-text truncate border pointer-events-none",
-          GHOST_SYLLABLE_RADIUS[cell.syllablePosition],
-          isSnapped && "is-snapped",
-        )}
-        style={{
-          left: cell.left,
-          top: cell.top,
-          width: cell.width,
-          height: cell.height,
-          backgroundColor: `${color}50`,
-          borderColor: `${color}90`,
-          ...(cell.syllablePosition === "first" || cell.syllablePosition === "middle"
-            ? { borderRightStyle: "dashed" }
-            : {}),
-          ...(cell.syllablePosition === "middle" || cell.syllablePosition === "last" ? { borderLeftWidth: 0 } : {}),
-        }}
-      >
-        <span className="px-1 truncate">{cell.text}</span>
-      </div>
-    ))}
-  </div>
-);
+// -- Helpers -------------------------------------------------------------------
 
 function makeDragOverlapCheck(
   data: { lineId: string; wordIndex: number; trackType: "word" | "bg"; begin: number; end: number },
@@ -121,6 +68,8 @@ function makeDragOverlapCheck(
     });
   };
 }
+
+// -- Components ----------------------------------------------------------------
 
 const TimelinePanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
@@ -503,7 +452,7 @@ const TimelinePanel: React.FC = () => {
           </div>
         </div>
 
-        <DragOverlay dropAnimation={null}>
+        <TimelineDragOverlay>
           {activeDrag && dragCells && (
             <DragGhost
               cells={dragCells.cells}
@@ -513,7 +462,7 @@ const TimelinePanel: React.FC = () => {
               isSnapped={ghostSnapped}
             />
           )}
-        </DragOverlay>
+        </TimelineDragOverlay>
       </div>
 
       <TimelineContextMenu />
