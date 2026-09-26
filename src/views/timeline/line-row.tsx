@@ -73,7 +73,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
       </div>
 
       <div className={cn("flex-1 border-b border-composer-border relative", mainWords && "overflow-hidden")}>
-        <div className="absolute inset-0" style={{ transform: shiftTransform }}>
+        <div className="absolute inset-0 pointer-events-none" style={{ transform: shiftTransform }}>
           {groupColor && (
             <div
               aria-hidden

@@ -12,6 +12,9 @@ const WAVEFORM_DOTS_UTILITY = "waveform-loading-dots";
 // react-virtuoso's viewport and leaves it with nothing to render.
 const POSITION_UTILITIES_CSS = ".relative{position:relative}.absolute{position:absolute}.sticky{position:sticky;top:0}";
 
+// Overlays only cover their siblings, and so only swallow clicks, once they span their parent.
+const HIT_TESTING_UTILITIES_CSS = ".inset-0{inset:0}.pointer-events-none{pointer-events:none}";
+
 // -- Helpers -------------------------------------------------------------------
 
 function extractCssBlock(header: RegExp): string {
@@ -47,4 +50,10 @@ const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WA
 
 // -- Exports -------------------------------------------------------------------
 
-export { installStyleSheet, POSITION_UTILITIES_CSS, WAVEFORM_SWEEP_ANIMATION, WAVEFORM_SWEEP_CSS };
+export {
+  HIT_TESTING_UTILITIES_CSS,
+  installStyleSheet,
+  POSITION_UTILITIES_CSS,
+  WAVEFORM_SWEEP_ANIMATION,
+  WAVEFORM_SWEEP_CSS,
+};
