@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import { shallow } from "zustand/shallow";
+import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 
@@ -23,7 +25,9 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
     return waitForYouTubeLoad(videoId).catch((error: unknown) => {
       const current = useProjectStore.getState();
       const loadFellBackToPrevious = useAudioStore.getState().source === previous;
-      const untouchedSinceReset = current.metadata === resetState.metadata && current.agents === resetState.agents;
+      const untouchedSinceReset =
+        current.agents === resetState.agents &&
+        shallow(withoutThumbnailOf(current.metadata, videoId), resetState.metadata);
       if (loadFellBackToPrevious && untouchedSinceReset) {
         current.setMetadata(metadata);
         current.setAgents(agents);
@@ -31,6 +35,11 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
       throw error;
     });
   }, []);
+}
+
+function withoutThumbnailOf(metadata: ProjectMetadata, videoId: string): ProjectMetadata {
+  if (metadata.thumbnailForVideoId !== videoId) return metadata;
+  return { ...metadata, thumbnailDataUrl: undefined, thumbnailForVideoId: undefined };
 }
 
 function waitForYouTubeLoad(videoId: string): Promise<void> {

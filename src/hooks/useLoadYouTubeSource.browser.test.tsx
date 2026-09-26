@@ -175,6 +175,20 @@ describe("useLoadYouTubeSource", () => {
       expect(useProjectStore.getState().agents).toEqual(agents);
     });
 
+    it("regression: a bridge thumbnail fetched for the failing video does not block the restore", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      const previousSource = useAudioStore.getState().source;
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(OTHER_VIDEO_ID);
+      useProjectStore
+        .getState()
+        .setMetadata({ thumbnailDataUrl: "data:image/png;base64,BBBB", thumbnailForVideoId: OTHER_VIDEO_ID });
+      failLoad(previousSource);
+
+      await expect.poll(() => useProjectStore.getState().metadata).toEqual(previousSong);
+    });
+
     it("keeps metadata edited while a failing load was pending", async () => {
       useAudioStore.getState().setYouTubeSource(VIDEO_ID);
       const previousSource = useAudioStore.getState().source;
