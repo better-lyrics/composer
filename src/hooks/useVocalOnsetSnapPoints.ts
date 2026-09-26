@@ -3,17 +3,18 @@ import { useAudioStore } from "@/stores/audio";
 import type { AudioSource } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { fileIdentityKey } from "@/utils/file-identity";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
 
 function audioSourceKey(source: AudioSource): string | null {
   if (source?.type === "file") {
     const file = source.file;
-    return `file:${file.name}|${file.size}|${file.lastModified ?? 0}`;
+    return `file:${fileIdentityKey(file)}`;
   }
   if (source?.type === "youtube") {
     const file = source.file;
-    const filePart = file ? `|file:${file.name}|${file.size}|${file.lastModified ?? 0}` : "";
+    const filePart = file ? `|file:${fileIdentityKey(file)}` : "";
     return `youtube:${source.videoId}${filePart}`;
   }
   return null;

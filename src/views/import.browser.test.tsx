@@ -509,6 +509,19 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     expect(useProjectStore.getState().agents).toEqual([{ id: "v1", type: "person", name: "Lead" }]);
   });
 
+  it("regression: dropping the same audio file again keeps the song's metadata and singer names", async () => {
+    const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
+    const sameFile = () => new File([new Uint8Array(8)], "Lovefield.wav", { type: "audio/wav", lastModified: 1000 });
+    useAudioStore.setState({ source: { type: "file", file: sameFile() } });
+    useProjectStore.setState({ lines: [], metadata: previousSong, agents });
+    const screen = await render(withQueryClient(<ImportPanel />));
+
+    dropOnImportPanel(screen.container, sameFile());
+
+    expect(useProjectStore.getState().metadata).toEqual(previousSong);
+    expect(useProjectStore.getState().agents).toEqual(agents);
+  });
+
   it("keeps metadata entered before the first audio file is loaded", async () => {
     useAudioStore.setState({ source: null });
     useProjectStore.setState({ lines: [], metadata: previousSong });

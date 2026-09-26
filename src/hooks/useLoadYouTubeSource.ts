@@ -12,13 +12,24 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
     audio.setYouTubeSource(videoId);
 
     const project = useProjectStore.getState();
-    if (previous != null && prevVideoId !== videoId) {
-      project.resetSongIdentity(videoId);
-    } else if (!project.metadata.title || prevVideoId !== videoId) {
-      project.setMetadata({ title: videoId });
+    if (previous == null || prevVideoId === videoId) {
+      if (!project.metadata.title || prevVideoId !== videoId) project.setMetadata({ title: videoId });
+      return waitForYouTubeLoad(videoId);
     }
 
-    return waitForYouTubeLoad(videoId);
+    const { metadata, agents } = project;
+    project.resetSongIdentity(videoId);
+    const resetState = useProjectStore.getState();
+    return waitForYouTubeLoad(videoId).catch((error: unknown) => {
+      const current = useProjectStore.getState();
+      const loadFellBackToPrevious = useAudioStore.getState().source === previous;
+      const untouchedSinceReset = current.metadata === resetState.metadata && current.agents === resetState.agents;
+      if (loadFellBackToPrevious && untouchedSinceReset) {
+        current.setMetadata(metadata);
+        current.setAgents(agents);
+      }
+      throw error;
+    });
   }, []);
 }
 

@@ -157,6 +157,49 @@ describe("useLoadYouTubeSource", () => {
       expect(useProjectStore.getState().metadata).toEqual(previousSong);
     });
 
+    function failLoad(restoredSource: ReturnType<typeof useAudioStore.getState>["source"]) {
+      useAudioStore.getState().setSource(restoredSource);
+      useAudioStore.getState().setYouTubeLoadError("Could not load that video. Try again.");
+    }
+
+    it("regression: a failed load of a different video restores the previous song's metadata and singer names", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      const previousSource = useAudioStore.getState().source;
+      const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
+      useProjectStore.setState({ metadata: previousSong, agents });
+
+      await load(OTHER_VIDEO_ID);
+      failLoad(previousSource);
+
+      await expect.poll(() => useProjectStore.getState().metadata).toEqual(previousSong);
+      expect(useProjectStore.getState().agents).toEqual(agents);
+    });
+
+    it("keeps metadata edited while a failing load was pending", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      const previousSource = useAudioStore.getState().source;
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(OTHER_VIDEO_ID);
+      useProjectStore.getState().setMetadata({ title: "Typed While Loading" });
+      failLoad(previousSource);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(useProjectStore.getState().metadata.title).toBe("Typed While Loading");
+    });
+
+    it("does not restore the previous song when the load is superseded by another video", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(OTHER_VIDEO_ID);
+      await load("aaaaaaaaaaa");
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(useProjectStore.getState().metadata.title).toBe("aaaaaaaaaaa");
+      expect(useProjectStore.getState().metadata.artists).toEqual([]);
+    });
+
     it("keeps metadata entered before the first audio source is loaded", async () => {
       useAudioStore.setState({ source: null });
       useProjectStore.setState({ metadata: previousSong });

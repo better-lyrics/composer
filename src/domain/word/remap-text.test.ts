@@ -130,7 +130,120 @@ describe("remapWordTextsPreservingTiming", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: words inserted on both sides of one word do not overlap it", () => {
+      const result = remapWordTextsPreservingTiming([{ text: "hello", begin: 0, end: 1 }], "oh hello there");
+      expect(timings(result)).toEqual([
+        ["oh ", 0, 0.5],
+        ["hello ", 0.5, 0.75],
+        ["there", 0.75, 1],
+      ]);
+    });
+
+    it("regression: an insert after a prepended run shares the shrunk slot, not the original one", () => {
+      const words: WordTiming[] = [
+        { text: "a ", begin: 0, end: 1 },
+        { text: "b", begin: 1, end: 2 },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "x a y b");
+      expect(timings(result)).toEqual([
+        ["x ", 0, 0.5],
+        ["a ", 0.5, 0.75],
+        ["y ", 0.75, 1],
+        ["b", 1, 2],
+      ]);
+    });
+
+    it("regression: a new word after a space does not join the previous word's syllable group", () => {
+      const words: WordTiming[] = [
+        { text: "bo", begin: 0, end: 0.5, syllableGroupId: "g" },
+        { text: "dy", begin: 0.5, end: 1, syllableGroupId: "g" },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "bo|dy c");
+      expect(result.map((w) => [w.text, w.syllableGroupId])).toEqual([
+        ["bo", "g"],
+        ["dy ", "g"],
+        ["c", undefined],
+      ]);
+    });
+
+    it("regression: a new word followed by a space does not join the next word's syllable group", () => {
+      const words: WordTiming[] = [
+        { text: "a ", begin: 0, end: 1 },
+        { text: "bo", begin: 2, end: 2.5, syllableGroupId: "g" },
+        { text: "dy", begin: 2.5, end: 3, syllableGroupId: "g" },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "a c bo|dy");
+      expect(result.map((w) => [w.text, w.syllableGroupId])).toEqual([
+        ["a ", undefined],
+        ["c ", undefined],
+        ["bo", "g"],
+        ["dy", "g"],
+      ]);
+    });
+
+    it("regression: a multi-syllable insert after a space does not join the previous word's group", () => {
+      const words: WordTiming[] = [
+        { text: "bo", begin: 0, end: 0.5, syllableGroupId: "g" },
+        { text: "dy ", begin: 0.5, end: 1, syllableGroupId: "g" },
+        { text: "end", begin: 2, end: 3 },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "bo|dy x|y end");
+      expect(result.map((w) => [w.text, w.syllableGroupId])).toEqual([
+        ["bo", "g"],
+        ["dy ", "g"],
+        ["x", undefined],
+        ["y ", undefined],
+        ["end", undefined],
+      ]);
+    });
+
+    it("regression: an insert separated from the next word by spaced words does not join its group", () => {
+      const words: WordTiming[] = [
+        { text: "a ", begin: 0, end: 1 },
+        { text: "bo", begin: 2, end: 2.5, syllableGroupId: "g" },
+        { text: "dy", begin: 2.5, end: 3, syllableGroupId: "g" },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "a x|y z bo|dy");
+      expect(result.map((w) => [w.text, w.syllableGroupId])).toEqual([
+        ["a ", undefined],
+        ["x", undefined],
+        ["y ", undefined],
+        ["z ", undefined],
+        ["bo", "g"],
+        ["dy", "g"],
+      ]);
+    });
+
+    it("keeps every inserted syllable of a glued chain in the surrounding group", () => {
+      const words: WordTiming[] = [
+        { text: "for", begin: 0, end: 1, syllableGroupId: "g" },
+        { text: "er", begin: 1, end: 2, syllableGroupId: "g" },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "for|ev|ev|er");
+      expect(result.every((w) => w.syllableGroupId === "g")).toBe(true);
+    });
+
+    it("keeps an inserted syllable glued to the next syllable in that syllable's group", () => {
+      const words: WordTiming[] = [
+        { text: "a ", begin: 0, end: 1 },
+        { text: "dy", begin: 2, end: 3, syllableGroupId: "g" },
+      ];
+      const result = remapWordTextsPreservingTiming(words, "a bo|dy");
+      expect(result.map((w) => [w.text, w.syllableGroupId])).toEqual([
+        ["a ", undefined],
+        ["bo", "g"],
+        ["dy", "g"],
+      ]);
+    });
+  });
+
   describe("invariants", () => {
+    it("never assigns overlapping timings when inserting around a single word", () => {
+      const result = remapWordTextsPreservingTiming([{ text: "hello", begin: 0, end: 1 }], "oh hello there now");
+      for (let i = 1; i < result.length; i++) expect(result[i].begin).toBeGreaterThanOrEqual(result[i - 1].end);
+    });
+
     it("keeps explicit and syllableGroupId on words that survive the edit", () => {
       const words: WordTiming[] = [
         { text: "damn ", begin: 0, end: 1, explicit: true },

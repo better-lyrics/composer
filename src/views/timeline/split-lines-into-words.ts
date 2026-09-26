@@ -110,4 +110,3 @@ function splitLinesIntoWords(targets: Iterable<SplitTarget>, effectiveLines: Lyr
 // -- Exports -------------------------------------------------------------------
 
 export { computeSplitIntoWordsUpdates, computeSplitSelections, splitLinesIntoWords, splitTargetsForMenu };
-export type { SplitTarget };
