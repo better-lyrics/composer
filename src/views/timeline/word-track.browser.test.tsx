@@ -329,42 +329,61 @@ describe("WordTrack", () => {
     expect(calls[0].updates.end).toBeGreaterThan(1.2);
   });
 
-  it("drags a flush syllable boundary independently when rollingAffectsSyllables is on and rolling edit is off", async () => {
-    useSettingsStore.setState({ rollingAffectsSyllables: true });
-    useTimelineStore.setState({ rollingEditMode: false });
-
-    const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "l" }),
-      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "l" }),
+  describe("syllables follow rolling edit", () => {
+    const flushSyllables = () => [
+      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "g" }),
+      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "g" }),
     ];
 
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
-    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+    async function renderFlushSyllables(rolling: boolean) {
+      useSettingsStore.setState({ syllablesFollowRolling: true });
+      useTimelineStore.setState({ rollingEditMode: rolling });
+      const calls: Array<{ index: number; updates: { end?: number }; adjacentIndex?: number }> = [];
+      const { screen } = await renderTrack(flushSyllables(), (index, updates, adjacentIndex) =>
+        calls.push({ index, updates, adjacentIndex }),
+      );
+      const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+      return { calls, firstBlock: blocks[0] };
+    }
 
-    // goal: drag boundary to left and make sure they separate
-    dragRightEdgeBy(blocks[0], -20);
-    expect(calls).toHaveLength(1);
-    expect(calls[0].adjacentIndex).toBe(undefined);
-  });
+    it("shows the independent-resize cursor on a flush syllable boundary when rolling edit is off", async () => {
+      const { firstBlock } = await renderFlushSyllables(false);
+      expect(edgeOf(firstBlock, "right").className).toContain("cursor-ew-resize");
+    });
 
-  it("conjoins a flush syllable boundary when rollingAffectsSyllables is on and rolling edit is on", async () => {
-    useSettingsStore.setState({ rollingAffectsSyllables: true });
-    useTimelineStore.setState({ rollingEditMode: true });
+    it("shows the joined-resize cursor on a flush syllable boundary when rolling edit is on", async () => {
+      const { firstBlock } = await renderFlushSyllables(true);
+      expect(edgeOf(firstBlock, "right").className).toContain("cursor-col-resize");
+    });
 
-    const calls: Array<{ index: number; adjacentIndex?: number }> = [];
-    const words = [
-      createWord({ text: "ev", begin: 0.5, end: 1.5, syllableGroupId: "l" }),
-      createWord({ text: "er", begin: 1.5, end: 2.5, syllableGroupId: "l" }),
-    ];
+    it("regression: keeps the joined-resize cursor on a flush syllable boundary while the setting is off", async () => {
+      const { screen } = await renderTrack(flushSyllables());
+      const firstBlock = screen.container.querySelector<HTMLElement>("[data-word-block]") as HTMLElement;
+      expect(edgeOf(firstBlock, "right").className).toContain("cursor-col-resize");
+    });
 
-    const screen = await renderTrack(words, (index, _u, adjacentIndex) => calls.push({ index, adjacentIndex }));
-    const blocks = Array.from(screen.container.querySelectorAll<HTMLElement>("[data-word-block]"));
+    it("drags a flush syllable boundary independently when rolling edit is off", async () => {
+      const { calls, firstBlock } = await renderFlushSyllables(false);
+      dragRightEdgeBy(firstBlock, -20);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].index).toBe(0);
+      expect(calls[0].adjacentIndex).toBeUndefined();
+      expect(calls[0].updates.end).toBeLessThan(1.5);
+    });
 
-    // goal: drag boundary and they stay together
-    dragRightEdge(blocks[0]);
-    expect(calls).toHaveLength(1);
-    expect(calls[0].adjacentIndex).not.toBe(undefined);
+    it("drags a flush syllable boundary conjoined when rolling edit is on", async () => {
+      const { calls, firstBlock } = await renderFlushSyllables(true);
+      dragRightEdge(firstBlock);
+      expect(calls).toHaveLength(1);
+      expect(calls[0].adjacentIndex).toBe(1);
+    });
+
+    it("drags a flush syllable boundary conjoined when Alt is held and rolling edit is off", async () => {
+      const { calls, firstBlock } = await renderFlushSyllables(false);
+      dragRightEdge(firstBlock, { altKey: true });
+      expect(calls).toHaveLength(1);
+      expect(calls[0].adjacentIndex).toBe(1);
+    });
   });
 
   it("conjoins a touching word boundary when rolling edit mode is on", async () => {

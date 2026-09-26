@@ -76,6 +76,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
   const toggleSelection = useTimelineStore((s) => s.toggleSelection);
   const rollingEditMode = useTimelineStore((s) => s.rollingEditMode);
 
+  const syllablesFollowRolling = useSettingsStore((s) => s.syllablesFollowRolling);
   const showSyllableIndicators = useSettingsStore((s) => s.showSyllableIndicators);
   const syllablePositions = useMemo(() => getSyllablePositions(words), [words]);
 
@@ -139,6 +140,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       setDragState(initialState);
 
       const rollingEdit = useTimelineStore.getState().rollingEditMode;
+      const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
 
@@ -173,6 +175,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           wordIndex,
           edge: boundaryEdge,
           rollingEdit,
+          syllablesFollowRolling: syllablesFollowRollingAtStart,
           syllablePositions,
           altHeld: e.altKey,
         });
@@ -261,6 +264,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
       wordIndex: boundaryIndex,
       edge: "end",
       rollingEdit: rollingEditMode,
+      syllablesFollowRolling,
       syllablePositions,
       altHeld: altPressed,
     });
@@ -426,6 +430,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
             isSelected={isWordSelected(selectedWords, lineId, wordIndex, trackType)}
             isExplicit={word.explicit === true}
             syllablePosition={syllablePosition}
+            syllableEdgesJoin={!syllablesFollowRolling}
             gapBefore={gapBefore}
             leftHighlighted={hoveredBoundary === wordIndex - 1 && isBoundaryConjoined(wordIndex - 1)}
             rightHighlighted={hoveredBoundary === wordIndex && isBoundaryConjoined(wordIndex)}

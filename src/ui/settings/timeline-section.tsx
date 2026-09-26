@@ -71,9 +71,9 @@ const TimelineSection: React.FC = () => {
         settingKey="defaultRollingEdit"
       />
       <ToggleSetting
-        label="Rolling edit mode affects syllable conjoining"
-        description="Adjusting syllable timings will respect whether or not rolling edit mode is enabled."
-        settingKey="rollingAffectsSyllables"
+        label="Syllables follow rolling edit"
+        description="Syllables of one word move together only in rolling edit mode, like separate words. When off, they always move together."
+        settingKey="syllablesFollowRolling"
       />
       <ToggleSetting
         label="Default preview sidebar"

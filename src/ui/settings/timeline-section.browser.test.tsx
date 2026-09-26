@@ -21,6 +21,15 @@ describe("TimelineSection", () => {
     await expect.element(toggle).toHaveAttribute("aria-checked", "true");
   });
 
+  it("starts with syllables following rolling edit off and flips it on when clicked", async () => {
+    const screen = await render(<TimelineSection />);
+    const toggle = screen.getByRole("switch", { name: "Syllables follow rolling edit" });
+    await expect.element(toggle).toHaveAttribute("aria-checked", "false");
+    await toggle.click();
+    await expect.poll(() => useSettingsStore.getState().syllablesFollowRolling).toBe(true);
+    await expect.element(toggle).toHaveAttribute("aria-checked", "true");
+  });
+
   it("flips the default preview sidebar setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ defaultPreviewSidebar: false });
     const screen = await render(<TimelineSection />);

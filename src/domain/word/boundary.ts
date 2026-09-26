@@ -20,6 +20,7 @@ interface RollDecisionInput {
   wordIndex: number;
   edge: BoundaryEdge;
   rollingEdit: boolean;
+  syllablesFollowRolling: boolean;
   syllablePositions: readonly SyllablePosition[];
   altHeld?: boolean;
 }
@@ -45,13 +46,14 @@ function isInsideSyllableGroup(position: SyllablePosition | undefined, edge: Bou
 
 // -- Roll decision ------------------------------------------------------------
 
-// Syllables of one word carry their neighbour without Rolling; separate words need it.
+// Syllables of one word carry their neighbour without Rolling unless opted out; separate words need it.
 // `altHeld` is the drag-only inversion: keyboard paths omit it and take the default.
 function shouldRollNeighbour({
   words,
   wordIndex,
   edge,
   rollingEdit,
+  syllablesFollowRolling,
   syllablePositions,
   altHeld = false,
 }: RollDecisionInput): boolean {
@@ -59,9 +61,8 @@ function shouldRollNeighbour({
   // Nothing to roll at the array ends, so Alt has nothing to invert into either.
   if (!words[wordIndex] || !neighbour) return false;
 
-  const rollsByDefault =
-    (rollingEdit || isInsideSyllableGroup(syllablePositions[wordIndex], edge)) &&
-    isBoundaryFlush(words, wordIndex, edge);
+  const syllablesRollOnTheirOwn = !syllablesFollowRolling && isInsideSyllableGroup(syllablePositions[wordIndex], edge);
+  const rollsByDefault = (rollingEdit || syllablesRollOnTheirOwn) && isBoundaryFlush(words, wordIndex, edge);
   return altHeld ? !rollsByDefault : rollsByDefault;
 }
 
