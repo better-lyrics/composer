@@ -69,18 +69,6 @@ function parseTimeMs(str: string): number | null {
   return mins * 60 + secs + ms / 1000;
 }
 
-function getTotalWords(lines: { text: string }[]): number {
-  return lines.reduce((acc, line) => acc + splitIntoWords(line.text).length, 0);
-}
-
-function getSyncedWordCount(lines: { words?: WordTiming[] }[]): number {
-  return lines.reduce((acc, line) => acc + (line.words?.length ?? 0), 0);
-}
-
-function getSyncedLineCount(lines: LyricLine[]): number {
-  return lines.filter((line) => effectiveBounds(line) !== null).length;
-}
-
 // -- Conversion Functions -----------------------------------------------------
 
 interface ConvertibleLine {
@@ -218,9 +206,6 @@ export {
   getNudgeAmount,
   convertLineToWord,
   formatTimeMs,
-  getSyncedLineCount,
-  getSyncedWordCount,
-  getTotalWords,
   hasLineTiming,
   parseTimeMs,
   splitIntoWords,

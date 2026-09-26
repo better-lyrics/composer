@@ -1,6 +1,7 @@
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
+import { syncProgress } from "@/domain/line/sync-progress";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
@@ -14,9 +15,6 @@ import {
   convertLineToWord,
   createBgWordsFromLine,
   getNudgeAmount,
-  getSyncedLineCount,
-  getSyncedWordCount,
-  getTotalWords,
   hasLineTiming,
 } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
@@ -187,11 +185,8 @@ const SyncPanel: React.FC = () => {
     editMode,
   );
 
-  const totalWords = useMemo(() => getTotalWords(lines), [lines]);
-  const syncedWords = useMemo(() => getSyncedWordCount(lines), [lines]);
-  const syncedLines = useMemo(() => getSyncedLineCount(lines), [lines]);
-
-  const progressText = granularity === "word" ? `${syncedWords}/${totalWords}` : `${syncedLines}/${lines.length}`;
+  const progress = useMemo(() => syncProgress(lines, granularity), [lines, granularity]);
+  const progressText = `${progress.done}/${progress.total}`;
 
   const handleGranularityChange = useCallback(
     (newGranularity: "line" | "word") => {

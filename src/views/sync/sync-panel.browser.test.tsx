@@ -325,3 +325,20 @@ describe("SyncPanel · touch sync", () => {
     });
   });
 });
+
+describe("progress counter", () => {
+  it("regression U2: line mode counts only syncable lines", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
+    useProjectStore.setState({
+      activeTab: "sync",
+      granularity: "line",
+      lines: [
+        createLine({ id: "l0", text: "a", begin: 1, end: 2 }),
+        createLine({ id: "blank", text: "" }),
+        createLine({ id: "l2", text: "b" }),
+      ],
+    });
+    const screen = await render(<SyncPanel />);
+    expect(screen.container.querySelector("h2 + span")?.textContent).toBe("1/2");
+  });
+});

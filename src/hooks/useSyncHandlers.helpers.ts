@@ -1,5 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
-import { hasMainLyrics } from "@/domain/line/predicates";
+import { isSyncableLine } from "@/domain/line/sync-progress";
 import { createInitialBgWords, splitIntoWordsWithMeta, type SyncState } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
@@ -45,10 +45,6 @@ function buildInitialWordUpdates(
   end: number,
 ): Partial<LyricLine> {
   return withBgSeedIfNeeded({ words: [{ text: textWithSpace, begin, end }] }, line, begin);
-}
-
-function isSyncableLine(line: LyricLine | undefined): boolean {
-  return !!line && hasMainLyrics(line);
 }
 
 function nextSyncableLineIndex(lines: LyricLine[], fromIndex: number): number {

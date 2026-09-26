@@ -1,3 +1,4 @@
+import { isLineTimed } from "@/domain/line/sync-progress";
 import { useAudioStore } from "@/stores/audio";
 import { type SimpleTab, useProjectStore } from "@/stores/project";
 import { MOD_KEY } from "@/utils/platform";
@@ -26,10 +27,7 @@ const YOUTUBE_EMBED_HTML = `<div class="composer-tour-video-embed"><iframe src="
 
 const gateAudioLoaded = () => useAudioStore.getState().source !== null;
 const gateLyricsExist = () => useProjectStore.getState().lines.length > 0;
-const gateFirstLineSynced = () => {
-  const lines = useProjectStore.getState().lines;
-  return lines.length > 0 && lines[0]?.begin !== undefined;
-};
+const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTimed);
 
 // -- Tour Steps ---------------------------------------------------------------
 

@@ -2,6 +2,7 @@ import { getAgentColor } from "@/domain/agent/colors";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
+import { isLineTimed } from "@/domain/line/sync-progress";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -217,7 +218,7 @@ const TimelinePreviewSidebar: React.FC = () => {
     }
   }, "timeline-preview-sidebar");
 
-  const hasSyncedContent = lines.some((line) => effectiveBounds(line) !== null);
+  const hasSyncedContent = lines.some(isLineTimed);
 
   if (lines.length === 0 || !hasSyncedContent) {
     return (
