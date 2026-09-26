@@ -26,9 +26,13 @@ function splitMultiWordWord(word: WordTiming): WordTiming[] {
   };
   const parts = convertLineToWord(asLine).words;
   if (!parts || parts.length < 2) return [word];
-  if (!word.text.endsWith(" ")) return parts;
-  const last = parts[parts.length - 1];
-  return [...parts.slice(0, -1), { ...last, text: `${last.text} ` }];
+  const { syllableGroupId: _drop, ...base } = word;
+  const lastIndex = parts.length - 1;
+  return parts.map((part, index) => ({
+    ...base,
+    ...part,
+    text: index === lastIndex && word.text.endsWith(" ") ? `${part.text} ` : part.text,
+  }));
 }
 
 function splitMultiWordBgWords(bgWords: WordTiming[]): WordTiming[] | null {
@@ -65,7 +69,7 @@ function computeSplitIntoWordsUpdates(targets: Iterable<SplitTarget>, rawLines: 
 }
 
 function splitTargetsForMenu(target: SplitTarget, selectedWords: WordSelection[]): SplitTarget[] {
-  return selectedWords.some((w) => w.lineId === target.lineId) ? selectedWords : [target];
+  return selectedWords.some((w) => w.lineId === target.lineId) ? [target, ...selectedWords] : [target];
 }
 
 function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: LyricLine[]): WordSelection[] {

@@ -6,7 +6,12 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
-import { computeSplitIntoWordsUpdates, computeSplitSelections, splitLinesIntoWords } from "./split-lines-into-words";
+import {
+  computeSplitIntoWordsUpdates,
+  computeSplitSelections,
+  splitLinesIntoWords,
+  splitTargetsForMenu,
+} from "./split-lines-into-words";
 
 const lineSynced: LyricLine = { id: "L1", text: "one two three", agentId: "v1", begin: 1, end: 4 };
 const wordSynced: LyricLine = {
@@ -230,6 +235,26 @@ describe("computeSplitIntoWordsUpdates · background track", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: split parts keep the source word's explicit flag", () => {
+      const line: LyricLine = {
+        ...sentenceBg,
+        backgroundWords: [{ text: "ooh yeah", begin: 1, end: 3, explicit: true }],
+      };
+      const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
+      expect(words?.map((w) => w.explicit)).toEqual([true, true]);
+    });
+
+    it("regression: split parts drop the source word's syllable group", () => {
+      const line: LyricLine = {
+        ...sentenceBg,
+        backgroundWords: [{ text: "ooh yeah", begin: 1, end: 3, syllableGroupId: "g1" }],
+      };
+      const words = computeSplitIntoWordsUpdates(bg("L4"), [line])[0].updates.backgroundWords;
+      expect(words?.every((w) => !("syllableGroupId" in w))).toBe(true);
+    });
+  });
+
   describe("invariants", () => {
     it("does not mutate the input line", () => {
       const snapshot = structuredClone(sentenceBg);
@@ -248,6 +273,49 @@ describe("computeSplitSelections · background track", () => {
       { lineId: "L4", lineIndex: 0, wordIndex: 1, type: "bg" },
       { lineId: "L4", lineIndex: 0, wordIndex: 2, type: "bg" },
     ]);
+  });
+});
+
+describe("splitTargetsForMenu", () => {
+  const selection = (lineId: string, type: "word" | "bg", wordIndex = 0) => ({ lineId, lineIndex: 0, wordIndex, type });
+
+  it("uses the target alone when nothing on its line is selected", () => {
+    expect(splitTargetsForMenu({ lineId: "L1", type: "word" }, [selection("L2", "word")])).toEqual([
+      { lineId: "L1", type: "word" },
+    ]);
+  });
+
+  it("uses the selection plus the target when the selection touches its line", () => {
+    const targets = splitTargetsForMenu({ lineId: "L1", type: "word" }, [
+      selection("L1", "word"),
+      selection("L2", "bg"),
+    ]);
+    expect(targets).toEqual(expect.arrayContaining([expect.objectContaining({ lineId: "L2", type: "bg" })]));
+    expect(targets).toEqual(expect.arrayContaining([expect.objectContaining({ lineId: "L1", type: "word" })]));
+  });
+
+  describe("regressions", () => {
+    it("regression: right-clicking main with a bg word selected on the same line still splits main", () => {
+      const line: LyricLine = {
+        id: "L5",
+        text: "one two",
+        agentId: "v1",
+        begin: 0,
+        end: 2,
+        backgroundText: "ooh",
+        backgroundWords: [{ text: "ooh", begin: 0, end: 2 }],
+      };
+      const targets = splitTargetsForMenu({ lineId: "L5", type: "word" }, [selection("L5", "bg")]);
+      const updates = computeSplitIntoWordsUpdates(targets, [line]);
+      expect(updates).toHaveLength(1);
+      expect(updates[0].updates.words?.map((w) => w.text)).toEqual(["one ", "two"]);
+    });
+
+    it("regression: right-clicking a multi-word bg with main selected on the same line still splits bg", () => {
+      const targets = splitTargetsForMenu({ lineId: "L4", type: "bg" }, [selection("L4", "word")]);
+      const updates = computeSplitIntoWordsUpdates(targets, [sentenceBg]);
+      expect(updates[0].updates.backgroundWords?.map((w) => w.text)).toEqual(["ooh ", "yeah ", "baby"]);
+    });
   });
 });
 
