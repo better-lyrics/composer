@@ -58,4 +58,4 @@ function isSyncComplete(lines: readonly LyricLine[]): boolean {
 // -- Exports ------------------------------------------------------------------
 
 export { isLineFullyTimed, isLineTimed, isSyncableLine, isSyncComplete, syncProgress, wordSlotCount };
-export type { SyncGranularity, SyncProgress };
+export type { SyncGranularity };

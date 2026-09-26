@@ -46,6 +46,11 @@ type LyricLine = WordSyncedLine | LineSyncedLine | UntimedLine;
 // combination of timing fields may be present. Used for merge scratch objects.
 type LooseLine = LineFields & { words?: WordTiming[]; begin?: number; end?: number };
 
+interface LineUpdate {
+  id: string;
+  updates: Partial<LyricLine>;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 // The store builds lines by spreading `...line` (a union member) together with
@@ -65,4 +70,4 @@ function reconcileLine(line: LooseLine): LyricLine {
 
 export { reconcileLine };
 
-export type { LineFields, LineSyncedLine, LyricLine, LooseLine };
+export type { LineFields, LineSyncedLine, LineUpdate, LyricLine, LooseLine };
