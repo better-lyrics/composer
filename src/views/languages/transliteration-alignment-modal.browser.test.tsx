@@ -7,7 +7,7 @@ import { TransliterationAlignmentModal } from "@/views/languages/transliteration
 import { describe, expect, it, vi } from "vitest";
 import { userEvent } from "vitest/browser";
 
-// -- Fixtures -------------------------------------------------------------------
+// -- Fixtures -----------------------------------------------------------------
 
 function setupLine({
   text = "가나",
@@ -46,7 +46,7 @@ function setupLine({
   return line;
 }
 
-// -- Tests ------------------------------------------------------------------------
+// -- Tests --------------------------------------------------------------------
 
 describe("TransliterationAlignmentModal", () => {
   describe("happy path", () => {
@@ -78,14 +78,18 @@ describe("TransliterationAlignmentModal", () => {
         transliterationText: "ga",
       });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
-      expect(screen.container.querySelectorAll('button[aria-label^="Transliteration split point"]')).toHaveLength(0);
-      await expect.element(screen.getByRole("button", { name: "Save", exact: true })).not.toBeDisabled();
+      const save = screen.getByRole("button", { name: "Save", exact: true });
+      await expect.element(save).toBeEnabled();
+      await screen.getByRole("button", { name: "Transliteration split point 1" }).click();
+      await expect.element(save).toBeDisabled();
+      await expect.element(screen.getByText("Pick 0 split points (1 so far).")).toBeInTheDocument();
     });
 
     it("renders nothing without a transliteration track", async () => {
       const line = setupLine({ withTransliteration: false });
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       expect(screen.container.textContent).toBe("");
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
     });
 
     it("treats a literal dash as a letter with split points on both sides", async () => {
@@ -101,7 +105,7 @@ describe("TransliterationAlignmentModal", () => {
       const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
       await expect.element(screen.getByRole("button", { name: "Transliteration split point 2" })).toBeInTheDocument();
       await expect.element(screen.getByRole("button", { name: "Transliteration split point 3" })).toBeInTheDocument();
-      expect(screen.container.querySelector('button[aria-label^="Transliteration dash"]')).toBeNull();
+      expect(document.querySelector('button[aria-label^="Transliteration dash"]')).toBeNull();
     });
 
     it("shows a word break separator with its own tooltip in the legend", async () => {

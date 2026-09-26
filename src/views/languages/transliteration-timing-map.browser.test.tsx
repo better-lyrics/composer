@@ -3,13 +3,13 @@ import { render } from "@/test/render";
 import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
 import { describe, expect, it } from "vitest";
 
-// -- Fixtures -------------------------------------------------------------------
+// -- Fixtures -----------------------------------------------------------------
 
 function word(text: string, begin: number, end: number): WordTiming {
   return { text, begin, end };
 }
 
-// -- Tests ------------------------------------------------------------------------
+// -- Tests --------------------------------------------------------------------
 
 describe("TransliterationTimingMap", () => {
   describe("happy path", () => {

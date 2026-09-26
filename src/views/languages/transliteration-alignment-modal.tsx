@@ -12,7 +12,7 @@ import { TransliterationTimingMap } from "@/views/languages/transliteration-timi
 import { IconCheck } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 
-// -- Types ----------------------------------------------------------------------
+// -- Types --------------------------------------------------------------------
 
 type AlignmentField = "words" | "backgroundWords";
 
@@ -22,7 +22,7 @@ interface TransliterationAlignmentModalProps {
   onClose: () => void;
 }
 
-// -- Helpers ----------------------------------------------------------------------
+// -- Helpers ------------------------------------------------------------------
 
 function groupReading(words: WordTiming[]): string {
   return words
@@ -162,7 +162,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
                 key={`${word.begin}-${word.end}-${index}`}
                 className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-composer-button px-2.5 text-sm leading-7"
               >
-                <span className="select-none">{word.text.trimEnd()}</span>
+                <span className="select-text">{word.text.trimEnd()}</span>
                 <span className="font-mono text-[11px] text-composer-text-muted tabular-nums select-text">
                   {formatTime(word.begin)} - {formatTime(word.end)}
                 </span>

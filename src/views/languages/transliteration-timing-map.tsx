@@ -18,7 +18,7 @@ const TransliterationTimingMap: React.FC<TransliterationTimingMapProps> = ({ wor
   <div
     role="group"
     aria-label="Timing map"
-    className="flex flex-wrap items-center justify-center gap-2 text-sm select-none"
+    className="flex flex-wrap items-center justify-center gap-2 text-sm select-text"
   >
     {words.map((word, index) => {
       const slice = timedTransliterationSlice({
