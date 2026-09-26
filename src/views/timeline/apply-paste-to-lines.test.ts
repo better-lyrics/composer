@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
-import { applyPasteToLines } from "@/views/timeline/apply-paste-to-lines";
+import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 
 // -- Helpers ------------------------------------------------------------------
@@ -129,6 +129,87 @@ describe("applyPasteToLines", () => {
       const updates = applyPasteToLines({ lines, clipboard, targetLineIndex: 0, timeDelta: 2, duration: 10 });
       expect(updates?.[0].updates.words?.[0].begin).toBe(3);
       expect(updates?.[0].updates.words?.[0].end).toBe(4);
+    });
+  });
+});
+
+describe("pasting onto a line-synced row", () => {
+  const lineSynced: LyricLine = { id: "ls", agentId: "a", text: "It hurts for me", begin: 10, end: 12 };
+  const clipboardAt = (begin: number, end: number): ClipboardData => ({
+    entries: [{ word: { text: "never", begin, end }, lineOffset: 0, trackType: "word" }],
+  });
+
+  it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
+    const updates = applyPasteToLines({
+      lines: [lineSynced],
+      clipboard: clipboardAt(13, 13.5),
+      targetLineIndex: 0,
+      timeDelta: 0,
+      duration: 60,
+    });
+    expect(updates?.[0].updates.words).toEqual([
+      { text: "It hurts for me ", begin: 10, end: 12 },
+      { text: "never", begin: 13, end: 13.5 },
+    ]);
+    expect(updates?.[0].updates.text).toContain("It hurts for me");
+    expect(updates?.[0].updates.text).toContain("never");
+  });
+
+  it("regression: a paste inside the line's span counts as an overlap", () => {
+    expect(pasteOverlaps(clipboardAt(11, 11.5), 0, 0, [lineSynced], 60)).toBe(true);
+  });
+
+  it("does not report an overlap for a paste outside the line's span", () => {
+    expect(pasteOverlaps(clipboardAt(13, 13.5), 0, 0, [lineSynced], 60)).toBe(false);
+  });
+});
+
+describe("pasteOverlaps", () => {
+  const wordLine: LyricLine = {
+    id: "w",
+    agentId: "a",
+    text: "a b",
+    words: [
+      { text: "a ", begin: 0, end: 1 },
+      { text: "b", begin: 1, end: 2 },
+    ],
+  };
+
+  it("reports an overlap with an existing word", () => {
+    const clipboard: ClipboardData = {
+      entries: [{ word: { text: "z", begin: 0.5, end: 1.5 }, lineOffset: 0, trackType: "word" }],
+    };
+    expect(pasteOverlaps(clipboard, 0, 0, [wordLine], 10)).toBe(true);
+  });
+
+  it("allows a paste into free space", () => {
+    const clipboard: ClipboardData = {
+      entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
+    };
+    expect(pasteOverlaps(clipboard, 0, 0, [wordLine], 10)).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("treats a target line index out of range as blocked", () => {
+      const clipboard: ClipboardData = {
+        entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 1, trackType: "word" }],
+      };
+      expect(pasteOverlaps(clipboard, 0, 0, [wordLine], 10)).toBe(true);
+    });
+
+    it("treats a word clamped to zero width at the song end as blocked", () => {
+      const clipboard: ClipboardData = {
+        entries: [{ word: { text: "z", begin: 12, end: 13 }, lineOffset: 0, trackType: "word" }],
+      };
+      expect(pasteOverlaps(clipboard, 0, 0, [wordLine], 10)).toBe(true);
+    });
+
+    it("ignores an untimed target line", () => {
+      const untimed: LyricLine = { id: "u", agentId: "a", text: "free text" };
+      const clipboard: ClipboardData = {
+        entries: [{ word: { text: "z", begin: 3, end: 4 }, lineOffset: 0, trackType: "word" }],
+      };
+      expect(pasteOverlaps(clipboard, 0, 0, [untimed], 10)).toBe(false);
     });
   });
 });

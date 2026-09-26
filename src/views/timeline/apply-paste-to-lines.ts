@@ -1,7 +1,9 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import { effectiveTrackWords, effectiveWords } from "@/domain/line/effective-words";
 import { mainWordEditFields } from "@/domain/line/main-words";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
+import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 
@@ -21,6 +23,27 @@ interface LineUpdate {
 }
 
 // -- Functions ----------------------------------------------------------------
+
+function pasteOverlaps(
+  clipboard: ClipboardData,
+  targetLineIndex: number,
+  timeDelta: number,
+  lines: LyricLine[],
+  duration: number,
+): boolean {
+  for (const entry of clipboard.entries) {
+    const lineIdx = targetLineIndex + entry.lineOffset;
+    if (lineIdx < 0 || lineIdx >= lines.length) return true;
+
+    const newBegin = Math.max(0, entry.word.begin + timeDelta);
+    const newEnd = Math.min(duration, entry.word.end + timeDelta);
+    if (newEnd <= newBegin) return true;
+
+    const existingWords = effectiveTrackWords(lines[lineIdx], entry.trackType) ?? [];
+    if (existingWords.some((existing) => boundsOverlap({ begin: newBegin, end: newEnd }, existing))) return true;
+  }
+  return false;
+}
 
 function applyPasteToLines({
   lines,
@@ -55,7 +78,7 @@ function applyPasteToLines({
 
     const lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(line.words ?? [], newWords)));
+      Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(effectiveWords(line), newWords)));
     }
     if (newBgWords.length > 0) {
       Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)));
@@ -69,4 +92,4 @@ function applyPasteToLines({
 
 // -- Exports ------------------------------------------------------------------
 
-export { applyPasteToLines };
+export { applyPasteToLines, pasteOverlaps };
