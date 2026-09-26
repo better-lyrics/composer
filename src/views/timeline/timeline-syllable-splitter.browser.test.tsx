@@ -186,7 +186,7 @@ describe("TimelineSyllableSplitter", () => {
       window.dispatchEvent(new Event("timeline:split-word"));
       await expect.element(screen.getByRole("heading", { name: /Split "It hurts" into words/ })).toBeInTheDocument();
 
-      await screen.getByRole("button", { name: "Text space boundary 3" }).click();
+      await screen.getByRole("button", { name: "Text pronunciation break 3" }).click();
       await screen.getByRole("button", { name: "Split Word" }).click();
 
       await vi.waitFor(() => {
