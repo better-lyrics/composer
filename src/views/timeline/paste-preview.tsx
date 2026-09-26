@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { useConfirm } from "@/stores/confirm-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
@@ -41,7 +42,6 @@ interface GhostWord {
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
-const BG_DROP_ZONE_HEIGHT = 24;
 const BG_BORDER = 1;
 
 // -- Component -----------------------------------------------------------------
@@ -75,7 +75,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       });
 
@@ -200,7 +199,6 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         defaultRowHeight,
         collapsedInstances,
         waveformHeight: ROWS_START_Y,
-        bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       }),
     [lines, rowHeights, defaultRowHeight, collapsedInstances],
@@ -307,9 +305,8 @@ function computeGhosts(
       trackTop = layoutEnd;
       trackHeight = defaultRowHeight;
     } else {
-      const hasBg = !!(targetLine.backgroundWords && targetLine.backgroundWords.length > 0);
-      const bgHeight = hasBg ? (targetPos.height - 1) / 2 : BG_DROP_ZONE_HEIGHT;
-      const mainHeight = targetPos.height - 1 - bgHeight;
+      const mainHeight = targetPos.mainBottom - targetPos.top;
+      const bgHeight = bgTrackHeight(targetLine, mainHeight);
       if (isBg) {
         trackTop = targetPos.top + mainHeight + BG_BORDER;
         trackHeight = bgHeight;

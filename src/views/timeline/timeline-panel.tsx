@@ -41,6 +41,7 @@ import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { IconMusic } from "@tabler/icons-react";
@@ -247,15 +248,12 @@ const TimelinePanel: React.FC = () => {
     const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
     const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
 
-    const BG_DROP_ZONE_HEIGHT = 24;
-
     const layout = computeRowLayout({
       lines: effectiveLines,
       rowHeights,
       defaultRowHeight,
       collapsedInstances,
       waveformHeight: WAVEFORM_HEIGHT,
-      bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });
 
@@ -267,8 +265,7 @@ const TimelinePanel: React.FC = () => {
       const pos = layout.lineTops.get(line.id);
       if (!pos) continue;
       const mainH = rowHeights[line.id] ?? defaultRowHeight;
-      const hasBg = line.backgroundWords && line.backgroundWords.length > 0;
-      const bgH = hasBg ? mainH : BG_DROP_ZONE_HEIGHT;
+      const bgH = bgTrackHeight(line, mainH);
       rowTops[line.id] = pos.top;
       rowMainHeights[line.id] = mainH;
       rowBgTops[line.id] = pos.top + mainH;

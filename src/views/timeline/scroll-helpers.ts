@@ -7,8 +7,6 @@ import { computeRowLayout } from "@/views/timeline/utils";
 
 // -- Constants -----------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Functions -----------------------------------------------------------------
 
 function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
@@ -22,7 +20,6 @@ function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
     defaultRowHeight,
     collapsedInstances,
     waveformHeight: WAVEFORM_HEIGHT,
-    bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   const target = layout.headerTops.get(`${groupId}:${instanceIdx}`);

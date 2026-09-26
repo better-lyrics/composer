@@ -7,7 +7,6 @@ import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
-const BG_DROP_ZONE_HEIGHT = 24;
 
 // -- Types ---------------------------------------------------------------------
 
@@ -58,7 +57,6 @@ function resolveViaLayoutModel(
     defaultRowHeight,
     collapsedInstances,
     waveformHeight: ROWS_START_Y,
-    bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
   return getLineAndTrackAtY(cursorY, lines, layout);

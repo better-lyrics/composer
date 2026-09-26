@@ -6,7 +6,8 @@ import type { WordTiming } from "@/domain/word/timing";
 import { applyWordPatch } from "@/utils/word-patch";
 import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-header-row";
 import { LineRow } from "@/views/timeline/line-row";
-import { DEFAULT_ROW_HEIGHT, GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { BG_DROP_ZONE_HEIGHT, lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
@@ -21,8 +22,6 @@ interface TimelineRowsProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Component -----------------------------------------------------------------
 
 const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
@@ -32,6 +31,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);
   const rowHeights = useTimelineStore((s) => s.rowHeights);
+  const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
 
   const allRows = useMemo(() => getEffectiveRows(lines), [lines]);
@@ -135,13 +135,11 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const getRowHeight = useCallback(
     (index: number) => {
       const row = visibleRows[index];
-      if (!row) return DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT;
+      if (!row) return defaultRowHeight + BG_DROP_ZONE_HEIGHT + 1;
       if (row.kind === "group-header") return GROUP_HEADER_HEIGHT;
-      const mainHeight = rowHeights[row.line.id] ?? DEFAULT_ROW_HEIGHT;
-      const hasBgWords = row.line.backgroundWords && row.line.backgroundWords.length > 0;
-      return mainHeight + (hasBgWords ? mainHeight : BG_DROP_ZONE_HEIGHT) + 1;
+      return lineRowHeight(row.line, rowHeights[row.line.id] ?? defaultRowHeight);
     },
-    [visibleRows, rowHeights],
+    [visibleRows, rowHeights, defaultRowHeight],
   );
 
   const totalHeight = useMemo(
@@ -188,7 +186,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
         style={{ height: "100%", width: "100%" }}
         customScrollParent={scrollContainerRef.current ?? undefined}
         overscan={200}
-        defaultItemHeight={DEFAULT_ROW_HEIGHT + BG_DROP_ZONE_HEIGHT}
+        defaultItemHeight={defaultRowHeight + BG_DROP_ZONE_HEIGHT + 1}
         increaseViewportBy={{ top: WAVEFORM_HEIGHT, bottom: 0 }}
       />
     </div>

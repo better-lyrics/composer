@@ -45,6 +45,7 @@ interface ForbiddenPattern {
   name: string;
   regex: RegExp;
   use: string;
+  ownerFile?: string;
 }
 
 const FORBIDDEN: ForbiddenPattern[] = [
@@ -93,6 +94,12 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\.map\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*\1\.time\b/,
     use: "snapPointTimes from @/domain/snap-point/model",
   },
+  {
+    name: "local BG drop zone height",
+    regex: /\bBG_DROP_ZONE_HEIGHT\s*=/,
+    use: "BG_DROP_ZONE_HEIGHT / bgTrackHeight / lineRowHeight from @/views/timeline/row-geometry",
+    ownerFile: "views/timeline/row-geometry.ts",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {
@@ -103,6 +110,7 @@ describe("no common inline domain derivations outside src/domain", () => {
       for (const file of walk(SRC_ROOT)) {
         const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
         if (isWhitelisted(rel)) continue;
+        if (rel === pattern.ownerFile) continue;
         if (rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;
 
         const lines = readFileSync(file, "utf8").split("\n");

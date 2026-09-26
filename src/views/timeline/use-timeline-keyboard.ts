@@ -68,8 +68,6 @@ function currentInstanceFromSelection(
 
 // -- Constants -----------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
-
 // -- Hook ----------------------------------------------------------------------
 
 function useTimelineKeyboard(
@@ -114,7 +112,6 @@ function useTimelineKeyboard(
           defaultRowHeight,
           collapsedInstances,
           waveformHeight: WAVEFORM_HEIGHT,
-          bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
         const pos = layout.lineTops.get(line.id);
@@ -293,7 +290,6 @@ function useTimelineKeyboard(
               defaultRowHeight,
               collapsedInstances,
               waveformHeight: WAVEFORM_HEIGHT,
-              bgDropZoneHeight: BG_DROP_ZONE_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });
             const instanceKey = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;

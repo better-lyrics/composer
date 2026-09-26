@@ -11,6 +11,7 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { createBgWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
+import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -33,7 +34,6 @@ interface EmptyBgTrackProps {
 
 // -- Constants -----------------------------------------------------------------
 
-const BG_DROP_ZONE_HEIGHT = 24;
 const MAIN_LABEL_MAX_CHARS = 60;
 const BG_LABEL_MAX_CHARS = 40;
 
