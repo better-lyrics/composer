@@ -19,6 +19,10 @@ describe("syncable line navigation", () => {
     expect(nextSyncableLineIndex(lines, 0)).toBe(2);
     expect(prevSyncableLineIndex(lines, 2)).toBe(0);
   });
+  it("from -1 returns the first syncable line, skipping leading blanks", () => {
+    expect(nextSyncableLineIndex([blank(), blank(), createLine({ text: "a" })], -1)).toBe(2);
+    expect(nextSyncableLineIndex(lines, -1)).toBe(0);
+  });
   it("returns lines.length and -1 at the ends", () => {
     expect(nextSyncableLineIndex(lines, 2)).toBe(3);
     expect(prevSyncableLineIndex(lines, 0)).toBe(-1);

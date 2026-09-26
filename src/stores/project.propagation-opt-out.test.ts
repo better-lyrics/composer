@@ -218,9 +218,7 @@ describe("updateLinesWithHistory · propagateToSiblings: false", () => {
 });
 
 describe("instance resync · issue #96 reproduction", () => {
-  // Replays the tap-by-tap word resync that useSyncHandlers.handleTap performs,
-  // using the real commitGesture owner. Every call site below uses a 0.3s
-  // duration (end - begin), so that is the fixed defaultWordDuration.
+  // Replays useSyncHandlers.handleTap through the real commitGesture owner.
   function tapResync(lineId: string, wordIndex: number, begin: number) {
     const lines = useProjectStore.getState().lines;
     const lineIndex = lines.findIndex((l) => l.id === lineId);
@@ -230,10 +228,10 @@ describe("instance resync · issue #96 reproduction", () => {
       time: begin,
       defaultWordDuration: 0.3,
     });
-    useProjectStore.getState().updateLineWithHistory(lineId, commit?.lineUpdates[0].updates ?? {}, {
-      deriveText: false,
-      propagateToSiblings: false,
-    });
+    if (!commit) throw new Error("expected a commit");
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
   }
 
   it("resyncing instance A word-by-word leaves instance B's timing untouched", () => {
@@ -329,9 +327,8 @@ describe("instance resync · issue #96 reproduction", () => {
       time: 0.5,
       defaultWordDuration: 0.3,
     });
-    useProjectStore.getState().updateLineWithHistory("a0", commit?.lineUpdates[0].updates ?? {}, {
-      deriveText: false,
-    });
+    if (!commit) throw new Error("expected a commit");
+    useProjectStore.getState().updateLinesWithHistory(commit.lineUpdates, { deriveText: false });
 
     expect(getLine("a1").words).toHaveLength(3);
     expect(getLine("a1").words).toEqual(INSTANCE_B_WORDS);

@@ -130,6 +130,12 @@ describe("tap-word", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  it("rule 8: does not re-seed an untimed line that already has background words", () => {
+    const lines = [createLine({ id: "l0", text: "a", backgroundText: "oh", backgroundWords: [word("oh", 7, 8)] })];
+    const updates = run(lines, "tap-word", [0, 0], 1)?.lineUpdates[0].updates;
+    expect(updates).not.toHaveProperty("backgroundWords");
+  });
+
   it("seeds background words when a line gets its first timing", () => {
     const lines = [createLine({ id: "l0", text: "a", backgroundText: "oh" })];
     const updates = run(lines, "tap-word", [0, 0], 1)?.lineUpdates[0].updates;
@@ -211,6 +217,23 @@ describe("tap-line", () => {
     expect(commit?.lineUpdates).toContainEqual({ id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 4)] } });
   });
 
+  it("regression I1: after a word-synced line, the floor is its last word's begin, never its first", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 5, 6)] }),
+      createLine({ id: "l1", text: "c" }),
+    ];
+    const commit = run(lines, "tap-line", [1, 0], 3);
+    expect(commit?.clampedTo).toBe(5);
+    expectMonotonic(apply(lines, commit));
+  });
+
+  it("rule 2: after a jump, a tap before the previous line's end is clamped to that end", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 4 }), createLine({ id: "l1", text: "second" })];
+    const commit = run(lines, "tap-line", [1, 0], 3, true);
+    expect(commit?.clampedTo).toBe(4);
+    expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { begin: 4, end: 4 } }]);
+  });
+
   it("after a jump the previous line is untouched", () => {
     const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 2 }), createLine({ id: "l1", text: "second" })];
     const ids = run(lines, "tap-line", [1, 0], 3, true)?.lineUpdates.map((u) => u.id);
@@ -233,6 +256,12 @@ describe("hold gestures", () => {
     ];
     const after = apply(lines, run(lines, "hold-start", [1, 0], 6.1));
     expect(after[0].words?.[1].end).toBe(6.1);
+  });
+
+  it("rule 3: a forward hold-start mid-line closes the previous word in the same line", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1.3)] })];
+    const commit = run(lines, "hold-start", [0, 1], 2);
+    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 2)] } }]);
   });
 
   it("hold-start keeps the jumped flag until the hold ends", () => {
@@ -280,8 +309,6 @@ describe("hold gestures", () => {
 });
 
 describe("ported behaviour", () => {
-  // Ported from src/utils/sync-helpers.test.ts (commitTappedWord) before those
-  // functions were folded into commitGesture.
   it("re-syncs from the middle: overwrites in place, closes the prior word, and preserves later words", () => {
     const lines = [
       createLine({
@@ -328,7 +355,6 @@ describe("ported behaviour", () => {
     expect(lines).toEqual(snapshot);
   });
 
-  // Ported from src/utils/sync-helpers.test.ts (commitHeldWord)
   it("opens the first word at the held time without leaving it ending before it begins", () => {
     const lines = [createLine({ id: "l0", text: "one", words: [word("one", 0, 1)] })];
     const after = apply(lines, run(lines, "hold-start", [0, 0], 5));
@@ -389,7 +415,6 @@ describe("ported behaviour", () => {
     expect(held?.syllableGroupId).toBe(tapped?.syllableGroupId);
   });
 
-  // Ported from src/utils/sync-helpers.test.ts (closeHeldWord)
   it("squeezes later words forward when the closed word overruns them", () => {
     const lines = [
       createLine({

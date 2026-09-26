@@ -24,9 +24,10 @@ describe("sync incremental tap preserves line.text", () => {
       time: 0,
       defaultWordDuration: 1,
     });
-    useProjectStore.getState().updateLineWithHistory("l0", commit?.lineUpdates[0].updates ?? {}, {
-      deriveText: false,
-    });
+    if (!commit) throw new Error("expected a commit");
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
 
     expect(useProjectStore.getState().lines[0].text).toBe("Hello world how are you");
   });
@@ -41,9 +42,10 @@ describe("sync incremental tap preserves line.text", () => {
         time: i * 0.5,
         defaultWordDuration: 0.4,
       });
-      useProjectStore.getState().updateLineWithHistory("l0", commit?.lineUpdates[0].updates ?? {}, {
-        deriveText: false,
-      });
+      if (!commit) throw new Error("expected a commit");
+      useProjectStore
+        .getState()
+        .updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
       expect(useProjectStore.getState().lines[0].text).toBe("Hello world how are you");
     }
   });
@@ -59,9 +61,10 @@ describe("sync incremental tap preserves line.text", () => {
       time: 0,
       defaultWordDuration: 1,
     });
-    useProjectStore.getState().updateLineWithHistory("l0", commit?.lineUpdates[0].updates ?? {}, {
-      deriveText: false,
-    });
+    if (!commit) throw new Error("expected a commit");
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
 
     const partialPrev = [...(useProjectStore.getState().lines[0].words ?? [])];
     partialPrev[partialPrev.length - 1] = { ...partialPrev[partialPrev.length - 1], end: 2 };

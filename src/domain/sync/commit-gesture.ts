@@ -1,5 +1,5 @@
 import { mainBounds } from "@/domain/line/bounds";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -11,11 +11,6 @@ import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpe
 // -- Types --------------------------------------------------------------------
 
 type SyncGesture = "tap-word" | "tap-line" | "hold-start" | "hold-end" | "hold-tap";
-
-interface LineUpdate {
-  id: string;
-  updates: Partial<LyricLine>;
-}
 
 interface GestureContext {
   cursor: SyncCursor;
@@ -44,12 +39,18 @@ interface Anchor {
   floor: number;
 }
 
-// A forward pass closes the previous slot, so it may shrink down to its begin; after a
-// jump the previous slot is already right, so the new slot may not start inside it.
+function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
+  const words = lines[slot.lineIndex]?.words;
+  return slot.wordIndex === null && words?.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
+}
+
+// A forward pass may shrink the slot it closes down to its begin; after a jump the previous slot stays whole.
 function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word"): Anchor {
-  const slot = previousSlot(lines, ctx.cursor, granularity);
-  const bounds = slot ? slotBounds(lines, slot) : null;
-  if (!slot || !bounds) return { slot: null, floor: 0 };
+  const previous = previousSlot(lines, ctx.cursor, granularity);
+  if (!previous) return { slot: null, floor: 0 };
+  const slot = ctx.jumped ? previous : closableSlot(lines, previous);
+  const bounds = slotBounds(lines, slot);
+  if (!bounds) return { slot: null, floor: 0 };
   return { slot, floor: ctx.jumped ? bounds.end : bounds.begin };
 }
 
@@ -60,13 +61,11 @@ function closeSlotWords(words: readonly WordTiming[], index: number, end: number
 }
 
 function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricLine> | null {
-  if (line.words?.length) return { words: closeSlotWords(line.words, slot.wordIndex ?? line.words.length - 1, end) };
+  if (line.words?.length && slot.wordIndex !== null) return { words: closeSlotWords(line.words, slot.wordIndex, end) };
   if (isLineSynced(line)) return { end: Math.max(end, line.begin) };
   return null;
 }
 
-// Closes whichever slot came right before this gesture; null after a jump, since the
-// slot before a jumped cursor is already correct and must be left alone.
 function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: number): LineUpdate | null {
   if (!slot) return null;
   const line = lines[slot.lineIndex];
@@ -171,9 +170,26 @@ function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number
 
 // -- Merge and apply ---------------------------------------------------------------
 
+// Narrows like reconcileLine, so one merged update lands the same as the two applied in order.
+function mergeLineUpdate(first: Partial<LyricLine>, second: Partial<LyricLine>): Partial<LyricLine> {
+  const merged: Partial<LooseLine> = { ...first, ...second };
+  const { words, begin, end, ...rest } = merged;
+  if (words !== undefined) return { ...rest, words };
+  return {
+    ...rest,
+    ...("words" in merged ? { words } : {}),
+    ...("begin" in merged ? { begin } : {}),
+    ...("end" in merged ? { end } : {}),
+  };
+}
+
 function mergeUpdates(a: readonly LineUpdate[], b: readonly LineUpdate[]): LineUpdate[] {
-  const bIds = new Set(b.map((u) => u.id));
-  return [...a.filter((u) => !bIds.has(u.id)), ...b];
+  const merged = new Map(a.map((u) => [u.id, u.updates]));
+  for (const u of b) {
+    const earlier = merged.get(u.id);
+    merged.set(u.id, earlier ? mergeLineUpdate(earlier, u.updates) : u.updates);
+  }
+  return [...merged].map(([id, updates]) => ({ id, updates }));
 }
 
 function applyUpdates(lines: readonly LyricLine[], updates: readonly LineUpdate[]): LyricLine[] {
@@ -231,4 +247,4 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 // -- Exports ------------------------------------------------------------------
 
 export { commitGesture };
-export type { GestureCommit, GestureContext, LineUpdate, SyncGesture };
+export type { GestureCommit, SyncGesture };
