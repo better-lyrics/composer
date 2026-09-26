@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
@@ -12,6 +12,8 @@ const ConfirmModalHost: React.FC = () => {
   const options = useConfirmStore((s) => s.options);
   const resolveAndClose = useConfirmStore((s) => s.resolveAndClose);
   const [dontAskAgain, setDontAskAgain] = useState(false);
+  const confirmButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleClose = () => {
     resolveAndClose(false, false);
@@ -38,7 +40,13 @@ const ConfirmModalHost: React.FC = () => {
   const showDontAskAgain = Boolean(settingsKey);
 
   return (
-    <Modal isOpen onClose={handleClose} title={title} className="max-w-md">
+    <Modal
+      isOpen
+      onClose={handleClose}
+      title={title}
+      className="max-w-md"
+      initialFocusRef={variant === "destructive" ? cancelButtonRef : confirmButtonRef}
+    >
       <div className="flex flex-col gap-4">
         {description && (
           <div className="text-sm text-composer-text-secondary leading-relaxed select-text">{description}</div>
@@ -59,10 +67,11 @@ const ConfirmModalHost: React.FC = () => {
             </label>
           )}
           <div className="flex gap-2 select-none">
-            <Button variant="secondary" size="sm" onClick={handleClose}>
+            <Button ref={cancelButtonRef} variant="secondary" size="sm" onClick={handleClose}>
               {cancelLabel}
             </Button>
             <Button
+              ref={confirmButtonRef}
               size="sm"
               onClick={handleConfirm}
               className={cn(

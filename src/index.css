@@ -131,6 +131,11 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+/* Every portalled layer (modal, popover, menu, tooltip) shares one z-index so open order decides what is on top. */
+@utility layer-floating {
+  z-index: 100;
+}
+
 @utility overflow-anchor-none {
   overflow-anchor: none;
 }

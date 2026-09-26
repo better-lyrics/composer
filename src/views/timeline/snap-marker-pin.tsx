@@ -143,7 +143,7 @@ const SnapMarkerPin = memo(function SnapMarkerPin({
             data-snap-marker-tooltip
             data-snap-marker-tooltip-align={tooltipAlignEnd ? "end" : "start"}
             className={cn(
-              "z-100 flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto",
+              "layer-floating flex items-center gap-2 whitespace-nowrap rounded-md border border-composer-border-hover bg-composer-bg-elevated px-2 py-1 shadow-lg pointer-events-auto",
               tooltipAlignEnd && "flex-row-reverse",
             )}
             style={floatingStyles}

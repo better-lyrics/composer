@@ -66,7 +66,7 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, placement = "top",
             style={floatingStyles}
             {...getFloatingProps()}
             className={cn(
-              "z-50 w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded text-composer-text shadow-lg",
+              "layer-floating w-max max-w-48 select-none px-2 py-1.5 text-xs text-center leading-snug rounded text-composer-text shadow-lg",
               isInModal ? "bg-composer-bg-elevated" : "bg-composer-bg-dark",
             )}
           >

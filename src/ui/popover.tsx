@@ -64,7 +64,7 @@ const Popover: React.FC<PopoverProps> = ({
               ref={refs.setFloating}
               style={floatingStyles}
               {...getFloatingProps()}
-              className="z-100 border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"
+              className="layer-floating border select-none shadow-2xl rounded-xl bg-composer-bg border-composer-border"
             >
               {typeof children === "function" ? children(() => setIsOpen(false)) : children}
             </div>

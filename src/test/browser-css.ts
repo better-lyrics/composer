@@ -48,9 +48,12 @@ function installStyleSheet(css: string): HTMLStyleElement {
 
 const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WAVEFORM_SWEEP_ANIMATION)].join("\n");
 
+const FLOATING_LAYER_CSS = utilityRule("layer-floating");
+
 // -- Exports -------------------------------------------------------------------
 
 export {
+  FLOATING_LAYER_CSS,
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
   POSITION_UTILITIES_CSS,

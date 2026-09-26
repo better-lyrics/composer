@@ -226,7 +226,7 @@ const TimelineContextMenu: React.FC = () => {
     <FloatingPortal>
       <div
         ref={refs.setFloating}
-        className="z-100 min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none overflow-y-auto overscroll-contain"
+        className="layer-floating min-w-36 p-1 border shadow-2xl rounded-lg bg-composer-bg border-composer-border select-none overflow-y-auto overscroll-contain"
         style={floatingStyles}
       >
         {target.kind === "word" && (

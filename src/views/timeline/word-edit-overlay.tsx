@@ -114,7 +114,7 @@ const WordEditOverlay: React.FC<WordEditOverlayProps> = ({ lineId, wordIndex, ty
         defaultValue={word.text.trimEnd()}
         onKeyDown={handleKeyDown}
         onBlur={commitWordEdit}
-        className="fixed z-100 px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"
+        className="fixed layer-floating px-2 py-1.5 text-sm text-composer-text bg-composer-bg border border-composer-border rounded-lg cursor-text focus:outline-none focus:border-composer-accent"
         style={{ top: pos.top, left: pos.left, width: pos.width }}
       />
     </FloatingPortal>
