@@ -141,10 +141,11 @@ describe("LanguagesPanel", () => {
     await expect.poll(() => useProjectStore.getState().lines[0].transliteration?.stale).toBe(true);
     await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveValue("manual romanization");
     await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveValue("Manual translation");
-    const summary = screen.container.querySelector("[data-language-review-summary]");
+    const summary = screen.container.querySelector('[data-language-status="warning"]');
     expect(summary?.textContent).toContain("1 line needs review");
-    expect(summary?.textContent).toContain("Line 1");
-    expect(summary?.textContent).toContain("Transliteration · English");
+    await expect
+      .element(screen.getByRole("button", { name: "Go to line 1: Transliteration, English" }))
+      .toHaveTextContent("Line 1");
   });
 
   it("does not mark language tracks stale when syllable splitting only adds structural markers", async () => {
@@ -185,7 +186,7 @@ describe("LanguagesPanel", () => {
     expect(useProjectStore.getState().lines[0].translations?.en.stale).toBeUndefined();
   });
 
-  it("summarizes transliteration alignment errors and links them to their lines", async () => {
+  it("summarizes timing mismatches and links them to their lines", async () => {
     const sourceFingerprint = languageSourceFingerprint("가|나");
     useProjectStore.getState().setLines([
       {
@@ -208,10 +209,11 @@ describe("LanguagesPanel", () => {
 
     const screen = await render(<LanguagesPanel />);
 
-    const summary = screen.container.querySelector("[data-language-alignment-error-summary]");
-    expect(summary?.textContent).toContain("1 line has an alignment error");
-    expect(summary?.textContent).toContain("Line 1");
-    expect(summary?.textContent).toContain("Transliteration");
+    const summary = screen.container.querySelector('[data-language-status="error"]');
+    expect(summary?.textContent).toContain("1 line has a timing mismatch");
+    await expect
+      .element(screen.getByRole("button", { name: "Go to line 1: Transliteration" }))
+      .toHaveTextContent("Line 1");
     await expect
       .element(screen.getByText("Original word 1 has more timed parts", { exact: false }))
       .toBeInTheDocument();
