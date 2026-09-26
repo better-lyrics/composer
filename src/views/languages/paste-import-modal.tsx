@@ -12,7 +12,7 @@ import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface PasteImportModalProps {
@@ -74,6 +74,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     [kind, lines, mappedLines],
   );
   const errorCount = errors.filter(Boolean).length;
+  const rowErrorIdPrefix = useId();
   const mappedCount = mappedLines.filter((line) => line.trim()).length;
   const languageSelectOptions = languageOptions.map(([value, label]) => ({ value, label }));
 
@@ -199,6 +200,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                   <input
                     aria-label={`Imported line ${index + 1}`}
                     aria-invalid={Boolean(errors[index])}
+                    aria-describedby={errors[index] ? `${rowErrorIdPrefix}-${index}` : undefined}
                     value={mappedLines[index] ?? ""}
                     onChange={(event) => updateMappedLine(index, event.target.value)}
                     className={cn(
@@ -208,7 +210,12 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
                     )}
                   />
                   {errors[index] && (
-                    <p className="mt-1 text-xs text-composer-error-text select-text cursor-text">{errors[index]}</p>
+                    <p
+                      id={`${rowErrorIdPrefix}-${index}`}
+                      className="mt-1 text-xs text-composer-error-text select-text cursor-text"
+                    >
+                      {errors[index]}
+                    </p>
                   )}
                 </div>
               </div>

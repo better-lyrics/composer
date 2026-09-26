@@ -7,7 +7,7 @@ import { userEvent } from "vitest/browser";
 import { toast } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 
-// -- Fixtures -------------------------------------------------------------------
+// -- Fixtures -----------------------------------------------------------------
 
 const LANGUAGE_OPTIONS = [
   ["en", "English"],
@@ -31,7 +31,7 @@ function buildProps(overrides: Partial<Props> & Pick<Props, "lines">): Props {
   };
 }
 
-// -- Tests ------------------------------------------------------------------
+// -- Tests --------------------------------------------------------------------
 
 describe("PasteImportModal", () => {
   it("imports pasted text as transliteration", async () => {
@@ -219,6 +219,37 @@ describe("PasteImportModal", () => {
 
       await userEvent.keyboard("{Escape}");
       expect(props.onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("invariants", () => {
+    it("ties each row's timing error to its input", async () => {
+      const lines = [
+        createLine({
+          id: "l0",
+          text: "가|나",
+          words: [
+            { text: "가", begin: 0, end: 0.5, syllableGroupId: "group" },
+            { text: "나", begin: 0.5, end: 1, syllableGroupId: "group" },
+          ],
+        }),
+      ];
+      const screen = await render(<PasteImportModal {...buildProps({ lines, initialText: "g" })} />);
+      const input = screen.getByRole("textbox", { name: "Imported line 1" });
+      await expect.element(input).toHaveAttribute("aria-invalid", "true");
+      const describedBy = input.element().getAttribute("aria-describedby");
+      expect(describedBy).toBeTruthy();
+      expect(document.getElementById(describedBy ?? "")?.textContent).toBe(
+        "Word 1 has more timed syllables than the transliteration has parts.",
+      );
+    });
+
+    it("leaves a valid row without an error description", async () => {
+      const lines = [createLine({ id: "l0", text: "Hello" })];
+      const screen = await render(<PasteImportModal {...buildProps({ lines, initialText: "Bonjour" })} />);
+      const input = screen.getByRole("textbox", { name: "Imported line 1" });
+      await expect.element(input).toHaveAttribute("aria-invalid", "false");
+      expect(input.element().hasAttribute("aria-describedby")).toBe(false);
     });
   });
 });
