@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { audioTagsToMetadata } from "@/utils/audio-tags";
+import { fileNameWithoutExtension } from "@/utils/file-name";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -15,7 +16,7 @@ function useLoadAudioFile(): (file: File) => void {
     useAudioStore.getState().setSource({ type: "file", file });
 
     const project = useProjectStore.getState();
-    const title = file.name.replace(/\.[^/.]+$/, "");
+    const title = fileNameWithoutExtension(file.name);
     const replacesDifferentSong = previous != null && !(previous.type === "file" && previous.file === file);
     if (replacesDifferentSong) project.resetMetadataForNewSource(title);
     else project.setMetadata({ title });

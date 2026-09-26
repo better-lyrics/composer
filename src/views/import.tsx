@@ -5,6 +5,7 @@ import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { fileNameWithoutExtension } from "@/utils/file-name";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
 
 // -- Helpers ------------------------------------------------------------------
@@ -112,7 +113,7 @@ const ImportPanel: React.FC = () => {
   if (source && source.type === "file") {
     const file = source.file;
     const extension = getFileExtension(file.name);
-    const fileName = file.name.replace(/\.[^/.]+$/, "");
+    const fileName = fileNameWithoutExtension(file.name);
 
     return (
       <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
