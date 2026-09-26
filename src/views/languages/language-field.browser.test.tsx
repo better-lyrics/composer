@@ -42,14 +42,6 @@ describe("LanguageField", () => {
       expect(icon).not.toBeNull();
     });
 
-    it("prefers the error tone over review when both apply", async () => {
-      const screen = await render(
-        <LanguageField label="English" value="Sky" status="review" error="Mismatch" onChange={vi.fn()} />,
-      );
-      await expect.element(screen.getByRole("textbox", { name: "English" })).toHaveClass("border-composer-error");
-      await expect.element(screen.getByRole("alert")).toHaveTextContent("Mismatch");
-    });
-
     it("marks the input invalid and wires the error to aria-describedby", async () => {
       const screen = await render(<LanguageField label="English" value="" error="Required" onChange={vi.fn()} />);
       const input = screen.getByRole("textbox", { name: "English" });
@@ -86,6 +78,18 @@ describe("LanguageField", () => {
     it("applies a monospace font only when mono is set", async () => {
       const screen = await render(<LanguageField label="Transliteration" value="so" mono onChange={vi.fn()} />);
       await expect.element(screen.getByRole("textbox", { name: "Transliteration" })).toHaveClass("font-mono");
+    });
+  });
+
+  describe("invariants", () => {
+    it("always shows the error tone over review when both apply", async () => {
+      const screen = await render(
+        <LanguageField label="English" value="Sky" status="review" error="Mismatch" onChange={vi.fn()} />,
+      );
+      const input = screen.getByRole("textbox", { name: "English" });
+      await expect.element(input).toHaveClass("border-composer-error");
+      await expect.element(input).not.toHaveClass("border-composer-warning/40");
+      await expect.element(screen.getByRole("alert")).toHaveTextContent("Mismatch");
     });
   });
 });
