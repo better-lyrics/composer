@@ -40,6 +40,7 @@ import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
 import { mainBounds } from "@/domain/line/bounds";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { IconMusic } from "@tabler/icons-react";
@@ -235,9 +236,7 @@ const TimelinePanel: React.FC = () => {
     [handlePanMouseDown, handleMarqueeMouseDown, pasteMode],
   );
 
-  const handleAudioDrop = useCallback((file: File) => {
-    useAudioStore.getState().setSource({ type: "file", file });
-  }, []);
+  const handleAudioDrop = useLoadAudioFile();
 
   const dragColor = activeDrag
     ? getAgentColor(effectiveLines.find((l) => l.id === activeDrag.lineId)?.agentId ?? "")

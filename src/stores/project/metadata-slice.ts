@@ -1,3 +1,4 @@
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
 import { createGroupsInitialState } from "@/stores/project/groups-slice";
@@ -44,6 +45,8 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       metadata: { ...state.metadata, ...metadata },
       isDirty: true,
     })),
+
+  resetMetadataForNewSource: (title) => set({ metadata: normalizeLoadedMetadata({ title }), isDirty: true }),
 
   reset: () => set(createProjectInitialState()),
 });

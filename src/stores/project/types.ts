@@ -78,6 +78,7 @@ interface HistoryState {
 
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
+  resetMetadataForNewSource: (title: string) => void;
   reset: () => void;
 }
 

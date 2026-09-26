@@ -72,4 +72,71 @@ describe("useLoadYouTubeSource", () => {
 
     expect(useProjectStore.getState().metadata.title).toBe(VIDEO_ID);
   });
+
+  describe("replacing the song", () => {
+    const previousSong = {
+      title: "Lovefield",
+      artists: ["underscores"],
+      album: "U",
+      duration: 0,
+      isrc: "USQE92600028",
+      songwriters: ["April Harper Grey"],
+      extra: { producer: "someone" },
+      language: "en",
+      thumbnailDataUrl: "data:image/png;base64,AAAA",
+      thumbnailForVideoId: VIDEO_ID,
+    };
+
+    async function load(videoId: string) {
+      const { result } = await renderHook(() => useLoadYouTubeSource());
+      result.current(videoId).catch(() => {});
+    }
+
+    it("regression: loading a different video clears the previous song's metadata", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(OTHER_VIDEO_ID);
+
+      const metadata = useProjectStore.getState().metadata;
+      expect(metadata.title).toBe(OTHER_VIDEO_ID);
+      expect(metadata.artists).toEqual([]);
+      expect(metadata.album).toBe("");
+      expect(metadata.isrc).toBeUndefined();
+      expect(metadata.songwriters).toBeUndefined();
+      expect(metadata.extra).toBeUndefined();
+      expect(metadata.language).toBeUndefined();
+      expect(metadata.thumbnailDataUrl).toBeUndefined();
+      expect(metadata.thumbnailForVideoId).toBeUndefined();
+    });
+
+    it("clears the previous song's metadata when a video replaces a file source", async () => {
+      useAudioStore.setState({ source: { type: "file", file: createAudioFile("Lovefield") } });
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(VIDEO_ID);
+
+      expect(useProjectStore.getState().metadata.artists).toEqual([]);
+      expect(useProjectStore.getState().metadata.isrc).toBeUndefined();
+    });
+
+    it("keeps all metadata when the same video is loaded again", async () => {
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(VIDEO_ID);
+
+      expect(useProjectStore.getState().metadata).toEqual(previousSong);
+    });
+
+    it("keeps metadata entered before the first audio source is loaded", async () => {
+      useAudioStore.setState({ source: null });
+      useProjectStore.setState({ metadata: previousSong });
+
+      await load(VIDEO_ID);
+
+      expect(useProjectStore.getState().metadata.artists).toEqual(["underscores"]);
+      expect(useProjectStore.getState().metadata.isrc).toBe("USQE92600028");
+    });
+  });
 });
