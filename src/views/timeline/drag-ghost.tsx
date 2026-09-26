@@ -82,11 +82,12 @@ function useHoveredTrackHeight(lines: LyricLine[]): number | null {
 
 const HoverSizedDragGhost: React.FC<HoverSizedDragGhostProps> = ({ lines, cells, anchorHeight, ...rest }) => {
   const hoveredTrackHeight = useHoveredTrackHeight(lines);
-  if (cells.length !== 1 || hoveredTrackHeight === null) {
+  const onAnchorTrack = cells.every((cell) => cell.top === 0);
+  if (!onAnchorTrack || hoveredTrackHeight === null) {
     return <DragGhost cells={cells} anchorHeight={anchorHeight} {...rest} />;
   }
   const height = hoveredTrackHeight - BLOCK_INSET_PX * 2;
-  return <DragGhost cells={[{ ...cells[0], height }]} anchorHeight={height} {...rest} />;
+  return <DragGhost cells={cells.map((cell) => ({ ...cell, height }))} anchorHeight={height} {...rest} />;
 };
 
 // dnd-kit's overlay is a fixed box over the pointer; the drop target is hit-tested underneath it.
