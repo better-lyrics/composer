@@ -145,6 +145,12 @@ function createBgWordsFromLine(line: LyricLine): WordTiming[] | null {
   return createInitialBgWords(line.backgroundText, (timing.begin + timing.end) / 2, timing.end);
 }
 
+function withSeededBackgroundWords(line: LyricLine): LyricLine {
+  if (!line.backgroundText || line.backgroundWords?.length) return line;
+  const backgroundWords = createBgWordsFromLine(line);
+  return backgroundWords ? { ...line, backgroundWords } : line;
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -159,5 +165,6 @@ export {
   parseTimeMs,
   splitIntoWords,
   splitIntoWordsWithMeta,
+  withSeededBackgroundWords,
 };
 export type { SyncState };

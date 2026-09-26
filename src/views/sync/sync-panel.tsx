@@ -14,9 +14,9 @@ import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
   type SyncState,
   convertLineToWord,
-  createBgWordsFromLine,
   getNudgeAmount,
   hasLineTiming,
+  withSeededBackgroundWords,
 } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
 import { ScrollableLine } from "@/views/sync/scrollable-line";
@@ -30,7 +30,8 @@ import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } fro
 // -- Components ---------------------------------------------------------------
 
 const SyncPanel: React.FC = () => {
-  const lines = useProjectStore((s) => s.lines);
+  const storeLines = useProjectStore((s) => s.lines);
+  const lines = useMemo(() => storeLines.map(withSeededBackgroundWords), [storeLines]);
   const groups = useProjectStore((s) => s.groups);
   const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
   const undo = useProjectStore((s) => s.undo);
@@ -145,19 +146,6 @@ const SyncPanel: React.FC = () => {
     triggerRippleAtCurrentPosition();
     handleHoldEndRaw();
   }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
-
-  const updateLine = useProjectStore((s) => s.updateLine);
-
-  useEffect(() => {
-    for (const line of lines) {
-      if (line.backgroundText && !line.backgroundWords?.length) {
-        const bgWords = createBgWordsFromLine(line);
-        if (bgWords) {
-          updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
-        }
-      }
-    }
-  }, [lines, updateLine]);
 
   // Smooth word progress updates (reads audioElement.currentTime directly)
   useFrameLoop(

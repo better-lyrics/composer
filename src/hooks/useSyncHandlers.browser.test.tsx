@@ -3,8 +3,11 @@ import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
+import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
-import { type SyncState, createBgWordsFromLine } from "@/utils/sync-helpers";
+import { render } from "@/test/render";
+import type { SyncState } from "@/utils/sync-helpers";
+import { SyncPanel } from "@/views/sync/sync-panel";
 import { describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
 
@@ -1013,9 +1016,10 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 });
 
 describe("sync-panel bg-init contract", () => {
-  it("preserves backgroundText and text when seeding backgroundWords on a synced line", async () => {
+  it("shows seeded background words in the view without writing them to the store until the user edits one", async () => {
     const BG_TEXT = "ooh ahh";
     const ORIGINAL_LINE_TEXT = "Lead vocal melody line";
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 60, isPlaying: false });
     useProjectStore.getState().setLines([
       createLine({
         id: "l0",
@@ -1025,15 +1029,12 @@ describe("sync-panel bg-init contract", () => {
       }),
     ]);
 
-    const line = useProjectStore.getState().lines[0];
-    const bgWords = createBgWordsFromLine(line);
-    expect(bgWords).not.toBeNull();
-    if (!bgWords) return;
+    const screen = await render(<SyncPanel />);
 
-    useProjectStore.getState().updateLine(line.id, { backgroundWords: bgWords }, { deriveText: false });
+    expect(screen.container.querySelector('button[title="Jump to this word"]')).not.toBeNull();
 
     expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);
-    expect(useProjectStore.getState().lines[0].backgroundWords?.length).toBeGreaterThan(0);
+    expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
   });
 });
