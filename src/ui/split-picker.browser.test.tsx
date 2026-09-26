@@ -132,6 +132,12 @@ describe("SplitPickerLegend", () => {
     await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Two spaces between words.");
   });
 
+  it("explains a kind in a tooltip on keyboard focus", async () => {
+    const screen = await render(<SplitPickerLegend kinds={["word"]} />);
+    (screen.getByText("Word break").element() as HTMLElement).focus();
+    await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Two spaces between words.");
+  });
+
   it("renders nothing when there are no separators", async () => {
     const screen = await render(<SplitPickerLegend kinds={[]} />);
     expect(screen.container.textContent).toBe("");
