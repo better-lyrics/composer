@@ -5,9 +5,12 @@ import type { TranslationTrack, TransliterationSegment } from "@/domain/language
 import { getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { Button } from "@/ui/button";
+import { StatusChip } from "@/ui/status-chip";
+import { cn } from "@/utils/cn";
 import { LanguageField as Field } from "@/views/languages/language-field";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
-import { IconAlertCircle, IconAlertTriangle } from "@tabler/icons-react";
+import { IconAlertCircle, IconAlertTriangle, IconSeparatorVertical } from "@tabler/icons-react";
 import { useState } from "react";
 
 function manualSegments(line: LyricLine, value: string): TransliterationSegment[] {
@@ -30,6 +33,15 @@ interface BackgroundLanguageFieldsProps extends Omit<LanguageLineEditorProps, "i
   onAlign: (field: AlignmentField) => void;
 }
 
+// -- Components ---------------------------------------------------------------
+
+const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string }> = ({ onClick, ariaLabel }) => (
+  <Button variant="ghost" size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
+    <IconSeparatorVertical className="size-4" />
+    Align
+  </Button>
+);
+
 const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
   line,
   targets,
@@ -41,82 +53,78 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
   clearTransliteration,
   onAlign,
 }) => (
-  <div className="mt-3 pl-4 border-l border-composer-border">
-    <p className="mb-2 text-xs text-composer-text-muted">Background: {line.backgroundText}</p>
-    <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-      <Field
-        label="Background transliteration"
-        value={line.transliteration?.backgroundText ?? ""}
-        stale={line.transliteration?.backgroundAlignmentStatus === "needs-review"}
-        error={error}
-        pasteKind="transliteration"
-        action={
-          line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
-            <button
-              type="button"
-              onClick={() => onAlign("backgroundWords")}
-              className="rounded px-1.5 py-0.5 font-medium text-composer-accent-text hover:bg-composer-accent/10"
-            >
-              Align timing
-            </button>
-          ) : null
+  <div className="mt-1 flex flex-col gap-1.5 pt-2 border-t border-dashed border-composer-border">
+    <p className="text-xs text-composer-text-faint select-none">Background</p>
+    <Field
+      label="Transliteration"
+      ariaLabel="Background transliteration"
+      mono
+      value={line.transliteration?.backgroundText ?? ""}
+      status={line.transliteration?.backgroundAlignmentStatus === "needs-review" ? "review" : undefined}
+      error={error}
+      pasteKind="transliteration"
+      action={
+        line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
+          <AlignButton ariaLabel="Align background timing" onClick={() => onAlign("backgroundWords")} />
+        ) : null
+      }
+      onChange={(value) => {
+        const current = line.transliteration;
+        if (!value && !current?.text) {
+          clearTransliteration();
+          return;
         }
-        onChange={(value) => {
-          const current = line.transliteration;
-          if (!value && !current?.text) {
-            clearTransliteration();
-            return;
-          }
-          update(
-            alignTrackToLine(line, {
-              language: `${sourceLanguage || "und"}-Latn`,
-              text: "",
-              segments: [],
-              ...current,
-              backgroundText: value,
-              backgroundSegments: value.trim()
-                ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
-                : [],
-              origin: "manual",
-              sourceFingerprint: fingerprint,
-            }),
-          );
-        }}
-      />
-      {targets.map((language) => {
-        const track = line.translations?.[language];
-        return (
-          <Field
-            key={language}
-            label={`Background ${languageNames.get(language) ?? language}`}
-            value={track?.backgroundText ?? ""}
-            pasteKind="translation"
-            pasteLanguage={language}
-            onChange={(value) => {
-              const translations = { ...line.translations };
-              if (!value && !track?.text) {
-                delete translations[language];
-                update({ translations });
-                return;
-              }
-              update({
-                translations: {
-                  ...translations,
-                  [language]: {
-                    language,
-                    text: "",
-                    ...track,
-                    backgroundText: value,
-                    origin: "manual",
-                    sourceFingerprint: fingerprint,
-                  },
-                },
-              });
-            }}
-          />
+        update(
+          alignTrackToLine(line, {
+            language: `${sourceLanguage || "und"}-Latn`,
+            text: "",
+            segments: [],
+            ...current,
+            backgroundText: value,
+            backgroundSegments: value.trim()
+              ? [{ original: line.backgroundText ?? "", transliteration: value.trim() }]
+              : [],
+            origin: "manual",
+            sourceFingerprint: fingerprint,
+          }),
         );
-      })}
-    </div>
+      }}
+    />
+    {targets.map((language) => {
+      const track = line.translations?.[language];
+      const name = languageNames.get(language) ?? language;
+      return (
+        <Field
+          key={language}
+          label={name}
+          ariaLabel={`Background ${name}`}
+          value={track?.backgroundText ?? ""}
+          pasteKind="translation"
+          pasteLanguage={language}
+          onChange={(value) => {
+            const translations = { ...line.translations };
+            if (!value && !track?.text) {
+              delete translations[language];
+              update({ translations });
+              return;
+            }
+            update({
+              translations: {
+                ...translations,
+                [language]: {
+                  language,
+                  text: "",
+                  ...track,
+                  backgroundText: value,
+                  origin: "manual",
+                  sourceFingerprint: fingerprint,
+                },
+              },
+            });
+          }}
+        />
+      );
+    })}
   </div>
 );
 
@@ -137,6 +145,10 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
     (error) => error.field === "background-transliteration",
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
+  const transliterationStale = line.transliteration
+    ? line.transliteration.sourceFingerprint !== fingerprint || line.transliteration.alignmentStatus === "needs-review"
+    : false;
+  const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
   const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });
   const clearTransliteration = () =>
     update({
@@ -149,58 +161,38 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   return (
     <section
       id={languageLineAnchorId(line.id)}
-      className={`p-4 border rounded-lg scroll-mt-4 ${
-        hasAlignmentError
-          ? "border-red-400/35 bg-red-400/[0.035]"
-          : needsReview
-            ? "border-amber-400/35 bg-amber-400/[0.035]"
-            : "border-composer-border bg-composer-bg-elevated"
-      }`}
+      className={cn(
+        "grid grid-cols-[2.5rem_minmax(10rem,18rem)_minmax(0,1fr)] gap-x-4 px-6 py-3 border-t border-composer-border scroll-mt-4",
+        hasAlignmentError ? "bg-composer-error/[0.08]" : needsReview && "bg-composer-warning/[0.04]",
+      )}
     >
-      <div className="flex items-start justify-between gap-3 mb-3 text-sm">
-        <div className="min-w-0">
-          <span className="mr-3 font-mono text-xs text-composer-text-muted">{index + 1}</span>
-          {line.text}
-        </div>
-        <span className="flex shrink-0 items-center gap-3">
-          {hasAlignmentError && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-red-300">
-              <IconAlertCircle aria-hidden="true" className="size-3.5" />
-              Error
-            </span>
-          )}
-          {needsReview && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-300">
-              <IconAlertTriangle aria-hidden="true" className="size-3.5" />
-              Review
-            </span>
-          )}
-        </span>
+      <span className="pt-1.5 font-mono text-xs text-composer-text-muted tabular-nums select-none">{index + 1}</span>
+      <div className="flex min-w-0 flex-col items-start gap-1.5 pt-1">
+        <span className="text-sm leading-6 select-text">{line.text}</span>
+        {line.backgroundText && (
+          <span className="text-sm text-composer-text-muted select-text">{line.backgroundText}</span>
+        )}
+        {hasAlignmentError && (
+          <StatusChip tone="error" icon={IconAlertCircle}>
+            Timing mismatch
+          </StatusChip>
+        )}
+        {needsReview && (
+          <StatusChip tone="warning" icon={IconAlertTriangle}>
+            Needs review
+          </StatusChip>
+        )}
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex min-w-0 flex-col gap-1.5">
         <Field
           label="Transliteration"
+          mono
           value={line.transliteration?.text ?? ""}
-          placeholder="Generated automatically when available"
-          stale={
-            line.transliteration
-              ? line.transliteration.sourceFingerprint !== fingerprint ||
-                line.transliteration.alignmentStatus === "needs-review"
-              : false
-          }
+          placeholder="Type one, or regenerate"
+          status={transliterationStale ? "review" : undefined}
           error={transliterationError}
           pasteKind="transliteration"
-          action={
-            line.words?.length && line.transliteration?.text && !transliterationError ? (
-              <button
-                type="button"
-                onClick={() => setAlignmentField("words")}
-                className="rounded px-1.5 py-0.5 font-medium text-composer-accent-text hover:bg-composer-accent/10"
-              >
-                Align timing
-              </button>
-            ) : null
-          }
+          action={canAlignMain ? <AlignButton onClick={() => setAlignmentField("words")} /> : null}
           onChange={(value) => {
             if (!value && !line.transliteration?.backgroundText) {
               clearTransliteration();
@@ -226,7 +218,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
               key={language}
               label={languageNames.get(language) ?? language}
               value={track?.text ?? ""}
-              stale={track ? track.sourceFingerprint !== fingerprint : false}
+              status={track && track.sourceFingerprint !== fingerprint ? "review" : undefined}
               pasteKind="translation"
               pasteLanguage={language}
               onChange={(value) => {
@@ -245,20 +237,20 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
             />
           );
         })}
+        {line.backgroundText && (
+          <BackgroundLanguageFields
+            line={line}
+            targets={targets}
+            languageNames={languageNames}
+            sourceLanguage={sourceLanguage}
+            fingerprint={fingerprint}
+            error={backgroundTransliterationError}
+            update={update}
+            clearTransliteration={clearTransliteration}
+            onAlign={setAlignmentField}
+          />
+        )}
       </div>
-      {line.backgroundText && (
-        <BackgroundLanguageFields
-          line={line}
-          targets={targets}
-          languageNames={languageNames}
-          sourceLanguage={sourceLanguage}
-          fingerprint={fingerprint}
-          error={backgroundTransliterationError}
-          update={update}
-          clearTransliteration={clearTransliteration}
-          onAlign={setAlignmentField}
-        />
-      )}
       {alignmentField && (
         <TransliterationAlignmentModal line={line} field={alignmentField} onClose={() => setAlignmentField(null)} />
       )}
