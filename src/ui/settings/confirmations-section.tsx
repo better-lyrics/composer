@@ -55,7 +55,7 @@ const ConfirmationsSection: React.FC = () => {
         />
         <ToggleSetting
           label="Confirm clearing imported song details"
-          description="Show a warning when a different song replaces imported song details that were never exported."
+          description="Show a warning before a new song clears imported details you have not exported."
           settingKey="confirmClearImportedSongDetails"
         />
       </div>
