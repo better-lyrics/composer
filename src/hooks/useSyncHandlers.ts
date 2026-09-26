@@ -64,19 +64,27 @@ function useSyncHandlers({
   const prevLine = prevSyncableLine(lines, lineIndex);
   const isComplete = lineIndex >= lines.length && lines.length > 0;
 
+  // Store `currentTime` only advances on `timeupdate` (~4 Hz); read the element's
+  // live clock so taps under that interval don't collide into zero-length syllables.
+  const readTapTime = useCallback(
+    () => useAudioStore.getState().audioElement?.currentTime ?? currentTime,
+    [currentTime],
+  );
+
   const handleTapWord = useCallback(() => {
     const prepared = prepareSyncWord(lines, lineIndex, wordIndex, isComplete);
     if (!prepared) return;
     const { line, lineWords, textWithSpace } = prepared;
 
-    const fallbackEnd = currentTime + useSettingsStore.getState().defaultWordDuration;
+    const tapTime = readTapTime();
+    const fallbackEnd = tapTime + useSettingsStore.getState().defaultWordDuration;
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
-      const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, currentTime, fallbackEnd);
+      const updatedWords = commitTappedWord(existingWords, wordIndex, textWithSpace, tapTime, fallbackEnd);
       updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
     } else {
-      const updates = buildInitialWordUpdates(line, textWithSpace, currentTime, fallbackEnd);
+      const updates = buildInitialWordUpdates(line, textWithSpace, tapTime, fallbackEnd);
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
@@ -84,7 +92,7 @@ function useSyncHandlers({
       const prevWords = [...prevLine.words];
       prevWords[prevWords.length - 1] = {
         ...prevWords[prevWords.length - 1],
-        end: currentTime,
+        end: tapTime,
       };
       updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
     }
@@ -95,7 +103,7 @@ function useSyncHandlers({
     lines,
     lineIndex,
     wordIndex,
-    currentTime,
+    readTapTime,
     updateLine,
     updateLineWithHistory,
     isComplete,
@@ -111,11 +119,13 @@ function useSyncHandlers({
     const line = lines[lineIndex];
     if (!line) return;
 
+    const tapTime = readTapTime();
+
     if (prevLine?.begin !== undefined && !syncState.jumpedToPosition) {
-      updateLine(prevLine.id, { end: currentTime }, { deriveText: false });
+      updateLine(prevLine.id, { end: tapTime }, { deriveText: false });
     }
 
-    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: currentTime, end: currentTime }, line, currentTime);
+    const updates = withBgSeedIfNeeded<Partial<LyricLine>>({ begin: tapTime, end: tapTime }, line, tapTime);
     updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
@@ -127,7 +137,7 @@ function useSyncHandlers({
   }, [
     lines,
     lineIndex,
-    currentTime,
+    readTapTime,
     updateLine,
     updateLineWithHistory,
     isComplete,
@@ -142,13 +152,14 @@ function useSyncHandlers({
     if (!prepared) return;
     const { line, textWithSpace } = prepared;
 
+    const tapTime = readTapTime();
     const existingWords = line.words ?? [];
 
     if (existingWords.length > 0) {
-      const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, currentTime);
+      const updatedWords = commitHeldWord(existingWords, wordIndex, textWithSpace, tapTime);
       updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
     } else {
-      const updates = buildInitialWordUpdates(line, textWithSpace, currentTime, currentTime);
+      const updates = buildInitialWordUpdates(line, textWithSpace, tapTime, tapTime);
       updateLineWithHistory(line.id, updates, { deriveText: false, propagateToSiblings: false });
     }
 
@@ -156,11 +167,11 @@ function useSyncHandlers({
       const prevWords = [...prevLine.words];
       const lastPrevWord = prevWords[prevWords.length - 1];
       if (lastPrevWord.end === lastPrevWord.begin) {
-        prevWords[prevWords.length - 1] = { ...lastPrevWord, end: currentTime };
+        prevWords[prevWords.length - 1] = { ...lastPrevWord, end: tapTime };
         updateLine(prevLine.id, { words: prevWords }, { deriveText: false });
       }
     }
-  }, [lines, lineIndex, wordIndex, currentTime, updateLine, updateLineWithHistory, isComplete, prevLine]);
+  }, [lines, lineIndex, wordIndex, readTapTime, updateLine, updateLineWithHistory, isComplete, prevLine]);
 
   const handleHoldEnd = useCallback(() => {
     if (lines.length === 0 || isComplete) return;
@@ -170,12 +181,12 @@ function useSyncHandlers({
 
     const { parts: lineWords } = splitIntoWordsWithMeta(line.text);
 
-    const updatedWords = closeHeldWord(line.words, wordIndex, currentTime);
+    const updatedWords = closeHeldWord(line.words, wordIndex, readTapTime());
     updateLineWithHistory(line.id, { words: updatedWords }, { deriveText: false, propagateToSiblings: false });
 
     triggerPulse(setShowPulse);
     advanceSyncPosition(setSyncState, lines, lineIndex, wordIndex, lineWords.length);
-  }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
+  }, [lines, lineIndex, wordIndex, readTapTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
 
   const handleHoldTap = useCallback(() => {
     if (lines.length === 0 || isComplete) return;
@@ -185,7 +196,8 @@ function useSyncHandlers({
 
     const { parts: lineWords, trailingSpace } = splitIntoWordsWithMeta(line.text);
 
-    const closedWords = closeHeldWord(line.words, wordIndex, currentTime);
+    const tapTime = readTapTime();
+    const closedWords = closeHeldWord(line.words, wordIndex, tapTime);
 
     const nextWordIndex = wordIndex + 1;
     const advancesToNextLine = nextWordIndex >= lineWords.length;
@@ -200,7 +212,7 @@ function useSyncHandlers({
         const nextWordText = nextLineWords[0];
         if (nextWordText) {
           const textWithSpace = nextTrailingSpace[0] ? `${nextWordText} ` : nextWordText;
-          const nextUpdates = buildInitialWordUpdates(nextLine, textWithSpace, currentTime, currentTime);
+          const nextUpdates = buildInitialWordUpdates(nextLine, textWithSpace, tapTime, tapTime);
           updateLineWithHistory(nextLine.id, nextUpdates, { deriveText: false, propagateToSiblings: false });
         }
       }
@@ -216,7 +228,7 @@ function useSyncHandlers({
             closedWords,
             nextWordIndex,
             trailingSpace[nextWordIndex] ? `${nextWordText} ` : nextWordText,
-            currentTime,
+            tapTime,
           )
         : closedWords;
       updateLineWithHistory(line.id, { words: openedWords }, { deriveText: false, propagateToSiblings: false });
@@ -228,7 +240,7 @@ function useSyncHandlers({
     }
 
     triggerPulse(setShowPulse);
-  }, [lines, lineIndex, wordIndex, currentTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
+  }, [lines, lineIndex, wordIndex, readTapTime, updateLineWithHistory, isComplete, setShowPulse, setSyncState]);
 
   const handleTap = granularity === "word" ? handleTapWord : handleTapLine;
 
