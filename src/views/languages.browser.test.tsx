@@ -242,12 +242,14 @@ describe("LanguagesPanel", () => {
     const screen = await render(<LanguagesPanel />);
     await expect.element(screen.getByText("Needs review", { exact: true })).toBeInTheDocument();
     await screen.getByRole("button", { name: "Align", exact: true }).click();
-    await expect.element(screen.getByRole("dialog", { name: "Align transliteration" })).toBeInTheDocument();
+    await expect.element(screen.getByRole("dialog", { name: "Align timing" })).toBeInTheDocument();
     const scrollRegion = document.querySelector<HTMLElement>("[data-transliteration-alignment-scroll-region]");
     expect(scrollRegion).not.toBeNull();
     expect(scrollRegion?.classList.contains("overflow-y-auto")).toBe(true);
-    await expect.element(screen.getByRole("combobox", { name: "Original word to align" })).toHaveValue("0");
-    await screen.getByRole("button", { name: "Save alignment" }).click();
+    await expect
+      .element(screen.getByRole("button", { name: "Original word to align" }))
+      .toHaveTextContent("1. 붙어있던");
+    await screen.getByRole("button", { name: "Save", exact: true }).click();
 
     const saved = useProjectStore.getState().lines[0];
     expect(saved.transliteration?.alignmentStatus).toBe("confirmed");

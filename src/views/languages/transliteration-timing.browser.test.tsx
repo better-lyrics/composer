@@ -54,11 +54,11 @@ describe("visible transliteration dash timing", () => {
 
       // Boundaries on either side of a separator have the same visible timing ownership.
       if (!importedWordEdge) {
-        await screen.getByRole("button", { name: "Alignment boundary 3", exact: true }).click();
-        await screen.getByRole("button", { name: "Alignment boundary 2", exact: true }).click();
+        await screen.getByRole("button", { name: "Transliteration split point 3", exact: true }).click();
+        await screen.getByRole("button", { name: "Transliteration split point 2", exact: true }).click();
         expect(mappedLabels()).toEqual(["to-", "do"]);
       }
-      await screen.getByRole("button", { name: "Save alignment" }).click();
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
       const saved = useProjectStore.getState().lines[0];
       expect(saved[field]).toEqual(words);
       expect(background ? saved.transliteration?.backgroundText : saved.transliteration?.text).toBe(reading);
