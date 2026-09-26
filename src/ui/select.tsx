@@ -27,8 +27,12 @@ interface SelectProps {
 
 // -- Helpers ------------------------------------------------------------------
 
-const scrollSelectedOptionIntoView = (viewport: HTMLDivElement) => {
-  viewport.querySelector('[role="option"][aria-selected="true"]')?.scrollIntoView({ block: "nearest" });
+const focusSelectedOption = (viewport: HTMLDivElement) => {
+  const option =
+    viewport.querySelector<HTMLElement>('[role="option"][aria-selected="true"]') ??
+    viewport.querySelector<HTMLElement>('[role="option"]');
+  option?.scrollIntoView({ block: "nearest" });
+  option?.focus();
 };
 
 // -- Component ----------------------------------------------------------------
@@ -70,7 +74,7 @@ const Select: React.FC<SelectProps> = ({
   return (
     <Popover placement={placement} hasPopup="listbox" trigger={triggerElement}>
       {(close) => (
-        <Scroll className="max-h-80" onInitialized={scrollSelectedOptionIntoView}>
+        <Scroll className="max-h-80" onInitialized={focusSelectedOption}>
           {/* react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- styled single-select popover; datalist is input autocomplete, not a listbox, and would reintroduce native chrome */}
           <div role="listbox" aria-label={ariaLabel} className="flex flex-col gap-0.5 p-1 w-max min-w-36">
             {options.map((option) => {

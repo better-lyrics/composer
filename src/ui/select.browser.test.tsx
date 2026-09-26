@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 import { Button } from "@/ui/button";
 import { Select } from "@/ui/select";
 import { installStyleSheet } from "@/test/browser-css";
@@ -165,6 +166,32 @@ describe("Select", () => {
       );
       await screen.getByRole("button", { name: "Language" }).click();
       await expect.element(screen.getByRole("option", { name: "Option 60" })).toBeInViewport();
+    });
+
+    it("focuses the selected option when opened by keyboard, and Enter selects it", async () => {
+      let selected = "";
+      const screen = await render(
+        <Select
+          aria-label="Language"
+          value="o60"
+          onChange={(value) => {
+            selected = value;
+          }}
+          options={LONG_OPTIONS}
+        />,
+      );
+      (screen.getByRole("button", { name: "Language" }).element() as HTMLButtonElement).focus();
+      await userEvent.keyboard("{Enter}");
+      await expect.element(screen.getByRole("option", { name: "Option 60" })).toHaveFocus();
+      await userEvent.keyboard("{Enter}");
+      expect(selected).toBe("o60");
+    });
+
+    it("focuses the first option when opened by keyboard and no option is selected", async () => {
+      const screen = await render(<Select aria-label="Language" value="" onChange={() => {}} options={LONG_OPTIONS} />);
+      (screen.getByRole("button", { name: "Language" }).element() as HTMLButtonElement).focus();
+      await userEvent.keyboard("{Enter}");
+      await expect.element(screen.getByRole("option", { name: "Option 1", exact: true })).toHaveFocus();
     });
   });
 });
