@@ -8,7 +8,6 @@ const SKIP_NETWORK = process.env.SKIP_NETWORK_TESTS === "1";
 const ONLINE_PROBE_URL = "https://lyrics-api.binimum.org/?track=test&artist=test";
 const ONLINE_PROBE_TIMEOUT_MS = 5000;
 const NETWORK_TEST_TIMEOUT_MS = 30000;
-const TTML_URL_REGEX = /^https:\/\/lrc\.red\/s\/.+\.ttml$/;
 
 // Binimum sits behind Cloudflare bot protection that 403s datacenter IPs (CI); a browser reaches it fine, so a block is an unavailable-for-tests signal, not a product failure.
 const BOT_BLOCK_STATUSES: ReadonlySet<number> = new Set([401, 403, 429]);
@@ -130,7 +129,10 @@ describeOnline("binimumProvider", () => {
           expect(result.sourceLabel).toBe("Binimum");
           expect(result.payload.kind).toBe("deferred-ttml");
           if (result.payload.kind === "deferred-ttml") {
-            expect(result.payload.fetchUrl).toMatch(TTML_URL_REGEX);
+            // The service owns its storage host and can move TTML files between CDNs.
+            const url = new URL(result.payload.fetchUrl);
+            expect(url.protocol).toBe("https:");
+            expect(url.pathname).toMatch(/\.ttml$/);
           }
         }
       },
@@ -291,9 +293,9 @@ describeOnline("binimumProvider", () => {
   });
 });
 
-// -- Duration mapping (stubbed transport, never reaches the network) ----------
+// -- Response mapping (stubbed transport, never reaches the network) ----------
 
-describe("binimumProvider duration mapping", () => {
+describe("binimumProvider response mapping", () => {
   const SEARCH_HIT = {
     id: "0a1b2c3d",
     track_name: "Bohemian Rhapsody",
@@ -325,6 +327,19 @@ describe("binimumProvider duration mapping", () => {
     expect(results).toHaveLength(1);
     return results[0].durationSec;
   }
+
+  it.each(["https://lyrics-storage.binimum.org/0a1b2c3d.ttml", "https://lrc.red/s/GBUM71029604.ttml"])(
+    "preserves the provider's TTML URL: %s",
+    async (lyricsUrl) => {
+      stubSearchBody({ results: [{ ...SEARCH_HIT, lyricsUrl }] });
+      const results = await binimumProvider.search(
+        { track: "Bohemian Rhapsody", artist: "Queen" },
+        new AbortController().signal,
+      );
+      expect(results).toHaveLength(1);
+      expect(results[0].payload).toEqual({ kind: "deferred-ttml", fetchUrl: lyricsUrl });
+    },
+  );
 
   it("rounds a usable duration to whole seconds", async () => {
     expect(await searchWithDuration({ ...SEARCH_HIT, duration: 354.6 })).toBe(355);

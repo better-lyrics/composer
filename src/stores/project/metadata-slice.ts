@@ -66,7 +66,6 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   clearUnexportedImport: () =>
     set((state) => (state.hasUnexportedImport ? { hasUnexportedImport: false, isDirty: true } : state)),
-
 });
 
 // -- Exports ------------------------------------------------------------------
