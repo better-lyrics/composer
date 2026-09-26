@@ -348,3 +348,30 @@ describe("TimelineContextMenu · split into words on the bg track", () => {
     expect(findButton(/^Split into words/)).toBeUndefined();
   });
 });
+
+describe("TimelineContextMenu · add word on a bg track with untimed text", () => {
+  it("regression: 'Add word here' times the existing untimed bg text instead of replacing it", async () => {
+    useAudioStore.setState({ duration: 10 });
+    const line = createLine({
+      id: "l1",
+      text: "main",
+      words: [createWord({ text: "main", begin: 0, end: 1 })],
+      backgroundText: "ooh yeah",
+    });
+    useProjectStore.setState({ lines: [line] });
+    useTimelineStore.setState({
+      contextMenu: { x: 100, y: 100, target: { kind: "track", lineId: "l1", lineIndex: 0, time: 5, type: "bg" } },
+    });
+    await render(<TimelineContextMenu />);
+
+    findButton(/Add word here/i)?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ooh ", "yeah"]);
+    expect(useProjectStore.getState().lines[0].backgroundText).toBe("ooh yeah");
+    const firstBegin = useProjectStore.getState().lines[0].backgroundWords?.[0].begin ?? -1;
+    expect(firstBegin).toBeGreaterThan(4.5);
+    expect(firstBegin).toBeLessThanOrEqual(5);
+  });
+});

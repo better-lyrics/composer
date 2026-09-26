@@ -1,13 +1,13 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields } from "@/domain/line/background";
+import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { createBgWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { GutterAgentPicker } from "@/views/timeline/gutter-agent-picker";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -282,6 +282,11 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
               const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
               const slot = findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
               if (!slot) return;
+              const timedText = createBgWordsFromTextAt(line, slot.begin, audioDuration);
+              if (timedText) {
+                useProjectStore.getState().updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
+                return;
+              }
               const newWord: WordTiming = { text: "...", begin: slot.begin, end: slot.end };
               useProjectStore
                 .getState()

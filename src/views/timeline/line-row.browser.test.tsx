@@ -154,4 +154,34 @@ describe("LineRow", () => {
     dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
     await expect.poll(() => useProjectStore.getState().lines[0].backgroundWords?.length).toBe(1);
   });
+
+  it("regression: double-clicking a BG zone that holds untimed bg text times that text instead of replacing it", async () => {
+    useAudioStore.setState({ duration: 30 });
+    const line = createLine({
+      id: "l1",
+      text: "hello world",
+      words: [createWord({ text: "hello", begin: 0, end: 1 })],
+      backgroundText: "ah ah",
+    });
+    useProjectStore.setState({ lines: [line] });
+    const screen = await render(
+      <LineRow line={line} lineIndex={0} duration={30} onUpdateWord={() => {}} onUpdateBgWord={() => {}} />,
+      { dndContext: true },
+    );
+
+    const dropZone = Array.from(screen.container.querySelectorAll("div")).find(
+      (d) => d.textContent?.trim() === "ah ah",
+    );
+    expect(dropZone).toBeDefined();
+    dropZone?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, clientX: 100 }));
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ah ", "ah"]);
+    const after = useProjectStore.getState().lines[0];
+    expect(after.backgroundText).toBe("ah ah");
+    expect(after.backgroundWords?.[0].begin).toBeLessThan(after.backgroundWords?.[1].begin ?? 0);
+    expect(after.backgroundWords?.[1].end).toBeLessThanOrEqual(30);
+    expect(useTimelineStore.getState().editingWord).toBeNull();
+  });
 });
