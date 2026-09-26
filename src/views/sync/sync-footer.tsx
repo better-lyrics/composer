@@ -2,6 +2,7 @@ import { getEffectiveKeysArray, getShortcutDescription } from "@/stores/shortcut
 import { syncCarouselTransition, syncPulseVariants } from "@/utils/animationVariants";
 import { TimingDisplay } from "@/views/sync/timing-display";
 import { m } from "motion/react";
+import { cn } from "@/utils/cn";
 
 interface SyncGestureControlsProps {
   currentWord?: string;
@@ -38,9 +39,10 @@ const SyncGestureControls: React.FC<SyncGestureControlsProps> = ({
         initial={false}
         animate={isHolding ? "pulse" : "idle"}
         transition={syncCarouselTransition}
-        className={`flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none ${
-          isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated"
-        }`}
+        className={cn(
+          "flex items-center justify-center border-2 rounded-full size-14 cursor-pointer touch-none tap-highlight-none",
+          isHolding ? "bg-composer-accent/20 border-composer-accent" : "bg-composer-bg-elevated",
+        )}
       >
         <span className="text-xs font-medium text-composer-text-muted">
           {getEffectiveKeysArray("sync.holdSync")

@@ -11,6 +11,7 @@ import { splitIntoWords } from "@/utils/sync-helpers";
 import { BgWordsRow, TransliterationRow, WordWithProgress } from "@/views/timeline/timeline-preview-rows";
 import { getTimingState } from "@/views/timeline/timeline-preview-sidebar-activity";
 import { useRef } from "react";
+import { cn } from "@/utils/cn";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -77,7 +78,7 @@ const PreviewOriginalRow: React.FC<PreviewOriginalRowProps> = ({
     );
   }
   return (
-    <div className={`flex flex-wrap items-center text-sm font-medium ${alignmentClass}`}>
+    <div className={cn("flex flex-wrap items-center text-sm font-medium", alignmentClass)}>
       {alignment === "left" && AgentDotLeft}
       {words.length > 0
         ? words.map((word) => (
@@ -138,7 +139,7 @@ const MiniPreviewLine: React.FC<{
 
   return (
     <div
-      className={`py-1.5 px-3 ${textAlignClass}`}
+      className={cn("py-1.5 px-3", textAlignClass)}
       style={{ opacity: 0.3 }}
       data-line-begin={timing?.begin ?? 0}
       data-line-end={timing?.end ?? 0}
