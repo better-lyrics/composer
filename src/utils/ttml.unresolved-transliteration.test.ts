@@ -57,7 +57,6 @@ describe("TTML unresolved transliteration", () => {
         metadata: { title: "Unresolved", artists: [], album: "", duration: 4, language: "ja" },
         agents: [{ id: "v1", type: "person", name: "Lead" }],
         lines: [line],
-        granularity: "word",
       });
       const parsed = parseLyricsFile("song.ttml", ttml).lines[0];
       expect(parsed.transliteration?.text).toBe(line.transliteration!.text);

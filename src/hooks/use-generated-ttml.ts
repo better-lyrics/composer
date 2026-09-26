@@ -9,7 +9,6 @@ function useGeneratedTtml() {
   const agents = useProjectStore((state) => state.agents);
   const lines = useProjectStore((state) => state.lines);
   const groups = useProjectStore((state) => state.groups);
-  const granularity = useProjectStore((state) => state.granularity);
   const duration = useAudioStore((state) => state.duration);
 
   const syncedLineCount = useMemo(() => {
@@ -20,8 +19,8 @@ function useGeneratedTtml() {
     return count;
   }, [lines]);
   const content = useMemo(
-    () => (syncedLineCount > 0 ? generateTTML({ metadata, agents, lines, groups, granularity, duration }) : ""),
-    [metadata, agents, lines, groups, granularity, duration, syncedLineCount],
+    () => (syncedLineCount > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : ""),
+    [metadata, agents, lines, groups, duration, syncedLineCount],
   );
 
   return { content, duration, lineCount: lines.length, syncedLineCount, title: metadata.title };

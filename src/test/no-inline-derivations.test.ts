@@ -95,6 +95,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     use: "snapPointTimes from @/domain/snap-point/model",
   },
   {
+    name: "inline project timing granularity",
+    regex: /\.some\(\s*(?:isWordSynced\b|\(?\s*(\w+)\s*\)?\s*=>\s*\1\.words\?\.length)/,
+    use: "timingGranularityOf from @/domain/project/timing-granularity",
+  },
+  {
     name: "local BG drop zone height",
     regex: /\bBG_DROP_ZONE_HEIGHT\s*=/,
     use: "BG_DROP_ZONE_HEIGHT / bgTrackHeight / lineRowHeight from @/views/timeline/row-geometry",

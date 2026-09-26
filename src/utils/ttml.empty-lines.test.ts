@@ -8,7 +8,7 @@ const baseMetadata: ProjectMetadata = { title: "Test", artists: [], album: "", d
 const baseAgents: Agent[] = [{ id: "v1", type: "person", name: "Lead" }];
 
 function exportLines(lines: LyricLine[]): string {
-  return generateTTML({ metadata: baseMetadata, agents: baseAgents, lines, groups: [], granularity: "word" });
+  return generateTTML({ metadata: baseMetadata, agents: baseAgents, lines, groups: [] });
 }
 
 function paragraphs(ttml: string): string[] {

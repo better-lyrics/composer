@@ -46,7 +46,7 @@ function buildSyncedTtml(durationSeconds?: number): string {
     }),
   ];
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word", duration: durationSeconds });
+  return generateTTML({ metadata, agents, lines, groups: [], duration: durationSeconds });
 }
 
 /** One word-synced line 2-6s carrying a background vocal over its second half. */
@@ -68,7 +68,7 @@ function buildBackgroundVocalTtml(): string {
     }),
   ];
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+  return generateTTML({ metadata, agents, lines, groups: [] });
 }
 
 /** One synced Korean line with a timed transliteration and an English translation. */
@@ -103,7 +103,7 @@ function buildAlternateLanguageTtml(): string {
   };
 
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+  return generateTTML({ metadata, agents, lines, groups: [] });
 }
 
 /** One synced Korean line whose alternate-language background vocal falls in a foreground pause. */
@@ -143,7 +143,7 @@ function buildAlternateBackgroundLanguageTtml(): string {
   };
 
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], granularity: "word" });
+  return generateTTML({ metadata, agents, lines, groups: [] });
 }
 
 /** One synced line whose alternate tracks are identical to the main text. */
@@ -183,7 +183,6 @@ function buildMatchingAlternateLanguageTtml(): string {
     agents,
     lines,
     groups: [],
-    granularity: "word",
   });
 }
 

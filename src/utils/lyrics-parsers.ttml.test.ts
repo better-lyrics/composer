@@ -165,7 +165,7 @@ describe("parseLyricsFile - TTML language", () => {
     it("survives a parse, export and re-parse cycle", () => {
       const first = parseLyricsFile("song.ttml", ttmlWith("pt-BR"));
       const metadata: ProjectMetadata = { title: "", artists: [], album: "", duration: 0, ...first.metadata };
-      const exported = generateTTML({ metadata, agents: [], lines: first.lines, granularity: "word" });
+      const exported = generateTTML({ metadata, agents: [], lines: first.lines });
       expect(parseLyricsFile("song.ttml", exported).metadata.language).toBe("pt-BR");
     });
   });

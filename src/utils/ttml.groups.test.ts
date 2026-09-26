@@ -16,7 +16,6 @@ describe("ttml export · groups registry", () => {
       agents: baseAgents,
       lines: [],
       groups,
-      granularity: "word",
     });
 
     expect(ttml).toContain("<composer:groups>");
@@ -32,7 +31,7 @@ describe("ttml export · groups registry", () => {
       { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 2 },
       { id: "g2", label: "Verse", color: "#60a5fa", templateVersion: 1 },
     ];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups, granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
 
     const i1 = ttml.indexOf('id="g1"');
     const i2 = ttml.indexOf('id="g2"');
@@ -43,13 +42,13 @@ describe("ttml export · groups registry", () => {
 
   it("escapes label and color values", () => {
     const groups: LinkGroup[] = [{ id: "g1", label: "Pre & Post", color: "#aaaaaa", templateVersion: 1 }];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups, granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
 
     expect(ttml).toContain('label="Pre &amp; Post"');
   });
 
   it("omits the registry block when groups is undefined", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [] });
     expect(ttml).not.toContain("<composer:groups>");
   });
 
@@ -59,7 +58,6 @@ describe("ttml export · groups registry", () => {
       agents: baseAgents,
       lines: [],
       groups: [],
-      granularity: "word",
     });
     expect(ttml).not.toContain("<composer:groups>");
   });
@@ -88,7 +86,6 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", { groupId: "g1", instanceIdx: 2, templateLineIdx: 0 })],
       groups,
-      granularity: "line",
     });
 
     expect(ttml).toContain('composer:groupId="g1"');
@@ -102,7 +99,6 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", {})],
       groups: [],
-      granularity: "line",
     });
 
     expect(ttml).not.toContain("composer:groupId");
@@ -115,7 +111,6 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("a", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, detached: true })],
       groups,
-      granularity: "line",
     });
     expect(t1).toContain('composer:detached="true"');
 
@@ -124,7 +119,6 @@ describe("ttml export · per-line group attrs", () => {
       agents: baseAgents,
       lines: [syncedLine("b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0, detached: false })],
       groups,
-      granularity: "line",
     });
     expect(t2).not.toContain("composer:detached");
   });
@@ -136,7 +130,7 @@ describe("ttml import · groups registry", () => {
       { id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 3 },
       { id: "g2", label: "Verse", color: "#60a5fa", templateVersion: 1 },
     ];
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups, granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
     const result = parseLyricsFile("test.ttml", ttml);
 
     expect(result.groups).toHaveLength(2);
@@ -146,7 +140,7 @@ describe("ttml import · groups registry", () => {
   });
 
   it("returns no groups when none in TTML", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [] });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.groups).toBeUndefined();
   });
@@ -172,7 +166,6 @@ describe("ttml import · per-line group attrs", () => {
         },
       ],
       groups,
-      granularity: "line",
     });
     const result = parseLyricsFile("test.ttml", ttml);
 
@@ -200,7 +193,6 @@ describe("ttml import · per-line group attrs", () => {
         },
       ],
       groups,
-      granularity: "line",
     });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.lines[0].detached).toBe(true);
@@ -223,7 +215,6 @@ describe("ttml import · per-line group attrs", () => {
         },
       ],
       groups: [],
-      granularity: "line",
     });
     const result = parseLyricsFile("test.ttml", ttml);
     expect(result.lines[0].groupId).toBeUndefined();
@@ -249,7 +240,7 @@ describe("ttml namespace · betterlyrics rebrand + legacy compat", () => {
   const groups: LinkGroup[] = [{ id: "g1", label: "Chorus", color: "#f472b6", templateVersion: 1 }];
 
   it("declares the new betterlyrics.org namespace on export, never the old one", () => {
-    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups, granularity: "word" });
+    const ttml = generateTTML({ metadata: baseMetadata, agents: baseAgents, lines: [], groups });
     expect(ttml).toContain(`xmlns:composer="${NEW_NS}"`);
     expect(ttml).not.toContain(OLD_NS);
   });
@@ -293,7 +284,6 @@ describe("ttml export · explicit word attribute", () => {
           ],
         },
       ],
-      granularity: "word",
     });
     expect(ttml).toContain(">clean</span>");
     expect(ttml).toMatch(/<span begin="[^"]*" end="[^"]*" composer:explicit="true">dirty<\/span>/);
@@ -317,7 +307,6 @@ describe("ttml export · explicit word attribute", () => {
           ],
         },
       ],
-      granularity: "word",
     });
     expect(ttml).toContain(`<span ttm:role="x-bg">`);
     expect(ttml).not.toMatch(/<span [^>]*ttm:role="x-bg"[^>]*composer:explicit/);
@@ -334,7 +323,6 @@ describe("ttml export · explicit word attribute", () => {
       metadata: baseMetadata,
       agents: baseAgents,
       lines: imported.lines,
-      granularity: "word",
     });
     expect(exported).toMatch(/composer:explicit="true">dirty/);
     expect(exported).not.toContain("amll:obscene");

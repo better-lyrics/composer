@@ -32,7 +32,7 @@ function backgroundOnlyTtml(timedBackground: boolean): string {
     },
   };
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines: [line], granularity: "word", duration: 5 });
+  return generateTTML({ metadata, agents, lines: [line], duration: 5 });
 }
 
 describe("background-only alternate previews", () => {

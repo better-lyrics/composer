@@ -32,7 +32,6 @@ describe("PreviewPanel", () => {
       agents: project.agents,
       lines: project.lines,
       groups: project.groups,
-      granularity: project.granularity,
       duration: useAudioStore.getState().duration,
     });
     const edited = generated.replace(">Hi</span>", ">Edited in Export</span>");

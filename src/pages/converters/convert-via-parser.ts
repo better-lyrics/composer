@@ -2,6 +2,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { generateTTML } from "@/utils/ttml";
@@ -30,11 +31,10 @@ function convertViaParser(conversion: ParserConversion, { input, filename }: Con
     // place the parsed songwriters, ISRC and extra fields can survive.
     const metadata: ProjectMetadata = { ...normalizeLoadedMetadata(result.metadata), duration: 0 };
     const agents: Agent[] = result.agents ?? DEFAULT_AGENTS;
-    const granularity =
-      conversion.granularity === "line" || !result.lines.some((line) => line.words?.length) ? "line" : "word";
+    const granularity = conversion.granularity === "line" ? "line" : timingGranularityOf(result.lines);
 
     return {
-      ttml: generateTTML({ metadata, agents, lines: result.lines, granularity }),
+      ttml: generateTTML({ metadata, agents, lines: result.lines }),
       projectPayload: JSON.stringify({ metadata, agents, lines: result.lines, granularity }),
     };
   } catch (conversionError) {

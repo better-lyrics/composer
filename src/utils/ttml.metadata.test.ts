@@ -14,7 +14,7 @@ const metadata: ProjectMetadata = {
 const lines = [{ id: "l1", text: "hi", begin: 1, end: 2, agentId: "v1" }];
 
 describe("generateTTML metadata", () => {
-  const ttml = generateTTML({ metadata, agents: [], lines, granularity: "line" });
+  const ttml = generateTTML({ metadata, agents: [], lines });
   it("keeps the title in ttm:title", () => expect(ttml).toContain("<ttm:title>Song &amp; Dance</ttm:title>"));
   it("emits one composer:meta per artist", () => {
     expect(ttml).toContain('<composer:meta key="artists" value="Kali Uchis"/>');
@@ -33,7 +33,6 @@ describe("generateTTML metadata", () => {
       metadata: { title: "x", artists: [], album: "", duration: 0 },
       agents: [],
       lines,
-      granularity: "line",
     });
     expect(bare).not.toContain("composer:meta");
   });
@@ -41,8 +40,7 @@ describe("generateTTML metadata", () => {
 
 describe("generateTTML xml:lang", () => {
   const bare: ProjectMetadata = { title: "t", artists: [], album: "", duration: 0 };
-  const generate = (language?: string) =>
-    generateTTML({ metadata: { ...bare, language }, agents: [], lines, granularity: "line" });
+  const generate = (language?: string) => generateTTML({ metadata: { ...bare, language }, agents: [], lines });
   const rootOf = (xml: string) => new DOMParser().parseFromString(xml, "application/xml").documentElement;
 
   it("omits xml:lang when no language is set", () => {
@@ -100,7 +98,6 @@ describe("generateTTML attribute escaping", () => {
       agents: [],
       lines,
       groups: [{ id: "g1", label: 'The "Big" Chorus', color: "#fff", templateVersion: 1 }],
-      granularity: "line",
     });
 
     expect(xml).toContain('label="The &quot;Big&quot; Chorus"');
@@ -112,7 +109,6 @@ describe("generateTTML attribute escaping", () => {
       metadata: { title: "t", artists: [], album: "", duration: 0 },
       agents: [{ id: 'v"1', type: "person", name: 'The "Lead"' }],
       lines,
-      granularity: "line",
     });
 
     expect(xml).toContain('xml:id="v&quot;1"');
@@ -124,7 +120,6 @@ describe("generateTTML attribute escaping", () => {
       metadata: { title: "t", artists: [], album: "", duration: 0, language: 'en"US' },
       agents: [],
       lines,
-      granularity: "line",
     });
 
     expect(xml).toContain('xml:lang="en&quot;US"');
