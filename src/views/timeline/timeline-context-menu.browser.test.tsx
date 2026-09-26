@@ -300,3 +300,51 @@ describe("TimelineContextMenu background provenance", () => {
     expect(useProjectStore.getState().lines[0].backgroundTextSource).toBe("extraction");
   });
 });
+
+describe("TimelineContextMenu · split into words on the bg track", () => {
+  function openBgWordContextMenu(lineId: string) {
+    useTimelineStore.setState({
+      contextMenu: {
+        x: 100,
+        y: 100,
+        target: { kind: "word", lineId, lineIndex: 0, wordIndex: 0, type: "bg" },
+      },
+      selectedWords: [{ lineId, lineIndex: 0, wordIndex: 0, type: "bg" }],
+    });
+  }
+
+  it("regression: offers 'Split into words' on a sentence-long bg word and splits it", async () => {
+    const line = createLine({
+      text: "main line",
+      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      backgroundText: "ooh yeah baby",
+      backgroundWords: [createWord({ text: "ooh yeah baby", begin: 1, end: 4 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    openBgWordContextMenu(line.id);
+    await render(<TimelineContextMenu />);
+
+    const splitButton = findButton(/^Split into words/);
+    expect(splitButton).toBeDefined();
+    splitButton?.click();
+
+    await expect
+      .poll(() => useProjectStore.getState().lines[0].backgroundWords?.map((w) => w.text))
+      .toEqual(["ooh ", "yeah ", "baby"]);
+    expect(useProjectStore.getState().lines[0].words).toEqual(line.words);
+  });
+
+  it("hides 'Split into words' on a bg track that is already one word per word", async () => {
+    const line = createLine({
+      text: "main line",
+      words: [createWord({ text: "main ", begin: 0, end: 2 }), createWord({ text: "line", begin: 2, end: 4 })],
+      backgroundText: "ooh yeah",
+      backgroundWords: [createWord({ text: "ooh ", begin: 1, end: 2 }), createWord({ text: "yeah", begin: 2, end: 3 })],
+    });
+    useProjectStore.setState({ lines: [line] });
+    openBgWordContextMenu(line.id);
+    await render(<TimelineContextMenu />);
+
+    expect(findButton(/^Split into words/)).toBeUndefined();
+  });
+});

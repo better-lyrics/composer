@@ -447,8 +447,7 @@ function useTimelineKeyboard(
           const { selectedWords: wSel } = useTimelineStore.getState();
           if (wSel.length === 0) break;
           e.preventDefault();
-          const lineIds = new Set(wSel.map((w) => w.lineId));
-          splitLinesIntoWords(lineIds, lines);
+          splitLinesIntoWords(wSel, lines);
           break;
         }
         case "timeline.expandAll": {
