@@ -134,7 +134,9 @@ describe("SplitPickerLegend", () => {
 
   it("explains a kind in a tooltip on keyboard focus", async () => {
     const screen = await render(<SplitPickerLegend kinds={["word"]} />);
-    (screen.getByText("Word break").element() as HTMLElement).focus();
+    const trigger = screen.getByRole("button", { name: "Word break" });
+    (trigger.element() as HTMLButtonElement).focus();
+    expect(document.activeElement).toBe(trigger.element());
     await expect.element(screen.getByRole("tooltip")).toHaveTextContent("Two spaces between words.");
   });
 
