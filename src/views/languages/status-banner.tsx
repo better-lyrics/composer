@@ -93,4 +93,3 @@ const LanguageStatusBanner: React.FC<LanguageStatusBannerProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { LanguageStatusBanner };
-export type { LanguageStatusBannerItem };

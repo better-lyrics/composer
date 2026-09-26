@@ -56,4 +56,3 @@ function SegmentedControl<T extends string>({
 // -- Exports ------------------------------------------------------------------
 
 export { SegmentedControl };
-export type { SegmentedOption };

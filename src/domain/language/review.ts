@@ -43,4 +43,4 @@ function languageLineAnchorId(lineId: string): string {
 }
 
 export { getLanguageReviewItems, getLanguageReviewTracks, languageLineAnchorId };
-export type { LanguageReviewItem, LanguageReviewTrack };
+export type { LanguageReviewTrack };

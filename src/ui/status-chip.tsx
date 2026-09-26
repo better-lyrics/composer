@@ -47,4 +47,3 @@ const StatusChip: React.FC<StatusChipProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { StatusChip };
-export type { StatusTone };

@@ -202,4 +202,3 @@ const SplitPickerLegend: React.FC<{ kinds: readonly SeparatorKind[] }> = ({ kind
 // -- Exports ------------------------------------------------------------------
 
 export { SplitPicker, SplitPickerLegend, separatorKinds };
-export type { DashMode, SeparatorKind };

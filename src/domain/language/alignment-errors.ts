@@ -39,4 +39,4 @@ function getLanguageAlignmentErrorItems(lines: LyricLine[]): LanguageAlignmentEr
 }
 
 export { getLanguageAlignmentErrorItems, getLanguageAlignmentErrors };
-export type { LanguageAlignmentError, LanguageAlignmentErrorField, LanguageAlignmentErrorItem };
+export type { LanguageAlignmentError, LanguageAlignmentErrorField };
