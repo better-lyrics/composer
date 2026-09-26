@@ -447,6 +447,28 @@ describe("TimelineWaveform loading dots", () => {
       expect(requireDots().style.opacity).toBe("0");
     });
 
+    it("regression: zooming redraws the settled waveform instead of rebuilding it behind the loading layer", async () => {
+      setupPlayableAudio(2);
+      useTimelineStore.setState({ zoom: 50 });
+      await render(<TimelineWaveform />);
+      const layer = requireDots();
+      await expect.poll(() => sweepAnimationName(), { timeout: 5000 }).toBe("none");
+
+      const shownOpacities: string[] = [];
+      const observer = new MutationObserver(() => shownOpacities.push(layer.style.opacity));
+      observer.observe(layer, { attributes: true, attributeFilter: ["style"] });
+      try {
+        useTimelineStore.setState({ zoom: 80 });
+        useTimelineStore.setState({ zoom: 120 });
+        for (let frame = 0; frame < 10; frame++) await nextFrame();
+      } finally {
+        observer.disconnect();
+      }
+
+      expect(shownOpacities.filter((opacity) => opacity === "1")).toEqual([]);
+      expect(requireDots().style.width).toBe("240px");
+    });
+
     it("settle delay outlasts the fade-out transition it is paired with", async () => {
       setupWaveformAudio(30);
       await render(<TimelineWaveform />);
