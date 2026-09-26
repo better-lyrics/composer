@@ -100,6 +100,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     // enable the tracks directly before the TTML is parsed.
     Reflect.set(el, "showRomanization", true);
     Reflect.set(el, "showTranslation", true);
+    el.setAttribute("no-auto-alternates", "");
     el.ttml = latestTtmlRef.current;
     removeMatchingAlternatesAfterUpdate(el);
     el.songDurationMs = latestDurationMsRef.current;
