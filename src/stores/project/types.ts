@@ -79,6 +79,7 @@ interface HistoryState {
 interface MetadataActions {
   setMetadata: (metadata: Partial<ProjectMetadata>) => void;
   resetSongIdentity: (title: string) => void;
+  restoreSongIdentity: (identity: { metadata: ProjectMetadata; agents: Agent[] }) => void;
   reset: () => void;
 }
 

@@ -189,6 +189,22 @@ describe("useLoadYouTubeSource", () => {
       await expect.poll(() => useProjectStore.getState().metadata).toEqual(previousSong);
     });
 
+    it("regression: the restore drops a bridge thumbnail when the previous song had none", async () => {
+      const { thumbnailDataUrl: _url, thumbnailForVideoId: _id, ...songWithoutThumbnail } = previousSong;
+      useAudioStore.getState().setYouTubeSource(VIDEO_ID);
+      const previousSource = useAudioStore.getState().source;
+      useProjectStore.setState({ metadata: songWithoutThumbnail });
+
+      await load(OTHER_VIDEO_ID);
+      useProjectStore
+        .getState()
+        .setMetadata({ thumbnailDataUrl: "data:image/png;base64,BBBB", thumbnailForVideoId: OTHER_VIDEO_ID });
+      failLoad(previousSource);
+
+      await expect.poll(() => useProjectStore.getState().metadata.title).toBe(songWithoutThumbnail.title);
+      expect(useProjectStore.getState().metadata).toStrictEqual(songWithoutThumbnail);
+    });
+
     it("keeps metadata edited while a failing load was pending", async () => {
       useAudioStore.getState().setYouTubeSource(VIDEO_ID);
       const previousSource = useAudioStore.getState().source;

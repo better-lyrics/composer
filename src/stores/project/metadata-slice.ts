@@ -54,6 +54,8 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       isDirty: true,
     })),
 
+  restoreSongIdentity: ({ metadata, agents }) => set({ metadata, agents, isDirty: true }),
+
   reset: () => set(createProjectInitialState()),
 });
 

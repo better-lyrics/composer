@@ -29,8 +29,7 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
         current.agents === resetState.agents &&
         shallow(withoutThumbnailOf(current.metadata, videoId), resetState.metadata);
       if (loadFellBackToPrevious && untouchedSinceReset) {
-        current.setMetadata(metadata);
-        current.setAgents(agents);
+        current.restoreSongIdentity({ metadata, agents });
       }
       throw error;
     });
