@@ -26,7 +26,7 @@ const TransliterationTimingMap: React.FC<TransliterationTimingMapProps> = ({ wor
         joinerAfter: index < words.length - 1 ? slices[index]?.joinerAfter : trailingJoiner,
       }).text;
       return (
-        <Fragment key={`${word.begin}-${word.end}-${index}`}>
+        <Fragment key={`${word.begin}-${word.end}-${word.text}`}>
           {index > 0 && <IconArrowRight aria-hidden="true" className="size-3.5 text-composer-text-faint" />}
           <span className="inline-flex h-7 items-baseline gap-1.5 rounded-lg bg-composer-button px-2.5 leading-7">
             <span className="text-composer-text-muted">{word.text.trimEnd()}</span>

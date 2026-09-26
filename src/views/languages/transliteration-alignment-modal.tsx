@@ -6,7 +6,8 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { Select } from "@/ui/select";
-import { SplitPicker, SplitPickerLegend, separatorKinds } from "@/ui/split-picker";
+import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
+import { separatorKinds } from "@/utils/split-separators";
 import { formatTime } from "@/utils/format-time";
 import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
 import { IconCheck } from "@tabler/icons-react";
@@ -157,9 +158,9 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
             />
           </div>
           <div className="flex flex-wrap gap-1.5">
-            {group.words.map((word, index) => (
+            {group.words.map((word) => (
               <span
-                key={`${word.begin}-${word.end}-${index}`}
+                key={`${word.begin}-${word.end}-${word.text}`}
                 className="inline-flex h-7 items-baseline gap-2 rounded-lg bg-composer-button px-2.5 text-sm leading-7"
               >
                 <span className="select-text">{word.text.trimEnd()}</span>

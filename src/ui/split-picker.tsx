@@ -1,24 +1,15 @@
 import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
-import { isDashSeparator, isWhitespaceSeparator } from "@/utils/split-separators";
+import {
+  type DashMode,
+  type SeparatorKind,
+  graphemeUnits,
+  isSeparatorUnit,
+  separatorRuns,
+} from "@/utils/split-separators";
 import { IconMinus, IconSpace } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
-
-type DashMode = "separator" | "literal";
-type SeparatorKind = "pronunciation" | "word" | "dash";
-
-interface GraphemeUnit {
-  text: string;
-  start: number;
-  end: number;
-}
-
-interface SeparatorRun {
-  firstIndex: number;
-  point: number;
-  kind: SeparatorKind;
-}
 
 interface SplitPickerProps {
   value: string;
@@ -31,8 +22,6 @@ interface SplitPickerProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const GRAPHEME_SEGMENTER = new Intl.Segmenter(undefined, { granularity: "grapheme" });
-const KIND_ORDER: readonly SeparatorKind[] = ["pronunciation", "word", "dash"];
 const KIND_ARIA: Record<SeparatorKind, string> = {
   pronunciation: "pronunciation break",
   word: "word break",
@@ -44,53 +33,6 @@ const LEGEND: Record<SeparatorKind, { label: string; explanation: string }> = {
   dash: { label: "Dash", explanation: "Kept as text, never timed." },
 };
 const LEGEND_SUMMARY = ["", "Not timed.", "Neither is timed.", "None are timed."];
-
-// -- Helpers ------------------------------------------------------------------
-
-function graphemeUnits(value: string): GraphemeUnit[] {
-  const segments = [...GRAPHEME_SEGMENTER.segment(value)];
-  return segments.map((segment, index) => ({
-    text: segment.segment,
-    start: segment.index,
-    end: segments[index + 1]?.index ?? value.length,
-  }));
-}
-
-function isSeparatorUnit(text: string, dashes: DashMode): boolean {
-  return isWhitespaceSeparator(text) || (dashes === "separator" && isDashSeparator(text));
-}
-
-function kindOfRun(run: string): SeparatorKind {
-  const spaces = [...run].filter(isWhitespaceSeparator).length;
-  if (spaces === 0) return "dash";
-  return spaces > 1 ? "word" : "pronunciation";
-}
-
-function separatorRuns(value: string, units: GraphemeUnit[], dashes: DashMode): SeparatorRun[] {
-  const runs: SeparatorRun[] = [];
-  let index = 0;
-  while (index < units.length) {
-    if (!isSeparatorUnit(units[index].text, dashes)) {
-      index++;
-      continue;
-    }
-    let last = index;
-    while (last + 1 < units.length && isSeparatorUnit(units[last + 1].text, dashes)) last++;
-    if (index > 0 && last < units.length - 1) {
-      const point = units[last].end;
-      runs.push({ firstIndex: index, point, kind: kindOfRun(value.slice(units[index].start, point)) });
-    }
-    index = last + 1;
-  }
-  return runs;
-}
-
-function separatorKinds(values: readonly string[], dashes: DashMode = "separator"): SeparatorKind[] {
-  const present = new Set(
-    values.flatMap((value) => separatorRuns(value, graphemeUnits(value), dashes)).map((run) => run.kind),
-  );
-  return KIND_ORDER.filter((kind) => present.has(kind));
-}
 
 // -- Components ---------------------------------------------------------------
 
@@ -204,4 +146,4 @@ const SplitPickerLegend: React.FC<{ kinds: readonly SeparatorKind[] }> = ({ kind
 
 // -- Exports ------------------------------------------------------------------
 
-export { SplitPicker, SplitPickerLegend, separatorKinds };
+export { SplitPicker, SplitPickerLegend };

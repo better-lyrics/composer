@@ -1,5 +1,6 @@
 import { Button } from "@/ui/button";
-import { SplitPicker, SplitPickerLegend, separatorKinds } from "@/ui/split-picker";
+import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
+import { separatorKinds } from "@/utils/split-separators";
 import { cn } from "@/utils/cn";
 import { useMemo } from "react";
 
@@ -22,6 +23,10 @@ interface SplitModeContentProps {
   secondarySplitPoints?: number[];
   onToggleSecondarySplit?: (index: number) => void;
 }
+
+// -- Constants ----------------------------------------------------------------
+
+const EMPTY_SPLIT_POINTS: number[] = [];
 
 // -- Components ---------------------------------------------------------------
 
@@ -105,7 +110,7 @@ const SplitModeContent: React.FC<SplitModeContentProps> = ({
   sourceText,
   showApplyControls,
   secondaryText,
-  secondarySplitPoints = [],
+  secondarySplitPoints = EMPTY_SPLIT_POINTS,
   onToggleSecondarySplit,
 }) => {
   const confirmLabel = applyToAll && identicalCount > 0 ? "Split all" : "Split Word";
