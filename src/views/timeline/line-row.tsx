@@ -57,7 +57,7 @@ const LineRow: React.FC<LineRowProps> = ({ line, lineIndex, duration, onUpdateWo
   const bgWords = line.backgroundWords?.length ? line.backgroundWords : null;
 
   return (
-    <div className="relative flex">
+    <div data-timeline-row className="relative flex">
       <div
         className="shrink-0 flex items-center justify-center text-xs text-composer-text-muted border-r-2 shadow-[inset_0_-1px_0_0_var(--color-composer-border),10px_0_15px_-3px_rgb(0_0_0/0.1),4px_0_6px_-4px_rgb(0_0_0/0.1)] bg-composer-bg w-12 sticky left-0 z-60"
         style={{ borderRightColor: color }}

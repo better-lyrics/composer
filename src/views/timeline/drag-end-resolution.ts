@@ -7,6 +7,7 @@ import { computeRowLayout, getLineAndTrackAtY } from "@/views/timeline/utils";
 
 const WAVEFORM_BORDER = 1;
 const ROWS_START_Y = WAVEFORM_HEIGHT + WAVEFORM_BORDER;
+const TRACK_SELECTOR = "[data-line-index][data-track]";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -29,11 +30,30 @@ interface ResolveDropTargetInput {
 // data-line-index + data-track (line-row.tsx). Walking up from whatever paints
 // under the cursor finds the row the user is visually over.
 function trackElementAt(clientX: number, clientY: number): HTMLElement | null {
-  return document.elementFromPoint(clientX, clientY)?.closest<HTMLElement>("[data-line-index][data-track]") ?? null;
+  const hit = document.elementFromPoint(clientX, clientY);
+  const track = hit?.closest<HTMLElement>(TRACK_SELECTOR);
+  if (track) return track;
+  const row = hit?.closest<HTMLElement>("[data-timeline-row]");
+  return row ? nearestTrackByY(row, clientY) : null;
+}
+
+// The gutter and resize strip sit over a row but outside its tracks, so resolve them by height.
+function nearestTrackByY(row: HTMLElement, clientY: number): HTMLElement | null {
+  let nearest: HTMLElement | null = null;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const track of row.querySelectorAll<HTMLElement>(TRACK_SELECTOR)) {
+    const { top, bottom } = track.getBoundingClientRect();
+    const distance = clientY < top ? top - clientY : clientY >= bottom ? clientY - bottom : 0;
+    if (distance < nearestDistance) {
+      nearest = track;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
 }
 
 function hasRenderedTracks(): boolean {
-  return document.querySelector("[data-line-index][data-track]") !== null;
+  return document.querySelector(TRACK_SELECTOR) !== null;
 }
 
 function hitTestTrack(clientX: number, clientY: number): TrackHit | null {
