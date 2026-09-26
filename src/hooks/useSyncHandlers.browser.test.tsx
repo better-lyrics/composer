@@ -194,35 +194,6 @@ describe("useSyncHandlers.handleTap (word granularity)", () => {
     expect(lines[2].text).toBe("Foo bar");
     expect(lines[2].words).toHaveLength(1);
   });
-
-  it("preserves prev-line text when patching a partially synced previous line on cross-line tap", async () => {
-    useProjectStore.getState().setLines([
-      createLine({
-        id: "l0",
-        text: ORIGINAL_TEXT,
-        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 })],
-      }),
-      createLine({ id: "l1", text: "Next line", words: [createWord({ text: "Next ", begin: 3, end: 4 })] }),
-    ]);
-
-    const TAP_TIME = 1.25;
-    const { result, act } = await mountSyncHandlers({
-      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
-      initialCurrentTime: TAP_TIME,
-      granularity: "line",
-    });
-
-    await act(() => {
-      result.current.handleTap();
-    });
-
-    const lines = useProjectStore.getState().lines;
-    expect(lines[0].text).toBe(ORIGINAL_TEXT);
-    expect(lines[0].words).toHaveLength(1);
-    expect(lines[0].words?.[0].end).toBe(TAP_TIME);
-    expect(lines[1].text).toBe("Next line");
-    expect(lines[1].words).toHaveLength(1);
-  });
 });
 
 describe("useSyncHandlers.handleSplitWord", () => {
@@ -327,6 +298,35 @@ describe("useSyncHandlers live audio time (issue #203)", () => {
 });
 
 describe("useSyncHandlers.handleTap (line granularity)", () => {
+  it("preserves prev-line text when patching a partially synced previous line on cross-line tap", async () => {
+    useProjectStore.getState().setLines([
+      createLine({
+        id: "l0",
+        text: ORIGINAL_TEXT,
+        words: [createWord({ text: "Hello ", begin: 0, end: 0.5 })],
+      }),
+      createLine({ id: "l1", text: "Next line", words: [createWord({ text: "Next ", begin: 3, end: 4 })] }),
+    ]);
+
+    const TAP_TIME = 1.25;
+    const { result, act } = await mountSyncHandlers({
+      initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: true },
+      initialCurrentTime: TAP_TIME,
+      granularity: "line",
+    });
+
+    await act(() => {
+      result.current.handleTap();
+    });
+
+    const lines = useProjectStore.getState().lines;
+    expect(lines[0].text).toBe(ORIGINAL_TEXT);
+    expect(lines[0].words).toHaveLength(1);
+    expect(lines[0].words?.[0].end).toBe(TAP_TIME);
+    expect(lines[1].text).toBe("Next line");
+    expect(lines[1].words).toHaveLength(1);
+  });
+
   it("preserves text on both lines across line-granularity taps", async () => {
     useProjectStore
       .getState()
