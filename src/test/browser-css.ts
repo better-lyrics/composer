@@ -46,11 +46,20 @@ function installStyleSheet(css: string): HTMLStyleElement {
 
 // -- Rules ---------------------------------------------------------------------
 
+// Help's content only scrolls once it is height-bound: the deferred host before OverlayScrollbars starts, the viewport after.
+const HELP_CONTENT_SCROLLER_CSS = [
+  "[data-overlayscrollbars-initialize]:not([data-overlayscrollbars]):has([data-help-content])",
+  "[data-overlayscrollbars-viewport]",
+]
+  .join(",")
+  .concat("{max-height:200px!important;overflow-y:scroll!important}");
+
 const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WAVEFORM_SWEEP_ANIMATION)].join("\n");
 
 // -- Exports -------------------------------------------------------------------
 
 export {
+  HELP_CONTENT_SCROLLER_CSS,
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
   POSITION_UTILITIES_CSS,

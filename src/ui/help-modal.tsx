@@ -40,10 +40,8 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, initialSc
         onSectionChange={setActiveSection}
         sidebarClassName="w-48"
         contentClassName="p-6"
+        contentInitialScrollTop={initialScrollTop}
         contentViewportRef={viewportRef}
-        onContentInitialized={(viewport) => {
-          viewport.scrollTop = initialScrollTop;
-        }}
       >
         <SettingLinkContext value={linkHost}>
           <div data-help-content>

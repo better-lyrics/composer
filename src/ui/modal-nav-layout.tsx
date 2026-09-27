@@ -20,6 +20,7 @@ interface ModalNavLayoutProps<T extends string> {
   sidebarClassName?: string;
   contentClassName?: string;
   sidebarHeader?: React.ReactNode;
+  contentInitialScrollTop?: number;
   contentViewportRef?: MutableRefObject<HTMLDivElement | null>;
   onContentInitialized?: (viewport: HTMLDivElement) => void;
 }
@@ -34,6 +35,7 @@ function ModalNavLayout<T extends string>({
   sidebarClassName,
   contentClassName,
   sidebarHeader,
+  contentInitialScrollTop,
   contentViewportRef,
   onContentInitialized,
 }: ModalNavLayoutProps<T>) {
@@ -71,6 +73,7 @@ function ModalNavLayout<T extends string>({
 
       <Scroll
         className={cn("flex-1", contentClassName)}
+        initialScrollTop={contentInitialScrollTop}
         viewportRef={contentViewportRef}
         onInitialized={onContentInitialized}
       >

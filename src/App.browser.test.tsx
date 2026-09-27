@@ -3,7 +3,7 @@ import { App } from "@/App";
 import { subscribeFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
-import { installStyleSheet } from "@/test/browser-css";
+import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
@@ -102,7 +102,7 @@ describe("App", () => {
   it("returns to the same Help section and scroll position after a setting link trip", async () => {
     allowConsole(/cannot be a descendant of/);
     allowConsole(/cannot contain a nested/);
-    installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
+    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
     localStorage.setItem(TOUR_SEEN_KEY, "true");
     const screen = await render(<App />);
     const helpViewport = () =>
@@ -124,6 +124,11 @@ describe("App", () => {
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await expect.poll(helpModalOpen).toBe(true);
+    const helpContent = document.querySelector("[data-help-content]");
+    const scrollerOnReturn =
+      helpContent?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ??
+      helpContent?.closest<HTMLElement>("[data-overlayscrollbars-initialize]");
+    expect(scrollerOnReturn?.scrollTop).toBe(scrollTopAtClick);
     await expect.poll(() => helpViewport()?.scrollTop).toBe(scrollTopAtClick);
   });
 });

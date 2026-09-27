@@ -1,4 +1,4 @@
-import { installStyleSheet } from "@/test/browser-css";
+import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
 import { describe, expect, it } from "vitest";
 import { HelpModal } from "@/ui/help-modal";
 import { render } from "@/test/render";
@@ -66,10 +66,20 @@ describe("HelpModal initialSection", () => {
 
 describe("HelpModal initialScrollTop", () => {
   it("restores the content scroll position once the viewport initializes", async () => {
-    installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
+    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
     await render(<HelpModal isOpen initialSection="timeline" initialScrollTop={150} onClose={() => {}} />);
     const viewport = () =>
       document.querySelector("[data-help-content]")?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ?? null;
     await expect.poll(() => viewport()?.scrollTop).toBe(150);
+  });
+
+  it("regression: opens already at the saved position instead of jumping from the top", async () => {
+    installStyleSheet(HELP_CONTENT_SCROLLER_CSS);
+    await render(<HelpModal isOpen initialSection="timeline" initialScrollTop={150} onClose={() => {}} />);
+    const content = document.querySelector("[data-help-content]");
+    const scroller =
+      content?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ??
+      content?.closest<HTMLElement>("[data-overlayscrollbars-initialize]");
+    expect(scroller?.scrollTop).toBe(150);
   });
 });
