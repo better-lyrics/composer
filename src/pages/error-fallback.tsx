@@ -138,7 +138,7 @@ const ErrorFallback: React.FC = () => {
 
   return (
     <>
-      <PageHead title={`${details.title} ・ Composer`} description={details.subtitle} path={pathname} />
+      <PageHead title={`${details.title} ・ Composer`} description={details.subtitle} path={pathname} noindex />
       <ErrorFallbackPanel details={details} />
     </>
   );
