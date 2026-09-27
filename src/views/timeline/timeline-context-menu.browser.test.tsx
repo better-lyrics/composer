@@ -374,4 +374,37 @@ describe("TimelineContextMenu · add word on a bg track with untimed text", () =
     expect(firstBegin).toBeGreaterThan(4.5);
     expect(firstBegin).toBeLessThanOrEqual(5);
   });
+
+  describe("group label", () => {
+    function openGroupMenuOver(lineCount: number) {
+      const lines = Array.from({ length: lineCount }, (_, i) =>
+        createLine({ words: [createWord({ text: `w${i}`, begin: i, end: i + 0.5 })] }),
+      );
+      useProjectStore.setState({ lines, groups: [] });
+      const last = lines.length - 1;
+      useTimelineStore.setState({
+        contextMenu: {
+          x: 100,
+          y: 100,
+          target: { kind: "word", lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+        },
+        selectedWords: [
+          { lineId: lines[0].id, lineIndex: 0, wordIndex: 0, type: "word" },
+          { lineId: lines[last].id, lineIndex: last, wordIndex: 0, type: "word" },
+        ],
+      });
+    }
+
+    it("counts a single filled gap in the singular", async () => {
+      openGroupMenuOver(3);
+      await render(<TimelineContextMenu />);
+      expect(findButton(/^Group/)?.textContent).toContain("Group 3 lines (incl. 1 gap)");
+    });
+
+    it("counts several filled gaps in the plural", async () => {
+      openGroupMenuOver(4);
+      await render(<TimelineContextMenu />);
+      expect(findButton(/^Group/)?.textContent).toContain("Group 4 lines (incl. 2 gaps)");
+    });
+  });
 });

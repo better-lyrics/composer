@@ -13,6 +13,7 @@ import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
 import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
 import { useEffect, useLayoutEffect } from "react";
+import { pluralize } from "@/utils/pluralize";
 
 function MenuItem({
   label,
@@ -74,7 +75,7 @@ function GroupingMenuSection({
         <MenuItem
           label={
             groupableSelection.count > 1
-              ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${groupableSelection.addedFromGaps} gap)` : ""}`
+              ? `Group ${groupableSelection.count} lines${groupableSelection.addedFromGaps > 0 ? ` (incl. ${pluralize(groupableSelection.addedFromGaps, "gap")})` : ""}`
               : "Group this line"
           }
           shortcut={getEffectiveKeysArray("timeline.createGroup")}

@@ -4,6 +4,7 @@ import { getLanguageReviewItems } from "@/domain/language/review";
 import type { LanguageReviewTrack } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { LanguageStatusBanner } from "@/views/languages/status-banner";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -33,9 +34,7 @@ const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines
       <LanguageStatusBanner
         tone="error"
         aria-label="Language timing mismatches"
-        title={
-          errorItems.length === 1 ? "1 line has a timing mismatch" : `${errorItems.length} lines have a timing mismatch`
-        }
+        title={`${pluralize(errorItems.length, "line has", "lines have")} a timing mismatch`}
         helper="Fix the text, then press Align."
         items={errorItems.map((item) => ({
           lineId: item.lineId,
@@ -46,7 +45,7 @@ const LanguageStatusSummaries: React.FC<LanguageStatusSummariesProps> = ({ lines
       <LanguageStatusBanner
         tone="warning"
         aria-label="Language content needing review"
-        title={reviewItems.length === 1 ? "1 line needs review" : `${reviewItems.length} lines need review`}
+        title={`${pluralize(reviewItems.length, "line needs", "lines need")} review`}
         helper="The lyric changed after these were written."
         items={reviewItems.map((item) => ({
           lineId: item.lineId,

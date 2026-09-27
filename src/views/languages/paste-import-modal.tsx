@@ -184,7 +184,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
               className="px-5 py-2 text-xs border-b border-composer-warning/20 bg-composer-warning/10 text-composer-warning select-text"
             >
               {errorCount > 0
-                ? `${errorCount} ${errorCount === 1 ? "line doesn't" : "lines don't"} fit the timing yet.`
+                ? `${pluralize(errorCount, "line doesn't", "lines don't")} fit the timing yet.`
                 : alignment.warning}
             </div>
           )}

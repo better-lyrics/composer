@@ -23,4 +23,13 @@ describe("pasted language line alignment", () => {
       pastedLineCount: 3,
     });
   });
+
+  it("warns with each count in the singular or plural it needs", () => {
+    expect(alignPastedLanguageLines("one", ["a", "b"]).warning).toBe(
+      "You pasted 1 line for 2 lyric lines. Fix the matches below before importing.",
+    );
+    expect(alignPastedLanguageLines("one\ntwo", ["a"]).warning).toBe(
+      "You pasted 2 lines for 1 lyric line. Fix the matches below before importing.",
+    );
+  });
 });

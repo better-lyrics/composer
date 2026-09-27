@@ -1,3 +1,5 @@
+import { pluralize } from "@/utils/pluralize";
+
 interface PasteAlignment {
   mappedLines: string[];
   pastedLineCount: number;
@@ -31,7 +33,7 @@ function alignPastedLanguageLines(text: string, sourceLines: string[]): PasteAli
     mappedLines: sourceLines.map((_, index) => rows[index] ?? ""),
     pastedLineCount: rows.length,
     strategy: "manual",
-    warning: `You pasted ${rows.length} lines for ${sourceLines.length} lyric lines. Fix the matches below before importing.`,
+    warning: `You pasted ${pluralize(rows.length, "line")} for ${pluralize(sourceLines.length, "lyric line")}. Fix the matches below before importing.`,
   };
 }
 
