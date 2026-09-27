@@ -15,7 +15,8 @@ import {
 import { useUIStore } from "@/stores/ui";
 import { SettingHint } from "@/ui/setting-hint";
 import { shouldShowBridgeCta } from "@/utils/bridge-cta";
-import { CobaltApiError, formatCobaltErrorForToast, getAudio, getAudioFromStandardCobalt } from "@/utils/cobalt-api";
+import { CobaltApiError, getAudio, getAudioFromStandardCobalt } from "@/utils/cobalt-api";
+import { formatCobaltErrorForToast } from "@/utils/cobalt-error-toast";
 import {
   BridgeError,
   buildBridgeAudioFile,

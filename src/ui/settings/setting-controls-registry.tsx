@@ -117,4 +117,3 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
 // -- Exports -------------------------------------------------------------------
 
 export { SETTING_CONTROLS };
-export type { SettingControl };

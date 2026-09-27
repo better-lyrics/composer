@@ -258,44 +258,6 @@ const TimelineSection: React.FC = () => (
       </ul>
     </div>
 
-    <div>
-      <h4 className={HEADING}>Splitting and merging</h4>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>
-          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
-          the splitter in syllable mode. Click between letters to mark where the word should break. The result is a
-          linked syllable group: the pieces stay tied together as one word. If the playhead is on the word when you
-          confirm a single split, the timing boundary snaps to the playhead position exactly.
-        </li>
-        <li>
-          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitWord")} /> (or right-click and pick{" "}
-          <strong>Split word</strong>) to open the splitter in word mode. This breaks one word into separate independent
-          words, joined by a space, rather than a linked syllable group.
-        </li>
-        <li>
-          To undo a syllable split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or
-          press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
-          collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
-        </li>
-        <li>
-          Select two or more adjacent words on the same line and press{" "}
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block. This
-          works even when the selected words have a space between them; the joining space is dropped.
-        </li>
-      </ul>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Syllable timing</h4>
-      <p className={PROSE}>
-        Syllables of a word can be timed flush against each other or with gaps between them. Gaps are useful for
-        staccato or rap delivery, and for per-character timing in Japanese, Chinese, or Korean lyrics. To close those
-        gaps, right-click a syllable and pick <strong>Snap syllables flush</strong>. It pulls every syllable group on
-        the line tight, so each syllable starts where the previous one ends. The item only shows up when a group has a
-        gap, and there is no keyboard shortcut for it.
-      </p>
-    </div>
-
     <TimelineExtras />
   </div>
 );
