@@ -12,7 +12,6 @@ import {
 
 interface ShortcutBindingsState {
   overrides: Record<string, ShortcutBinding>;
-  setBinding: (id: string, binding: ShortcutBinding) => void;
   resetBinding: (id: string) => void;
   resetAllBindings: () => void;
 }
@@ -23,10 +22,6 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
   persist(
     (set) => ({
       overrides: {},
-      setBinding: (id, binding) =>
-        set((state) => ({
-          overrides: { ...state.overrides, [id]: binding },
-        })),
       resetBinding: (id) =>
         set((state) => {
           const { [id]: _, ...rest } = state.overrides;
