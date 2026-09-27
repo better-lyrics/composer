@@ -50,6 +50,21 @@ describe("useKeyboardShortcuts", () => {
     expect(count).toBe(1);
   });
 
+  it("regression: calls the latest action and enabled flag after a rerender", async () => {
+    const calls: string[] = [];
+    useShortcutBindingsStore.setState({ overrides: { "global.settings": { key: "z" } } });
+    const { rerender } = await renderHook(
+      (props?: { tag: string; enabled: boolean }) =>
+        useKeyboardShortcuts({ "global.settings": () => calls.push(props?.tag ?? "") }, { enabled: props?.enabled }),
+      { initialProps: { tag: "first", enabled: true } },
+    );
+    await rerender({ tag: "second", enabled: true });
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", bubbles: true }));
+    await rerender({ tag: "third", enabled: false });
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "z", bubbles: true }));
+    expect(calls).toEqual(["second"]);
+  });
+
   it("does nothing for a matched shortcut that has no action", async () => {
     let count = 0;
     await renderHook(() => useKeyboardShortcuts({ "global.settings": () => count++ }));

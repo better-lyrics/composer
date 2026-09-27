@@ -127,8 +127,6 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
-  const cursorRef = useRef(cursor);
-  cursorRef.current = cursor;
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
     setSyncState((prev) => ({ ...prev, isActive: false }));
@@ -146,7 +144,7 @@ const SyncPanel: React.FC = () => {
   }, [audioElement]);
 
   const triggerRippleAtCurrentPosition = useCallback(() => {
-    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursorRef.current;
+    const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursor;
     const lineId = linesRef.current[committedLineIndex]?.id;
     if (!lineId) return;
     setRippleTarget((prev) => ({
@@ -154,7 +152,7 @@ const SyncPanel: React.FC = () => {
       wordIndex: committedWordIndex,
       nonce: (prev?.nonce ?? 0) + 1,
     }));
-  }, []);
+  }, [cursor]);
 
   const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
 
