@@ -91,18 +91,12 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
         return;
       }
 
-      const conflicts = detectConflicts(definition.id, newBinding);
-      if (conflicts.length > 0) {
-        setCaptureState({ status: "conflict", newBinding, conflicts });
-      } else {
-        assignBinding(definition.id, newBinding);
-        setCaptureState({ status: "idle" });
-      }
+      continueFromWarning(newBinding);
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [captureState.status, definition.id, cancelCapture]);
+  }, [captureState.status, cancelCapture, continueFromWarning]);
 
   return (
     <>
