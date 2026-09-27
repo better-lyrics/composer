@@ -1,3 +1,4 @@
+import { applySavedProject } from "@/lib/apply-saved-project";
 import {
   clearAudioFile,
   loadAudioFile,
@@ -11,9 +12,6 @@ import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration";
 import { type AudioSource, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
-import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useEffect } from "react";
@@ -89,19 +87,6 @@ function usePersistence(): void {
     Promise.all([loadCurrentProjectWithPrimingMigration(), loadAudioFile()])
       .then(([project, file]) => {
         if (project) {
-          const issues: string[] = [];
-          const safeLines = project.lines ?? [];
-          if (!project.lines) issues.push("missing lines");
-          const safeAgents = project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS;
-          if (!project.agents || project.agents.length === 0) issues.push("missing or empty agents");
-          const safeGranularity = project.granularity ?? useSettingsStore.getState().defaultGranularity;
-          if (project.granularity === undefined) issues.push("missing granularity");
-          if (issues.length > 0) {
-            console.warn(
-              `${LOG_PREFIX} loaded project has malformed fields (${issues.join(", ")}); using safe defaults. The raw record is still in IndexedDB; visit /recover to download it.`,
-            );
-          }
-
           // Restore the saved stem selection BEFORE setting the audio source.
           // useAutoSeparate's source subscription will then run refreshForCurrentSource
           // which preserves currentStem when the cached stems are still available, and
@@ -117,21 +102,12 @@ function usePersistence(): void {
             useAudioStore.getState().setSource({ type: "file", file });
           }
 
-          const state = useProjectStore.getState();
-          state.setMetadata(normalizeLoadedMetadata(project.metadata));
-          state.setLines(safeLines);
-          state.setGroups(project.groups ?? []);
-          state.setGranularity(safeGranularity);
-          state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
-          state.setAgents(safeAgents);
-          state.setDismissedSuggestions(project.dismissedSuggestions ?? []);
-          state.setDismissedExplicitSuggestions(project.dismissedExplicitSuggestions ?? []);
-          state.setPrimingStripped(project.primingStripped ?? false);
-          state.setCustomSnapPoints(project.customSnapPoints ?? []);
-          if (project.hasUnexportedImport) state.markSongDetailsImported();
-          state.restoreImportedMetadataKeys(project.importedMetadataKeys ?? []);
-          state.setTtmlEditState(project.ttmlEditState ?? null);
-          state.markClean();
+          const issues = applySavedProject(project, "storage");
+          if (issues.length > 0) {
+            console.warn(
+              `${LOG_PREFIX} loaded project has malformed fields (${issues.join(", ")}); using safe defaults. The raw record is still in IndexedDB; visit /recover to download it.`,
+            );
+          }
         } else if (file) {
           useAudioStore.getState().setSource({ type: "file", file });
         }

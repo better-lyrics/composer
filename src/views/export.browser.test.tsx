@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { ExportPanel } from "@/views/export";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
@@ -342,5 +343,102 @@ describe("ExportPanel · invalid XML is blocked", () => {
     } finally {
       clipboard.restore();
     }
+  });
+});
+
+describe("ExportPanel · project file keeps the hand-edited TTML with its project", () => {
+  const STALE_EDIT = { source: "<tt>a</tt>", content: "<tt>a edited</tt>" };
+  const SAVED_EDIT = { source: "<tt>b</tt>", content: "<tt>b edited</tt>" };
+
+  function projectFile(extra: Record<string, unknown> = {}): File {
+    const payload = {
+      version: 3 as const,
+      savedAt: Date.now(),
+      metadata: { title: "Project B", artists: [], album: "Album B", duration: 0 },
+      agents: DEFAULT_AGENTS,
+      lines: [createLine({ text: "B", words: [createWord({ text: "B", begin: 0, end: 1 })] })],
+      groups: [],
+      granularity: "word" as const,
+      ...extra,
+    };
+    return new File([JSON.stringify(payload)], "b.ttml-project.json", { type: "application/json" });
+  }
+
+  async function renderWithProjectA(): Promise<Awaited<ReturnType<typeof render>>> {
+    useSettingsStore.setState({ confirmReplaceLyrics: false });
+    useProjectStore.setState({
+      lines: [createLine({ text: "A", words: [createWord({ text: "A", begin: 0, end: 1 })] })],
+      ttmlEditState: STALE_EDIT,
+      importedMetadataKeys: ["title"],
+    });
+    return render(<ExportPanel />);
+  }
+
+  async function exportedProjectText(screen: Awaited<ReturnType<typeof render>>): Promise<string> {
+    const originalCreate = URL.createObjectURL;
+    const originalRevoke = URL.revokeObjectURL;
+    const blobs: Blob[] = [];
+    URL.createObjectURL = (obj: Blob | MediaSource) => {
+      if (obj instanceof Blob) blobs.push(obj);
+      return "blob:stub";
+    };
+    URL.revokeObjectURL = () => {};
+    try {
+      await screen.getByRole("button", { name: "Export Project" }).click();
+      await expect.poll(() => blobs.length).toBe(1);
+      return await blobs[0].text();
+    } finally {
+      URL.createObjectURL = originalCreate;
+      URL.revokeObjectURL = originalRevoke;
+    }
+  }
+
+  it("drops the previous project's edit when a file without an edit is opened", async () => {
+    await renderWithProjectA();
+
+    dispatchFileChange(getProjectImportInput(), projectFile());
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Project B");
+    expect(useProjectStore.getState().ttmlEditState).toBeNull();
+  });
+
+  it("restores the edit saved in the opened file", async () => {
+    await renderWithProjectA();
+
+    dispatchFileChange(getProjectImportInput(), projectFile({ ttmlEditState: SAVED_EDIT }));
+
+    await expect.poll(() => useProjectStore.getState().ttmlEditState).toEqual(SAVED_EDIT);
+  });
+
+  it("restores the imported song detail keys saved in the opened file", async () => {
+    await renderWithProjectA();
+
+    dispatchFileChange(getProjectImportInput(), projectFile({ importedMetadataKeys: ["album"] }));
+
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Project B");
+    expect(useProjectStore.getState().importedMetadataKeys).toEqual(["album"]);
+  });
+
+  it("keeps the edit and the imported keys through an export and import round trip", async () => {
+    const screen = await renderWithProjectA();
+    const text = await exportedProjectText(screen);
+    useProjectStore.setState({ ttmlEditState: null, importedMetadataKeys: [] });
+
+    dispatchFileChange(getProjectImportInput(), new File([text], "a.ttml-project.json", { type: "application/json" }));
+
+    await expect.poll(() => useProjectStore.getState().ttmlEditState).toEqual(STALE_EDIT);
+    expect(useProjectStore.getState().importedMetadataKeys).toEqual(["title"]);
+  });
+
+  describe("invariants", () => {
+    it("leaves the opened project clean and flagged as an unexported import", async () => {
+      await renderWithProjectA();
+
+      dispatchFileChange(getProjectImportInput(), projectFile({ ttmlEditState: SAVED_EDIT }));
+
+      await expect.poll(() => useProjectStore.getState().ttmlEditState).toEqual(SAVED_EDIT);
+      expect(useProjectStore.getState().isDirty).toBe(false);
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+    });
   });
 });

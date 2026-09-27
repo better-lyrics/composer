@@ -60,17 +60,20 @@ function captureDownloadName(run: () => void): string {
 
 function exportProject(title: string): string {
   return captureDownloadName(() =>
-    exportProjectToFile(
-      { title, artists: [], album: "", duration: 0 },
-      [],
-      [],
-      [],
-      "word",
-      DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
-      [],
-      [],
-      [],
-    ),
+    exportProjectToFile({
+      metadata: { title, artists: [], album: "", duration: 0 },
+      agents: [],
+      lines: [],
+      groups: [],
+      granularity: "word",
+      syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
+      dismissedSuggestions: [],
+      dismissedExplicitSuggestions: [],
+      customSnapPoints: [],
+      importedMetadataKeys: [],
+      ttmlEditState: null,
+      audioFileName: undefined,
+    }),
   );
 }
 

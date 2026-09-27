@@ -58,6 +58,21 @@ interface ProjectSaveInput {
   ttmlEditState: TtmlEditState;
 }
 
+type ProjectFileInput = Pick<
+  ProjectSaveInput,
+  | "metadata"
+  | "agents"
+  | "lines"
+  | "groups"
+  | "granularity"
+  | "syllableSplitDefaults"
+  | "dismissedSuggestions"
+  | "dismissedExplicitSuggestions"
+  | "customSnapPoints"
+  | "importedMetadataKeys"
+  | "ttmlEditState"
+> & { audioFileName: string | undefined };
+
 // -- Constants ----------------------------------------------------------------
 
 const CURRENT_PROJECT_KEY = "current";
@@ -117,36 +132,27 @@ async function clearAudioFile(): Promise<void> {
   await deleteFromStore(PROJECT_STORE_NAME, AUDIO_FILE_KEY);
 }
 
-function exportProjectToFile(
-  metadata: ProjectMetadata,
-  agents: Agent[],
-  lines: LyricLine[],
-  groups: LinkGroup[],
-  granularity: GranularityMode,
-  syllableSplitDefaults: SyllableSplitDefaults,
-  dismissedSuggestions: string[],
-  dismissedExplicitSuggestions: string[],
-  customSnapPoints: SnapPoint[],
-  audioFileName?: string,
-): void {
+function exportProjectToFile(input: ProjectFileInput): void {
   const project: SavedProject = {
     version: 3,
     savedAt: Date.now(),
-    metadata,
-    agents,
-    lines,
-    groups,
-    granularity,
-    syllableSplitDefaults,
-    audioFileName,
-    dismissedSuggestions,
-    dismissedExplicitSuggestions,
-    customSnapPoints,
+    metadata: input.metadata,
+    agents: input.agents,
+    lines: input.lines,
+    groups: input.groups,
+    granularity: input.granularity,
+    syllableSplitDefaults: input.syllableSplitDefaults,
+    audioFileName: input.audioFileName,
+    dismissedSuggestions: input.dismissedSuggestions,
+    dismissedExplicitSuggestions: input.dismissedExplicitSuggestions,
+    customSnapPoints: input.customSnapPoints,
+    importedMetadataKeys: input.importedMetadataKeys,
+    ttmlEditState: input.ttmlEditState,
   };
 
   downloadText(
     JSON.stringify(project, null, 2),
-    `${sanitizeFileName(metadata.title, "project")}-${localDateStamp()}.ttml-project.json`,
+    `${sanitizeFileName(input.metadata.title, "project")}-${localDateStamp()}.ttml-project.json`,
     "application/json",
   );
 }
