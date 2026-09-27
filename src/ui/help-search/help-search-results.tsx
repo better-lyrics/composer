@@ -19,16 +19,14 @@ interface HelpSearchResultsProps {
 const HelpSearchResults: React.FC<HelpSearchResultsProps> = ({ terms, onCounts, onOpenSection, onOpenTopic }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const termsKey = terms.join(" ");
-  const onCountsRef = useRef(onCounts);
-  onCountsRef.current = onCounts;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     const activeTerms = termsKey.split(" ");
-    onCountsRef.current(filterHelpTopics(root, activeTerms));
+    onCounts(filterHelpTopics(root, activeTerms));
     paintHelpMatches(root, activeTerms);
-  }, [termsKey]);
+  }, [termsKey, onCounts]);
 
   useLayoutEffect(() => clearHelpMatches, []);
 

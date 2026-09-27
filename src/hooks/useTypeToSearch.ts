@@ -1,5 +1,5 @@
 import { useModalStackStore } from "@/stores/modal-stack";
-import { type RefObject, useEffect, useRef } from "react";
+import { type RefObject, useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -20,20 +20,15 @@ function useTypeToSearch(
   query: string,
   setQuery: (query: string) => void,
 ): void {
-  const latest = useRef({ query, setQuery });
-  latest.current = { query, setQuery };
-
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       if (useModalStackStore.getState().count > 1) return;
-      const { query: current, setQuery: write } = latest.current;
-
       if (event.key === "Escape") {
-        if (current === "") return;
+        if (query === "") return;
         event.preventDefault();
         event.stopPropagation();
-        write("");
+        setQuery("");
         return;
       }
 
@@ -49,12 +44,12 @@ function useTypeToSearch(
       if (event.key.length !== 1 || event.key === " ") return;
       event.preventDefault();
       inputRef.current?.focus({ preventScroll: true });
-      write(current + event.key);
+      setQuery(query + event.key);
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
     return () => document.removeEventListener("keydown", handleKeyDown, true);
-  }, [inputRef]);
+  }, [inputRef, query, setQuery]);
 }
 
 // -- Exports -------------------------------------------------------------------
