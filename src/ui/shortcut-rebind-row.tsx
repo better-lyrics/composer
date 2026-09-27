@@ -28,7 +28,6 @@ type CaptureState =
 
 const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => {
   const [captureState, setCaptureState] = useState<CaptureState>({ status: "idle" });
-  const setBinding = useShortcutBindingsStore((s) => s.setBinding);
   const resetBinding = useShortcutBindingsStore((s) => s.resetBinding);
   const overrides = useShortcutBindingsStore((s) => s.overrides);
   const isOverridden = definition.id in overrides;
@@ -57,11 +56,11 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
       if (conflicts.length > 0) {
         setCaptureState({ status: "conflict", newBinding: binding, conflicts });
       } else {
-        setBinding(definition.id, binding);
+        assignBinding(definition.id, binding);
         setCaptureState({ status: "idle" });
       }
     },
-    [definition.id, setBinding],
+    [definition.id],
   );
 
   useEffect(() => {
@@ -88,14 +87,14 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
       if (conflicts.length > 0) {
         setCaptureState({ status: "conflict", newBinding, conflicts });
       } else {
-        setBinding(definition.id, newBinding);
+        assignBinding(definition.id, newBinding);
         setCaptureState({ status: "idle" });
       }
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [captureState.status, definition.id, setBinding, cancelCapture]);
+  }, [captureState.status, definition.id, cancelCapture]);
 
   return (
     <>
