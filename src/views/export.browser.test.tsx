@@ -26,6 +26,29 @@ function dispatchFileChange(input: HTMLInputElement, file: File): void {
   input.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
+describe("ExportPanel preview highlight", () => {
+  it("resolves token colours through the composer theme variables", async () => {
+    const root = document.documentElement;
+    root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
+    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
+    try {
+      useProjectStore.setState({
+        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+      });
+      const screen = await render(<ExportPanel />);
+      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
+      const pre = screen.container.querySelector("pre");
+      const tag = screen.container.querySelector("pre .token.tag:not(.punctuation)");
+      if (!pre || !tag) throw new Error("highlighted preview not rendered");
+      expect(getComputedStyle(tag).color).toBe("rgb(1, 2, 3)");
+      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
+    } finally {
+      root.style.removeProperty("--color-composer-accent-text");
+      root.style.removeProperty("--color-composer-bg-elevated");
+    }
+  });
+});
+
 describe("ExportPanel", () => {
   it("shows the 'No lyrics to export' empty state when there are no lines", async () => {
     useProjectStore.setState({ lines: [] });

@@ -69,6 +69,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const latestLyricsRef = useRef(lyrics);
+  const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
+  const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const appliedPlaybackRateRef = useRef(1);
   const [isAutoscrollPaused, setIsAutoscrollPaused] = useState(false);
   const resumeWakeRef = useRef<number | null>(null);
@@ -116,14 +118,25 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     decorateAlternateTracks(el, latestLyricsRef.current);
   }, []);
 
-  const setElement = useCallback((el: BraccatoLyricsElement | null) => {
-    elementRef.current = el;
-    if (!el) return;
-    el.theme = braccatoTheme;
-    el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-    el.lyrics = latestLyricsRef.current;
-    decorateAlternateTracks(el, latestLyricsRef.current);
+  const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[]) => {
+    if (appliedLyricsRef.current === next) return;
+    appliedLyricsRef.current = next;
+    el.lyrics = next;
+    decorateAlternateTracks(el, next);
   }, []);
+
+  // Activity re-attaches this ref on every reveal; re-initializing the same element rebuilds its lines.
+  const setElement = useCallback(
+    (el: BraccatoLyricsElement | null) => {
+      elementRef.current = el;
+      if (!el || initializedElementRef.current === el) return;
+      initializedElementRef.current = el;
+      el.theme = braccatoTheme;
+      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+      applyLyrics(el, latestLyricsRef.current);
+    },
+    [applyLyrics],
+  );
 
   useEffect(() => {
     const el = elementRef.current;
@@ -148,11 +161,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   useEffect(() => {
     latestLyricsRef.current = lyrics;
     const element = elementRef.current;
-    if (element) {
-      element.lyrics = lyrics;
-      decorateAlternateTracks(element, lyrics);
-    }
-  }, [lyrics]);
+    if (element) applyLyrics(element, lyrics);
+  }, [lyrics, applyLyrics]);
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.

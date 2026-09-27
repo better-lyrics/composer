@@ -6,6 +6,7 @@ import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
+import { codeHighlightTheme } from "@/utils/theme/code-highlight-theme";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
@@ -19,7 +20,7 @@ import {
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
-import { Highlight, themes } from "prism-react-renderer";
+import { Highlight } from "prism-react-renderer";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -192,15 +193,9 @@ const ExportPanel: React.FC = () => {
         <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
-          <Highlight theme={themes.nightOwl} code={exportContent} language="xml">
+          <Highlight theme={codeHighlightTheme} code={exportContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre
-                className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text"
-                style={{
-                  ...style,
-                  background: "var(--color-composer-bg-elevated)",
-                }}
-              >
+              <pre className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text" style={style}>
                 {tokens.map((line, i) => (
                   // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
                   <div key={i} {...getLineProps({ line })}>

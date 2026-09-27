@@ -9,6 +9,7 @@ import {
   buildSyncedTtml,
 } from "@/test/ttml-fixtures";
 import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
+import { Activity, useState } from "react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
@@ -278,5 +279,79 @@ describe("AmLyricsRenderer", () => {
     expect(
       el.shadowRoot?.querySelector(".lyrics-translation-container")?.hasAttribute("data-composer-matching-alternate"),
     ).toBe(false);
+  });
+});
+
+let setRevealVisible: (visible: boolean) => void = () => {};
+
+function RevealHarness({ ttml }: { ttml: string }) {
+  const [visible, set] = useState(true);
+  setRevealVisible = set;
+  return (
+    <Activity mode={visible ? "visible" : "hidden"}>
+      <div data-testid="reveal-panel" style={{ display: "flex", flexDirection: "column", height: 600 }}>
+        <AmLyricsRenderer ttmlString={ttml} durationSeconds={SONG_DURATION_SECONDS} />
+      </div>
+    </Activity>
+  );
+}
+
+async function hideAndReveal(container: Element): Promise<void> {
+  const panel = () => container.querySelector<HTMLElement>("[data-testid='reveal-panel']");
+  setRevealVisible(false);
+  await expect.poll(() => panel()?.style.display).toBe("none");
+  setRevealVisible(true);
+  await expect.poll(() => panel()?.style.display).not.toBe("none");
+}
+
+describe("AmLyricsRenderer inside Activity", () => {
+  beforeAll(() => {
+    addGlobalAllowedConsolePattern(/dev mode/i);
+  });
+
+  it("keeps its element and line nodes across a hide and reveal", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(<RevealHarness ttml={buildSyncedTtml()} />);
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+    const firstLineBefore = firstLyricLine(el);
+
+    await hideAndReveal(screen.container);
+
+    expect(screen.container.querySelectorAll("am-lyrics")).toHaveLength(1);
+    expect(screen.container.querySelector("am-lyrics")).toBe(el);
+    expect(firstLyricLine(el)).toBe(firstLineBefore);
+  });
+
+  it("still answers line clicks after a hide and reveal", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(<RevealHarness ttml={buildSyncedTtml()} />);
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await hideAndReveal(screen.container);
+    firstLyricLine(el)?.click();
+
+    await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
+  });
+});
+
+describe("AmLyricsRenderer unmount", () => {
+  beforeAll(() => {
+    addGlobalAllowedConsolePattern(/dev mode/i);
+  });
+
+  it("stops listening to the element once the component truly unmounts", async () => {
+    useAudioStore.setState({ audioElement: new Audio() });
+    const screen = await render(
+      <AmLyricsRenderer ttmlString={buildSyncedTtml()} durationSeconds={SONG_DURATION_SECONDS} />,
+    );
+    const el = await waitForAmLyrics(screen.container);
+    await waitForLyrics(el);
+
+    await screen.unmount();
+    el.dispatchEvent(new CustomEvent("line-click", { detail: { timestamp: 7000 } }));
+
+    expect(useAudioStore.getState().currentTime).toBe(0);
   });
 });
