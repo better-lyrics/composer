@@ -168,6 +168,19 @@ describe("usePersistence + useImportFromHash: hash overrides persistence", () =>
     expect(useProjectStore.getState().granularity).toBe("word");
   });
 
+  it("regression: keeps an imported agent the replaced project also had", async () => {
+    const savedDuet = { id: "v2", type: "person" as const, name: "Saved Duet" };
+    const importedDuet = { id: "v2", type: "person" as const, name: "Imported Duet" };
+    await seedProject({ ...savedSnapshot(), agents: [SAVED_AGENT, savedDuet] });
+    autoAcceptHashConfirm();
+    setHash(encodeHashPayload({ ...importedPayload(), agents: [IMPORTED_AGENT, importedDuet] }));
+
+    await render(<HookHost />);
+    await waitForBootSettled();
+
+    expect(useProjectStore.getState().agents.map((agent) => agent.name)).toEqual(["Imported Lead", "Imported Duet"]);
+  });
+
   it("regression: a payload with null metadata is rejected and the saved project survives", async () => {
     allowConsole(/Invalid import payload structure/);
     await seedProject(savedSnapshot());

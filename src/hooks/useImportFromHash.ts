@@ -78,13 +78,13 @@ function useImportFromHash(): void {
         // a malformed payload can never leave the user with an emptied project.
         const metadata = normalizeLoadedMetadata(payload.metadata);
 
+        useProjectStore.getState().reset();
         const state = useProjectStore.getState();
-        state.reset();
         state.setMetadata(metadata);
         state.setLines(payload.lines);
         state.setGranularity(payload.granularity);
         for (const agent of payload.agents) {
-          if (!state.agents.some((existing) => existing.id === agent.id)) {
+          if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {
             state.addAgent(agent);
           } else {
             state.updateAgent(agent.id, agent);
