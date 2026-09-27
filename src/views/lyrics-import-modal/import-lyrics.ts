@@ -9,7 +9,6 @@ import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
-import { formatKey } from "@/utils/format-key";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { ParseIssue, ParseResult } from "@/utils/lyrics-parsers/shared";
 import { distributeLinesTiming } from "@/views/timeline/utils";
@@ -62,10 +61,11 @@ function confirmReplace(confirm: ConfirmFn): Promise<boolean> {
   if (existing === 0) return Promise.resolve(true);
   return confirm({
     title: "Replace existing lyrics?",
-    description: `This replaces your ${existing} existing ${lineNoun(existing)}. You can undo it with ${formatKey("Mod")}+Z.`,
+    description: `This replaces your ${existing} existing ${lineNoun(existing)}.`,
     confirmLabel: "Replace",
     variant: "destructive",
     settingsKey: "confirmReplaceLyrics",
+    recoverable: true,
   });
 }
 

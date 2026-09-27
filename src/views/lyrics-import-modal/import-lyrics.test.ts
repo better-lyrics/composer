@@ -137,8 +137,8 @@ describe("importLyrics confirm flow", () => {
     );
     expect(prompts[0].title).toBe("Replace existing lyrics?");
     expect(prompts[0].description).not.toContain("cannot be undone");
-    expect(prompts[0].description).toContain("This replaces your 2 existing lines.");
-    expect(prompts[0].description).toMatch(/You can undo it with .+Z\./);
+    expect(prompts[0].description).toBe("This replaces your 2 existing lines.");
+    expect(prompts[0].recoverable).toBe(true);
   });
 
   it("uses the singular for one existing line", async () => {
@@ -153,7 +153,7 @@ describe("importLyrics confirm flow", () => {
         },
       }),
     );
-    expect(prompts[0].description).toContain("This replaces your 1 existing line.");
+    expect(prompts[0].description).toBe("This replaces your 1 existing line.");
   });
 
   it("undoes the whole import in one step", async () => {
