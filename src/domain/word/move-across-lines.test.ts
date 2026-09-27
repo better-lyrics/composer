@@ -582,7 +582,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     expect(JSON.stringify(input)).toBe(snapshot);
   });
 
-  it("returns a new array (referential change)", () => {
+  it("applying the returned updates changes the lines", () => {
     const lineA = createLine({
       id: "A",
       words: [
@@ -611,7 +611,6 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    // The API returns per-line updates, so the referential check becomes "applying them changes the lines".
     expect(applyUpdates(input, result.updates)).not.toEqual(input);
   });
 

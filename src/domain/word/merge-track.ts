@@ -28,7 +28,6 @@ function regenerateSyllableGroupIds(words: WordTiming[]): WordTiming[] {
   return changed ? result : words;
 }
 
-// An atomic unit is one word, or a whole run of adjacent syllables that share a group id.
 function atomicUnits(words: WordTiming[], isIncoming: boolean): TaggedWord[][] {
   const runEndByStart = new Map(computeByGroupId(words).map((run) => [run.startIndex, run.endIndex]));
   const units: TaggedWord[][] = [];

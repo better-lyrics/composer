@@ -385,4 +385,13 @@ describe("mergeWordsIntoTrack syllable groups", () => {
     const result = mergeWordsIntoTrack([{ text: "x", begin: 0, end: 1 }], outOfOrder);
     expect(result.map((w) => w.text.trim())).toEqual(["x", "a", "b"]);
   });
+
+  it("an id-less trailing-space group is not atomic, so an incoming word in its gap splits it", () => {
+    const existing: WordTiming[] = [
+      { text: "ti", begin: 1, end: 1.4 },
+      { text: "tle", begin: 2, end: 2.4 },
+    ];
+    const result = mergeWordsIntoTrack(existing, [{ text: "x", begin: 1.5, end: 1.8 }]);
+    expect(result.map((w) => w.text)).toEqual(["ti ", "x ", "tle"]);
+  });
 });

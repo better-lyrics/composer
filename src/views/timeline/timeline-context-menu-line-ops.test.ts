@@ -50,7 +50,6 @@ describe("gutter add/delete preserves line-sync granularity", () => {
     const effective = getEffectiveLines(useProjectStore.getState().lines);
     // effective[0] now has a synthesised single-word array
     expect(effective[0].words).toHaveLength(1);
-    // The store setter now rejects effective lines at compile time instead of corrupting them at runtime.
     expectTypeOf([...effective]).not.toMatchTypeOf<Parameters<StoreState["setLinesWithHistory"]>[0]>();
   });
 
