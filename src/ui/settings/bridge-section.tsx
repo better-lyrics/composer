@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { IconCheck, IconExclamationCircle, IconLoader2 } from "@tabler/icons-react";
 import { useSettingsStore } from "@/stores/settings";
+import { settingEntry } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
 import { hasBridgeEverBeenDetected, markBridgeDetected } from "@/utils/bridge-detection";
 import {
@@ -157,15 +158,12 @@ const BridgeSection: React.FC = () => {
     <div
       ref={containerRef}
       data-testid="bridge-section"
-      className={cn(
-        "pt-3 mt-3 border-t border-composer-border transition-shadow duration-300",
-        pulsing && "ring-2 ring-composer-accent",
-      )}
+      className={cn("py-3 transition-shadow duration-300", pulsing && "ring-2 ring-composer-accent")}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex flex-col gap-0.5 pr-4">
           <span className="text-sm font-medium text-composer-text">
-            Composer Bridge for YouTube
+            {settingEntry("youtubeBridge").label}
             <span className="ml-2 text-[10px] tracking-wide text-composer-accent-text">Experimental</span>
           </span>
           <span className="text-xs text-composer-text-muted">

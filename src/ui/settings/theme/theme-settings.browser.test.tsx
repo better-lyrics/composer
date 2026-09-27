@@ -2,31 +2,31 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { encodeThemeCode } from "@/domain/theme/code";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
 import { useThemeStore } from "@/stores/theme";
-import { ThemeSection } from "@/ui/settings/theme-section";
+import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
 import { render } from "@/test/render";
 
 // -- Tests --------------------------------------------------------------------
 
-describe("ThemeSection", () => {
+describe("ThemeSettings", () => {
   beforeEach(() => {
     useThemeStore.setState({ activeThemeId: DEFAULT_PRESET_ID, customThemes: [] });
   });
 
   it("renders the preset gallery with a Composer and a classic preset", async () => {
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     await expect.element(screen.getByRole("button", { name: /Default/ })).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: /Dracula/ })).toBeInTheDocument();
   });
 
   it("opens the editor when Customize current is clicked", async () => {
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     await screen.getByRole("button", { name: "Customize current" }).click();
     await expect.element(screen.getByLabelText("Theme name")).toBeInTheDocument();
   });
 
   it("forks the active theme as the editor base", async () => {
     useThemeStore.setState({ activeThemeId: "harbor" });
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     await screen.getByRole("button", { name: "Customize current" }).click();
     const name = screen.getByLabelText("Theme name").element() as HTMLInputElement;
     expect(name.value).toBe(`${PRESET_BY_ID.get("harbor")?.name} (copy)`);
@@ -44,7 +44,7 @@ describe("ThemeSection", () => {
         },
       ],
     });
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     await screen.getByRole("button", { name: "Edit Saved One" }).click();
     const name = screen.getByLabelText("Theme name").element() as HTMLInputElement;
     expect(name.value).toBe("Saved One");
@@ -55,7 +55,7 @@ describe("ThemeSection", () => {
     const preset = PRESET_BY_ID.get("nord");
     if (!preset) throw new Error("missing preset");
     const code = encodeThemeCode(preset);
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     const input = screen.getByLabelText("Theme code");
     await input.fill(code);
     await screen.getByRole("button", { name: /Import/ }).click();
@@ -64,7 +64,7 @@ describe("ThemeSection", () => {
   });
 
   it("shows an inline error for an invalid code and does not grow customThemes", async () => {
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     const input = screen.getByLabelText("Theme code");
     await input.fill("bogus");
     await screen.getByRole("button", { name: /Import/ }).click();
@@ -73,7 +73,7 @@ describe("ThemeSection", () => {
   });
 
   it("re-applies the active theme when the editor closes", async () => {
-    const screen = await render(<ThemeSection onResetTour={() => {}} onClose={() => {}} />);
+    const screen = await render(<ThemeSettings />);
     await screen.getByRole("button", { name: "Customize current" }).click();
     await screen.getByRole("button", { name: "Discard" }).click();
     await expect.element(screen.getByRole("button", { name: "Customize current" })).toBeInTheDocument();

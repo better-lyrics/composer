@@ -1,6 +1,7 @@
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
+import { SettingText } from "@/ui/settings/setting-text";
 import { useCallback, useEffect, useState } from "react";
 
 // -- Split Character Setting --------------------------------------------------
@@ -72,12 +73,7 @@ const SplitCharacterSetting: React.FC = () => {
   return (
     <>
       <div className="flex items-center justify-between py-3">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-composer-text">Split character</span>
-          <span className="text-xs text-composer-text-muted">
-            Character used to mark syllable boundaries in the edit view
-          </span>
-        </div>
+        <SettingText id="splitCharacter" />
         <div className="flex items-center gap-2">
           {!isDefault && (
             <button

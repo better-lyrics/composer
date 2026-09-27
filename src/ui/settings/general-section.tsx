@@ -1,7 +1,7 @@
 import { useConfirm } from "@/stores/confirm-store";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
-import { ToggleSetting } from "@/ui/settings/setting-controls";
+import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { IconRefresh, IconRoute } from "@tabler/icons-react";
 
 // -- General Section ----------------------------------------------------------
@@ -26,31 +26,7 @@ const GeneralSection: React.FC<{
 
   return (
     <div className="divide-y divide-composer-border">
-      <ToggleSetting
-        label="Show shortcut hints"
-        description="Display keyboard shortcut badges on toolbar buttons."
-        settingKey="showShortcutHints"
-      />
-      <ToggleSetting
-        label="Show syllable indicators"
-        description="Visually group syllables split from one word."
-        settingKey="showSyllableIndicators"
-      />
-      <ToggleSetting
-        label="Auto-extract background vocals"
-        description="Move parenthesised text into background vocals when lyrics are pasted, imported, or edited."
-        settingKey="autoExtractBackgroundVocals"
-      />
-      <ToggleSetting
-        label="Merge standalone background lines"
-        description="When a whole line is in parentheses, attach it to the line above instead of keeping it as its own line."
-        settingKey="mergeStandaloneBackgroundLines"
-      />
-      <ToggleSetting
-        label="Preserve brackets when extracting"
-        description="Keep parentheses around extracted background vocals. Multiple snippets share one outer pair."
-        settingKey="preserveBracketsOnExtraction"
-      />
+      <SettingsSectionRows section="general" />
       <div className="flex items-center justify-between py-3">
         <div className="flex flex-col gap-0.5">
           <span className="text-sm font-medium text-composer-text">Reset product tour</span>
