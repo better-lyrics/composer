@@ -6,7 +6,6 @@ import { fileURLToPath } from "node:url";
 
 const TEST_FILE_SUFFIXES = [".test.ts", ".test.tsx", ".browser.test.tsx"];
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const SCRATCH_DIR = "test/e2e-repro/";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,7 +27,7 @@ function findProductionMatches(pattern: RegExp, allowed: (relPath: string) => bo
   const offenders: string[] = [];
   for (const file of walkSourceFiles(SRC_ROOT)) {
     const rel = relative(SRC_ROOT, file).split("\\").join("/");
-    if (rel.startsWith(SCRATCH_DIR) || isTestFile(rel) || allowed(rel)) continue;
+    if (isTestFile(rel) || allowed(rel)) continue;
     const code = readFileSync(file, "utf8");
     for (const match of code.matchAll(global)) {
       offenders.push(`${rel}:${code.slice(0, match.index).split("\n").length}`);

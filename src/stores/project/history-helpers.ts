@@ -104,8 +104,7 @@ function commitSnapPointEdit(state: ProjectState, baseline: SnapPoint[]) {
   return { isDirty: true, isDirtySinceHistory: false, history: newHistory, historyIndex: newHistory.length - 1 };
 }
 
-// Undo from a pending non-history edit first records that edit as its own
-// entry, so redo can return to it and nothing between entries is skipped.
+// A pending edit becomes its own entry first so redo can return to it.
 function undoState(state: ProjectState) {
   const pending = state.isDirtySinceHistory && state.historyIndex >= 0;
   if (!pending && state.historyIndex <= 0) return state;

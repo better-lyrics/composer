@@ -6,6 +6,7 @@ import { isTestFile, walkSourceFiles } from "@/test/source-files";
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OWNER = "lib/download-file.ts";
+const LOCAL_SCRATCH_DIR = "test/e2e-repro/";
 
 // These create object URLs to play or probe audio, not to download a file.
 const OBJECT_URL_WHITELIST = new Set([
@@ -65,7 +66,7 @@ function offendersOf(rule: Rule): string[] {
   const offenders: string[] = [];
   for (const file of walkSourceFiles(SRC_ROOT)) {
     const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
-    if (rel.startsWith("test/e2e-repro/") || rule.allowed(rel)) continue;
+    if (rel.startsWith(LOCAL_SCRATCH_DIR) || rule.allowed(rel)) continue;
     if (!rule.includeTests && isTestFile(rel)) continue;
     readFileSync(file, "utf8")
       .split("\n")

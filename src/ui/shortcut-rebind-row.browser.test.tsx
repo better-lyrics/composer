@@ -83,7 +83,7 @@ async function openCapture(screen: Awaited<ReturnType<typeof render>>) {
   await expect.element(screen.getByText("Press a new key combination")).toBeInTheDocument();
 }
 
-describe("cluster-e shortcuts", () => {
+describe("capturing a new key combination", () => {
   it("U5: Replace leaves no other shortcut on the same key", async () => {
     const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
     await openCapture(screen);
