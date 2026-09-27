@@ -743,14 +743,14 @@ const EditPanel: React.FC = () => {
                       : undefined;
                   return (
                     <div key={line.lineNumber}>
-                      {isFirstOfInstance && group && (
+                      {isFirstOfInstance && group && line.instanceIdx !== undefined && (
                         <div
                           className="mx-3 mt-2 mb-1 flex items-center gap-2 text-xs text-composer-text-muted select-none"
                           aria-hidden
                         >
                           <span className="font-medium text-composer-text">{group.label}</span>
                           <span className="tabular-nums">
-                            · {instanceOrdinal(lines, group.id, line.instanceIdx ?? 0)} of {totalInstances}
+                            · {instanceOrdinal(lines, group.id, line.instanceIdx)} of {totalInstances}
                           </span>
                           <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />
                         </div>
