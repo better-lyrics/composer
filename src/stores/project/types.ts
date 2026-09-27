@@ -91,6 +91,12 @@ interface MetadataActions {
   startProjectSession: () => void;
   resetSongIdentity: (title: string) => void;
   restoreSongIdentity: (identity: SongIdentity) => void;
+  replaceLyricsWithHistory: (input: {
+    lines: LyricLine[];
+    groups: LinkGroup[];
+    agents: Agent[] | undefined;
+    metadata: Partial<ProjectMetadata>;
+  }) => void;
   markSongDetailsImported: () => void;
   clearUnexportedImport: () => void;
   reset: () => void;
