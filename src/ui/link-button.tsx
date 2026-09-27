@@ -25,7 +25,7 @@ const LinkButton: React.FC<LinkButtonProps> = (props) => {
           variant,
           size,
           hasIcon,
-          className: cn("opacity-50 cursor-not-allowed", className),
+          className: cn("opacity-50 cursor-not-allowed pointer-events-none", className),
         })}
       >
         {children}

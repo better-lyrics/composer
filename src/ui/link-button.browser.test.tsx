@@ -1,3 +1,4 @@
+import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { buttonClassName } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
@@ -64,5 +65,19 @@ describe("LinkButton", () => {
     const className = screen.getByRole("link", { name: "Go" }).element().className;
     expect(className).toContain("opacity-50");
     expect(className).toContain("cursor-not-allowed");
+  });
+
+  it("takes no pointer input while disabled, so hover never brightens it", async () => {
+    const utilities = installStyleSheet(HIT_TESTING_UTILITIES_CSS);
+    try {
+      const screen = await render(
+        <LinkButton href="/x" variant="primary" disabled>
+          Go
+        </LinkButton>,
+      );
+      expect(getComputedStyle(screen.getByRole("link", { name: "Go" }).element()).pointerEvents).toBe("none");
+    } finally {
+      utilities.remove();
+    }
   });
 });

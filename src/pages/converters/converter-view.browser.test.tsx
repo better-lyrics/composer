@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { convertViaParser } from "@/pages/converters/convert-via-parser";
 import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
+import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 
 const LRC_CONVERSION = {
@@ -141,6 +142,18 @@ describe("ConverterView", () => {
     await expect.element(link).toHaveAttribute("aria-disabled", "true");
     await expect.element(link).not.toHaveAttribute("href");
     expect(link.element().querySelector("button")).toBe(null);
+  });
+
+  it("keeps the disabled Open in Composer at the quarter dimming the wrapped button had", async () => {
+    const utilities = installStyleSheet(`${HIT_TESTING_UTILITIES_CSS}.opacity-25{opacity:.25}.opacity-50{opacity:.5}`);
+    try {
+      const screen = await renderLrcConverter();
+      const style = getComputedStyle(screen.getByRole("link", { name: "Open in Composer" }).element());
+      expect(style.pointerEvents).toBe("none");
+      expect(style.opacity).toBe("0.25");
+    } finally {
+      utilities.remove();
+    }
   });
 });
 

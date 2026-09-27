@@ -137,7 +137,14 @@ const ConverterView: React.FC<ConverterViewProps> = ({
           </pre>
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-xs text-composer-text-muted">Need to fine-tune timing against a waveform?</span>
-            <LinkButton href={openInComposerHref} variant="primary" size="sm" disabled={!projectPayload} hasIcon>
+            <LinkButton
+              href={openInComposerHref}
+              variant="primary"
+              size="sm"
+              disabled={!projectPayload}
+              hasIcon
+              className={cn(!projectPayload && "opacity-25")}
+            >
               Open in Composer
               <IconExternalLink size={12} />
             </LinkButton>
