@@ -2,7 +2,7 @@
  * @vitest-environment node
  */
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
-import { computeSyllableGroups } from "@/domain/word/syllable-groups";
+import { computeSyllableGroups, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 import { reorderWordTrack } from "./reorder-track";
@@ -278,5 +278,28 @@ describe("reorderWordTrack edge cases and invariants", () => {
     expect(result[result.length - 1].text.endsWith(" ")).toBe(false);
     expect(computeSyllableGroups(result)).toEqual([]);
     expect(reconstructLineText(result, "|")).not.toContain("|");
+  });
+});
+
+describe("regressions: T9 syllable drag past a neighbor", () => {
+  const track: WordTiming[] = [
+    { text: "Hel", begin: 0, end: 0.25, syllableGroupId: "g1" },
+    { text: "lo ", begin: 0.25, end: 0.5, syllableGroupId: "g1" },
+    { text: "there", begin: 0.5, end: 1.0 },
+  ];
+
+  it("a drag of 'lo' moves its groupmate 'Hel' too (expandSelectionToGroupmates)", () => {
+    expect([...expandSelectionToGroupmates(track, [1])].toSorted()).toEqual([0, 1]);
+  });
+
+  it("the dragged syllable group stays contiguous when it partially overlaps 'there'", () => {
+    const result = reorderWordTrack(track, new Set([0, 1]), 0.3, 10);
+    const order = result.map((w) => w.text.trim());
+    expect(order).toEqual(["Hel", "lo", "there"]);
+  });
+
+  it("the whole group jumps as one block once it is past 'there'", () => {
+    const result = reorderWordTrack(track, new Set([0, 1]), 0.9, 10);
+    expect(reconstructLineText(result, "|")).toBe("there Hel|lo");
   });
 });
