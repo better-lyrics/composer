@@ -8,9 +8,8 @@ type AudioProbeResult = { ok: true; duration: number } | { ok: false };
 
 // -- Probe --------------------------------------------------------------------
 
-function probeAudioFile(file: File): Promise<AudioProbeResult> {
+function probeAudioUrl(url: string): Promise<AudioProbeResult> {
   return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
     const audio = new Audio();
     let timer = 0;
 
@@ -19,7 +18,6 @@ function probeAudioFile(file: File): Promise<AudioProbeResult> {
       audio.removeEventListener("loadedmetadata", onMetadata);
       audio.removeEventListener("error", onError);
       audio.removeAttribute("src");
-      URL.revokeObjectURL(url);
       resolve(result);
     };
     const onMetadata = () =>
@@ -32,6 +30,11 @@ function probeAudioFile(file: File): Promise<AudioProbeResult> {
     audio.preload = "metadata";
     audio.src = url;
   });
+}
+
+function probeAudioFile(file: File): Promise<AudioProbeResult> {
+  const url = URL.createObjectURL(file);
+  return probeAudioUrl(url).finally(() => URL.revokeObjectURL(url));
 }
 
 // -- Exports ------------------------------------------------------------------
