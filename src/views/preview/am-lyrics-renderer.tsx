@@ -68,7 +68,7 @@ function removeMatchingAlternatesAfterUpdate(el: AmLyricsElement): void {
   void el.updateComplete.then(() => el.updateComplete).then(() => markMatchingAlternateElements(el));
 }
 
-function createAmLyricsElement(ttml: string, songDurationMs: number, layout: LyricsLayout): AmLyricsElement {
+function createAmLyricsElement(ttml: string, songDurationMs: number): AmLyricsElement {
   const el = document.createElement("am-lyrics") as AmLyricsElement;
   // am-lyrics parses our iTunes sidecars, but keeps both alternate tracks
   // behind controls in its built-in header. Composer hides that header, so
@@ -82,7 +82,6 @@ function createAmLyricsElement(ttml: string, songDurationMs: number, layout: Lyr
   el.ttml = ttml;
   removeMatchingAlternatesAfterUpdate(el);
   el.songDurationMs = songDurationMs;
-  el.className = LYRICS_ELEMENT_CLASS[layout];
   el.style.setProperty("--am-lyrics-highlight-color", "var(--color-composer-text)");
   return el;
 }
@@ -97,8 +96,6 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
   const latestDurationMsRef = useRef(durationSeconds * 1000);
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
-  const latestLayoutRef = useRef(layout);
-  latestLayoutRef.current = layout;
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
 
@@ -118,10 +115,9 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     if (!container) return;
 
     // Activity re-runs this effect on every reveal; the element is kept so its rendered lines survive.
-    const el =
-      createdElementRef.current ??
-      createAmLyricsElement(latestTtmlRef.current, latestDurationMsRef.current, latestLayoutRef.current);
+    const el = createdElementRef.current ?? createAmLyricsElement(latestTtmlRef.current, latestDurationMsRef.current);
     createdElementRef.current = el;
+    el.className = LYRICS_ELEMENT_CLASS[layout];
     const matchingAlternateObserver = new MutationObserver(() => markMatchingAlternateElements(el));
 
     const handleLineClick = (event: Event) => {
@@ -159,7 +155,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
       el.removeEventListener("line-click", handleLineClick);
       elementRef.current = null;
     };
-  }, [isRegistered]);
+  }, [isRegistered, layout]);
 
   useEffect(() => {
     const el = elementRef.current;
