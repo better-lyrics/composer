@@ -1,4 +1,5 @@
 import { getActiveCobaltInstance } from "@/stores/settings";
+import type { SettingHint } from "@/stores/settings-catalog";
 
 // -- Types --------------------------------------------------------------------
 
@@ -208,81 +209,88 @@ interface ToastErrorContext {
   instanceLabel: string;
 }
 
-function switchSuffix(ctx: ToastErrorContext): string {
-  return ctx.isDefault ? "" : " Try a different cobalt instance from Settings → Advanced.";
+interface ToastMessage {
+  message: string;
+  hint?: SettingHint;
 }
 
-function formatCobaltErrorForToast(err: unknown, ctx: ToastErrorContext): string {
-  if (!(err instanceof CobaltApiError)) return "Couldn't load YouTube audio.";
+const SWITCH_INSTANCE_HINT: SettingHint = { text: "Try a different cobalt instance in", setting: "cobaltInstances" };
+const ADD_INSTANCE_HINT: SettingHint = {
+  text: "Add a working instance from cobalt.directory in",
+  setting: "cobaltInstances",
+};
+
+function formatCobaltErrorForToast(err: unknown, ctx: ToastErrorContext): ToastMessage {
+  if (!(err instanceof CobaltApiError)) return { message: "Couldn't load YouTube audio." };
 
   const { isDefault, instanceLabel } = ctx;
-  const switchHint = switchSuffix(ctx);
+  const switchHint = isDefault ? undefined : SWITCH_INSTANCE_HINT;
 
   switch (err.code) {
     case "empty_audio":
       return isDefault
-        ? "Couldn't extract audio for this video. Try again in a bit."
-        : `${instanceLabel} returned an empty file for this video.${switchHint}`;
+        ? { message: "Couldn't extract audio for this video. Try again in a bit." }
+        : { message: `${instanceLabel} returned an empty file for this video.`, hint: switchHint };
 
     case "bad_response":
-      return `${instanceLabel} sent a malformed response.${switchHint}`;
+      return { message: `${instanceLabel} sent a malformed response.`, hint: switchHint };
 
     case "cobalt_failed":
-      return `${instanceLabel} couldn't fetch the audio for this video.${switchHint}`;
+      return { message: `${instanceLabel} couldn't fetch the audio for this video.`, hint: switchHint };
 
     case "bot_detection":
       return isDefault
-        ? "YouTube is blocking Composer's default Cobalt instance. Open Settings → Advanced, add a working instance from cobalt.directory, and switch to it."
-        : `YouTube is blocking ${instanceLabel} as a bot.${switchHint}`;
+        ? { message: "YouTube is blocking Composer's default Cobalt instance.", hint: ADD_INSTANCE_HINT }
+        : { message: `YouTube is blocking ${instanceLabel} as a bot.`, hint: switchHint };
 
     case "geo_blocked":
       return isDefault
-        ? "This video isn't available in this region."
-        : `${instanceLabel} can't access this video in its region.${switchHint}`;
+        ? { message: "This video isn't available in this region." }
+        : { message: `${instanceLabel} can't access this video in its region.`, hint: switchHint };
 
     case "rate_limited":
       return isDefault
-        ? "Too many requests. Wait a minute and try again."
-        : `${instanceLabel} is rate-limiting you. Wait a minute or pick a different instance.`;
+        ? { message: "Too many requests. Wait a minute and try again." }
+        : { message: `${instanceLabel} is rate-limiting you. Wait a minute or pick a different instance.` };
 
     case "too_long":
       return isDefault
-        ? "This video is too long to import."
-        : `${instanceLabel} won't process videos this long.${switchHint}`;
+        ? { message: "This video is too long to import." }
+        : { message: `${instanceLabel} won't process videos this long.`, hint: switchHint };
 
     case "auth_required":
-      return `${instanceLabel} requires authentication that Composer doesn't support.${switchHint}`;
+      return { message: `${instanceLabel} requires authentication that Composer doesn't support.`, hint: switchHint };
 
     case "invalid_origin":
-      return `${instanceLabel} doesn't allow requests from this site.${switchHint}`;
+      return { message: `${instanceLabel} doesn't allow requests from this site.`, hint: switchHint };
 
     case "video_unavailable":
-      return "YouTube marks this video as private, removed, or age-restricted.";
+      return { message: "YouTube marks this video as private, removed, or age-restricted." };
 
     case "picker_unsupported":
-      return "This URL returns multiple items, which Composer can't import.";
+      return { message: "This URL returns multiple items, which Composer can't import." };
 
     case "invalid_video_id":
-      return "That doesn't look like a valid YouTube video.";
+      return { message: "That doesn't look like a valid YouTube video." };
 
     case "network_error":
-      return "Network error. Check your connection and try again.";
+      return { message: "Network error. Check your connection and try again." };
 
     case "turnstile_failed":
-      return "Verification failed. Refresh the page and try again.";
+      return { message: "Verification failed. Refresh the page and try again." };
 
     case "turnstile_missing":
-      return "Verification didn't complete. Refresh the page.";
+      return { message: "Verification didn't complete. Refresh the page." };
 
     case "jwt_expired":
     case "jwt_invalid":
-      return "Your session expired. Refresh the page.";
+      return { message: "Your session expired. Refresh the page." };
 
     case "ip_mismatch":
-      return "Your network changed. Refresh the page to continue.";
+      return { message: "Your network changed. Refresh the page to continue." };
 
     default:
-      return err.message;
+      return { message: err.message };
   }
 }
 
@@ -298,3 +306,4 @@ export {
   parseStandardCobaltResponse,
   stripFilenameExtension,
 };
+export type { ToastMessage };
