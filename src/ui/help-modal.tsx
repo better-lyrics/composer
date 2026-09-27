@@ -4,7 +4,7 @@ import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
 import { HelpSectionContent } from "@/ui/help-sections";
-import { withMatchCounts } from "@/ui/match-count";
+import { withMatchCounts } from "@/ui/nav-match-counts";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
 import { NoMatches } from "@/ui/no-matches";

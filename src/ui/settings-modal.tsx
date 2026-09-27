@@ -1,7 +1,7 @@
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
-import { withMatchCounts } from "@/ui/match-count";
+import { withMatchCounts } from "@/ui/nav-match-counts";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
 import { revealElement } from "@/ui/reveal-element";
