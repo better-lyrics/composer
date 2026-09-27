@@ -131,4 +131,20 @@ describe("App", () => {
     expect(scrollerOnReturn?.scrollTop).toBe(scrollTopAtClick);
     await expect.poll(() => helpViewport()?.scrollTop).toBe(scrollTopAtClick);
   });
+
+  it("returns to the same Help search after a setting link trip from a result", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    const screen = await render(<App />);
+
+    useUIStore.getState().openHelp();
+    await screen.getByRole("textbox", { name: "Search help" }).fill("snap threshold");
+    await screen.getByRole("button", { name: /^Open setting Snap threshold/ }).click();
+    await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap threshold"' })).toBeInTheDocument();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await expect.element(screen.getByRole("textbox", { name: "Search help" })).toHaveValue("snap threshold");
+    await expect.element(screen.getByRole("heading", { name: "Snap (magnet)", level: 4 })).toBeVisible();
+  });
 });

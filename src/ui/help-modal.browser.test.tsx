@@ -173,6 +173,19 @@ describe("HelpModal search", () => {
     expect(closes).toBe(1);
   });
 
+  it("opens on an initial search with its results", async () => {
+    const screen = await openHelp({ initialQuery: "frozen" });
+    await expect.element(searchBox(screen)).toHaveValue("frozen");
+    expect(visibleTopics()).toContain("The app is frozen");
+  });
+
+  it("records the search in the setting link return point", async () => {
+    const screen = await openHelp();
+    await searchBox(screen).fill("snap threshold");
+    await screen.getByRole("button", { name: /^Open setting Snap threshold/ }).click();
+    expect(useUIStore.getState().settingsReturnTo?.query).toBe("snap threshold");
+  });
+
   describe("edge cases", () => {
     it("shows no open buttons outside search", async () => {
       const screen = await openHelp({ initialSection: "timeline" });

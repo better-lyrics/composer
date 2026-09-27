@@ -83,6 +83,22 @@ describe("useUIStore", () => {
     });
   });
 
+  describe("returning to a Help search", () => {
+    it("reopens Help with the search it came from", () => {
+      state().openSettings({
+        target: { setting: "timelineSnapThreshold" },
+        returnTo: { section: "timeline", scrollTop: 40, query: "snap threshold" },
+      });
+      state().closeSettings();
+      expect(state().helpLocation).toEqual({ section: "timeline", scrollTop: 40, query: "snap threshold" });
+    });
+
+    it("opens Help fresh without a query", () => {
+      state().openHelp("timeline");
+      expect(state().helpLocation.query).toBeUndefined();
+    });
+  });
+
   describe("section and query", () => {
     it("changing section clears the query", () => {
       state().openSettings();

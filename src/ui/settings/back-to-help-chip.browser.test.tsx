@@ -29,6 +29,12 @@ describe("BackToHelpChip", () => {
     });
   });
 
+  it("names the search it returns to", async () => {
+    useUIStore.getState().openSettings({ returnTo: { section: "timeline", scrollTop: 0, query: "snap" } });
+    const screen = await render(<BackToHelpChip />);
+    await expect.element(screen.getByRole("button", { name: 'Back to Help ・ "snap"' })).toBeInTheDocument();
+  });
+
   describe("edge cases", () => {
     it("falls back to plain Help for an unknown section", async () => {
       useUIStore.getState().openSettings({ returnTo: { section: "gone", scrollTop: 0 } });

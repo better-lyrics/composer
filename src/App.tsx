@@ -100,10 +100,15 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
       <AppHeader onSettingsOpen={() => openSettings()} onHelpOpen={() => openHelp()} onTourStart={resumeOrStartTour} />
       <HelpModal
-        key={helpOpen ? `help-${helpLocation.section}-${helpLocation.scrollTop}` : "help-closed"}
+        key={
+          helpOpen
+            ? `help-${helpLocation.section}-${helpLocation.scrollTop}-${helpLocation.query ?? ""}`
+            : "help-closed"
+        }
         isOpen={helpOpen}
         initialSection={helpLocation.section}
         initialScrollTop={helpLocation.scrollTop}
+        initialQuery={helpLocation.query}
         onClose={closeHelp}
       />
       <SettingsModal

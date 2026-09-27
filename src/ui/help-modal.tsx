@@ -47,8 +47,14 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
   useTypeToSearch(searchInputRef, query, setQuery);
 
   const linkHost = useMemo<SettingLinkHost>(
-    () => ({ returnPoint: () => ({ section: activeSection, scrollTop: viewportRef.current?.scrollTop ?? 0 }) }),
-    [activeSection],
+    () => ({
+      returnPoint: () => ({
+        section: activeSection,
+        scrollTop: viewportRef.current?.scrollTop ?? 0,
+        ...(query.trim() ? { query } : {}),
+      }),
+    }),
+    [activeSection, query],
   );
 
   const openSection = useCallback((section: string) => {
@@ -63,7 +69,10 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
     setActiveSection(section);
   }, []);
 
+  const lastQueryRef = useRef(query);
   useLayoutEffect(() => {
+    if (lastQueryRef.current === query) return;
+    lastQueryRef.current = query;
     if (query.trim()) viewportRef.current?.scrollTo({ top: 0 });
   }, [query]);
 

@@ -9,6 +9,7 @@ type SettingsTarget = { setting: SettingId } | { section: SettingsSectionId };
 interface HelpLocation {
   section: string;
   scrollTop: number;
+  query?: string;
 }
 
 interface OpenSettingsOptions {
