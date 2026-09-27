@@ -1,4 +1,5 @@
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
+import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
 import { StatusChip } from "@/ui/status-chip";
@@ -18,7 +19,7 @@ interface ConverterViewProps {
   inputLabel: string;
   inputPlaceholder: string;
   sampleInput: string;
-  convert: (args: ConvertArgs) => { ttml: string; projectPayload: string; skippedLines?: number } | { error: string };
+  convert: (args: ConvertArgs) => ConversionResult;
   downloadFilename: string;
 }
 
@@ -44,7 +45,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
       ttml: result.ttml,
       error: null,
       projectPayload: result.projectPayload,
-      skippedLines: result.skippedLines ?? 0,
+      skippedLines: result.skippedLines,
     };
   }, [input, filename, convert]);
 

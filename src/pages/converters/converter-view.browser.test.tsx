@@ -68,7 +68,7 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}" })}
+        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
         downloadFilename="out.ttml"
       />,
       { withRouter: true },
@@ -84,7 +84,7 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}" })}
+        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
         downloadFilename="out.ttml"
       />,
       { withRouter: true },
@@ -99,7 +99,7 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}" })}
+        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
         downloadFilename="out.ttml"
       />,
       { withRouter: true },
