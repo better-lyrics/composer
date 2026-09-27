@@ -338,8 +338,8 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: var(--color-composer-accent);
 }
 
-/* Settings: nudge the row a link or search result jumped to */
-[data-setting-id][data-nudge]::before {
+/* Nudge the row or topic a link or search result jumped to; the target must be position: relative */
+[data-nudge]::before {
   content: "";
   position: absolute;
   inset: 2px -12px;
@@ -348,10 +348,10 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: color-mix(in srgb, var(--color-composer-accent) 8%, transparent);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-composer-accent) 35%, transparent);
   opacity: 0;
-  animation: setting-nudge 1000ms ease-in-out 300ms forwards;
+  animation: nudge 1000ms ease-in-out 300ms forwards;
 }
 
-@keyframes setting-nudge {
+@keyframes nudge {
   0% {
     opacity: 0;
   }
@@ -363,7 +363,7 @@ input[type="range"].settings-slider::-moz-range-progress {
   }
 }
 
-@keyframes setting-nudge-static {
+@keyframes nudge-static {
   0% {
     opacity: 1;
   }
@@ -441,8 +441,8 @@ input[type="range"].settings-slider::-moz-range-progress {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  [data-setting-id][data-nudge]::before {
-    animation-name: setting-nudge-static;
+  [data-nudge]::before {
+    animation-name: nudge-static;
     animation-duration: 1000ms !important;
     animation-timing-function: steps(1, end);
   }

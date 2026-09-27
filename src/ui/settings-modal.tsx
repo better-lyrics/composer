@@ -1,14 +1,15 @@
-import { useSettingsSearchKeys } from "@/hooks/useSettingsSearchKeys";
+import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
+import { MatchCount } from "@/ui/match-count";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
+import { revealElement } from "@/ui/reveal-element";
+import { SearchField } from "@/ui/search-field";
 import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 import { BackToHelpChip } from "@/ui/settings/back-to-help-chip";
 import { GeneralSection } from "@/ui/settings/general-section";
-import { revealSetting } from "@/ui/settings/reveal-setting";
 import { countMatchesBySection, searchSettings } from "@/ui/settings/search-settings";
-import { SettingsSearchInput } from "@/ui/settings/settings-search-input";
 import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
 import { SettingsSearchResults } from "@/ui/settings/settings-search-results";
 import { SETTINGS_SECTION_ICONS } from "@/ui/settings/settings-section-icons";
@@ -51,26 +52,25 @@ const SectionContent: React.FC<{ section: SettingsSectionId; onResetTour: () => 
 
 // -- Settings Modal -----------------------------------------------------------
 
-const MatchCount: React.FC<{ count: number }> = ({ count }) => (
-  <span className="font-mono text-[11px] tabular-nums text-composer-accent-text">{count}</span>
-);
-
 const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void }> = ({ onResetTour, onClose }) => {
   const settingsSection = useUIStore((s) => s.settingsSection);
   const settingsTarget = useUIStore((s) => s.settingsTarget);
   const setSettingsSection = useUIStore((s) => s.setSettingsSection);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const settingsQuery = useUIStore((s) => s.settingsQuery);
+  const setSettingsQuery = useUIStore((s) => s.setSettingsQuery);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const results = useMemo(() => searchSettings(settingsQuery), [settingsQuery]);
 
-  useSettingsSearchKeys(searchInputRef);
+  useTypeToSearch(searchInputRef, settingsQuery, setSettingsQuery);
 
   const revealPendingTarget = useCallback(() => {
     const viewport = viewportRef.current;
     const { settingsTarget: target, consumeSettingsTarget } = useUIStore.getState();
     if (!viewport || !target) return;
-    if ("setting" in target) revealSetting(viewport, target.setting);
+    const row =
+      "setting" in target ? viewport.querySelector<HTMLElement>(`[data-setting-id="${target.setting}"]`) : null;
+    if (row) revealElement(viewport, row);
     consumeSettingsTarget();
   }, []);
 
@@ -97,7 +97,14 @@ const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void
         sections={navSections}
         activeSection={results ? null : settingsSection}
         onSectionChange={setSettingsSection}
-        sidebarHeader={<SettingsSearchInput inputRef={searchInputRef} />}
+        sidebarHeader={
+          <SearchField
+            label="Search settings"
+            value={settingsQuery}
+            onChange={setSettingsQuery}
+            inputRef={searchInputRef}
+          />
+        }
         contentClassName="px-6 py-2"
         contentViewportRef={viewportRef}
         onContentInitialized={revealPendingTarget}

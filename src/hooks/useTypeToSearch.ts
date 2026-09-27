@@ -1,6 +1,5 @@
 import { useModalStackStore } from "@/stores/modal-stack";
-import { useUIStore } from "@/stores/ui";
-import { type RefObject, useEffect } from "react";
+import { type RefObject, useEffect, useRef } from "react";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -16,18 +15,25 @@ function isTypingTarget(target: EventTarget | null): boolean {
 
 // -- Hook ----------------------------------------------------------------------
 
-function useSettingsSearchKeys(inputRef: RefObject<HTMLInputElement | null>): void {
+function useTypeToSearch(
+  inputRef: RefObject<HTMLInputElement | null>,
+  query: string,
+  setQuery: (query: string) => void,
+): void {
+  const latest = useRef({ query, setQuery });
+  latest.current = { query, setQuery };
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       if (useModalStackStore.getState().count > 1) return;
-      const { settingsQuery, setSettingsQuery } = useUIStore.getState();
+      const { query: current, setQuery: write } = latest.current;
 
       if (event.key === "Escape") {
-        if (settingsQuery === "") return;
+        if (current === "") return;
         event.preventDefault();
         event.stopPropagation();
-        setSettingsQuery("");
+        write("");
         return;
       }
 
@@ -43,7 +49,7 @@ function useSettingsSearchKeys(inputRef: RefObject<HTMLInputElement | null>): vo
       if (event.key.length !== 1 || event.key === " ") return;
       event.preventDefault();
       inputRef.current?.focus({ preventScroll: true });
-      setSettingsQuery(settingsQuery + event.key);
+      write(current + event.key);
     };
 
     document.addEventListener("keydown", handleKeyDown, true);
@@ -53,4 +59,4 @@ function useSettingsSearchKeys(inputRef: RefObject<HTMLInputElement | null>): vo
 
 // -- Exports -------------------------------------------------------------------
 
-export { useSettingsSearchKeys };
+export { useTypeToSearch };
