@@ -3,6 +3,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Importing ----------------------------------------------------------------
 
@@ -45,16 +46,17 @@ const ImportSection: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         <strong>Cobalt</strong> is the default. Composer ships with a public instance that handles verification
         automatically, but YouTube is currently blocking it. To get unblocked, add a working instance from
-        cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status icon next to
-        its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
+        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance shows a small
+        status icon next to its name reflecting the last attempt, with the actual error in the tooltip if anything went
+        wrong.
       </p>
       <p className={`${PROSE} mt-3`}>
         <strong>Composer Bridge</strong>
         <span className="ml-2 text-[10px] tracking-wide text-composer-accent-text">Experimental</span>
         <br />A tiny binary you run on your own machine that downloads YouTube audio over your residential IP, so
         YouTube doesn't block it the way it blocks shared Cobalt hosts. Composer talks to it over localhost; nothing
-        leaves your machine. Toggle "Composer Bridge for YouTube" on in Settings → Advanced and every YouTube import
-        routes through the bridge instead of Cobalt.
+        leaves your machine. Turn on <SettingLink setting="youtubeBridge" /> and every YouTube import routes through the
+        bridge instead of Cobalt.
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>

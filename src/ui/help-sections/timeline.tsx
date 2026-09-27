@@ -3,6 +3,7 @@ import { HEADING, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Timeline -----------------------------------------------------------------
 
@@ -32,8 +33,8 @@ const TimelineSection: React.FC = () => (
           trackpad gesture.
         </li>
         <li>
-          Turn on "Scroll wheel scrolls timeline" in Settings, under Timeline, to swap the axes: a plain wheel then
-          scrolls the timeline horizontally and Shift + wheel scrolls vertically.
+          Turn on <SettingLink setting="timelineHorizontalScroll" /> to swap the axes: a plain wheel then scrolls the
+          timeline horizontally and Shift + wheel scrolls vertically.
         </li>
         <li>
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
@@ -61,7 +62,8 @@ const TimelineSection: React.FC = () => (
         When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
         audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
         press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
-        stays silent when the audio is muted. If it gets in the way, turn it off in Settings, under Playback.
+        stays silent when the audio is muted. If it gets in the way, turn off{" "}
+        <SettingLink setting="audioScrubPreview" />.
       </p>
       <p className={`${PROSE} mt-2`}>
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
@@ -159,8 +161,8 @@ const TimelineSection: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
-          edge drags on its own. Turn on <strong>Syllables follow rolling edit</strong> in Settings to join them only
-          while Rolling is on.
+          edge drags on its own. Turn on <SettingLink setting="syllablesFollowRolling" /> to join them only while
+          Rolling is on.
         </li>
         <li>
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped
@@ -193,7 +195,10 @@ const TimelineSection: React.FC = () => (
           Hold <strong>{MOD_KEY}</strong> mid-drag to bypass snap. The toolbar magnet dims while bypass is active.
           Release the key and snap re-engages.
         </li>
-        <li>Adjust the snap distance in Settings, under Timeline. Range is 4 to 24 pixels, default 12.</li>
+        <li>
+          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />. Range is 4 to 24 pixels,
+          default 12.
+        </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the
           next-best anchor or doesn't snap at all.
@@ -241,9 +246,9 @@ const TimelineSection: React.FC = () => (
           while hovering to remove it.
         </li>
         <li>
-          Turn on "Snap playhead to points" in Settings, under Timeline (on by default), and clicking or dragging the
-          playhead snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture.
-          Scroll-wheel scrubbing over the waveform stays smooth and is never snapped.
+          Turn on <SettingLink setting="snapPlayheadToPoints" /> (on by default), and clicking or dragging the playhead
+          snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture. Scroll-wheel
+          scrubbing over the waveform stays smooth and is never snapped.
         </li>
         <li>
           Snap points are saved with your project and come back when you reopen it. Undo and redo treat placing, moving,

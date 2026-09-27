@@ -2,6 +2,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Timeline extras ----------------------------------------------------------
 
@@ -83,8 +84,8 @@ const TimelineExtras: React.FC = () => (
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
-        Follow, Rolling, Preview, and Snap remember their state across reloads. Override the per-session default in
-        Settings, under Timeline.
+        Follow, Rolling, Preview, and Snap remember their state across reloads. Override the per-session default in{" "}
+        <SettingLink section="timeline" />.
       </p>
     </div>
 

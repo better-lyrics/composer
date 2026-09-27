@@ -1,5 +1,6 @@
 import { IconCheck, IconX } from "@tabler/icons-react";
 import type { Rule } from "@/best-practices/model";
+import { SettingLink } from "@/ui/setting-link";
 import { HEADING, PROSE } from "@/ui/typography";
 import { cn } from "@/utils/cn";
 
@@ -44,8 +45,13 @@ const RuleCard: React.FC<RuleCardProps> = ({ rule }) => (
         {paragraph}
       </p>
     ))}
-    {rule.aside ? (
+    {rule.aside || rule.asideSetting ? (
       <p className="max-w-[68ch] border-l-2 border-composer-border-hover pl-2.5 text-xs text-composer-text-muted select-text">
+        {rule.asideSetting && (
+          <>
+            <SettingLink setting={rule.asideSetting} />{" "}
+          </>
+        )}
         {rule.aside}
       </p>
     ) : null}

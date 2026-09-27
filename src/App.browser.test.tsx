@@ -3,6 +3,7 @@ import { App } from "@/App";
 import { subscribeFrame } from "@/lib/frame-loop";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
+import { installStyleSheet } from "@/test/browser-css";
 import { allowConsole } from "@/test/console-guard";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
@@ -96,5 +97,33 @@ describe("App", () => {
     unsubscribe();
 
     expect(frames).toBeGreaterThan(0);
+  });
+
+  it("returns to the same Help section and scroll position after a setting link trip", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    const screen = await render(<App />);
+    const helpViewport = () =>
+      document.querySelector("[data-help-content]")?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ?? null;
+
+    useUIStore.getState().openHelp("timeline");
+    await expect.poll(helpViewport).not.toBeNull();
+    const viewport = helpViewport();
+    if (!viewport) throw new Error("help viewport missing");
+    const link = screen.getByRole("button", { name: /^Open setting Scroll wheel scrolls timeline/ });
+    (link.element() as HTMLElement).scrollIntoView({ block: "end" });
+    const scrollTopAtClick = viewport.scrollTop;
+    expect(scrollTopAtClick).toBeGreaterThan(0);
+
+    await link.click();
+    await expect.poll(() => useUIStore.getState().settingsOpen).toBe(true);
+    expect(helpModalOpen()).toBe(false);
+    await expect.element(screen.getByRole("button", { name: "Back to Help ・ Timeline" })).toBeInTheDocument();
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await expect.poll(helpModalOpen).toBe(true);
+    await expect.poll(() => helpViewport()?.scrollTop).toBe(scrollTopAtClick);
   });
 });

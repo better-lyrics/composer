@@ -1,5 +1,6 @@
 import { useSettingsStore } from "@/stores/settings";
 import { HEADING, PROSE } from "@/ui/typography";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Editing Lyrics -----------------------------------------------------------
 
@@ -35,7 +36,7 @@ const EditSection: React.FC = () => {
           Use the <span className="font-mono text-composer-text">{splitCharacter}</span> character to mark where you
           want words split. For example, typing beau{splitCharacter}ti{splitCharacter}ful creates three separate timed
           blocks instead of one. This is useful when a word stretches across several beats. You can change this
-          character in Settings.
+          character in <SettingLink setting="splitCharacter" />.
         </p>
       </div>
 

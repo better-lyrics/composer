@@ -1,5 +1,6 @@
 import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Linked group extras ------------------------------------------------------
 
@@ -38,7 +39,7 @@ const GroupsExtras: React.FC = () => (
       </p>
       <p className={`${PROSE} mt-2`}>
         Tick "Don't ask again" in the modal to default to your choice next time. Reset the preference from{" "}
-        <strong>Settings → Confirmations</strong>.
+        <SettingLink section="confirmations" />.
       </p>
     </div>
 
@@ -82,7 +83,7 @@ const GroupsExtras: React.FC = () => (
       <p className={PROSE}>
         Right-click any banner and pick <strong>Delete group</strong>. A confirmation modal warns you that all instances
         will become standalone (text and timing survive, they just stop syncing). Tick "Don't ask again" to skip the
-        modal next time, or restore the prompt from <strong>Settings → Confirmations</strong>.
+        modal next time, or restore the prompt from <SettingLink setting="confirmGroupDissolution" />.
       </p>
     </div>
 

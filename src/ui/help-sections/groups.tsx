@@ -3,6 +3,7 @@ import { GroupsExtras } from "@/ui/help-sections/groups-extras";
 import { HEADING, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
 
 // -- Linked Groups ------------------------------------------------------------
 
@@ -134,7 +135,7 @@ const GroupsSection: React.FC = () => (
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />: nudge the current instance earlier or
-          later by the nudge amount in Settings.
+          later by <SettingLink setting="nudgeAmount" />.
         </li>
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.pingSiblings")} />: ping every sibling instance.
@@ -156,7 +157,9 @@ const GroupsSection: React.FC = () => (
           start of the current instance without changing the selection.
         </li>
       </ul>
-      <p className={`${PROSE} mt-2`}>All of these are remappable in Settings → Shortcuts.</p>
+      <p className={`${PROSE} mt-2`}>
+        All of these are remappable in <SettingLink section="shortcuts" />.
+      </p>
     </div>
 
     <div>

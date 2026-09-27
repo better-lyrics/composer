@@ -70,7 +70,8 @@ describe("BACKGROUND_VOCALS", () => {
 
   it("points at the bracket-preservation setting from the one-pair rule", () => {
     const rule = BACKGROUND_VOCALS.rules.find((r) => r.id === "one-bracket-pair");
-    expect(rule?.aside).toMatch(/Preserve brackets when extracting/);
+    expect(rule?.asideSetting).toBe("preserveBracketsOnExtraction");
+    expect(rule?.aside).toMatch(/on by default/);
   });
 
   it("sends the credited-feature exception over to the Voices group", () => {
