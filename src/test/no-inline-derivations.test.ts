@@ -115,6 +115,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\?\.begin\s*!==\s*undefined/,
     use: "isLineTimed from @/domain/line/sync-progress or isLineSynced from @/domain/line/predicates",
   },
+  {
+    name: "raw main-word edit outside the effective-line owner",
+    regex: /\bmainWordEditFields\(/,
+    use: "effectiveMainWordEdit from @/domain/line/effective-words",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

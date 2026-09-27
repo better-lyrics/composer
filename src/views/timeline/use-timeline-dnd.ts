@@ -1,3 +1,4 @@
+import type { EffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
@@ -18,7 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Hook ----------------------------------------------------------------------
 
-function useTimelineDnd(lines: LyricLine[]) {
+function useTimelineDnd(lines: (LyricLine | EffectiveLine)[]) {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);

@@ -1,6 +1,6 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -141,10 +141,11 @@ interface HistoryActions {
 }
 
 interface LineActions {
-  setLines: (lines: LyricLine[]) => void;
+  setLines: (lines: RawLine[]) => void;
   // See the JSDoc on the implementation in lines-slice.ts before using this.
-  setTransientLines: (lines: LyricLine[]) => void;
-  setLinesWithHistory: (lines: LyricLine[], groups?: LinkGroup[]) => void;
+  setTransientLines: (lines: RawLine[]) => void;
+  setLinesWithHistory: (lines: RawLine[], groups?: LinkGroup[]) => void;
+  insertEmptyLineWithHistory: (anchorLineId: string, position: "above" | "below") => void;
   updateLine: (id: string, updates: Partial<LyricLine>, options?: { deriveText?: boolean }) => void;
   updateLineWithHistory: (
     id: string,

@@ -18,7 +18,6 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
-  const agents = useProjectStore((s) => s.agents);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const setLinesWithHistory = useProjectStore((s) => s.setLinesWithHistory);
 
@@ -40,22 +39,10 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleAddLine = useCallback(
     (position: "above" | "below") => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-      // Operate on raw lines, not effective lines. getEffectiveLines synthesises
-      // single-word arrays for line-synced rows; if we wrote those back via
-      // setLinesWithHistory, every line-synced row would silently flip to
-      // word-synced (and TTML granularity would change on save).
-      const lineId = contextMenu.target.lineId;
-      const targetIndex = rawLines.findIndex((l) => l.id === lineId);
-      if (targetIndex === -1) return;
-      const defaultAgentId = agents?.[0]?.id ?? "v1";
-      const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
-      const newLines = [...rawLines];
-      const insertIndex = position === "above" ? targetIndex : targetIndex + 1;
-      newLines.splice(insertIndex, 0, newLine);
-      setLinesWithHistory(newLines);
+      useProjectStore.getState().insertEmptyLineWithHistory(contextMenu.target.lineId, position);
       clearContextMenu();
     },
-    [contextMenu, rawLines, agents, setLinesWithHistory, clearContextMenu],
+    [contextMenu, clearContextMenu],
   );
 
   const handleDeleteLine = useCallback(() => {

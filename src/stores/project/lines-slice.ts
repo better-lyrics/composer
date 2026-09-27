@@ -43,6 +43,15 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
 
   setLinesWithHistory: (lines, groups) => set((state) => commitHistory(state, groups ? { lines, groups } : { lines })),
 
+  insertEmptyLineWithHistory: (anchorLineId, position) =>
+    set((state) => {
+      const anchorIndex = state.lines.findIndex((l) => l.id === anchorLineId);
+      if (anchorIndex === -1) return state;
+      const newLine = { id: crypto.randomUUID(), text: "", agentId: state.agents?.[0]?.id ?? "v1" };
+      const lines = state.lines.toSpliced(position === "above" ? anchorIndex : anchorIndex + 1, 0, newLine);
+      return commitHistory(state, { lines });
+    }),
+
   updateLine: (id, updates, options = {}) =>
     set((state) => {
       const splitChar = getSplitCharacter();

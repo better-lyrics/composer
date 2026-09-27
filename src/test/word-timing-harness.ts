@@ -1,3 +1,4 @@
+import { effectiveTimingWrite } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { createLine } from "@/test/factories";
 import { createWordTimingOps } from "@/utils/timing/word-timing-ops";
@@ -24,8 +25,11 @@ function captureUpdates() {
 
 // -- Factory instances --------------------------------------------------------
 
-const wordsOps = createWordTimingOps({ getWords: (line) => line.words, updateKey: "words" });
-const bgOps = createWordTimingOps({ getWords: (line) => line.backgroundWords, updateKey: "backgroundWords" });
+const wordsOps = createWordTimingOps({ getWords: (line) => line.words, writeWords: effectiveTimingWrite });
+const bgOps = createWordTimingOps({
+  getWords: (line) => line.backgroundWords,
+  writeWords: (_line, words) => ({ backgroundWords: words }),
+});
 
 // -- Fixtures -----------------------------------------------------------------
 

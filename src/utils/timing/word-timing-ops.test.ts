@@ -1,5 +1,7 @@
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import { createLine } from "@/test/factories";
 import { bgOps, captureUpdates, makeLine, wordsOps } from "@/test/word-timing-harness";
+import { nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
 import { describe, expect, it } from "vitest";
 
 describe("createWordTimingOps: early returns", () => {
@@ -130,5 +132,44 @@ describe("createWordTimingOps: write contract", () => {
     const out = calls[0].updates.words ?? [];
     expect(out[0]).toEqual({ text: "a ", begin: 0, end: 1 });
     expect(out[2]).toEqual({ text: "c", begin: 2, end: 3 });
+  });
+});
+
+describe("main-track ops on effective lines", () => {
+  it("regression [: set begin on a line-synced row writes begin/end, not words", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    setWordBegin(lines, 0, 0, 18, updateLineWithHistory);
+    expect(calls[0].updates).toEqual({ begin: 18, end: 20 });
+  });
+
+  it("regression info panel: set boundary on a line-synced row writes begin/end, not words", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "Line synced", begin: 17, end: 20 })]);
+    setWordBoundary({
+      lines,
+      lineIdx: 0,
+      wordIdx: 0,
+      edge: "end",
+      time: 21,
+      minDuration: 0.05,
+      rolling: false,
+      syllablesFollowRolling: false,
+      updateLineWithHistory,
+    });
+    expect(calls[0].updates).toEqual({ begin: 17, end: 21 });
+  });
+
+  it("writes words and never text for a partially synced line", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    const lines = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a ", begin: 1, end: 2 }] })]);
+    nudgeWordEnd(lines, 0, 0, 0.5, updateLineWithHistory);
+    expect(calls[0].updates).toEqual({ words: [{ text: "a ", begin: 1, end: 2.5 }] });
+  });
+
+  it("leaves a raw line-synced row alone because it has no words to edit", () => {
+    const { calls, updateLineWithHistory } = captureUpdates();
+    setWordBegin([createLine({ text: "Line synced", begin: 17, end: 20 })], 0, 0, 18, updateLineWithHistory);
+    expect(calls).toHaveLength(0);
   });
 });

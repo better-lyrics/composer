@@ -3,6 +3,7 @@ import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate"
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
+import type { EffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
@@ -69,7 +70,7 @@ function currentInstanceFromSelection(
 
 function useTimelineKeyboard(
   scrollContainerRef: RefObject<HTMLDivElement | null>,
-  lines: LyricLine[],
+  lines: (LyricLine | EffectiveLine)[],
   duration: number,
   onOpenLyricsModal?: () => void,
 ) {
@@ -361,14 +362,8 @@ function useTimelineKeyboard(
         case "timeline.insertLineAbove": {
           const { selectedWords: nSel } = useTimelineStore.getState();
           if (nSel.length === 0) break;
-          const lineIndex = nSel[0].lineIndex;
-          const agents = useProjectStore.getState().agents;
-          const defaultAgentId = agents?.[0]?.id ?? "v1";
-          const newLine = { id: crypto.randomUUID(), text: "", agentId: defaultAgentId };
-          const newLines = [...lines];
-          const insertIndex = matched === "timeline.insertLineAbove" ? lineIndex : lineIndex + 1;
-          newLines.splice(insertIndex, 0, newLine);
-          useProjectStore.getState().setLinesWithHistory(newLines);
+          const position = matched === "timeline.insertLineAbove" ? "above" : "below";
+          useProjectStore.getState().insertEmptyLineWithHistory(nSel[0].lineId, position);
           break;
         }
         case "timeline.editWord": {

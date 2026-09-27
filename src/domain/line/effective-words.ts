@@ -82,4 +82,4 @@ export {
   isLineSyncedSource,
 };
 
-export type { EffectiveLine, TimingSource };
+export type { EffectiveLine };

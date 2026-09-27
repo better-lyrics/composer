@@ -1,6 +1,6 @@
 import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { mainWordEditFields } from "@/domain/line/main-words";
+import { effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
@@ -31,6 +31,7 @@ interface DragData {
 // -- Constants -----------------------------------------------------------------
 
 const DRAG_X_MIN_THRESHOLD = 5;
+const LINE_SYNCED_REJECT_MESSAGE = "Sync this line into words first";
 
 // -- Selection helpers --------------------------------------------------------
 
@@ -100,6 +101,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
   const grouped = groupSelectionsByLine(wordsToDuplicate);
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
+  let rejectedLineSynced = false;
 
   for (const [lineId, selections] of grouped) {
     const line = linesById.get(lineId);
@@ -127,7 +129,11 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     if (wordDups.length > 0) {
       const existing = line.words ?? [];
       const hasOverlap = wordDups.some((dup) => existing.some((w) => boundsOverlap(dup, w)));
-      if (!hasOverlap) Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(existing, wordDups)));
+      if (!hasOverlap) {
+        const edit = effectiveMainWordEdit(line, mergeWordsIntoTrack(existing, wordDups));
+        if (edit) Object.assign(lineUpdates, edit);
+        else rejectedLineSynced = true;
+      }
     }
 
     if (bgDups.length > 0) {
@@ -141,6 +147,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: LyricLine[], zoom: numbe
     }
   }
 
+  if (rejectedLineSynced) toast.error(LINE_SYNCED_REJECT_MESSAGE);
   if (updates.length > 0) {
     useProjectStore.getState().updateLinesWithHistory(updates, { propagateToSiblings: false });
   }
@@ -171,7 +178,8 @@ function applySameLineReorder(
       const bgIndices = new Set(selections.flatMap((s) => (s.type === "bg" ? [s.wordIndex] : [])));
 
       if (wordIndices.size > 0 && line.words) {
-        Object.assign(lineUpdates, mainWordEditFields(reorderWordTrack(line.words, wordIndices, timeDelta, duration)));
+        const edit = effectiveMainWordEdit(line, reorderWordTrack(line.words, wordIndices, timeDelta, duration));
+        if (edit) Object.assign(lineUpdates, edit);
       }
       if (bgIndices.size > 0 && line.backgroundWords) {
         const reordered = reorderWordTrack(line.backgroundWords, bgIndices, timeDelta, duration);
@@ -197,7 +205,8 @@ function applySameLineReorder(
 
   const normalized = reorderWordTrack(wordsArray, new Set([wordIndex]), timeDelta, duration);
   if (activeData.trackType === "word") {
-    updateLineWithHistory(activeData.lineId, mainWordEditFields(normalized), { propagateToSiblings: false });
+    const edit = effectiveMainWordEdit(line, normalized);
+    if (edit) updateLineWithHistory(activeData.lineId, edit, { propagateToSiblings: false });
   } else {
     updateLineWithHistory(activeData.lineId, manualBackgroundWordEdit(normalized), { propagateToSiblings: false });
   }
@@ -273,7 +282,7 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
     return;
   }
   if (result.reject === "line-synced-target") {
-    toast.error("Sync this line into words first");
+    toast.error(LINE_SYNCED_REJECT_MESSAGE);
     return;
   }
 }

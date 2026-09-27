@@ -1,6 +1,5 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveTrackWords, effectiveWords } from "@/domain/line/effective-words";
-import { mainWordEditFields } from "@/domain/line/main-words";
+import { effectiveMainWordEdit, effectiveTrackWords, effectiveWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -78,7 +77,9 @@ function applyPasteToLines({
 
     const lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      Object.assign(lineUpdates, mainWordEditFields(mergeWordsIntoTrack(effectiveWords(line), newWords)));
+      const edit = effectiveMainWordEdit(line, mergeWordsIntoTrack(effectiveWords(line), newWords));
+      if (!edit) return null;
+      Object.assign(lineUpdates, edit);
     }
     if (newBgWords.length > 0) {
       Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)));
