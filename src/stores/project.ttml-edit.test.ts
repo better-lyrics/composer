@@ -29,6 +29,24 @@ describe("hand-edited TTML is project data", () => {
       expect(useProjectStore.getState().history).toHaveLength(before);
       expect(useProjectStore.getState().canUndo()).toBe(false);
     });
+
+    it("leaves the state untouched when the updater returns the current edit", () => {
+      useProjectStore.getState().setTtmlEditState(EDIT);
+      useProjectStore.getState().markClean();
+      const before = useProjectStore.getState();
+      useProjectStore.getState().setTtmlEditState((prev) => prev);
+      expect(useProjectStore.getState()).toBe(before);
+      expect(useProjectStore.getState().isDirty).toBe(false);
+    });
+
+    it("leaves the state untouched when clearing an edit that is already clear", () => {
+      useProjectStore.getState().setTtmlEditState(null);
+      useProjectStore.getState().markClean();
+      const before = useProjectStore.getState();
+      useProjectStore.getState().setTtmlEditState(null);
+      expect(useProjectStore.getState()).toBe(before);
+      expect(useProjectStore.getState().isDirty).toBe(false);
+    });
   });
 
   describe("clearing", () => {

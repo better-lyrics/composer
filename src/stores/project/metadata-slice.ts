@@ -91,10 +91,10 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => (state.hasUnexportedImport ? { hasUnexportedImport: false, isDirty: true } : state)),
 
   setTtmlEditState: (editState) =>
-    set((state) => ({
-      ttmlEditState: typeof editState === "function" ? editState(state.ttmlEditState) : editState,
-      isDirty: true,
-    })),
+    set((state) => {
+      const next = typeof editState === "function" ? editState(state.ttmlEditState) : editState;
+      return next === state.ttmlEditState ? state : { ttmlEditState: next, isDirty: true };
+    }),
 });
 
 // -- Exports ------------------------------------------------------------------
