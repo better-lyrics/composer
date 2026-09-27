@@ -3,6 +3,7 @@ import { installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { buildBackgroundVocalTtml, buildSongwriterTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
 import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
+import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
 import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import { Activity, useState } from "react";
@@ -100,6 +101,27 @@ describe("BraccatoRenderer inside Activity", () => {
     setVisible(true);
 
     await expect.poll(() => el.querySelector(".blyrics-credits")?.textContent).toBe("Ada & Grace");
+  });
+});
+
+describe("BraccatoRenderer first rendered hidden", () => {
+  it("regression: carries the shared theme before it is ever revealed", async () => {
+    const screen = await render(
+      <>
+        <Activity mode="hidden">
+          <div>
+            <BraccatoRenderer ttmlString={buildSyncedTtml()} />
+          </div>
+        </Activity>
+        <BraccatoRenderer ttmlString={buildSyncedTtml()} />
+      </>,
+    );
+    const [hidden, visible] = screen.container.querySelectorAll<BraccatoLyricsElement>("braccato-lyrics");
+    await expect.poll(() => visible.querySelectorAll(".blyrics--line").length).toBeGreaterThan(0);
+
+    await expect.poll(() => hidden.theme).toBe(braccatoTheme);
+    expect(hidden.status).not.toBe("theme-conflict");
+    expect(visible.status).not.toBe("theme-conflict");
   });
 });
 

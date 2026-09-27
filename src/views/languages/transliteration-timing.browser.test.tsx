@@ -1,12 +1,12 @@
-import { getLanguageDisplayLine } from "@/domain/language/display";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { render } from "@/test/render";
+import { generateTTML } from "@/utils/ttml";
 import { type AlignmentField, TransliterationAlignmentModal } from "@/views/languages/transliteration-alignment-modal";
-import { TransliterationRow } from "@/views/timeline/timeline-preview-rows";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { WordTrack } from "@/views/timeline/word-track";
+import { TTMLParser } from "@braccato/parsers";
 import { describe, expect, it } from "vitest";
 
 describe("visible transliteration dash timing", () => {
@@ -65,38 +65,33 @@ describe("visible transliteration dash timing", () => {
       await screen.unmount();
 
       useTimelineStore.setState({ textVariant: "transliteration" });
-      const display = getLanguageDisplayLine(saved, "transliteration");
       const track = await render(
-        <>
-          <WordTrack
-            lineId={line.id}
-            lineIndex={0}
-            words={saved[field]!}
-            color="#a3c9ff"
-            trackType={background ? "bg" : "word"}
-            duration={3}
-            height={32}
-            onUpdateWord={() => {}}
-          />
-          <TransliterationRow
-            text={reading}
-            words={saved[field]}
-            wordTexts={background ? display.backgroundWordTexts : display.wordTexts}
-            timing={{ begin: 1, end: 2 }}
-            lineIndex={0}
-            alignmentClass=""
-            background={background}
-          />
-        </>,
+        <WordTrack
+          lineId={line.id}
+          lineIndex={0}
+          words={saved[field]!}
+          color="#a3c9ff"
+          trackType={background ? "bg" : "word"}
+          duration={3}
+          height={32}
+          onUpdateWord={() => {}}
+        />,
         { dndContext: true },
       );
       const blocks = track.container.querySelectorAll("[data-word-block]");
       expect(blocks[0].textContent).toContain("to-");
       expect(blocks[1].textContent).toContain("do");
-      const preview = track.container.querySelectorAll("[data-word-begin]");
-      expect(Array.from(preview, (el) => el.textContent)).toEqual([importedWordEdge ? "to-  " : "to-", "do"]);
-      expect(preview[0].getAttribute("data-word-begin")).toBe("1");
-      expect(preview[0].getAttribute("data-word-end")).toBe("1.5");
+      // Export drops a line whose main text is untimed, so the background case needs a timed main word to reach the preview.
+      const exported = background ? reconcileLine({ ...saved, words: [{ text: "Main", begin: 0, end: 1 }] }) : saved;
+      const { metadata, agents } = useProjectStore.getState();
+      const [previewLine] = TTMLParser.parse(generateTTML({ metadata, agents, lines: [exported], groups: [] }));
+      const previewParts = (previewLine.timedRomanization ?? []).filter(
+        (part) => Boolean(part.isBackground) === background,
+      );
+      expect(previewParts.map((part) => part.words).join("")).toBe(reading);
+      expect(previewParts[0].words).toBe("to-");
+      expect(previewParts[0].startTimeMs).toBe(1000);
+      expect(previewParts[0].durationMs).toBe(500);
     },
   );
 });

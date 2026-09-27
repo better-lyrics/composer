@@ -152,7 +152,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
       elementRef.current = el;
       if (!el || initializedElementRef.current === el) return;
       initializedElementRef.current = el;
-      el.theme = braccatoTheme;
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
       applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current);
     },
@@ -205,8 +204,8 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   );
 
   return (
-    <div className="relative flex flex-col flex-1 min-h-0">
-      <braccato-lyrics ref={setElement} className={LYRICS_ELEMENT_CLASS[layout]} />
+    <div data-lyrics-layout={layout} className="relative flex flex-col flex-1 min-h-0">
+      <braccato-lyrics ref={setElement} theme={braccatoTheme} className={LYRICS_ELEMENT_CLASS[layout]} />
       <AnimatePresence>
         {isAutoscrollPaused ? (
           <m.div

@@ -185,7 +185,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     "am-lyrics-renderer",
   );
 
-  return <div ref={containerRef} className="flex flex-col flex-1 min-h-0" />;
+  return <div ref={containerRef} data-lyrics-layout={layout} className="flex flex-col flex-1 min-h-0" />;
 };
 
 // -- Exports ------------------------------------------------------------------

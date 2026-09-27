@@ -113,6 +113,20 @@ braccato-lyrics .blyrics-container {
   padding-top: var(--blyrics-padding-top, 2rem);
 }
 
+/* The sidebar layout halves the Preview sizes. The theme sets the padding on the
+   container, so overriding it needs the deeper selector. */
+[data-lyrics-layout="sidebar"] {
+  --blyrics-font-size: 1.25rem;
+  --blyrics-translated-font-size: 1rem;
+  --blyrics-padding-top: 1rem;
+  --am-lyrics-compact-font-size: 1.25rem;
+  --am-lyrics-compact-line-spacing: 12px;
+}
+
+[data-lyrics-layout="sidebar"] .blyrics-container {
+  --blyrics-padding: 0.625rem;
+}
+
 /* Text selection */
 ::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);

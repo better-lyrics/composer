@@ -1,11 +1,14 @@
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { POSITION_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { createLine } from "@/test/factories";
 import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
 import { settleFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
+import type { BraccatoLyricsElement } from "@braccato/core/element";
+import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Constants -----------------------------------------------------------------
@@ -14,19 +17,30 @@ const LINE_COUNT = 15;
 const WORD_SECONDS = 2;
 const VIEWPORT_HEIGHT = 200;
 
+// Tailwind never reaches the test document, so the bounded flex column that makes the lyrics
+// element the scroller comes from the harness.
+const SIDEBAR_LAYOUT_CSS = [
+  braccatoLyricsCss,
+  POSITION_UTILITIES_CSS,
+  "braccato-lyrics{display:block;overflow-y:auto}",
+  ".flex{display:flex}",
+  ".flex-col{flex-direction:column}",
+  ".flex-1{flex:1 1 0%}",
+  ".min-h-0{min-height:0}",
+  ".overflow-hidden{overflow:hidden}",
+].join("\n");
+
 // -- Harness -------------------------------------------------------------------
 
-// Tailwind never reaches the test document, so the scroll box the sidebar's own
-// classes would create has to come from the harness for scrollIntoView to have a
-// scrollable ancestor to move.
 const Harness: React.FC = () => (
-  <div data-test="viewport" style={{ height: VIEWPORT_HEIGHT, overflow: "auto" }}>
+  <div style={{ display: "flex", height: VIEWPORT_HEIGHT }}>
     <TimelinePreviewSidebar />
   </div>
 );
 
 let disposeWiring: (() => void) | null = null;
 let probe: FrameProbe;
+let layoutStyles: HTMLStyleElement | null = null;
 
 function seedLines(): void {
   useProjectStore.setState({
@@ -47,34 +61,30 @@ function attachAudio(): HTMLAudioElement {
   return audioElement;
 }
 
-function wordSweep(root: HTMLElement, lineIndex: number): string | undefined {
-  return root.querySelector<HTMLElement>(`[data-word-begin='${lineIndex * WORD_SECONDS}']`)?.style.clipPath;
+async function lyricsElement(root: Element): Promise<BraccatoLyricsElement> {
+  await expect.poll(() => root.querySelectorAll("braccato-lyrics .blyrics--line").length).toBeGreaterThan(0);
+  const el = root.querySelector<BraccatoLyricsElement>("braccato-lyrics");
+  if (!el) throw new Error("braccato-lyrics missing");
+  return el;
 }
 
-function transliterationSweep(root: HTMLElement, track: "main" | "background"): string | undefined {
-  return root.querySelector<HTMLElement>(`[data-preview-transliteration='${track}'] [data-word-begin]`)?.style.clipPath;
+function activeLineStart(el: Element): string | undefined {
+  return el.querySelector<HTMLElement>(".blyrics--line.blyrics--active")?.dataset.time;
 }
 
-function sweptTo(progress: number): string {
-  return `inset(0px ${(1 - progress) * 100}% 0px 0px)`;
-}
-
-function lineOpacity(root: HTMLElement, lineIndex: number): string | undefined {
-  return root.querySelector<HTMLElement>(`[data-line-idx='${lineIndex}'][data-line-begin]`)?.style.opacity;
-}
-
-function viewportOf(root: HTMLElement): HTMLElement {
-  const viewport = root.querySelector<HTMLElement>("[data-test='viewport']");
-  if (!viewport) throw new Error("viewport missing");
-  return viewport;
+function romanizedText(el: Element): string {
+  return [...el.querySelectorAll(".blyrics--romanized")].map((node) => node.textContent ?? "").join(" ");
 }
 
 beforeEach(() => {
   disposeWiring = wireFrameLoop();
   probe = createFrameProbe();
+  layoutStyles = installStyleSheet(SIDEBAR_LAYOUT_CSS);
 });
 
 afterEach(() => {
+  layoutStyles?.remove();
+  layoutStyles = null;
   probe.dispose();
   disposeWiring?.();
   disposeWiring = null;
@@ -83,19 +93,30 @@ afterEach(() => {
 // -- Tests ---------------------------------------------------------------------
 
 describe("TimelinePreviewSidebar on the frame loop", () => {
-  it("sweeps the word clip path while the audio plays", async () => {
+  it("highlights the line under the audio while it plays", async () => {
     seedLines();
     const audioElement = attachAudio();
     const screen = await render(<Harness />);
-    await expect.poll(() => wordSweep(screen.container, 0)).toBe(sweptTo(0));
+    const el = await lyricsElement(screen.container);
 
     useAudioStore.getState().setIsPlaying(true);
-    audioElement.currentTime = 1;
+    audioElement.currentTime = 3;
 
-    await expect.poll(() => wordSweep(screen.container, 0)).toBe(sweptTo(0.5));
+    await expect.poll(() => activeLineStart(el)).toBe(String(1 * WORD_SECONDS));
   });
 
-  it("sweeps main and background romanizations with their timed words", async () => {
+  it("moves the highlight after a seek while paused", async () => {
+    seedLines();
+    attachAudio();
+    const screen = await render(<Harness />);
+    const el = await lyricsElement(screen.container);
+
+    useAudioStore.getState().seekTo(9);
+
+    await expect.poll(() => activeLineStart(el)).toBe(String(4 * WORD_SECONDS));
+  });
+
+  it("shows main and background romanizations", async () => {
     const line = createLine({
       text: "안녕",
       words: [{ text: "안녕", begin: 0, end: 2 }],
@@ -121,23 +142,13 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
     });
     attachAudio();
     const screen = await render(<Harness />);
+    const el = await lyricsElement(screen.container);
 
-    expect(screen.container.querySelector('[data-preview-transliteration="main"] [data-word-begin]')?.textContent).toBe(
-      "annyeong",
-    );
-    expect(
-      screen.container.querySelector('[data-preview-transliteration="background"] [data-word-begin]')?.textContent,
-    ).toBe("sesang");
-    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0));
-    expect(transliterationSweep(screen.container, "background")).toBe(sweptTo(0));
-
-    useAudioStore.getState().seekTo(1.5);
-
-    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0.75));
-    expect(transliterationSweep(screen.container, "background")).toBe(sweptTo(0.25));
+    await expect.poll(() => romanizedText(el)).toContain("annyeong");
+    expect(romanizedText(el)).toContain("sesang");
   });
 
-  it("sweeps a romanization across line-synced timing", async () => {
+  it("shows a romanization over line-synced timing", async () => {
     const line = createLine({ text: "안녕하세요", begin: 2, end: 6 });
     useProjectStore.setState({
       granularity: "line",
@@ -156,50 +167,22 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
     });
     attachAudio();
     const screen = await render(<Harness />);
+    const el = await lyricsElement(screen.container);
 
-    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0));
-
-    useAudioStore.getState().seekTo(4);
-
-    await expect.poll(() => transliterationSweep(screen.container, "main")).toBe(sweptTo(0.5));
-  });
-
-  it("sweeps the word clip path after a seek while paused", async () => {
-    seedLines();
-    attachAudio();
-    const screen = await render(<Harness />);
-    await expect.poll(() => wordSweep(screen.container, 0)).toBe(sweptTo(0));
-
-    useAudioStore.getState().seekTo(3);
-
-    await expect.poll(() => wordSweep(screen.container, 1)).toBe(sweptTo(0.5));
-    expect(wordSweep(screen.container, 0)).toBe(sweptTo(1));
-  });
-
-  it("moves a line through the upcoming, active and complete opacities", async () => {
-    seedLines();
-    attachAudio();
-    const screen = await render(<Harness />);
-    await expect.poll(() => lineOpacity(screen.container, 2)).toBe("0.3");
-
-    useAudioStore.getState().seekTo(5);
-    await expect.poll(() => lineOpacity(screen.container, 2)).toBe("1");
-
-    useAudioStore.getState().seekTo(9);
-    await expect.poll(() => lineOpacity(screen.container, 2)).toBe("0.6");
+    await expect.poll(() => romanizedText(el)).toContain("annyeonghaseyo");
   });
 
   it("scrolls the active line into view", async () => {
     seedLines();
     attachAudio();
     const screen = await render(<Harness />);
-    const viewport = viewportOf(screen.container);
-    await expect.poll(() => lineOpacity(screen.container, 0)).toBe("1");
-    expect(viewport.scrollTop).toBe(0);
+    const el = await lyricsElement(screen.container);
+    const scrollTopBefore = el.scrollTop;
 
     useAudioStore.getState().seekTo(25);
 
-    await expect.poll(() => viewport.scrollTop).toBeGreaterThan(0);
+    await expect.poll(() => activeLineStart(el)).toBe(String(12 * WORD_SECONDS));
+    await expect.poll(() => el.scrollTop).toBeGreaterThan(scrollTopBefore);
   });
 
   describe("invariants", () => {
@@ -207,7 +190,7 @@ describe("TimelinePreviewSidebar on the frame loop", () => {
       seedLines();
       attachAudio();
       const screen = await render(<Harness />);
-      await expect.poll(() => lineOpacity(screen.container, 0)).toBe("1");
+      await lyricsElement(screen.container);
       await probe.quiesce();
 
       await settleFrames(probe.count);

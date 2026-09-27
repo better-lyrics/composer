@@ -264,7 +264,7 @@ const SETTINGS_CATALOG = {
   previewRenderer: {
     section: "advanced",
     label: "Preview renderer",
-    description: "Which engine renders synced lyrics in the Preview tab.",
+    description: "Which engine renders synced lyrics in the Preview tab and the Timeline preview.",
     settingKey: "previewRenderer",
   },
   youtubeBridge: {
