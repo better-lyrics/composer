@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
+import { useModalStackStore } from "@/stores/modal-stack";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { SettingsModal } from "@/ui/settings-modal";
@@ -142,5 +144,100 @@ describe("SettingsModal target", () => {
     useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
     await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
     await expect.poll(() => row("youtubeBridge")?.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
+  });
+});
+
+describe("SettingsModal search", () => {
+  const openModal = async () => {
+    const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await expect.poll(() => document.querySelector("dialog")?.contains(document.activeElement)).toBe(true);
+    return screen;
+  };
+  const searchBox = (screen: Awaited<ReturnType<typeof openModal>>) =>
+    screen.getByRole("textbox", { name: "Search settings" });
+
+  it("shows matching rows as live controls grouped by section", async () => {
+    const screen = await openModal();
+    await searchBox(screen).fill("follow playhead");
+    await expect.element(screen.getByRole("heading", { name: "Timeline" })).toBeInTheDocument();
+    await screen.getByRole("switch", { name: "Follow playhead" }).click();
+    expect(useSettingsStore.getState().followPlayhead).toBe(false);
+  });
+
+  it("starts a search when a letter is typed anywhere in the modal", async () => {
+    const screen = await openModal();
+    (document.querySelector("dialog") as HTMLElement).focus();
+    await userEvent.keyboard("snap");
+    await expect.element(searchBox(screen)).toHaveValue("snap");
+    expect(document.activeElement).toBe(searchBox(screen).element());
+  });
+
+  it("focuses the search on slash without typing it", async () => {
+    const screen = await openModal();
+    (document.querySelector("dialog") as HTMLElement).focus();
+    await userEvent.keyboard("/");
+    expect(document.activeElement).toBe(searchBox(screen).element());
+    await expect.element(searchBox(screen)).toHaveValue("");
+  });
+
+  it("counts matches per section and dims the rest", async () => {
+    const screen = await openModal();
+    await searchBox(screen).fill("snap");
+    await expect.element(screen.getByRole("button", { name: /^Timeline\s*\d+$/ })).toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "General" })).toHaveAttribute("data-dimmed");
+  });
+
+  it("finds shortcuts and renders them as rebind rows", async () => {
+    const screen = await openModal();
+    await searchBox(screen).fill("toggle snap");
+    await expect.element(screen.getByRole("heading", { name: "Shortcuts" })).toBeInTheDocument();
+    await expect.element(screen.getByText("Toggle snap (magnet)")).toBeInTheDocument();
+  });
+
+  it("leaves search when a section is opened from the results", async () => {
+    const screen = await openModal();
+    await searchBox(screen).fill("snap");
+    await screen.getByRole("button", { name: "Open Timeline section" }).click();
+    await expect.element(searchBox(screen)).toHaveValue("");
+    expect(useUIStore.getState().settingsSection).toBe("timeline");
+  });
+
+  it("shows no matches with a clear action", async () => {
+    const screen = await openModal();
+    await searchBox(screen).fill("zzzqqq");
+    await expect.element(screen.getByRole("status")).toHaveTextContent('No settings match "zzzqqq"');
+    await screen.getByRole("button", { name: "Clear search" }).first().click();
+    await expect.element(searchBox(screen)).toHaveValue("");
+  });
+
+  it("clears the query on Escape before closing", async () => {
+    let closes = 0;
+    const screen = await render(<SettingsModal isOpen onClose={() => closes++} onResetTour={() => {}} />);
+    await searchBox(screen).fill("snap");
+    await userEvent.keyboard("{Escape}");
+    await expect.element(searchBox(screen)).toHaveValue("");
+    expect(closes).toBe(0);
+    await userEvent.keyboard("{Escape}");
+    expect(closes).toBe(1);
+  });
+
+  describe("edge cases", () => {
+    it("does not steal keys while a nested modal is open", async () => {
+      await openModal();
+      useModalStackStore.setState({ count: 2 });
+      (document.querySelector("dialog") as HTMLElement).focus();
+      await userEvent.keyboard("a");
+      expect(useUIStore.getState().settingsQuery).toBe("");
+    });
+
+    it("ignores keys another handler already claimed", async () => {
+      await openModal();
+      const claim = (event: KeyboardEvent) => event.preventDefault();
+      window.addEventListener("keydown", claim, true);
+      (document.querySelector("dialog") as HTMLElement).focus();
+      await userEvent.keyboard("a");
+      window.removeEventListener("keydown", claim, true);
+      expect(useUIStore.getState().settingsQuery).toBe("");
+    });
   });
 });

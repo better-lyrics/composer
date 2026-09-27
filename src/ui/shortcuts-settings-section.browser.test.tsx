@@ -5,30 +5,12 @@ import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 
 describe("ShortcutsSettingsSection", () => {
-  it("renders the search input and section headings from the registry", async () => {
+  it("renders every scope heading from the registry", async () => {
     const screen = await render(<ShortcutsSettingsSection />);
-    await expect.element(screen.getByPlaceholder("Search shortcuts")).toBeInTheDocument();
     await expect.element(screen.getByText("General")).toBeInTheDocument();
-  });
-
-  it("labels the search input", async () => {
-    const screen = await render(<ShortcutsSettingsSection />);
-    await expect.element(screen.getByRole("textbox", { name: "Search shortcuts" })).toBeInTheDocument();
-  });
-
-  it("filters shortcuts by description as the user types", async () => {
-    const screen = await render(<ShortcutsSettingsSection />);
-    const input = screen.getByPlaceholder("Search shortcuts");
-    await input.fill("settings");
-    expect(document.body.textContent).toContain("Open settings");
-    expect(document.body.textContent).not.toContain("Play / Pause");
-  });
-
-  it("shows an empty state when no shortcuts match", async () => {
-    const screen = await render(<ShortcutsSettingsSection />);
-    const input = screen.getByPlaceholder("Search shortcuts");
-    await input.fill("thiswillmatchnothing");
-    await expect.element(screen.getByText(/No shortcuts match/)).toBeInTheDocument();
+    await expect.element(screen.getByText("Sync Mode")).toBeInTheDocument();
+    await expect.element(screen.getByText("Timeline Mode")).toBeInTheDocument();
+    expect(screen.container.querySelector("input")).toBeNull();
   });
 
   it("disables 'Reset all' when there are no overrides", async () => {
