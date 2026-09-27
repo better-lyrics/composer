@@ -1,7 +1,7 @@
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
-import { MatchCount } from "@/ui/match-count";
+import { withMatchCounts } from "@/ui/match-count";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
 import { revealElement } from "@/ui/reveal-element";
@@ -82,14 +82,10 @@ const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void
     if (settingsQuery) viewportRef.current?.scrollTo({ top: 0 });
   }, [settingsQuery]);
 
-  const navSections = useMemo(() => {
-    if (!results) return NAV_SECTIONS;
-    const counts = countMatchesBySection(results);
-    return NAV_SECTIONS.map((section) => {
-      const count = counts[section.id] ?? 0;
-      return { ...section, dimmed: count === 0, trailing: count > 0 ? <MatchCount count={count} /> : undefined };
-    });
-  }, [results]);
+  const navSections = useMemo(
+    () => (results ? withMatchCounts(NAV_SECTIONS, countMatchesBySection(results)) : NAV_SECTIONS),
+    [results],
+  );
 
   return (
     <>

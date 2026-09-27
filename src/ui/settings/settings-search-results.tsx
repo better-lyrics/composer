@@ -3,6 +3,7 @@ import { SETTINGS_SECTIONS, type SettingId, type SettingsSectionId, settingEntry
 import { useUIStore } from "@/stores/ui";
 import { Button } from "@/ui/button";
 import { NoMatches } from "@/ui/no-matches";
+import { SearchResultGroupHeader } from "@/ui/search-result-group-header";
 import type { SettingsSearchResult } from "@/ui/settings/search-settings";
 import { SettingRow } from "@/ui/settings/setting-row";
 import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
@@ -30,28 +31,10 @@ function groupResults(results: SettingsSearchResult): ResultGroup[] {
 
 // -- Components ----------------------------------------------------------------
 
-const ResultGroupHeader: React.FC<{ section: SettingsSectionId; label: string }> = ({ section, label }) => {
-  const Icon = SETTINGS_SECTION_ICONS[section];
-  const setSettingsSection = useUIStore((s) => s.setSettingsSection);
-  return (
-    <div className="flex items-center gap-2 pt-3.5 pb-1 text-xs text-composer-text-muted select-none">
-      <Icon size={14} className="shrink-0" />
-      <h3 className="font-medium">{label}</h3>
-      <button
-        type="button"
-        aria-label={`Open ${label} section`}
-        onClick={() => setSettingsSection(section)}
-        className="ml-auto text-composer-text-faint hover:text-composer-accent-text cursor-pointer transition-colors"
-      >
-        Open section
-      </button>
-    </div>
-  );
-};
-
 const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ results }) => {
   const query = useSettingsSearchQuery();
   const setSettingsQuery = useUIStore((s) => s.setSettingsQuery);
+  const setSettingsSection = useUIStore((s) => s.setSettingsSection);
   const groups = groupResults(results);
 
   if (groups.length === 0) {
@@ -72,7 +55,11 @@ const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ re
 
   return groups.map((group) => (
     <section key={group.section} aria-label={group.label}>
-      <ResultGroupHeader section={group.section} label={group.label} />
+      <SearchResultGroupHeader
+        icon={SETTINGS_SECTION_ICONS[group.section]}
+        label={group.label}
+        onOpenSection={() => setSettingsSection(group.section)}
+      />
       <div className="divide-y divide-composer-border">
         {group.settings.map((id) => (
           <SettingRow key={id} id={id} />
