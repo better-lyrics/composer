@@ -58,19 +58,9 @@ interface ProjectSaveInput {
   ttmlEditState: TtmlEditState;
 }
 
-type ProjectFileInput = Pick<
+type ProjectFileInput = Omit<
   ProjectSaveInput,
-  | "metadata"
-  | "agents"
-  | "lines"
-  | "groups"
-  | "granularity"
-  | "syllableSplitDefaults"
-  | "dismissedSuggestions"
-  | "dismissedExplicitSuggestions"
-  | "customSnapPoints"
-  | "importedMetadataKeys"
-  | "ttmlEditState"
+  "audioSource" | "currentStem" | "primingStripped" | "hasUnexportedImport"
 > & { audioFileName: string | undefined };
 
 // -- Constants ----------------------------------------------------------------
@@ -133,22 +123,7 @@ async function clearAudioFile(): Promise<void> {
 }
 
 function exportProjectToFile(input: ProjectFileInput): void {
-  const project: SavedProject = {
-    version: 3,
-    savedAt: Date.now(),
-    metadata: input.metadata,
-    agents: input.agents,
-    lines: input.lines,
-    groups: input.groups,
-    granularity: input.granularity,
-    syllableSplitDefaults: input.syllableSplitDefaults,
-    audioFileName: input.audioFileName,
-    dismissedSuggestions: input.dismissedSuggestions,
-    dismissedExplicitSuggestions: input.dismissedExplicitSuggestions,
-    customSnapPoints: input.customSnapPoints,
-    importedMetadataKeys: input.importedMetadataKeys,
-    ttmlEditState: input.ttmlEditState,
-  };
+  const project: SavedProject = { version: 3, savedAt: Date.now(), ...input };
 
   downloadText(
     JSON.stringify(project, null, 2),
