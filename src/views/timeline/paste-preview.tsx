@@ -6,7 +6,7 @@ import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceCount } from "@/domain/instance/enumerate";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { cn } from "@/utils/cn";
 import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
@@ -143,10 +143,10 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         if (match) {
           const group = useProjectStore.getState().groups.find((g) => g.id === match.groupId);
           const groupLabel = group?.label ?? "group";
-          const instanceCount = instanceIndicesOf(lines, match.groupId).length;
+          const matchedInstances = instanceCount(lines, match.groupId);
           const ok = await confirm({
             title: `Link as another ${groupLabel}?`,
-            description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${instanceCount} instance${instanceCount === 1 ? "" : "s"}). Link as another instance, or paste as plain words?`,
+            description: `These ${clipboard.candidateLines.length} lines look like a ${groupLabel} (matches ${matchedInstances} instance${matchedInstances === 1 ? "" : "s"}). Link as another instance, or paste as plain words?`,
             confirmLabel: "Link as instance",
             cancelLabel: "Paste as words",
           });

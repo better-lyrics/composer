@@ -1,4 +1,4 @@
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceCount } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -97,10 +97,10 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
     const { groupId } = contextMenu.target;
     const group = groups.find((g) => g.id === groupId);
     if (!group) return;
-    const instanceCount = instanceIndicesOf(useProjectStore.getState().lines, groupId).length;
+    const count = instanceCount(useProjectStore.getState().lines, groupId);
 
     clearContextMenu();
-    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount });
+    await deleteGroupWithConfirm({ groupId, groupLabel: group.label, instanceCount: count });
   }, [contextMenu, groups, clearContextMenu]);
 
   const handleRenameStart = useCallback(() => {

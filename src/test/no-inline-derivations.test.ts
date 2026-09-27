@@ -125,6 +125,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /instanceIdx\b(?:\s*\?\?\s*\d+\))?\s*\+\s*1\b/,
     use: "instanceOrdinal from @/domain/instance/enumerate",
   },
+  {
+    name: "inline instance count",
+    regex: /instanceIndicesOf\((?:[^()]|\([^()]*\))*\)\.length/,
+    use: "instanceCount from @/domain/instance/enumerate",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

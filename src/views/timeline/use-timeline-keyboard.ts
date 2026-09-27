@@ -1,5 +1,5 @@
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -599,8 +599,8 @@ function useTimelineKeyboard(
           const group = useProjectStore.getState().groups.find((g) => g.id === inst.groupId);
           if (!group) break;
           e.preventDefault();
-          const instanceCount = instanceIndicesOf(projectLines, inst.groupId).length;
-          void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount });
+          const count = instanceCount(projectLines, inst.groupId);
+          void deleteGroupWithConfirm({ groupId: inst.groupId, groupLabel: group.label, instanceCount: count });
           break;
         }
         case "timeline.pingSiblings": {
