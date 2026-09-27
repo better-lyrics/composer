@@ -377,7 +377,8 @@ function nudgeSelectedWords(
   const appliedDelta = direction * allowedMagnitude;
   const updates: NudgeUpdate[] = [];
   for (const group of groups.values()) {
-    const wordsArray = trackWords(group.line, group.type) ?? [];
+    const wordsArray = trackWords(group.line, group.type);
+    if (!wordsArray) continue;
     const updatedWords = wordsArray.map((w, i) =>
       group.indices.has(i) ? { ...w, begin: w.begin + appliedDelta, end: w.end + appliedDelta } : w,
     );

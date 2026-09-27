@@ -5,7 +5,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
@@ -427,7 +427,7 @@ function useTimelineKeyboard(
           if (mSel.length === 0) break;
           const first = mSel[0];
           if (!mSel.every((w) => w.lineId === first.lineId && w.type === first.type)) break;
-          const field: "words" | "backgroundWords" = first.type === "word" ? "words" : "backgroundWords";
+          const field = trackField(first.type);
           e.preventDefault();
           useProjectStore.getState().mergeSyllableGroupIntoWord(
             first.lineId,

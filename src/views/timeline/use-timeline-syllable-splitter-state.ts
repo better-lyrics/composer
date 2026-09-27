@@ -12,6 +12,7 @@ import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
+import { trackField } from "@/domain/line/tracks";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -141,12 +142,7 @@ function useTimelineSyllableSplitterState({
     const updatedWords = [...wordsArray.slice(0, wordIndex), ...newWords, ...wordsArray.slice(wordIndex + 1)];
     const transliteration =
       mode === "syllable"
-        ? reconcileTransliterationAfterSyllableSplit(
-            line,
-            type === "word" ? "words" : "backgroundWords",
-            wordIndex,
-            newWords,
-          )
+        ? reconcileTransliterationAfterSyllableSplit(line, trackField(type), wordIndex, newWords)
         : null;
     const extraUpdates = transliteration ? { transliteration } : {};
 

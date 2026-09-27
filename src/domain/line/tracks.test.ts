@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { trackWords } from "@/domain/line/tracks";
+import { trackField, trackWords } from "@/domain/line/tracks";
 
 function line(extras: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({ id: "l1", text: "Hello world", agentId: "v1", ...extras });
@@ -55,6 +55,21 @@ describe("trackWords", () => {
     it("returns the stored array by reference, never a copy", () => {
       const synced = line({ words: mainWords });
       expect(trackWords(synced, "word")).toBe(synced.words);
+    });
+  });
+});
+
+describe("trackField", () => {
+  it("names the line field that holds each track", () => {
+    expect(trackField("word")).toBe("words");
+    expect(trackField("bg")).toBe("backgroundWords");
+  });
+
+  describe("invariants", () => {
+    it("reads the same words as trackWords for both tracks", () => {
+      const synced = line({ words: mainWords, backgroundText: "ooh", backgroundWords: bgWords });
+      expect(synced[trackField("word")]).toBe(trackWords(synced, "word"));
+      expect(synced[trackField("bg")]).toBe(trackWords(synced, "bg"));
     });
   });
 });

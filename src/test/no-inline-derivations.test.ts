@@ -139,6 +139,13 @@ const FORBIDDEN: ForbiddenPattern[] = [
     ownerFile: "domain/line/tracks.ts",
     includeDomain: true,
   },
+  {
+    name: "inline word track field name",
+    regex: /=== "word" \?\s*"words"\s*:\s*"backgroundWords"|=== "bg" \?\s*"backgroundWords"\s*:\s*"words"/,
+    use: "trackField from @/domain/line/tracks",
+    ownerFile: "domain/line/tracks.ts",
+    includeDomain: true,
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { trackField, trackWords } from "@/domain/line/tracks";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordSelection } from "@/domain/selection/model";
 
@@ -22,8 +23,9 @@ function resolveExplicitSelectionToggle(lines: LyricLine[], selection: WordSelec
   const groups = new Map<string, { lineId: string; field: "words" | "backgroundWords"; indices: number[] }>();
 
   for (const w of selection) {
-    const field: "words" | "backgroundWords" = w.type === "word" ? "words" : "backgroundWords";
-    const wordsArr = linesById.get(w.lineId)?.[field];
+    const field = trackField(w.type);
+    const line = linesById.get(w.lineId);
+    const wordsArr = line ? trackWords(line, w.type) : undefined;
     if (!wordsArr || w.wordIndex < 0 || w.wordIndex >= wordsArr.length) continue;
     const key = `${w.lineId}:${field}`;
     const existing = groups.get(key);

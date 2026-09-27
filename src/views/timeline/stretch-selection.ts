@@ -38,7 +38,8 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
   };
 
   for (const track of targets.tracks.values()) {
-    const words = trackWords(track.line, track.type) ?? [];
+    const words = trackWords(track.line, track.type);
+    if (!words) continue;
     const updatedWords = words.map((word, i) =>
       track.indices.has(i) ? { ...word, begin: mapTime(word.begin), end: mapTime(word.end) } : word,
     );
