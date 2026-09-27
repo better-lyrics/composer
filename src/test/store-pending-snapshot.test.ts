@@ -47,7 +47,7 @@ describe("snapshot writes outside history flag the pending snapshot", () => {
   it("every slice write of lines, groups, agents or snap points outside history sets isDirtySinceHistory", () => {
     const offenders = sliceActions()
       .filter(writesSnapshotOutsideHistory)
-      .filter((action) => !(actionName(action) in ALLOWED) && !action.body.includes("isDirtySinceHistory"))
+      .filter((action) => !(actionName(action) in ALLOWED) && !/isDirtySinceHistory:\s*true/.test(action.body))
       .map((action) => action.name);
     expect(offenders).toEqual([]);
   });
