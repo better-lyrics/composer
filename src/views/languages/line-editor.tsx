@@ -4,7 +4,12 @@ import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import { manualSegments } from "@/domain/language/manual-segments";
 import type { TranslationTrack } from "@/domain/language/model";
-import { alignmentNeedsReview, getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
+import {
+  alignmentNeedsReview,
+  getLanguageReviewTracks,
+  isTransliterationSourceStale,
+  languageLineAnchorId,
+} from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { StatusChip } from "@/ui/status-chip";
@@ -45,7 +50,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
   const transliterationStale = line.transliteration
-    ? line.transliteration.sourceFingerprint !== fingerprint || alignmentNeedsReview(line.transliteration, "main")
+    ? isTransliterationSourceStale(line, "words") || alignmentNeedsReview(line.transliteration, "main")
     : false;
   const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
   const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });

@@ -33,7 +33,7 @@ describe("upgradeSavedProject", () => {
     expect(upgradeSavedProject(project)).toBe(true);
     expect(project.version).toBe(SAVED_PROJECT_VERSION);
     expect(project.lines[0].transliteration?.text).toBe("geol eum eun  Like  a  dance");
-    expect(project.lines[0].transliteration?.alignmentStatus).toBe("confirmed");
+    expect(project.lines[0].transliteration?.alignmentStatus).toBe("inferred");
   });
 
   it("upgrades a version 2 record", () => {

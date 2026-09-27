@@ -1,5 +1,5 @@
 import { alignTrackToLine } from "@/domain/language/align";
-import { alignmentNeedsReview } from "@/domain/language/review";
+import { alignmentNeedsReview, isTransliterationSourceStale } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
@@ -62,7 +62,12 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
       ariaLabel="Background transliteration"
       mono
       value={line.transliteration?.backgroundText ?? ""}
-      status={alignmentNeedsReview(line.transliteration, "background") ? "review" : undefined}
+      status={
+        isTransliterationSourceStale(line, "backgroundWords") ||
+        alignmentNeedsReview(line.transliteration, "background")
+          ? "review"
+          : undefined
+      }
       error={error}
       pasteKind="transliteration"
       action={
@@ -92,6 +97,8 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
               : [],
             origin: "manual",
             sourceFingerprint: fingerprint,
+            reviewedSourceFingerprint: undefined,
+            backgroundReviewedSourceFingerprint: undefined,
           }),
         );
       }}
