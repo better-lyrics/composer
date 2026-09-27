@@ -1,22 +1,12 @@
+import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateTTML } from "@/utils/ttml";
 
 // -- Fixtures -----------------------------------------------------------------
 
-/**
- * Three word-synced lyric lines with wide, non-overlapping time windows,
- * rendered to a real TTML string via the production generator. Used by the
- * preview renderer tests to drive highlight and line-click behaviour.
- *
- * Windows: "first line here" 2-6s, "second line now" 12-18s, "third line ends"
- * 24-30s.
- *
- * `durationSeconds` becomes the document's `dur`, the only channel a song
- * duration reaches a lyrics parser through.
- */
-function buildSyncedTtml(durationSeconds?: number): string {
-  const lines = [
+function threeSyncedLines(): LyricLine[] {
+  return [
     createLine({
       id: "line-a",
       text: "first line here",
@@ -45,8 +35,33 @@ function buildSyncedTtml(durationSeconds?: number): string {
       ],
     }),
   ];
+}
+
+/**
+ * Three word-synced lyric lines with wide, non-overlapping time windows,
+ * rendered to a real TTML string via the production generator. Used by the
+ * preview renderer tests to drive highlight and line-click behaviour.
+ *
+ * Windows: "first line here" 2-6s, "second line now" 12-18s, "third line ends"
+ * 24-30s.
+ *
+ * `durationSeconds` becomes the document's `dur`, the only channel a song
+ * duration reaches a lyrics parser through.
+ */
+function buildSyncedTtml(durationSeconds?: number): string {
   const { metadata, agents } = useProjectStore.getState();
-  return generateTTML({ metadata, agents, lines, groups: [], duration: durationSeconds });
+  return generateTTML({ metadata, agents, lines: threeSyncedLines(), groups: [], duration: durationSeconds });
+}
+
+/** The three `buildSyncedTtml` lines, credited to `songwriters` the way Composer writes them. */
+function buildSongwriterTtml(songwriters: string[]): string {
+  const { metadata, agents } = useProjectStore.getState();
+  return generateTTML({ metadata: { ...metadata, songwriters }, agents, lines: threeSyncedLines(), groups: [] });
+}
+
+/** One timed line credited through Apple's `<iTunesMetadata><songwriters>` list, as an imported Apple TTML carries it. */
+function buildAppleSongwriterTtml(): string {
+  return `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata" xml:lang="en"><head><metadata><ttm:agent type="person" xml:id="v1"/><iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal"><songwriters><songwriter>Apple Writer</songwriter><songwriter>Second Writer</songwriter></songwriters></iTunesMetadata></metadata></head><body dur="10s"><div><p begin="0s" end="5s" ttm:agent="v1">Apple line</p></div></body></tt>`;
 }
 
 /** One word-synced line 2-6s carrying a background vocal over its second half. */
@@ -190,8 +205,10 @@ function buildMatchingAlternateLanguageTtml(): string {
 
 export {
   buildAlternateBackgroundLanguageTtml,
+  buildAppleSongwriterTtml,
   buildAlternateLanguageTtml,
   buildBackgroundVocalTtml,
   buildMatchingAlternateLanguageTtml,
+  buildSongwriterTtml,
   buildSyncedTtml,
 };

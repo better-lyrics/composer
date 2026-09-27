@@ -68,7 +68,9 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
 const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
+  const songwriters = useMemo(() => TTMLParser.metadata(ttmlString).songwriters, [ttmlString]);
   const latestLyricsRef = useRef(lyrics);
+  const latestSongwritersRef = useRef(songwriters);
   const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
@@ -123,7 +125,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     decorateAlternateTracks(el, latestLyricsRef.current);
   }, []);
 
-  const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[]) => {
+  const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[], songwriters: readonly string[]) => {
     if (appliedLyricsRef.current === next) return;
     const scrollTopBefore = el.scrollTop;
     // Braccato's in-place lyrics swap keeps the old scroll geometry; a fresh renderer (writing host) positions from scratch.
@@ -133,6 +135,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
     }
     appliedLyricsRef.current = next;
+    el.lyricsOptions = { songwriters };
     el.lyrics = next;
     // A rebuild that moves the scroll position fires one scroll the reader never made.
     rebuildScrollTopRef.current = el.scrollTop === scrollTopBefore ? null : el.scrollTop;
@@ -147,7 +150,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
       initializedElementRef.current = el;
       el.theme = braccatoTheme;
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
-      applyLyrics(el, latestLyricsRef.current);
+      applyLyrics(el, latestLyricsRef.current, latestSongwritersRef.current);
     },
     [applyLyrics],
   );
@@ -174,9 +177,10 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
   useEffect(() => {
     latestLyricsRef.current = lyrics;
+    latestSongwritersRef.current = songwriters;
     const element = elementRef.current;
-    if (element) applyLyrics(element, lyrics);
-  }, [lyrics, applyLyrics]);
+    if (element) applyLyrics(element, lyrics, songwriters);
+  }, [lyrics, songwriters, applyLyrics]);
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.

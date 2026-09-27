@@ -1,12 +1,12 @@
+import { useAudioStore } from "@/stores/audio";
+import { installStyleSheet } from "@/test/browser-css";
+import { render } from "@/test/render";
+import { buildBackgroundVocalTtml, buildSongwriterTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
+import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 import type { BraccatoLyricsElement } from "@braccato/core/element";
+import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
 import { Activity, useState } from "react";
 import { describe, expect, it } from "vitest";
-import { useAudioStore } from "@/stores/audio";
-import { render } from "@/test/render";
-import braccatoLyricsCss from "@braccato/core/styles/lyrics.css?raw";
-import { installStyleSheet } from "@/test/browser-css";
-import { buildBackgroundVocalTtml, buildSyncedTtml } from "@/test/ttml-fixtures";
-import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
 
 let setVisible: (visible: boolean) => void = () => {};
 
@@ -86,6 +86,20 @@ describe("BraccatoRenderer inside Activity", () => {
 
     el.querySelector<HTMLElement>(".blyrics--line")?.click();
     await expect.poll(() => useAudioStore.getState().currentTime).toBe(2);
+  });
+
+  it("regression: keeps the songwriter credits across a hide, an edit while hidden, and a reveal", async () => {
+    const screen = await render(<Harness ttml={buildSongwriterTtml(["Ada"])} />);
+    const el = screen.container.querySelector<BraccatoLyricsElement>("braccato-lyrics");
+    if (!el) throw new Error("braccato-lyrics element not rendered");
+    await expect.poll(() => el.querySelector(".blyrics-credits")?.textContent).toBe("Ada");
+
+    setVisible(false);
+    await expect.poll(() => screen.container.querySelector<HTMLElement>(":scope > div")?.style.display).toBe("none");
+    await screen.rerender(<Harness ttml={buildSongwriterTtml(["Ada", "Grace"])} />);
+    setVisible(true);
+
+    await expect.poll(() => el.querySelector(".blyrics-credits")?.textContent).toBe("Ada & Grace");
   });
 });
 
