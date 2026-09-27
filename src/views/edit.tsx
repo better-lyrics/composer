@@ -22,12 +22,13 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
-import { linesToEditText, shiftCaretPastRewrittenRows } from "@/views/edit/edit-text";
+import { linesToEditText } from "@/views/edit/edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
+import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -289,7 +290,6 @@ const EditPanel: React.FC = () => {
   const lines = useProjectStore((s) => s.lines);
   const groups = useProjectStore((s) => s.groups);
   const activeTab = useProjectStore((s) => s.activeTab);
-  const setLines = useProjectStore((s) => s.setLines);
   const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
@@ -300,8 +300,7 @@ const EditPanel: React.FC = () => {
   const [rawText, setRawText] = useState(() => linesToEditText(lines));
   const rawTextRef = useRef(rawText);
   rawTextRef.current = rawText;
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const pendingCaretRef = useRef<{ typedText: string; start: number; end: number } | null>(null);
+  const { textareaRef, showEditText } = useEditTextCaret(rawText, setRawText);
   const linesSetByUs = useRef<LyricLine[] | null>(null);
   const modalPendingRef = useRef(false);
   const pastedRef = useRef(false);
@@ -320,17 +319,6 @@ const EditPanel: React.FC = () => {
     }
     setRawText(linesToEditText(lines));
   }, [lines]);
-
-  useLayoutEffect(() => {
-    const pending = pendingCaretRef.current;
-    const textarea = textareaRef.current;
-    if (!pending || !textarea) return;
-    pendingCaretRef.current = null;
-    textarea.setSelectionRange(
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.start),
-      shiftCaretPastRewrittenRows(pending.typedText, rawText, pending.end),
-    );
-  }, [rawText]);
 
   const defaultAgentId = agents?.[0]?.id ?? "v1";
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
@@ -524,12 +512,12 @@ const EditPanel: React.FC = () => {
 
   useEffect(() => () => finalizeRun(), [finalizeRun]);
 
-  const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const applyTextareaText = useCallback(
+    (textarea: HTMLTextAreaElement) => {
       const wasPaste = pastedRef.current;
       pastedRef.current = false;
 
-      const text = e.target.value;
+      const text = textarea.value;
       const action = decideEditTextAction({
         text,
         defaultAgentId,
@@ -543,8 +531,8 @@ const EditPanel: React.FC = () => {
       // textarea on a state-less return path and the user's keystrokes persist
       // visually even though the store rejected them.
       const snapBack = () => {
-        if (e.target.value !== rawTextRef.current) {
-          e.target.value = rawTextRef.current;
+        if (textarea.value !== rawTextRef.current) {
+          textarea.value = rawTextRef.current;
         }
       };
 
@@ -586,7 +574,7 @@ const EditPanel: React.FC = () => {
       useImportModalStore.getState().clearImportResult();
 
       if (action.kind === "noop") {
-        setRawText(text);
+        showEditText(text, text, textarea);
         return;
       }
 
@@ -604,21 +592,19 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      if (action.editText !== text) {
-        pendingCaretRef.current = { typedText: text, start: e.target.selectionStart, end: e.target.selectionEnd };
-      }
-      setRawText(action.editText);
+      showEditText(text, action.editText, textarea);
 
       if (runBaselineRef.current === null) {
         const projectState = useProjectStore.getState();
         runBaselineRef.current = { lines: projectState.lines, wasDirty: projectState.isDirtySinceHistory };
       }
       linesSetByUs.current = finalLines;
-      setLines(finalLines);
+      useProjectStore.getState().setLines(finalLines);
       scheduleRunFinalize();
     },
-    [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
+    [confirm, defaultAgentId, groups, lines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun, showEditText],
   );
+  const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
 
   const importTriggers = useDualClickImport(openImportModal);
 
@@ -689,8 +675,10 @@ const EditPanel: React.FC = () => {
             id={textareaId}
             ref={textareaRef}
             value={rawText}
-            onChange={handleTextChange}
+            onChange={textareaChange.onChange}
             onBlur={handleTextareaBlur}
+            onCompositionStart={textareaChange.onCompositionStart}
+            onCompositionEnd={textareaChange.onCompositionEnd}
             onPaste={() => {
               pastedRef.current = true;
             }}

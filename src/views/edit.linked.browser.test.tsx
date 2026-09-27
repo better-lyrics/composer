@@ -135,3 +135,30 @@ describe("pasting over a linked line", () => {
     expect(textarea.selectionStart).toBeLessThanOrEqual(textarea.value.length);
   });
 });
+
+describe("IME composition on a linked line", () => {
+  it("shows exactly what was typed until the composition ends, then rewrites the sibling once", async () => {
+    useProjectStore.setState({
+      activeTab: "edit",
+      lines: linkedChorusAroundVerse(),
+      groups: [createGroup({ id: "g1", label: "Chorus" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = getTextarea(screen.container);
+    textarea.focus();
+
+    textarea.dispatchEvent(new CompositionEvent("compositionstart", { bubbles: true }));
+    setTextareaValue(textarea, "Chorusk line\nVerse\nChorus line");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(textarea.value).toBe("Chorusk line\nVerse\nChorus line");
+
+    setTextareaValue(textarea, "Chorusか line\nVerse\nChorus line");
+    await new Promise((r) => setTimeout(r, 50));
+    expect(textarea.value).toBe("Chorusか line\nVerse\nChorus line");
+
+    textarea.dispatchEvent(new CompositionEvent("compositionend", { bubbles: true, data: "か" }));
+
+    await expect.poll(() => textarea.value).toBe("Chorusか line\nVerse\nChorusか line");
+    await expect.poll(texts).toEqual(["Chorusか line", "Verse", "Chorusか line"]);
+  });
+});
