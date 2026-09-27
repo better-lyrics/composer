@@ -26,10 +26,7 @@ const BASELINE_OVER_BUDGET = new Set<string>([
   "views/timeline/utils.ts",
   "views/timeline/word-track.tsx",
   "views/timeline/paste-preview.tsx",
-  // timeline-context-menu.tsx is intentionally exempt: it is a pure
-  // declarative menu JSX tree. Carving it into per-target sub-components is
-  // negative value (it would force four new .browser.test.tsx files for a
-  // zero-behaviour-change extraction).
+  // timeline-context-menu.tsx is intentionally exempt: its per-target sections share private menu primitives in one file.
   "views/timeline/timeline-context-menu.tsx",
   "views/sync/scrollable-line.tsx",
   // shortcut-definitions.ts is intentionally exempt: it is a flat declarative
