@@ -46,6 +46,7 @@ interface ForbiddenPattern {
   regex: RegExp;
   use: string;
   ownerFile?: string;
+  includeDomain?: boolean;
 }
 
 const FORBIDDEN: ForbiddenPattern[] = [
@@ -130,6 +131,14 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /instanceIndicesOf\((?:[^()]|\([^()]*\))*\)\.length/,
     use: "instanceCount from @/domain/instance/enumerate",
   },
+  {
+    name: "inline word track pick",
+    regex:
+      /=== "word" \?\s*\(?[\w.?]+\.words\b[^:]*:\s*\(?[\w.?]+\.backgroundWords\b|=== "bg" \?\s*\(?[\w.?]+\.backgroundWords\b[^:]*:\s*\(?[\w.?]+\.words\b/,
+    use: "trackWords from @/domain/line/tracks",
+    ownerFile: "domain/line/tracks.ts",
+    includeDomain: true,
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {
@@ -139,7 +148,7 @@ describe("no common inline domain derivations outside src/domain", () => {
 
       for (const file of walk(SRC_ROOT)) {
         const rel = relative(SRC_ROOT, file).replace(/\\/g, "/");
-        if (isWhitelisted(rel)) continue;
+        if (!pattern.includeDomain && isWhitelisted(rel)) continue;
         if (rel === pattern.ownerFile) continue;
         if (rel.endsWith(".test.ts") || rel.endsWith(".test.tsx")) continue;
 

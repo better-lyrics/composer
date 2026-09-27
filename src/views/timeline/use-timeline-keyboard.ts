@@ -5,6 +5,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
@@ -94,7 +95,7 @@ function useTimelineKeyboard(
       const line = lines[targetWord.lineIndex];
       if (!line) return;
 
-      const wordsArray = targetWord.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = trackWords(line, targetWord.type);
       if (!wordsArray) return;
 
       const wordIndex = targetWord.wordIndex;
@@ -400,8 +401,7 @@ function useTimelineKeyboard(
           const run = contiguousSelectionRun(mSel);
           if (!run) break;
           const mLine = lines.find((l) => l.id === run.lineId);
-          if (!mLine) break;
-          const mWords = run.type === "word" ? mLine.words : mLine.backgroundWords;
+          const mWords = mLine ? trackWords(mLine, run.type) : undefined;
           if (!mWords) break;
           e.preventDefault();
           const firstIdx = run.indices[0];

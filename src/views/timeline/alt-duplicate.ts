@@ -1,6 +1,7 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -45,7 +46,7 @@ function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[],
     const bgDups: WordTiming[] = [];
 
     for (const sel of selections) {
-      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = trackWords(line, sel.type);
       const word = wordsArray?.[sel.wordIndex];
       if (!word) continue;
 

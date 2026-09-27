@@ -4,6 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { selfKey } from "@/views/timeline/snap";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -59,7 +60,7 @@ function makeDragOverlapCheck(
 ) {
   const line = lines.find((l) => l.id === data.lineId);
   if (!line) return () => true;
-  const wordsArr = data.trackType === "word" ? (line.words ?? []) : (line.backgroundWords ?? []);
+  const wordsArr = trackWords(line, data.trackType) ?? [];
   return (shift: number) => {
     const newBegin = data.begin + shift;
     const newEnd = data.end + shift;
@@ -152,8 +153,7 @@ const TimelinePanel: React.FC = () => {
     const valid = selectedWords.filter((sel) => {
       const line = effectiveLines[sel.lineIndex];
       if (!line || line.id !== sel.lineId) return false;
-      const words = sel.type === "word" ? line.words : line.backgroundWords;
-      return !!words?.[sel.wordIndex];
+      return !!trackWords(line, sel.type)?.[sel.wordIndex];
     });
     if (valid.length < selectedWords.length) {
       useTimelineStore.getState().setSelectedWords(valid);
@@ -245,7 +245,7 @@ const TimelinePanel: React.FC = () => {
     const seen = new Set<string>();
     for (const sel of baseSelections) {
       const line = lineById.get(sel.lineId);
-      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
+      const wordsArray = line ? trackWords(line, sel.type) : undefined;
       if (!line || !wordsArray) continue;
       const indices = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
       for (const idx of indices) {
@@ -280,7 +280,7 @@ const TimelinePanel: React.FC = () => {
       let positions = positionsByLineTrack.get(key);
       if (!positions) {
         const line = lineById.get(lineId);
-        const wordsArray = type === "word" ? line?.words : line?.backgroundWords;
+        const wordsArray = line ? trackWords(line, type) : undefined;
         positions = wordsArray ? getSyllablePositions(wordsArray) : [];
         positionsByLineTrack.set(key, positions);
       }
@@ -289,7 +289,7 @@ const TimelinePanel: React.FC = () => {
 
     const cells = wordsToShow.map((sel) => {
       const line = lineById.get(sel.lineId);
-      const wordsArray = sel.type === "word" ? line?.words : line?.backgroundWords;
+      const wordsArray = line ? trackWords(line, sel.type) : undefined;
       const word = wordsArray?.[sel.wordIndex];
       if (!word || !line)
         return { text: "", left: 0, top: 0, width: 0, height: 0, syllablePosition: "none" as SyllablePosition };

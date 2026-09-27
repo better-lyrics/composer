@@ -1,5 +1,6 @@
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
@@ -104,7 +105,7 @@ function useContextMenuTargets() {
 
     const line = lines.find((l) => l.id === run.lineId);
     if (!line) return null;
-    const wordsArray = run.type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = trackWords(line, run.type);
     if (!wordsArray) return null;
 
     return { indices: run.indices, lineId: run.lineId, type: run.type };

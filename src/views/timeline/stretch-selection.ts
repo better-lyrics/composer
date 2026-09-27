@@ -1,5 +1,6 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import {
   STRETCH_EPS,
   type StretchClampOptions,
@@ -7,7 +8,6 @@ import {
   type StretchTargets,
   deriveBounds,
   resolveStretchTargets,
-  trackWords,
 } from "@/views/timeline/stretch-targets";
 
 // -- Types ---------------------------------------------------------------------
@@ -38,7 +38,7 @@ function mapStretchTargets(targets: StretchTargets, k: number, anchorTime: numbe
   };
 
   for (const track of targets.tracks.values()) {
-    const words = trackWords(track);
+    const words = trackWords(track.line, track.type) ?? [];
     const updatedWords = words.map((word, i) =>
       track.indices.has(i) ? { ...word, begin: mapTime(word.begin), end: mapTime(word.end) } : word,
     );

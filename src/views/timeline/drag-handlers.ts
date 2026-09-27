@@ -1,6 +1,7 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { isWordSelected } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
 import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
@@ -56,7 +57,7 @@ function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections:
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const words = sel.type === "word" ? line.words : line.backgroundWords;
+    const words = trackWords(line, sel.type);
     if (!words) continue;
     const expanded = expandSelectionToGroupmates(words, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -123,7 +124,7 @@ function applySameLineReorder(
 
   const line = lines.find((l) => l.id === activeData.lineId);
   if (!line) return;
-  const wordsArray = activeData.trackType === "word" ? line.words : line.backgroundWords;
+  const wordsArray = trackWords(line, activeData.trackType);
   if (!wordsArray) return;
 
   const wordIndex = activeData.wordIndex;
@@ -167,7 +168,7 @@ function buildCrossLineMoves({
     if (sel.lineId !== activeData.lineId) continue;
     const sourceLine = linesById.get(sel.lineId);
     if (!sourceLine) continue;
-    const sourceArr = sel.type === "word" ? sourceLine.words : sourceLine.backgroundWords;
+    const sourceArr = trackWords(sourceLine, sel.type);
     const source = sourceArr?.[sel.wordIndex];
     if (!source) continue;
 

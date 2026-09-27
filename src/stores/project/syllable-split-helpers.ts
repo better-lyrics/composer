@@ -1,5 +1,6 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { findIdenticalWords, type IdenticalMatchSource } from "@/utils/identical-word-matcher";
 import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
@@ -50,7 +51,7 @@ function applyTargetsToLine(line: LyricLine, targets: SplitTarget[], splitPoints
 function findSourceTarget(lines: LyricLine[], source: IdenticalMatchSource): SplitTarget | null {
   const sourceLine = lines.find((line) => line.id === source.lineId);
   if (!sourceLine) return null;
-  const track = source.type === "word" ? sourceLine.words : sourceLine.backgroundWords;
+  const track = trackWords(sourceLine, source.type);
   const word = track?.[source.wordIndex];
   if (!word) return null;
   return { lineId: source.lineId, wordIndex: source.wordIndex, type: source.type, word, reuseGroupId: true };

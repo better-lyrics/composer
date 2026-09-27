@@ -2,6 +2,7 @@ import { getLanguageDisplayLine } from "@/domain/language/display";
 import { mainWordEditFields } from "@/domain/line/main-words";
 import { effectiveLineBrand, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
 
@@ -29,7 +30,7 @@ function withEffectiveWords(line: LyricLine): LyricLine {
 }
 
 function effectiveTrackWords(line: LyricLine, type: "word" | "bg"): WordTiming[] | undefined {
-  return type === "word" ? effectiveWords(line) : line.backgroundWords;
+  return type === "word" ? effectiveWords(line) : trackWords(line, type);
 }
 
 function timingSourceOf(line: LyricLine): TimingSource {

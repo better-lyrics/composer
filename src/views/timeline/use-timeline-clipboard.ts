@@ -1,5 +1,6 @@
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { useProjectStore } from "@/stores/project";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
@@ -23,7 +24,7 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     for (const sel of selectedWords) {
       const line = lines[sel.lineIndex];
       if (!line) continue;
-      const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
+      const wordsArray = trackWords(line, sel.type);
       const word = wordsArray?.[sel.wordIndex];
       if (!word) continue;
 

@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
@@ -30,7 +31,7 @@ function normalizeText(text: string, caseInsensitive: boolean): string {
 function findSourceWord(lines: LyricLine[], source: IdenticalMatchSource): WordTiming | undefined {
   const sourceLine = lines.find((line) => line.id === source.lineId);
   if (!sourceLine) return undefined;
-  const track = source.type === "word" ? sourceLine.words : sourceLine.backgroundWords;
+  const track = trackWords(sourceLine, source.type);
   return track?.[source.wordIndex];
 }
 

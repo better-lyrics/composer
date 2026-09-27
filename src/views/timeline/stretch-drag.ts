@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import {
   STRETCH_EPS,
@@ -9,7 +10,6 @@ import {
   deriveBounds,
   isFiniteWord,
   resolveStretchTargets,
-  trackWords,
 } from "@/views/timeline/stretch-targets";
 import { selectionGripEdges } from "@/views/timeline/stretch-grips";
 
@@ -59,7 +59,7 @@ function planStretchDrag(
   }
 
   const draggedTrack = targets.tracks.get(`${drag.lineId}:${drag.type}`);
-  const draggedWords = draggedTrack ? trackWords(draggedTrack) : null;
+  const draggedWords = draggedTrack ? trackWords(draggedTrack.line, draggedTrack.type) : null;
   const draggedWord = draggedTrack?.indices.has(drag.wordIndex)
     ? (draggedWords?.[drag.wordIndex] as WordTiming | undefined)
     : undefined;

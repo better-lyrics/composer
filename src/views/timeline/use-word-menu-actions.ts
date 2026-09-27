@@ -1,4 +1,5 @@
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
+import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { absorbDeletedSyllablesIntoNeighbors } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
@@ -68,7 +69,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = trackWords(line, type);
     if (!wordsArray) return;
 
     const absorbed = absorbDeletedSyllablesIntoNeighbors(wordsArray, [wordIndex]);
@@ -88,7 +89,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!line) return;
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-    const existingWords = type === "word" ? line.words : line.backgroundWords;
+    const existingWords = trackWords(line, type);
     const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, duration, minWordDuration);
     if (!slot) {
       clearContextMenu();
@@ -135,7 +136,7 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     const line = lines.find((l) => l.id === lineId);
     if (!line) return;
 
-    const wordsArray = type === "word" ? line.words : line.backgroundWords;
+    const wordsArray = trackWords(line, type);
     if (!wordsArray) return;
 
     const firstIdx = indices[0];

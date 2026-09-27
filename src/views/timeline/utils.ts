@@ -5,6 +5,7 @@ import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
@@ -214,7 +215,7 @@ function partitionNudgeSelections(
   const seenLineSyncedIds = new Set<string>();
 
   const pushWordSynced = (sel: NudgeSelection, line: LyricLine) => {
-    const wordsArray = sel.type === "bg" ? line.backgroundWords : line.words;
+    const wordsArray = trackWords(line, sel.type);
     if (!wordsArray) return;
     const expanded = expandSelectionToGroupmates(wordsArray, [sel.wordIndex]);
     for (const idx of expanded) {
@@ -329,8 +330,7 @@ function nudgeSelectedWords(
   for (const sel of selections) {
     const line = linesById.get(sel.lineId);
     if (!line) continue;
-    const wordsArray = sel.type === "word" ? line.words : line.backgroundWords;
-    if (!wordsArray || wordsArray[sel.wordIndex] === undefined) continue;
+    if (trackWords(line, sel.type)?.[sel.wordIndex] === undefined) continue;
     const key = `${sel.lineId}:${sel.type}`;
     let group = groups.get(key);
     if (!group) {
@@ -346,7 +346,7 @@ function nudgeSelectedWords(
   let allowedMagnitude = Math.abs(requestedDelta);
 
   for (const group of groups.values()) {
-    const wordsArray = (group.type === "word" ? group.line.words : group.line.backgroundWords) as WordTiming[];
+    const wordsArray = trackWords(group.line, group.type) ?? [];
     for (const idx of group.indices) {
       const word = wordsArray[idx];
       let headroom: number;
@@ -377,7 +377,7 @@ function nudgeSelectedWords(
   const appliedDelta = direction * allowedMagnitude;
   const updates: NudgeUpdate[] = [];
   for (const group of groups.values()) {
-    const wordsArray = (group.type === "word" ? group.line.words : group.line.backgroundWords) as WordTiming[];
+    const wordsArray = trackWords(group.line, group.type) ?? [];
     const updatedWords = wordsArray.map((w, i) =>
       group.indices.has(i) ? { ...w, begin: w.begin + appliedDelta, end: w.end + appliedDelta } : w,
     );

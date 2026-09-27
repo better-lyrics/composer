@@ -1,4 +1,5 @@
 import type { LineSyncedLine, LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -61,7 +62,7 @@ function resolveStretchTargets(
   const seenLineSynced = new Set<string>();
 
   const pushWord = (sel: StretchSelectionRef, line: LyricLine) => {
-    const words = sel.type === "bg" ? line.backgroundWords : line.words;
+    const words = trackWords(line, sel.type);
     if (!words || words[sel.wordIndex] === undefined) return;
     const key = `${sel.lineId}:${sel.type}:${sel.wordIndex}`;
     if (seenWord.has(key)) return;
@@ -93,10 +94,6 @@ function resolveStretchTargets(
   return { tracks, lineSynced };
 }
 
-function trackWords(track: StretchTrack): WordTiming[] {
-  return (track.type === "word" ? track.line.words : track.line.backgroundWords) as WordTiming[];
-}
-
 function isFiniteWord(word: WordTiming | undefined): word is WordTiming {
   return !!word && Number.isFinite(word.begin) && Number.isFinite(word.end);
 }
@@ -107,7 +104,7 @@ function* selectedFiniteWords(
   targets: StretchTargets,
 ): Generator<{ track: StretchTrack; words: WordTiming[]; idx: number; word: WordTiming }> {
   for (const track of targets.tracks.values()) {
-    const words = trackWords(track);
+    const words = trackWords(track.line, track.type) ?? [];
     for (const idx of track.indices) {
       const word = words[idx];
       if (!isFiniteWord(word)) continue;
@@ -226,13 +223,5 @@ function deriveBounds(
 
 // -- Exports -------------------------------------------------------------------
 
-export {
-  deriveBounds,
-  isFiniteWord,
-  resolveStretchTargets,
-  selectedFiniteWords,
-  selectionExtremes,
-  STRETCH_EPS,
-  trackWords,
-};
+export { deriveBounds, isFiniteWord, resolveStretchTargets, selectedFiniteWords, selectionExtremes, STRETCH_EPS };
 export type { StretchAnchor, StretchClampOptions, StretchSelectionRef, StretchTargets };

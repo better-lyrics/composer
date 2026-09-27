@@ -2,6 +2,7 @@ import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit, isLineSyncedSource } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { trackWords } from "@/domain/line/tracks";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -47,7 +48,7 @@ function validateMoves(moves: WordMove[], linesById: Map<string, ReadableLine>):
     if (move.targetTrack === "word" && isLineSyncedSource(target) && target.id !== source.id) {
       return { ok: false, reject: "line-synced-target" };
     }
-    const targetArr = move.targetTrack === "word" ? target.words : target.backgroundWords;
+    const targetArr = trackWords(target, move.targetTrack);
     if (targetArr) {
       for (const existing of targetArr) {
         if (boundsOverlap(move.word, existing)) return { ok: false, reject: "overlap" };
