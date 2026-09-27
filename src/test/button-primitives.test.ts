@@ -31,12 +31,14 @@ const RULES: PrimitiveRule[] = [
   },
   {
     name: "a Button wrapped in a link (<Link><Button> or <a><Button>)",
-    pattern: /<(?:Link\b|a\s)[^>]*>\s*<Button\b/,
+    pattern: /<(?:Link\b|a\s)(?:[^>{]|\{(?:[^{}]|\{[^{}]*\})*\})*>\s*<Button\b/,
     use: "LinkButton from @/ui/link-button, which renders one anchor",
     allowed: () => false,
     offendingExamples: [
       '<Link to={cta.to}>\n  <Button variant="primary">',
       '<a href={href} className="x">\n  <Button size="sm">',
+      '<a href={href} onClick={() => track()}>\n  <Button size="sm">',
+      '<Link to="/app" style={{ opacity: a > b ? 1 : 0 }}>\n  <Button>',
     ],
   },
 ];
