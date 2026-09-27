@@ -3,6 +3,7 @@ import { describe, expect, expectTypeOf, it } from "vitest";
 import {
   effectiveMainWordEdit,
   effectiveTimingWrite,
+  effectiveWordTextEdit,
   effectiveWords,
   getEffectiveLines,
 } from "@/domain/line/effective-words";
@@ -167,5 +168,28 @@ describe("effectiveMainWordEdit", () => {
       { text: "a", begin: 1, end: 2 },
     ];
     expect(effectiveMainWordEdit(line, reordered)).toEqual({ words: reordered, text: "b a" });
+  });
+});
+
+describe("effectiveWordTextEdit", () => {
+  it("regression: renaming the word of a line-synced row updates text and keeps it line-synced", () => {
+    const [line] = getEffectiveLines([createLine({ text: "Old", begin: 3, end: 5 })]);
+    expect(effectiveWordTextEdit(line, [{ text: "New words", begin: 3, end: 5 }])).toEqual({ text: "New words" });
+  });
+
+  it("writes words for a word-synced line", () => {
+    const [line] = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a ", begin: 1, end: 2 }] })]);
+    const words = [{ text: "z ", begin: 1, end: 2 }];
+    expect(effectiveWordTextEdit(line, words)).toEqual({ words });
+  });
+
+  it("writes words for a raw line with no timing", () => {
+    const words = [{ text: "z", begin: 1, end: 2 }];
+    expect(effectiveWordTextEdit(createLine({ text: "a" }), words)).toEqual({ words });
+  });
+
+  it("accepts a raw line-synced line", () => {
+    const raw = createLine({ text: "Old", begin: 3, end: 5 });
+    expect(effectiveWordTextEdit(raw, [{ text: "New", begin: 3, end: 5 }])).toEqual({ text: "New" });
   });
 });

@@ -81,12 +81,17 @@ function effectiveMainWordEdit(
   return words.length === 1 ? { begin: words[0].begin, end: words[0].end } : null;
 }
 
+function effectiveWordTextEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> {
+  return isLineSyncedSource(line) ? { text: mainWordEditFields(words).text } : { words };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
   effectiveMainWordEdit,
   effectiveTimingWrite,
   effectiveTrackWords,
+  effectiveWordTextEdit,
   effectiveWords,
   getEffectiveLines,
   isLineSyncedSource,
