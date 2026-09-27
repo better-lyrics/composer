@@ -31,11 +31,16 @@ const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
   </Button>
 );
 
-const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details }) => {
-  const Icon = details.icon;
-  const homeIsPrimary = details.primaryAction === "home";
-  const [showDetails, setShowDetails] = useState(false);
-  const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
+type RecoveryStatus = "idle" | "downloading" | "success" | "empty" | "failed";
+
+const RECOVERY_MESSAGES: Partial<Record<RecoveryStatus, string>> = {
+  success: "Saved. Open Composer, head to the Export tab, and click Import Project to keep going.",
+  empty: "Nothing saved in this browser yet.",
+  failed: "Couldn't reach your save. Try opening /recover in a fresh tab.",
+};
+
+const ErrorActions: React.FC<{ homeIsPrimary: boolean }> = ({ homeIsPrimary }) => {
+  const [recoveryStatus, setRecoveryStatus] = useState<RecoveryStatus>("idle");
 
   const handleRecover = async () => {
     setRecoveryStatus("downloading");
@@ -48,18 +53,70 @@ const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details 
     }
   };
 
-  const recoveryMessage =
-    recoveryStatus === "success"
-      ? "Saved. Open Composer, head to the Export tab, and click Import Project to keep going."
-      : recoveryStatus === "empty"
-        ? "Nothing saved in this browser yet."
-        : recoveryStatus === "failed"
-          ? "Couldn't reach your save. Try opening /recover in a fresh tab."
-          : null;
+  const recoveryMessage = RECOVERY_MESSAGES[recoveryStatus];
 
-  const responseDataString =
-    details.responseData !== undefined && details.responseData !== null ? safeStringify(details.responseData) : null;
-  const hasDetails = !!(details.stack || responseDataString);
+  return (
+    <>
+      <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+        {homeIsPrimary && <GoHomeButton primary />}
+        <Button variant={homeIsPrimary ? "secondary" : "primary"} hasIcon onClick={handleReload}>
+          <IconRefresh size={16} />
+          Reload
+        </Button>
+        {!homeIsPrimary && <GoHomeButton primary={false} />}
+        <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
+          <IconDownload size={16} />
+          {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
+        </Button>
+      </div>
+      {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
+      {recoveryStatus === "success" && (
+        <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
+      )}
+    </>
+  );
+};
+
+const TechnicalDetails: React.FC<{ stack?: string; responseData?: unknown }> = ({ stack, responseData }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  const responseDataString = responseData !== undefined && responseData !== null ? safeStringify(responseData) : null;
+  if (!stack && !responseDataString) return null;
+
+  return (
+    <div className="w-full mt-2 flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setShowDetails((v) => !v)}
+        className="inline-flex items-center gap-1 text-xs text-composer-text-muted hover:text-composer-text transition-colors cursor-pointer"
+        aria-expanded={showDetails}
+      >
+        {showDetails ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
+        Technical details
+      </button>
+      {showDetails && (
+        <div className="w-full flex flex-col gap-2 text-left">
+          {responseDataString && (
+            <Scroll className="rounded-md bg-composer-button max-h-48">
+              <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono">
+                {responseDataString}
+              </pre>
+            </Scroll>
+          )}
+          {stack && (
+            <Scroll className="rounded-md bg-composer-button max-h-72">
+              <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono whitespace-pre-wrap">
+                {stack}
+              </pre>
+            </Scroll>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details }) => {
+  const Icon = details.icon;
 
   return (
     <div className="min-h-screen bg-composer-bg text-composer-text flex items-center justify-center p-6 select-none">
@@ -76,54 +133,8 @@ const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details 
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-          {homeIsPrimary && <GoHomeButton primary />}
-          <Button variant={homeIsPrimary ? "secondary" : "primary"} hasIcon onClick={handleReload}>
-            <IconRefresh size={16} />
-            Reload
-          </Button>
-          {!homeIsPrimary && <GoHomeButton primary={false} />}
-          <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
-            <IconDownload size={16} />
-            {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
-          </Button>
-        </div>
-        {recoveryMessage && <p className="text-xs text-composer-text-muted select-text">{recoveryMessage}</p>}
-        {recoveryStatus === "success" && (
-          <ClearRecoveryButton clearedMessage="Cleared. Reload Composer to start fresh." />
-        )}
-
-        {hasDetails && (
-          <div className="w-full mt-2 flex flex-col items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setShowDetails((v) => !v)}
-              className="inline-flex items-center gap-1 text-xs text-composer-text-muted hover:text-composer-text transition-colors cursor-pointer"
-              aria-expanded={showDetails}
-            >
-              {showDetails ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
-              Technical details
-            </button>
-            {showDetails && (
-              <div className="w-full flex flex-col gap-2 text-left">
-                {responseDataString && (
-                  <Scroll className="rounded-md bg-composer-button max-h-48">
-                    <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono">
-                      {responseDataString}
-                    </pre>
-                  </Scroll>
-                )}
-                {details.stack && (
-                  <Scroll className="rounded-md bg-composer-button max-h-72">
-                    <pre className="p-3 text-[11px] leading-relaxed text-composer-text-secondary select-text font-mono whitespace-pre-wrap">
-                      {details.stack}
-                    </pre>
-                  </Scroll>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <ErrorActions homeIsPrimary={details.primaryAction === "home"} />
+        <TechnicalDetails stack={details.stack} responseData={details.responseData} />
       </div>
     </div>
   );
