@@ -1,8 +1,7 @@
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
-import { applyMainWordEdit } from "@/domain/line/main-words";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { isLineSynced } from "@/domain/line/predicates";
+import { type EffectiveLine, effectiveMainWordEdit, isLineSyncedSource } from "@/domain/line/effective-words";
+import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
 import type { WordTiming } from "@/domain/word/timing";
@@ -21,9 +20,11 @@ interface WordMove {
   word: WordTiming;
 }
 
-type MoveRejectReason = "cross-instance" | "line-synced-target" | "overlap";
+type MoveRejectReason = "cross-instance" | "line-synced-target" | "line-synced-source" | "overlap";
 
-type MoveResult = { ok: true; lines: LyricLine[] } | { ok: false; reject: MoveRejectReason };
+type MoveLine = LyricLine | EffectiveLine;
+
+type MoveResult = { ok: true; updates: LineUpdate[] } | { ok: false; reject: MoveRejectReason };
 
 interface SourceRemovals {
   word: Set<number>;
@@ -37,7 +38,7 @@ interface TargetInserts {
 
 // -- Validation ---------------------------------------------------------------
 
-function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): MoveResult | null {
+function validateMoves(moves: WordMove[], linesById: Map<string, MoveLine>): MoveResult | null {
   for (const move of moves) {
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
@@ -45,7 +46,7 @@ function validateMoves(moves: WordMove[], linesById: Map<string, LyricLine>): Mo
     if (source.id !== target.id && wouldDropCrossInstance(source, target)) {
       return { ok: false, reject: "cross-instance" };
     }
-    if (move.targetTrack === "word" && isLineSynced(target) && target.id !== source.id) {
+    if (move.targetTrack === "word" && isLineSyncedSource(target) && target.id !== source.id) {
       return { ok: false, reject: "line-synced-target" };
     }
     const targetArr = move.targetTrack === "word" ? target.words : target.backgroundWords;
@@ -76,7 +77,7 @@ function detectIncomingSelfOverlap(moves: WordMove[]): MoveResult | null {
   return null;
 }
 
-// -- Plan -> Snapshot ---------------------------------------------------------
+// -- Plan -> Updates ----------------------------------------------------------
 
 function planRemovals(moves: WordMove[]): Map<string, SourceRemovals> {
   const removeByLine = new Map<string, SourceRemovals>();
@@ -100,41 +101,51 @@ function planInserts(moves: WordMove[]): Map<string, TargetInserts> {
   return insertByLine;
 }
 
-function applyRemovals(line: LyricLine, removals: SourceRemovals): LyricLine {
-  let updated = line;
-  if (removals.word.size > 0 && updated.words) {
-    const remaining = trimTrailingSpaceFromLast(updated.words.filter((_, i) => !removals.word.has(i)));
-    updated = applyMainWordEdit(updated, remaining);
+function lineUpdateFor(
+  line: MoveLine,
+  removals: SourceRemovals | undefined,
+  inserts: TargetInserts | undefined,
+  duration: number,
+): Partial<LyricLine> | null {
+  let words = line.words;
+  let backgroundWords = line.backgroundWords;
+  let mainChanged = false;
+  let bgChanged = false;
+  if (removals?.word.size && words) {
+    words = trimTrailingSpaceFromLast(words.filter((_, i) => !removals.word.has(i)));
+    mainChanged = true;
   }
-  if (removals.bg.size > 0 && updated.backgroundWords) {
-    const remaining = trimTrailingSpaceFromLast(updated.backgroundWords.filter((_, i) => !removals.bg.has(i)));
-    updated =
-      remaining.length > 0
-        ? reconcileLine({ ...updated, ...manualBackgroundWordEdit(remaining) })
-        : reconcileLine({ ...updated, ...CLEARED_BACKGROUND });
+  if (removals?.bg.size && backgroundWords) {
+    backgroundWords = trimTrailingSpaceFromLast(backgroundWords.filter((_, i) => !removals.bg.has(i)));
+    bgChanged = true;
   }
-  return updated;
-}
+  if (inserts?.word.length) {
+    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word), duration);
+    mainChanged = true;
+  }
+  if (inserts?.bg.length) {
+    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg), duration);
+    bgChanged = true;
+  }
 
-function applyInserts(line: LyricLine, inserts: TargetInserts, duration: number): LyricLine {
-  let updated = line;
-  if (inserts.word.length > 0) {
-    const merged = resolveOverlapsForward(mergeWordsIntoTrack(updated.words ?? [], inserts.word), duration);
-    updated = applyMainWordEdit(updated, merged);
+  const updates: Partial<LyricLine> = {};
+  if (mainChanged) {
+    const mainEdit = effectiveMainWordEdit(line, words ?? []);
+    if (!mainEdit) return null;
+    Object.assign(updates, mainEdit);
   }
-  if (inserts.bg.length > 0) {
-    const merged = resolveOverlapsForward(mergeWordsIntoTrack(updated.backgroundWords ?? [], inserts.bg), duration);
-    updated = reconcileLine({ ...updated, ...manualBackgroundWordEdit(merged) });
+  if (bgChanged) {
+    Object.assign(updates, backgroundWords?.length ? manualBackgroundWordEdit(backgroundWords) : CLEARED_BACKGROUND);
   }
-  return updated;
+  return updates;
 }
 
 // -- Entry point --------------------------------------------------------------
 
-function applyWordMoveAcrossLines(lines: LyricLine[], moves: WordMove[], duration: number): MoveResult {
-  if (moves.length === 0) return { ok: true, lines };
+function applyWordMoveAcrossLines(lines: readonly MoveLine[], moves: WordMove[], duration: number): MoveResult {
+  if (moves.length === 0) return { ok: true, updates: [] };
 
-  const linesById = new Map<string, LyricLine>();
+  const linesById = new Map<string, MoveLine>();
   for (const line of lines) linesById.set(line.id, line);
 
   const validation = validateMoves(moves, linesById);
@@ -145,16 +156,17 @@ function applyWordMoveAcrossLines(lines: LyricLine[], moves: WordMove[], duratio
   const removeByLine = planRemovals(moves);
   const insertByLine = planInserts(moves);
 
-  const next = lines.map((line) => {
-    let updated = line;
+  const updates: LineUpdate[] = [];
+  for (const line of lines) {
     const removals = removeByLine.get(line.id);
-    if (removals) updated = applyRemovals(updated, removals);
     const inserts = insertByLine.get(line.id);
-    if (inserts) updated = applyInserts(updated, inserts, duration);
-    return updated;
-  });
+    if (!removals && !inserts) continue;
+    const lineUpdates = lineUpdateFor(line, removals, inserts, duration);
+    if (!lineUpdates) return { ok: false, reject: "line-synced-source" };
+    if (Object.keys(lineUpdates).length > 0) updates.push({ id: line.id, updates: lineUpdates });
+  }
 
-  return { ok: true, lines: next };
+  return { ok: true, updates };
 }
 
 // -- Exports ------------------------------------------------------------------

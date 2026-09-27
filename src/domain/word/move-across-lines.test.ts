@@ -1,7 +1,8 @@
 /**
  * @vitest-environment node
  */
-import type { LyricLine } from "@/domain/line/model";
+import { getEffectiveLines } from "@/domain/line/effective-words";
+import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -10,6 +11,13 @@ import { applyWordMoveAcrossLines } from "./move-across-lines";
 // -- Helpers ------------------------------------------------------------------
 
 const DURATION = 60;
+
+function applyUpdates(lines: LyricLine[], updates: LineUpdate[]): LyricLine[] {
+  return lines.map((line) => {
+    const update = updates.find((u) => u.id === line.id);
+    return update ? reconcileLine({ ...line, ...update.updates }) : line;
+  });
+}
 
 function findById(lines: LyricLine[], id: string): LyricLine {
   const line = lines.find((l) => l.id === id);
@@ -53,8 +61,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
     expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["foo", "bar", "world"]);
   });
@@ -92,8 +100,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["hello"]);
     expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh", "world"]);
     expect(b.backgroundTextSource).toBe("manual");
@@ -135,8 +143,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
     expect(b.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["yeah", "ahh"]);
   });
@@ -174,8 +182,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(a.backgroundWords?.map((w) => w.text.trimEnd())).toEqual(["ooh"]);
     expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["first", "ahh"]);
   });
@@ -220,8 +228,8 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["three"]);
     expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["alpha", "one", "two"]);
   });
@@ -272,9 +280,9 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
-    const b = findById(result.lines, "B");
-    const c = findById(result.lines, "C");
+    const a = findById(applyUpdates([lineA, lineB, lineC], result.updates), "A");
+    const b = findById(applyUpdates([lineA, lineB, lineC], result.updates), "B");
+    const c = findById(applyUpdates([lineA, lineB, lineC], result.updates), "C");
     expect(a.words?.map((w) => w.text.trimEnd())).toEqual(["a1"]);
     expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["b2"]);
     expect(c.words?.map((w) => w.text.trimEnd())).toEqual(["c1", "a2", "b1"]);
@@ -459,7 +467,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     expect(a.text).toBe("alpha gamma");
   });
 
@@ -492,7 +500,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const b = findById(result.lines, "B");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(b.text).toBe("foo world");
   });
 
@@ -535,7 +543,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const b = findById(result.lines, "B");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     const inserted = b.words?.filter((w) => w.text.trimEnd() === "ti" || w.text.trimEnd() === "tle") ?? [];
     expect(inserted).toHaveLength(2);
     for (const w of inserted) expect(w.syllableGroupId).not.toBe("shared");
@@ -603,7 +611,8 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    expect(result.lines).not.toBe(input);
+    // The API returns per-line updates, so the referential check becomes "applying them changes the lines".
+    expect(applyUpdates(input, result.updates)).not.toEqual(input);
   });
 
   it("source line that becomes empty has words: [] and undefined begin/end via reconcileLine", () => {
@@ -632,7 +641,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const a = findById(result.lines, "A");
+    const a = findById(applyUpdates([lineA, lineB], result.updates), "A");
     expect(a.words).toEqual([]);
     expect(a.begin).toBeUndefined();
     expect(a.end).toBeUndefined();
@@ -668,7 +677,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    const b = findById(result.lines, "B");
+    const b = findById(applyUpdates([lineA, lineB], result.updates), "B");
     expect(b.words?.map((w) => w.text.trimEnd())).toEqual(["world"]);
   });
 
@@ -738,6 +747,102 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
     const result = applyWordMoveAcrossLines(input, [], DURATION);
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
-    expect(result.lines).toBe(input);
+    expect(result.updates).toEqual([]);
+  });
+});
+
+// -- Effective lines ----------------------------------------------------------
+
+describe("applyWordMoveAcrossLines: effective lines", () => {
+  const moveAlphaTo = (targetLineId: string) => ({
+    sourceLineId: "A",
+    sourceWordIndex: 0,
+    sourceTrack: "word" as const,
+    targetLineId,
+    targetTrack: "word" as const,
+    word: { text: "alpha", begin: 6, end: 6.3 },
+  });
+
+  it("returns updates for exactly the source and target lines", () => {
+    const lines = getEffectiveLines([
+      createLine({
+        id: "A",
+        words: [
+          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "beta", begin: 0.4, end: 0.7 },
+        ],
+      }),
+      createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
+      createLine({ id: "U", text: "untouched", words: [{ text: "untouched", begin: 9, end: 10 }] }),
+    ]);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.updates.map((u) => u.id)).toEqual(["A", "B"]);
+  });
+
+  it("regression D6: never includes an unrelated line-synced line", () => {
+    const lines = getEffectiveLines([
+      createLine({
+        id: "A",
+        words: [
+          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "beta", begin: 0.4, end: 0.7 },
+        ],
+      }),
+      createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
+      createLine({ id: "C", text: "Line synced only", begin: 17, end: 20 }),
+    ]);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.updates.some((u) => u.id === "C")).toBe(false);
+  });
+
+  it("regression D6 sibling: rejects a word-track target that is a line-synced source", () => {
+    const lines = getEffectiveLines([
+      createLine({
+        id: "A",
+        words: [
+          { text: "alpha ", begin: 0.1, end: 0.4 },
+          { text: "beta", begin: 0.4, end: 0.7 },
+        ],
+      }),
+      createLine({ id: "B", text: "delta", begin: 5, end: 5.4 }),
+    ]);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    expect(result).toEqual({ ok: false, reject: "line-synced-target" });
+  });
+
+  it("rejects moving the only synthetic word out of a line-synced source", () => {
+    const lines = getEffectiveLines([
+      createLine({ id: "A", text: "Line synced only", begin: 1, end: 2 }),
+      createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
+    ]);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    expect(result).toEqual({ ok: false, reject: "line-synced-source" });
+  });
+
+  it("a background move onto a line-synced row leaves its main timing line-synced", () => {
+    const lines = getEffectiveLines([
+      createLine({ id: "A", text: "lead", words: [{ text: "lead", begin: 0, end: 1 }] }),
+      createLine({ id: "B", text: "Line synced", begin: 5, end: 8 }),
+    ]);
+    const result = applyWordMoveAcrossLines(
+      lines,
+      [
+        {
+          sourceLineId: "A",
+          sourceWordIndex: 0,
+          sourceTrack: "word",
+          targetLineId: "B",
+          targetTrack: "bg",
+          word: { text: "lead", begin: 6, end: 7 },
+        },
+      ],
+      DURATION,
+    );
+    if (!result.ok) throw new Error("expected ok");
+    const toB = result.updates.find((u) => u.id === "B")?.updates;
+    expect(toB?.words).toBeUndefined();
+    expect(toB?.backgroundWords?.map((w) => w.text)).toEqual(["lead"]);
   });
 });

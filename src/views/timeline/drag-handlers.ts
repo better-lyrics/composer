@@ -274,14 +274,14 @@ function applyCrossLineMove(args: CrossLineMoveArgs) {
 
   const result = applyWordMoveAcrossLines(args.lines, moves, args.duration);
   if (result.ok) {
-    useProjectStore.getState().setLinesWithHistory(result.lines);
+    useProjectStore.getState().updateLinesWithHistory(result.updates, { propagateToSiblings: false });
     return;
   }
   if (result.reject === "cross-instance") {
     toast.error("Detach the line first to move it out of the group");
     return;
   }
-  if (result.reject === "line-synced-target") {
+  if (result.reject === "line-synced-target" || result.reject === "line-synced-source") {
     toast.error(LINE_SYNCED_REJECT_MESSAGE);
     return;
   }
