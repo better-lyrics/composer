@@ -19,8 +19,9 @@ type SettingLinkProps = { setting: SettingId } | { section: SettingsSectionId };
 interface SettingChipProps {
   target: SettingsTarget;
   ariaLabel: string;
+  label: string;
+  crumb?: SettingsSectionId;
   stateMark?: React.ReactNode;
-  children: React.ReactNode;
 }
 
 // -- Styles --------------------------------------------------------------------
@@ -40,15 +41,16 @@ const Crumb: React.FC<{ section: SettingsSectionId }> = ({ section }) => (
   </>
 );
 
-const SettingChip: React.FC<SettingChipProps> = ({ target, ariaLabel, stateMark, children }) => {
+const SettingChip: React.FC<SettingChipProps> = ({ target, ariaLabel, label, crumb, stateMark }) => {
   const host = useContext(SettingLinkContext);
-  if (!host) return <span className="font-medium text-composer-text">{children}</span>;
+  if (!host) return <span className="font-medium text-composer-text">{label}</span>;
 
   const openTarget = () => useUIStore.getState().openSettings({ target, returnTo: host.returnPoint() });
 
   return (
     <button type="button" onClick={openTarget} aria-label={ariaLabel} className={CHIP_STYLES}>
-      {children}
+      {crumb && <Crumb section={crumb} />}
+      {label}
       {stateMark}
       <IconArrowUpRight size={12} aria-hidden="true" className={ARROW_STYLES} />
     </button>
@@ -72,17 +74,22 @@ const SettingTargetLink: React.FC<{ setting: SettingId }> = ({ setting }) => {
     );
 
   return (
-    <SettingChip target={{ setting }} ariaLabel={`Open setting ${label}${valueSuffix}`} stateMark={stateMark}>
-      <Crumb section={section} />
-      {label}
-    </SettingChip>
+    <SettingChip
+      target={{ setting }}
+      ariaLabel={`Open setting ${label}${valueSuffix}`}
+      label={label}
+      crumb={section}
+      stateMark={stateMark}
+    />
   );
 };
 
 const SectionTargetLink: React.FC<{ section: SettingsSectionId }> = ({ section }) => (
-  <SettingChip target={{ section }} ariaLabel={`Open ${sectionLabel(section)} settings`}>
-    {sectionLabel(section)}
-  </SettingChip>
+  <SettingChip
+    target={{ section }}
+    ariaLabel={`Open ${sectionLabel(section)} settings`}
+    label={sectionLabel(section)}
+  />
 );
 
 const SettingLink: React.FC<SettingLinkProps> = (props) =>

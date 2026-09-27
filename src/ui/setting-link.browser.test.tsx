@@ -90,6 +90,11 @@ describe("SettingLink", () => {
   });
 
   describe("regressions", () => {
+    it("regression: the plain-text fallback shows only the label, never the section crumb", async () => {
+      const screen = await render(<SettingLink setting="preserveBracketsOnExtraction" />);
+      expect(screen.container.textContent).toBe("Preserve brackets when extracting");
+    });
+
     it("regression: stays a working link inside a sonner toast", async () => {
       const screen = await render(inApp(<Toaster />));
       toast.error("Blocked", {
