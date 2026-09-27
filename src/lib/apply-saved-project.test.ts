@@ -58,6 +58,14 @@ describe("applySavedProject", () => {
       expect(state.historyIndex).toBe(-1);
       expect(state.isDirtySinceHistory).toBe(false);
     });
+
+    it("regression: drops imported metadata keys a hand-edited file does not know", () => {
+      const keys = JSON.parse('["isrc", "producer"]');
+
+      applySavedProject(projectFile({ importedMetadataKeys: keys }), "file");
+
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual(["isrc"]);
+    });
   });
 
   describe("invariants", () => {

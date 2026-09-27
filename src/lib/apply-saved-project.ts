@@ -1,4 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { isMetadataKey } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import type { SavedProject } from "@/lib/persistence";
 import { useProjectStore } from "@/stores/project";
@@ -35,7 +36,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   if (origin === "storage") state.setPrimingStripped(project.primingStripped ?? false);
   state.setCustomSnapPoints(project.customSnapPoints ?? []);
   if (origin === "file" || project.hasUnexportedImport) state.markSongDetailsImported();
-  state.restoreImportedMetadataKeys(project.importedMetadataKeys ?? []);
+  state.restoreImportedMetadataKeys((project.importedMetadataKeys ?? []).filter(isMetadataKey));
   state.setTtmlEditState(project.ttmlEditState ?? null);
   if (origin === "file") state.clearHistory();
   state.markClean();

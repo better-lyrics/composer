@@ -56,5 +56,5 @@ function importedKeysAfterWrite(importedKeys: readonly MetadataKey[], patch: Par
 
 // -- Exports ------------------------------------------------------------------
 
-export { filledMetadata, importedKeysAfterWrite, metadataAfterImport };
+export { filledMetadata, importedKeysAfterWrite, isMetadataKey, metadataAfterImport };
 export type { MetadataKey };
