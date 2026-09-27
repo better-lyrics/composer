@@ -1,10 +1,8 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useAudioStore } from "@/stores/audio";
-import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
-import { AmLyricsRenderer } from "@/views/preview/am-lyrics-renderer";
-import { BraccatoRenderer } from "@/views/preview/braccato-renderer";
+import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled } from "@tabler/icons-react";
 
 // -- Components ---------------------------------------------------------------
@@ -14,7 +12,6 @@ const PreviewPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
-  const renderer = useSettingsStore((s) => s.previewRenderer);
 
   const hasSyncedContent = syncedLineCount > 0;
 
@@ -52,11 +49,7 @@ const PreviewPanel: React.FC = () => {
         </Button>
       </div>
 
-      {renderer === "am-lyrics" ? (
-        <AmLyricsRenderer ttmlString={ttmlString} durationSeconds={duration} />
-      ) : (
-        <BraccatoRenderer ttmlString={ttmlString} />
-      )}
+      <LyricsRenderer ttmlString={ttmlString} durationSeconds={duration} />
     </div>
   );
 };

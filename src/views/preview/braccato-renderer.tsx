@@ -5,6 +5,7 @@ import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
+import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
@@ -16,6 +17,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface BraccatoRendererProps {
   ttmlString: string;
+  layout?: LyricsLayout;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -65,7 +67,7 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
 
 // -- Component ----------------------------------------------------------------
 
-const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
+const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout = "page" }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const songwriters = useMemo(() => TTMLParser.metadata(ttmlString).songwriters, [ttmlString]);
@@ -202,7 +204,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
 
   return (
     <div className="relative flex flex-col flex-1 min-h-0">
-      <braccato-lyrics ref={setElement} className="block flex-1 mx-auto w-full max-w-3xl px-6" />
+      <braccato-lyrics ref={setElement} className={LYRICS_ELEMENT_CLASS[layout]} />
       <AnimatePresence>
         {isAutoscrollPaused ? (
           <m.div

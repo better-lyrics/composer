@@ -2,6 +2,7 @@ import { alternateMatchesMainText } from "@/domain/language/alternate-visibility
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
+import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import type { AmLyrics as AmLyricsElement } from "@uimaxbai/am-lyrics";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,6 +11,7 @@ import { useEffect, useRef, useState } from "react";
 interface AmLyricsRendererProps {
   ttmlString: string;
   durationSeconds: number;
+  layout?: LyricsLayout;
 }
 
 // -- Element registration -----------------------------------------------------
@@ -66,7 +68,7 @@ function removeMatchingAlternatesAfterUpdate(el: AmLyricsElement): void {
   void el.updateComplete.then(() => el.updateComplete).then(() => markMatchingAlternateElements(el));
 }
 
-function createAmLyricsElement(ttml: string, songDurationMs: number): AmLyricsElement {
+function createAmLyricsElement(ttml: string, songDurationMs: number, layout: LyricsLayout): AmLyricsElement {
   const el = document.createElement("am-lyrics") as AmLyricsElement;
   // am-lyrics parses our iTunes sidecars, but keeps both alternate tracks
   // behind controls in its built-in header. Composer hides that header, so
@@ -80,14 +82,14 @@ function createAmLyricsElement(ttml: string, songDurationMs: number): AmLyricsEl
   el.ttml = ttml;
   removeMatchingAlternatesAfterUpdate(el);
   el.songDurationMs = songDurationMs;
-  el.className = "block flex-1 mx-auto w-full max-w-3xl px-6";
+  el.className = LYRICS_ELEMENT_CLASS[layout];
   el.style.setProperty("--am-lyrics-highlight-color", "var(--color-composer-text)");
   return el;
 }
 
 // -- Component ----------------------------------------------------------------
 
-const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, durationSeconds }) => {
+const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, durationSeconds, layout = "page" }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const elementRef = useRef<AmLyricsElement | null>(null);
   const createdElementRef = useRef<AmLyricsElement | null>(null);
@@ -95,6 +97,8 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
   const latestDurationMsRef = useRef(durationSeconds * 1000);
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
+  const latestLayoutRef = useRef(layout);
+  latestLayoutRef.current = layout;
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
 
@@ -114,7 +118,9 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({ ttmlString, duratio
     if (!container) return;
 
     // Activity re-runs this effect on every reveal; the element is kept so its rendered lines survive.
-    const el = createdElementRef.current ?? createAmLyricsElement(latestTtmlRef.current, latestDurationMsRef.current);
+    const el =
+      createdElementRef.current ??
+      createAmLyricsElement(latestTtmlRef.current, latestDurationMsRef.current, latestLayoutRef.current);
     createdElementRef.current = el;
     const matchingAlternateObserver = new MutationObserver(() => markMatchingAlternateElements(el));
 
