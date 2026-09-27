@@ -11,6 +11,7 @@ import { RecoverySection } from "@/ui/help-sections/recovery";
 import { SyncSection } from "@/ui/help-sections/syncing";
 import { TimelineSection } from "@/ui/help-sections/timeline";
 import { TtmlStandardsSection } from "@/ui/help-sections/ttml-standards";
+import { HelpSectionContext } from "@/ui/help-topic";
 
 // -- Registry -----------------------------------------------------------------
 
@@ -34,7 +35,11 @@ const HELP_SECTION_COMPONENTS: Record<string, React.FC> = {
 
 const HelpSectionContent: React.FC<{ section: string }> = ({ section }) => {
   const Section = HELP_SECTION_COMPONENTS[section] ?? GettingStartedSection;
-  return <Section />;
+  return (
+    <HelpSectionContext value={section}>
+      <Section />
+    </HelpSectionContext>
+  );
 };
 
 // -- Exports ------------------------------------------------------------------

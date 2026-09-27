@@ -1,9 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/typography";
+import { PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
 import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Timeline -----------------------------------------------------------------
 
@@ -16,17 +17,15 @@ const TimelineSection: React.FC = () => (
       DAW or video editor before, this will feel familiar.
     </p>
 
-    <div>
-      <h4 className={HEADING}>Layout</h4>
+    <HelpTopic title="Layout">
       <p className={PROSE}>
         The waveform sits at the top. Below it, each lyrics line is a horizontal track. Word blocks sit on the tracks,
         positioned by their start and end times. The playhead (vertical line) follows the audio. The gutter on the left
         shows line numbers and agent colors. Click it to assign agents.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Navigation</h4>
+    <HelpTopic title="Navigation">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           A plain scroll wheel scrolls vertically through the lines. To move through time, scroll horizontally with a
@@ -54,10 +53,9 @@ const TimelineSection: React.FC = () => (
           the view scrolls automatically during playback.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Audio scrub preview</h4>
+    <HelpTopic title="Audio scrub preview">
       <p className={PROSE}>
         When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
         audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
@@ -70,10 +68,9 @@ const TimelineSection: React.FC = () => (
         stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
         The full track plays back as normal regardless of the stem choice.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Selecting words</h4>
+    <HelpTopic title="Selecting words">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
         <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
@@ -88,10 +85,9 @@ const TimelineSection: React.FC = () => (
           Press <strong>Escape</strong> to deselect everything.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Editing words</h4>
+    <HelpTopic title="Editing words">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Double-click a word block to edit its text inline. Press Enter to confirm, Escape to cancel.</li>
         <li>Double-click on empty track space to create a new word at that position.</li>
@@ -121,10 +117,9 @@ const TimelineSection: React.FC = () => (
           keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Copy, cut, paste</h4>
+    <HelpTopic title="Copy, cut, paste">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
@@ -133,10 +128,9 @@ const TimelineSection: React.FC = () => (
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
         <li>Press Delete or Backspace to remove selected words.</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Moving words across lines and tracks</h4>
+    <HelpTopic title="Moving words across lines and tracks">
       <p className={PROSE}>
         Drag any word block onto another line to move it there. It can land on a different line's main track, on a
         background track, or on the background track of its own line. Multi-select moves the whole selection at once:
@@ -154,10 +148,9 @@ const TimelineSection: React.FC = () => (
           of an existing word just stays put.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Boundary dragging</h4>
+    <HelpTopic title="Boundary dragging">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
@@ -177,10 +170,9 @@ const TimelineSection: React.FC = () => (
           drag.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Snap (magnet)</h4>
+    <HelpTopic title="Snap (magnet)">
       <p className={PROSE}>
         Drag or resize a word and its edges lock onto nearby anchors: the begin and end of any other word (main or
         background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
@@ -204,10 +196,9 @@ const TimelineSection: React.FC = () => (
           next-best anchor or doesn't snap at all.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Snap points and marker mode</h4>
+    <HelpTopic title="Snap points and marker mode">
       <p className={PROSE}>
         Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
         from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
@@ -256,7 +247,7 @@ const TimelineSection: React.FC = () => (
           you share.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
     <TimelineExtras />
   </div>

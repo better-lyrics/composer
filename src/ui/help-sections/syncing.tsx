@@ -1,7 +1,8 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/typography";
+import { PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Syncing ------------------------------------------------------------------
 
@@ -12,18 +13,16 @@ const SyncSection: React.FC = () => (
       synced. You have two keys available, and you can use them freely in combination.
     </p>
 
-    <div>
-      <h4 className={HEADING}>Tap (Space)</h4>
+    <HelpTopic title="Tap (Space)">
       <p className={PROSE}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> to start playback and begin syncing. As the
         music plays, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} /> on each word right when the singer
         says it. Each tap marks the word's start time, and the previous word's end time is set to the same moment,
         creating gapless transitions.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Hold (F)</h4>
+    <HelpTopic title="Hold (F)">
       <p className={PROSE}>
         Press and hold <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> for the duration of each word.
         The key-down marks the word's start, and key-up marks the end. This gives you explicit control over word
@@ -37,10 +36,9 @@ const SyncSection: React.FC = () => (
         <li>Hold F: "world" starts</li>
         <li>Release F: "world" ends</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Gapless syllables (Hold F + Tap Space)</h4>
+    <HelpTopic title="Gapless syllables (Hold F + Tap Space)">
       <p className={PROSE}>
         For syllables that flow together without pauses, tap <InlineKeyBadge keys={getEffectiveKeysArray("sync.tap")} />{" "}
         while holding <InlineKeyBadge keys={getEffectiveKeysArray("sync.holdSync")} /> to create gapless boundaries.
@@ -64,40 +62,36 @@ const SyncSection: React.FC = () => (
         <li>Tap Space, tap Space: gapless boundaries for "ti" and "ful"</li>
         <li>Release F: "ful" ends</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Made a mistake?</h4>
+    <HelpTopic title="Made a mistake?">
       <p className={PROSE}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> to nudge the last synced word 50ms
         earlier. <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> nudges it 50ms later. You can also
         press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back precisely.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Line-level vs word-level</h4>
+    <HelpTopic title="Line-level vs word-level">
       <p className={PROSE}>
         By default, you're syncing word by word. The granularity toggle at the top lets you switch to line-level if you
         only need rough timing.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Re-syncing a line</h4>
+    <HelpTopic title="Re-syncing a line">
       <p className={PROSE}>
         If a whole line went wrong, just navigate back to it and sync again. New taps overwrite old timing.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Splitting syllables</h4>
+    <HelpTopic title="Splitting syllables">
       <p className={PROSE}>
         Each word on the active line has a small scissors button. Click it to split that word into syllables right here,
         without switching to the Timeline. A popover opens where you click between letters to mark the split points,
         then confirm. The Timeline splitter offers the same syllable split plus a word-mode split.
       </p>
-    </div>
+    </HelpTopic>
 
     <p className={PROSE}>
       After syncing, your words have timing data. The Sync tab works at the line or word level, but for precise per-word

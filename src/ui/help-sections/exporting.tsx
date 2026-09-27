@@ -1,9 +1,10 @@
 import { PROSE } from "@/ui/typography";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Exporting ----------------------------------------------------------------
 
 const ExportSection: React.FC = () => (
-  <div className="space-y-5">
+  <HelpTopic title="Exporting" showTitle={false} className="space-y-5">
     <p className={PROSE}>The Export tab shows a syntax-highlighted preview of your TTML output.</p>
     <ul className={`${PROSE} list-disc pl-4 space-y-1.5`}>
       <li>
@@ -28,7 +29,7 @@ const ExportSection: React.FC = () => (
     <p className={PROSE}>
       The counter at the top shows how many lines have timing data. Unsynced lines are skipped in the export.
     </p>
-  </div>
+  </HelpTopic>
 );
 
 // -- Exports ------------------------------------------------------------------
