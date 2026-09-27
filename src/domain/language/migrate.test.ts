@@ -23,7 +23,7 @@ describe("legacy transliteration migration", () => {
     const migrated = migrateLegacyTransliterationLine(legacyLine());
 
     expect(migrated.transliteration?.text).toBe("geol eum eun  Like  a  dance");
-    expect(migrated.transliteration?.alignmentStatus).toBe("confirmed");
+    expect(migrated.transliteration?.alignmentStatus).toBe("inferred");
   });
 
   it("uses complete timed mappings instead of reinterpreting their display text", () => {

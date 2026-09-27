@@ -124,19 +124,27 @@ function groupRegions(
   return { regions, exact: false };
 }
 
-function planTransliterationAlignment(words: WordTiming[], rawText: string): TransliterationAlignmentPlan {
+function planTransliterationAlignment(
+  words: WordTiming[],
+  rawText: string,
+  previousStatus?: TransliterationAlignmentStatus,
+): TransliterationAlignmentPlan {
   const text = normalizeTransliterationForEditing(rawText);
   if (!text) {
     return {
       words: words.map(({ transliteration: _text, transliterationJoinerAfter: _joiner, ...word }) => word),
-      status: "confirmed",
+      status: "inferred",
     };
   }
-  if (words.length === 0) return { words, status: "confirmed" };
+  if (words.length === 0) return { words, status: "inferred" };
 
   const existing = mappedTransliteration(words);
   if (existing !== null && normalizeTransliterationForEditing(existing) === text) {
-    return { words, status: "confirmed" };
+    // Matching text preserves the mapping, but does not constitute manual review.
+    return {
+      words,
+      status: previousStatus === "confirmed" || previousStatus === "needs-review" ? previousStatus : "inferred",
+    };
   }
 
   const lexicalGroups = timingLexicalWordGroups(words);
@@ -222,20 +230,37 @@ function withAlignedTransliteration(line: LyricLine): LyricLine {
 }
 
 function alignTrackToLine(line: LyricLine, track: TransliterationTrack): Partial<LyricLine> {
+  // Regeneration and text edits may build a fresh track object. When its reading
+  // is unchanged, retain the old mapping's review state rather than laundering
+  // an estimated mapping through the existing-fragments shortcut.
+  const mainStatus =
+    track.alignmentStatus ??
+    (line.transliteration &&
+    normalizeTransliterationForEditing(line.transliteration.text) === normalizeTransliterationForEditing(track.text)
+      ? line.transliteration.alignmentStatus
+      : undefined);
+  const backgroundStatus =
+    track.backgroundAlignmentStatus ??
+    (line.transliteration &&
+    normalizeTransliterationForEditing(line.transliteration.backgroundText ?? "") ===
+      normalizeTransliterationForEditing(track.backgroundText ?? "")
+      ? line.transliteration.backgroundAlignmentStatus
+      : undefined);
   const main = line.words?.length
-    ? planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text))
+    ? planTransliterationAlignment(line.words, timedPrefixText(line.text, line.words, track.text), mainStatus)
     : null;
   const background = line.backgroundWords?.length
     ? planTransliterationAlignment(
         line.backgroundWords,
         timedPrefixText(line.backgroundText ?? "", line.backgroundWords, track.backgroundText ?? ""),
+        backgroundStatus,
       )
     : null;
   return {
     transliteration: {
       ...track,
-      alignmentStatus: main?.status ?? "confirmed",
-      backgroundAlignmentStatus: track.backgroundText ? (background?.status ?? "confirmed") : undefined,
+      alignmentStatus: main?.status ?? "inferred",
+      backgroundAlignmentStatus: track.backgroundText ? (background?.status ?? "inferred") : undefined,
     },
     ...(main ? { words: main.words } : {}),
     ...(background ? { backgroundWords: background.words } : {}),

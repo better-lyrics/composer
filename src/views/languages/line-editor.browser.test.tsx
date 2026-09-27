@@ -145,4 +145,24 @@ describe("background alternate editing", () => {
       transliteration: "sora",
     });
   });
+
+  it("discards earlier source acknowledgements when background transliteration is edited", async () => {
+    useProjectStore.getState().updateLine("background-only", {
+      transliteration: {
+        language: "ja-Latn",
+        text: "hello",
+        backgroundText: "sora",
+        segments: [],
+        origin: "manual",
+        sourceFingerprint: "old",
+        reviewedSourceFingerprint: "earlier",
+        backgroundReviewedSourceFingerprint: "earlier",
+      },
+    });
+    const screen = await render(<Editor />);
+    await screen.getByRole("textbox", { name: "Background transliteration", exact: true }).fill("soraa");
+    const track = useProjectStore.getState().lines[0].transliteration;
+    expect(track?.reviewedSourceFingerprint).toBeUndefined();
+    expect(track?.backgroundReviewedSourceFingerprint).toBeUndefined();
+  });
 });

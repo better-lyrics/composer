@@ -1,3 +1,4 @@
+import { getLanguageReviewTracks } from "@/domain/language/review";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -144,6 +145,18 @@ describe("TransliterationAlignmentModal", () => {
   });
 
   describe("regressions", () => {
+    it("clears the source-change warning after saving alignment for the only populated side", async () => {
+      const line = setupLine();
+      line.transliteration!.sourceFingerprint = "old-source";
+      line.transliteration!.stale = true;
+      useProjectStore.getState().setLines([line]);
+      const screen = await render(<TransliterationAlignmentModal line={line} field="words" onClose={() => {}} />);
+      await screen.getByRole("button", { name: "Save", exact: true }).click();
+      const saved = useProjectStore.getState().lines[0];
+      expect(saved.transliteration?.sourceFingerprint).toBe(languageSourceFingerprint(line.text));
+      expect(getLanguageReviewTracks(saved)).toEqual([]);
+    });
+
     it("regression: saves per-word transliteration and joiners for a pronunciation break inside one lexical group", async () => {
       const words: WordTiming[] = [
         { text: "밤", begin: 0, end: 0.5, transliteration: "bam", transliterationJoinerAfter: " " },

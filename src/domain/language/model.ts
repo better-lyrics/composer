@@ -2,6 +2,7 @@
 
 type LanguageContentOrigin = "google" | "import" | "manual";
 
+/** Confirmed requires manual alignment; inferred is automatically accepted without a review warning. */
 type TransliterationAlignmentStatus = "confirmed" | "inferred" | "needs-review" | "unresolved";
 
 interface LanguageContentMeta {
@@ -24,6 +25,9 @@ interface TransliterationTrack extends LanguageContentMeta {
   /** The mapping itself lives on WordTiming.transliteration. */
   alignmentStatus?: TransliterationAlignmentStatus;
   backgroundAlignmentStatus?: TransliterationAlignmentStatus;
+  /** Source acknowledged by manually aligning one side while the other may still be stale. */
+  reviewedSourceFingerprint?: string;
+  backgroundReviewedSourceFingerprint?: string;
 }
 
 interface TranslationTrack extends LanguageContentMeta {

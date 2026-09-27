@@ -2,7 +2,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationSegment } from "@/domain/language/model";
-import { getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
+import { getLanguageReviewTracks, isTransliterationSourceStale, languageLineAnchorId } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -64,7 +64,12 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
       ariaLabel="Background transliteration"
       mono
       value={line.transliteration?.backgroundText ?? ""}
-      status={line.transliteration?.backgroundAlignmentStatus === "needs-review" ? "review" : undefined}
+      status={
+        isTransliterationSourceStale(line, "backgroundWords") ||
+        line.transliteration?.backgroundAlignmentStatus === "needs-review"
+          ? "review"
+          : undefined
+      }
       error={error}
       pasteKind="transliteration"
       action={
@@ -90,6 +95,8 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
               : [],
             origin: "manual",
             sourceFingerprint: fingerprint,
+            reviewedSourceFingerprint: undefined,
+            backgroundReviewedSourceFingerprint: undefined,
           }),
         );
       }}
@@ -150,7 +157,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
   const transliterationStale = line.transliteration
-    ? line.transliteration.sourceFingerprint !== fingerprint || line.transliteration.alignmentStatus === "needs-review"
+    ? isTransliterationSourceStale(line, "words") || line.transliteration.alignmentStatus === "needs-review"
     : false;
   const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
   const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });
