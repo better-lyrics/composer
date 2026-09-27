@@ -2,9 +2,10 @@ import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
+import { SettingLinkContext, type SettingLinkHost } from "@/ui/setting-link-context";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -20,6 +21,10 @@ interface HelpModalProps {
 const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, initialScrollTop = 0, onClose }) => {
   const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
   const viewportRef = useRef<HTMLDivElement | null>(null);
+  const linkHost = useMemo<SettingLinkHost>(
+    () => ({ returnPoint: () => ({ section: activeSection, scrollTop: viewportRef.current?.scrollTop ?? 0 }) }),
+    [activeSection],
+  );
 
   return (
     <Modal
@@ -40,9 +45,11 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, initialSc
           viewport.scrollTop = initialScrollTop;
         }}
       >
-        <div data-help-content>
-          <HelpSectionContent section={activeSection} />
-        </div>
+        <SettingLinkContext value={linkHost}>
+          <div data-help-content>
+            <HelpSectionContent section={activeSection} />
+          </div>
+        </SettingLinkContext>
       </ModalNavLayout>
 
       <div className="px-5 py-3 border-t border-composer-border text-xs text-composer-text-muted text-center shrink-0 select-none flex items-center justify-center gap-1.5">

@@ -22,6 +22,7 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
 import { HelpModal } from "@/ui/help-modal";
 import { SettingsModal } from "@/ui/settings-modal";
+import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
 import { TabBar } from "@/ui/tab-bar";
 import { EditPanel } from "@/views/edit";
 import { ExportPanel } from "@/views/export";
@@ -163,21 +164,23 @@ const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <LazyMotion features={domAnimation} strict>
-        <AppContent />
-        <ConfirmModalHost />
-        <DivergenceModalHost />
-        <LyricsImportModalHost />
-        <Toaster
-          theme="dark"
-          position="bottom-center"
-          toastOptions={{
-            style: {
-              background: "var(--color-composer-bg-elevated)",
-              border: "1px solid var(--color-composer-border)",
-              color: "var(--color-composer-text)",
-            },
-          }}
-        />
+        <SettingLinkContext value={APP_SETTING_LINK_HOST}>
+          <AppContent />
+          <ConfirmModalHost />
+          <DivergenceModalHost />
+          <LyricsImportModalHost />
+          <Toaster
+            theme="dark"
+            position="bottom-center"
+            toastOptions={{
+              style: {
+                background: "var(--color-composer-bg-elevated)",
+                border: "1px solid var(--color-composer-border)",
+                color: "var(--color-composer-text)",
+              },
+            }}
+          />
+        </SettingLinkContext>
       </LazyMotion>
     </QueryClientProvider>
   );
