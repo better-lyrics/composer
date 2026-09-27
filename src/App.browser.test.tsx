@@ -49,7 +49,7 @@ describe("App", () => {
     localStorage.setItem(TOUR_SEEN_KEY, "true");
     await render(<App />);
 
-    useUIStore.getState().openSettings("bridge-section");
+    useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
     await expect.poll(bridgeSectionVisible).toBe(true);
 
     useUIStore.getState().closeSettings();

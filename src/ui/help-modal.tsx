@@ -1,55 +1,25 @@
 import { HelpSectionContent } from "@/ui/help-sections";
 import { Modal } from "@/ui/modal";
-import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
+import { HELP_SECTIONS } from "@/ui/help-nav";
+import { ModalNavLayout } from "@/ui/modal-nav-layout";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import {
-  IconAward,
-  IconDownload,
-  IconEye,
-  IconFileImport,
-  IconHandClick,
-  IconInfoHexagon,
-  IconKeyboard,
-  IconLayoutRows,
-  IconLifebuoy,
-  IconLink,
-  IconPencil,
-  IconRocket,
-  IconTagStarred,
-} from "@tabler/icons-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
 interface HelpModalProps {
   isOpen: boolean;
   initialSection?: string;
+  initialScrollTop?: number;
   onClose: () => void;
 }
 
-// -- Data ---------------------------------------------------------------------
-
-const HELP_SECTIONS: ModalNavSection[] = [
-  { id: "getting-started", label: "Getting Started", icon: IconRocket },
-  { id: "best-practices", label: "Best practices", icon: IconTagStarred },
-  { id: "keyboard-shortcuts", label: "Keyboard Shortcuts", icon: IconKeyboard },
-  { id: "importing", label: "Importing", icon: IconFileImport },
-  { id: "editing", label: "Editing Lyrics", icon: IconPencil },
-  { id: "syncing", label: "Syncing", icon: IconHandClick },
-  { id: "timeline", label: "Timeline", icon: IconLayoutRows },
-  { id: "groups", label: "Linked groups", icon: IconLink },
-  { id: "preview", label: "Preview", icon: IconEye },
-  { id: "exporting", label: "Exporting", icon: IconDownload },
-  { id: "recovery", label: "Recovery", icon: IconLifebuoy },
-  { id: "ttml-standards", label: "TTML & standards", icon: IconAward },
-  { id: "about", label: "About", icon: IconInfoHexagon },
-];
-
 // -- Help Modal ---------------------------------------------------------------
 
-const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, onClose }) => {
+const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, initialScrollTop = 0, onClose }) => {
   const [activeSection, setActiveSection] = useState(initialSection ?? "getting-started");
+  const viewportRef = useRef<HTMLDivElement | null>(null);
 
   return (
     <Modal
@@ -65,6 +35,10 @@ const HelpModal: React.FC<HelpModalProps> = ({ isOpen, initialSection, onClose }
         onSectionChange={setActiveSection}
         sidebarClassName="w-48"
         contentClassName="p-6"
+        contentViewportRef={viewportRef}
+        onContentInitialized={(viewport) => {
+          viewport.scrollTop = initialScrollTop;
+        }}
       >
         <div data-help-content>
           <HelpSectionContent section={activeSection} />

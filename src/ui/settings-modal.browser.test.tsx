@@ -37,18 +37,25 @@ describe("SettingsModal", () => {
     expect(closes).toBeGreaterThan(0);
   });
 
-  describe("section seeding from settingsHighlight", () => {
-    it("opens on the Advanced section when settingsHighlight is bridge-section", async () => {
+  describe("section from the store", () => {
+    it("opens on the target setting's section", async () => {
       allowConsole(/cannot be a descendant of/);
       allowConsole(/cannot contain a nested/);
-      useUIStore.setState({ settingsHighlight: "bridge-section" });
+      useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
       await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
       expect(document.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
     });
 
-    it("opens on the General section when there is no highlight", async () => {
+    it("opens on General when there is no target", async () => {
+      useUIStore.getState().openSettings();
       await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
       expect(document.querySelector('[data-testid="bridge-section"]')).toBeNull();
+    });
+
+    it("writes section changes to the store", async () => {
+      const screen = await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+      await screen.getByRole("button", { name: /Sync & Timing/ }).click();
+      expect(useUIStore.getState().settingsSection).toBe("sync");
     });
   });
 

@@ -222,7 +222,7 @@ function useResolveYouTubeTunnel(): void {
       toast.error(message, {
         action: {
           label: "Try Bridge",
-          onClick: () => useUIStore.getState().openSettings("bridge-section"),
+          onClick: () => useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } }),
         },
       });
     } else {

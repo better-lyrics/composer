@@ -33,7 +33,7 @@ import { SyncPanel } from "@/views/sync/sync-panel";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { LazyMotion, domAnimation } from "motion/react";
-import { Activity, useCallback, useEffect, useRef, useState } from "react";
+import { Activity, useCallback, useEffect, useRef } from "react";
 import { Toaster } from "sonner";
 
 const TABS_WITH_PLAYER = ["import", "edit", "languages", "sync", "timeline", "preview"];
@@ -48,15 +48,13 @@ const AppContent: React.FC = () => {
   const activeTab = useProjectStore((s) => s.activeTab);
   const setActiveTab = useProjectStore((s) => s.setActiveTab);
   const source = useAudioStore((s) => s.source);
-  const [helpOpen, setHelpOpen] = useState(false);
-  const [helpSection, setHelpSection] = useState<string | undefined>(undefined);
+  const helpOpen = useUIStore((s) => s.helpOpen);
+  const helpLocation = useUIStore((s) => s.helpLocation);
+  const openHelp = useUIStore((s) => s.openHelp);
+  const closeHelp = useUIStore((s) => s.closeHelp);
   const settingsOpen = useUIStore((s) => s.settingsOpen);
   const openSettings = useUIStore((s) => s.openSettings);
   const closeSettings = useUIStore((s) => s.closeSettings);
-  const openHelp = useCallback((section?: string) => {
-    setHelpSection(section);
-    setHelpOpen(true);
-  }, []);
   const openBestPractices = useCallback(() => openHelp("best-practices"), [openHelp]);
   const { startTour, resumeOrStartTour, shouldShowTour, guideCard, skipGuideCard } = useTour({
     onOpenBestPractices: openBestPractices,
@@ -85,13 +83,7 @@ const AppContent: React.FC = () => {
   useDocumentTitle();
   useVocalOnsetSnapPoints();
 
-  const setHelpOpenCb = useCallback(
-    (open: boolean) => {
-      if (open) openHelp();
-      else setHelpOpen(false);
-    },
-    [openHelp],
-  );
+  const setHelpOpenCb = useCallback((open: boolean) => (open ? openHelp() : closeHelp()), [openHelp, closeHelp]);
   const setSettingsOpenCb = useCallback(
     (open: boolean) => (open ? openSettings() : closeSettings()),
     [openSettings, closeSettings],
@@ -107,10 +99,11 @@ const AppContent: React.FC = () => {
     <div className="flex flex-col h-screen bg-composer-bg text-composer-text">
       <AppHeader onSettingsOpen={() => openSettings()} onHelpOpen={() => openHelp()} onTourStart={resumeOrStartTour} />
       <HelpModal
-        key={helpOpen ? `help-${helpSection ?? "default"}` : "help-closed"}
+        key={helpOpen ? `help-${helpLocation.section}-${helpLocation.scrollTop}` : "help-closed"}
         isOpen={helpOpen}
-        initialSection={helpSection}
-        onClose={() => setHelpOpen(false)}
+        initialSection={helpLocation.section}
+        initialScrollTop={helpLocation.scrollTop}
+        onClose={closeHelp}
       />
       <SettingsModal
         key={settingsOpen ? "settings-open" : "settings-closed"}

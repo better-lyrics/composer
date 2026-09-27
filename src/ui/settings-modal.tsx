@@ -7,7 +7,6 @@ import { GeneralSection } from "@/ui/settings/general-section";
 import { SETTINGS_SECTION_ICONS } from "@/ui/settings/settings-section-icons";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
-import { useState } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -45,9 +44,8 @@ const SectionContent: React.FC<{ section: SettingsSectionId; onResetTour: () => 
 // -- Settings Modal -----------------------------------------------------------
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetTour }) => {
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>(() =>
-    useUIStore.getState().settingsHighlight === "bridge-section" ? "advanced" : "general",
-  );
+  const activeSection = useUIStore((s) => s.settingsSection);
+  const setActiveSection = useUIStore((s) => s.setSettingsSection);
 
   return (
     <Modal

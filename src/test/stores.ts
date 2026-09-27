@@ -9,7 +9,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { DEFAULTS as SETTINGS_DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { INITIAL_STATE as THEME_INITIAL_STATE, useThemeStore } from "@/stores/theme";
-import { useUIStore } from "@/stores/ui";
+import { UI_INITIAL_STATE, useUIStore } from "@/stores/ui";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 type PersistedStore = { persist?: { clearStorage?: () => void | Promise<void> } };
@@ -42,7 +42,7 @@ async function resetAllStores(): Promise<void> {
   useDivergenceStore.setState({ isOpen: false, options: null, resolve: null });
   useImportModalStore.setState({ ...IMPORT_MODAL_INITIAL_STATE });
   useModalStackStore.setState({ count: 0 });
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, ttmlEditState: null });
+  useUIStore.setState({ ...UI_INITIAL_STATE });
 
   const settings = useSettingsStore.getState();
   useTimelineStore.setState({

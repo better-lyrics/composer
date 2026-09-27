@@ -1,3 +1,4 @@
+import { installStyleSheet } from "@/test/browser-css";
 import { describe, expect, it } from "vitest";
 import { HelpModal } from "@/ui/help-modal";
 import { render } from "@/test/render";
@@ -60,5 +61,15 @@ describe("HelpModal initialSection", () => {
   it("seeds any registered section, not only best practices", async () => {
     const screen = await render(<HelpModal isOpen initialSection="recovery" onClose={() => {}} />);
     await expect.element(screen.getByRole("heading", { name: "The app is frozen", exact: true })).toBeInTheDocument();
+  });
+});
+
+describe("HelpModal initialScrollTop", () => {
+  it("restores the content scroll position once the viewport initializes", async () => {
+    installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
+    await render(<HelpModal isOpen initialSection="timeline" initialScrollTop={150} onClose={() => {}} />);
+    const viewport = () =>
+      document.querySelector("[data-help-content]")?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ?? null;
+    await expect.poll(() => viewport()?.scrollTop).toBe(150);
   });
 });
