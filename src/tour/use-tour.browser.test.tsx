@@ -424,6 +424,21 @@ describe("useTour lifecycle", () => {
     await screen.unmount();
     expect(useModalStackStore.getState().count).toBe(0);
   });
+
+  it("does not reopen the tour when the host unmounts while a passed gate is flashing Done", async () => {
+    const screen = await render(<TourHarness />);
+    await screen.getByTestId("start").click();
+    await clickNext();
+    await clickNext();
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
+    setAudioLoaded();
+    await expect.poll(() => screen.container.textContent).toContain("Done!");
+    await screen.unmount();
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(useModalStackStore.getState().count).toBe(0);
+    expect(document.querySelector(".driver-popover")).toBe(null);
+  });
 });
 
 describe("resetTour", () => {

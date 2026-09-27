@@ -75,6 +75,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   const driverRef = useRef<Driver | null>(null);
   const releaseModalRef = useRef<(() => void) | null>(null);
   const gateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const gateSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guideCard, setGuideCard] = useState<GuideCardState | null>(null);
   const reducedMotion = useReducedMotion();
 
@@ -84,10 +85,14 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
     localStorage.setItem(TOUR_SEEN_KEY, "true");
   }, []);
 
-  const clearGateInterval = useCallback(() => {
+  const clearGateTimers = useCallback(() => {
     if (gateIntervalRef.current) {
       clearInterval(gateIntervalRef.current);
       gateIntervalRef.current = null;
+    }
+    if (gateSuccessTimeoutRef.current) {
+      clearTimeout(gateSuccessTimeoutRef.current);
+      gateSuccessTimeoutRef.current = null;
     }
   }, []);
 
@@ -148,7 +153,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
   const startGuideCard = useCallback(
     (gatedStep: GatedStep, totalSteps: number, patchedSteps: DriveStep[]) => {
-      clearGateInterval();
+      clearGateTimers();
 
       const nextStepIndex = gatedStep.stepIndex + 1;
       const stepLabel = `Step ${gatedStep.stepIndex + 1} / ${totalSteps}`;
@@ -158,17 +163,18 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
 
       gateIntervalRef.current = setInterval(() => {
         if (gatedStep.gateCheck()) {
-          clearGateInterval();
+          clearGateTimers();
           setGuideCard((prev) => (prev ? { ...prev, isComplete: true } : null));
 
-          setTimeout(() => {
+          gateSuccessTimeoutRef.current = setTimeout(() => {
+            gateSuccessTimeoutRef.current = null;
             setGuideCard(null);
             launchDriver(patchedSteps, nextStepIndex);
           }, GATE_SUCCESS_DELAY);
         }
       }, GATE_CHECK_INTERVAL);
     },
-    [clearGateInterval, launchDriver],
+    [clearGateTimers, launchDriver],
   );
 
   const patchStepsWithGates = useCallback(
@@ -205,7 +211,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   );
 
   const skipGuideCard = useCallback(() => {
-    clearGateInterval();
+    clearGateTimers();
     const currentIdx = guideCard?.stepIndex;
     setGuideCard(null);
     if (currentIdx === undefined) return;
@@ -220,15 +226,15 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
     if (nextIdx < steps.length) {
       launchDriver(patchStepsWithGates(steps), nextIdx);
     }
-  }, [guideCard, clearGateInterval, launchDriver, patchStepsWithGates, openBestPractices]);
+  }, [guideCard, clearGateTimers, launchDriver, patchStepsWithGates, openBestPractices]);
 
   const driveTour = useCallback(
     (startIndex?: number) => {
-      clearGateInterval();
+      clearGateTimers();
       setGuideCard(null);
       launchDriver(patchStepsWithGates(createTourSteps(openBestPractices)), startIndex ?? 0);
     },
-    [clearGateInterval, launchDriver, patchStepsWithGates, openBestPractices],
+    [clearGateTimers, launchDriver, patchStepsWithGates, openBestPractices],
   );
 
   const startTour = useCallback(() => {
@@ -240,15 +246,15 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
   useEffect(() => {
     return () => {
       destroyDriver();
-      clearGateInterval();
+      clearGateTimers();
     };
-  }, [destroyDriver, clearGateInterval]);
+  }, [destroyDriver, clearGateTimers]);
 
   const resumeOrStartTour = useCallback(() => {
     const isActive = driverRef.current?.isActive() || guideCard !== null;
     if (isActive) {
       destroyDriver();
-      clearGateInterval();
+      clearGateTimers();
       setGuideCard(null);
       return;
     }
@@ -260,7 +266,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
     } else {
       startTour();
     }
-  }, [guideCard, destroyDriver, clearGateInterval, markTourSeen, driveTour, startTour, openBestPractices]);
+  }, [guideCard, destroyDriver, clearGateTimers, markTourSeen, driveTour, startTour, openBestPractices]);
 
   return {
     startTour,
