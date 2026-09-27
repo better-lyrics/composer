@@ -127,7 +127,11 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
     if (appliedLyricsRef.current === next) return;
     const scrollTopBefore = el.scrollTop;
     // Braccato's in-place lyrics swap keeps the old scroll geometry; a fresh renderer (writing host) positions from scratch.
-    if (appliedLyricsRef.current !== null) el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+    if (appliedLyricsRef.current !== null) {
+      // Cleared first so the fresh renderer's own build of the old lyrics is an empty one.
+      el.lyrics = [];
+      el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };
+    }
     appliedLyricsRef.current = next;
     el.lyrics = next;
     // A rebuild that moves the scroll position fires one scroll the reader never made.

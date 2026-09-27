@@ -90,6 +90,23 @@ describe("BraccatoRenderer inside Activity", () => {
 });
 
 describe("BraccatoRenderer lyrics updates", () => {
+  it("builds the lines of an edit once, not once for the old lyrics and again for the new", async () => {
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = screen.container.querySelector<BraccatoLyricsElement>("braccato-lyrics");
+    if (!el) throw new Error("braccato-lyrics element not rendered");
+    await expect.poll(() => el.querySelectorAll(".blyrics--line").length).toBeGreaterThan(0);
+    const builtLineCounts: number[] = [];
+    el.addEventListener("braccato:lyrics-loaded", (event) => {
+      const lineCount = (event as CustomEvent<{ lineCount: number }>).detail.lineCount;
+      if (lineCount > 0) builtLineCounts.push(lineCount);
+    });
+
+    await screen.rerender(<BraccatoRenderer ttmlString={buildBackgroundVocalTtml()} />);
+
+    await expect.poll(() => el.querySelectorAll(".blyrics--line").length).toBe(1);
+    expect(builtLineCounts).toEqual([1]);
+  });
+
   it("regression: the scroll a lyrics rebuild causes is not reported as the reader scrolling", async () => {
     const layout = installStyleSheet(
       `${braccatoLyricsCss}\nbraccato-lyrics{display:block;overflow-y:auto;height:120px}`,
@@ -102,18 +119,28 @@ describe("BraccatoRenderer lyrics updates", () => {
       el.scrollTop = el.scrollHeight;
       await expect.poll(() => el.scrollTop).toBeGreaterThan(0);
       const scrollTopBefore = el.scrollTop;
+      let userScrolls = 0;
+      const rendererGetter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(el), "renderer")?.get;
+      Object.defineProperty(el, "renderer", {
+        configurable: true,
+        get: () => {
+          const current = rendererGetter?.call(el);
+          if (!current) return current;
+          return new Proxy(current, {
+            get: (target, key) => {
+              if (key === "noteUserScroll") return () => userScrolls++;
+              const value = Reflect.get(target, key);
+              return typeof value === "function" ? value.bind(target) : value;
+            },
+          });
+        },
+      });
+      let rebuildScrolled = false;
+      el.addEventListener("scroll", () => (rebuildScrolled = true), { once: true });
 
       await screen.rerender(<BraccatoRenderer ttmlString={buildBackgroundVocalTtml()} />);
       expect(el.scrollTop).not.toBe(scrollTopBefore);
-      const renderer = el.renderer;
-      if (!renderer) throw new Error("braccato renderer not built");
-      const noteUserScroll = renderer.noteUserScroll.bind(renderer);
-      let userScrolls = 0;
-      renderer.noteUserScroll = () => {
-        userScrolls++;
-        noteUserScroll();
-      };
-      el.dispatchEvent(new Event("scroll"));
+      await expect.poll(() => rebuildScrolled).toBe(true);
       expect(userScrolls).toBe(0);
 
       el.dispatchEvent(new Event("scroll"));

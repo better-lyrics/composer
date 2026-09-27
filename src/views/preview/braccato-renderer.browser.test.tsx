@@ -321,6 +321,24 @@ describe("BraccatoRenderer", () => {
 
     await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
   });
+
+  it("regression: an edit rebuilds the view following the song again, so the way back goes away", async () => {
+    const audio = new Audio();
+    audio.currentTime = 14;
+    useAudioStore.setState({ audioElement: audio, isPlaying: true });
+
+    const screen = await render(<BraccatoRenderer ttmlString={buildSyncedTtml()} />);
+    const el = getBraccatoElement(screen.container);
+    await waitForLyrics(el);
+    for (let i = 0; i < 5; i++) el.dispatchEvent(new Event("scroll"));
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).toBeInTheDocument();
+    const rendererBefore = el.renderer;
+
+    await screen.rerender(<BraccatoRenderer ttmlString={buildSyncedTtml(120)} />);
+
+    expect(el.renderer).not.toBe(rendererBefore);
+    await expect.element(screen.getByRole("button", { name: "Resume autoscroll" })).not.toBeInTheDocument();
+  });
 });
 
 // -- Edge cases ---------------------------------------------------------------
