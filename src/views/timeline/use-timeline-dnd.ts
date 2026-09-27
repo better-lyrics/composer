@@ -3,13 +3,13 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { handleAltDuplicate } from "@/views/timeline/alt-duplicate";
 import { hitTestTrack, resolveDropTarget } from "@/views/timeline/drag-end-resolution";
 import {
   applyCrossLineMove,
   applySameLineReorder,
   DRAG_X_MIN_THRESHOLD,
   expandSelectionsAcrossLines,
-  handleAltDuplicate,
   resolveWordsToOperate,
   type DragData,
 } from "@/views/timeline/drag-handlers";
