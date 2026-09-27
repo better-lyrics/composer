@@ -6,6 +6,8 @@ import { Modal } from "@/ui/modal";
 import { isMac } from "@/utils/platform";
 import { detectConflicts, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useState } from "react";
+import { HighlightMatches } from "@/ui/highlight-matches";
+import { useSettingsSearchQuery } from "@/ui/settings/settings-search-query";
 
 // -- Types --------------------------------------------------------------------
 
@@ -22,6 +24,7 @@ type CaptureState =
 // -- Component ----------------------------------------------------------------
 
 const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => {
+  const searchQuery = useSettingsSearchQuery();
   const [captureState, setCaptureState] = useState<CaptureState>({ status: "idle" });
   const setBinding = useShortcutBindingsStore((s) => s.setBinding);
   const resetBinding = useShortcutBindingsStore((s) => s.resetBinding);
@@ -110,7 +113,9 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
   return (
     <>
       <div className="flex items-center justify-between py-2.5">
-        <span className="text-sm text-composer-text-secondary">{definition.description}</span>
+        <span className="text-sm text-composer-text-secondary">
+          <HighlightMatches text={definition.description} query={searchQuery} />
+        </span>
         <div className="flex items-center gap-2">
           {isOverridden && (
             <button

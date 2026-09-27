@@ -4,6 +4,7 @@ import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { render } from "@/test/render";
+import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
 
 // Use an existing registry entry so `getEffectiveKeysArray` resolves it.
 import { getShortcutById } from "@/stores/shortcut-registry";
@@ -47,5 +48,23 @@ describe("ShortcutRebindRow", () => {
     const reset = screen.getByRole("button", { name: "Reset" });
     await reset.click();
     expect(TEST_SHORTCUT.id in useShortcutBindingsStore.getState().overrides).toBe(false);
+  });
+
+  describe("inside settings search", () => {
+    it("underlines the matched words in its description", async () => {
+      const screen = await render(
+        <SettingsSearchQueryContext value="help">
+          <ShortcutRebindRow definition={TEST_SHORTCUT} />
+        </SettingsSearchQueryContext>,
+      );
+      const marks = [...screen.container.querySelectorAll("mark")].map((mark) => mark.textContent?.toLowerCase());
+      expect(marks.length).toBeGreaterThan(0);
+      expect(marks.every((mark) => mark === "help")).toBe(true);
+    });
+
+    it("marks nothing outside search", async () => {
+      const screen = await render(<ShortcutRebindRow definition={TEST_SHORTCUT} />);
+      expect(screen.container.querySelector("mark")).toBeNull();
+    });
   });
 });
