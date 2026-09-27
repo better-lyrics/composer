@@ -46,6 +46,33 @@ describe("TimelineHeader", () => {
     useTimelineStore.setState({ textVariant: "original" });
   });
 
+  it("names the language state in its label without also reporting it as pressed", async () => {
+    useProjectStore.getState().setLines([
+      {
+        id: "language-line",
+        agentId: "v1",
+        text: "今日",
+        transliteration: {
+          language: "ja-Latn",
+          text: "kyou",
+          segments: [{ original: "今日", transliteration: "kyou" }],
+          origin: "manual",
+          sourceFingerprint: "test",
+        },
+      },
+    ]);
+    useTimelineStore.setState({ textVariant: "original" });
+    const screen = await render(<TimelineHeader />);
+    const original = screen.getByRole("button", { name: /Original/ });
+    await expect.element(original).not.toHaveAttribute("aria-pressed");
+    await expect.element(original).toHaveClass("opacity-60");
+    await original.click();
+    const transliteration = screen.getByRole("button", { name: /Transliteration/ });
+    await expect.element(transliteration).not.toHaveAttribute("aria-pressed");
+    await expect.element(transliteration).toHaveClass("bg-composer-accent-dark");
+    useTimelineStore.setState({ textVariant: "original" });
+  });
+
   it("does not render the Import button when onImportLyrics is omitted", async () => {
     const screen = await render(<TimelineHeader />);
     const importButton = Array.from(screen.container.querySelectorAll("button")).find((b) =>

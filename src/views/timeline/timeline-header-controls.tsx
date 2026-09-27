@@ -17,6 +17,7 @@ interface TimelineToggleButtonProps {
   disabled?: boolean;
   title?: string;
   className?: string;
+  stateInLabel?: boolean;
 }
 
 const TimelineToggleButton: React.FC<TimelineToggleButtonProps> = ({
@@ -28,11 +29,13 @@ const TimelineToggleButton: React.FC<TimelineToggleButtonProps> = ({
   disabled,
   title,
   className,
+  stateInLabel,
 }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   return (
     <ToggleButton
       pressed={active}
+      stateInLabel={stateInLabel}
       size="sm"
       onClick={onClick}
       disabled={disabled}

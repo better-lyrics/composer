@@ -42,6 +42,20 @@ describe("ToggleButton", () => {
     await expect.element(screen.getByRole("button", { name: "Snap" })).toHaveClass("h-7 pl-2 pr-3 text-xs");
   });
 
+  it("omits aria-pressed when the label itself names the state, keeping the same look", async () => {
+    const screen = await render(
+      <>
+        <ToggleButton pressed stateInLabel>
+          Transliteration
+        </ToggleButton>
+        <ToggleButton pressed>Follow</ToggleButton>
+      </>,
+    );
+    const labelled = screen.getByRole("button", { name: "Transliteration" });
+    await expect.element(labelled).not.toHaveAttribute("aria-pressed");
+    expect(labelled.element().className).toBe(screen.getByRole("button", { name: "Follow" }).element().className);
+  });
+
   it("fires onClick", async () => {
     let clicks = 0;
     const screen = await render(

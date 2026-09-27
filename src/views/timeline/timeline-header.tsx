@@ -138,6 +138,7 @@ const TimelineHeader: React.FC<TimelineHeaderProps> = ({ onImportLyrics, scrollC
         <TimelineToggleButton
           active={textVariant === "transliteration"}
           label={textVariant === "transliteration" ? "Transliteration" : "Original"}
+          stateInLabel
           shortcut="timeline.toggleTextVariant"
           onClick={toggleTextVariant}
           disabled={!hasTransliteration}
