@@ -10,22 +10,26 @@ function tokenizeWordTexts(text: string): string[] {
   return parts.map((part, i) => part + (trailingSpace[i] ? " " : ""));
 }
 
-function spreadEvenly(texts: string[], begin: number, end: number, bases: Array<WordTiming | undefined>) {
+function spreadEvenly(texts: string[], begin: number, end: number) {
   const step = (end - begin) / texts.length;
-  return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1), base: bases[k] }));
+  return texts.map((text, k) => ({ text, begin: begin + step * k, end: begin + step * (k + 1) }));
 }
 
-function gluedToRightBracket(spread: Array<{ text: string; base: WordTiming | undefined }>): boolean[] {
-  const glued = new Array<boolean>(spread.length);
+function gluedToRightBracket(texts: string[]): boolean[] {
+  const glued = new Array<boolean>(texts.length);
   let chainOpen = true;
-  for (let k = spread.length - 1; k >= 0; k--) {
-    chainOpen = spread[k].base !== undefined || (chainOpen && !spread[k].text.endsWith(" "));
+  for (let k = texts.length - 1; k >= 0; k--) {
+    chainOpen = chainOpen && !texts[k].endsWith(" ");
     glued[k] = chainOpen;
   }
   return glued;
 }
 
 // -- Functions ----------------------------------------------------------------
+
+function insertSlot(prevEnd: number, nextBegin: number): { begin: number; end: number } {
+  return { begin: prevEnd, end: Math.max(prevEnd, nextBegin) };
+}
 
 function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string): WordTiming[] {
   const texts = tokenizeWordTexts(newText);
@@ -57,52 +61,30 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string)
     const leftBracket = oldWords[prevOld];
     const rightBracket = oldWords[nextOld];
 
-    let runStart = i;
-    let runTexts = texts.slice(i, runEnd);
-    let bases: Array<WordTiming | undefined> = runTexts.map(() => undefined);
-    let slotBegin: number;
-    let slotEnd: number;
+    const runTexts = texts.slice(i, runEnd);
+    let slot: { begin: number; end: number };
 
     if (prevOld + 1 < nextOld) {
-      slotBegin = oldWords[prevOld + 1].begin;
-      slotEnd = oldWords[nextOld - 1].end;
+      slot = { begin: oldWords[prevOld + 1].begin, end: oldWords[nextOld - 1].end };
     } else {
-      slotBegin = leftBracket ? leftBracket.end : rightBracket.begin;
-      slotEnd = rightBracket ? rightBracket.begin : slotBegin;
-      // An insert with no gap to fill shares its neighbour's slot so it stays visible.
-      if (slotEnd <= slotBegin && leftBracket) {
-        const absorbed = result.pop() as WordTiming;
-        runStart--;
-        runTexts = [absorbed.text, ...runTexts];
-        bases = [absorbed, ...bases];
-        slotBegin = absorbed.begin;
-        slotEnd = absorbed.end;
-      } else if (slotEnd <= slotBegin) {
-        runTexts = [...runTexts, texts[runEnd]];
-        bases = [...bases, rightBracket];
-        slotBegin = rightBracket.begin;
-        slotEnd = rightBracket.end;
-        runEnd++;
-      }
+      const prevEnd = leftBracket ? leftBracket.end : rightBracket.begin;
+      slot = insertSlot(prevEnd, rightBracket ? rightBracket.begin : prevEnd);
     }
 
-    const spread = spreadEvenly(runTexts, slotBegin, slotEnd, bases);
-    const gluedToRight = gluedToRightBracket(spread);
-    let gluedToLeft = runStart > 0 && !texts[runStart - 1].endsWith(" ");
-    for (const [k, { text, begin, end, base }] of spread.entries()) {
+    const gluedToRight = gluedToRightBracket(runTexts);
+    let gluedToLeft = i > 0 && !texts[i - 1].endsWith(" ");
+    for (const [k, { text, begin, end }] of spreadEvenly(runTexts, slot.begin, slot.end).entries()) {
       result.push(
-        base
-          ? { ...base, text, begin, end }
-          : synthesizeBracketedWord({
-              text,
-              begin,
-              end,
-              leftBracket: gluedToLeft ? leftBracket : undefined,
-              rightBracket: gluedToRight[k] ? rightBracket : undefined,
-              explicit: false,
-            }),
+        synthesizeBracketedWord({
+          text,
+          begin,
+          end,
+          leftBracket: gluedToLeft ? leftBracket : undefined,
+          rightBracket: gluedToRight[k] ? rightBracket : undefined,
+          explicit: false,
+        }),
       );
-      gluedToLeft = (base !== undefined || gluedToLeft) && !text.endsWith(" ");
+      gluedToLeft = gluedToLeft && !text.endsWith(" ");
     }
     i = runEnd;
   }
@@ -112,4 +94,4 @@ function remapWordTextsPreservingTiming(oldWords: WordTiming[], newText: string)
 
 // -- Exports ------------------------------------------------------------------
 
-export { remapWordTextsPreservingTiming };
+export { insertSlot, remapWordTextsPreservingTiming };

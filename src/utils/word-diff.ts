@@ -1,4 +1,5 @@
 import type { WordTiming } from "@/domain/word/timing";
+import { insertSlot } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { synthesizeBracketedWord } from "@/utils/word-timing";
 
@@ -121,8 +122,7 @@ function applySiblingWords(
     } else {
       const prevEnd = lastMatchedBefore >= 0 ? siblingWords[lastMatchedBefore].end : 0;
       const nextBegin = nextMatchedBefore < siblingWords.length ? siblingWords[nextMatchedBefore].begin : prevEnd;
-      slotStart = prevEnd;
-      slotEnd = Math.max(prevEnd, nextBegin);
+      ({ begin: slotStart, end: slotEnd } = insertSlot(prevEnd, nextBegin));
     }
 
     const sourceSegStart = sourceAfter[i].begin;

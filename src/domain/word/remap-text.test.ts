@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { insertSlot, remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import type { WordTiming } from "@/domain/word/timing";
 
 const flush: WordTiming[] = [
@@ -17,6 +17,20 @@ const gapped: WordTiming[] = [
 function timings(words: WordTiming[]) {
   return words.map((w) => [w.text, w.begin, w.end]);
 }
+
+describe("insertSlot", () => {
+  it("fills the gap between the neighbours", () => {
+    expect(insertSlot(2, 3)).toEqual({ begin: 2, end: 3 });
+  });
+
+  it("gives a zero-length slot at the previous end when there is no gap", () => {
+    expect(insertSlot(2, 2)).toEqual({ begin: 2, end: 2 });
+  });
+
+  it("treats a negative gap as no gap", () => {
+    expect(insertSlot(2, 1.5)).toEqual({ begin: 2, end: 2 });
+  });
+});
 
 describe("remapWordTextsPreservingTiming", () => {
   it("remaps texts positionally when the word count is unchanged", () => {
@@ -56,31 +70,31 @@ describe("remapWordTextsPreservingTiming", () => {
     ]);
   });
 
-  it("shares the left neighbour's slot when an inserted word has no gap to fill", () => {
+  it("gives an inserted word with no gap a zero-length slot and leaves the left neighbour intact", () => {
     const result = remapWordTextsPreservingTiming(flush, "I really can't wait");
     expect(timings(result)).toEqual([
-      ["I ", 1, 1.5],
-      ["really ", 1.5, 2],
+      ["I ", 1, 2],
+      ["really ", 2, 2],
       ["can't ", 2, 3],
       ["wait", 3, 4],
     ]);
   });
 
-  it("shares the last word's slot when a word is appended at the end", () => {
+  it("gives a word appended at the end a zero-length slot after the last word", () => {
     const result = remapWordTextsPreservingTiming(flush, "I can't wait now");
     expect(timings(result)).toEqual([
       ["I ", 1, 2],
       ["can't ", 2, 3],
-      ["wait ", 3, 3.5],
-      ["now", 3.5, 4],
+      ["wait ", 3, 4],
+      ["now", 4, 4],
     ]);
   });
 
-  it("shares the first word's slot when a word is prepended with no gap before it", () => {
+  it("gives a word prepended with no gap before it a zero-length slot at the first word's begin", () => {
     const result = remapWordTextsPreservingTiming(flush, "Oh I can't wait");
     expect(timings(result)).toEqual([
-      ["Oh ", 1, 1.5],
-      ["I ", 1.5, 2],
+      ["Oh ", 1, 1],
+      ["I ", 1, 2],
       ["can't ", 2, 3],
       ["wait", 3, 4],
     ]);
@@ -124,8 +138,8 @@ describe("remapWordTextsPreservingTiming", () => {
       const result = remapWordTextsPreservingTiming(words, "愛 してる よ");
       expect(timings(result)).toEqual([
         ["愛 ", 0, 1],
-        ["してる ", 1, 1.5],
-        ["よ", 1.5, 2],
+        ["してる ", 1, 2],
+        ["よ", 2, 2],
       ]);
     });
   });
@@ -134,22 +148,22 @@ describe("remapWordTextsPreservingTiming", () => {
     it("regression: words inserted on both sides of one word do not overlap it", () => {
       const result = remapWordTextsPreservingTiming([{ text: "hello", begin: 0, end: 1 }], "oh hello there");
       expect(timings(result)).toEqual([
-        ["oh ", 0, 0.5],
-        ["hello ", 0.5, 0.75],
-        ["there", 0.75, 1],
+        ["oh ", 0, 0],
+        ["hello ", 0, 1],
+        ["there", 1, 1],
       ]);
     });
 
-    it("regression: an insert after a prepended run shares the shrunk slot, not the original one", () => {
+    it("regression: an insert after a prepended run leaves every original word's timing intact", () => {
       const words: WordTiming[] = [
         { text: "a ", begin: 0, end: 1 },
         { text: "b", begin: 1, end: 2 },
       ];
       const result = remapWordTextsPreservingTiming(words, "x a y b");
       expect(timings(result)).toEqual([
-        ["x ", 0, 0.5],
-        ["a ", 0.5, 0.75],
-        ["y ", 0.75, 1],
+        ["x ", 0, 0],
+        ["a ", 0, 1],
+        ["y ", 1, 1],
         ["b", 1, 2],
       ]);
     });
@@ -239,6 +253,17 @@ describe("remapWordTextsPreservingTiming", () => {
   });
 
   describe("invariants", () => {
+    for (const [position, withInsert] of [
+      ["start", "Oh I can't wait"],
+      ["middle", "I really can't wait"],
+      ["end", "I can't wait now"],
+    ]) {
+      it(`restores every word's timing exactly after inserting then deleting a word at the ${position}`, () => {
+        const inserted = remapWordTextsPreservingTiming(flush, withInsert);
+        expect(remapWordTextsPreservingTiming(inserted, "I can't wait")).toEqual(flush);
+      });
+    }
+
     it("never assigns overlapping timings when inserting around a single word", () => {
       const result = remapWordTextsPreservingTiming([{ text: "hello", begin: 0, end: 1 }], "oh hello there now");
       for (let i = 1; i < result.length; i++) expect(result[i].begin).toBeGreaterThanOrEqual(result[i - 1].end);
