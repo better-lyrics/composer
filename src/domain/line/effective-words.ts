@@ -66,8 +66,18 @@ function effectiveTimingWrite(line: LyricLine | EffectiveLine, words: WordTiming
   return { words };
 }
 
-function effectiveMainWordEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> | null {
-  if (!isLineSyncedSource(line)) return mainWordEditFields(words);
+function effectiveMainWordEdit(
+  line: LyricLine | EffectiveLine,
+  words: WordTiming[],
+  options: { convertLineSynced: true },
+): Partial<LyricLine>;
+function effectiveMainWordEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> | null;
+function effectiveMainWordEdit(
+  line: LyricLine | EffectiveLine,
+  words: WordTiming[],
+  options?: { convertLineSynced: true },
+): Partial<LyricLine> | null {
+  if (options?.convertLineSynced || !isLineSyncedSource(line)) return mainWordEditFields(words);
   return words.length === 1 ? { begin: words[0].begin, end: words[0].end } : null;
 }
 

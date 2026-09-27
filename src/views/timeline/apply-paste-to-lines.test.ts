@@ -139,7 +139,7 @@ describe("pasting onto a line-synced row", () => {
     entries: [{ word: { text: "never", begin, end }, lineOffset: 0, trackType: "word" }],
   });
 
-  it("regression: pasting after the line's span is rejected instead of converting the row to word timing", () => {
+  it("regression: pasting after the line's span keeps its text and timing as the first word", () => {
     const updates = applyPasteToLines({
       lines: [lineSynced],
       clipboard: clipboardAt(13, 13.5),
@@ -147,8 +147,12 @@ describe("pasting onto a line-synced row", () => {
       timeDelta: 0,
       duration: 60,
     });
-    // A structural edit may not give a line-synced row a second word; the row must be synced into words first.
-    expect(updates).toBeNull();
+    expect(updates?.[0].updates.words).toEqual([
+      { text: "It hurts for me ", begin: 10, end: 12 },
+      { text: "never", begin: 13, end: 13.5 },
+    ]);
+    expect(updates?.[0].updates.text).toContain("It hurts for me");
+    expect(updates?.[0].updates.text).toContain("never");
   });
 
   it("regression: a paste inside the line's span counts as an overlap", () => {

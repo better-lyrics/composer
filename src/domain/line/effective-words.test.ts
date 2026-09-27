@@ -131,6 +131,27 @@ describe("effectiveMainWordEdit", () => {
     ).toBeNull();
   });
 
+  it("regression #213: converts a line-synced row to words when the caller opts in", () => {
+    const [line] = getEffectiveLines([createLine({ text: "It hurts", begin: 3, end: 5 })]);
+    const words = [
+      { text: "It hurts ", begin: 3, end: 5 },
+      { text: "never", begin: 6, end: 7 },
+    ];
+    expect(effectiveMainWordEdit(line, words, { convertLineSynced: true })).toEqual({
+      words,
+      text: "It hurts never",
+    });
+  });
+
+  it("converting leaves a word-synced line on the normal word edit", () => {
+    const [line] = getEffectiveLines([createLine({ text: "a", words: [{ text: "a", begin: 1, end: 2 }] })]);
+    const words = [
+      { text: "a ", begin: 1, end: 2 },
+      { text: "b", begin: 2, end: 3 },
+    ];
+    expect(effectiveMainWordEdit(line, words, { convertLineSynced: true })).toEqual({ words, text: "a b" });
+  });
+
   it("re-derives text for a word-synced line", () => {
     const [line] = getEffectiveLines([
       createLine({

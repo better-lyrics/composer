@@ -77,9 +77,8 @@ function applyPasteToLines({
 
     const lineUpdates: Partial<LyricLine> = {};
     if (newWords.length > 0) {
-      const edit = effectiveMainWordEdit(line, mergeWordsIntoTrack(effectiveWords(line), newWords));
-      if (!edit) return null;
-      Object.assign(lineUpdates, edit);
+      const merged = mergeWordsIntoTrack(effectiveWords(line), newWords);
+      Object.assign(lineUpdates, effectiveMainWordEdit(line, merged, { convertLineSynced: true }));
     }
     if (newBgWords.length > 0) {
       Object.assign(lineUpdates, manualBackgroundWordEdit(mergeWordsIntoTrack(line.backgroundWords ?? [], newBgWords)));
