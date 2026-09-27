@@ -1,6 +1,6 @@
 import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
-import { wake } from "@/lib/frame-loop";
+import { nextFrame, wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
@@ -129,7 +129,15 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString }) => {
   const setElement = useCallback(
     (el: BraccatoLyricsElement | null) => {
       elementRef.current = el;
-      if (!el || initializedElementRef.current === el) return;
+      if (!el) return;
+      if (initializedElementRef.current === el) {
+        // Lines built or measured while hidden have no layout, so re-read it once the tab paints.
+        nextFrame(() => {
+          el.renderer?.relayout();
+          wake();
+        });
+        return;
+      }
       initializedElementRef.current = el;
       el.theme = braccatoTheme;
       el.host = { setResumeAffordanceVisible: setIsAutoscrollPaused };

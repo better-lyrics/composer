@@ -53,6 +53,28 @@ describe("BraccatoRenderer inside Activity", () => {
     expect(hostWrites).toBe(0);
   });
 
+  it("regression: re-reads its layout on reveal so the active line is re-centred", async () => {
+    const screen = await render(<Harness ttml={buildSyncedTtml()} />);
+    const el = screen.container.querySelector<BraccatoLyricsElement>("braccato-lyrics");
+    if (!el) throw new Error("braccato-lyrics element not rendered");
+    await expect.poll(() => el.querySelectorAll(".blyrics--line").length).toBeGreaterThan(0);
+    const renderer = el.renderer;
+    if (!renderer) throw new Error("braccato renderer not built");
+    const relayout = renderer.relayout.bind(renderer);
+    let relayouts = 0;
+    renderer.relayout = (measureLines) => {
+      relayouts++;
+      relayout(measureLines);
+    };
+
+    setVisible(false);
+    await expect.poll(() => screen.container.querySelector<HTMLElement>(":scope > div")?.style.display).toBe("none");
+    expect(relayouts).toBe(0);
+    setVisible(true);
+
+    await expect.poll(() => relayouts).toBe(1);
+  });
+
   it("still answers line clicks after a hide and reveal", async () => {
     useAudioStore.setState({ audioElement: new Audio() });
     const screen = await render(<Harness ttml={buildSyncedTtml()} />);
