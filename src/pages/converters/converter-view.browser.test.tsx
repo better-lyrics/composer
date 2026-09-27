@@ -27,8 +27,8 @@ function captureDownloads(): { names: string[]; restore: () => void } {
   };
 }
 
-async function downloadWithFilename(typed: string): Promise<string[]> {
-  const screen = await render(
+function renderLrcConverter() {
+  return render(
     <ConverterView
       title="LRC"
       inputLabel="LRC"
@@ -39,6 +39,10 @@ async function downloadWithFilename(typed: string): Promise<string[]> {
     />,
     { withRouter: true },
   );
+}
+
+async function downloadWithFilename(typed: string): Promise<string[]> {
+  const screen = await renderLrcConverter();
   await screen.getByRole("button", { name: "Load sample" }).click();
   await screen.getByRole("textbox", { name: "Filename" }).fill(typed);
   const originalCreate = URL.createObjectURL;
@@ -121,5 +125,20 @@ describe("sibling: converter Filename field is ignored by Download", () => {
 
   it("strips reserved characters from the typed name", async () => {
     expect(await downloadWithFilename("a/b:c")).toEqual(["abc.ttml"]);
+  });
+});
+
+describe("I7 converter output after the input is cleared", () => {
+  it("disables Copy and Download once the input is cleared by the user", async () => {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    const copy = screen.getByRole("button", { name: /Copy/ });
+    await expect.poll(() => (copy.element() as HTMLButtonElement).disabled).toBe(false);
+
+    const input = screen.getByRole("textbox", { name: "Converter input" });
+    await userEvent.click(input);
+    await userEvent.keyboard("{ControlOrMeta>}a{/ControlOrMeta}{Backspace}");
+    await expect.poll(() => (input.element() as HTMLTextAreaElement).value).toBe("");
+    await expect.poll(() => (copy.element() as HTMLButtonElement).disabled).toBe(true);
   });
 });
