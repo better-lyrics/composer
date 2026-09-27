@@ -8,6 +8,7 @@ import { GROUP_HEADER_HEIGHT, GroupHeaderRow } from "@/views/timeline/group-head
 import { LineRow } from "@/views/timeline/line-row";
 import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
 import { emptyBgRowHeight, lineRowHeight } from "@/views/timeline/row-geometry";
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { isLineSynced } from "@/domain/line/predicates";
 import { type EffectiveRow, getEffectiveRows } from "@/views/timeline/utils";
@@ -57,19 +58,6 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     }
     return out;
   }, [allRows, collapsedInstances]);
-
-  const instanceCountsByGroupId = useMemo(() => {
-    const seen = new Set<string>();
-    const out: Record<string, number> = {};
-    for (const line of lines) {
-      if (!isLinked(line)) continue;
-      const key = `${line.groupId}:${line.instanceIdx}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out[line.groupId] = (out[line.groupId] ?? 0) + 1;
-    }
-    return out;
-  }, [lines]);
 
   const groupsById = useMemo(() => new Map((groups ?? []).map((g) => [g.id, g])), [groups]);
 
@@ -149,9 +137,7 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
     <div style={{ width: totalWidth + GUTTER_WIDTH, minWidth: "100%", height: totalHeight }}>
       <Virtuoso
         data={visibleRows}
-        computeItemKey={(_, row) =>
-          row.kind === "group-header" ? `header:${row.groupId}:${row.instanceIdx}` : row.line.id
-        }
+        computeItemKey={(_, row) => (row.kind === "group-header" ? `header:${row.firstLineId}` : row.line.id)}
         itemContent={(_, row) => {
           if (row.kind === "group-header") {
             const group = groupsById.get(row.groupId);
@@ -160,7 +146,8 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
               <GroupHeaderRow
                 group={group}
                 instanceIdx={row.instanceIdx}
-                totalInstances={instanceCountsByGroupId[row.groupId] ?? 1}
+                ordinal={instanceOrdinal(lines, row.groupId, row.instanceIdx)}
+                totalInstances={instanceCount(lines, row.groupId)}
                 instanceStart={row.instanceStart}
                 instanceEnd={row.instanceEnd}
               />

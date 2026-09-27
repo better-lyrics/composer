@@ -1,4 +1,4 @@
-import { isLinked } from "@/domain/instance/predicates";
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useConfirm } from "@/stores/confirm-store";
@@ -336,22 +336,10 @@ const EditPanel: React.FC = () => {
   const parsed = useMemo(() => parseLyrics(rawText, lines, defaultAgentId), [rawText, lines, defaultAgentId]);
   const bracketCount = useMemo(() => parsed.filter((p) => p.hasBrackets).length, [parsed]);
   const nonEmptyCount = useMemo(() => parsed.filter((p) => !p.isEmpty).length, [parsed]);
-  const instanceCountByGroup = useMemo(() => {
-    const indices = new Map<string, Set<number>>();
-    for (const l of lines) {
-      if (isLinked(l)) {
-        let set = indices.get(l.groupId);
-        if (!set) {
-          set = new Set();
-          indices.set(l.groupId, set);
-        }
-        set.add(l.instanceIdx);
-      }
-    }
-    const counts = new Map<string, number>();
-    for (const [k, v] of indices) counts.set(k, v.size);
-    return counts;
-  }, [lines]);
+  const instanceCountByGroup = useMemo(
+    () => new Map(groups.map((g) => [g.id, instanceCount(lines, g.id)])),
+    [groups, lines],
+  );
 
   const extractOptions = useMemo(
     () => ({
@@ -771,7 +759,7 @@ const EditPanel: React.FC = () => {
                         >
                           <span className="font-medium text-composer-text">{group.label}</span>
                           <span className="tabular-nums">
-                            · {(line.instanceIdx ?? 0) + 1} of {totalInstances}
+                            · {instanceOrdinal(lines, group.id, line.instanceIdx ?? 0)} of {totalInstances}
                           </span>
                           <span className="flex-1 h-px" style={{ backgroundColor: group.color, opacity: 0.4 }} />
                         </div>

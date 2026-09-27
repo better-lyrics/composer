@@ -41,6 +41,7 @@ const RenameInput: React.FC<{
 interface GroupHeaderRowProps {
   group: LinkGroup;
   instanceIdx: number;
+  ordinal: number;
   totalInstances: number;
   instanceStart: number;
   instanceEnd: number;
@@ -55,6 +56,7 @@ const GROUP_HEADER_HEIGHT = 38;
 const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
   group,
   instanceIdx,
+  ordinal,
   totalInstances,
   instanceStart,
   instanceEnd,
@@ -130,7 +132,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
             onClick={openGroupMenu}
             onContextMenu={openGroupMenu}
             className="w-full h-full flex items-center justify-center cursor-pointer hover:brightness-110 transition-[filter]"
-            title={`${group.label} · ${instanceIdx + 1} of ${totalInstances}`}
+            title={`${group.label} · ${ordinal} of ${totalInstances}`}
           >
             <span className="text-[10px] font-semibold text-composer-text truncate w-full text-center leading-none">
               {group.label}
@@ -142,6 +144,7 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
         <GroupBanner
           group={group}
           instanceIdx={instanceIdx}
+          ordinal={ordinal}
           totalInstances={totalInstances}
           instanceStart={instanceStart}
           instanceEnd={instanceEnd}

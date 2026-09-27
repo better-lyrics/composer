@@ -15,6 +15,14 @@ function instanceIndicesOf(lines: ReadonlyArray<LyricLine>, groupId: string): nu
   return Array.from(indices).toSorted((a, b) => a - b);
 }
 
+function instanceOrdinal(lines: ReadonlyArray<LyricLine>, groupId: string, instanceIdx: number): number {
+  return instanceIndicesOf(lines, groupId).indexOf(instanceIdx) + 1;
+}
+
+function instanceCount(lines: ReadonlyArray<LyricLine>, groupId: string): number {
+  return instanceIndicesOf(lines, groupId).length;
+}
+
 function nextInstanceIdx(lines: ReadonlyArray<LyricLine>, groupId: string): number {
   let instanceIdx = 0;
   for (const used of instanceIndicesOf(lines, groupId)) {
@@ -26,4 +34,4 @@ function nextInstanceIdx(lines: ReadonlyArray<LyricLine>, groupId: string): numb
 
 // -- Exports ------------------------------------------------------------------
 
-export { instanceIndicesOf, linesOfInstance, nextInstanceIdx };
+export { instanceCount, instanceIndicesOf, instanceOrdinal, linesOfInstance, nextInstanceIdx };

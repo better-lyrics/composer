@@ -1,4 +1,4 @@
-import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { type LooseLine, reconcileLine } from "@/domain/line/model";
@@ -194,20 +194,10 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       const linkScope = getLinkScope(target);
 
       if (resolution === "detach") {
-        return commitHistory(state, {
-          lines: state.lines.map((line) => {
-            if (line.id !== lineId) return line;
-            return reconcileLine({
-              ...line,
-              ...extraUpdates,
-              [field]: newWords,
-              groupId: undefined,
-              instanceIdx: undefined,
-              templateLineIdx: undefined,
-              detached: undefined,
-            });
-          }),
-        });
+        const edited = state.lines.map((line) =>
+          line.id === lineId ? reconcileLine({ ...line, ...extraUpdates, [field]: newWords }) : line,
+        );
+        return commitHistory(state, { lines: unlinkLines(edited, (line) => line.id === lineId) });
       }
 
       const linkedExtras = linkScope ? extractLinkedFields(extraUpdates) : null;

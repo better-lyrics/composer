@@ -1,3 +1,4 @@
+import { unlinkLines } from "@/domain/group/linking";
 import { isLinked } from "@/domain/instance/predicates";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -112,11 +113,7 @@ function applyWordDeletion(lines: LyricLine[], selectedWords: ReadonlyArray<Dele
     }
 
     if (keysToStrip.size > 0) {
-      result = result.map((line) => {
-        if (!isLinked(line)) return line;
-        if (!keysToStrip.has(`${line.groupId}:${line.instanceIdx}`)) return line;
-        return { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined };
-      });
+      result = unlinkLines(result, (line) => isLinked(line) && keysToStrip.has(`${line.groupId}:${line.instanceIdx}`));
     }
   }
 

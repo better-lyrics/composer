@@ -15,7 +15,7 @@ import { cn } from "@/utils/cn";
 interface ScrollableLineLinkInfo {
   color: string;
   label: string;
-  instanceIdx: number;
+  ordinal: number;
   totalInstances: number;
 }
 
@@ -290,7 +290,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
         {linkInfo && (
           <span
             className="flex items-center gap-1 px-1.5 h-4 text-[10px] rounded-md select-none"
-            title={`Linked: ${linkInfo.label} ${linkInfo.instanceIdx + 1}/${linkInfo.totalInstances}`}
+            title={`Linked: ${linkInfo.label} ${linkInfo.ordinal}/${linkInfo.totalInstances}`}
             style={{
               background: `color-mix(in srgb, ${linkInfo.color} 18%, transparent)`,
               color: linkInfo.color,
@@ -298,7 +298,7 @@ const ScrollableLineInner: React.FC<ScrollableLineProps> = ({
           >
             <IconLink className="size-2.5" />
             <span className="tabular-nums">
-              {linkInfo.instanceIdx + 1}/{linkInfo.totalInstances}
+              {linkInfo.ordinal}/{linkInfo.totalInstances}
             </span>
           </span>
         )}
@@ -352,7 +352,7 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
     prev.words === next.words &&
     prev.linkInfo?.color === next.linkInfo?.color &&
     prev.linkInfo?.label === next.linkInfo?.label &&
-    prev.linkInfo?.instanceIdx === next.linkInfo?.instanceIdx &&
+    prev.linkInfo?.ordinal === next.linkInfo?.ordinal &&
     prev.linkInfo?.totalInstances === next.linkInfo?.totalInstances
   );
 });
@@ -360,3 +360,4 @@ const ScrollableLine = memo(ScrollableLineInner, (prev, next) => {
 // -- Exports ------------------------------------------------------------------
 
 export { ScrollableLine };
+export type { ScrollableLineLinkInfo };

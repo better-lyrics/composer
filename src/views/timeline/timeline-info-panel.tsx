@@ -2,7 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
-import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import type { BoundaryEdge } from "@/domain/word/boundary";
 import { BackgroundTextEditor } from "@/views/timeline/background-text-editor";
 import { Button } from "@/ui/button";
@@ -48,12 +48,14 @@ const TimelineInfoPanel: React.FC = () => {
     const group = groups.find((g) => g.id === firstGroupId);
     if (!group) return null;
     const sameInstance = instanceKeys.size === 1;
-    const totalInstances = instanceIndicesOf(rawLines, firstGroupId).length;
     return {
       group,
       sameInstance,
-      instanceIdx: sameInstance ? firstInstanceIdx : undefined,
-      totalInstances,
+      ordinal:
+        sameInstance && firstInstanceIdx !== undefined
+          ? instanceOrdinal(rawLines, firstGroupId, firstInstanceIdx)
+          : undefined,
+      totalInstances: instanceCount(rawLines, firstGroupId),
       instanceCount: instanceKeys.size,
     };
   }, [selectedWords, rawLines, groups]);
@@ -62,8 +64,8 @@ const TimelineInfoPanel: React.FC = () => {
     ? {
         accentColor: groupContext.group.color,
         label:
-          groupContext.sameInstance && groupContext.instanceIdx !== undefined
-            ? `${groupContext.group.label} · ${groupContext.instanceIdx + 1} of ${groupContext.totalInstances}`
+          groupContext.ordinal !== undefined
+            ? `${groupContext.group.label} · ${groupContext.ordinal} of ${groupContext.totalInstances}`
             : `${groupContext.group.label} · ${groupContext.instanceCount} instances`,
       }
     : null;

@@ -41,6 +41,17 @@ function extractLinkedFields(updates: Partial<LyricLine>): Partial<LyricLine> {
   return linked;
 }
 
+// -- Unlinking ----------------------------------------------------------------
+
+function unlinkLines(lines: LyricLine[], shouldUnlink: (line: LyricLine) => boolean): LyricLine[] {
+  if (!lines.some(shouldUnlink)) return lines;
+  return lines.map((line) =>
+    shouldUnlink(line)
+      ? { ...line, groupId: undefined, instanceIdx: undefined, templateLineIdx: undefined, detached: undefined }
+      : line,
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { extractLinkedFields, getLinkScope, isLinkedSibling };
+export { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines };

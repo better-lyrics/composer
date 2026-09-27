@@ -12,6 +12,7 @@ describe("GroupBanner", () => {
       <GroupBanner
         group={group}
         instanceIdx={0}
+        ordinal={1}
         totalInstances={1}
         instanceStart={0}
         instanceEnd={5}
@@ -29,6 +30,7 @@ describe("GroupBanner", () => {
       <GroupBanner
         group={group}
         instanceIdx={1}
+        ordinal={2}
         totalInstances={3}
         instanceStart={0}
         instanceEnd={5}

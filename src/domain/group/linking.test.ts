@@ -1,6 +1,6 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { extractLinkedFields, getLinkScope, isLinkedSibling } from "@/domain/group/linking";
+import { extractLinkedFields, getLinkScope, isLinkedSibling, unlinkLines } from "@/domain/group/linking";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -152,5 +152,40 @@ describe("extractLinkedFields", () => {
       backgroundText: "ah",
       backgroundTextSource: "manual",
     });
+  });
+});
+
+// -- unlinkLines --------------------------------------------------------------
+
+describe("unlinkLines", () => {
+  it("clears all four link fields on every matching line", () => {
+    const lines = [
+      line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, detached: true }),
+      line({ id: "b", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 }),
+    ];
+    const result = unlinkLines(lines, (l) => l.id === "a");
+    expect(result[0]).toMatchObject({ id: "a", text: "Hello" });
+    for (const field of ["groupId", "instanceIdx", "templateLineIdx", "detached"] as const) {
+      expect(result[0][field]).toBeUndefined();
+    }
+    expect(result[1]).toBe(lines[1]);
+  });
+
+  it("returns the same array when no line matches", () => {
+    const lines = [line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }), line({ id: "b" })];
+    expect(unlinkLines(lines, () => false)).toBe(lines);
+  });
+
+  it("keeps timing and content on the unlinked line", () => {
+    const words = [{ text: "Hello", begin: 1, end: 2 }];
+    const lines = [line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, words })];
+    expect(unlinkLines(lines, () => true)[0].words).toEqual(words);
+  });
+
+  it("does not modify its input", () => {
+    const lines = [line({ id: "a", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 })];
+    const snapshot = structuredClone(lines);
+    unlinkLines(lines, () => true);
+    expect(lines).toEqual(snapshot);
   });
 });

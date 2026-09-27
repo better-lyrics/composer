@@ -11,7 +11,7 @@ describe("GroupHeaderRow", () => {
     const line = createLine({ groupId: group.id, instanceIdx: 0, begin: 0, end: 2 });
     useProjectStore.setState({ groups: [group], lines: [line] });
     const screen = await render(
-      <GroupHeaderRow group={group} instanceIdx={0} totalInstances={1} instanceStart={0} instanceEnd={2} />,
+      <GroupHeaderRow group={group} instanceIdx={0} ordinal={1} totalInstances={1} instanceStart={0} instanceEnd={2} />,
     );
     expect(screen.container.textContent).toContain("Chorus");
   });
@@ -22,7 +22,7 @@ describe("GroupHeaderRow", () => {
     useProjectStore.setState({ groups: [group], lines: [line] });
     useTimelineStore.getState().setRenamingGroupId(group.id, 0);
     const screen = await render(
-      <GroupHeaderRow group={group} instanceIdx={0} totalInstances={1} instanceStart={0} instanceEnd={2} />,
+      <GroupHeaderRow group={group} instanceIdx={0} ordinal={1} totalInstances={1} instanceStart={0} instanceEnd={2} />,
     );
     await expect.element(screen.getByRole("textbox", { name: "Group name" })).toBeInTheDocument();
   });

@@ -1,4 +1,4 @@
-import { extractLinkedFields } from "@/domain/group/linking";
+import { extractLinkedFields, unlinkLines } from "@/domain/group/linking";
 import { propagateWordChanges } from "@/domain/group/smart-sync";
 import { isLinked } from "@/domain/instance/predicates";
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
@@ -130,20 +130,8 @@ function findStructurallyImpactedInstances(oldLines: LyricLine[], newLines: Lyri
 }
 
 function detachInstancesFromLines(lines: LyricLine[], instances: ImpactedInstance[]): LyricLine[] {
-  if (instances.length === 0) return lines;
   const impactedKeys = new Set(instances.map((i) => `${i.groupId}:${i.instanceIdx}`));
-
-  return lines.map((line) => {
-    if (!isLinked(line)) return line;
-    if (!impactedKeys.has(`${line.groupId}:${line.instanceIdx}`)) return line;
-    return {
-      ...line,
-      groupId: undefined,
-      instanceIdx: undefined,
-      templateLineIdx: undefined,
-      detached: undefined,
-    };
-  });
+  return unlinkLines(lines, (line) => isLinked(line) && impactedKeys.has(`${line.groupId}:${line.instanceIdx}`));
 }
 
 interface LinkedScope {

@@ -1,3 +1,4 @@
+import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -20,7 +21,7 @@ import {
   withSeededBackgroundWords,
 } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
-import { ScrollableLine } from "@/views/sync/scrollable-line";
+import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
@@ -57,22 +58,22 @@ const SyncPanel: React.FC = () => {
     [lines, textVariant],
   );
 
-  const instanceCountByGroup = useMemo(() => {
-    const indices = new Map<string, Set<number>>();
-    for (const l of lines) {
-      if (isLinked(l)) {
-        let set = indices.get(l.groupId);
-        if (!set) {
-          set = new Set();
-          indices.set(l.groupId, set);
-        }
-        set.add(l.instanceIdx);
-      }
+  const linkInfoByLineId = useMemo(() => {
+    const groupsById = new Map(groups.map((g) => [g.id, g]));
+    const out = new Map<string, ScrollableLineLinkInfo>();
+    for (const line of lines) {
+      if (!isLinked(line)) continue;
+      const group = groupsById.get(line.groupId);
+      if (!group) continue;
+      out.set(line.id, {
+        color: group.color,
+        label: group.label,
+        ordinal: instanceOrdinal(lines, group.id, line.instanceIdx),
+        totalInstances: instanceCount(lines, group.id),
+      });
     }
-    const counts = new Map<string, number>();
-    for (const [k, v] of indices) counts.set(k, v.size);
-    return counts;
-  }, [lines]);
+    return out;
+  }, [lines, groups]);
 
   const [syncState, setSyncState] = useState<SyncState>({
     position: { lineIndex: 0, wordIndex: 0 },
@@ -439,17 +440,6 @@ const SyncPanel: React.FC = () => {
             {lines.map((line, index) => {
               const displayLine = displayLines[index];
               const timing = effectiveBounds(line);
-              const linkedGroup = line.groupId ? groups.find((g) => g.id === line.groupId) : undefined;
-              const totalInstances = linkedGroup ? (instanceCountByGroup.get(linkedGroup.id) ?? 0) : 0;
-              const linkInfo =
-                linkedGroup && line.instanceIdx !== undefined
-                  ? {
-                      color: linkedGroup.color,
-                      label: linkedGroup.label,
-                      instanceIdx: line.instanceIdx,
-                      totalInstances,
-                    }
-                  : undefined;
               return (
                 <ScrollableLine
                   key={line.id}
@@ -470,7 +460,7 @@ const SyncPanel: React.FC = () => {
                   granularity={granularity}
                   currentTime={currentTime}
                   editMode={editMode}
-                  linkInfo={linkInfo}
+                  linkInfo={linkInfoByLineId.get(line.id)}
                   onClick={() => handleJumpToLine(index)}
                   onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
                   onClickBgWord={(wordIdx) => handleJumpToBgWord(index, wordIdx)}

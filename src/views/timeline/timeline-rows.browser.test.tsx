@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { useRef } from "react";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { useProjectStore } from "@/stores/project";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { render } from "@/test/render";
 
@@ -35,6 +35,34 @@ describe("TimelineRows", () => {
     expect(heightPx).toBeGreaterThan(0);
   });
   describe("regressions", () => {
+    function splitInstanceLines() {
+      const linked = (id: string, instanceIdx: number, templateLineIdx: number, begin: number) =>
+        createLine({ id, text: id, groupId: "g1", instanceIdx, templateLineIdx, begin, end: begin + 1 });
+      return [
+        linked("a0", 0, 0, 0),
+        createLine({ id: "detached", text: "detached", begin: 1, end: 2 }),
+        linked("a2", 0, 2, 2),
+        linked("b0", 2, 0, 6),
+        linked("b2", 2, 2, 8),
+      ];
+    }
+
+    it("regression: renders one header per run of an instance split by a detached line", async () => {
+      useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })], lines: splitInstanceLines() });
+      const screen = await render(<Harness />);
+      await expect.poll(() => screen.container.querySelectorAll('[data-group-header="g1:0"]').length).toBe(2);
+    });
+
+    it("regression: labels the surviving instances by rank, never past the count", async () => {
+      useProjectStore.setState({ groups: [createGroup({ id: "g1", label: "Chorus" })], lines: splitInstanceLines() });
+      const screen = await render(<Harness />);
+      await expect
+        .poll(() =>
+          [...screen.container.querySelectorAll("[data-group-header] [title]")].map((el) => el.getAttribute("title")),
+        )
+        .toEqual(["Chorus · 1 of 2", "Chorus · 1 of 2", "Chorus · 2 of 2"]);
+    });
+
     function sizerHeight(container: HTMLElement): string {
       return container.querySelector<HTMLElement>("[style*='min-width']")?.style.height ?? "";
     }

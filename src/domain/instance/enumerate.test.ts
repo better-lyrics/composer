@@ -1,6 +1,12 @@
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { instanceIndicesOf, linesOfInstance, nextInstanceIdx } from "@/domain/instance/enumerate";
+import {
+  instanceCount,
+  instanceIndicesOf,
+  instanceOrdinal,
+  linesOfInstance,
+  nextInstanceIdx,
+} from "@/domain/instance/enumerate";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -159,5 +165,56 @@ describe("nextInstanceIdx", () => {
       nextInstanceIdx(lines, "g1");
       expect(lines).toEqual(snapshot);
     });
+  });
+});
+
+// -- instanceOrdinal / instanceCount -------------------------------------------
+
+describe("instanceOrdinal", () => {
+  it("ranks an instance among the surviving instances after a removal leaves a gap", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", groupId: "g1", instanceIdx: 1 }),
+      line({ id: "b", groupId: "g1", instanceIdx: 3 }),
+      line({ id: "c", groupId: "g1", instanceIdx: 3 }),
+    ];
+    expect(instanceOrdinal(lines, "g1", 1)).toBe(1);
+    expect(instanceOrdinal(lines, "g1", 3)).toBe(2);
+  });
+
+  it("is 1 for the only instance, whatever its stored index", () => {
+    const lines: LyricLine[] = [line({ id: "a", groupId: "g1", instanceIdx: 1 })];
+    expect(instanceOrdinal(lines, "g1", 1)).toBe(1);
+  });
+
+  it("ignores instances of other groups", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", groupId: "g2", instanceIdx: 0 }),
+      line({ id: "b", groupId: "g1", instanceIdx: 2 }),
+    ];
+    expect(instanceOrdinal(lines, "g1", 2)).toBe(1);
+  });
+});
+
+describe("instanceCount", () => {
+  it("counts distinct surviving instances of the group", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", groupId: "g1", instanceIdx: 1 }),
+      line({ id: "b", groupId: "g1", instanceIdx: 3 }),
+      line({ id: "c", groupId: "g1", instanceIdx: 3 }),
+      line({ id: "d", groupId: "g2", instanceIdx: 0 }),
+    ];
+    expect(instanceCount(lines, "g1")).toBe(2);
+  });
+
+  it("is 0 when the group has no lines", () => {
+    expect(instanceCount([line()], "g1")).toBe(0);
+  });
+
+  it("never falls below the ordinal of any surviving instance", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", groupId: "g1", instanceIdx: 4 }),
+      line({ id: "b", groupId: "g1", instanceIdx: 9 }),
+    ];
+    for (const idx of [4, 9]) expect(instanceOrdinal(lines, "g1", idx)).toBeLessThanOrEqual(instanceCount(lines, "g1"));
   });
 });

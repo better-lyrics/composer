@@ -120,6 +120,11 @@ const FORBIDDEN: ForbiddenPattern[] = [
     regex: /\bmainWordEditFields\(/,
     use: "effectiveMainWordEdit from @/domain/line/effective-words",
   },
+  {
+    name: "inline instance ordinal",
+    regex: /instanceIdx\b(?:\s*\?\?\s*\d+\))?\s*\+\s*1\b/,
+    use: "instanceOrdinal from @/domain/instance/enumerate",
+  },
 ];
 
 describe("no common inline domain derivations outside src/domain", () => {

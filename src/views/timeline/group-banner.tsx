@@ -16,6 +16,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 interface GroupBannerProps {
   group: LinkGroup;
   instanceIdx: number;
+  ordinal: number;
   totalInstances: number;
   instanceStart: number;
   instanceEnd: number;
@@ -32,6 +33,7 @@ const BANNER_MIN_WIDTH = 80;
 const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   group,
   instanceIdx,
+  ordinal,
   totalInstances,
   instanceStart,
   instanceEnd,
@@ -210,7 +212,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         onMouseLeave={handleBadgeMouseLeave}
       >
         <IconLink className="size-2.5" />
-        {instanceIdx + 1} of {totalInstances}
+        {ordinal} of {totalInstances}
         {isDragging && (
           <span className="ml-1 text-composer-text">
             {deltaSecondsLive >= 0 ? "+" : ""}
