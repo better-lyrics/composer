@@ -61,6 +61,34 @@ describe("decideEditTextAction", () => {
     expect(action.finalLines.find((l) => l.id === "c2a")?.text).toBe("I luv you");
   });
 
+  it("returns the edit text with linked siblings rewritten and typed rows verbatim", () => {
+    const lines = chorusLines();
+    const text = baseText(lines).replace("I love you", "I luv you ").replace("verse line", "verse  line");
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText).toBe("I luv you \nmore than words\nverse  line\nI luv you\nmore than words");
+  });
+
+  it("returns the typed text verbatim as the edit text for a structural apply", () => {
+    const lines = chorusLines();
+    const text = `${baseText(lines)}\n  brand new outro`;
+    const action = decideEditTextAction({
+      text,
+      defaultAgentId: "v1",
+      lines,
+      groups: [groupChorus],
+      modalPending: false,
+    });
+    if (action.kind !== "apply") throw new Error(`expected apply, got ${action.kind}`);
+    expect(action.editText).toBe(text);
+  });
+
   it("returns apply for structural changes outside any group (no confirm)", () => {
     const lines = chorusLines();
     const text = `${baseText(lines)}\nbrand new outro`;
