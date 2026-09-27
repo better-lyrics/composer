@@ -13,7 +13,7 @@ const CLOCK = String.raw`(\d{1,2}):(\d{2})(?:[.:](\d{2,3}))?`;
 const LINE_TIMESTAMP_REGEX = new RegExp(String.raw`\[${CLOCK}\]`, "g");
 const INLINE_WORD_TAG_REGEX = new RegExp(`<${CLOCK}>`, "g");
 const LENGTH_REGEX = new RegExp(`^${CLOCK}$`);
-const METADATA_TAG_REGEX = /^\[([a-z]+):(.+)\]$/i;
+const LRC_METADATA_TAG_REGEX = /^\[([a-z]+):(.*)\]$/i;
 const PENDING_WORD_END = -1;
 const SECONDS_PER_MINUTE = 60;
 
@@ -69,6 +69,7 @@ function parseInlineWordTags(text: string, lineBegin: number): InlineWordParseRe
 
 function applyMetadataTag(metadata: Partial<ProjectMetadata>, tag: string, rawValue: string): void {
   const value = rawValue.trim();
+  if (!value) return;
   const tagLower = tag.toLowerCase();
   if (tagLower === "ti" || tagLower === "title") {
     metadata.title = value;
@@ -136,7 +137,7 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
     if (!trimmed) return;
     const lineNumber = index + 1;
 
-    const metaMatch = trimmed.match(METADATA_TAG_REGEX);
+    const metaMatch = trimmed.match(LRC_METADATA_TAG_REGEX);
     if (metaMatch) {
       applyMetadataTag(metadata, metaMatch[1], metaMatch[2]);
       return;
@@ -147,14 +148,17 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
       const time = parseLrcClock(match[1], match[2], match[3]);
       return time === null ? [] : [time];
     });
-    if (timestamps.length < tagMatches.length) {
-      issues.push({ line: lineNumber, text: trimmed, reason: "invalid-timestamp" });
-    }
     if (tagMatches.length === 0) {
       issues.push({ line: lineNumber, text: trimmed, reason: "unparsed" });
       return;
     }
-    if (timestamps.length === 0) return;
+    if (timestamps.length === 0) {
+      issues.push({ line: lineNumber, text: trimmed, reason: "invalid-timestamp" });
+      return;
+    }
+    if (timestamps.length < tagMatches.length) {
+      issues.push({ line: lineNumber, text: trimmed, reason: "ignored-timestamp" });
+    }
 
     const textWithoutLineTags = trimmed.replace(LINE_TIMESTAMP_REGEX, "");
 
@@ -199,4 +203,4 @@ function parseLrc(content: string, fallbackDuration?: number): ParseResult {
 
 // -- Exports ------------------------------------------------------------------
 
-export { parseLrc, parseLrcClock };
+export { LRC_METADATA_TAG_REGEX, parseLrc, parseLrcClock };

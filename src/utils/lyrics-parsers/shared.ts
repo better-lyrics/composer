@@ -8,7 +8,7 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 interface ParseIssue {
   line: number;
   text: string;
-  reason: "invalid-timestamp" | "unparsed" | "empty-document";
+  reason: "invalid-timestamp" | "ignored-timestamp" | "unparsed" | "empty-document";
 }
 
 interface ParseResult {
@@ -28,7 +28,11 @@ function generateLineId(): string {
   return crypto.randomUUID();
 }
 
+function skippedLineCount(issues: readonly ParseIssue[]): number {
+  return new Set(issues.filter((issue) => issue.reason !== "ignored-timestamp").map((issue) => issue.line)).size;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { generateLineId };
+export { generateLineId, skippedLineCount };
 export type { ParseIssue, ParseResult, ParserFn };

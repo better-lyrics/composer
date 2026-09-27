@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { toast } from "sonner";
 import { isSupportedLyricsFile, UNSUPPORTED_LYRICS_FILE_MESSAGE } from "@/domain/lyrics-file/supported-formats";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+import { filledMetadata } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm } from "@/stores/confirm-store";
@@ -10,7 +11,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import type { ParseIssue, ParseResult } from "@/utils/lyrics-parsers/shared";
+import { type ParseIssue, type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 
 // -- Types --------------------------------------------------------------------
@@ -46,8 +47,9 @@ function lineNoun(count: number): string {
 
 function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
-  if (issues.length === 0) return `No lyrics found in ${filename}.`;
-  return `No lyrics could be read from ${filename}. ${issues.length} ${lineNoun(issues.length)} could not be read.`;
+  const skipped = skippedLineCount(issues);
+  if (skipped === 0) return `No lyrics found in ${filename}.`;
+  return `No lyrics could be read from ${filename}. ${skipped} ${lineNoun(skipped)} could not be read.`;
 }
 
 function partialImportMessage(imported: number, skipped: number): string {
@@ -104,10 +106,11 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
     lines: workingLines,
     groups: parsed.groups ?? [],
     agents: parsed.agents,
-    metadata: { ...searchResultMetadata(input.searchResult), ...parsed.metadata },
+    metadata: { ...searchResultMetadata(input.searchResult), ...filledMetadata(parsed.metadata) },
   });
 
-  if (parsed.issues.length > 0) toast.warning(partialImportMessage(workingLines.length, parsed.issues.length));
+  const skipped = skippedLineCount(parsed.issues);
+  if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
   ctx.onResult?.(parsed, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;

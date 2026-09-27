@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { parseLrcClock } from "@/utils/lyrics-parsers/lrc";
+import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
 
 const RUMORS_LRC = `[ti:Rumors]
 [ar:Test Artist]
@@ -124,7 +125,13 @@ describe("T13 invalid LRC timestamps", () => {
   it("keeps the valid tags of a line that also carries an invalid one", () => {
     const parsed = parseLyricsFile("song.lrc", "[00:01.00][00:75.00]Chorus\n[00:05.00]Next", 10);
     expect(parsed.lines.filter((line) => line.text === "Chorus")).toHaveLength(1);
-    expect(parsed.issues).toEqual([{ line: 1, text: "[00:01.00][00:75.00]Chorus", reason: "invalid-timestamp" }]);
+    expect(parsed.issues).toEqual([{ line: 1, text: "[00:01.00][00:75.00]Chorus", reason: "ignored-timestamp" }]);
+  });
+
+  it("reports a line skipped for an invalid inline clock even when a line tag was also ignored", () => {
+    const parsed = parseLyricsFile("song.lrc", "[00:01.00][00:75.00]<00:01.00>Hi <00:61.00>there\n[00:05.00]Next", 10);
+    expect(parsed.lines.map((line) => line.text)).toEqual(["Next"]);
+    expect(skippedLineCount(parsed.issues)).toBe(1);
   });
 
   it("reports an invalid inline word clock and skips the line", () => {
@@ -136,5 +143,23 @@ describe("T13 invalid LRC timestamps", () => {
   it("ignores an invalid [length:] tag", () => {
     const parsed = parseLyricsFile("song.lrc", "[length:00:70.00]\n[00:01.00]Only", 20);
     expect(parsed.lines[0].end).toBe(20);
+  });
+});
+
+describe("LRC metadata tags with an empty value", () => {
+  it("does not report an empty [by:] tag as unparsed", () => {
+    const parsed = parseLyricsFile("song.lrc", "[by:]\n[00:01.00]Only", 10);
+    expect(parsed.issues).toEqual([]);
+    expect(parsed.lines.map((line) => line.text)).toEqual(["Only"]);
+  });
+
+  it("does not write an empty title or artist", () => {
+    const parsed = parseLyricsFile("song.lrc", "[ti:]\n[ar: ]\n[00:01.00]Only", 10);
+    expect(parsed.metadata).toEqual({});
+  });
+
+  it("still reports a section label as unparsed", () => {
+    const parsed = parseLyricsFile("song.lrc", "[Chorus]\n[00:01.00]Only", 10);
+    expect(parsed.issues).toEqual([{ line: 1, text: "[Chorus]", reason: "unparsed" }]);
   });
 });
