@@ -5,6 +5,7 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { generateTTML } from "@/utils/ttml";
 
 // -- Types --------------------------------------------------------------------
@@ -17,7 +18,7 @@ interface ParserConversion {
   logLabel: string;
 }
 
-type ConversionResult = { ttml: string; projectPayload: string } | { error: string };
+type ConversionResult = { ttml: string; projectPayload: string; skippedLines: number } | { error: string };
 
 // -- Conversion ---------------------------------------------------------------
 
@@ -36,6 +37,7 @@ function convertViaParser(conversion: ParserConversion, { input, filename }: Con
     return {
       ttml: generateTTML({ metadata, agents, lines: result.lines }),
       projectPayload: JSON.stringify({ metadata, agents, lines: result.lines, granularity }),
+      skippedLines: skippedLineCount(result.issues),
     };
   } catch (conversionError) {
     console.error(`[Composer] ${conversion.logLabel} conversion failed`, conversionError);

@@ -157,6 +157,44 @@ describe("ConverterView", () => {
   });
 });
 
+describe("converter notice for lines it could not read", () => {
+  async function convertLrcInput(input: string) {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("textbox", { name: "Converter input" }).fill(input);
+    return screen;
+  }
+
+  it("announces one unreadable line and still shows the TTML for the good lines", async () => {
+    const screen = await convertLrcInput("[00:01.00]Good\n[00:99.99]Bad\n[00:03.00]Also good\n[00:05.00]");
+
+    await expect.element(screen.getByRole("status")).toHaveTextContent("1 line could not be read.");
+    await expect.poll(() => screen.container.querySelector("pre")?.textContent).toContain("Also good</p>");
+    expect(screen.container.querySelector("pre")?.textContent).toContain("<tt");
+  });
+
+  it("pluralizes the count when several lines could not be read", async () => {
+    const screen = await convertLrcInput(
+      "[00:01.00]Good\n[00:99.99]Bad\n[00:98.00]Worse\n[00:05.00]Also good\n[00:07.00]",
+    );
+
+    await expect.element(screen.getByRole("status")).toHaveTextContent("2 lines could not be read.");
+  });
+
+  it("shows no notice for valid input", async () => {
+    const screen = await convertLrcInput("[00:01.00]Good\n[00:03.00]Also good\n[00:05.00]");
+
+    await expect.poll(() => screen.container.querySelector("pre")?.textContent).toContain("Also good</p>");
+    await expect.element(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("keeps the error box and shows no notice when no line could be read", async () => {
+    const screen = await convertLrcInput("[00:99.99]Bad");
+
+    await expect.element(screen.getByText("No timed lines found.")).toBeInTheDocument();
+    await expect.element(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+});
+
 describe("sibling: converter Filename field is ignored by Download", () => {
   it("downloads with the name typed into the Filename field", async () => {
     const names = await downloadWithFilename("my-song.lrc");

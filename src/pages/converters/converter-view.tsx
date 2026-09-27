@@ -1,8 +1,10 @@
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
+import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
-import { IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
+import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
+import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -16,7 +18,7 @@ interface ConverterViewProps {
   inputLabel: string;
   inputPlaceholder: string;
   sampleInput: string;
-  convert: (args: ConvertArgs) => { ttml: string; projectPayload: string } | { error: string };
+  convert: (args: ConvertArgs) => { ttml: string; projectPayload: string; skippedLines?: number } | { error: string };
   downloadFilename: string;
 }
 
@@ -34,18 +36,17 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   const [input, setInput] = useState("");
   const [filename, setFilename] = useState(() => downloadFilename);
 
-  const { ttml, error } = useMemo(() => {
-    if (!input.trim()) return { ttml: "", error: null };
+  const { ttml, error, projectPayload, skippedLines } = useMemo(() => {
+    if (!input.trim()) return { ttml: "", error: null, projectPayload: "", skippedLines: 0 };
     const result = convert({ input, filename });
-    if ("error" in result) return { ttml: "", error: result.error };
-    return { ttml: result.ttml, error: null };
+    if ("error" in result) return { ttml: "", error: result.error, projectPayload: "", skippedLines: 0 };
+    return {
+      ttml: result.ttml,
+      error: null,
+      projectPayload: result.projectPayload,
+      skippedLines: result.skippedLines ?? 0,
+    };
   }, [input, filename, convert]);
-
-  const projectPayload = useMemo(() => {
-    if (!input.trim() || error) return "";
-    const result = convert({ input, filename });
-    return "error" in result ? "" : result.projectPayload;
-  }, [input, filename, convert, error]);
 
   const downloadTtml = () => {
     if (!ttml) return;
@@ -135,6 +136,13 @@ const ConverterView: React.FC<ConverterViewProps> = ({
           >
             {error || ttml || "Paste input to see TTML output"}
           </pre>
+          <div role="status">
+            {skippedLines > 0 && (
+              <StatusChip tone="warning" icon={IconAlertTriangle} className="mt-3">
+                {skippedLinesMessage(skippedLines)}
+              </StatusChip>
+            )}
+          </div>
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-xs text-composer-text-muted">Need to fine-tune timing against a waveform?</span>
             <LinkButton

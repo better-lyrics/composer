@@ -202,4 +202,31 @@ describe("convertViaParser", () => {
       expect(conversion).toEqual(LRC_CONVERSION);
     });
   });
+
+  describe("skipped lines", () => {
+    it("counts the lines the parser could not read alongside the TTML", () => {
+      const result = convertViaParser(LRC_CONVERSION, {
+        input: "[00:01.00]Good\n[00:99.99]Bad\n[00:03.00]Also good\n[00:05.00]",
+        filename: "input.lrc",
+      });
+
+      expect(expectConverted(result).ttml).toContain("Also good");
+      expect(result).toMatchObject({ skippedLines: 1 });
+    });
+
+    it("reports no skipped lines for valid input", () => {
+      expect(convertViaParser(LRC_CONVERSION, { input: ELRC_INPUT, filename: "input.lrc" })).toMatchObject({
+        skippedLines: 0,
+      });
+    });
+
+    it("does not count a line whose extra tag was ignored but whose text was kept", () => {
+      const result = convertViaParser(LRC_CONVERSION, {
+        input: "[00:01.00][00:75.00]Chorus\n[00:05.00]Next",
+        filename: "input.lrc",
+      });
+
+      expect(result).toMatchObject({ skippedLines: 0 });
+    });
+  });
 });

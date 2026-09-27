@@ -11,7 +11,12 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { type ParseIssue, type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
+import {
+  type ParseIssue,
+  type ParseResult,
+  skippedLineCount,
+  skippedLinesMessage,
+} from "@/utils/lyrics-parsers/shared";
 import { distributeLinesTiming } from "@/views/timeline/utils";
 import { pluralize } from "@/utils/pluralize";
 
@@ -46,11 +51,11 @@ function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
   const skipped = skippedLineCount(issues);
   if (skipped === 0) return `No lyrics found in ${filename}.`;
-  return `No lyrics could be read from ${filename}. ${pluralize(skipped, "line")} could not be read.`;
+  return `No lyrics could be read from ${filename}. ${skippedLinesMessage(skipped)}`;
 }
 
 function partialImportMessage(imported: number, skipped: number): string {
-  return `Imported ${pluralize(imported, "line")}. ${pluralize(skipped, "line")} could not be read.`;
+  return `Imported ${pluralize(imported, "line")}. ${skippedLinesMessage(skipped)}`;
 }
 
 // -- Helpers ------------------------------------------------------------------
