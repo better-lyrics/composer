@@ -13,7 +13,7 @@ interface MetadataAfterImport {
 // -- Helpers ------------------------------------------------------------------
 
 function isMetadataKey(key: string): key is MetadataKey {
-  return key in normalizeLoadedMetadata(null);
+  return Object.hasOwn(normalizeLoadedMetadata(null), key);
 }
 
 function isEmptyMetadataValue(value: ProjectMetadata[MetadataKey]): boolean {

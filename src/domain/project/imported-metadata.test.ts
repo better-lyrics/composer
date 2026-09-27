@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { filledMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
+import {
+  filledMetadata,
+  importedKeysAfterWrite,
+  isMetadataKey,
+  metadataAfterImport,
+} from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 
@@ -27,6 +32,23 @@ describe("filledMetadata", () => {
 
     it("returns an empty object for an empty patch", () => {
       expect(filledMetadata({})).toEqual({});
+    });
+  });
+});
+
+describe("isMetadataKey", () => {
+  it("accepts a real metadata field", () => {
+    expect(isMetadataKey("title")).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("rejects inherited object keys such as constructor and toString", () => {
+      expect(isMetadataKey("constructor")).toBe(false);
+      expect(isMetadataKey("toString")).toBe(false);
+    });
+
+    it("rejects an unknown key", () => {
+      expect(isMetadataKey("mood")).toBe(false);
     });
   });
 });
