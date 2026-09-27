@@ -277,3 +277,41 @@ describe("MetadataPanel", () => {
     });
   });
 });
+
+describe("MetadataPanel · language validation", () => {
+  async function renderLanguageField() {
+    seedMetadata();
+    const screen = await render(<MetadataPanel />);
+    await screen.getByRole("button", { name: "Metadata" }).click();
+    return { screen, language: screen.getByRole("textbox", { name: "Language" }) };
+  }
+
+  it("announces an invalid language and marks the input invalid", async () => {
+    const { screen, language } = await renderLanguageField();
+    await expect.element(language).toHaveAttribute("aria-invalid", "false");
+
+    await language.fill("not a lang!!");
+    await expect.element(screen.getByRole("alert")).toHaveTextContent(/Invalid language/);
+    await expect.element(language).toHaveAttribute("aria-invalid", "true");
+    expect(useProjectStore.getState().metadata.language).toBeUndefined();
+
+    await language.fill("pt-BR");
+    await expect.element(language).toHaveAttribute("aria-invalid", "false");
+    await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps what the user typed and stores the canonical tag", async () => {
+    const { language } = await renderLanguageField();
+    await language.fill("EN-us");
+    await expect.poll(() => useProjectStore.getState().metadata.language).toBe("en-US");
+    await expect.element(language).toHaveValue("EN-us");
+  });
+
+  it("shows the stored tag once the store changes under the draft", async () => {
+    const { language } = await renderLanguageField();
+    await language.fill("EN-us");
+    await expect.poll(() => useProjectStore.getState().metadata.language).toBe("en-US");
+    useProjectStore.getState().setMetadata({ language: "ja" });
+    await expect.element(language).toHaveValue("ja");
+  });
+});

@@ -155,6 +155,14 @@ describe("parseLyricsFile - TTML language", () => {
     it("trims surrounding whitespace off the language", () => {
       expect(languageOf(ttmlWith("  ja  "))).toBe("ja");
     });
+
+    it("stores the canonical form of the language", () => {
+      expect(languageOf(ttmlWith("PT-br"))).toBe("pt-BR");
+    });
+
+    it("drops a language that is not a BCP-47 tag", () => {
+      expect(languageOf(ttmlWith("not a lang!!"))).toBeUndefined();
+    });
   });
 
   describe("invariants", () => {
@@ -168,5 +176,15 @@ describe("parseLyricsFile - TTML language", () => {
       const exported = generateTTML({ metadata, agents: [], lines: first.lines });
       expect(parseLyricsFile("song.ttml", exported).metadata.language).toBe("pt-BR");
     });
+  });
+});
+
+describe("parseLyricsFile - TTML timing at zero", () => {
+  it("sibling: TTML line-synced <p begin=0> survives import as timed", () => {
+    const parsed = parseLyricsFile(
+      "a.ttml",
+      '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:00.000" end="00:02.000">Start</p></div></body></tt>',
+    );
+    expect(parsed.lines[0].begin).toBe(0);
   });
 });

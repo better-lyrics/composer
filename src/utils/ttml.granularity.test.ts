@@ -63,3 +63,11 @@ describe("generateTTML timing granularity", () => {
     });
   });
 });
+
+describe("D1 granularity header vs body", () => {
+  it("keeps word spans when project granularity is line but data is word-timed", () => {
+    const ttml = generateTTML({ metadata, agents, lines: [wordSynced] });
+    expect(ttml).toContain('itunes:timing="Word"');
+    expect(ttml).toContain("<span begin=");
+  });
+});

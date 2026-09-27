@@ -2,6 +2,7 @@ import type { Agent, AgentType } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
+import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { fromComposerMeta } from "@/domain/project/metadata-ttml";
 import { inferSyllableGroupIds } from "@/domain/word/syllable-groups";
@@ -54,7 +55,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const ttmTitleEl = doc.getElementsByTagName("ttm:title")[0];
   if (ttmTitleEl?.textContent && !metadata.title) metadata.title = ttmTitleEl.textContent;
 
-  const documentLanguage = doc.documentElement.getAttribute("xml:lang")?.trim();
+  const documentLanguage = normalizeLanguageTag(doc.documentElement.getAttribute("xml:lang") ?? "");
   if (documentLanguage) metadata.language = documentLanguage;
 
   const metaEls = Array.from(

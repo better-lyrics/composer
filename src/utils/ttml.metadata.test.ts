@@ -67,6 +67,36 @@ describe("generateTTML xml:lang", () => {
     it("trims surrounding whitespace off the emitted language", () => {
       expect(rootOf(generate("  ja  ")).getAttribute("xml:lang")).toBe("ja");
     });
+
+    it("emits the canonical form of a tag", () => {
+      expect(rootOf(generate("EN-us")).getAttribute("xml:lang")).toBe("en-US");
+    });
+
+    it("omits xml:lang for a tag that is not BCP-47", () => {
+      expect(rootOf(generate("not a lang!!")).hasAttribute("xml:lang")).toBe(false);
+    });
+  });
+
+  describe("U9 language validation", () => {
+    const agents = [{ id: "v1", type: "person" as const, name: "Lead" }];
+    const wordLine = {
+      id: "a",
+      text: "Hello world",
+      agentId: "v1",
+      words: [
+        { text: "Hello ", begin: 1, end: 1.5 },
+        { text: "world", begin: 1.5, end: 2 },
+      ],
+    };
+
+    it("does not export an invalid BCP-47 tag as xml:lang", () => {
+      const ttml = generateTTML({
+        metadata: { ...bare, language: "not a lang!!" },
+        agents,
+        lines: [wordLine],
+      });
+      expect(ttml).not.toContain('xml:lang="not a lang!!"');
+    });
   });
 
   describe("invariants", () => {
@@ -122,7 +152,7 @@ describe("generateTTML attribute escaping", () => {
       lines,
     });
 
-    expect(xml).toContain('xml:lang="en&quot;US"');
+    expect(xml).not.toContain("xml:lang=");
     expect(parse(xml).querySelector("parsererror")).toBeNull();
   });
 });

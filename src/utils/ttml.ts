@@ -4,6 +4,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
+import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
@@ -40,7 +41,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   const keyedLines = lines.filter(isLineTimed).map((line, index) => ({ line, key: `L${index + 1}` }));
   const keyById = new Map(keyedLines.map(({ line, key }) => [line.id, key]));
 
-  const language = metadata.language?.trim();
+  const language = normalizeLanguageTag(metadata.language ?? "");
   const langAttr = language ? ` xml:lang="${escapeXmlAttribute(language)}"` : "";
 
   // Apple Music lyric dialect, not strict W3C TTML1. Absolute span times and the
