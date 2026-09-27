@@ -59,4 +59,73 @@ describe("ModalNavLayout", () => {
     await screen.getByRole("button", { name: /second section/i }).click();
     await expect.element(screen.getByText("Content for second")).toBeInTheDocument();
   });
+
+  it("renders the sidebar header above the section buttons", async () => {
+    const screen = await render(
+      <ModalNavLayout
+        sections={SECTIONS}
+        activeSection="first"
+        onSectionChange={() => {}}
+        sidebarHeader={<input aria-label="Filter" />}
+      >
+        <p>Body</p>
+      </ModalNavLayout>,
+    );
+    await expect.element(screen.getByRole("textbox", { name: "Filter" })).toBeInTheDocument();
+  });
+
+  it("shows trailing content and marks dimmed sections", async () => {
+    const screen = await render(
+      <ModalNavLayout
+        sections={[
+          { ...SECTIONS[0], trailing: <span>4</span> },
+          { ...SECTIONS[1], dimmed: true },
+        ]}
+        activeSection={null}
+        onSectionChange={() => {}}
+      >
+        <p>Body</p>
+      </ModalNavLayout>,
+    );
+    await expect.element(screen.getByRole("button", { name: /First Section/ })).toHaveTextContent("4");
+    await expect.element(screen.getByRole("button", { name: /Second Section/ })).toHaveAttribute("data-dimmed");
+  });
+
+  it("marks no section active when activeSection is null", async () => {
+    const screen = await render(
+      <ModalNavLayout sections={SECTIONS} activeSection={null} onSectionChange={() => {}}>
+        <p>Body</p>
+      </ModalNavLayout>,
+    );
+    await expect.element(screen.getByRole("button", { name: /First Section/ })).not.toHaveAttribute("aria-current");
+  });
+
+  it("hands the content viewport to onContentInitialized and the ref", async () => {
+    const viewportRef: { current: HTMLDivElement | null } = { current: null };
+    let initialized: HTMLDivElement | null = null;
+    await render(
+      <ModalNavLayout
+        sections={SECTIONS}
+        activeSection="first"
+        onSectionChange={() => {}}
+        contentViewportRef={viewportRef}
+        onContentInitialized={(viewport) => {
+          initialized = viewport;
+        }}
+      >
+        <p>Scrollable body</p>
+      </ModalNavLayout>,
+    );
+    await expect.poll(() => initialized?.textContent).toContain("Scrollable body");
+    expect(viewportRef.current).toBe(initialized);
+  });
+
+  it("marks the active section with aria-current", async () => {
+    const screen = await render(<Harness />);
+    await expect.element(screen.getByRole("button", { name: /First Section/ })).toHaveAttribute("aria-current", "page");
+    await screen.getByRole("button", { name: /Second Section/ }).click();
+    await expect
+      .element(screen.getByRole("button", { name: /Second Section/ }))
+      .toHaveAttribute("aria-current", "page");
+  });
 });
