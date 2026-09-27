@@ -13,6 +13,7 @@ import { extractBackgroundVocals } from "@/utils/background-vocal-extraction";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { type ParseIssue, type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { distributeLinesTiming } from "@/views/timeline/utils";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------
 
@@ -41,19 +42,15 @@ interface ImportLyricsInput {
 
 // -- Copy ---------------------------------------------------------------------
 
-function lineNoun(count: number): string {
-  return count === 1 ? "line" : "lines";
-}
-
 function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
   const skipped = skippedLineCount(issues);
   if (skipped === 0) return `No lyrics found in ${filename}.`;
-  return `No lyrics could be read from ${filename}. ${skipped} ${lineNoun(skipped)} could not be read.`;
+  return `No lyrics could be read from ${filename}. ${pluralize(skipped, "line")} could not be read.`;
 }
 
 function partialImportMessage(imported: number, skipped: number): string {
-  return `Imported ${imported} ${lineNoun(imported)}. ${skipped} ${lineNoun(skipped)} could not be read.`;
+  return `Imported ${pluralize(imported, "line")}. ${pluralize(skipped, "line")} could not be read.`;
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -63,7 +60,7 @@ function confirmReplace(confirm: ConfirmFn): Promise<boolean> {
   if (existing === 0) return Promise.resolve(true);
   return confirm({
     title: "Replace existing lyrics?",
-    description: `This replaces your ${existing} existing ${lineNoun(existing)}.`,
+    description: `This replaces your ${pluralize(existing, "existing line")}.`,
     confirmLabel: "Replace",
     variant: "destructive",
     settingsKey: "confirmReplaceLyrics",

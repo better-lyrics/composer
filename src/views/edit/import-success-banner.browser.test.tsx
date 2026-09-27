@@ -24,6 +24,17 @@ describe("ImportSuccessBanner", () => {
     await expect.element(screen.getByText("Imported 2 lines from song.txt")).toBeInTheDocument();
   });
 
+  it("regression: says 1 line, not 1 lines, for a single imported line", async () => {
+    const screen = await render(
+      <ImportSuccessBanner
+        result={parseResultOf([createLine({ text: "a", begin: 0, end: 1 })], true)}
+        filename="song.lrc"
+        onDismiss={() => {}}
+      />,
+    );
+    await expect.element(screen.getByText("Imported 1 line from song.lrc with 1 timed line")).toBeInTheDocument();
+  });
+
   it("names its icon-only dismiss button and calls onDismiss", async () => {
     let dismissed = 0;
     const screen = await render(

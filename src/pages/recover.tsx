@@ -3,6 +3,7 @@ import { PageHead } from "@/seo/page-head";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { ClientOnly } from "@/ui/client-only";
+import { pluralize } from "@/utils/pluralize";
 import { IconCheck, IconDownload, IconHome2, IconLifebuoy, IconRefresh } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
@@ -113,7 +114,7 @@ const RecoverPanel: React.FC = () => {
               </span>
             </p>
             <p className="text-xs text-composer-text-muted select-text">
-              {state.result.lineCount} lines, last edited {formatSavedAt(state.result.savedAt)}
+              {pluralize(state.result.lineCount, "line")}, last edited {formatSavedAt(state.result.savedAt)}
             </p>
           </div>
         )}
@@ -122,7 +123,7 @@ const RecoverPanel: React.FC = () => {
           <div className="flex flex-col items-center gap-2 text-sm">
             <p className="text-composer-text">We found your last session.</p>
             <p className="text-xs text-composer-text-muted select-text">
-              {state.result.lineCount} lines, last edited {formatSavedAt(state.result.savedAt)}
+              {pluralize(state.result.lineCount, "line")}, last edited {formatSavedAt(state.result.savedAt)}
             </p>
           </div>
         )}

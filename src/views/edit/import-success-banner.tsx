@@ -1,5 +1,6 @@
 import { IconButton } from "@/ui/icon-button";
 import type { ParseResult } from "@/utils/lyrics-parsers";
+import { pluralize } from "@/utils/pluralize";
 import { IconFileImport, IconX } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
@@ -22,9 +23,15 @@ const ImportSuccessBanner: React.FC<ImportSuccessBannerProps> = ({ result, filen
       <div className="flex items-center gap-2">
         <IconFileImport className="size-4 shrink-0" />
         <span>
-          Imported {lineCount} lines from {filename}
+          Imported {pluralize(lineCount, "line")} from {filename}
           {result.hasTimingData && (
-            <> with {wordTimedCount > 0 ? `${wordTimedCount} word-timed` : `${timedLineCount} timed`} lines</>
+            <>
+              {" "}
+              with{" "}
+              {wordTimedCount > 0
+                ? pluralize(wordTimedCount, "word-timed line")
+                : pluralize(timedLineCount, "timed line")}
+            </>
           )}
         </span>
       </div>

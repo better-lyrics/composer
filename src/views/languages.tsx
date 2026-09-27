@@ -14,6 +14,7 @@ import { PasteImportModal } from "@/views/languages/paste-import-modal";
 import { RegenerateLanguageControl } from "@/views/languages/regenerate-language-control";
 import { LanguageStatusSummaries } from "@/views/languages/status-summaries";
 import { useLanguageTargets } from "@/views/languages/use-language-targets";
+import { pluralize } from "@/utils/pluralize";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -196,8 +197,7 @@ const LanguagesPanel: React.FC = () => {
         <div className="flex items-baseline gap-3">
           <h2 className="text-lg font-medium">Languages</h2>
           <span className="font-mono text-sm text-composer-text-muted tabular-nums">
-            {lines.length} {lines.length === 1 ? "line" : "lines"} ・ {trackCount}{" "}
-            {trackCount === 1 ? "track" : "tracks"}
+            {pluralize(lines.length, "line")} ・ {pluralize(trackCount, "track")}
           </span>
         </div>
         <div className="flex items-center gap-2">

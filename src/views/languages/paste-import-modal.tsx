@@ -11,6 +11,7 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { Select } from "@/ui/select";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
+import { pluralize } from "@/utils/pluralize";
 import { IconAlertTriangle, IconArrowRight, IconCheck, IconFileImport } from "@tabler/icons-react";
 import { useId, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -119,7 +120,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
     });
     updateLinesWithHistory(updates, { deriveText: false, propagateToSiblings: false });
     if (kind === "translation") onImportedTranslation(targetLanguage);
-    toast.success(`Imported ${mappedCount} ${mappedCount === 1 ? "line" : "lines"}`);
+    toast.success(`Imported ${pluralize(mappedCount, "line")}`);
     onClose();
   };
 
@@ -233,7 +234,7 @@ const PasteImportModal: React.FC<PasteImportModalProps> = ({
               <Button onClick={onClose}>Cancel</Button>
               <Button hasIcon variant="primary" disabled={errorCount > 0 || mappedCount === 0} onClick={importContent}>
                 <IconFileImport className="size-4" />
-                Import {mappedCount} {mappedCount === 1 ? "line" : "lines"}
+                Import {pluralize(mappedCount, "line")}
               </Button>
             </div>
           </div>

@@ -6,6 +6,7 @@ import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
 import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-types";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
+import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -49,8 +50,8 @@ function useTimelineClipboard(lines: readonly ReadableLine[]) {
     useTimelineStore.getState().setClipboard(clipboard);
     toast(
       sourceInstance
-        ? `Copied linked instance (${entries.length} word${entries.length > 1 ? "s" : ""})`
-        : `Copied ${entries.length} word${entries.length > 1 ? "s" : ""}`,
+        ? `Copied linked instance (${pluralize(entries.length, "word")})`
+        : `Copied ${pluralize(entries.length, "word")}`,
     );
   }, [lines]);
 

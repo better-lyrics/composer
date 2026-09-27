@@ -6,6 +6,7 @@ import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
 import { formatDuration, parseDurationInput } from "@/views/lyrics-import-modal/duration-input-utils";
 import { SearchField } from "@/views/lyrics-import-modal/search-field";
 import { SearchResults } from "@/views/lyrics-import-modal/search-results";
+import { pluralize } from "@/utils/pluralize";
 import {
   IconAlbum,
   IconBrandYoutube,
@@ -210,7 +211,7 @@ const SearchSection: React.FC<SearchSectionProps> = ({
               ? "Searching"
               : results.length === 0
                 ? "No results"
-                : `${results.length} result${results.length === 1 ? "" : "s"}`}
+                : pluralize(results.length, "result")}
           </span>
           <button
             type="button"

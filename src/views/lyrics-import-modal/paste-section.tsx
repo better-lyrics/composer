@@ -1,6 +1,7 @@
 import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------
 
@@ -71,9 +72,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
           to split syllables (e.g. beau|ti|ful)
         </span>
         {lineCount > 0 && (
-          <span className="text-xs text-composer-text-muted select-text">
-            {lineCount} line{lineCount !== 1 ? "s" : ""}
-          </span>
+          <span className="text-xs text-composer-text-muted select-text">{pluralize(lineCount, "line")}</span>
         )}
       </div>
     </div>

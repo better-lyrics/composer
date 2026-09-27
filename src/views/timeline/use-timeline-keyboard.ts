@@ -38,6 +38,7 @@ import {
   shiftSelectionsTogether,
 } from "@/views/timeline/utils";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
+import { pluralize } from "@/utils/pluralize";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -468,12 +469,8 @@ function useTimelineKeyboard(
           }
           projectState.addGroupWithLines(result.group, result.updatedLines);
           const totalCount = filled.expanded.size;
-          const noun = totalCount === 1 ? "line" : "lines";
-          toast.success(
-            filled.addedCount > 0
-              ? `Grouped ${totalCount} ${noun} (filled ${filled.addedCount} gap${filled.addedCount === 1 ? "" : "s"})`
-              : `Grouped ${totalCount} ${noun}`,
-          );
+          const grouped = `Grouped ${pluralize(totalCount, "line")}`;
+          toast.success(filled.addedCount > 0 ? `${grouped} (filled ${pluralize(filled.addedCount, "gap")})` : grouped);
           break;
         }
         case "timeline.duplicateAsLinked": {

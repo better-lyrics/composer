@@ -2,6 +2,7 @@ import { Button } from "@/ui/button";
 import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { separatorKinds } from "@/utils/split-separators";
 import { cn } from "@/utils/cn";
+import { pluralize } from "@/utils/pluralize";
 import { useMemo } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -89,7 +90,7 @@ const SplitApplyControls: React.FC<
     </label>
     {applyToAll && identicalCount > 0 && (
       <p className="text-sm text-composer-text-secondary">
-        This will also split {identicalCount} other "{sourceText}"{identicalCount === 1 ? "" : "s"}
+        This will also split {pluralize(identicalCount, `other "${sourceText}"`)}
       </p>
     )}
     {applyToAll && identicalCount === 0 && <p className="text-sm text-composer-text-muted">No other matching words</p>}

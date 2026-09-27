@@ -27,6 +27,7 @@ import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { pluralize, pluralWord } from "@/utils/pluralize";
 import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -49,7 +50,7 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
     <div className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg bg-composer-error/10 text-composer-error">
       <IconAlertTriangle className="size-4 shrink-0" />
       <span>
-        {count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets]
+        {pluralize(count, "line")} {pluralWord(count, "contains", "contain")} [brackets]
       </span>
     </div>
   );
@@ -519,7 +520,7 @@ const EditPanel: React.FC = () => {
         modalPendingRef.current = true;
         const labelText =
           action.labels.length === 0
-            ? `${action.impacted.length} instance${action.impacted.length === 1 ? "" : "s"}`
+            ? pluralize(action.impacted.length, "instance")
             : action.labels.length === 1
               ? `[${action.labels[0]}]`
               : action.labels.map((l) => `[${l}]`).join(", ");
@@ -600,9 +601,7 @@ const EditPanel: React.FC = () => {
       <div className="flex items-center justify-between select-none">
         <h2 className="text-lg font-medium">Lyrics Editor</h2>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-composer-text-muted">
-            {nonEmptyCount} line{nonEmptyCount !== 1 ? "s" : ""}
-          </span>
+          <span className="text-sm text-composer-text-muted">{pluralize(nonEmptyCount, "line")}</span>
           <Button
             hasIcon
             variant="secondary"
@@ -668,9 +667,7 @@ const EditPanel: React.FC = () => {
             <div
               className={`flex items-center gap-2 transition-opacity ${selectedLines.size > 0 ? "opacity-100" : "opacity-0 pointer-events-none"}`}
             >
-              <span className="text-xs text-composer-text-muted">
-                {selectedLines.size} line{selectedLines.size !== 1 ? "s" : ""} selected
-              </span>
+              <span className="text-xs text-composer-text-muted">{pluralize(selectedLines.size, "line")} selected</span>
               {agents.length > 1 && (
                 <Select
                   aria-label="Assign agent"
@@ -712,7 +709,7 @@ const EditPanel: React.FC = () => {
                   const totalInstances = group ? (instanceCountByGroup.get(group.id) ?? 0) : 0;
                   const groupTooltip =
                     group && totalInstances > 1
-                      ? `Part of ${group.label} · linked to ${totalInstances - 1} other instance${totalInstances - 1 === 1 ? "" : "s"}. Edits propagate.`
+                      ? `Part of ${group.label} · linked to ${pluralize(totalInstances - 1, "other instance")}. Edits propagate.`
                       : undefined;
                   return (
                     <div key={line.lineNumber}>

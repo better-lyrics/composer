@@ -3,6 +3,7 @@ import { useDivergenceStore } from "@/stores/divergence-store";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { MOD_KEY } from "@/utils/platform";
+import { pluralWord } from "@/utils/pluralize";
 
 // -- Component ----------------------------------------------------------------
 
@@ -22,7 +23,7 @@ const DivergenceModalHost: React.FC = () => {
 
   const { affectedSiblingCount, groupLabel } = options;
   const groupName = groupLabel ?? "this group";
-  const siblingNoun = affectedSiblingCount === 1 ? "instance" : "instances";
+  const siblingNoun = pluralWord(affectedSiblingCount, "instance");
 
   return (
     <Modal isOpen onClose={() => close("cancel")} title="Word structure changed" className="max-w-md">

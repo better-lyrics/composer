@@ -74,4 +74,16 @@ describe("RecoverPanel", () => {
       document.createElement = originalCreate;
     }
   });
+
+  it("regression: says 1 line, not 1 lines, for a one-line project", async () => {
+    await seedProject({ version: 1, metadata: { title: "Solo" }, lines: [{ id: "a", text: "x", agentId: "v1" }] });
+    const originalClick = HTMLAnchorElement.prototype.click;
+    HTMLAnchorElement.prototype.click = () => {};
+    try {
+      const screen = await render(<RecoverPanel />);
+      await expect.element(screen.getByText(/^1 line, last edited/)).toBeInTheDocument();
+    } finally {
+      HTMLAnchorElement.prototype.click = originalClick;
+    }
+  });
 });

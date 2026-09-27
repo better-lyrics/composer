@@ -10,6 +10,7 @@ import { SplitPicker, SplitPickerLegend } from "@/ui/split-picker";
 import { separatorKinds } from "@/utils/split-separators";
 import { formatTime } from "@/utils/format-time";
 import { TransliterationTimingMap } from "@/views/languages/transliteration-timing-map";
+import { pluralize } from "@/utils/pluralize";
 import { IconCheck } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
 
@@ -188,7 +189,7 @@ const TransliterationAlignmentModal: React.FC<TransliterationAlignmentModalProps
           />
           {!currentValid && (
             <p className="text-sm text-center text-composer-error-text select-text">
-              Pick {required} split {required === 1 ? "point" : "points"} ({points.length} so far).
+              Pick {pluralize(required, "split point")} ({points.length} so far).
             </p>
           )}
         </div>

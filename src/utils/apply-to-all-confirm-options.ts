@@ -1,4 +1,5 @@
 import type { ConfirmOptions } from "@/stores/confirm-store";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------
 
@@ -12,9 +13,7 @@ interface ApplyToAllConfirmParams {
 function buildApplyToAllConfirmOptions({ identicalCount, sourceText }: ApplyToAllConfirmParams): ConfirmOptions {
   return {
     title: `Split ${identicalCount + 1} matching "${sourceText}"?`,
-    description: `Apply this split to the source and ${identicalCount} other ${
-      identicalCount === 1 ? "match" : "matches"
-    }.`,
+    description: `Apply this split to the source and ${pluralize(identicalCount, "other match", "other matches")}.`,
     confirmLabel: "Split",
     cancelLabel: "Cancel",
     variant: "primary",

@@ -2,6 +2,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { cn } from "@/utils/cn";
 import { IconWaveSine } from "@tabler/icons-react";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { pluralize } from "@/utils/pluralize";
 
 // -- Status hint --------------------------------------------------------------
 
@@ -12,7 +13,7 @@ function describeOnsetStatus(
 ): string {
   if (status === "processing") return "Detecting onsets...";
   if (status === "error") return error ? `Detection failed: ${error}` : "Detection failed";
-  if (pointCount > 0) return `${pointCount} snap point${pointCount === 1 ? "" : "s"}`;
+  if (pointCount > 0) return pluralize(pointCount, "snap point");
   return "Separate vocals to detect onsets";
 }
 

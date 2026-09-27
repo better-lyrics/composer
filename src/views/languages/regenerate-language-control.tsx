@@ -2,6 +2,7 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { cn } from "@/utils/cn";
+import { pluralize } from "@/utils/pluralize";
 import { IconCheck, IconChevronDown, IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
 
@@ -88,7 +89,7 @@ const RegenerateSelectionMenu: React.FC<RegenerateSelectionMenuProps> = ({
           }
         >
           <IconRefresh className="size-4" />
-          Regenerate {selectedCount} {selectedCount === 1 ? "track" : "tracks"}
+          Regenerate {pluralize(selectedCount, "track")}
         </Button>
       </div>
     </div>

@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { findRepeatingStandaloneSections, type RepeatingSection } from "@/views/timeline/repeating-sections";
 import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { pluralize } from "@/utils/pluralize";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -40,7 +41,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
       accentClass="bg-composer-accent/8"
       modalTitle="Grouping suggestions"
       multiText={(count) => `Found ${count} grouping suggestions across your lyrics`}
-      modalCountText={(count) => `${count} repeating section${count === 1 ? "" : "s"} detected`}
+      modalCountText={(count) => `${pluralize(count, "repeating section")} detected`}
       accept={{ label: "Group them", rowLabel: "Group", icon: IconLink }}
       acceptAll={{ label: "Group all", icon: IconLink }}
       rowKey={suggestionKey}
@@ -48,7 +49,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
       renderRow={(s) => (
         <>
           <span className="text-sm text-composer-text">
-            {s.starts.length} runs · {s.length} line{s.length === 1 ? "" : "s"} each
+            {s.starts.length} runs · {pluralize(s.length, "line")} each
           </span>
           <span className="text-xs text-composer-text-muted">
             At lines {s.starts.map((start) => `${start + 1} to ${start + s.length}`).join(", ")}
@@ -84,7 +85,7 @@ function suggestionKey(s: RepeatingSection): string {
 
 function summarizeInline(s: RepeatingSection): React.ReactNode {
   const trimmedLines = s.previewLines.map((t) => t.trim() || "(empty line)");
-  const lengthSuffix = ` (${s.length} line${s.length === 1 ? "" : "s"} each)`;
+  const lengthSuffix = ` (${pluralize(s.length, "line")} each)`;
 
   if (trimmedLines.length === 1) {
     return (

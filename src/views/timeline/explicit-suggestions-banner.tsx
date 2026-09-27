@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
 import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { pluralize } from "@/utils/pluralize";
 import { IconAlertTriangle, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -46,7 +47,7 @@ const ExplicitSuggestionsBanner: React.FC = () => {
       accentClass="bg-composer-warning/8"
       modalTitle="Explicit-word suggestions"
       multiText={(count) => `Found ${count} possibly explicit words across your lyrics`}
-      modalCountText={(count) => `${count} possibly explicit word${count === 1 ? "" : "s"} detected`}
+      modalCountText={(count) => `${pluralize(count, "possibly explicit word")} detected`}
       accept={{ label: "Mark explicit", rowLabel: "Mark", icon: IconAlertTriangle }}
       acceptAll={{ label: "Mark all", icon: IconAlertTriangle }}
       rowKey={(s) => s.fingerprint}

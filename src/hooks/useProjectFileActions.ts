@@ -4,6 +4,7 @@ import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
+import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
 
 // -- Hook ---------------------------------------------------------------------
@@ -40,7 +41,7 @@ function useProjectFileActions(fileInputRef: React.RefObject<HTMLInputElement | 
       if (existingLineCount > 0) {
         const ok = await confirm({
           title: "Replace current project?",
-          description: `Loading this project file will replace your ${existingLineCount} existing line${existingLineCount === 1 ? "" : "s"} and metadata. This cannot be undone.`,
+          description: `Loading this project file will replace your ${pluralize(existingLineCount, "existing line")} and metadata. This cannot be undone.`,
           confirmLabel: "Replace",
           variant: "destructive",
           settingsKey: "confirmReplaceLyrics",
