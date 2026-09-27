@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { SettingsModal } from "@/ui/settings-modal";
 import { allowConsole } from "@/test/console-guard";
+import { installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 
 describe("SettingsModal", () => {
@@ -93,5 +94,53 @@ describe("SettingsModal", () => {
       expect(document.activeElement).toBe(urlInput);
       expect(urlInput.value).toBe("https://example.com/abc");
     });
+  });
+});
+
+describe("SettingsModal target", () => {
+  const settingsViewport = () =>
+    document.querySelector("[data-settings-content]")?.closest<HTMLElement>("[data-overlayscrollbars-viewport]") ??
+    null;
+  const row = (id: string) => document.querySelector<HTMLElement>(`[data-setting-id="${id}"]`);
+
+  it("centers the target row and nudges it", async () => {
+    installStyleSheet("[data-overlayscrollbars-viewport]{max-height:200px!important;overflow-y:scroll!important}");
+    useUIStore.getState().openSettings({ target: { setting: "timelineHorizontalScroll" } });
+    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await expect.poll(() => row("timelineHorizontalScroll")?.hasAttribute("data-nudge")).toBe(true);
+    expect(settingsViewport()?.scrollTop ?? 0).toBeGreaterThan(0);
+    expect(useUIStore.getState().settingsTarget).toBeNull();
+  });
+
+  it("removes the nudge when its animation ends", async () => {
+    useUIStore.getState().openSettings({ target: { setting: "followPlayhead" } });
+    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await expect.poll(() => row("followPlayhead")?.hasAttribute("data-nudge")).toBe(true);
+    row("followPlayhead")?.dispatchEvent(new AnimationEvent("animationend"));
+    expect(row("followPlayhead")?.hasAttribute("data-nudge")).toBe(false);
+  });
+
+  it("opens a section target without nudging anything", async () => {
+    useUIStore.getState().openSettings({ target: { section: "timeline" } });
+    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await expect.poll(() => useUIStore.getState().settingsTarget).toBeNull();
+    expect(document.querySelector("[data-nudge]")).toBeNull();
+  });
+
+  it("retargets while already open", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    useUIStore.getState().openSettings();
+    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
+    await expect.poll(() => row("youtubeBridge")?.hasAttribute("data-nudge")).toBe(true);
+  });
+
+  it("regression: the Try Bridge path lands on the bridge block", async () => {
+    allowConsole(/cannot be a descendant of/);
+    allowConsole(/cannot contain a nested/);
+    useUIStore.getState().openSettings({ target: { setting: "youtubeBridge" } });
+    await render(<SettingsModal isOpen onClose={() => {}} onResetTour={() => {}} />);
+    await expect.poll(() => row("youtubeBridge")?.querySelector('[data-testid="bridge-section"]')).not.toBeNull();
   });
 });

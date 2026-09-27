@@ -103,4 +103,13 @@ describe("Modal", () => {
     closeButton?.click();
     expect(closeCalls).toBeGreaterThan(0);
   });
+
+  it("renders the header accessory next to the title", async () => {
+    const screen = await render(
+      <Modal isOpen onClose={() => {}} title="Settings" headerAccessory={<button type="button">Back</button>}>
+        <p>Body</p>
+      </Modal>,
+    );
+    await expect.element(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
+  });
 });
