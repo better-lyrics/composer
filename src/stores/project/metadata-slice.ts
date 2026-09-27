@@ -26,6 +26,7 @@ function createMetadataInitialState(): MetadataState {
     },
     hasUnexportedImport: false,
     importedMetadataKeys: [],
+    ttmlEditState: null,
   };
 }
 
@@ -78,6 +79,7 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
         metadata: next.metadata,
         importedMetadataKeys: next.importedKeys,
         hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,
+        ttmlEditState: null,
       };
     }),
 
@@ -87,6 +89,12 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   clearUnexportedImport: () =>
     set((state) => (state.hasUnexportedImport ? { hasUnexportedImport: false, isDirty: true } : state)),
+
+  setTtmlEditState: (editState) =>
+    set((state) => ({
+      ttmlEditState: typeof editState === "function" ? editState(state.ttmlEditState) : editState,
+      isDirty: true,
+    })),
 });
 
 // -- Exports ------------------------------------------------------------------

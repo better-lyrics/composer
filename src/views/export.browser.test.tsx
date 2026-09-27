@@ -222,3 +222,20 @@ describe("ExportPanel · project file customSnapPoints", () => {
     await expect.poll(() => useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([7, 8]);
   });
 });
+
+describe("D10 export edits survive a remount", () => {
+  it("keeps the hand-edited TTML after the Export panel remounts", async () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
+    });
+    const first = await render(<ExportPanel />);
+    await first.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = first.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
+    await first.getByRole("button", { name: "Done" }).click();
+    await expect.poll(() => document.body.textContent ?? "").toContain("HELLO EDITED");
+    await first.rerender(<ExportPanel key="remounted" />);
+    await expect.poll(() => document.body.textContent ?? "", { timeout: 2000 }).toContain("HELLO EDITED");
+  });
+});

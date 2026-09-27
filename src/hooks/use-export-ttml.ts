@@ -1,12 +1,12 @@
 import { useGeneratedTtml } from "@/hooks/use-generated-ttml";
-import { useUIStore } from "@/stores/ui";
+import { useProjectStore } from "@/stores/project";
 import { rebaseTtmlEdits } from "@/utils/ttml-merge";
 import { useMemo } from "react";
 
 function useExportTtml() {
   const generated = useGeneratedTtml();
-  const editState = useUIStore((state) => state.ttmlEditState);
-  const setEditState = useUIStore((state) => state.setTtmlEditState);
+  const editState = useProjectStore((state) => state.ttmlEditState);
+  const setEditState = useProjectStore((state) => state.setTtmlEditState);
   const drift = editState !== null && editState.source !== generated.content;
   const rebased = useMemo(
     () =>

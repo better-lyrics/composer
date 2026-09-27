@@ -1,13 +1,4 @@
-import type { Stem } from "@/audio/separation/types";
-import type { Agent } from "@/domain/agent/model";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { MetadataKey } from "@/domain/project/imported-metadata";
-import type { ProjectMetadata } from "@/domain/project/metadata";
-import type { SnapPoint } from "@/domain/snap-point/model";
-import { type SavedAudioSource, saveCurrentProject } from "@/lib/persistence";
-import type { GranularityMode } from "@/stores/project";
-import type { SyllableSplitDefaults } from "@/stores/project/types";
+import { saveCurrentProject } from "@/lib/persistence";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Constants ----------------------------------------------------------------
@@ -16,60 +7,15 @@ const LOG_PREFIX = "[Persistence]";
 
 // -- Module state -------------------------------------------------------------
 
-type SaveArgs = [
-  ProjectMetadata,
-  Agent[],
-  LyricLine[],
-  LinkGroup[],
-  GranularityMode,
-  SyllableSplitDefaults,
-  SavedAudioSource | undefined,
-  string[],
-  string[],
-  Stem,
-  boolean,
-  SnapPoint[],
-  boolean,
-  MetadataKey[],
-];
+type SaveArgs = Parameters<typeof saveCurrentProject>;
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let pendingSaveArgs: SaveArgs | null = null;
 
 // -- Public API ---------------------------------------------------------------
 
-function debouncedSave(
-  metadata: ProjectMetadata,
-  agents: Agent[],
-  lines: LyricLine[],
-  groups: LinkGroup[],
-  granularity: GranularityMode,
-  syllableSplitDefaults: SyllableSplitDefaults,
-  audioSource: SavedAudioSource | undefined,
-  dismissedSuggestions: string[],
-  dismissedExplicitSuggestions: string[],
-  currentStem: Stem,
-  primingStripped: boolean,
-  customSnapPoints: SnapPoint[],
-  hasUnexportedImport: boolean,
-  importedMetadataKeys: MetadataKey[],
-): void {
-  pendingSaveArgs = [
-    metadata,
-    agents,
-    lines,
-    groups,
-    granularity,
-    syllableSplitDefaults,
-    audioSource,
-    dismissedSuggestions,
-    dismissedExplicitSuggestions,
-    currentStem,
-    primingStripped,
-    customSnapPoints,
-    hasUnexportedImport,
-    importedMetadataKeys,
-  ];
+function debouncedSave(...args: SaveArgs): void {
+  pendingSaveArgs = args;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }

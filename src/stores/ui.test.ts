@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 // -- Setup --------------------------------------------------------------------
 
 beforeEach(() => {
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null, ttmlEditState: null });
+  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
 });
 
 // -- Tests --------------------------------------------------------------------

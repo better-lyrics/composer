@@ -9,7 +9,11 @@ import type { SnapPoint } from "@/domain/snap-point/model";
 import { downloadText, localDateStamp, sanitizeFileName } from "@/lib/download-file";
 import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
 import type { GranularityMode } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
+import {
+  DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
+  type SyllableSplitDefaults,
+  type TtmlEditState,
+} from "@/stores/project/types";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,6 +37,7 @@ interface SavedProject {
   customSnapPoints?: (SnapPoint | number)[];
   hasUnexportedImport?: boolean;
   importedMetadataKeys?: MetadataKey[];
+  ttmlEditState?: TtmlEditState;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -57,6 +62,7 @@ async function saveCurrentProject(
   customSnapPoints: SnapPoint[],
   hasUnexportedImport = false,
   importedMetadataKeys: MetadataKey[] = [],
+  ttmlEditState: TtmlEditState = null,
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -77,6 +83,7 @@ async function saveCurrentProject(
     customSnapPoints,
     hasUnexportedImport,
     importedMetadataKeys,
+    ttmlEditState,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }

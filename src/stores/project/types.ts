@@ -11,6 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
 type SimpleTab = "import" | "edit" | "languages" | "sync" | "timeline" | "preview" | "export";
+type TtmlEditState = { source: string; content: string } | null;
 
 interface SyllableSplitDefaults {
   applyToAll: boolean;
@@ -38,6 +39,7 @@ interface MetadataState {
   projectSession: number;
   hasUnexportedImport: boolean;
   importedMetadataKeys: MetadataKey[];
+  ttmlEditState: TtmlEditState;
 }
 
 interface SongIdentity {
@@ -103,6 +105,7 @@ interface MetadataActions {
   markSongDetailsImported: () => void;
   restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;
   clearUnexportedImport: () => void;
+  setTtmlEditState: (editState: TtmlEditState | ((current: TtmlEditState) => TtmlEditState)) => void;
   reset: () => void;
 }
 
@@ -230,6 +233,7 @@ export type {
   GranularityMode,
   SimpleTab,
   SyllableSplitDefaults,
+  TtmlEditState,
   MetadataState,
   SongIdentity,
   AgentsState,
