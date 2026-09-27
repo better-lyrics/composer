@@ -58,6 +58,7 @@ const SettingsSearchResults: React.FC<{ results: SettingsSearchResult }> = ({ re
     return (
       <div className="flex py-12">
         <NoMatches
+          size="large"
           message={`No settings match "${query.trim()}"`}
           action={
             <Button size="sm" variant="secondary" onClick={() => setSettingsQuery("")}>

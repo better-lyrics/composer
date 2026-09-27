@@ -32,7 +32,19 @@ describe("NoMatches", () => {
     expect(clicked).toBe(1);
   });
 
+  it("renders a slightly larger icon and message at the large size", async () => {
+    const screen = await render(<NoMatches message="No matches" size="large" />);
+    expect(screen.container.querySelector("svg.tabler-icon-zoom-question")?.getAttribute("width")).toBe("28");
+    await expect.element(screen.getByText("No matches")).toHaveClass("text-sm");
+  });
+
   describe("edge cases", () => {
+    it("keeps the compact size by default", async () => {
+      const screen = await render(<NoMatches message="No matches" />);
+      expect(screen.container.querySelector("svg.tabler-icon-zoom-question")?.getAttribute("width")).toBe("22");
+      await expect.element(screen.getByText("No matches")).toHaveClass("text-xs");
+    });
+
     it("renders no hint or action slot when omitted", async () => {
       const screen = await render(<NoMatches message="No matches" />);
       expect(screen.container.querySelectorAll("button").length).toBe(0);
