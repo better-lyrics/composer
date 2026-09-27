@@ -1,6 +1,9 @@
 import { TOKEN_VAR } from "@/domain/theme/model";
-import { codeHighlightTheme } from "@/utils/theme/code-highlight-theme";
+import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
+import { themes } from "prism-react-renderer";
 import { describe, expect, it } from "vitest";
+
+const codeHighlightTheme = codeHighlightThemeFor("light");
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,7 +17,7 @@ function colorFor(type: string): string | undefined {
 
 // -- Tests --------------------------------------------------------------------
 
-describe("codeHighlightTheme", () => {
+describe("codeHighlightThemeFor light", () => {
   it("uses only composer theme variables, so it follows the active theme", () => {
     const colors = [
       ...colorsOf(codeHighlightTheme.plain),
@@ -46,5 +49,24 @@ describe("codeHighlightTheme", () => {
     expect(colorFor("comment")).toBe(`var(${TOKEN_VAR["text-muted"]})`);
     expect(colorFor("prolog")).toBe(`var(${TOKEN_VAR["text-muted"]})`);
     expect(colorFor("punctuation")).toBe(`var(${TOKEN_VAR["text-secondary"]})`);
+  });
+});
+
+describe("codeHighlightThemeFor dark", () => {
+  const dark = codeHighlightThemeFor("dark");
+
+  it("keeps the night owl token colours", () => {
+    expect(dark.styles).toBe(themes.nightOwl.styles);
+    expect(dark.plain.color).toBe(themes.nightOwl.plain.color);
+  });
+
+  it("draws the background from the elevated background token", () => {
+    expect(dark.plain.backgroundColor).toBe(`var(${TOKEN_VAR["bg-elevated"]})`);
+  });
+
+  describe("invariants", () => {
+    it("does not modify the shared night owl theme", () => {
+      expect(themes.nightOwl.plain.backgroundColor).not.toBe(`var(${TOKEN_VAR["bg-elevated"]})`);
+    });
   });
 });

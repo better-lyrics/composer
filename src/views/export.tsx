@@ -6,7 +6,8 @@ import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
-import { codeHighlightTheme } from "@/utils/theme/code-highlight-theme";
+import { useThemeStore } from "@/stores/theme";
+import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
+  const scheme = useThemeStore((s) => s.getThemeById(s.activeThemeId)?.scheme ?? "dark");
   const {
     content: exportContent,
     editedContent,
@@ -193,7 +195,7 @@ const ExportPanel: React.FC = () => {
         <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
-          <Highlight theme={codeHighlightTheme} code={exportContent} language="xml">
+          <Highlight theme={codeHighlightThemeFor(scheme)} code={exportContent} language="xml">
             {({ style, tokens, getLineProps, getTokenProps }) => (
               <pre className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text" style={style}>
                 {tokens.map((line, i) => (

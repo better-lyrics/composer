@@ -1,13 +1,19 @@
-import { type TokenKey, TOKEN_VAR } from "@/domain/theme/model";
-import type { PrismTheme } from "prism-react-renderer";
+import { type Scheme, type TokenKey, TOKEN_VAR } from "@/domain/theme/model";
+import { type PrismTheme, themes } from "prism-react-renderer";
 
 // -- Helpers ------------------------------------------------------------------
 
 const token = (key: TokenKey) => `var(${TOKEN_VAR[key]})`;
 
-// -- Theme --------------------------------------------------------------------
+// -- Themes -------------------------------------------------------------------
 
-const codeHighlightTheme: PrismTheme = {
+const DARK_THEME: PrismTheme = {
+  ...themes.nightOwl,
+  plain: { ...themes.nightOwl.plain, backgroundColor: token("bg-elevated") },
+};
+
+// Night Owl's pale palette is unreadable on a light background, so light themes draw from the theme tokens.
+const LIGHT_THEME: PrismTheme = {
   plain: { color: token("text"), backgroundColor: token("bg-elevated") },
   styles: [
     { types: ["tag"], style: { color: token("accent-text") } },
@@ -18,6 +24,12 @@ const codeHighlightTheme: PrismTheme = {
   ],
 };
 
+// -- Functions ----------------------------------------------------------------
+
+function codeHighlightThemeFor(scheme: Scheme): PrismTheme {
+  return scheme === "light" ? LIGHT_THEME : DARK_THEME;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { codeHighlightTheme };
+export { codeHighlightThemeFor };

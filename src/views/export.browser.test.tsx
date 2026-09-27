@@ -4,6 +4,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { ExportPanel } from "@/views/export";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { useThemeStore } from "@/stores/theme";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
@@ -27,7 +28,27 @@ function dispatchFileChange(input: HTMLInputElement, file: File): void {
 }
 
 describe("ExportPanel preview highlight", () => {
-  it("resolves token colours through the composer theme variables", async () => {
+  it("keeps the night owl colours on the elevated background in a dark theme", async () => {
+    const root = document.documentElement;
+    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
+    try {
+      useThemeStore.setState({ activeThemeId: "default" });
+      useProjectStore.setState({
+        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+      });
+      const screen = await render(<ExportPanel />);
+      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
+      const pre = screen.container.querySelector("pre");
+      if (!pre) throw new Error("highlighted preview not rendered");
+      expect(getComputedStyle(pre).color).toBe("rgb(214, 222, 235)");
+      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
+    } finally {
+      root.style.removeProperty("--color-composer-bg-elevated");
+    }
+  });
+
+  it("resolves token colours through the composer theme variables in a light theme", async () => {
+    useThemeStore.setState({ activeThemeId: "light" });
     const root = document.documentElement;
     root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
     root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
@@ -45,6 +66,7 @@ describe("ExportPanel preview highlight", () => {
     } finally {
       root.style.removeProperty("--color-composer-accent-text");
       root.style.removeProperty("--color-composer-bg-elevated");
+      useThemeStore.setState({ activeThemeId: "default" });
     }
   });
 });
