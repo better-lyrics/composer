@@ -22,6 +22,57 @@ function getEventKey(event: KeyboardEvent): string {
   return event.key.length === 1 ? event.key.toLowerCase() : event.key;
 }
 
+const MODIFIER_KEYS = new Set([
+  "Shift",
+  "Alt",
+  "Control",
+  "Meta",
+  "AltGraph",
+  "CapsLock",
+  "Fn",
+  "FnLock",
+  "Hyper",
+  "Super",
+  "OS",
+]);
+const NAMED_BINDABLE_KEYS = new Set([
+  "Enter",
+  "Tab",
+  "Backspace",
+  "Delete",
+  "Insert",
+  "Home",
+  "End",
+  "PageUp",
+  "PageDown",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+]);
+const FUNCTION_KEY = /^F([1-9]|1\d|2[0-4])$/;
+
+function isBindableKey(key: string): boolean {
+  return key.length === 1 || NAMED_BINDABLE_KEYS.has(key) || FUNCTION_KEY.test(key);
+}
+
+function bindingFromKeyboardEvent(event: KeyboardEvent): ShortcutBinding | null {
+  if (MODIFIER_KEYS.has(event.key)) return null;
+  const key = getEventKey(event);
+  if (!isBindableKey(key)) return null;
+  const modPressed = isMac ? event.metaKey : event.ctrlKey;
+  const rawCtrl = isMac && event.ctrlKey;
+  const rawMeta = !isMac && event.metaKey;
+  return {
+    key,
+    ...(event.shiftKey && { shift: true }),
+    ...(event.altKey && { alt: true }),
+    ...(modPressed && { mod: true }),
+    ...(rawCtrl && { ctrl: true }),
+    ...(rawMeta && { meta: true }),
+  };
+}
+
 function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean {
   if (binding.key === "") return false;
   const eventKey = getEventKey(event);
@@ -144,4 +195,4 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { findMatchingShortcut, detectConflicts, isReservedBrowserShortcut };
+export { bindingFromKeyboardEvent, findMatchingShortcut, detectConflicts, isReservedBrowserShortcut };

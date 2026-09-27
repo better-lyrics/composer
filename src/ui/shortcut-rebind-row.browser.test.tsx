@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { render } from "@/test/render";
+import { isMac } from "@/utils/platform";
+import { detectConflicts, findMatchingShortcut } from "@/utils/shortcut-matcher";
 
 // Use an existing registry entry so `getEffectiveKeysArray` resolves it.
 import { getShortcutById } from "@/stores/shortcut-registry";
@@ -47,5 +49,65 @@ describe("ShortcutRebindRow", () => {
     const reset = screen.getByRole("button", { name: "Reset" });
     await reset.click();
     expect(TEST_SHORTCUT.id in useShortcutBindingsStore.getState().overrides).toBe(false);
+  });
+});
+
+const FOLLOW = getShortcutById("timeline.toggleFollow") as ShortcutDefinition;
+
+async function openCapture(screen: Awaited<ReturnType<typeof render>>) {
+  screen.container.querySelectorAll("button")[0]?.click();
+  await expect.element(screen.getByText("Press a new key combination")).toBeInTheDocument();
+}
+
+describe("cluster-e shortcuts", () => {
+  it("U5: Replace leaves no other shortcut on the same key", async () => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    await userEvent.keyboard("p");
+    await expect.element(screen.getByText("is already used by:")).toBeInTheDocument();
+    await screen.getByRole("button", { name: "Replace" }).click();
+
+    expect(detectConflicts(FOLLOW.id, getEffectiveBinding(FOLLOW.id)).map((d) => d.id)).toEqual([]);
+  });
+
+  it("lowercase badge: conflict modal shows the key uppercased like every other badge", async () => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    await userEvent.keyboard("p");
+    await expect.element(screen.getByText("is already used by:")).toBeInTheDocument();
+    const badgeText = document.querySelector("dialog span.inline-flex > span")?.textContent;
+    expect(badgeText).toBe("P");
+  });
+
+  it("sibling: an Alt binding recorded on macOS matches the same key press afterwards", async () => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    const init = { key: "\u00b4", code: "KeyE", altKey: true, bubbles: true };
+    window.dispatchEvent(new KeyboardEvent("keydown", init));
+    expect(findMatchingShortcut(new KeyboardEvent("keydown", init), "timeline")).toBe(FOLLOW.id);
+  });
+
+  it.each(["Unidentified", "Dead", "Process"])("U6: recorder ignores non-bindable key %s", async (key) => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+    expect(useShortcutBindingsStore.getState().overrides[FOLLOW.id]).toBeUndefined();
+  });
+
+  it("U6: recorder keeps listening after a non-bindable key", async () => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "Dead", bubbles: true }));
+    await expect.element(screen.getByText("Press a new key combination")).toBeInTheDocument();
+  });
+
+  it("browser warning badge shows the key uppercased", async () => {
+    const screen = await render(<ShortcutRebindRow definition={FOLLOW} />);
+    await openCapture(screen);
+    const modifier = isMac ? { metaKey: true } : { ctrlKey: true };
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "t", code: "KeyT", ...modifier, bubbles: true }));
+    await expect.element(screen.getByText("may be reserved by the browser.")).toBeInTheDocument();
+    const badges = Array.from(document.querySelectorAll("dialog span.inline-flex > span")).map((el) => el.textContent);
+    expect(badges.at(-1)).toBe("T");
   });
 });

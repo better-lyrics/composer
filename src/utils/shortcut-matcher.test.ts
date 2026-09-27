@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { bindingFromKeyboardEvent, findMatchingShortcut } from "@/utils/shortcut-matcher";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", { bubbles: true, ...init });
@@ -43,6 +44,60 @@ describe("findMatchingShortcut", () => {
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
+    });
+  });
+});
+
+describe("bindingFromKeyboardEvent", () => {
+  describe("happy paths", () => {
+    it("records a plain key", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "p", code: "KeyP" }))).toEqual({ key: "p" });
+    });
+
+    it("records Shift with a lowercase key", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "P", code: "KeyP", shiftKey: true }))).toEqual({
+        key: "p",
+        shift: true,
+      });
+    });
+
+    it("records a named key", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "ArrowLeft", code: "ArrowLeft" }))).toEqual({ key: "ArrowLeft" });
+    });
+
+    it("records a function key", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "F5", code: "F5" }))).toEqual({ key: "F5" });
+    });
+
+    it("records Space as a space", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: " ", code: "Space" }))).toEqual({ key: " " });
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: macOS Alt+E records the physical key, not the glyph", () => {
+      expect(bindingFromKeyboardEvent(keydown({ key: "\u00b4", code: "KeyE", altKey: true }))).toEqual({
+        key: "e",
+        alt: true,
+      });
+    });
+
+    it("regression: a recorded macOS Alt binding matches the same key press", () => {
+      const event = keydown({ key: "\u00b4", code: "KeyE", altKey: true });
+      const binding = bindingFromKeyboardEvent(event);
+      if (!binding) throw new Error("expected a binding");
+      useShortcutBindingsStore.setState({ overrides: { "timeline.toggleFollow": binding } });
+      expect(findMatchingShortcut(event, "timeline")).toBe("timeline.toggleFollow");
+    });
+  });
+
+  describe("edge cases", () => {
+    it.each(["Dead", "Unidentified", "Process", "Compose"])("ignores the non-bindable key %s", (key) => {
+      expect(bindingFromKeyboardEvent(keydown({ key }))).toBeNull();
+    });
+
+    it.each(["Shift", "Alt", "Control", "Meta", "AltGraph", "CapsLock"])("ignores a bare %s", (key) => {
+      expect(bindingFromKeyboardEvent(keydown({ key }))).toBeNull();
     });
   });
 });

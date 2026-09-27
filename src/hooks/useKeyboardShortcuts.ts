@@ -1,19 +1,11 @@
 import { isAnyModalOpen } from "@/stores/modal-stack";
-import { isMac } from "@/utils/platform";
+import { getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { useEffect, useRef } from "react";
 
 // -- Types --------------------------------------------------------------------
 
-interface Shortcut {
-  key: string;
-  ctrl?: boolean;
-  shift?: boolean;
-  alt?: boolean;
-  meta?: boolean;
-  mod?: boolean;
-  action: () => void;
-  description: string;
-}
+type ShortcutActions = Partial<Record<string, () => void>>;
 
 interface ShortcutOptions {
   enabled?: boolean;
@@ -21,33 +13,18 @@ interface ShortcutOptions {
 
 // -- Helpers ------------------------------------------------------------------
 
-function matchesShortcut(event: KeyboardEvent, shortcut: Shortcut): boolean {
-  const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
-  const shiftMatches = !!shortcut.shift === event.shiftKey;
-  const altMatches = !!shortcut.alt === event.altKey;
-
-  const modActive = isMac ? event.metaKey : event.ctrlKey;
-  const modMatches = !!shortcut.mod === modActive;
-
-  const ctrlExpected = !!shortcut.ctrl;
-  const metaExpected = !!shortcut.meta;
-  const ctrlMatches = ctrlExpected === event.ctrlKey;
-  const metaMatches = metaExpected === event.metaKey;
-
-  if (shortcut.mod) {
-    return keyMatches && modMatches && shiftMatches && altMatches;
-  }
-
-  return keyMatches && ctrlMatches && metaMatches && shiftMatches && altMatches;
+function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 }
 
 // -- Hook ---------------------------------------------------------------------
 
-function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = {}): void {
+function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions = {}): void {
   const { enabled = true } = options;
 
-  const shortcutsRef = useRef(shortcuts);
-  shortcutsRef.current = shortcuts;
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
 
@@ -57,19 +34,15 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
       if (event.repeat) return;
       if (isAnyModalOpen()) return;
 
-      const target = event.target as HTMLElement;
-      const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
+      const id = findMatchingShortcut(event, "global");
+      const action = id === null ? undefined : actionsRef.current[id];
+      if (!id || !action) return;
 
-      for (const shortcut of shortcutsRef.current) {
-        if (matchesShortcut(event, shortcut)) {
-          if (isInput && !shortcut.ctrl && !shortcut.meta && !shortcut.mod) {
-            continue;
-          }
-          event.preventDefault();
-          shortcut.action();
-          return;
-        }
-      }
+      const binding = getEffectiveBinding(id);
+      if (isTypingTarget(event.target) && !binding.ctrl && !binding.meta && !binding.mod) return;
+
+      event.preventDefault();
+      action();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -77,4 +50,3 @@ function useKeyboardShortcuts(shortcuts: Shortcut[], options: ShortcutOptions = 
 }
 
 export { useKeyboardShortcuts };
-export type { Shortcut };

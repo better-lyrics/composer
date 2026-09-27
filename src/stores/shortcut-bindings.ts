@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type ShortcutBinding, getShortcutById } from "@/stores/shortcut-registry";
+import { detectConflicts } from "@/utils/shortcut-matcher";
 
 // -- Types --------------------------------------------------------------------
 
@@ -34,6 +35,8 @@ const useShortcutBindingsStore = create<ShortcutBindingsState>()(
 
 // -- Helpers ------------------------------------------------------------------
 
+const UNBOUND: ShortcutBinding = { key: "" };
+
 function getEffectiveBinding(id: string): ShortcutBinding {
   const override = useShortcutBindingsStore.getState().overrides[id];
   if (override) return override;
@@ -42,8 +45,12 @@ function getEffectiveBinding(id: string): ShortcutBinding {
   return def.defaultBinding;
 }
 
-function getEffectiveKeysArray(id: string): string[] {
-  const binding = getEffectiveBinding(id);
+function assignBinding(id: string, binding: ShortcutBinding): void {
+  const unbound = Object.fromEntries(detectConflicts(id, binding).map((conflict) => [conflict.id, UNBOUND]));
+  useShortcutBindingsStore.setState((state) => ({ overrides: { ...state.overrides, ...unbound, [id]: binding } }));
+}
+
+function bindingToKeys(binding: ShortcutBinding): string[] {
   if (binding.key === "") return [];
   const keys: string[] = [];
   if (binding.mod) keys.push("Mod");
@@ -57,10 +64,21 @@ function getEffectiveKeysArray(id: string): string[] {
   return keys;
 }
 
+function getEffectiveKeysArray(id: string): string[] {
+  return bindingToKeys(getEffectiveBinding(id));
+}
+
 function getShortcutDescription(id: string): string {
   return getShortcutById(id)?.description ?? id;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { useShortcutBindingsStore, getEffectiveBinding, getEffectiveKeysArray, getShortcutDescription };
+export {
+  useShortcutBindingsStore,
+  assignBinding,
+  bindingToKeys,
+  getEffectiveBinding,
+  getEffectiveKeysArray,
+  getShortcutDescription,
+};
