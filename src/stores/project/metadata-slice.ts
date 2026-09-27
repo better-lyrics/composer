@@ -65,9 +65,10 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       hasUnexportedImport: false,
       importedMetadataKeys: [],
       isDirty: true,
+      isDirtySinceHistory: true,
     })),
 
-  restoreSongIdentity: (identity) => set({ ...identity, isDirty: true }),
+  restoreSongIdentity: (identity) => set({ ...identity, isDirty: true, isDirtySinceHistory: true }),
 
   replaceLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
     set((state) => {
