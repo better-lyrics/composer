@@ -338,6 +338,13 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: var(--color-composer-accent);
 }
 
+/* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
+::highlight(help-match) {
+  color: var(--color-composer-accent-text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-composer-accent) 70%, transparent);
+}
+
 /* Nudge the row or topic a link or search result jumped to; the target must be position: relative */
 [data-nudge]::before {
   content: "";
@@ -349,6 +356,10 @@ input[type="range"].settings-slider::-moz-range-progress {
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-composer-accent) 35%, transparent);
   opacity: 0;
   animation: nudge 1000ms ease-in-out 300ms forwards;
+}
+
+[data-help-topic][data-nudge]::before {
+  inset: -8px -12px;
 }
 
 @keyframes nudge {

@@ -3,7 +3,7 @@ import { matchesAllTerms } from "@/utils/search-terms";
 // -- Constants -----------------------------------------------------------------
 
 const TOPIC_SELECTOR = "[data-help-topic]";
-const HIGHLIGHT_NAME = "help-match";
+const HELP_MATCH_HIGHLIGHT = "help-match";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -69,13 +69,13 @@ function paintHelpMatches(root: HTMLElement, terms: readonly string[]): void {
       }
     }
   }
-  CSS.highlights.set(HIGHLIGHT_NAME, new Highlight(...ranges));
+  CSS.highlights.set(HELP_MATCH_HIGHLIGHT, new Highlight(...ranges));
 }
 
 function clearHelpMatches(): void {
-  if ("highlights" in CSS) CSS.highlights.delete(HIGHLIGHT_NAME);
+  if ("highlights" in CSS) CSS.highlights.delete(HELP_MATCH_HIGHLIGHT);
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { clearHelpMatches, filterHelpTopics, paintHelpMatches };
+export { clearHelpMatches, filterHelpTopics, HELP_MATCH_HIGHLIGHT, paintHelpMatches };
