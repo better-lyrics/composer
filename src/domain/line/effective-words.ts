@@ -10,6 +10,7 @@ import { stripSplitCharacter } from "@/utils/split-character";
 type TimingSource = "words" | "line" | "none";
 
 type EffectiveLine = LyricLine & { readonly [effectiveLineBrand]: true; readonly timingSource: TimingSource };
+type ReadableLine = LyricLine | EffectiveLine;
 
 // -- Functions ----------------------------------------------------------------
 
@@ -40,7 +41,7 @@ function brand(line: LyricLine, timingSource: TimingSource): EffectiveLine {
   return { ...line, [effectiveLineBrand]: true, timingSource };
 }
 
-function isEffectiveLine(line: LyricLine | EffectiveLine): line is EffectiveLine {
+function isEffectiveLine(line: ReadableLine): line is EffectiveLine {
   return effectiveLineBrand in line;
 }
 
@@ -57,23 +58,23 @@ function getEffectiveLines(lines: readonly LyricLine[]): EffectiveLine[] {
   });
 }
 
-function isLineSyncedSource(line: LyricLine | EffectiveLine): boolean {
+function isLineSyncedSource(line: ReadableLine): boolean {
   return isEffectiveLine(line) ? line.timingSource === "line" : isLineSynced(line);
 }
 
-function effectiveTimingWrite(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> {
+function effectiveTimingWrite(line: ReadableLine, words: WordTiming[]): Partial<LyricLine> {
   if (isLineSyncedSource(line) && words.length === 1) return { begin: words[0].begin, end: words[0].end };
   return { words };
 }
 
 function effectiveMainWordEdit(
-  line: LyricLine | EffectiveLine,
+  line: ReadableLine,
   words: WordTiming[],
   options: { convertLineSynced: true },
 ): Partial<LyricLine>;
-function effectiveMainWordEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> | null;
+function effectiveMainWordEdit(line: ReadableLine, words: WordTiming[]): Partial<LyricLine> | null;
 function effectiveMainWordEdit(
-  line: LyricLine | EffectiveLine,
+  line: ReadableLine,
   words: WordTiming[],
   options?: { convertLineSynced: true },
 ): Partial<LyricLine> | null {
@@ -81,7 +82,7 @@ function effectiveMainWordEdit(
   return words.length === 1 ? { begin: words[0].begin, end: words[0].end } : null;
 }
 
-function effectiveWordTextEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> {
+function effectiveWordTextEdit(line: ReadableLine, words: WordTiming[]): Partial<LyricLine> {
   return isLineSyncedSource(line) ? { text: mainWordEditFields(words).text } : { words };
 }
 
@@ -97,4 +98,4 @@ export {
   isLineSyncedSource,
 };
 
-export type { EffectiveLine };
+export type { ReadableLine };

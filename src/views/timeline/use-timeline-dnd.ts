@@ -1,17 +1,16 @@
-import type { EffectiveLine } from "@/domain/line/effective-words";
-import type { LyricLine } from "@/domain/line/model";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { handleAltDuplicate } from "@/views/timeline/alt-duplicate";
 import { hitTestTrack, resolveDropTarget } from "@/views/timeline/drag-end-resolution";
 import {
+  DRAG_X_MIN_THRESHOLD,
+  type DragData,
   applyCrossLineMove,
   applySameLineReorder,
-  DRAG_X_MIN_THRESHOLD,
   expandSelectionsAcrossLines,
   resolveWordsToOperate,
-  type DragData,
 } from "@/views/timeline/drag-handlers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { type DragEndEvent, type DragStartEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -19,7 +18,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Hook ----------------------------------------------------------------------
 
-function useTimelineDnd(lines: (LyricLine | EffectiveLine)[]) {
+function useTimelineDnd(lines: ReadableLine[]) {
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
   const duration = useAudioStore((s) => s.duration);
   const zoom = useTimelineStore((s) => s.zoom);

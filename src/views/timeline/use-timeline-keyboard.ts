@@ -3,7 +3,7 @@ import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate"
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
-import type { EffectiveLine } from "@/domain/line/effective-words";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
@@ -70,7 +70,7 @@ function currentInstanceFromSelection(
 
 function useTimelineKeyboard(
   scrollContainerRef: RefObject<HTMLDivElement | null>,
-  lines: (LyricLine | EffectiveLine)[],
+  lines: ReadableLine[],
   duration: number,
   onOpenLyricsModal?: () => void,
 ) {

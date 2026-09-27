@@ -1,4 +1,4 @@
-import type { EffectiveLine } from "@/domain/line/effective-words";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { getSyllablePositions } from "@/domain/word/syllable-groups";
@@ -12,11 +12,9 @@ type UpdateLineWithHistory = (
   options?: { deriveText?: boolean; propagateToSiblings?: boolean },
 ) => void;
 
-type TimingLines = readonly (LyricLine | EffectiveLine)[];
-
 interface WordFieldConfig {
   getWords: (line: LyricLine) => WordTiming[] | undefined;
-  writeWords: (line: LyricLine | EffectiveLine, words: WordTiming[]) => Partial<LyricLine>;
+  writeWords: (line: ReadableLine, words: WordTiming[]) => Partial<LyricLine>;
   // mutateWord deliberately writes raw: routing it here too would newly stamp background provenance in useSyncHandlers.
   buildBoundaryUpdate?: (words: WordTiming[]) => Partial<LyricLine>;
 }
@@ -30,7 +28,7 @@ interface NeighborContext {
 type WordMutator = (ctx: NeighborContext) => WordTiming;
 
 interface SetBoundaryInput {
-  lines: TimingLines;
+  lines: readonly ReadableLine[];
   lineIdx: number;
   wordIdx: number;
   edge: BoundaryEdge;
@@ -46,11 +44,11 @@ interface SetBoundaryInput {
 
 function createWordTimingOps(config: WordFieldConfig) {
   const { getWords, writeWords, buildBoundaryUpdate } = config;
-  const boundaryUpdate = (line: LyricLine | EffectiveLine, words: WordTiming[]) =>
+  const boundaryUpdate = (line: ReadableLine, words: WordTiming[]) =>
     buildBoundaryUpdate ? buildBoundaryUpdate(words) : writeWords(line, words);
 
   function mutateWord(
-    lines: TimingLines,
+    lines: readonly ReadableLine[],
     lineIdx: number,
     wordIdx: number,
     updateLineWithHistory: UpdateLineWithHistory,
@@ -82,7 +80,7 @@ function createWordTimingOps(config: WordFieldConfig) {
   }
 
   function nudgeBegin(
-    lines: TimingLines,
+    lines: readonly ReadableLine[],
     lineIdx: number,
     wordIdx: number,
     delta: number,
@@ -92,7 +90,7 @@ function createWordTimingOps(config: WordFieldConfig) {
   }
 
   function setBegin(
-    lines: TimingLines,
+    lines: readonly ReadableLine[],
     lineIdx: number,
     wordIdx: number,
     newBegin: number,
@@ -102,7 +100,7 @@ function createWordTimingOps(config: WordFieldConfig) {
   }
 
   function nudgeEnd(
-    lines: TimingLines,
+    lines: readonly ReadableLine[],
     lineIdx: number,
     wordIdx: number,
     delta: number,
@@ -112,7 +110,7 @@ function createWordTimingOps(config: WordFieldConfig) {
   }
 
   function setEnd(
-    lines: TimingLines,
+    lines: readonly ReadableLine[],
     lineIdx: number,
     wordIdx: number,
     newEnd: number,

@@ -1,5 +1,5 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type EffectiveLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
+import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -9,9 +9,9 @@ import { cloneWord } from "@/utils/word-timing";
 import {
   DRAG_X_MIN_THRESHOLD,
   type DragData,
+  LINE_SYNCED_REJECT_MESSAGE,
   expandSelectionsAcrossLines,
   groupSelectionsByLine,
-  LINE_SYNCED_REJECT_MESSAGE,
   resolveWordsToOperate,
 } from "@/views/timeline/drag-handlers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -20,12 +20,7 @@ import { toast } from "sonner";
 
 // -- Alt duplicate -------------------------------------------------------------
 
-function handleAltDuplicate(
-  event: DragEndEvent,
-  lines: readonly (LyricLine | EffectiveLine)[],
-  zoom: number,
-  duration: number,
-) {
+function handleAltDuplicate(event: DragEndEvent, lines: readonly ReadableLine[], zoom: number, duration: number) {
   const { active, delta } = event;
   const activeData = active.data.current as DragData | undefined;
   if (!activeData) return;

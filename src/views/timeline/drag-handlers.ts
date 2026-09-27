@@ -1,13 +1,13 @@
-import { isWordSelected } from "@/domain/selection/identity";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { type EffectiveLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
+import { type ReadableLine, effectiveMainWordEdit } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { useProjectStore } from "@/stores/project";
-import { applyWordMoveAcrossLines, type WordMove } from "@/domain/word/move-across-lines";
+import { isWordSelected } from "@/domain/selection/identity";
+import type { WordSelection } from "@/domain/selection/model";
+import { type WordMove, applyWordMoveAcrossLines } from "@/domain/word/move-across-lines";
 import { reorderWordTrack } from "@/domain/word/reorder-track";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
+import { useProjectStore } from "@/stores/project";
 import { cloneWord } from "@/utils/word-timing";
-import type { WordSelection } from "@/domain/selection/model";
 import { toast } from "sonner";
 
 // -- Types ---------------------------------------------------------------------
@@ -48,10 +48,7 @@ function resolveWordsToOperate(activeData: DragData, selectedWords: WordSelectio
   ];
 }
 
-function expandSelectionsAcrossLines(
-  lines: readonly (LyricLine | EffectiveLine)[],
-  selections: WordSelection[],
-): WordSelection[] {
+function expandSelectionsAcrossLines(lines: readonly ReadableLine[], selections: WordSelection[]): WordSelection[] {
   const linesById = new Map<string, LyricLine>();
   for (const l of lines) linesById.set(l.id, l);
   const seen = new Set<string>();
@@ -87,7 +84,7 @@ function groupSelectionsByLine(selections: WordSelection[]): Map<string, WordSel
 function applySameLineReorder(
   activeData: DragData,
   wordsToMove: WordSelection[],
-  lines: readonly (LyricLine | EffectiveLine)[],
+  lines: readonly ReadableLine[],
   timeDelta: number,
   duration: number,
   updateLineWithHistory: ReturnType<typeof useProjectStore.getState>["updateLineWithHistory"],
@@ -148,7 +145,7 @@ interface CrossLineMoveArgs {
   targetLine: LyricLine;
   targetTrack: "word" | "bg";
   wordsToMove: WordSelection[];
-  lines: readonly (LyricLine | EffectiveLine)[];
+  lines: readonly ReadableLine[];
   timeDelta: number;
   duration: number;
 }

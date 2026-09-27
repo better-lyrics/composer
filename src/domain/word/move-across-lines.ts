@@ -1,6 +1,6 @@
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
-import { type EffectiveLine, effectiveMainWordEdit, isLineSyncedSource } from "@/domain/line/effective-words";
+import { type ReadableLine, effectiveMainWordEdit, isLineSyncedSource } from "@/domain/line/effective-words";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -22,8 +22,6 @@ interface WordMove {
 
 type MoveRejectReason = "cross-instance" | "line-synced-target" | "line-synced-source" | "overlap";
 
-type MoveLine = LyricLine | EffectiveLine;
-
 type MoveResult = { ok: true; updates: LineUpdate[] } | { ok: false; reject: MoveRejectReason };
 
 interface SourceRemovals {
@@ -38,7 +36,7 @@ interface TargetInserts {
 
 // -- Validation ---------------------------------------------------------------
 
-function validateMoves(moves: WordMove[], linesById: Map<string, MoveLine>): MoveResult | null {
+function validateMoves(moves: WordMove[], linesById: Map<string, ReadableLine>): MoveResult | null {
   for (const move of moves) {
     const source = linesById.get(move.sourceLineId);
     const target = linesById.get(move.targetLineId);
@@ -102,7 +100,7 @@ function planInserts(moves: WordMove[]): Map<string, TargetInserts> {
 }
 
 function lineUpdateFor(
-  line: MoveLine,
+  line: ReadableLine,
   removals: SourceRemovals | undefined,
   inserts: TargetInserts | undefined,
   duration: number,
@@ -142,10 +140,10 @@ function lineUpdateFor(
 
 // -- Entry point --------------------------------------------------------------
 
-function applyWordMoveAcrossLines(lines: readonly MoveLine[], moves: WordMove[], duration: number): MoveResult {
+function applyWordMoveAcrossLines(lines: readonly ReadableLine[], moves: WordMove[], duration: number): MoveResult {
   if (moves.length === 0) return { ok: true, updates: [] };
 
-  const linesById = new Map<string, MoveLine>();
+  const linesById = new Map<string, ReadableLine>();
   for (const line of lines) linesById.set(line.id, line);
 
   const validation = validateMoves(moves, linesById);
