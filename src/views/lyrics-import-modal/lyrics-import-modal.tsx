@@ -17,14 +17,9 @@ import {
 } from "@/domain/lyrics-file/supported-formats";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { textToLyricLines } from "@/utils/lyrics-text";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
-import {
-  payloadToContent,
-  syntheticFilenameForResult,
-  wrapTextAsParseResult,
-} from "@/views/lyrics-import-modal/shell-helpers";
+import { payloadToContent, syntheticFilenameForResult } from "@/views/lyrics-import-modal/shell-helpers";
 import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
 import {
   importParsedLyrics,
@@ -90,12 +85,10 @@ const LyricsImportModalShell: React.FC = () => {
 
   const handleImportPaste = useCallback(async () => {
     if (pasteText.trim().length === 0) return;
-    const defaultAgentId = agents?.[0]?.id ?? "v1";
-    const lyricLines = textToLyricLines(pasteText, defaultAgentId);
-    const parsed = wrapTextAsParseResult(lyricLines);
+    const parsed = parseLyricsFile("pasted", pasteText, audioDuration > 0 ? audioDuration : undefined);
     const ok = await importParsedLyrics(parsed, buildContext({ label: "Paste", filename: "paste.txt" }));
     if (ok) close();
-  }, [agents, buildContext, close, pasteText]);
+  }, [audioDuration, buildContext, close, pasteText]);
 
   const handleImportUpload = useCallback(async () => {
     if (!pendingFile) return;

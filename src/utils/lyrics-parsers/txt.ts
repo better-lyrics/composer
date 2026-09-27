@@ -4,18 +4,15 @@ import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared"
 // -- Plain Text Parser --------------------------------------------------------
 
 function parseTxt(content: string, _fallbackDuration?: number): ParseResult {
-  const lines = content.split(/\r?\n/).flatMap((raw) => {
-    const text = raw.trim();
-    if (text.length === 0) return [];
-    const displayText = text.includes(getSplitCharacter()) ? cleanSplitCharacters(text) : text;
-    return [
-      {
-        id: generateLineId(),
-        text: displayText,
-        agentId: "v1",
-      },
-    ];
-  });
+  const splitChar = getSplitCharacter();
+  const texts = content.split(/\r?\n/).map((raw) => raw.trim());
+  const first = texts.findIndex((text) => text.length > 0);
+  const last = texts.findLastIndex((text) => text.length > 0);
+  const lines = (first === -1 ? [] : texts.slice(first, last + 1)).map((text) => ({
+    id: generateLineId(),
+    text: text.includes(splitChar) ? cleanSplitCharacters(text) : text,
+    agentId: "v1",
+  }));
 
   return {
     lines,

@@ -1,12 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
-import {
-  payloadToContent,
-  syntheticFilenameForResult,
-  wrapTextAsParseResult,
-} from "@/views/lyrics-import-modal/shell-helpers";
+import { payloadToContent, syntheticFilenameForResult } from "@/views/lyrics-import-modal/shell-helpers";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -23,10 +18,6 @@ function buildResult(overrides: Partial<LyricsSearchResult> = {}): LyricsSearchR
     payload: { kind: "lrc", synced: "[00:00.00]hi", plain: null },
     ...overrides,
   };
-}
-
-function buildLine(text: string): LyricLine {
-  return { id: `line-${text}`, text, agentId: "v1" };
 }
 
 function dataUrl(body: string): string {
@@ -122,21 +113,5 @@ describe("payloadToContent", () => {
       const result = buildResult({ payload: { kind: "deferred-ttml", fetchUrl: "not a url" } });
       await expect(payloadToContent(result, new AbortController().signal)).rejects.toThrow();
     });
-  });
-});
-
-describe("wrapTextAsParseResult", () => {
-  it("wraps lines with empty metadata and no timing", () => {
-    const lines = [buildLine("one"), buildLine("two")];
-    expect(wrapTextAsParseResult(lines)).toEqual({ lines, metadata: {}, hasTimingData: false });
-  });
-
-  it("keeps the same line references it was given", () => {
-    const lines = [buildLine("one")];
-    expect(wrapTextAsParseResult(lines).lines[0]).toBe(lines[0]);
-  });
-
-  it("wraps an empty list without inventing lines", () => {
-    expect(wrapTextAsParseResult([]).lines).toEqual([]);
   });
 });

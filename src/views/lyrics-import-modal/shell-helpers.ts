@@ -1,6 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
 import type { LyricsSearchPayload, LyricsSearchResult } from "@/domain/lyrics-search/result";
-import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -10,10 +8,6 @@ const PAYLOAD_EXTENSIONS: Record<LyricsSearchPayload["kind"], string> = {
   qrc: "qrc",
   "deferred-ttml": "ttml",
 };
-
-function wrapTextAsParseResult(lines: LyricLine[]): ParseResult {
-  return { lines, metadata: {}, hasTimingData: false, issues: [] };
-}
 
 function syntheticFilenameForResult(result: LyricsSearchResult): string {
   return `${result.source}-${result.id}.${PAYLOAD_EXTENSIONS[result.payload.kind]}`;
@@ -35,4 +29,4 @@ async function payloadToContent(result: LyricsSearchResult, signal: AbortSignal)
 
 // -- Exports ------------------------------------------------------------------
 
-export { payloadToContent, syntheticFilenameForResult, wrapTextAsParseResult };
+export { payloadToContent, syntheticFilenameForResult };
