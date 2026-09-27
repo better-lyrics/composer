@@ -1,18 +1,10 @@
 import { useConfirm } from "@/stores/confirm-store";
 import { getEffectiveKeysArray, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
-import { type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
+import { SHORTCUT_SCOPE_GROUPS, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { Button } from "@/ui/button";
 import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
 import { IconRefresh, IconSearch, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-// -- Constants ----------------------------------------------------------------
-
-const SCOPE_GROUPS: { scope: ShortcutScope; title: string }[] = [
-  { scope: "global", title: "General" },
-  { scope: "sync", title: "Sync Mode" },
-  { scope: "timeline", title: "Timeline Mode" },
-];
 
 // -- Component ----------------------------------------------------------------
 
@@ -70,7 +62,7 @@ const ShortcutsSettingsSection: React.FC = () => {
 
   const filteredScopes = useMemo(() => {
     const trimmed = query.trim().toLowerCase();
-    return SCOPE_GROUPS.flatMap(({ scope, title }) => {
+    return SHORTCUT_SCOPE_GROUPS.flatMap(({ scope, title }) => {
       const shortcuts = getShortcutsByScope(scope).filter((def) => {
         if (trimmed.length === 0) return true;
         if (def.description.toLowerCase().includes(trimmed)) return true;
