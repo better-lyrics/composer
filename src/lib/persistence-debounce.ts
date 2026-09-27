@@ -2,6 +2,7 @@ import type { Stem } from "@/audio/separation/types";
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
+import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { type SavedAudioSource, saveCurrentProject } from "@/lib/persistence";
@@ -29,6 +30,7 @@ type SaveArgs = [
   boolean,
   SnapPoint[],
   boolean,
+  MetadataKey[],
 ];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -50,6 +52,7 @@ function debouncedSave(
   primingStripped: boolean,
   customSnapPoints: SnapPoint[],
   hasUnexportedImport: boolean,
+  importedMetadataKeys: MetadataKey[],
 ): void {
   pendingSaveArgs = [
     metadata,
@@ -65,6 +68,7 @@ function debouncedSave(
     primingStripped,
     customSnapPoints,
     hasUnexportedImport,
+    importedMetadataKeys,
   ];
   if (saveTimeout) {
     clearTimeout(saveTimeout);

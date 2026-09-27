@@ -172,3 +172,83 @@ describe("replaceLyricsWithHistory", () => {
     });
   });
 });
+
+describe("song details a lyrics import owns", () => {
+  it("keeps artist, album and ISRC from the audio tags through a plain text import", () => {
+    useProjectStore.getState().setMetadata({ artists: ["Tag Artist"], album: "Tag Album", isrc: "USQX91700001" });
+    importParsed(parseLyricsFile("b.txt", "Solo line"));
+    expect(useProjectStore.getState().metadata).toMatchObject({
+      artists: ["Tag Artist"],
+      album: "Tag Album",
+      isrc: "USQX91700001",
+    });
+  });
+
+  it("clears a TTML title on the next plain text import even after an export", () => {
+    importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+    useProjectStore.getState().clearUnexportedImport();
+    importParsed(parseLyricsFile("b.txt", "Solo line"));
+    expect(useProjectStore.getState().metadata.title).toBe("");
+  });
+
+  it("keeps a title the user typed after a TTML import through the next import", () => {
+    importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+    useProjectStore.getState().setMetadata({ title: "My Title" });
+    importParsed(parseLyricsFile("b.txt", "Solo line"));
+    expect(useProjectStore.getState().metadata.title).toBe("My Title");
+  });
+
+  it("replaces only the fields the previous import brought", () => {
+    useProjectStore.getState().setMetadata({ artists: ["Tag Artist"] });
+    importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+    expect(useProjectStore.getState().metadata).toMatchObject({ title: "Song A", artists: ["Tag Artist"] });
+    importParsed(parseLyricsFile("b.txt", "Solo line"));
+    expect(useProjectStore.getState().metadata).toMatchObject({ title: "", artists: ["Tag Artist"] });
+  });
+
+  describe("edge cases", () => {
+    it("does not let an empty imported value replace a song detail", () => {
+      useProjectStore.getState().setMetadata({ title: "Tag Title" });
+      useProjectStore.getState().replaceLyricsWithHistory({
+        lines: [createLine({ text: "One" })],
+        groups: [],
+        agents: undefined,
+        metadata: { title: "", artists: [] },
+      });
+      expect(useProjectStore.getState().metadata).toMatchObject({ title: "Tag Title", artists: [] });
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual([]);
+    });
+
+    it("forgets what the last import brought when a different song loads", () => {
+      importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+      useProjectStore.getState().resetSongIdentity("New Song");
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual([]);
+      importParsed(parseLyricsFile("b.txt", "Solo line"));
+      expect(useProjectStore.getState().metadata.title).toBe("New Song");
+    });
+  });
+
+  describe("invariants", () => {
+    it("records exactly the non-empty keys the import wrote", () => {
+      useProjectStore.getState().replaceLyricsWithHistory({
+        lines: [createLine({ text: "One" })],
+        groups: [],
+        agents: undefined,
+        metadata: { title: "A", album: "", isrc: "USRC17607839" },
+      });
+      expect(useProjectStore.getState().importedMetadataKeys.toSorted()).toEqual(["isrc", "title"]);
+    });
+
+    it("hands a field to the song or the user once anything else writes it", () => {
+      importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+      expect(useProjectStore.getState().importedMetadataKeys).toContain("title");
+      useProjectStore.getState().setMetadata({ title: "Edited" });
+      expect(useProjectStore.getState().importedMetadataKeys).not.toContain("title");
+    });
+
+    it("keeps the record out of history snapshots", () => {
+      importParsed(parseLyricsFile("a.ttml", SONG_A_TTML));
+      for (const entry of useProjectStore.getState().history) expect(entry).not.toHaveProperty("importedMetadataKeys");
+    });
+  });
+});

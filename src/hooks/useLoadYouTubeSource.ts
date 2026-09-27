@@ -41,7 +41,7 @@ function useLoadYouTubeSource(): (videoId: string) => Promise<void> {
 
 function resetSongIdentityForVideo(videoId: string, previous: AudioSource): () => void {
   const project = useProjectStore.getState();
-  const { metadata, agents, hasUnexportedImport } = project;
+  const { metadata, agents, hasUnexportedImport, importedMetadataKeys } = project;
   project.resetSongIdentity(videoId);
   const resetState = useProjectStore.getState();
   return () => {
@@ -51,7 +51,7 @@ function resetSongIdentityForVideo(videoId: string, previous: AudioSource): () =
       current.agents === resetState.agents &&
       shallow(withoutThumbnailOf(current.metadata, videoId), resetState.metadata);
     if (loadFellBackToPrevious && untouchedSinceReset) {
-      current.restoreSongIdentity({ metadata, agents, hasUnexportedImport });
+      current.restoreSongIdentity({ metadata, agents, hasUnexportedImport, importedMetadataKeys });
     }
   };
 }

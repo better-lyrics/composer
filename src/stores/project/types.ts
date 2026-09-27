@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
+import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -36,12 +37,14 @@ interface MetadataState {
   /** In-memory identity for replacements, including files that reuse line IDs. */
   projectSession: number;
   hasUnexportedImport: boolean;
+  importedMetadataKeys: MetadataKey[];
 }
 
 interface SongIdentity {
   metadata: ProjectMetadata;
   agents: Agent[];
   hasUnexportedImport: boolean;
+  importedMetadataKeys: MetadataKey[];
 }
 
 interface AgentsState {
@@ -98,6 +101,7 @@ interface MetadataActions {
     metadata: Partial<ProjectMetadata>;
   }) => void;
   markSongDetailsImported: () => void;
+  restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;
   clearUnexportedImport: () => void;
   reset: () => void;
 }

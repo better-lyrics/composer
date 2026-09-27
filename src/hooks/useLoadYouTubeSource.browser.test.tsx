@@ -166,13 +166,15 @@ describe("useLoadYouTubeSource", () => {
       useAudioStore.getState().setYouTubeSource(VIDEO_ID);
       const previousSource = useAudioStore.getState().source;
       const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
-      useProjectStore.setState({ metadata: previousSong, agents });
+      useProjectStore.setState({ metadata: previousSong, agents, importedMetadataKeys: ["album"] });
 
       await load(OTHER_VIDEO_ID);
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual([]);
       failLoad(previousSource);
 
       await expect.poll(() => useProjectStore.getState().metadata).toEqual(previousSong);
       expect(useProjectStore.getState().agents).toEqual(agents);
+      expect(useProjectStore.getState().importedMetadataKeys).toEqual(["album"]);
     });
 
     it("regression: a bridge thumbnail fetched for the failing video does not block the restore", async () => {

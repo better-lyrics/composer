@@ -259,7 +259,8 @@ describe("importLyrics agents", () => {
 // -- Metadata -----------------------------------------------------------------
 
 describe("importLyrics metadata", () => {
-  it("does not call setMetadata when metadata is empty", async () => {
+  it("leaves every song detail unchanged when the lyrics carry none", async () => {
+    useProjectStore.getState().setMetadata({ title: "Tag Title", artists: ["Tag Artist"], album: "Tag Album" });
     const before = useProjectStore.getState().metadata;
     await importLyrics(HELLO_WORLD, buildContext());
     expect(useProjectStore.getState().metadata).toEqual(before);
@@ -296,6 +297,15 @@ describe("importLyrics metadata", () => {
       artists: ["Queen"],
       album: "A Night at the Opera",
     });
+  });
+
+  it("replaces the details a search result filled on the next plain import", async () => {
+    await importLyrics(
+      { filename: "lrclib-42.lrc", content: LRC_WITHOUT_TAGS, searchResult: searchResult() },
+      buildContext(),
+    );
+    await importLyrics(HELLO_WORLD, buildContext());
+    expect(useProjectStore.getState().metadata).toMatchObject({ title: "", artists: [], album: "" });
   });
 
   it("prefers the title the lyrics carry over the search result track", async () => {

@@ -3,6 +3,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { migrateLegacyTransliterationLine } from "@/domain/language/migrate";
 import type { LyricLine } from "@/domain/line/model";
+import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
@@ -30,6 +31,7 @@ interface SavedProject {
   primingStripped?: boolean;
   customSnapPoints?: (SnapPoint | number)[];
   hasUnexportedImport?: boolean;
+  importedMetadataKeys?: MetadataKey[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -53,6 +55,7 @@ async function saveCurrentProject(
   primingStripped: boolean,
   customSnapPoints: SnapPoint[],
   hasUnexportedImport = false,
+  importedMetadataKeys: MetadataKey[] = [],
 ): Promise<void> {
   const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
   const project: SavedProject = {
@@ -72,6 +75,7 @@ async function saveCurrentProject(
     primingStripped,
     customSnapPoints,
     hasUnexportedImport,
+    importedMetadataKeys,
   };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }
