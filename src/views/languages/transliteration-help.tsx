@@ -1,4 +1,4 @@
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { IconInfoCircle } from "@tabler/icons-react";
 
@@ -8,9 +8,12 @@ const TransliterationHelp: React.FC = () => (
   <Popover
     placement="bottom-start"
     trigger={
-      <Button size="icon" variant="ghost" aria-label="Transliteration formatting help" className="size-5 rounded-md">
-        <IconInfoCircle className="size-3.5" />
-      </Button>
+      <IconButton
+        label="Transliteration formatting help"
+        icon={<IconInfoCircle className="size-3.5" />}
+        variant="ghost"
+        className="size-5 rounded-md"
+      />
     }
   >
     <div className="w-72 p-3 select-text">

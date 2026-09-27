@@ -77,4 +77,16 @@ describe("AgentManager", () => {
     await screen.getByRole("button", { name: "Add Custom Agent" }).click();
     await expect.poll(() => useProjectStore.getState().agents.find((a) => a.name === "Choir")?.type).toBe("group");
   });
+
+  it("names the icon-only delete button", async () => {
+    useProjectStore.setState({
+      agents: [
+        { id: "v1", name: "Lead", type: "person" },
+        { id: "v3", name: "Carol", type: "person" },
+      ],
+    });
+    const screen = await render(<AgentManager />);
+    await screen.getByRole("button", { name: /v3/ }).click();
+    await expect.element(screen.getByRole("button", { name: "Delete agent" })).toBeInTheDocument();
+  });
 });

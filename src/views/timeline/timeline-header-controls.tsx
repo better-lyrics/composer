@@ -1,8 +1,8 @@
 import { useSettingsStore } from "@/stores/settings";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { cn } from "@/utils/cn";
+import { ToggleButton } from "@/ui/toggle-button";
 import { MAX_ZOOM, MIN_ZOOM, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineZoom } from "@/views/timeline/use-timeline-zoom";
 import { IconMinus, IconPlus } from "@tabler/icons-react";
@@ -31,19 +31,19 @@ const TimelineToggleButton: React.FC<TimelineToggleButtonProps> = ({
 }) => {
   const showHints = useSettingsStore((s) => s.showShortcutHints);
   return (
-    <Button
-      variant={active ? "primary" : "ghost"}
+    <ToggleButton
+      pressed={active}
       size="sm"
       onClick={onClick}
       disabled={disabled}
       hasIcon
-      className={cn(!active && "opacity-60", className)}
+      className={className}
       title={title}
     >
       {children}
       <span>{label}</span>
       {showHints && <InlineKeyBadge keys={getEffectiveKeysArray(shortcut)} />}
-    </Button>
+    </ToggleButton>
   );
 };
 
@@ -61,31 +61,25 @@ const TimelineZoomControls: React.FC<{ scrollContainerRef?: React.RefObject<HTML
   const zoomPercent = Math.round(((zoom - MIN_ZOOM) / (MAX_ZOOM - MIN_ZOOM)) * 100);
   return (
     <div className="flex items-center gap-1">
-      <Button
+      <IconButton
+        label="Zoom out"
+        icon={<IconMinus size={16} />}
         variant="ghost"
-        size="icon"
         onClick={zoomOut}
         disabled={zoom <= MIN_ZOOM}
         className="size-7"
-        title="Zoom out"
-        aria-label="Zoom out"
-      >
-        <IconMinus size={16} />
-      </Button>
+      />
 
       <span className="w-12 text-center text-xs text-composer-text-muted select-none tabular-nums">{zoomPercent}%</span>
 
-      <Button
+      <IconButton
+        label="Zoom in"
+        icon={<IconPlus size={16} />}
         variant="ghost"
-        size="icon"
         onClick={zoomIn}
         disabled={zoom >= MAX_ZOOM}
         className="size-7"
-        title="Zoom in"
-        aria-label="Zoom in"
-      >
-        <IconPlus size={16} />
-      </Button>
+      />
     </div>
   );
 };

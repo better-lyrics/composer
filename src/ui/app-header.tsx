@@ -1,4 +1,4 @@
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { IconHelp, IconRoute, IconSettings } from "@tabler/icons-react";
 
 interface AppHeaderProps {
@@ -14,15 +14,19 @@ const AppHeader: React.FC<AppHeaderProps> = ({ onSettingsOpen, onHelpOpen, onTou
       Composer
     </h1>
     <div className="flex items-center gap-1">
-      <Button size="icon" variant="ghost" onClick={onSettingsOpen} title="Settings">
-        <IconSettings className="size-5" />
-      </Button>
-      <Button size="icon" variant="ghost" onClick={onTourStart} title="Product tour">
-        <IconRoute className="size-5" />
-      </Button>
-      <Button size="icon" variant="ghost" onClick={onHelpOpen} title="Keyboard shortcuts (?)">
-        <IconHelp className="size-5" />
-      </Button>
+      <IconButton
+        label="Settings"
+        icon={<IconSettings className="size-5" />}
+        variant="ghost"
+        onClick={onSettingsOpen}
+      />
+      <IconButton label="Product tour" icon={<IconRoute className="size-5" />} variant="ghost" onClick={onTourStart} />
+      <IconButton
+        label="Keyboard shortcuts (?)"
+        icon={<IconHelp className="size-5" />}
+        variant="ghost"
+        onClick={onHelpOpen}
+      />
     </div>
   </header>
 );

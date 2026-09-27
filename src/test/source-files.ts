@@ -1,9 +1,12 @@
-import { readdirSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // -- Constants ----------------------------------------------------------------
 
 const TEST_FILE_SUFFIXES = [".test.ts", ".test.tsx", ".browser.test.tsx"];
+const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SCRATCH_DIR = "test/e2e-repro/";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,6 +22,21 @@ function isTestFile(relPath: string): boolean {
   return TEST_FILE_SUFFIXES.some((suffix) => relPath.endsWith(suffix));
 }
 
+// Matches whole files so a pattern can span a JSX tag broken across lines.
+function findProductionMatches(pattern: RegExp, allowed: (relPath: string) => boolean): string[] {
+  const global = new RegExp(pattern.source, pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`);
+  const offenders: string[] = [];
+  for (const file of walkSourceFiles(SRC_ROOT)) {
+    const rel = relative(SRC_ROOT, file).split("\\").join("/");
+    if (rel.startsWith(SCRATCH_DIR) || isTestFile(rel) || allowed(rel)) continue;
+    const code = readFileSync(file, "utf8");
+    for (const match of code.matchAll(global)) {
+      offenders.push(`${rel}:${code.slice(0, match.index).split("\n").length}`);
+    }
+  }
+  return offenders;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { isTestFile, walkSourceFiles };
+export { findProductionMatches, isTestFile, walkSourceFiles };

@@ -16,10 +16,10 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
-import type { ParseResult } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
+import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
@@ -27,7 +27,7 @@ import { parseLyrics } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
-import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
+import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
@@ -51,33 +51,6 @@ const BracketWarning: React.FC<{ count: number }> = ({ count }) => {
       <span>
         {count} line{count > 1 ? "s" : ""} contain{count === 1 ? "s" : ""} [brackets]
       </span>
-    </div>
-  );
-};
-
-const ImportSuccessBanner: React.FC<{
-  result: ParseResult;
-  filename: string;
-  onDismiss: () => void;
-}> = ({ result, filename, onDismiss }) => {
-  const lineCount = result.lines.length;
-  const timedLineCount = result.lines.filter((l) => l.begin !== undefined).length;
-  const wordTimedCount = result.lines.filter((l) => l.words?.length).length;
-
-  return (
-    <div className="flex items-center justify-between gap-2 px-3 py-2 text-sm rounded-lg bg-composer-accent/10 text-composer-accent-text">
-      <div className="flex items-center gap-2">
-        <IconFileImport className="size-4 shrink-0" />
-        <span>
-          Imported {lineCount} lines from {filename}
-          {result.hasTimingData && (
-            <> with {wordTimedCount > 0 ? `${wordTimedCount} word-timed` : `${timedLineCount} timed`} lines</>
-          )}
-        </span>
-      </div>
-      <Button size="icon" variant="ghost" onClick={onDismiss} className="size-6">
-        <IconX className="size-4" />
-      </Button>
     </div>
   );
 };

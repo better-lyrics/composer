@@ -1,5 +1,6 @@
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import {
@@ -60,14 +61,12 @@ const ExtraFieldList: React.FC<ExtraFieldListProps> = ({ values, onChange }) => 
               onChange={(e) => handleEdit(pair.id, { value: e.target.value })}
               className={cn("flex-1", INPUT_STYLES)}
             />
-            <Button
+            <IconButton
+              label={`Remove field ${index + 1}`}
+              icon={<IconX className="size-4" />}
               variant="ghost"
-              size="icon"
-              aria-label={`Remove field ${index + 1}`}
               onClick={() => handleRemove(pair.id)}
-            >
-              <IconX className="size-4" />
-            </Button>
+            />
           </div>
           {isReservedExtraKey(pair.key) && (
             <span className="text-xs text-composer-error-text select-text cursor-text">

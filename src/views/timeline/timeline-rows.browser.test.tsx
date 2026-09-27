@@ -58,7 +58,9 @@ describe("TimelineRows", () => {
       const screen = await render(<Harness />);
       await expect
         .poll(() =>
-          [...screen.container.querySelectorAll("[data-group-header] [title]")].map((el) => el.getAttribute("title")),
+          [...screen.container.querySelectorAll("[data-group-header] [title]:not([aria-label])")].map((el) =>
+            el.getAttribute("title"),
+          ),
         )
         .toEqual(["Chorus · 1 of 2", "Chorus · 1 of 2", "Chorus · 2 of 2"]);
     });

@@ -1,4 +1,5 @@
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { Modal } from "@/ui/modal";
 import { Scroll } from "@/ui/scroll";
 import type { Icon } from "@tabler/icons-react";
@@ -68,9 +69,7 @@ const AcceptButton: React.FC<{ action: SuggestionAction; label: string; onClick:
 };
 
 const DismissButton: React.FC<{ label: string; onClick: () => void }> = ({ label, onClick }) => (
-  <Button size="icon" variant="ghost" onClick={onClick} className="size-7" aria-label={label}>
-    <IconX className="size-4" />
-  </Button>
+  <IconButton label={label} icon={<IconX className="size-4" />} variant="ghost" onClick={onClick} className="size-7" />
 );
 
 function SuggestionsBanner<T extends { fingerprint: string }>(props: SuggestionsBannerProps<T>): React.ReactNode {

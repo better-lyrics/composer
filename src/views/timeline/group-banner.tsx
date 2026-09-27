@@ -1,6 +1,6 @@
 import { useProjectStore } from "@/stores/project";
 import type { LinkGroup } from "@/domain/group/template";
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import { registerBanner } from "@/views/timeline/banner-progress-registry";
@@ -192,19 +192,19 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         transform: isDragging ? `translateX(${dragOffsetPx}px)` : undefined,
       }}
     >
-      <Button
+      <IconButton
+        label={isCollapsed ? "Expand instance" : "Collapse instance"}
+        icon={
+          <IconChevronDown
+            className={cn("size-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
+          />
+        }
         variant="ghost"
-        size="icon"
-        aria-label={isCollapsed ? "Expand instance" : "Collapse instance"}
         onClick={handleChevronClick}
         onPointerDown={handleChevronPointerDown}
         onDoubleClick={(e) => e.stopPropagation()}
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
-      >
-        <IconChevronDown
-          className={cn("size-3 transition-transform duration-200 ease-out", isCollapsed && "-rotate-90")}
-        />
-      </Button>
+      />
       <span className="font-semibold whitespace-nowrap">{group.label}</span>
       <span
         className="flex items-center gap-1 text-composer-text-muted tabular-nums whitespace-nowrap ml-auto"

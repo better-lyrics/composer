@@ -109,6 +109,7 @@ const EditAgentPopover: React.FC<{
                 <Button
                   size="sm"
                   variant="ghost"
+                  aria-label="Delete agent"
                   onClick={() => handleDelete(close)}
                   className="text-composer-error-text bg-composer-error/80 hover:bg-composer-error flex items-center gap-2"
                 >

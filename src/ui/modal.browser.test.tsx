@@ -27,6 +27,17 @@ describe("Modal", () => {
 
   // -- Dismissal --------------------------------------------------------------
 
+  it("closes from the named close button in the title bar", async () => {
+    let closed = 0;
+    const screen = await render(
+      <Modal isOpen onClose={() => closed++} title="Settings">
+        <div>Body content</div>
+      </Modal>,
+    );
+    await screen.getByRole("button", { name: "Close" }).click();
+    expect(closed).toBe(1);
+  });
+
   it("closes when Escape is pressed", async () => {
     let closeCalls = 0;
     await render(

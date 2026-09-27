@@ -1,6 +1,7 @@
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { Popover } from "@/ui/popover";
 import { Slider } from "@/ui/slider";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
@@ -127,22 +128,18 @@ const VolumeControl: React.FC<{
     <Popover
       placement="top-end"
       trigger={
-        <Button variant="ghost" size="icon" className="size-8" aria-label="Volume">
-          <VolumeIcon className="size-4" />
-        </Button>
+        <IconButton label="Volume" icon={<VolumeIcon className="size-4" />} variant="ghost" className="size-8" />
       }
     >
       <div className="p-3 w-40">
         <div className="flex items-center gap-2 mb-2 justify-between pr-2.5">
-          <Button
+          <IconButton
+            label={isMuted ? "Unmute" : "Mute"}
+            icon={<VolumeIcon className="size-4" />}
             variant="ghost"
-            size="icon"
             className="size-7 shrink-0"
             onClick={onToggleMute}
-            aria-label={isMuted ? "Unmute" : "Mute"}
-          >
-            <VolumeIcon className="size-4" />
-          </Button>
+          />
           <span className="text-xs text-composer-text-muted tabular-nums w-8 text-right">{displayVolume}%</span>
         </div>
         <Slider

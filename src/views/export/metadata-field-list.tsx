@@ -1,5 +1,6 @@
 import { useReconciledBuffer } from "@/hooks/useReconciledBuffer";
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { INPUT_STYLES } from "@/ui/input-styles";
 import { cn } from "@/utils/cn";
 import { type Row, reconcileRows, sameStrings, seedRows } from "@/views/export/metadata-field-rows";
@@ -44,14 +45,12 @@ const MetadataFieldList: React.FC<MetadataFieldListProps> = ({ label, itemNoun, 
             onChange={(e) => handleEdit(row.id, e.target.value)}
             className={cn("flex-1", INPUT_STYLES)}
           />
-          <Button
+          <IconButton
+            label={`Remove ${itemNoun.toLowerCase()} ${index + 1}`}
+            icon={<IconX className="size-4" />}
             variant="ghost"
-            size="icon"
-            aria-label={`Remove ${itemNoun.toLowerCase()} ${index + 1}`}
             onClick={() => handleRemove(row.id)}
-          >
-            <IconX className="size-4" />
-          </Button>
+          />
         </div>
       ))}
       <Button

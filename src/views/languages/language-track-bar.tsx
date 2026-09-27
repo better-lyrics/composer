@@ -1,4 +1,5 @@
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { Select } from "@/ui/select";
 import { TransliterationHelp } from "@/views/languages/transliteration-help";
 import { IconAbc, IconPlus, IconX } from "@tabler/icons-react";
@@ -40,15 +41,13 @@ const LanguageTrackBar: React.FC<LanguageTrackBarProps> = ({
       return (
         <span key={language} className={CHIP}>
           {name}
-          <Button
-            size="icon"
+          <IconButton
+            label={`Remove ${name}`}
+            icon={<IconX className="size-3.5" />}
             variant="ghost"
-            aria-label={`Remove ${name}`}
             onClick={() => onRemove(language)}
             className="size-5 rounded-md"
-          >
-            <IconX className="size-3.5" />
-          </Button>
+          />
         </span>
       );
     })}

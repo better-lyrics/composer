@@ -63,3 +63,4 @@ const Button: React.FC<ButtonProps> = ({
 // -- Exports ------------------------------------------------------------------
 
 export { Button };
+export type { ButtonProps };

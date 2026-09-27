@@ -1,5 +1,5 @@
 import type { CobaltInstanceStatus } from "@/stores/settings";
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { displayHostFromUrl } from "@/utils/url";
 import {
@@ -129,18 +129,16 @@ const CobaltInstanceRow: React.FC<{
         {displayHostFromUrl(instance.url)}
       </span>
       {onRemove ? (
-        <Button
+        <IconButton
+          label="Remove instance"
+          icon={<IconTrash size={14} />}
           variant="ghost"
-          size="icon"
-          aria-label="Remove instance"
           onClick={(e) => {
             e.stopPropagation();
             onRemove();
           }}
           className="size-6 rounded text-composer-text-faint hover:text-composer-error hover:bg-transparent shrink-0"
-        >
-          <IconTrash size={14} />
-        </Button>
+        />
       ) : (
         <span aria-hidden className="size-6 shrink-0 flex items-center justify-center text-composer-text-faint">
           <IconLock size={13} />

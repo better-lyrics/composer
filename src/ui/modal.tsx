@@ -1,5 +1,5 @@
 import { useModalStackStore } from "@/stores/modal-stack";
-import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
 import { IconX } from "@tabler/icons-react";
@@ -83,9 +83,7 @@ const Modal: React.FC<ModalProps> = ({
                 <h2 id="modal-title" className="text-lg font-medium">
                   {title}
                 </h2>
-                <Button size="icon" variant="ghost" onClick={onClose}>
-                  <IconX className="size-5" />
-                </Button>
+                <IconButton label="Close" icon={<IconX className="size-5" />} variant="ghost" onClick={onClose} />
               </div>
             )}
             <div className={cn(title ? "p-5" : "p-5 pt-4", bodyClassName)}>{children}</div>
