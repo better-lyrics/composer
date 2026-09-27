@@ -150,4 +150,59 @@ describe("findRepeatingStandaloneSections", () => {
     expect(result[0].starts).toEqual([0, 2]);
     expect(result[1].starts).toEqual([5, 7]);
   });
+
+  it("never lets a block contain a blank line", () => {
+    const lines = [line("1", "a"), line("2", ""), line("3", "b"), line("4", "a"), line("5", ""), line("6", "b")];
+    expect(findRepeatingStandaloneSections(lines)).toEqual([]);
+  });
+
+  it("prefers three short repeats over two long ones that cover fewer lines", () => {
+    const texts = ["a", "b", "c", "x", "a", "b", "c", "x", "a", "b", "c"];
+    const result = findRepeatingStandaloneSections(texts.map((t, i) => line(`${i}`, t)));
+    expect(result.map((r) => ({ starts: r.starts, length: r.length }))).toEqual([{ starts: [0, 4, 8], length: 3 }]);
+  });
+
+  it("suggests the three choruses without the blank separators", () => {
+    const texts = [
+      "Verse one a",
+      "Verse one b",
+      "",
+      "Chorus a",
+      "Chorus b",
+      "Chorus c",
+      "",
+      "Verse two a",
+      "Verse two b",
+      "",
+      "Chorus a",
+      "Chorus b",
+      "Chorus c",
+      "",
+      "Bridge",
+      "",
+      "Chorus a",
+      "Chorus b",
+      "Chorus c",
+    ];
+    const lines: LyricLine[] = texts.map((text, i) => ({ id: `l${i}`, text, agentId: "v1" }));
+    const sections = findRepeatingStandaloneSections(lines);
+    expect(sections.map((s) => ({ starts: s.starts, length: s.length, first: s.previewLines[0] }))).toEqual([
+      { starts: [3, 10, 16], length: 3, first: "Chorus a" },
+    ]);
+  });
+
+  describe("regressions", () => {
+    it("regression: still skips a grouped copy when choosing the best repeat", () => {
+      const lines = [
+        line("1", "a"),
+        line("2", "b"),
+        line("3", "a"),
+        line("4", "b", { groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+        line("5", "a"),
+        line("6", "b"),
+      ];
+      const result = findRepeatingStandaloneSections(lines);
+      expect(result.map((r) => ({ starts: r.starts, length: r.length }))).toEqual([{ starts: [0, 4], length: 2 }]);
+    });
+  });
 });
