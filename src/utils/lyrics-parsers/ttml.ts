@@ -11,7 +11,7 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
-import { parseXmlDocument } from "@/utils/lyrics-parsers/validate-ttml";
+import { parseXmlDocument } from "@/utils/xml-document";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------

@@ -62,10 +62,26 @@ function offendersOf(rule: Rule): string[] {
   return offenders;
 }
 
+const XML_DOCUMENT_OWNER = "utils/xml-document.ts";
+
+const XML_PARSE_ERROR_RULE: Rule = {
+  name: "parse error lookup outside the XML owner",
+  regex: /querySelector\(\s*["']parsererror["']\s*\)/,
+  use: "parseXmlDocument",
+  includeTests: false,
+  allowed: (relPath) => relPath === XML_DOCUMENT_OWNER,
+};
+
 describe("every download goes through lib/download-file", () => {
   for (const rule of RULES) {
     it(`has no ${rule.name} (use ${rule.use})`, () => {
       expect(offendersOf(rule)).toEqual([]);
     });
   }
+});
+
+describe("every XML parse goes through utils/xml-document", () => {
+  it(`has no ${XML_PARSE_ERROR_RULE.name} (use ${XML_PARSE_ERROR_RULE.use})`, () => {
+    expect(offendersOf(XML_PARSE_ERROR_RULE)).toEqual([]);
+  });
 });

@@ -20,6 +20,7 @@ import {
 } from "@/utils/lyrics-parsers/qrc-metadata";
 import { generateLineId, type ParseResult } from "@/utils/lyrics-parsers/shared";
 import { getSplitCharacter } from "@/utils/split-character";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -53,13 +54,13 @@ interface QrcPartition {
 function extractLyricContent(content: string): string {
   if (!content.includes("<QrcInfos")) return content;
 
-  const doc = new DOMParser().parseFromString(content, "text/xml");
-  if (doc.querySelector("parsererror")) {
+  const parsed = parseXmlDocument(content);
+  if (!parsed.ok) {
     console.warn("[Composer] QRC document is not well-formed XML, reading it as a raw body");
     return content;
   }
 
-  return doc.querySelector("[LyricContent]")?.getAttribute("LyricContent") ?? "";
+  return parsed.doc.querySelector("[LyricContent]")?.getAttribute("LyricContent") ?? "";
 }
 
 // Sum in milliseconds before dividing: 35.42 + 0.938 is 36.358000000000004.

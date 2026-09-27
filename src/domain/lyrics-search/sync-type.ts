@@ -1,4 +1,5 @@
 import { QRC_LINE_HEADER_REGEX, QRC_WORD_TAG_REGEX } from "@/domain/lyrics-file/qrc-syntax";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Types --------------------------------------------------------------------
 
@@ -50,11 +51,10 @@ function detectTtmlSyncType(xml: string): SyncType {
 
 function detectTtmlSyncTypeViaDom(xml: string): SyncType | null {
   try {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, "text/xml");
-    if (doc.querySelector("parsererror")) return null;
+    const parsed = parseXmlDocument(xml);
+    if (!parsed.ok) return null;
 
-    const paragraphs = doc.getElementsByTagName("p");
+    const paragraphs = parsed.doc.getElementsByTagName("p");
     if (paragraphs.length === 0) return null;
 
     let sawLineLevel = false;
