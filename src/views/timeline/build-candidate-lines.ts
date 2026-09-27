@@ -1,7 +1,10 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 
-function buildCandidateLines(lines: LyricLine[], selectedWords: ReadonlyArray<WordSelection>): LyricLine[] | undefined {
+function buildCandidateLines(
+  lines: readonly LyricLine[],
+  selectedWords: ReadonlyArray<WordSelection>,
+): LyricLine[] | undefined {
   if (selectedWords.length === 0) return undefined;
 
   const byLine = new Map<string, { mainIdxs: Set<number>; bgIdxs: Set<number>; lineIndex: number }>();

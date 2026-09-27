@@ -103,7 +103,7 @@ interface WordSelectionRef {
   type: "word" | "bg";
 }
 
-function getWordsInInstance(lines: LyricLine[], groupId: string, instanceIdx: number): WordSelectionRef[] {
+function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): WordSelectionRef[] {
   const out: WordSelectionRef[] = [];
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];

@@ -1,5 +1,10 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { effectiveMainWordEdit, effectiveTrackWords, effectiveWords } from "@/domain/line/effective-words";
+import {
+  type EffectiveLine,
+  effectiveMainWordEdit,
+  effectiveTrackWords,
+  effectiveWords,
+} from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { mergeWordsIntoTrack } from "@/domain/word/merge-track";
 import { boundsOverlap } from "@/domain/word/overlap";
@@ -9,7 +14,7 @@ import type { ClipboardData, ClipboardEntry } from "@/views/timeline/selection-t
 // -- Types --------------------------------------------------------------------
 
 interface PasteInput {
-  lines: LyricLine[];
+  lines: readonly (LyricLine | EffectiveLine)[];
   clipboard: ClipboardData;
   targetLineIndex: number;
   timeDelta: number;
@@ -27,7 +32,7 @@ function pasteOverlaps(
   clipboard: ClipboardData,
   targetLineIndex: number,
   timeDelta: number,
-  lines: LyricLine[],
+  lines: readonly (LyricLine | EffectiveLine)[],
   duration: number,
 ): boolean {
   for (const entry of clipboard.entries) {

@@ -1,4 +1,5 @@
 import { useProjectStore } from "@/stores/project";
+import type { EffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { applyWordDeletion } from "@/views/timeline/apply-word-deletion";
 import { buildCandidateLines } from "@/views/timeline/build-candidate-lines";
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 
 // -- Hook ---------------------------------------------------------------------
 
-function useTimelineClipboard(lines: LyricLine[]) {
+function useTimelineClipboard(lines: readonly (LyricLine | EffectiveLine)[]) {
   const handleCopy = useCallback(() => {
     const { selectedWords } = useTimelineStore.getState();
     if (selectedWords.length === 0) return;
@@ -87,7 +88,7 @@ function useTimelineClipboard(lines: LyricLine[]) {
 // -- Helpers ------------------------------------------------------------------
 
 function detectFullInstance(
-  lines: LyricLine[],
+  lines: readonly (LyricLine | EffectiveLine)[],
   selectedWords: ReadonlyArray<{ lineId: string; wordIndex: number; type: "word" | "bg" }>,
 ): { groupId: string; instanceIdx: number } | undefined {
   const linesById = new Map<string, LyricLine>();

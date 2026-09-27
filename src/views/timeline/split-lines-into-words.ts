@@ -1,4 +1,5 @@
 import { manualBackgroundWordEdit } from "@/domain/line/background";
+import type { EffectiveLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordSelection } from "@/domain/selection/model";
@@ -72,7 +73,10 @@ function splitTargetsForMenu(target: SplitTarget, selectedWords: WordSelection[]
   return selectedWords.some((w) => w.lineId === target.lineId) ? [target, ...selectedWords] : [target];
 }
 
-function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: LyricLine[]): WordSelection[] {
+function computeSplitSelections(
+  updates: LineWordsUpdate[],
+  effectiveLines: readonly (LyricLine | EffectiveLine)[],
+): WordSelection[] {
   const lineIndexById = new Map<string, number>();
   for (let i = 0; i < effectiveLines.length; i++) lineIndexById.set(effectiveLines[i].id, i);
 
@@ -95,7 +99,10 @@ function computeSplitSelections(updates: LineWordsUpdate[], effectiveLines: Lyri
 
 // -- Store-mutating operation --------------------------------------------------
 
-function splitLinesIntoWords(targets: Iterable<SplitTarget>, effectiveLines: LyricLine[]): void {
+function splitLinesIntoWords(
+  targets: Iterable<SplitTarget>,
+  effectiveLines: readonly (LyricLine | EffectiveLine)[],
+): void {
   const projectState = useProjectStore.getState();
   const updates = computeSplitIntoWordsUpdates(targets, projectState.lines);
 
