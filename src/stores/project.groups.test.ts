@@ -449,7 +449,7 @@ describe("project store · shiftInstance", () => {
     expect(bg?.end).toBeCloseTo(33);
   });
 
-  it("regression: clamps a line-synced instance and its background words at zero like every other shift", () => {
+  it("regression: an instance shifted past zero stops there as a whole, keeping duration and background offset", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.setState({
       lines: [
@@ -472,8 +472,8 @@ describe("project store · shiftInstance", () => {
 
     expect(useProjectStore.getState().lines[0]).toMatchObject({
       begin: 0,
-      end: 0.5,
-      backgroundWords: [{ text: "yeah", begin: 0, end: 0.25 }],
+      end: 1,
+      backgroundWords: [{ text: "yeah", begin: 0.25, end: 0.75 }],
     });
   });
 

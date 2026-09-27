@@ -33,13 +33,13 @@ describe("nudgeLineBegin", () => {
   });
 
   describe("edge cases", () => {
-    it("clamps the line and its background words at zero", () => {
+    it("stops at zero as a whole, keeping the line duration and its background offset", () => {
       seedLine(0.5, 2);
 
       nudgeLineBegin(store().lines, 0, -1, store().updateLineWithHistory);
 
-      expect(lineAt(0)).toMatchObject({ begin: 0, end: 1 });
-      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 0, end: 0.25 }]);
+      expect(lineAt(0)).toMatchObject({ begin: 0, end: 1.5 });
+      expect(lineAt(0).backgroundWords).toEqual([{ text: "ooh", begin: 0.25, end: 0.75 }]);
     });
 
     it("leaves an untimed line alone", () => {
@@ -76,12 +76,12 @@ describe("setLineBegin", () => {
   });
 
   describe("edge cases", () => {
-    it("clamps a negative start at zero", () => {
+    it("clamps a negative start at zero and keeps the duration", () => {
       seedLine(10, 12);
 
       setLineBegin(store().lines, 0, -1, store().updateLineWithHistory);
 
-      expect(lineAt(0)).toMatchObject({ begin: 0, end: 1 });
+      expect(lineAt(0)).toMatchObject({ begin: 0, end: 2 });
     });
   });
 });

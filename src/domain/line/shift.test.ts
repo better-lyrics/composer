@@ -41,6 +41,23 @@ describe("shiftLineTiming", () => {
   it("shifts a line-synced line", () => {
     expect(shiftLineTiming(createLine({ text: "a", begin: 26, end: 28 }), -21)).toEqual({ begin: 5, end: 7 });
   });
+  it("edge: a line-synced line nudged past zero keeps its duration", () => {
+    expect(shiftLineTiming(createLine({ text: "a", begin: 0.5, end: 2 }), -1)).toEqual({ begin: 0, end: 1.5 });
+  });
+  it("edge: a word-synced line nudged past zero keeps every word length and gap", () => {
+    const line = createLine({ text: "a b", words: [word("a ", 1, 2), word("b", 3, 4)] });
+    expect(shiftLineTiming(line, -5)).toEqual({ words: [word("a ", 0, 1), word("b", 2, 3)] });
+  });
+  it("edge: background words move by the clamped main delta", () => {
+    const line = createLine({
+      text: "a",
+      begin: 1,
+      end: 2,
+      backgroundText: "oh",
+      backgroundWords: [word("oh", 1.5, 2.5)],
+    });
+    expect(shiftLineTiming(line, -3)).toEqual({ begin: 0, end: 1, backgroundWords: [word("oh", 0.5, 1.5)] });
+  });
   it("edge: an untimed line with no background returns no fields", () => {
     expect(shiftLineTiming(createLine({ text: "a" }), 3)).toEqual({});
   });
