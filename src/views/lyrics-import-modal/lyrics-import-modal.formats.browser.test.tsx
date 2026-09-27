@@ -17,6 +17,9 @@ const TTML =
 const PLAIN = "Verse one first line\nVerse one sec|ond line\n\n(Background only line)\nMain line (with background)\n";
 
 const WEIRD_LRC = "[00:99.99]Invalid time\n[aa:bb.cc]garbage\nplain line no timestamp\n[00:01.00]valid\n";
+const LRC_WITH_IGNORED_TAG = "[00:01.00][00:75.00]Chorus\n[00:99.00]Broken\n[00:05.00]Next\n";
+const LRCLIB_STYLE_PASTE =
+  "\n\n  [ar: Queen]\n[ti: Bohemian Rhapsody]\n[length: 05:55]\n\n[00:00.63] Is this the real life?\n[00:04.21] Is this just fantasy?\n";
 
 let providerSnapshot: readonly LyricsSearchProvider[] = [];
 
@@ -92,6 +95,27 @@ describe("I1 paste path format detection", () => {
   });
 });
 
+describe("pasted LRC", () => {
+  it("reads a paste that opens with blank lines and metadata tags as timed LRC", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: false });
+    const screen = await render(host());
+    await pasteAndImport(screen, LRCLIB_STYLE_PASTE);
+    const { lines, metadata } = useProjectStore.getState();
+    expect(lines.map((line) => [line.text, line.begin])).toEqual([
+      ["Is this the real life?", 0.63],
+      ["Is this just fantasy?", 4.21],
+    ]);
+    expect(metadata.title).toBe("Bohemian Rhapsody");
+  });
+
+  it("gives pasted lines the first singer of the project", async () => {
+    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    const screen = await render(host());
+    await pasteAndImport(screen, "First line\nSecond line");
+    expect(useProjectStore.getState().lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+  });
+});
+
 describe("I4 broken or empty lyrics files", () => {
   it("tells the user when broken.ttml yields no lyrics", async () => {
     const screen = await render(host());
@@ -121,6 +145,14 @@ describe("partially readable lyrics files", () => {
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
     expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["valid"]);
     await expect.element(screen.getByText("Imported 1 line. 3 lines could not be read.")).toBeInTheDocument();
+  });
+
+  it("does not count a line that imported despite an ignored timestamp as unread", async () => {
+    const screen = await render(host());
+    await uploadAndImport(screen, "mixed.lrc", LRC_WITH_IGNORED_TAG);
+    await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
+    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Chorus", "Next"]);
+    await expect.element(screen.getByText("Imported 2 lines. 1 line could not be read.")).toBeInTheDocument();
   });
 });
 

@@ -72,8 +72,9 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
     set((state) => {
       const importsSongDetails = Object.keys(metadata).length > 0 || (agents?.length ?? 0) > 0;
       const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
+      const assignment = agentsAfterImport(state.agents, agents, lines);
       return {
-        ...commitHistory(state, { lines, groups, agents: agentsAfterImport(state.agents, agents, lines) }),
+        ...commitHistory(state, { lines: assignment.lines, groups, agents: assignment.agents }),
         metadata: next.metadata,
         importedMetadataKeys: next.importedKeys,
         hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,

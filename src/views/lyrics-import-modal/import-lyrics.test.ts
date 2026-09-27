@@ -256,6 +256,16 @@ describe("importLyrics agents", () => {
   });
 });
 
+describe("importLyrics default singer", () => {
+  it("gives lyrics without singers the first singer of the project", async () => {
+    useProjectStore.getState().setAgents([{ id: "v2", type: "person", name: "Bob" }]);
+    await importLyrics(HELLO_WORLD, buildContext());
+    const { lines, agents } = useProjectStore.getState();
+    expect(lines.map((line) => line.agentId)).toEqual(["v2", "v2"]);
+    expect(agents).toEqual([{ id: "v2", type: "person", name: "Bob" }]);
+  });
+});
+
 // -- Metadata -----------------------------------------------------------------
 
 describe("importLyrics metadata", () => {
@@ -318,6 +328,14 @@ describe("importLyrics metadata", () => {
   });
 
   describe("edge cases", () => {
+    it("does not let an empty tag in the lyrics hide the search result details", async () => {
+      await importLyrics(
+        { filename: "lrclib-42.lrc", content: `[ti: ]\n[ar:]\n${LRC_WITHOUT_TAGS}`, searchResult: searchResult() },
+        buildContext(),
+      );
+      expect(useProjectStore.getState().metadata).toMatchObject({ title: "Bohemian Rhapsody", artists: ["Queen"] });
+    });
+
     it("does not mark song details for plain lyrics with no metadata or singers", async () => {
       await importLyrics(HELLO_WORLD, buildContext());
       expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
