@@ -11,6 +11,7 @@ import { setWordBoundary } from "@/utils/timing/word-timing";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { isLineSynced } from "@/domain/line/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
+import { pluralize } from "@/utils/pluralize";
 import { formatTime } from "@/views/timeline/utils";
 import { IconBracketsContainEnd, IconBracketsContainStart, IconLink } from "@tabler/icons-react";
 import { useCallback, useMemo } from "react";
@@ -155,10 +156,10 @@ const TimelineInfoPanel: React.FC = () => {
         )}
         <span className="text-sm font-medium text-composer-text">
           {multiSelectionInfo.lineCount > 0 && multiSelectionInfo.wordCount > 0
-            ? `${multiSelectionInfo.wordCount} words, ${multiSelectionInfo.lineCount} lines selected`
+            ? `${pluralize(multiSelectionInfo.wordCount, "word")}, ${pluralize(multiSelectionInfo.lineCount, "line")} selected`
             : multiSelectionInfo.lineCount > 0
-              ? `${multiSelectionInfo.lineCount} lines selected`
-              : `${multiSelectionInfo.wordCount} words selected`}
+              ? `${pluralize(multiSelectionInfo.lineCount, "line")} selected`
+              : `${pluralize(multiSelectionInfo.wordCount, "word")} selected`}
         </span>
         <div className="flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">

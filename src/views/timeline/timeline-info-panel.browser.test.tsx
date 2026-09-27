@@ -230,3 +230,29 @@ describe("TimelineInfoPanel cursor buttons · rolling edit", () => {
     await expect.poll(() => currentWords()[1].end).toBeCloseTo(1.2, 10);
   });
 });
+
+describe("TimelineInfoPanel selection copy", () => {
+  it("regression: uses singular 'line' for one selected line-synced row", async () => {
+    useAudioStore.setState({ duration: 30 });
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "w",
+          text: "a b",
+          words: [createWord({ text: "a ", begin: 0, end: 1 }), createWord({ text: "b", begin: 1, end: 2 })],
+        }),
+        { id: "ls", text: "line synced", agentId: "v1", begin: 3, end: 5 },
+      ],
+    });
+    useTimelineStore.setState({
+      selectedWords: [
+        { lineId: "w", lineIndex: 0, wordIndex: 0, type: "word" },
+        { lineId: "w", lineIndex: 0, wordIndex: 1, type: "word" },
+        { lineId: "ls", lineIndex: 1, wordIndex: 0, type: "word" },
+      ],
+    });
+    const screen = await render(<TimelineInfoPanel />);
+    await expect.poll(() => screen.container.textContent ?? "").toContain("selected");
+    expect(screen.container.textContent).toContain("2 words, 1 line selected");
+  });
+});
