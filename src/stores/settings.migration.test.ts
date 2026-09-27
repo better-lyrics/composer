@@ -73,3 +73,16 @@ describe("syllablesFollowRolling", () => {
     expect(useSettingsStore.getState().syllablesFollowRolling).toBe(true);
   });
 });
+
+describe("previewSidebarWidth", () => {
+  it("gives a saved blob from before the setting existed the default width", async () => {
+    const { previewSidebarWidth: _omitted, ...withoutWidth } = legacyBlob();
+    await rehydrateAt(6, withoutWidth);
+    expect(useSettingsStore.getState().previewSidebarWidth).toBe(320);
+  });
+
+  it("keeps a remembered width across a rehydrate", async () => {
+    await rehydrateAt(6, legacyBlob({ previewSidebarWidth: 480 }));
+    expect(useSettingsStore.getState().previewSidebarWidth).toBe(480);
+  });
+});
