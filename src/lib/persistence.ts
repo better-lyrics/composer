@@ -6,6 +6,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import { downloadText, localDateStamp, sanitizeFileName } from "@/lib/download-file";
 import { PROJECT_STORE_NAME, deleteFromStore, getFromStore, setInStore } from "@/lib/persistence-idb";
 import type { GranularityMode } from "@/stores/project";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS, type SyllableSplitDefaults } from "@/stores/project/types";
@@ -153,15 +154,11 @@ function exportProjectToFile(
     customSnapPoints,
   };
 
-  const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${metadata.title || "project"}-${new Date().toISOString().slice(0, 10)}.ttml-project.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  downloadText(
+    JSON.stringify(project, null, 2),
+    `${sanitizeFileName(metadata.title, "project")}-${localDateStamp()}.ttml-project.json`,
+    "application/json",
+  );
 }
 
 async function importProjectFromFile(file: File): Promise<SavedProject> {

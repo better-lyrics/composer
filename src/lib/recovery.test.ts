@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { localDateStamp } from "@/lib/download-file";
 import { NOT_FOUND_RESULT, type RecoveredProject, buildRecoveryResult } from "@/lib/recovery";
 
 // -- Helpers ------------------------------------------------------------------
 
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = localDateStamp();
 
 function project(overrides: Partial<RecoveredProject> = {}): RecoveredProject {
   return { savedAt: 1700000000000, metadata: { title: "song" }, lines: [], ...overrides };

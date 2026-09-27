@@ -1,3 +1,4 @@
+import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
@@ -19,6 +20,7 @@ interface ConverterViewProps {
 }
 
 const OPEN_IN_COMPOSER_HASH_PREFIX = "#import=";
+const TTML_EXTENSION = /\.ttml$/i;
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -46,15 +48,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
 
   const downloadTtml = () => {
     if (!ttml) return;
-    const blob = new Blob([ttml], { type: "application/ttml+xml" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = downloadFilename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
+    const name = sanitizeFileName(filename, downloadFilename);
+    downloadText(ttml, TTML_EXTENSION.test(name) ? name : `${name}.ttml`, "application/ttml+xml");
   };
 
   const copyTtml = async () => {

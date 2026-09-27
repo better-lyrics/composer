@@ -3,6 +3,7 @@
 // store, hook, or component so it remains usable from error boundaries
 // and `/recover` even when the rest of the app is in a broken state.
 
+import { downloadText, localDateStamp, sanitizeFileName } from "@/lib/download-file";
 import { PROJECT_STORE_NAME, getFromStore, openDB } from "@/lib/persistence-idb";
 
 // -- Types --------------------------------------------------------------------
@@ -41,25 +42,13 @@ function readProjectFromIDB(): Promise<RecoveredProject | undefined> {
 
 function buildRecoveryResult(project: RecoveredProject): RecoveryResult {
   const title = project.metadata?.title?.trim() || "recovered";
-  const date = new Date().toISOString().slice(0, 10);
   return {
     found: true,
-    filename: `${title}-${date}.ttml-project.json`,
+    filename: `${sanitizeFileName(title, "recovered")}-${localDateStamp()}.ttml-project.json`,
     lineCount: project.lines?.length ?? 0,
     savedAt: project.savedAt,
     title,
   };
-}
-
-function triggerDownload(blob: Blob, filename: string): void {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 // -- Public API ---------------------------------------------------------------
@@ -73,8 +62,7 @@ async function downloadRecoveryFile(): Promise<RecoveryResult> {
   const project = await readProjectFromIDB();
   if (!project) return NOT_FOUND_RESULT;
   const result = buildRecoveryResult(project);
-  const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-  triggerDownload(blob, result.filename);
+  downloadText(JSON.stringify(project, null, 2), result.filename, "application/json");
   return result;
 }
 

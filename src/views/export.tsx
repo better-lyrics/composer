@@ -1,5 +1,6 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
+import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -44,17 +45,7 @@ const ExportPanel: React.FC = () => {
   const handleDownload = useCallback(() => {
     if (!exportContent) return;
 
-    const blob = new Blob([exportContent], {
-      type: "application/ttml+xml;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title || "lyrics"}.ttml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadText(exportContent, `${sanitizeFileName(title, "lyrics")}.ttml`, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
   }, [exportContent, title]);
 
