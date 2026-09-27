@@ -107,6 +107,22 @@ describe("ConverterView", () => {
     await userEvent.fill(textarea, "[00:01.00] hello");
     expect(screen.container.textContent).toContain("tt");
   });
+
+  it("links Open in Composer as one anchor once there is a project to open", async () => {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    const link = screen.getByRole("link", { name: "Open in Composer" });
+    await expect.element(link).toHaveAttribute("href", expect.stringMatching(/^\/#/));
+    expect(link.element().querySelector("button")).toBe(null);
+  });
+
+  it("makes Open in Composer truly disabled with no project to open", async () => {
+    const screen = await renderLrcConverter();
+    const link = screen.getByRole("link", { name: "Open in Composer" });
+    await expect.element(link).toHaveAttribute("aria-disabled", "true");
+    await expect.element(link).not.toHaveAttribute("href");
+    expect(link.element().querySelector("button")).toBe(null);
+  });
 });
 
 describe("sibling: converter Filename field is ignored by Download", () => {

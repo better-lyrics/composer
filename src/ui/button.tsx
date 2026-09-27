@@ -35,32 +35,29 @@ const SIZE_STYLES_WITH_ICON: Record<ButtonSize, string> = {
   icon: "size-8 p-0",
 };
 
+// -- Recipe -------------------------------------------------------------------
+
+interface ButtonStyleOptions {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  hasIcon?: boolean;
+  className?: string;
+}
+
+function buttonClassName({ variant = "secondary", size = "md", hasIcon = false, className }: ButtonStyleOptions) {
+  const sizeStyles = hasIcon ? SIZE_STYLES_WITH_ICON[size] : SIZE_STYLES[size];
+  return cn(BASE_STYLES, VARIANT_STYLES[variant], sizeStyles, className);
+}
+
 // -- Component ----------------------------------------------------------------
 
-const Button: React.FC<ButtonProps> = ({
-  variant = "secondary",
-  size = "md",
-  hasIcon = false,
-  className,
-  children,
-  ref,
-  ...props
-}) => {
-  const sizeStyles = hasIcon ? SIZE_STYLES_WITH_ICON[size] : SIZE_STYLES[size];
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      className={cn(BASE_STYLES, VARIANT_STYLES[variant], sizeStyles, className)}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-};
+const Button: React.FC<ButtonProps> = ({ variant, size, hasIcon, className, children, ref, ...props }) => (
+  <button ref={ref} type="button" className={buttonClassName({ variant, size, hasIcon, className })} {...props}>
+    {children}
+  </button>
+);
 
 // -- Exports ------------------------------------------------------------------
 
-export { Button };
-export type { ButtonProps };
+export { Button, buttonClassName };
+export type { ButtonProps, ButtonStyleOptions };

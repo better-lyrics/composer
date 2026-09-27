@@ -2,7 +2,7 @@ import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { PageHead } from "@/seo/page-head";
 import { articleSchema, breadcrumbListSchema, organizationSchema } from "@/seo/schemas";
-import { Button } from "@/ui/button";
+import { LinkButton } from "@/ui/link-button";
 import { IconArrowRight, IconChevronLeft } from "@tabler/icons-react";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -54,12 +54,10 @@ const GuideLayout: React.FC<GuideLayoutProps> = ({ slug, title, description, dat
         <div className="prose-guide text-composer-text-secondary leading-relaxed space-y-6 select-text">{children}</div>
         <div className="mt-14 pt-10 border-t border-composer-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <span className="text-sm text-composer-text-muted">Ready to try it?</span>
-          <Link to="/">
-            <Button variant="primary" size="md" hasIcon>
-              Open Composer
-              <IconArrowRight size={14} />
-            </Button>
-          </Link>
+          <LinkButton to="/" variant="primary" size="md" hasIcon>
+            Open Composer
+            <IconArrowRight size={14} />
+          </LinkButton>
         </div>
         {related.length > 0 ? (
           <aside className="mt-16">

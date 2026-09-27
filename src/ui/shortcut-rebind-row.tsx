@@ -9,6 +9,7 @@ import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-regi
 import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { Modal } from "@/ui/modal";
+import { MOD_KEY } from "@/utils/platform";
 import { bindingFromKeyboardEvent, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useState } from "react";
 
@@ -23,6 +24,13 @@ type CaptureState =
   | { status: "listening" }
   | { status: "warning"; newBinding: ShortcutBinding }
   | { status: "conflict"; newBinding: ShortcutBinding; conflicts: ShortcutDefinition[] };
+
+// -- Helpers ------------------------------------------------------------------
+
+function spokenKeys(keys: string[]): string {
+  if (keys.length === 0) return "Unbound";
+  return keys.map((key) => (key === "Mod" ? MOD_KEY : key)).join("+");
+}
 
 // -- Component ----------------------------------------------------------------
 
@@ -112,6 +120,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
           )}
           <button
             type="button"
+            aria-label={`Change shortcut for ${definition.description}, currently ${spokenKeys(keys)}`}
             onClick={startCapture}
             className="flex items-center gap-1 cursor-pointer rounded px-1 py-0.5 -mx-1 transition-colors hover:bg-composer-button/50"
           >

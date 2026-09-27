@@ -50,6 +50,30 @@ describe("ShortcutRebindRow", () => {
     await reset.click();
     expect(TEST_SHORTCUT.id in useShortcutBindingsStore.getState().overrides).toBe(false);
   });
+
+  it("names the rebind button by the action and its current keys", async () => {
+    const screen = await render(<ShortcutRebindRow definition={TEST_SHORTCUT} />);
+    await expect
+      .element(screen.getByRole("button", { name: "Change shortcut for Show help, currently Shift+?" }))
+      .toBeInTheDocument();
+  });
+
+  it("spells the platform modifier in the rebind button name", async () => {
+    useShortcutBindingsStore.setState({ overrides: { [TEST_SHORTCUT.id]: { key: "k", mod: true } } });
+    const screen = await render(<ShortcutRebindRow definition={TEST_SHORTCUT} />);
+    const modifier = isMac ? "Cmd" : "Ctrl";
+    await expect
+      .element(screen.getByRole("button", { name: `Change shortcut for Show help, currently ${modifier}+K` }))
+      .toBeInTheDocument();
+  });
+
+  it("names an unbound shortcut's rebind button as Unbound", async () => {
+    useShortcutBindingsStore.setState({ overrides: { [TEST_SHORTCUT.id]: { key: "" } } });
+    const screen = await render(<ShortcutRebindRow definition={TEST_SHORTCUT} />);
+    await expect
+      .element(screen.getByRole("button", { name: "Change shortcut for Show help, currently Unbound" }))
+      .toBeInTheDocument();
+  });
 });
 
 const FOLLOW = getShortcutById("timeline.toggleFollow") as ShortcutDefinition;

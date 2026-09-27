@@ -1,5 +1,6 @@
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { Button } from "@/ui/button";
+import { LinkButton } from "@/ui/link-button";
 import { cn } from "@/utils/cn";
 import { IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
@@ -136,12 +137,10 @@ const ConverterView: React.FC<ConverterViewProps> = ({
           </pre>
           <div className="mt-3 flex items-center justify-between gap-2">
             <span className="text-xs text-composer-text-muted">Need to fine-tune timing against a waveform?</span>
-            <a href={openInComposerHref} className={cn(!projectPayload && "pointer-events-none opacity-50")}>
-              <Button variant="primary" size="sm" disabled={!projectPayload} hasIcon>
-                Open in Composer
-                <IconExternalLink size={12} />
-              </Button>
-            </a>
+            <LinkButton href={openInComposerHref} variant="primary" size="sm" disabled={!projectPayload} hasIcon>
+              Open in Composer
+              <IconExternalLink size={12} />
+            </LinkButton>
           </div>
         </div>
       </div>

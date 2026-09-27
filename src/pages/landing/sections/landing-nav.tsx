@@ -1,4 +1,4 @@
-import { Button } from "@/ui/button";
+import { LinkButton } from "@/ui/link-button";
 import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 
@@ -27,12 +27,10 @@ const LandingNav: React.FC = () => {
             Guides
           </Link>
         </div>
-        <Link to="/">
-          <Button variant="primary" size="sm" hasIcon>
-            Open editor
-            <IconArrowRight size={12} />
-          </Button>
-        </Link>
+        <LinkButton to="/" variant="primary" size="sm" hasIcon>
+          Open editor
+          <IconArrowRight size={12} />
+        </LinkButton>
       </nav>
     </header>
   );

@@ -1,6 +1,5 @@
-import { Button } from "@/ui/button";
+import { LinkButton } from "@/ui/link-button";
 import { IconArrowRight } from "@tabler/icons-react";
-import { Link } from "react-router-dom";
 
 interface HeroProps {
   eyebrow?: string;
@@ -24,18 +23,14 @@ const Hero: React.FC<HeroProps> = ({ eyebrow, headline, subhead, primaryCta, sec
         {subhead}
       </p>
       <div className="flex items-center justify-center gap-3">
-        <Link to={primaryCta.to}>
-          <Button variant="primary" size="md" hasIcon>
-            {primaryCta.label}
-            <IconArrowRight size={14} />
-          </Button>
-        </Link>
+        <LinkButton to={primaryCta.to} variant="primary" size="md" hasIcon>
+          {primaryCta.label}
+          <IconArrowRight size={14} />
+        </LinkButton>
         {secondaryCta ? (
-          <Link to={secondaryCta.to}>
-            <Button variant="secondary" size="md">
-              {secondaryCta.label}
-            </Button>
-          </Link>
+          <LinkButton to={secondaryCta.to} variant="secondary" size="md">
+            {secondaryCta.label}
+          </LinkButton>
         ) : null}
       </div>
     </section>
