@@ -440,6 +440,7 @@ describe("ImportPanel: stale audio tag writes", () => {
           ["TPE1", "Stale Artist"],
           ["TALB", "Stale Album"],
         ]),
+        createMp3File(),
         paddingThatMakesThisTheSlowerParse,
       ],
       "stale.mp3",
@@ -447,12 +448,15 @@ describe("ImportPanel: stale audio tag writes", () => {
     );
     const current = taggedMp3([["TIT2", "Current Title"]], "current.mp3");
 
-    const dropZone = audioDropZone(screen.container);
-    expect(dropZone).not.toBeNull();
-    if (dropZone) {
-      dispatchDrop(dropZone, stale);
-      dispatchDrop(dropZone, current);
-    }
+    const emptyDropZone = audioDropZone(screen.container);
+    expect(emptyDropZone).not.toBeNull();
+    if (emptyDropZone) dispatchDrop(emptyDropZone, stale);
+    await waitForLoadedFile(stale);
+
+    const loadedDropZone = audioDropZone(screen.container);
+    expect(loadedDropZone).not.toBeNull();
+    if (loadedDropZone) dispatchDrop(loadedDropZone, current);
+    await waitForLoadedFile(current);
 
     await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Current Title");
 
