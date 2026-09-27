@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { type ShortcutBinding, getShortcutById } from "@/stores/shortcut-registry";
-import { detectConflicts } from "@/utils/shortcut-matcher";
+import {
+  type ShortcutBinding,
+  type ShortcutDefinition,
+  type ShortcutScope,
+  SHORTCUT_REGISTRY,
+  getShortcutById,
+} from "@/stores/shortcut-registry";
 
 // -- Types --------------------------------------------------------------------
 
@@ -45,6 +50,38 @@ function getEffectiveBinding(id: string): ShortcutBinding {
   return def.defaultBinding;
 }
 
+// -- Conflict Detection -------------------------------------------------------
+
+function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {
+  const aKey = a.key.length === 1 ? a.key.toLowerCase() : a.key;
+  const bKey = b.key.length === 1 ? b.key.toLowerCase() : b.key;
+  return (
+    aKey === bKey &&
+    !!a.shift === !!b.shift &&
+    !!a.alt === !!b.alt &&
+    !!a.ctrl === !!b.ctrl &&
+    !!a.meta === !!b.meta &&
+    !!a.mod === !!b.mod
+  );
+}
+
+function scopesConflict(a: ShortcutScope, b: ShortcutScope): boolean {
+  if (a === "global" || b === "global") return true;
+  return a === b;
+}
+
+function detectConflicts(id: string, newBinding: ShortcutBinding): ShortcutDefinition[] {
+  const source = SHORTCUT_REGISTRY.find((d) => d.id === id);
+  if (!source) return [];
+
+  return SHORTCUT_REGISTRY.filter((def) => {
+    if (def.id === id) return false;
+    if (!scopesConflict(source.scope, def.scope)) return false;
+    const effective = getEffectiveBinding(def.id);
+    return bindingsEqual(effective, newBinding);
+  });
+}
+
 function assignBinding(id: string, binding: ShortcutBinding): void {
   const unbound = Object.fromEntries(detectConflicts(id, binding).map((conflict) => [conflict.id, UNBOUND]));
   useShortcutBindingsStore.setState((state) => ({ overrides: { ...state.overrides, ...unbound, [id]: binding } }));
@@ -77,7 +114,9 @@ function getShortcutDescription(id: string): string {
 export {
   useShortcutBindingsStore,
   assignBinding,
+  bindingsEqual,
   bindingToKeys,
+  detectConflicts,
   getEffectiveBinding,
   getEffectiveKeysArray,
   getShortcutDescription,

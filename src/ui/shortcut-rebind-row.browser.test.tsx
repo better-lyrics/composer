@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
-import { getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { detectConflicts, getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
-import { detectConflicts, findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 
 // Use an existing registry entry so `getEffectiveKeysArray` resolves it.
 import { getShortcutById } from "@/stores/shortcut-registry";

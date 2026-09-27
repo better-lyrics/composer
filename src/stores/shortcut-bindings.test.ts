@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   assignBinding,
   bindingToKeys,
+  detectConflicts,
   getEffectiveBinding,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
-import { detectConflicts } from "@/utils/shortcut-matcher";
 
 describe("assignBinding", () => {
   it("sets the binding", () => {

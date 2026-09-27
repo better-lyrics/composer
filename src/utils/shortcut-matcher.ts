@@ -1,11 +1,5 @@
-import { getEffectiveBinding } from "@/stores/shortcut-bindings";
-import {
-  type ShortcutBinding,
-  type ShortcutDefinition,
-  type ShortcutScope,
-  SHORTCUT_REGISTRY,
-  getShortcutsByScope,
-} from "@/stores/shortcut-registry";
+import { bindingsEqual, getEffectiveBinding } from "@/stores/shortcut-bindings";
+import { type ShortcutBinding, type ShortcutScope, getShortcutsByScope } from "@/stores/shortcut-registry";
 import { isMac } from "@/utils/platform";
 
 // -- Matching -----------------------------------------------------------------
@@ -103,38 +97,6 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   return null;
 }
 
-// -- Conflict Detection -------------------------------------------------------
-
-function bindingsEqual(a: ShortcutBinding, b: ShortcutBinding): boolean {
-  const aKey = a.key.length === 1 ? a.key.toLowerCase() : a.key;
-  const bKey = b.key.length === 1 ? b.key.toLowerCase() : b.key;
-  return (
-    aKey === bKey &&
-    !!a.shift === !!b.shift &&
-    !!a.alt === !!b.alt &&
-    !!a.ctrl === !!b.ctrl &&
-    !!a.meta === !!b.meta &&
-    !!a.mod === !!b.mod
-  );
-}
-
-function scopesConflict(a: ShortcutScope, b: ShortcutScope): boolean {
-  if (a === "global" || b === "global") return true;
-  return a === b;
-}
-
-function detectConflicts(id: string, newBinding: ShortcutBinding): ShortcutDefinition[] {
-  const source = SHORTCUT_REGISTRY.find((d) => d.id === id);
-  if (!source) return [];
-
-  return SHORTCUT_REGISTRY.filter((def) => {
-    if (def.id === id) return false;
-    if (!scopesConflict(source.scope, def.scope)) return false;
-    const effective = getEffectiveBinding(def.id);
-    return bindingsEqual(effective, newBinding);
-  });
-}
-
 // -- Reserved Browser Shortcuts -----------------------------------------------
 
 const RESERVED_BROWSER_SHORTCUTS: ShortcutBinding[] = [
@@ -195,4 +157,4 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { bindingFromKeyboardEvent, findMatchingShortcut, detectConflicts, isReservedBrowserShortcut };
+export { bindingFromKeyboardEvent, findMatchingShortcut, isReservedBrowserShortcut };

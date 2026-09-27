@@ -1,6 +1,7 @@
 import {
   assignBinding,
   bindingToKeys,
+  detectConflicts,
   getEffectiveKeysArray,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
@@ -8,7 +9,7 @@ import type { ShortcutBinding, ShortcutDefinition } from "@/stores/shortcut-regi
 import { Button } from "@/ui/button";
 import { KeyBadge } from "@/ui/shortcut-reference";
 import { Modal } from "@/ui/modal";
-import { bindingFromKeyboardEvent, detectConflicts, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
+import { bindingFromKeyboardEvent, isReservedBrowserShortcut } from "@/utils/shortcut-matcher";
 import { useCallback, useEffect, useState } from "react";
 
 // -- Types --------------------------------------------------------------------
