@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { Scroll } from "@/ui/scroll";
+import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
@@ -20,6 +21,7 @@ import {
 } from "@tabler/icons-react";
 import { Highlight, themes } from "prism-react-renderer";
 import { useCallback, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // -- Components ---------------------------------------------------------------
 
@@ -42,21 +44,29 @@ const ExportPanel: React.FC = () => {
 
   const hasSyncedContent = syncedLineCount > 0;
 
+  const isExportable = useCallback(() => {
+    if (editedContent === null) return true;
+    const validation = validateTtml(editedContent);
+    if (validation.ok) return true;
+    toast.error(`The TTML has an XML error: ${validation.message}`);
+    return false;
+  }, [editedContent]);
+
   const handleDownload = useCallback(() => {
-    if (!exportContent) return;
+    if (!exportContent || !isExportable()) return;
 
     downloadText(exportContent, `${sanitizeFileName(title, "lyrics")}.ttml`, "application/ttml+xml;charset=utf-8");
     useProjectStore.getState().clearUnexportedImport();
-  }, [exportContent, title]);
+  }, [exportContent, isExportable, title]);
 
   const handleCopy = useCallback(async () => {
-    if (!exportContent) return;
+    if (!exportContent || !isExportable()) return;
 
     await navigator.clipboard.writeText(exportContent);
     useProjectStore.getState().clearUnexportedImport();
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  }, [exportContent]);
+  }, [exportContent, isExportable]);
 
   const handleEdit = useCallback(() => {
     setIsEditing((prev) => !prev);

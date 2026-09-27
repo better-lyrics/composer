@@ -1,7 +1,9 @@
+import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { ExportPanel } from "@/views/export";
 import { useProjectStore } from "@/stores/project";
+import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 
@@ -237,5 +239,108 @@ describe("D10 export edits survive a remount", () => {
     await expect.poll(() => document.body.textContent ?? "").toContain("HELLO EDITED");
     await first.rerender(<ExportPanel key="remounted" />);
     await expect.poll(() => document.body.textContent ?? "", { timeout: 2000 }).toContain("HELLO EDITED");
+  });
+});
+
+function captureDownloads(): { names: string[]; restore: () => void } {
+  const names: string[] = [];
+  const originalClick = HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click = function (this: HTMLAnchorElement) {
+    if (this.download) names.push(this.download);
+  };
+  return {
+    names,
+    restore: () => {
+      HTMLAnchorElement.prototype.click = originalClick;
+    },
+  };
+}
+
+describe("U8 invalid XML is exported without warning", () => {
+  it("warns or blocks before downloading TTML that is not well-formed", async () => {
+    useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 0, end: 1 })] });
+    const screen = await render(<ExportPanel />);
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("</tt>", ""));
+    await screen.getByRole("button", { name: "Done" }).click();
+
+    const downloads = captureDownloads();
+    try {
+      await screen.getByRole("button", { name: /Download TTML/ }).click();
+    } finally {
+      downloads.restore();
+    }
+    const warned = /invalid|not well-formed|malformed|xml error/i.test(document.body.textContent ?? "");
+    expect(warned || downloads.names.length === 0).toBe(true);
+  });
+});
+
+describe("ExportPanel · invalid XML is blocked", () => {
+  async function renderWithBrokenEdit() {
+    useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 0, end: 1 })] });
+    const screen = await render(
+      <>
+        <ExportPanel />
+        <Toaster />
+      </>,
+    );
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    const generated = (textarea.element() as HTMLTextAreaElement).value;
+    await textarea.fill(generated.replace("</tt>", ""));
+    await screen.getByRole("button", { name: "Done" }).click();
+    return screen;
+  }
+
+  it("does not copy invalid XML and explains why", async () => {
+    const screen = await renderWithBrokenEdit();
+    const clipboard = stubClipboard();
+    try {
+      await screen.getByRole("button", { name: "Copy" }).click();
+      await expect.element(screen.getByText(/The TTML has an XML error: /)).toBeInTheDocument();
+      expect(clipboard.writes).toEqual([]);
+    } finally {
+      clipboard.restore();
+    }
+  });
+
+  it("does not download invalid XML and explains why", async () => {
+    const screen = await renderWithBrokenEdit();
+    const downloads = captureDownloads();
+    try {
+      await screen.getByRole("button", { name: /Download TTML/ }).click();
+      await expect.element(screen.getByText(/The TTML has an XML error: /)).toBeInTheDocument();
+      expect(downloads.names).toEqual([]);
+    } finally {
+      downloads.restore();
+    }
+  });
+
+  it("does not clear the unexported-import flag when the export is blocked", async () => {
+    const screen = await renderWithBrokenEdit();
+    useProjectStore.setState({ hasUnexportedImport: true });
+    const clipboard = stubClipboard();
+    try {
+      await screen.getByRole("button", { name: "Copy" }).click();
+      await expect.element(screen.getByText(/The TTML has an XML error: /)).toBeInTheDocument();
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+    } finally {
+      clipboard.restore();
+    }
+  });
+
+  it("still copies valid XML", async () => {
+    useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 0, end: 1 })] });
+    const screen = await render(<ExportPanel />);
+    const clipboard = stubClipboard();
+    try {
+      await screen.getByRole("button", { name: "Copy" }).click();
+      await expect.poll(() => clipboard.writes.length).toBe(1);
+      expect(clipboard.writes[0]).toContain("Hello");
+    } finally {
+      clipboard.restore();
+    }
   });
 });

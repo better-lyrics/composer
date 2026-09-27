@@ -1,7 +1,8 @@
 import { Button } from "@/ui/button";
 import { Scroll } from "@/ui/scroll";
+import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { TtmlDiffViewer } from "@/views/export/ttml-diff-viewer";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -17,6 +18,7 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange 
   const [showDiff, setShowDiff] = useState(false);
   const canDiff = value !== generatedTtml;
   const viewingDiff = showDiff && canDiff;
+  const validation = useMemo(() => (canDiff ? validateTtml(value) : null), [canDiff, value]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 p-6 gap-3">
@@ -39,6 +41,11 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange 
           className="w-full flex-1 p-4 rounded-lg font-mono text-xs bg-composer-bg-elevated text-composer-text resize-none focus:outline-none focus:ring-1 focus:ring-composer-accent"
           spellCheck={false}
         />
+      )}
+      {validation?.ok === false && (
+        <span role="alert" className="text-xs text-composer-error-text select-text cursor-text">
+          XML error: {validation.message}
+        </span>
       )}
     </div>
   );

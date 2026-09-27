@@ -10,6 +10,7 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
+import { parseXmlDocument } from "@/utils/lyrics-parsers/validate-ttml";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Helpers ------------------------------------------------------------------
@@ -38,16 +39,12 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   const lineIndexByKey = new Map<string, number>();
   const paragraphByKey = new Map<string, Element>();
 
-  const parser = new DOMParser();
   const unescapedContent = content.replace(/\\"/g, '"').replace(/\\n/g, "\n");
-  const cleanedContent = declareMissingNamespaces(unescapedContent);
-  const doc = parser.parseFromString(cleanedContent, "text/xml");
-
-  // Check for parse errors
-  const parseError = doc.querySelector("parsererror");
-  if (parseError) {
+  const parsed = parseXmlDocument(declareMissingNamespaces(unescapedContent));
+  if (!parsed.ok) {
     return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }
+  const doc = parsed.doc;
 
   // Extract metadata (use getElementsByTagName for namespace compatibility)
   const titleEl = doc.getElementsByTagName("title")[0];

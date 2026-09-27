@@ -49,3 +49,28 @@ describe("TtmlEditor", () => {
     });
   });
 });
+
+describe("TtmlEditor · XML status", () => {
+  const VALID = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p>Hello</p></div></body></tt>`;
+
+  it("shows an XML error while the edit is not well-formed", async () => {
+    const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
+    await screen.getByRole("textbox", { name: "Edit TTML content" }).fill(VALID.replace("</tt>", ""));
+    await expect.element(screen.getByRole("alert")).toHaveTextContent(/XML error/);
+  });
+
+  it("clears the XML error once the edit is well-formed again", async () => {
+    const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    await textarea.fill(VALID.replace("</tt>", ""));
+    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+    await textarea.fill(VALID.replace("Hello", "Hi"));
+    await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("shows no XML error for a well-formed edit", async () => {
+    const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
+    await screen.getByRole("textbox", { name: "Edit TTML content" }).fill(VALID.replace("Hello", "Hi"));
+    await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+  });
+});
