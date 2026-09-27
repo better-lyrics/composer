@@ -1,3 +1,4 @@
+import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { createAudioFile } from "@/test/audio-fixtures";
@@ -78,6 +79,21 @@ describe("FileDropZone", () => {
     );
     const input = screen.container.querySelector("input[type='file']") as HTMLInputElement;
     expect(input.getAttribute("aria-label")).toBe("Upload audio file");
+  });
+
+  it("tells the user which audio types are accepted when a dropped file is not audio", async () => {
+    const screen = await render(
+      <>
+        <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+          <span>Drop</span>
+        </FileDropZone>
+        <Toaster />
+      </>,
+    );
+    const label = screen.container.querySelector("label");
+    if (!label) throw new Error("drop zone label not rendered");
+    dispatchDragEvent(label, "drop", [new File(["plain text"], "lyrics.txt", { type: "text/plain" })]);
+    await expect.element(screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac")).toBeInTheDocument();
   });
 
   describe("regressions", () => {

@@ -1,7 +1,6 @@
 import { isLinked } from "@/domain/instance/predicates";
-import { isSupportedLyricsFile, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
-import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
@@ -17,7 +16,7 @@ import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
-import { type ParseResult, parseLyricsFile } from "@/utils/lyrics-parsers";
+import type { ParseResult } from "@/utils/lyrics-parsers";
 import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
@@ -25,10 +24,7 @@ import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import {
-  importParsedLyrics,
-  type ImportParsedLyricsContext,
-} from "@/views/lyrics-import-modal/use-import-modal-actions";
+import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { IconAlertTriangle, IconFileImport, IconMicrophone, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -296,7 +292,7 @@ const EditPanel: React.FC = () => {
   const confirm = useConfirm();
   const openImportModal = useImportModal();
   const lastImportResult = useLastImportResult();
-  const autoExtractBackgroundVocals = useSettingsStore((s) => s.autoExtractBackgroundVocals);
+  const dropImportContext = useImportContext("Drop");
   const mergeStandaloneBackgroundLines = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
   const preserveBracketsOnExtraction = useSettingsStore((s) => s.preserveBracketsOnExtraction);
 
@@ -615,39 +611,15 @@ const EditPanel: React.FC = () => {
     [confirm, defaultAgentId, groups, lines, setLines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun],
   );
 
-  const handleDroppedFile = useCallback(
-    async (file: File) => {
-      const content = await file.text();
-      const audioDuration = useAudioStore.getState().duration;
-      const parsed = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
-      const context: ImportParsedLyricsContext = {
-        confirm,
-        agents,
-        audioDuration,
-        applyBackgroundExtraction: autoExtractBackgroundVocals,
-        backgroundExtractionMergeStandalone: mergeStandaloneBackgroundLines,
-        backgroundExtractionPreserveBrackets: preserveBracketsOnExtraction,
-        source: { label: "Drop", filename: file.name },
-        onResult: (result, source) => {
-          useImportModalStore.getState().recordImportResult(result, source);
-        },
-      };
-      await importParsedLyrics(parsed, context);
-    },
-    [agents, autoExtractBackgroundVocals, confirm, mergeStandaloneBackgroundLines, preserveBracketsOnExtraction],
-  );
-
   const importTriggers = useDualClickImport(openImportModal);
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       const file = e.dataTransfer.files[0];
-      if (file && isSupportedLyricsFile(file.name)) {
-        handleDroppedFile(file);
-      }
+      if (file) void importLyricsFile(file, dropImportContext);
     },
-    [handleDroppedFile],
+    [dropImportContext],
   );
 
   return (

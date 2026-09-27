@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import type { LyricsSearchQuery } from "@/utils/lyrics-search/types";
-import type { ImportSourceInfo } from "@/views/lyrics-import-modal/use-import-modal-actions";
+import type { ImportSourceInfo } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types --------------------------------------------------------------------
 

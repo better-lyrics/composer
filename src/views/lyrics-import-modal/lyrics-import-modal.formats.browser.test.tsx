@@ -16,6 +16,8 @@ const TTML =
   '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hello</p></div></body></tt>';
 const PLAIN = "Verse one first line\nVerse one sec|ond line\n\n(Background only line)\nMain line (with background)\n";
 
+const WEIRD_LRC = "[00:99.99]Invalid time\n[aa:bb.cc]garbage\nplain line no timestamp\n[00:01.00]valid\n";
+
 let providerSnapshot: readonly LyricsSearchProvider[] = [];
 
 beforeEach(() => {
@@ -87,6 +89,38 @@ describe("I1 paste path format detection", () => {
     await pasteAndImport(screen, TTML);
     const texts = useProjectStore.getState().lines.map((line) => line.text);
     expect(texts).toEqual(["Hello"]);
+  });
+});
+
+describe("I4 broken or empty lyrics files", () => {
+  it("tells the user when broken.ttml yields no lyrics", async () => {
+    const screen = await render(host());
+    await uploadAndImport(screen, "broken.ttml", '<tt><body><p begin="00:01.000"');
+    await expect
+      .poll(() => document.body.textContent ?? "", { timeout: 3000 })
+      .toMatch(/could not|couldn't|invalid|no lyrics|failed|empty|nothing to import/i);
+  });
+
+  it("shows an error for an empty file and leaves the project unchanged", async () => {
+    useProjectStore.getState().setMetadata({ title: "Kept" });
+    const before = useProjectStore.getState();
+    const screen = await render(host());
+    await uploadAndImport(screen, "empty.lrc", "");
+    await expect.element(screen.getByText("No lyrics found in empty.lrc.")).toBeInTheDocument();
+    const after = useProjectStore.getState();
+    expect(after.lines).toBe(before.lines);
+    expect(after.metadata).toBe(before.metadata);
+    expect(after.history).toBe(before.history);
+  });
+});
+
+describe("partially readable lyrics files", () => {
+  it("imports the good lines of an LRC and warns about the rest", async () => {
+    const screen = await render(host());
+    await uploadAndImport(screen, "weird.lrc", WEIRD_LRC);
+    await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
+    expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["valid"]);
+    await expect.element(screen.getByText("Imported 1 line. 3 lines could not be read.")).toBeInTheDocument();
   });
 });
 

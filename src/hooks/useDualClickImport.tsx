@@ -1,17 +1,6 @@
 import { useCallback, useRef } from "react";
-import { toast } from "sonner";
-import {
-  isSupportedLyricsFile,
-  LYRICS_FILE_ACCEPT_ATTRIBUTE,
-  UNSUPPORTED_LYRICS_FILE_MESSAGE,
-} from "@/domain/lyrics-file/supported-formats";
-import { useAudioStore } from "@/stores/audio";
-import { useConfirm } from "@/stores/confirm-store";
-import { useImportModalStore } from "@/stores/import-modal-store";
-import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
-import { parseLyricsFile } from "@/utils/lyrics-parsers";
-import { importParsedLyrics } from "@/views/lyrics-import-modal/use-import-modal-actions";
+import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
+import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -26,12 +15,7 @@ interface DualClickImportHandlers {
 }
 
 function useDualClickImport(openModal: () => void): DualClickImportHandlers {
-  const confirm = useConfirm();
-  const agents = useProjectStore((s) => s.agents);
-  const audioDuration = useAudioStore((s) => s.duration);
-  const autoExtract = useSettingsStore((s) => s.autoExtractBackgroundVocals);
-  const mergeStandalone = useSettingsStore((s) => s.mergeStandaloneBackgroundLines);
-  const preserveBrackets = useSettingsStore((s) => s.preserveBracketsOnExtraction);
+  const importContext = useImportContext("File");
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const clickTimerRef = useRef<number | null>(null);
@@ -60,28 +44,9 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       e.target.value = "";
-      if (!file) return;
-      // accept= is only a dialog hint: an OS picker set to all files reaches here.
-      if (!isSupportedLyricsFile(file.name)) {
-        toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
-        return;
-      }
-      const content = await file.text();
-      const parsed = parseLyricsFile(file.name, content, audioDuration > 0 ? audioDuration : undefined);
-      await importParsedLyrics(parsed, {
-        confirm,
-        agents,
-        audioDuration,
-        applyBackgroundExtraction: autoExtract,
-        backgroundExtractionMergeStandalone: mergeStandalone,
-        backgroundExtractionPreserveBrackets: preserveBrackets,
-        source: { label: "File", filename: file.name },
-        onResult: (parsedResult, source) => {
-          useImportModalStore.getState().recordImportResult(parsedResult, source);
-        },
-      });
+      if (file) await importLyricsFile(file, importContext);
     },
-    [agents, audioDuration, autoExtract, confirm, mergeStandalone, preserveBrackets],
+    [importContext],
   );
 
   const fileInput = (

@@ -1,4 +1,6 @@
+import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
+import { UNSUPPORTED_LYRICS_FILE_MESSAGE } from "@/domain/lyrics-file/supported-formats";
 import { useProjectStore } from "@/stores/project";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { render } from "@/test/render";
@@ -73,6 +75,20 @@ describe("EditPanel file drop", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(useProjectStore.getState().lines).toEqual([]);
+  });
+
+  it("tells the user which lyrics formats are accepted when a dropped file cannot be parsed", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(
+      <>
+        <EditPanel />
+        <Toaster />
+      </>,
+    );
+
+    dropFile(getEditPanel(), new File(["binary"], "cover.png", { type: "image/png" }));
+
+    await expect.element(screen.getByText(UNSUPPORTED_LYRICS_FILE_MESSAGE)).toBeInTheDocument();
   });
 
   it("accepts an uppercase extension on a dropped file", async () => {
