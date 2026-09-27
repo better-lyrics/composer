@@ -33,7 +33,7 @@ const createHistorySlice: StateCreator<ProjectStore, [], [], HistoryState & Hist
 
   canRedo: () => get().historyIndex < get().history.length - 1,
 
-  clearHistory: () => set({ history: [], historyIndex: -1 }),
+  clearHistory: () => set({ history: [], historyIndex: -1, isDirtySinceHistory: false }),
 });
 
 // -- Exports ------------------------------------------------------------------
