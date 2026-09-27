@@ -1,6 +1,6 @@
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
-import { buttonClassName } from "@/ui/button";
+import { buttonClassName } from "@/ui/button-class-name";
 import { LinkButton } from "@/ui/link-button";
 import { describe, expect, it } from "vitest";
 

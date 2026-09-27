@@ -1,4 +1,4 @@
-import { type ButtonStyleOptions, buttonClassName } from "@/ui/button";
+import { type ButtonStyleOptions, buttonClassName } from "@/ui/button-class-name";
 import { cn } from "@/utils/cn";
 import { Link } from "react-router-dom";
 
@@ -19,6 +19,7 @@ const LinkButton: React.FC<LinkButtonProps> = (props) => {
   if (disabled) {
     return (
       <span
+        // react-doctor-disable-next-line react-doctor/prefer-tag-over-role -- a disabled link has no href, and an <a> without one is not a link, so the role carries it
         role="link"
         aria-disabled="true"
         className={buttonClassName({

@@ -1,4 +1,5 @@
 import { AnalyticsScripts } from "@/seo/analytics";
+import { indexingTags } from "@/seo/indexing-tags";
 import { SITE_ORIGIN } from "@/seo/schemas";
 import { Head } from "vite-react-ssg";
 
@@ -11,16 +12,7 @@ interface PageHeadProps {
   noindex?: boolean;
 }
 
-interface IndexingTags {
-  canonical?: string;
-  robots?: "noindex";
-}
-
 const DEFAULT_OG_IMAGE = "/og-image.png";
-
-function indexingTags(path: string, noindex: boolean): IndexingTags {
-  return noindex ? { robots: "noindex" } : { canonical: `${SITE_ORIGIN}${path}` };
-}
 
 const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, jsonLd, noindex = false }) => {
   const { canonical, robots } = indexingTags(path, noindex);
@@ -60,4 +52,4 @@ const PageHead: React.FC<PageHeadProps> = ({ title, description, path, ogImage, 
   );
 };
 
-export { indexingTags, PageHead };
+export { PageHead };
