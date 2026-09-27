@@ -19,6 +19,7 @@ function editTextWithRewrittenRows(
 function shiftCaretPastRewrittenRows(typedText: string, displayedText: string, caret: number): number {
   const typedRows = typedText.split("\n");
   const displayedRows = displayedText.split("\n");
+  if (typedRows.length !== displayedRows.length) return caret;
   let shift = 0;
   let rowStart = 0;
   for (let i = 0; i < typedRows.length; i++) {

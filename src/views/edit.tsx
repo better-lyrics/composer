@@ -583,14 +583,12 @@ const EditPanel: React.FC = () => {
         return;
       }
 
-      const editText = action.kind === "apply" ? action.editText : text;
-      if (editText !== text) {
-        pendingCaretRef.current = { typedText: text, start: e.target.selectionStart, end: e.target.selectionEnd };
-      }
-      setRawText(editText);
       useImportModalStore.getState().clearImportResult();
 
-      if (action.kind === "noop") return;
+      if (action.kind === "noop") {
+        setRawText(text);
+        return;
+      }
 
       let finalLines = action.finalLines;
 
@@ -605,6 +603,11 @@ const EditPanel: React.FC = () => {
         commitLinesWithHistory(finalLines);
         return;
       }
+
+      if (action.editText !== text) {
+        pendingCaretRef.current = { typedText: text, start: e.target.selectionStart, end: e.target.selectionEnd };
+      }
+      setRawText(action.editText);
 
       if (runBaselineRef.current === null) {
         const projectState = useProjectStore.getState();

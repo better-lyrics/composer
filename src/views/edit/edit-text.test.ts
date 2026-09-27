@@ -49,4 +49,12 @@ describe("shiftCaretPastRewrittenRows", () => {
   it("treats a caret at a row start as belonging to that row", () => {
     expect(shiftCaretPastRewrittenRows("a\nb", "abc\nb", 2)).toBe(4);
   });
+
+  it("keeps the caret when the displayed text has fewer rows than the typed text", () => {
+    expect(shiftCaretPastRewrittenRows("ab\n(oh)\ncd", "ab (oh)\ncd", 9)).toBe(9);
+  });
+
+  it("keeps the caret when the displayed text has more rows than the typed text", () => {
+    expect(shiftCaretPastRewrittenRows("a\nb", "abc\nb\nc", 3)).toBe(3);
+  });
 });

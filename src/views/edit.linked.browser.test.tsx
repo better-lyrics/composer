@@ -3,6 +3,7 @@ import { userEvent } from "vitest/browser";
 import type { LyricLine } from "@/domain/line/model";
 import { reconcileLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createGroup } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
@@ -18,6 +19,11 @@ function getTextarea(container: HTMLElement): HTMLTextAreaElement {
   const textarea = container.querySelector("textarea");
   if (!textarea) throw new Error("textarea not rendered");
   return textarea;
+}
+
+function pasteTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
+  textarea.dispatchEvent(new Event("paste", { bubbles: true, cancelable: true }));
+  setTextareaValue(textarea, value);
 }
 
 function linkedChorusAroundVerse(): LyricLine[] {
@@ -87,5 +93,45 @@ describe("regressions", () => {
     setTextareaValue(textarea, `${textarea.value.replace("Verse", "Verse!")}`);
     await new Promise((r) => setTimeout(r, 50));
     expect(texts()).toEqual(["Chorus line edited", "Verse!", "Chorus line edited"]);
+  });
+});
+
+describe("pasting over a linked line", () => {
+  it("regression: commits the extracted text without crashing when standalone background rows merge", async () => {
+    useSettingsStore.setState({ autoExtractBackgroundVocals: true, mergeStandaloneBackgroundLines: true });
+    useProjectStore.setState({
+      activeTab: "edit",
+      lines: [
+        reconcileLine({
+          id: "a0",
+          text: "Chorus line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+        }),
+        reconcileLine({ id: "x", text: "Verse", agentId: "v1" }),
+        reconcileLine({ id: "bg1", text: "(oh)", agentId: "v1" }),
+        reconcileLine({ id: "bg2", text: "(yeah)", agentId: "v1" }),
+        reconcileLine({
+          id: "b0",
+          text: "Chorus line",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+        }),
+      ],
+      groups: [createGroup({ id: "g1", label: "Chorus" })],
+    });
+    const screen = await render(<EditPanel />);
+    const textarea = getTextarea(screen.container);
+
+    textarea.focus();
+    pasteTextareaValue(textarea, "Chorus song\nVerse\n(oh)\n(yeah)\nChorus line");
+
+    await expect.poll(texts).toEqual(["Chorus song", "Verse", "Chorus song"]);
+    await expect.poll(() => textarea.value).toBe("Chorus song\nVerse\nChorus song");
+    expect(textarea.selectionStart).toBeLessThanOrEqual(textarea.value.length);
   });
 });
