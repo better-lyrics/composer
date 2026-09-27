@@ -1,8 +1,15 @@
 import { getLanguageDisplayLine } from "@/domain/language/display";
-import type { LyricLine } from "@/domain/line/model";
+import { mainWordEditFields } from "@/domain/line/main-words";
+import { effectiveLineBrand, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
 import { stripSplitCharacter } from "@/utils/split-character";
+
+// -- Types --------------------------------------------------------------------
+
+type TimingSource = "words" | "line" | "none";
+
+type EffectiveLine = LyricLine & { readonly [effectiveLineBrand]: true; readonly timingSource: TimingSource };
 
 // -- Functions ----------------------------------------------------------------
 
@@ -24,18 +31,55 @@ function effectiveTrackWords(line: LyricLine, type: "word" | "bg"): WordTiming[]
   return type === "word" ? effectiveWords(line) : line.backgroundWords;
 }
 
-function getEffectiveLines(lines: LyricLine[]): LyricLine[] {
+function timingSourceOf(line: LyricLine): TimingSource {
+  if (line.words?.length) return "words";
+  return isLineSynced(line) ? "line" : "none";
+}
+
+function brand(line: LyricLine, timingSource: TimingSource): EffectiveLine {
+  return { ...line, [effectiveLineBrand]: true, timingSource };
+}
+
+function isEffectiveLine(line: LyricLine | EffectiveLine): line is EffectiveLine {
+  return effectiveLineBrand in line;
+}
+
+function getEffectiveLines(lines: readonly LyricLine[]): EffectiveLine[] {
   return lines.map((line) => {
     const effectiveLine = withEffectiveWords(line);
     const display = getLanguageDisplayLine(effectiveLine, "transliteration");
-    return {
+    const displayed = reconcileLine({
       ...effectiveLine,
       ...(display.words ? { words: display.words } : {}),
       ...(display.backgroundWords ? { backgroundWords: display.backgroundWords } : {}),
-    } as LyricLine;
+    });
+    return brand(displayed, timingSourceOf(line));
   });
+}
+
+function isLineSyncedSource(line: LyricLine | EffectiveLine): boolean {
+  return isEffectiveLine(line) ? line.timingSource === "line" : isLineSynced(line);
+}
+
+function effectiveTimingWrite(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> {
+  if (isLineSyncedSource(line) && words.length === 1) return { begin: words[0].begin, end: words[0].end };
+  return { words };
+}
+
+function effectiveMainWordEdit(line: LyricLine | EffectiveLine, words: WordTiming[]): Partial<LyricLine> | null {
+  if (!isLineSyncedSource(line)) return mainWordEditFields(words);
+  return words.length === 1 ? { begin: words[0].begin, end: words[0].end } : null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { effectiveTrackWords, effectiveWords, getEffectiveLines };
+export {
+  effectiveMainWordEdit,
+  effectiveTimingWrite,
+  effectiveTrackWords,
+  effectiveWords,
+  getEffectiveLines,
+  isLineSyncedSource,
+};
+
+export type { EffectiveLine, TimingSource };

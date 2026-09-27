@@ -1,6 +1,12 @@
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
-import { effectiveWords, getEffectiveLines } from "@/domain/line/effective-words";
+import { reconcileLine, type LooseLine, type LyricLine, type RawLine } from "@/domain/line/model";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import {
+  effectiveMainWordEdit,
+  effectiveTimingWrite,
+  effectiveWords,
+  getEffectiveLines,
+} from "@/domain/line/effective-words";
+import { createLine } from "@/test/factories";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -66,5 +72,79 @@ describe("getEffectiveLines", () => {
     expect(out.agentId).toBe("v9");
     expect(out.groupId).toBe("g1");
     expect(out.instanceIdx).toBe(3);
+  });
+});
+
+describe("getEffectiveLines timing source", () => {
+  it("records where each effective line's words came from", () => {
+    const [w, l, u] = getEffectiveLines([
+      createLine({ id: "w", text: "a", words: [{ text: "a", begin: 1, end: 2 }] }),
+      createLine({ id: "l", text: "Line synced", begin: 3, end: 5 }),
+      createLine({ id: "u", text: "untimed" }),
+    ]);
+    expect([w.timingSource, l.timingSource, u.timingSource]).toEqual(["words", "line", "none"]);
+    expect(l.words).toEqual([{ text: "Line synced", begin: 3, end: 5 }]);
+  });
+
+  it("invariant: an EffectiveLine is not assignable to RawLine", () => {
+    const [line] = getEffectiveLines([createLine({ text: "a" })]);
+    expectTypeOf(line).not.toMatchTypeOf<RawLine>();
+    expectTypeOf(createLine({ text: "a" })).toMatchTypeOf<RawLine>();
+  });
+});
+
+describe("effectiveTimingWrite", () => {
+  it("regression D7/[: a timing edit of a line-synced row writes begin/end, not words", () => {
+    const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 3, end: 5 })]);
+    expect(effectiveTimingWrite(line, [{ text: "Line synced", begin: 4, end: 6 }])).toEqual({ begin: 4, end: 6 });
+  });
+
+  it("writes words for a word-synced line and never writes text", () => {
+    const [line] = getEffectiveLines([createLine({ text: "a b", words: [{ text: "a ", begin: 1, end: 2 }] })]);
+    const words = [{ text: "a ", begin: 1.5, end: 2 }];
+    expect(effectiveTimingWrite(line, words)).toEqual({ words });
+  });
+
+  it("accepts a raw line too", () => {
+    expect(
+      effectiveTimingWrite(createLine({ text: "x", begin: 1, end: 2 }), [{ text: "x", begin: 2, end: 3 }]),
+    ).toEqual({
+      begin: 2,
+      end: 3,
+    });
+  });
+});
+
+describe("effectiveMainWordEdit", () => {
+  it("keeps a line-synced row line-synced when a structural edit leaves one word", () => {
+    const [line] = getEffectiveLines([createLine({ text: "Line synced", begin: 3, end: 5 })]);
+    expect(effectiveMainWordEdit(line, [{ text: "Line synced", begin: 6, end: 8 }])).toEqual({ begin: 6, end: 8 });
+  });
+
+  it("regression Alt-duplicate: rejects a structural edit that would give a line-synced row two words", () => {
+    const [line] = getEffectiveLines([createLine({ text: "L", begin: 3, end: 5 })]);
+    expect(
+      effectiveMainWordEdit(line, [
+        { text: "L ", begin: 3, end: 5 },
+        { text: "L", begin: 6, end: 8 },
+      ]),
+    ).toBeNull();
+  });
+
+  it("re-derives text for a word-synced line", () => {
+    const [line] = getEffectiveLines([
+      createLine({
+        text: "a b",
+        words: [
+          { text: "a ", begin: 1, end: 2 },
+          { text: "b", begin: 2, end: 3 },
+        ],
+      }),
+    ]);
+    const reordered = [
+      { text: "b ", begin: 0, end: 1 },
+      { text: "a", begin: 1, end: 2 },
+    ];
+    expect(effectiveMainWordEdit(line, reordered)).toEqual({ words: reordered, text: "b a" });
   });
 });
