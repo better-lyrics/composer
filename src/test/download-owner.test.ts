@@ -32,8 +32,22 @@ const RULES: Rule[] = [
     allowed: (relPath) => relPath === OWNER,
   },
   {
+    name: "UTC date stamp from a split",
+    regex: /toISOString\(\)\.split\(\s*["']T["']\s*\)\[0\]/,
+    use: "localDateStamp",
+    includeTests: true,
+    allowed: (relPath) => relPath === OWNER,
+  },
+  {
     name: "hand-rolled download anchor",
     regex: /\.download\s*=(?!=)/,
+    use: "downloadBlob or downloadText",
+    includeTests: false,
+    allowed: (relPath) => relPath === OWNER,
+  },
+  {
+    name: "download attribute set by name",
+    regex: /setAttribute\(\s*["']download["']/,
     use: "downloadBlob or downloadText",
     includeTests: false,
     allowed: (relPath) => relPath === OWNER,
