@@ -129,7 +129,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             className={cn(
               "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border",
               error
-                ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text"
+                ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text select-text whitespace-pre-wrap break-words"
                 : "bg-composer-bg-dark border-composer-border text-composer-text select-text",
             )}
           >

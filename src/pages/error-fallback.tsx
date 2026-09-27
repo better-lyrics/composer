@@ -2,80 +2,17 @@ import { downloadRecoveryFile } from "@/lib/recovery";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { Scroll } from "@/ui/scroll";
-import {
-  IconBug,
-  IconChevronDown,
-  IconChevronRight,
-  IconDiscOff,
-  IconDownload,
-  IconGhost2,
-  IconHome2,
-  IconRefresh,
-} from "@tabler/icons-react";
-import { useMemo, useState } from "react";
-import { isRouteErrorResponse, useRouteError } from "react-router-dom";
+import { describeError, safeStringify } from "@/pages/error-presentation";
+import { PageHead } from "@/seo/page-head";
+import { IconChevronDown, IconChevronRight, IconDownload, IconHome2, IconRefresh } from "@tabler/icons-react";
+import { useState } from "react";
+import { useLocation, useRouteError } from "react-router-dom";
 
 // -- Constants -----------------------------------------------------------------
 
 const LOG_PREFIX = "[Composer]";
 
-const ERROR_ICONS = [IconDiscOff, IconGhost2, IconBug] as const;
-
 // -- Helpers -------------------------------------------------------------------
-
-interface ErrorDetails {
-  title: string;
-  subtitle: string;
-  errorName?: string;
-  status?: number;
-  statusText?: string;
-  stack?: string;
-  responseData?: unknown;
-}
-
-function describeError(error: unknown): ErrorDetails {
-  if (error === undefined || error === null) {
-    return {
-      title: "404",
-      subtitle: "We couldn't find that page.",
-      status: 404,
-    };
-  }
-
-  if (isRouteErrorResponse(error)) {
-    const is404 = error.status === 404;
-    return {
-      title: is404 ? "404" : `${error.status}`,
-      subtitle: is404 ? "We couldn't find that page." : error.statusText || "The route returned an error response.",
-      status: error.status,
-      statusText: error.statusText,
-      responseData: error.data,
-    };
-  }
-
-  if (error instanceof Error) {
-    return {
-      title: "Something broke",
-      subtitle: error.message || "The view threw without a message.",
-      errorName: error.name,
-      stack: error.stack,
-    };
-  }
-
-  return {
-    title: "Something broke",
-    subtitle: typeof error === "string" ? error : "The view threw a non-Error value.",
-    stack: safeStringify(error),
-  };
-}
-
-function safeStringify(value: unknown): string {
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
-}
 
 function handleReload(): void {
   window.location.reload();
@@ -87,10 +24,18 @@ function handleGoHome(): void {
 
 // -- Component -----------------------------------------------------------------
 
-const ErrorFallback: React.FC = () => {
+const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
+  <Button variant={primary ? "primary" : "secondary"} hasIcon onClick={handleGoHome}>
+    <IconHome2 size={16} />
+    Go home
+  </Button>
+);
+
+const ErrorFallbackPanel: React.FC = () => {
   const error = useRouteError();
   const details = describeError(error);
-  const Icon = useMemo(() => ERROR_ICONS[Math.floor(Math.random() * ERROR_ICONS.length)], []);
+  const Icon = details.icon;
+  const homeIsPrimary = details.primaryAction === "home";
   const [showDetails, setShowDetails] = useState(false);
   const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
 
@@ -136,14 +81,12 @@ const ErrorFallback: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
-          <Button variant="primary" hasIcon onClick={handleReload}>
+          {homeIsPrimary && <GoHomeButton primary />}
+          <Button variant={homeIsPrimary ? "secondary" : "primary"} hasIcon onClick={handleReload}>
             <IconRefresh size={16} />
             Reload
           </Button>
-          <Button variant="secondary" hasIcon onClick={handleGoHome}>
-            <IconHome2 size={16} />
-            Go home
-          </Button>
+          {!homeIsPrimary && <GoHomeButton primary={false} />}
           <Button variant="secondary" hasIcon onClick={handleRecover} disabled={recoveryStatus === "downloading"}>
             <IconDownload size={16} />
             {recoveryStatus === "downloading" ? "Downloading…" : "Download my work"}
@@ -190,6 +133,17 @@ const ErrorFallback: React.FC = () => {
   );
 };
 
+const ErrorFallback: React.FC = () => {
+  const details = describeError(useRouteError());
+  const { pathname } = useLocation();
+  return (
+    <>
+      <PageHead title={`${details.title} ・ Composer`} description={details.subtitle} path={pathname} />
+      <ErrorFallbackPanel />
+    </>
+  );
+};
+
 // -- Exports -------------------------------------------------------------------
 
-export { ErrorFallback };
+export { ErrorFallback, ErrorFallbackPanel };

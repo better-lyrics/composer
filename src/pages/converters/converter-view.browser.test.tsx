@@ -116,6 +116,25 @@ describe("ConverterView", () => {
     expect(link.element().querySelector("button")).toBe(null);
   });
 
+  it("lets the user select and read a long conversion error", async () => {
+    const screen = await render(
+      <ConverterView
+        title="LRC"
+        inputLabel="LRC"
+        inputPlaceholder="Paste LRC"
+        sampleInput="[00:01.00] hello"
+        convert={() => ({ error: "Could not parse line 3: an unexpectedly long explanation that must wrap" })}
+        downloadFilename="out.ttml"
+      />,
+      { withRouter: true },
+    );
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    const output = screen.getByText(/Could not parse line 3/);
+    await expect.element(output).toHaveClass("select-text");
+    await expect.element(output).toHaveClass("whitespace-pre-wrap");
+    await expect.element(output).toHaveClass("break-words");
+  });
+
   it("makes Open in Composer truly disabled with no project to open", async () => {
     const screen = await renderLrcConverter();
     const link = screen.getByRole("link", { name: "Open in Composer" });
