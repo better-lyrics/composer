@@ -1,10 +1,7 @@
 import { useSettingsStore } from "@/stores/settings";
+import { escapeRegex } from "@/utils/escape-regex";
 
 // -- Helpers ------------------------------------------------------------------
-
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 function getSplitCharacter(): string {
   return useSettingsStore.getState().splitCharacter;
