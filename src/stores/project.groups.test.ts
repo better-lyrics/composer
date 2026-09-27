@@ -449,6 +449,34 @@ describe("project store · shiftInstance", () => {
     expect(bg?.end).toBeCloseTo(33);
   });
 
+  it("regression: clamps a line-synced instance and its background words at zero like every other shift", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.setState({
+      lines: [
+        {
+          id: "a",
+          text: "hi",
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          begin: 10,
+          end: 11,
+          backgroundText: "yeah",
+          backgroundWords: [{ text: "yeah", begin: 10.25, end: 10.75 }],
+        },
+      ],
+    });
+
+    useProjectStore.getState().shiftInstance("g1", 0, -10.5);
+
+    expect(useProjectStore.getState().lines[0]).toMatchObject({
+      begin: 0,
+      end: 0.5,
+      backgroundWords: [{ text: "yeah", begin: 0, end: 0.25 }],
+    });
+  });
+
   it("is undoable", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.setState({

@@ -3,6 +3,7 @@ import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { shiftLineTiming } from "@/domain/line/shift";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -150,21 +151,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       commitHistory(state, {
         lines: state.lines.map((line) => {
           if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
-          return reconcileLine({
-            ...line,
-            begin: line.begin !== undefined ? line.begin + deltaSeconds : undefined,
-            end: line.end !== undefined ? line.end + deltaSeconds : undefined,
-            words: line.words?.map((w) => ({
-              ...w,
-              begin: w.begin + deltaSeconds,
-              end: w.end + deltaSeconds,
-            })),
-            backgroundWords: line.backgroundWords?.map((w) => ({
-              ...w,
-              begin: w.begin + deltaSeconds,
-              end: w.end + deltaSeconds,
-            })),
-          });
+          return reconcileLine({ ...line, ...shiftLineTiming(line, deltaSeconds) });
         }),
       }),
     ),

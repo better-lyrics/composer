@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { shiftLineTiming } from "@/domain/line/shift";
 
 type UpdateLineWithHistory = (
   id: string,
@@ -15,9 +16,7 @@ function nudgeLineBegin(
   const line = lines[lineIdx];
   if (line?.begin === undefined) return;
 
-  const newBegin = Math.max(0, line.begin + delta);
-  const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
+  updateLineWithHistory(line.id, shiftLineTiming(line, delta), { propagateToSiblings: false });
 }
 
 function setLineBegin(
@@ -26,11 +25,10 @@ function setLineBegin(
   newBegin: number,
   updateLineWithHistory: UpdateLineWithHistory,
 ) {
-  const line = lines[lineIdx];
-  if (line?.begin === undefined) return;
+  const begin = lines[lineIdx]?.begin;
+  if (begin === undefined) return;
 
-  const duration = line.end - line.begin;
-  updateLineWithHistory(line.id, { begin: newBegin, end: newBegin + duration }, { propagateToSiblings: false });
+  nudgeLineBegin(lines, lineIdx, newBegin - begin, updateLineWithHistory);
 }
 
 export { nudgeLineBegin, setLineBegin };
