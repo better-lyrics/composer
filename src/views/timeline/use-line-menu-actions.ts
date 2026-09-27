@@ -4,12 +4,8 @@ import { showGroupActionToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
-
-// -- Interfaces ---------------------------------------------------------------
-
-type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 
 // -- Hook ---------------------------------------------------------------------
 

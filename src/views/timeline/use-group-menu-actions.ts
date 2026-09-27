@@ -7,14 +7,10 @@ import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/co
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
 import { toast } from "sonner";
-
-// -- Interfaces ---------------------------------------------------------------
-
-type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 
 // -- Constants ----------------------------------------------------------------
 

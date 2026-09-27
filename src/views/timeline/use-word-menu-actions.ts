@@ -10,12 +10,8 @@ import { mergeWordText } from "@/utils/word-merge";
 import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import type { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
-
-// -- Interfaces ---------------------------------------------------------------
-
-type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 
 // -- Hook ---------------------------------------------------------------------
 

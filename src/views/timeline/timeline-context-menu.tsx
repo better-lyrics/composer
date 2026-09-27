@@ -4,7 +4,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { GROUP_COLORS } from "@/utils/group-colors";
 import { formatKey } from "@/utils/format-key";
 import { isMac } from "@/utils/platform";
-import { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
+import { type ContextMenuTargets, useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
 import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
@@ -51,8 +51,6 @@ function MenuDivider() {
 }
 
 // -- Grouping section ---------------------------------------------------------
-
-type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
 
 function GroupingMenuSection({
   groupableSelection,

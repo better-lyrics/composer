@@ -160,6 +160,9 @@ function useContextMenuTargets() {
   };
 }
 
+type ContextMenuTargets = ReturnType<typeof useContextMenuTargets>;
+
 // -- Exports ------------------------------------------------------------------
 
 export { useContextMenuTargets };
+export type { ContextMenuTargets };
