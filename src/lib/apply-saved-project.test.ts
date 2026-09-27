@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import type { Agent } from "@/domain/agent/model";
 import { applySavedProject } from "@/lib/apply-saved-project";
 import type { SavedProject } from "@/lib/persistence";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createProjectSaveInput } from "@/test/factories";
 import { resetAllStores } from "@/test/stores";
 
-const FILE_AGENTS = [
-  { id: "v1", type: "person" as const, name: "File Lead" },
-  { id: "v2", type: "person" as const, name: "File Duet" },
+const FILE_AGENTS: Agent[] = [
+  { id: "v1", type: "person", name: "File Lead" },
+  { id: "v2", type: "person", name: "File Duet" },
 ];
 
 function projectFile(overrides: Partial<SavedProject> = {}): SavedProject {

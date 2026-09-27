@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Agent } from "@/domain/agent/model";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { usePersistence } from "@/hooks/usePersistence";
 import { getHashImportSettled, getPersistenceSettled } from "@/lib/persistence-settled";
@@ -169,8 +170,8 @@ describe("usePersistence + useImportFromHash: hash overrides persistence", () =>
   });
 
   it("regression: keeps an imported agent the replaced project also had", async () => {
-    const savedDuet = { id: "v2", type: "person" as const, name: "Saved Duet" };
-    const importedDuet = { id: "v2", type: "person" as const, name: "Imported Duet" };
+    const savedDuet: Agent = { id: "v2", type: "person", name: "Saved Duet" };
+    const importedDuet: Agent = { id: "v2", type: "person", name: "Imported Duet" };
     await seedProject({ ...savedSnapshot(), agents: [SAVED_AGENT, savedDuet] });
     autoAcceptHashConfirm();
     setHash(encodeHashPayload({ ...importedPayload(), agents: [IMPORTED_AGENT, importedDuet] }));
