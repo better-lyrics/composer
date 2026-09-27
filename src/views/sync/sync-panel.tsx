@@ -1,4 +1,4 @@
-import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -60,16 +60,18 @@ const SyncPanel: React.FC = () => {
 
   const linkInfoByLineId = useMemo(() => {
     const groupsById = new Map(groups.map((g) => [g.id, g]));
+    const positions = instancePositionsByLineId(lines);
     const out = new Map<string, ScrollableLineLinkInfo>();
     for (const line of lines) {
       if (!isLinked(line)) continue;
       const group = groupsById.get(line.groupId);
-      if (!group) continue;
+      const position = positions.get(line.id);
+      if (!group || !position) continue;
       out.set(line.id, {
         color: group.color,
         label: group.label,
-        ordinal: instanceOrdinal(lines, group.id, line.instanceIdx),
-        totalInstances: instanceCount(lines, group.id),
+        ordinal: position.ordinal,
+        totalInstances: position.count,
       });
     }
     return out;

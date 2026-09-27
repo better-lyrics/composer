@@ -4,9 +4,11 @@ import {
   instanceCount,
   instanceIndicesOf,
   instanceOrdinal,
+  instancePositionsByLineId,
   linesOfInstance,
   nextInstanceIdx,
 } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -216,5 +218,50 @@ describe("instanceCount", () => {
       line({ id: "b", groupId: "g1", instanceIdx: 9 }),
     ];
     for (const idx of [4, 9]) expect(instanceOrdinal(lines, "g1", idx)).toBeLessThanOrEqual(instanceCount(lines, "g1"));
+  });
+});
+
+describe("instancePositionsByLineId", () => {
+  it("gives every linked line its instance ordinal and its group's instance count", () => {
+    const lines: LyricLine[] = [
+      line({ id: "a", groupId: "g1", instanceIdx: 3 }),
+      line({ id: "b", groupId: "g2", instanceIdx: 0 }),
+      line({ id: "c", groupId: "g1", instanceIdx: 1 }),
+      line({ id: "d", groupId: "g1", instanceIdx: 3 }),
+    ];
+    const positions = instancePositionsByLineId(lines);
+    expect(positions.get("a")).toEqual({ ordinal: 2, count: 2 });
+    expect(positions.get("b")).toEqual({ ordinal: 1, count: 1 });
+    expect(positions.get("c")).toEqual({ ordinal: 1, count: 2 });
+    expect(positions.get("d")).toEqual({ ordinal: 2, count: 2 });
+  });
+
+  describe("edge cases", () => {
+    it("skips standalone lines", () => {
+      expect(instancePositionsByLineId([line({ id: "s" })]).has("s")).toBe(false);
+    });
+
+    it("is empty for no lines", () => {
+      expect(instancePositionsByLineId([]).size).toBe(0);
+    });
+  });
+
+  describe("invariants", () => {
+    it("agrees with instanceOrdinal and instanceCount for every linked line", () => {
+      const lines: LyricLine[] = [
+        line({ id: "a", groupId: "g1", instanceIdx: 4 }),
+        line({ id: "b", groupId: "g1", instanceIdx: 9 }),
+        line({ id: "c", groupId: "g2", instanceIdx: 2 }),
+        line({ id: "d", groupId: "g1", instanceIdx: 0 }),
+      ];
+      const positions = instancePositionsByLineId(lines);
+      for (const l of lines) {
+        if (!isLinked(l)) continue;
+        expect(positions.get(l.id)).toEqual({
+          ordinal: instanceOrdinal(lines, l.groupId, l.instanceIdx),
+          count: instanceCount(lines, l.groupId),
+        });
+      }
+    });
   });
 });
