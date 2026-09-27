@@ -6,12 +6,33 @@ import type { DriveStep } from "driver.js";
 
 // -- Types --------------------------------------------------------------------
 
+type TourStepId = (typeof TOUR_STEP_IDS)[number];
+
 interface GatedStep {
+  stepId: TourStepId;
   stepIndex: number;
   task: string;
   gateCheck: () => boolean;
   tabId: string;
 }
+
+// -- Step order ---------------------------------------------------------------
+
+const TOUR_STEP_IDS = [
+  "welcome",
+  "import",
+  "import-gate",
+  "edit",
+  "edit-gate",
+  "languages",
+  "sync",
+  "sync-gate",
+  "timeline",
+  "preview",
+  "export",
+  "best-practices",
+  "outro",
+] as const;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -32,9 +53,8 @@ const gateFirstLineSynced = () => useProjectStore.getState().lines.some(isLineTi
 // -- Tour Steps ---------------------------------------------------------------
 
 function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
-  return [
-    // 0: Welcome
-    {
+  const stepsById: Record<TourStepId, DriveStep> = {
+    welcome: {
       popover: {
         title: "Welcome to Composer",
         description:
@@ -44,8 +64,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
         showProgress: false,
       },
     },
-    // 1: Import tab
-    {
+    import: {
       element: () => document.querySelector('[data-tour="import-dropzone"]') as Element,
       popover: {
         title: "Bring in your audio",
@@ -56,8 +75,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("import"),
     },
-    // 2: GATED - wait for audio
-    {
+    "import-gate": {
       element: () => document.querySelector('[data-tour="import-dropzone"]') as Element,
       popover: {
         title: "Import your audio",
@@ -66,8 +84,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("import"),
     },
-    // 3: Edit tab
-    {
+    edit: {
       element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
       popover: {
         title: "Type or paste lyrics",
@@ -77,8 +94,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("edit"),
     },
-    // 4: GATED - wait for lyrics
-    {
+    "edit-gate": {
       element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
       popover: {
         title: "Add your lyrics",
@@ -87,8 +103,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("edit"),
     },
-    // 5: Languages tab
-    {
+    languages: {
       element: () => document.querySelector('[data-tour="languages-panel"]') as Element,
       popover: {
         title: "Translate and transliterate",
@@ -99,8 +114,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("languages"),
     },
-    // 6: Sync tab
-    {
+    sync: {
       element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
       popover: {
         title: "Sync your lyrics",
@@ -111,8 +125,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("sync"),
     },
-    // 7: GATED - wait for first line synced
-    {
+    "sync-gate": {
       element: () => document.querySelector('[data-tour="sync-panel"]') as Element,
       popover: {
         title: "Sync at least one line",
@@ -121,8 +134,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("sync"),
     },
-    // 8: Timeline tab
-    {
+    timeline: {
       element: () => document.querySelector('[data-tour="timeline-panel"]') as Element,
       popover: {
         title: "Fine-tune on the timeline",
@@ -132,8 +144,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("timeline"),
     },
-    // 9: Preview tab
-    {
+    preview: {
       element: () => document.querySelector('[data-tour="preview-panel"]') as Element,
       popover: {
         title: "Preview your work",
@@ -143,8 +154,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("preview"),
     },
-    // 10: Export tab
-    {
+    export: {
       element: () => document.querySelector('[data-tour="export-panel"]') as Element,
       popover: {
         title: "Export your TTML",
@@ -154,8 +164,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       },
       onHighlightStarted: () => switchTab("export"),
     },
-    // 11: Best practices, ahead of the closing video
-    {
+    "best-practices": {
       popover: {
         title: BEST_PRACTICES_STEP_TITLE,
         description:
@@ -167,8 +176,7 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
         onNextClick: () => onOpenBestPractices(),
       },
     },
-    // 12: Outro with video
-    {
+    outro: {
       popover: {
         title: "See a full walkthrough",
         description: `You're all set! Here's a video of the full process.${YOUTUBE_EMBED_HTML}`,
@@ -178,33 +186,39 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
         showProgress: false,
       },
     },
-  ];
+  };
+  return TOUR_STEP_IDS.map((id) => stepsById[id]);
 }
 
 // -- Gated Steps Config -------------------------------------------------------
 
-const TOUR_GATED_STEPS: GatedStep[] = [
+const TOUR_GATES: Omit<GatedStep, "stepIndex">[] = [
   {
-    stepIndex: 2,
+    stepId: "import-gate",
     task: "Drop an audio file",
     gateCheck: gateAudioLoaded,
     tabId: "import",
   },
   {
-    stepIndex: 4,
+    stepId: "edit-gate",
     task: "Type or paste lyrics",
     gateCheck: gateLyricsExist,
     tabId: "edit",
   },
   {
-    stepIndex: 7,
+    stepId: "sync-gate",
     task: "Sync at least one line",
     gateCheck: gateFirstLineSynced,
     tabId: "sync",
   },
 ];
 
+const TOUR_GATED_STEPS: GatedStep[] = TOUR_GATES.map((gate) => ({
+  ...gate,
+  stepIndex: TOUR_STEP_IDS.indexOf(gate.stepId),
+}));
+
 // -- Exports ------------------------------------------------------------------
 
-export { BEST_PRACTICES_STEP_TITLE, createTourSteps, TOUR_GATED_STEPS };
+export { BEST_PRACTICES_STEP_TITLE, createTourSteps, TOUR_GATED_STEPS, TOUR_STEP_IDS };
 export type { GatedStep };

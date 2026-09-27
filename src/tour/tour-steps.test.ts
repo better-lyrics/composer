@@ -1,4 +1,6 @@
-import { BEST_PRACTICES_STEP_TITLE, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
+import { useProjectStore } from "@/stores/project";
+import { createLine } from "@/test/factories";
+import { BEST_PRACTICES_STEP_TITLE, TOUR_GATED_STEPS, TOUR_STEP_IDS, createTourSteps } from "@/tour/tour-steps";
 import { type DriveStep, driver } from "driver.js";
 import { describe, expect, it } from "vitest";
 
@@ -97,5 +99,38 @@ describe("createTourSteps", () => {
     const steps = createTourSteps(() => {});
     expect(steps).toHaveLength(13);
     for (const step of steps) expect(step.popover?.title?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("TOUR_GATED_STEPS", () => {
+  it("references step ids that exist, with the index derived from the step order", () => {
+    const steps = createTourSteps(() => {});
+    expect(steps).toHaveLength(TOUR_STEP_IDS.length);
+    for (const gate of TOUR_GATED_STEPS) {
+      expect(TOUR_STEP_IDS).toContain(gate.stepId);
+      expect(gate.stepIndex).toBe(TOUR_STEP_IDS.indexOf(gate.stepId));
+    }
+  });
+
+  it("keeps every step id unique", () => {
+    expect(new Set(TOUR_STEP_IDS).size).toBe(TOUR_STEP_IDS.length);
+  });
+});
+
+describe("tour sync gate", () => {
+  const syncGate = TOUR_GATED_STEPS.find((g) => g.stepId === "sync-gate");
+
+  it("sync gate passes once the first line is word-synced", () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "hello", words: [{ text: "hello", begin: 0, end: 1 }] })],
+    });
+    expect(syncGate?.gateCheck()).toBe(true);
+  });
+
+  it("sync gate passes when a later line is synced but line 1 is not", () => {
+    useProjectStore.setState({
+      lines: [createLine({ text: "intro" }), createLine({ text: "hello", begin: 0, end: 1 })],
+    });
+    expect(syncGate?.gateCheck()).toBe(true);
   });
 });

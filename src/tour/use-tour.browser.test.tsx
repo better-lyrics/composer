@@ -1,11 +1,13 @@
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
+import { isAnyModalOpen, useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { GuideCard } from "@/tour/guide-card";
 import { BEST_PRACTICES_STEP_TITLE, createTourSteps } from "@/tour/tour-steps";
-import { TOUR_RESUME_KEY, useTour } from "@/tour/use-tour";
+import { TOUR_RESUME_KEY, TOUR_SEEN_KEY, resetTour, useTour } from "@/tour/use-tour";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Harness ------------------------------------------------------------------
@@ -31,11 +33,31 @@ function HandoffHarness({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+function ShortcutsHarness() {
+  const { resumeOrStartTour, startTour } = useTour({ onOpenBestPractices: () => {} });
+  useGlobalShortcuts({
+    setActiveTab: (tab) => useProjectStore.getState().setActiveTab(tab),
+    setHelpOpen: () => {},
+    setSettingsOpen: () => {},
+  });
+  return (
+    <div>
+      <button type="button" data-testid="resume" onClick={() => resumeOrStartTour()}>
+        Resume
+      </button>
+      <button type="button" data-testid="start" onClick={() => startTour()}>
+        Start
+      </button>
+    </div>
+  );
+}
+
 // -- Driver popover helpers ---------------------------------------------------
 
 const driverNextBtn = () => document.querySelector(".driver-popover-next-btn") as HTMLButtonElement | null;
 const driverProgress = () => document.querySelector(".driver-popover-progress-text")?.textContent ?? "";
 const driverTitle = () => document.querySelector(".driver-popover-title")?.textContent ?? "";
+const driverCloseBtn = () => document.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
 const VIDEO_BTN_CLASS = "composer-tour-video-btn";
 const driverWatchBtn = () => document.querySelector(`.${VIDEO_BTN_CLASS}`) as HTMLButtonElement | null;
 
@@ -293,7 +315,123 @@ describe("useTour skipGuideCard", () => {
     await clickNext();
     await expect.poll(driverProgress).toBe("7 / 13");
     await clickNext();
-    // Sync gate passes -> driver auto-advances past step 7. Guide card never appears.
-    await expect.poll(() => screen.container.textContent?.includes("Step 8 / 13") ?? false).toBe(false);
+    await expect.poll(driverProgress).toBe("9 / 13");
+    await expect.poll(driverTitle).toBe("Fine-tune on the timeline");
+    expect(screen.container.textContent).not.toContain("Step 8 / 13");
+    expect(screen.container.textContent).not.toContain("Sync at least one line");
+  });
+});
+
+describe("useTour lifecycle", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("restarts from Welcome after the user finishes the tour on the last step", async () => {
+    const steps = createTourSteps(() => {});
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: steps.length - 1, stepCount: steps.length }));
+    const screen = await render(<ShortcutsHarness />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("See a full walkthrough");
+    driverCloseBtn()?.click();
+    await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+  });
+
+  it("restarts from Welcome after the best practices handoff ends the tour", async () => {
+    const steps = createTourSteps(() => {});
+    const stepIndex = steps.findIndex((s) => s.popover?.title === BEST_PRACTICES_STEP_TITLE);
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex, stepCount: steps.length }));
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe(BEST_PRACTICES_STEP_TITLE);
+    driverNextBtn()?.click();
+    await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+  });
+
+  it("keeps the resume point when the tour is closed partway through", async () => {
+    const steps = createTourSteps(() => {});
+    const exportIndex = steps.findIndex((step) => step.popover?.title === "Export your TTML");
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: exportIndex, stepCount: steps.length }));
+    const screen = await render(<HandoffHarness onOpen={() => {}} />);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Export your TTML");
+    driverCloseBtn()?.click();
+    await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
+
+    await screen.getByTestId("resume").click();
+    await expect.poll(driverTitle).toBe("Export your TTML");
+  });
+
+  it("does not switch tabs with Mod+digit while a tour popover is open", async () => {
+    const screen = await render(<ShortcutsHarness />);
+    await screen.getByTestId("start").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    expect(useProjectStore.getState().activeTab).toBe("import");
+
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "4", metaKey: true, ctrlKey: true, bubbles: true }));
+    expect(useProjectStore.getState().activeTab).toBe("import");
+  });
+
+  it("holds one modal entry while open and releases it when the tour closes", async () => {
+    const screen = await render(<ShortcutsHarness />);
+    await screen.getByTestId("start").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    expect(isAnyModalOpen()).toBe(true);
+
+    driverCloseBtn()?.click();
+    await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
+    expect(isAnyModalOpen()).toBe(false);
+  });
+
+  it("does not leak a modal entry when a tour restarts while one is running", async () => {
+    const screen = await render(<ShortcutsHarness />);
+    await screen.getByTestId("start").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    screen
+      .getByTestId("start")
+      .element()
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    expect(useModalStackStore.getState().count).toBe(1);
+
+    driverCloseBtn()?.click();
+    await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
+    expect(useModalStackStore.getState().count).toBe(0);
+  });
+
+  it("releases the modal entry when a gate hands over to the guide card", async () => {
+    const screen = await render(<TourHarness />);
+    await screen.getByTestId("start").click();
+    await clickNext();
+    await clickNext();
+    await expect.poll(() => screen.container.textContent).toContain("Step 3 / 13");
+    expect(useModalStackStore.getState().count).toBe(0);
+  });
+
+  it("releases the modal entry when the host unmounts mid tour", async () => {
+    const screen = await render(<ShortcutsHarness />);
+    await screen.getByTestId("start").click();
+    await expect.poll(driverTitle).toBe("Welcome to Composer");
+    await screen.unmount();
+    expect(useModalStackStore.getState().count).toBe(0);
+  });
+});
+
+describe("resetTour", () => {
+  it("forgets that the tour was seen and where it stopped", () => {
+    localStorage.setItem(TOUR_SEEN_KEY, "true");
+    localStorage.setItem(TOUR_RESUME_KEY, JSON.stringify({ stepIndex: 3, stepCount: 13 }));
+    resetTour();
+    expect(localStorage.getItem(TOUR_SEEN_KEY)).toBe(null);
+    expect(localStorage.getItem(TOUR_RESUME_KEY)).toBe(null);
   });
 });

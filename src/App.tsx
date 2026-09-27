@@ -15,7 +15,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
-import { TOUR_RESUME_KEY, TOUR_SEEN_KEY, useTour } from "@/tour/use-tour";
+import { resetTour, useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -116,10 +116,7 @@ const AppContent: React.FC = () => {
         key={settingsOpen ? "settings-open" : "settings-closed"}
         isOpen={settingsOpen}
         onClose={closeSettings}
-        onResetTour={() => {
-          localStorage.removeItem(TOUR_SEEN_KEY);
-          localStorage.removeItem(TOUR_RESUME_KEY);
-        }}
+        onResetTour={resetTour}
       />
       <TabBar />
       <main className="relative flex-1 overflow-hidden">
