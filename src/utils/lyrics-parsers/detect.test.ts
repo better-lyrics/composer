@@ -12,6 +12,17 @@ const TTML_BODY_WITH_QRC_BRACKET =
 const QRC_BODY = "[34059,2299]Is (34059,130)it (34189,120)";
 const SRT_BODY_WITH_QRC_BRACKET = "1\n00:00:01,000 --> 00:00:02,000\nMeet me at [1000,500] tonight";
 const PLAIN_BODY = "Is it so hard to say the same thing";
+const LRCLIB_STYLE_PASTE = `
+
+  [ar: Queen]
+[al: A Night at the Opera]
+[ti: Bohemian Rhapsody]
+[length: 05:55]
+[by:]
+
+[00:00.63] Is this the real life?
+[00:04.21] Is this just fantasy?
+`;
 
 // -- Tests --------------------------------------------------------------------
 
@@ -139,6 +150,28 @@ describe("detectFileType", () => {
 
     it("does not throw on a truncated QRC document", () => {
       expect(() => detectFileType("lyrics.qrc", "<QrcInfos><LyricInfo LyricContent=")).not.toThrow();
+    });
+  });
+
+  describe("pasted lrc", () => {
+    it("detects LRC that opens with blank lines, indentation and metadata tags", () => {
+      expect(detectFileType("pasted text", LRCLIB_STYLE_PASTE)).toBe("lrc");
+    });
+
+    it("detects LRC that opens with an indented timestamp", () => {
+      expect(detectFileType("pasted text", "   [00:12.34]Hello world")).toBe("lrc");
+    });
+
+    it("keeps plain text that only opens with metadata tags as plain text", () => {
+      expect(detectFileType("pasted text", "[ti: Song]\nIs it so hard")).toBe("txt");
+    });
+
+    it("keeps lyrics that open with a section label as plain text", () => {
+      expect(detectFileType("pasted text", "[Chorus]\n[00:12.34]Hello world")).toBe("txt");
+    });
+
+    it("keeps an empty paste as plain text", () => {
+      expect(detectFileType("pasted text", "\n  \n")).toBe("txt");
     });
   });
 });
