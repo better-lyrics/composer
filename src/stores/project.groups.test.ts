@@ -477,6 +477,23 @@ describe("project store · shiftInstance", () => {
     });
   });
 
+  it("regression: a multi-line instance shifted past zero moves every line by the same amount", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
+    useProjectStore.setState({
+      lines: [
+        { ...member, id: "a", text: "one", templateLineIdx: 0, begin: 0.5, end: 2.5 },
+        { ...member, id: "b", text: "two", templateLineIdx: 1, begin: 3, end: 4 },
+      ],
+    });
+
+    useProjectStore.getState().shiftInstance("g1", 0, -2);
+
+    const [a, b] = useProjectStore.getState().lines;
+    expect(a).toMatchObject({ begin: 0, end: 2 });
+    expect(b).toMatchObject({ begin: 2.5, end: 3.5 });
+  });
+
   it("is undoable", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.setState({

@@ -3,7 +3,7 @@ import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
-import { shiftLineTiming } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -147,14 +147,15 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     ),
 
   shiftInstance: (groupId, instanceIdx, deltaSeconds) =>
-    set((state) =>
-      commitHistory(state, {
-        lines: state.lines.map((line) => {
-          if (line.groupId !== groupId || line.instanceIdx !== instanceIdx || line.detached) return line;
-          return reconcileLine({ ...line, ...shiftLineTiming(line, deltaSeconds) });
-        }),
-      }),
-    ),
+    set((state) => {
+      const isMember = (line: LyricLine) => belongsToInstance(line, groupId, instanceIdx) && !line.detached;
+      const delta = clampShiftDelta(state.lines.filter(isMember), deltaSeconds);
+      return commitHistory(state, {
+        lines: state.lines.map((line) =>
+          isMember(line) ? reconcileLine({ ...line, ...shiftLineTiming(line, delta) }) : line,
+        ),
+      });
+    }),
 });
 
 // -- Exports ------------------------------------------------------------------

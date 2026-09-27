@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { createLine } from "@/test/factories";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
@@ -22,6 +22,25 @@ describe("shiftWords", () => {
   });
   it("edge: an empty array stays empty", () => {
     expect(shiftWords([], 3)).toEqual([]);
+  });
+});
+
+describe("clampShiftDelta", () => {
+  it("stops the earliest main begin at zero", () => {
+    const lines = [createLine({ text: "a", begin: 0.5, end: 2.5 }), createLine({ text: "b", begin: 3, end: 4 })];
+    expect(clampShiftDelta(lines, -2)).toBe(-0.5);
+  });
+
+  it("leaves a delta that stays at or above zero alone", () => {
+    expect(clampShiftDelta([createLine({ text: "a", begin: 5, end: 6 })], -2)).toBe(-2);
+    expect(clampShiftDelta([createLine({ text: "a", begin: 5, end: 6 })], 3)).toBe(3);
+  });
+
+  describe("edge cases", () => {
+    it("does not clamp when no line has main timing", () => {
+      expect(clampShiftDelta([createLine({ text: "a" })], -4)).toBe(-4);
+      expect(clampShiftDelta([], -4)).toBe(-4);
+    });
   });
 });
 
