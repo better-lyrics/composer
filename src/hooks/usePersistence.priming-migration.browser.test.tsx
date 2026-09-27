@@ -9,33 +9,26 @@ import { loadCurrentProjectWithPrimingMigration } from "@/lib/priming-migration"
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
+import { createProjectSaveInput } from "@/test/factories";
 
 // -- Helpers ------------------------------------------------------------------
 
 function seedSavedProject(opts: { primingStripped: boolean }): Promise<void> {
   return saveCurrentProject(
-    { title: "t", artists: [], album: "", duration: 0 },
-    DEFAULT_AGENTS,
-    [
-      {
-        id: "L1",
-        text: "hello world",
-        agentId: DEFAULT_AGENTS[0].id,
-        words: [
-          { text: "hello", begin: 1.0, end: 1.5 },
-          { text: "world", begin: 1.5, end: 2.0 },
-        ],
-      },
-    ],
-    [],
-    "word",
-    { applyToAll: false, caseInsensitive: false },
-    { kind: "file", name: "silence.mp3" },
-    [],
-    [],
-    "original",
-    opts.primingStripped,
-    [],
+    createProjectSaveInput({
+      lines: [
+        {
+          id: "L1",
+          text: "hello world",
+          agentId: DEFAULT_AGENTS[0].id,
+          words: [
+            { text: "hello", begin: 1.0, end: 1.5 },
+            { text: "world", begin: 1.5, end: 2.0 },
+          ],
+        },
+      ],
+      primingStripped: opts.primingStripped,
+    }),
   );
 }
 
@@ -133,18 +126,7 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     expect(parseLamePriming(await mp3.arrayBuffer()).samples).toBeGreaterThan(0);
     await saveAudioFile(mp3);
     await saveCurrentProject(
-      { title: "race", artists: [], album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "silence.mp3" },
-      [],
-      [],
-      "original",
-      false,
-      [],
+      createProjectSaveInput({ metadata: { title: "race", artists: [], album: "", duration: 0 } }),
     );
 
     await renderHook(() => usePersistence());
@@ -159,18 +141,10 @@ describe("usePersistence priming-stripped flag survives the post-load debounced 
     const noPrimingMp3 = new File([new Uint8Array([0, 1, 2, 3])], "not-mp3.bin", { type: "audio/mpeg" });
     await saveAudioFile(noPrimingMp3);
     await saveCurrentProject(
-      { title: "race-zero", artists: [], album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "not-mp3.bin" },
-      [],
-      [],
-      "original",
-      false,
-      [],
+      createProjectSaveInput({
+        metadata: { title: "race-zero", artists: [], album: "", duration: 0 },
+        audioSource: { kind: "file", name: "not-mp3.bin" },
+      }),
     );
 
     await renderHook(() => usePersistence());

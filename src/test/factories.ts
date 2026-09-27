@@ -2,6 +2,8 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { reconcileLine, type LyricLine } from "@/domain/line/model";
 import { type SnapPoint, toSnapPoints } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
+import type { ProjectSaveInput } from "@/lib/persistence";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 
 interface FactoryLineOptions {
   id?: string;
@@ -80,4 +82,25 @@ function createGroup(opts: FactoryGroupOptions = {}) {
   };
 }
 
-export { createLine, createWord, createGroup, snapPoints };
+function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): ProjectSaveInput {
+  return {
+    metadata: { title: "t", artists: [], album: "", duration: 0 },
+    agents: DEFAULT_AGENTS,
+    lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
+    groups: [],
+    granularity: "word",
+    syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
+    audioSource: { kind: "file", name: "silence.mp3" },
+    dismissedSuggestions: [],
+    dismissedExplicitSuggestions: [],
+    currentStem: "original",
+    primingStripped: false,
+    customSnapPoints: [],
+    hasUnexportedImport: false,
+    importedMetadataKeys: [],
+    ttmlEditState: null,
+    ...overrides,
+  };
+}
+
+export { createLine, createWord, createGroup, createProjectSaveInput, snapPoints };

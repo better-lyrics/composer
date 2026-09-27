@@ -2,6 +2,7 @@ import {
   clearAudioFile,
   loadAudioFile,
   saveAudioFile,
+  type ProjectSaveInput,
   saveCurrentProject,
   type SavedAudioSource,
 } from "@/lib/persistence";
@@ -37,9 +38,7 @@ function playableFile(source: AudioSource): File | null {
   return null;
 }
 
-type ProjectSaveArgs = Parameters<typeof debouncedSave>;
-
-function buildSaveArgs(): ProjectSaveArgs | null {
+function buildSaveInput(): ProjectSaveInput | null {
   const projectState = useProjectStore.getState();
   const liveAudioSource = useAudioStore.getState().source;
   // Skip only when the session is truly empty. Audio-loaded sessions need to
@@ -48,39 +47,39 @@ function buildSaveArgs(): ProjectSaveArgs | null {
   const hasContent = projectState.lines.length > 0 || projectState.metadata.title;
   const hasContext = liveAudioSource !== null;
   if (!hasContent && !hasContext) return null;
-  return [
-    projectState.metadata,
-    projectState.agents,
-    projectState.lines,
-    projectState.groups,
-    projectState.granularity,
-    projectState.syllableSplitDefaults,
-    toSavedAudioSource(liveAudioSource),
-    projectState.dismissedSuggestions,
-    projectState.dismissedExplicitSuggestions,
-    useSeparationStore.getState().currentStem,
-    projectState.primingStripped,
-    projectState.customSnapPoints,
-    projectState.hasUnexportedImport,
-    projectState.importedMetadataKeys,
-    projectState.ttmlEditState,
-  ];
+  return {
+    metadata: projectState.metadata,
+    agents: projectState.agents,
+    lines: projectState.lines,
+    groups: projectState.groups,
+    granularity: projectState.granularity,
+    syllableSplitDefaults: projectState.syllableSplitDefaults,
+    audioSource: toSavedAudioSource(liveAudioSource),
+    dismissedSuggestions: projectState.dismissedSuggestions,
+    dismissedExplicitSuggestions: projectState.dismissedExplicitSuggestions,
+    currentStem: useSeparationStore.getState().currentStem,
+    primingStripped: projectState.primingStripped,
+    customSnapPoints: projectState.customSnapPoints,
+    hasUnexportedImport: projectState.hasUnexportedImport,
+    importedMetadataKeys: projectState.importedMetadataKeys,
+    ttmlEditState: projectState.ttmlEditState,
+  };
 }
 
 function commitProjectSave(): void {
-  const args = buildSaveArgs();
-  if (!args) return;
-  debouncedSave(...args);
+  const input = buildSaveInput();
+  if (!input) return;
+  debouncedSave(input);
 }
 
 // Discrete user actions (stem picking) should not wait for the typing-tuned
 // debounce. Cancel any queued debounced save so it can't overwrite this one
 // with stale args, then write to IDB now.
 function commitProjectSaveNow(): void {
-  const args = buildSaveArgs();
-  if (!args) return;
+  const input = buildSaveInput();
+  if (!input) return;
   cancelPendingSave();
-  saveCurrentProject(...args).catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
+  saveCurrentProject(input).catch((err) => console.error(LOG_PREFIX, "Immediate save failed:", err));
 }
 
 // -- Hook ---------------------------------------------------------------------

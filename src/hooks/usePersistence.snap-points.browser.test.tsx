@@ -8,7 +8,7 @@ import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
-import { snapPoints } from "@/test/factories";
+import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 
 // -- Helpers ------------------------------------------------------------------
@@ -53,18 +53,10 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("regression: usePersistence hydrates saved customSnapPoints into the project store", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "with-markers", artists: [], album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "silence.mp3" },
-      [],
-      [],
-      "original",
-      false,
-      snapPoints([4, 9]),
+      createProjectSaveInput({
+        metadata: { title: "with-markers", artists: [], album: "", duration: 0 },
+        customSnapPoints: snapPoints([4, 9]),
+      }),
     );
 
     await renderHook(() => usePersistence());
@@ -106,18 +98,10 @@ describe("usePersistence · customSnapPoints hydration", () => {
   it("regression: a saved project's markers survive the audio-source clear fired during load", async () => {
     await saveAudioFile(createMp3File());
     await saveCurrentProject(
-      { title: "survives-load", artists: [], album: "", duration: 0 },
-      DEFAULT_AGENTS,
-      [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
-      [],
-      "word",
-      { applyToAll: false, caseInsensitive: false },
-      { kind: "file", name: "silence.mp3" },
-      [],
-      [],
-      "original",
-      false,
-      snapPoints([5, 12]),
+      createProjectSaveInput({
+        metadata: { title: "survives-load", artists: [], album: "", duration: 0 },
+        customSnapPoints: snapPoints([5, 12]),
+      }),
     );
 
     useProjectStore.setState({ customSnapPoints: [] });

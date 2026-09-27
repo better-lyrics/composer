@@ -40,6 +40,24 @@ interface SavedProject {
   ttmlEditState?: TtmlEditState;
 }
 
+interface ProjectSaveInput {
+  metadata: ProjectMetadata;
+  agents: Agent[];
+  lines: LyricLine[];
+  groups: LinkGroup[];
+  granularity: GranularityMode;
+  syllableSplitDefaults: SyllableSplitDefaults;
+  audioSource: SavedAudioSource | undefined;
+  dismissedSuggestions: string[];
+  dismissedExplicitSuggestions: string[];
+  currentStem: Stem;
+  primingStripped: boolean;
+  customSnapPoints: SnapPoint[];
+  hasUnexportedImport: boolean;
+  importedMetadataKeys: MetadataKey[];
+  ttmlEditState: TtmlEditState;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const CURRENT_PROJECT_KEY = "current";
@@ -47,44 +65,9 @@ const AUDIO_FILE_KEY = "current-audio";
 
 // -- Public API ---------------------------------------------------------------
 
-async function saveCurrentProject(
-  metadata: ProjectMetadata,
-  agents: Agent[],
-  lines: LyricLine[],
-  groups: LinkGroup[],
-  granularity: GranularityMode,
-  syllableSplitDefaults: SyllableSplitDefaults,
-  audioSource: SavedAudioSource | undefined,
-  dismissedSuggestions: string[],
-  dismissedExplicitSuggestions: string[],
-  currentStem: Stem,
-  primingStripped: boolean,
-  customSnapPoints: SnapPoint[],
-  hasUnexportedImport = false,
-  importedMetadataKeys: MetadataKey[] = [],
-  ttmlEditState: TtmlEditState = null,
-): Promise<void> {
-  const audioFileName = audioSource?.kind === "file" ? audioSource.name : undefined;
-  const project: SavedProject = {
-    version: 3,
-    savedAt: Date.now(),
-    metadata,
-    agents,
-    lines,
-    groups,
-    granularity,
-    syllableSplitDefaults,
-    audioFileName,
-    audioSource,
-    dismissedSuggestions,
-    dismissedExplicitSuggestions,
-    currentStem,
-    primingStripped,
-    customSnapPoints,
-    hasUnexportedImport,
-    importedMetadataKeys,
-    ttmlEditState,
-  };
+async function saveCurrentProject(input: ProjectSaveInput): Promise<void> {
+  const audioFileName = input.audioSource?.kind === "file" ? input.audioSource.name : undefined;
+  const project: SavedProject = { version: 3, savedAt: Date.now(), ...input, audioFileName };
   await setInStore(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY, project);
 }
 
@@ -200,4 +183,4 @@ export {
   loadAudioFile,
   clearAudioFile,
 };
-export type { SavedAudioSource, SavedProject };
+export type { ProjectSaveInput, SavedAudioSource, SavedProject };

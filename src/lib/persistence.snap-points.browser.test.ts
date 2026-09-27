@@ -3,7 +3,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { clearCurrentProject, loadCurrentProject, type SavedProject, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
-import { snapPoints } from "@/test/factories";
+import { createProjectSaveInput, snapPoints } from "@/test/factories";
 
 // The shared browser setup (src/test/setup-browser.ts) deletes the entire
 // `ttml-composer` database before every test. We also clear the current
@@ -13,18 +13,11 @@ import { snapPoints } from "@/test/factories";
 
 function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
   return saveCurrentProject(
-    { title: "snap", artists: [], album: "", duration: 0 },
-    DEFAULT_AGENTS,
-    [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
-    [],
-    "word",
-    { applyToAll: false, caseInsensitive: false },
-    { kind: "file", name: "silence.mp3" },
-    [],
-    [],
-    "original",
-    false,
-    customSnapPoints,
+    createProjectSaveInput({
+      metadata: { title: "snap", artists: [], album: "", duration: 0 },
+      lines: [{ id: "L1", text: "hello", agentId: DEFAULT_AGENTS[0].id }],
+      customSnapPoints,
+    }),
   );
 }
 
