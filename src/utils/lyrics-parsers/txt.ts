@@ -21,6 +21,7 @@ function parseTxt(content: string, _fallbackDuration?: number): ParseResult {
     lines,
     metadata: {},
     hasTimingData: false,
+    issues: [],
   };
 }
 

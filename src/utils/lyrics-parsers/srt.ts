@@ -59,6 +59,7 @@ function parseSrt(content: string, _fallbackDuration?: number): ParseResult {
     lines,
     metadata: {},
     hasTimingData: lines.some((l) => l.begin !== undefined),
+    issues: [],
   };
 }
 

@@ -16,7 +16,7 @@ function lineFactory(id: string, text: string, agentId = "v1"): LyricLine {
 }
 
 function emptyParseResult(): ParseResult {
-  return { lines: [], metadata: {}, hasTimingData: false };
+  return { lines: [], metadata: {}, hasTimingData: false, issues: [] };
 }
 
 function parseResult(overrides: Partial<ParseResult> = {}): ParseResult {
@@ -24,6 +24,7 @@ function parseResult(overrides: Partial<ParseResult> = {}): ParseResult {
     lines: [lineFactory("a", "Hello"), lineFactory("b", "World")],
     metadata: {},
     hasTimingData: false,
+    issues: [],
     ...overrides,
   };
 }
@@ -129,7 +130,7 @@ describe("importParsedLyrics timing distribution", () => {
       words: [{ text: "Hi", begin: 1, end: 2 }],
     };
     await importParsedLyrics(
-      { lines: [timed], metadata: {}, hasTimingData: true },
+      { lines: [timed], metadata: {}, hasTimingData: true, issues: [] },
       buildContext({ audioDuration: 60 }),
     );
     const stored = useProjectStore.getState().lines;
@@ -144,7 +145,7 @@ describe("importParsedLyrics background extraction", () => {
   it("applies background extraction when the flag is set", async () => {
     const inline: LyricLine = { id: "x", text: "Hello (world)", agentId: "v1" };
     await importParsedLyrics(
-      { lines: [inline], metadata: {}, hasTimingData: false },
+      { lines: [inline], metadata: {}, hasTimingData: false, issues: [] },
       buildContext({ applyBackgroundExtraction: true }),
     );
     const stored = useProjectStore.getState().lines;
@@ -156,7 +157,7 @@ describe("importParsedLyrics background extraction", () => {
   it("passes original lines through when the flag is unset", async () => {
     const inline: LyricLine = { id: "x", text: "Hello (world)", agentId: "v1" };
     await importParsedLyrics(
-      { lines: [inline], metadata: {}, hasTimingData: false },
+      { lines: [inline], metadata: {}, hasTimingData: false, issues: [] },
       buildContext({ applyBackgroundExtraction: false }),
     );
     const stored = useProjectStore.getState().lines;

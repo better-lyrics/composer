@@ -5,7 +5,7 @@ import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 
 function makeParseResult(overrides: Partial<ParseResult> = {}): ParseResult {
   const lines: LyricLine[] = [];
-  return { lines, metadata: {}, hasTimingData: false, ...overrides };
+  return { lines, metadata: {}, hasTimingData: false, issues: [], ...overrides };
 }
 
 beforeEach(() => {

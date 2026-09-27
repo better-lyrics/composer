@@ -235,6 +235,7 @@ function parseQrc(content: string, fallbackDuration?: number): ParseResult {
     metadata,
     hasTimingData: reconciledLines.some(hasAnyTiming),
     agents,
+    issues: [],
   };
 }
 

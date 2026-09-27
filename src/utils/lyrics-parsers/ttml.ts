@@ -46,7 +46,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
   // Check for parse errors
   const parseError = doc.querySelector("parsererror");
   if (parseError) {
-    return { lines: [], metadata: {}, hasTimingData: false };
+    return { lines: [], metadata: {}, hasTimingData: false, issues: [{ line: 1, text: "", reason: "empty-document" }] };
   }
 
   // Extract metadata (use getElementsByTagName for namespace compatibility)
@@ -237,6 +237,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     hasTimingData: lines.some((l) => l.begin !== undefined || l.words?.length),
     agents: agents.length > 0 ? agents : undefined,
     groups: groups.length > 0 ? groups : undefined,
+    issues: [],
   };
 }
 

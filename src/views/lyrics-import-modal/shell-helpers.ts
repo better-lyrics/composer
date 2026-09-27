@@ -12,7 +12,7 @@ const PAYLOAD_EXTENSIONS: Record<LyricsSearchPayload["kind"], string> = {
 };
 
 function wrapTextAsParseResult(lines: LyricLine[]): ParseResult {
-  return { lines, metadata: {}, hasTimingData: false };
+  return { lines, metadata: {}, hasTimingData: false, issues: [] };
 }
 
 function syntheticFilenameForResult(result: LyricsSearchResult): string {

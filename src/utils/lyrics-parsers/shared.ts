@@ -5,10 +5,17 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 
 // -- Types --------------------------------------------------------------------
 
+interface ParseIssue {
+  line: number;
+  text: string;
+  reason: "invalid-timestamp" | "unparsed" | "empty-document";
+}
+
 interface ParseResult {
   lines: LyricLine[];
   metadata: Partial<ProjectMetadata>;
   hasTimingData: boolean;
+  issues: ParseIssue[];
   agents?: Agent[];
   groups?: LinkGroup[];
 }
@@ -24,4 +31,4 @@ function generateLineId(): string {
 // -- Exports ------------------------------------------------------------------
 
 export { generateLineId };
-export type { ParseResult, ParserFn };
+export type { ParseIssue, ParseResult, ParserFn };
