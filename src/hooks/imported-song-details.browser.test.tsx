@@ -6,6 +6,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { createAudioFile } from "@/test/audio-fixtures";
 
 // -- Constants -----------------------------------------------------------------
 
@@ -26,7 +27,7 @@ const importedAgents = [{ id: "v1", type: "person" as const, name: "April Harper
 // -- Helpers -------------------------------------------------------------------
 
 function audioFile(name: string, lastModified = 1000): File {
-  return new File([new Uint8Array(8)], name, { type: "audio/wav", lastModified });
+  return new File([createAudioFile()], name, { type: "audio/wav", lastModified });
 }
 
 function importWhileOtherSongLoaded() {
@@ -37,7 +38,7 @@ function importWhileOtherSongLoaded() {
 
 async function dropFile(file: File) {
   const { result } = await renderHook(() => useLoadAudioFile());
-  result.current(file);
+  await result.current(file);
 }
 
 async function loadVideo(videoId: string) {

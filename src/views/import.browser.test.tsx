@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { ImportPanel } from "@/views/import";
@@ -48,6 +48,23 @@ function id3v2(frames: Array<[string, string]>): Uint8Array {
 
 function audioDropZone(container: Element): HTMLLabelElement | null {
   return container.querySelector<HTMLInputElement>("input[aria-label='Upload audio file']")?.closest("label") ?? null;
+}
+
+function playableWav(name: string, lastModified?: number): File {
+  return new File([createAudioFile()], name, { type: "audio/wav", lastModified });
+}
+
+function taggedMp3(frames: Array<[string, string]>, name: string): File {
+  return new File([id3v2(frames), createMp3File()], name, { type: "audio/mpeg" });
+}
+
+async function waitForLoadedFile(file: File): Promise<void> {
+  await expect
+    .poll(() => {
+      const source = useAudioStore.getState().source;
+      return source?.type === "file" && source.file === file;
+    })
+    .toBe(true);
 }
 
 function dispatchDrop(target: Element, file: File) {
@@ -347,15 +364,16 @@ describe("ImportPanel: videoId-gated thumb fallback", () => {
 // -- File drop: embedded tag capture --------------------------------------
 
 describe("ImportPanel: audio tag capture", () => {
-  it("sets the filename as the title synchronously on drop", async () => {
+  it("sets the filename as the title once the dropped file is verified as audio", async () => {
     useAudioStore.setState({ source: null });
     useProjectStore.setState({ lines: [] });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    const file = new File([new Uint8Array(8)], "My Untagged Song.wav", { type: "audio/wav" });
+    const file = playableWav("My Untagged Song.wav");
     const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
+    await waitForLoadedFile(file);
 
     expect(useProjectStore.getState().metadata.title).toBe("My Untagged Song");
   });
@@ -365,13 +383,15 @@ describe("ImportPanel: audio tag capture", () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    const bytes = id3v2([
-      ["TIT2", "Tagged Title"],
-      ["TPE1", "The Artist"],
-      ["TALB", "The Album"],
-      ["TSRC", "USQX91700001"],
-    ]);
-    const file = new File([bytes], "filename-fallback.mp3", { type: "audio/mpeg" });
+    const file = taggedMp3(
+      [
+        ["TIT2", "Tagged Title"],
+        ["TPE1", "The Artist"],
+        ["TALB", "The Album"],
+        ["TSRC", "USQX91700001"],
+      ],
+      "filename-fallback.mp3",
+    );
     const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
@@ -388,9 +408,10 @@ describe("ImportPanel: audio tag capture", () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    const file = new File([new Uint8Array(8)], "No Tags Here.wav", { type: "audio/wav" });
+    const file = playableWav("No Tags Here.wav");
     const dropZone = audioDropZone(screen.container);
     if (dropZone) dispatchDrop(dropZone, file);
+    await waitForLoadedFile(file);
 
     expect(useProjectStore.getState().metadata.title).toBe("No Tags Here");
     await expect.poll(() => useProjectStore.getState().metadata.title).toBe("No Tags Here");
@@ -424,7 +445,7 @@ describe("ImportPanel: stale audio tag writes", () => {
       "stale.mp3",
       { type: "audio/mpeg" },
     );
-    const current = new File([id3v2([["TIT2", "Current Title"]])], "current.mp3", { type: "audio/mpeg" });
+    const current = taggedMp3([["TIT2", "Current Title"]], "current.mp3");
 
     const dropZone = audioDropZone(screen.container);
     expect(dropZone).not.toBeNull();
@@ -457,10 +478,11 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     language: "en",
   };
 
-  function dropOnImportPanel(container: HTMLElement, file: File) {
+  async function dropOnImportPanel(container: HTMLElement, file: File) {
     const dropZone = audioDropZone(container);
     expect(dropZone).not.toBeNull();
     if (dropZone) dispatchDrop(dropZone, file);
+    await waitForLoadedFile(file);
   }
 
   it("regression: an untagged replacement file clears the previous song's metadata", async () => {
@@ -468,7 +490,7 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     useProjectStore.setState({ lines: [], metadata: previousSong });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
 
     const metadata = useProjectStore.getState().metadata;
     expect(metadata.title).toBe("Other Song");
@@ -485,11 +507,16 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     useProjectStore.setState({ lines: [], metadata: previousSong });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    const bytes = id3v2([
-      ["TIT2", "New Title"],
-      ["TPE1", "New Artist"],
-    ]);
-    dropOnImportPanel(screen.container, new File([bytes], "new.mp3", { type: "audio/mpeg" }));
+    await dropOnImportPanel(
+      screen.container,
+      taggedMp3(
+        [
+          ["TIT2", "New Title"],
+          ["TPE1", "New Artist"],
+        ],
+        "new.mp3",
+      ),
+    );
 
     await expect.poll(() => useProjectStore.getState().metadata.title).toBe("New Title");
     const metadata = useProjectStore.getState().metadata;
@@ -508,19 +535,19 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
 
     expect(useProjectStore.getState().agents).toEqual([{ id: "v1", type: "person", name: "Lead" }]);
   });
 
   it("regression: dropping the same audio file again keeps the song's metadata and singer names", async () => {
     const agents = [{ id: "v1", type: "person" as const, name: "April Harper Grey" }];
-    const sameFile = () => new File([new Uint8Array(8)], "Lovefield.wav", { type: "audio/wav", lastModified: 1000 });
+    const sameFile = () => playableWav("Lovefield.wav", 1000);
     useAudioStore.setState({ source: { type: "file", file: sameFile() } });
     useProjectStore.setState({ lines: [], metadata: previousSong, agents });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    dropOnImportPanel(screen.container, sameFile());
+    await dropOnImportPanel(screen.container, sameFile());
 
     expect(useProjectStore.getState().metadata).toEqual(previousSong);
     expect(useProjectStore.getState().agents).toEqual(agents);
@@ -531,7 +558,7 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     useProjectStore.setState({ lines: [], metadata: previousSong });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Lovefield.wav", { type: "audio/wav" }));
+    await dropOnImportPanel(screen.container, playableWav("Lovefield.wav"));
 
     const metadata = useProjectStore.getState().metadata;
     expect(metadata.artists).toEqual(["underscores"]);
@@ -544,7 +571,7 @@ describe("ImportPanel: replacing the audio with a different song", () => {
     useProjectStore.setState({ lines: [], metadata: previousSong });
     const screen = await render(withQueryClient(<ImportPanel />));
 
-    dropOnImportPanel(screen.container, new File([new Uint8Array(8)], "Other Song.wav", { type: "audio/wav" }));
+    await dropOnImportPanel(screen.container, playableWav("Other Song.wav"));
 
     expect(useProjectStore.getState().metadata.artists).toEqual([]);
     expect(useProjectStore.getState().metadata.isrc).toBeUndefined();

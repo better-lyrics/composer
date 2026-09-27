@@ -1,4 +1,6 @@
 import { useCallback } from "react";
+import { toast } from "sonner";
+import { probeAudioFile } from "@/audio/probe-audio-file";
 import { confirmClearImportedSongDetails } from "@/hooks/imported-song-details";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,10 +11,15 @@ import { fileNameWithoutExtension } from "@/utils/file-name";
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[Composer]";
+const UNPLAYABLE_AUDIO_MESSAGE = "That file is not playable audio.";
 
 // -- Types --------------------------------------------------------------------
 
 type TagWrite = "apply" | "skip";
+
+// -- State --------------------------------------------------------------------
+
+let latestPick: File | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -54,8 +61,16 @@ async function applyAudioTags(file: File): Promise<void> {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useLoadAudioFile(): (file: File) => void {
-  return useCallback((file: File) => {
+function useLoadAudioFile(): (file: File) => Promise<void> {
+  return useCallback(async (file: File) => {
+    latestPick = file;
+    const probe = await probeAudioFile(file);
+    if (latestPick !== file) return;
+    if (!probe.ok) {
+      toast.error(UNPLAYABLE_AUDIO_MESSAGE);
+      return;
+    }
+
     const previous = useAudioStore.getState().source;
     useAudioStore.getState().setSource({ type: "file", file });
 
