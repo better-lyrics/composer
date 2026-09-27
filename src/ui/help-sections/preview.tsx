@@ -1,9 +1,10 @@
 import { PROSE } from "@/ui/typography";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Preview ------------------------------------------------------------------
 
 const PreviewSection: React.FC = () => (
-  <div className="space-y-4">
+  <HelpTopic title="Preview" showTitle={false} className="space-y-4">
     <p className={PROSE}>
       The Preview tab shows you how your synced lyrics will look with{" "}
       <a
@@ -29,7 +30,7 @@ const PreviewSection: React.FC = () => (
         they'll show up in the final output.
       </li>
     </ul>
-  </div>
+  </HelpTopic>
 );
 
 // -- Exports ------------------------------------------------------------------

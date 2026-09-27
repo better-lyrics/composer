@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { render } from "@/test/render";
 import { TimelineSection } from "@/ui/help-sections/timeline";
+import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
 
 describe("TimelineSection", () => {
   it("renders the section content", async () => {
@@ -42,8 +43,14 @@ describe("TimelineSection", () => {
   });
 
   it("documents the scroll wheel timeline setting", async () => {
-    const screen = await render(<TimelineSection />);
-    await expect.element(screen.getByText(/Turn on "Scroll wheel scrolls timeline" in Settings/)).toBeInTheDocument();
+    const screen = await render(
+      <SettingLinkContext value={APP_SETTING_LINK_HOST}>
+        <TimelineSection />
+      </SettingLinkContext>,
+    );
+    await expect
+      .element(screen.getByRole("button", { name: /^Open setting Scroll wheel scrolls timeline/ }))
+      .toBeInTheDocument();
   });
 
   it("documents playhead-drag edge auto-scroll", async () => {
@@ -120,7 +127,7 @@ describe("TimelineSection", () => {
 
   it("documents the snap playhead to points setting", async () => {
     const screen = await render(<TimelineSection />);
-    expect(screen.container.textContent).toContain('"Snap playhead to points"');
+    expect(screen.container.textContent).toContain("Turn on Snap playhead to points (on by default)");
     expect(screen.container.textContent).toContain("never snapped");
   });
 
@@ -157,7 +164,7 @@ describe("TimelineSection", () => {
     expect(boundaryItem?.textContent).toContain("unless the setting below is on");
     const draggingItem = items.find((li) => li.textContent?.includes("Two flush syllables share one boundary"));
     expect(draggingItem?.textContent).toContain(
-      "Turn on Syllables follow rolling edit in Settings to join them only while Rolling is on",
+      "Turn on Syllables follow rolling edit to join them only while Rolling is on",
     );
   });
 

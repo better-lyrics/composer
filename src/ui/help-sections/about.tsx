@@ -1,4 +1,5 @@
-import { HEADING, PROSE } from "@/ui/typography";
+import { PROSE } from "@/ui/typography";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- About --------------------------------------------------------------------
 
@@ -16,16 +17,14 @@ const AboutSection: React.FC = () => (
       </div>
     </div>
 
-    <div>
-      <h4 className={HEADING}>What it is</h4>
+    <HelpTopic title="What it is">
       <p className={PROSE}>
         Free and open-source, runs entirely in your browser. No accounts, nothing leaves your machine. Bring your audio
         and lyrics, sync them up, export TTML.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Open source</h4>
+    <HelpTopic title="Open source">
       <p className={PROSE}>
         AGPL v3. Source on{" "}
         <a
@@ -38,10 +37,9 @@ const AboutSection: React.FC = () => (
         </a>
         . PRs welcome if you spot something to fix.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Commercial use</h4>
+    <HelpTopic title="Commercial use">
       <p className={PROSE}>
         Composer is also available under a commercial license that removes the AGPL copyleft obligations and covers
         commercial use of its output, such as a label or distributor publishing generated lyrics in a release. For
@@ -54,10 +52,9 @@ const AboutSection: React.FC = () => (
         </a>
         .
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Community</h4>
+    <HelpTopic title="Community">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           <a
@@ -82,10 +79,9 @@ const AboutSection: React.FC = () => (
           if something's broken.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Made by</h4>
+    <HelpTopic title="Made by">
       <p className={PROSE}>
         <a
           href="https://boidu.dev"
@@ -106,7 +102,7 @@ const AboutSection: React.FC = () => (
         </a>{" "}
         community who's tested it, reported bugs, and put up with the rough edges.
       </p>
-    </div>
+    </HelpTopic>
   </div>
 );
 

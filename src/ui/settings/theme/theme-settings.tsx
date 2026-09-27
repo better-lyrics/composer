@@ -5,16 +5,9 @@ import { type EditorTarget, ThemeEditor } from "@/ui/settings/theme/theme-editor
 import { ThemePresetGallery } from "@/ui/settings/theme/theme-preset-gallery";
 import { IconDownload } from "@tabler/icons-react";
 
-// -- Interfaces ----------------------------------------------------------------
-
-interface ThemeSectionProps {
-  onResetTour: () => void;
-  onClose: () => void;
-}
-
 // -- Components ----------------------------------------------------------------
 
-const ThemeSection: React.FC<ThemeSectionProps> = () => {
+const ThemeSettings: React.FC = () => {
   const [editor, setEditor] = useState<EditorTarget | null>(null);
   const [importValue, setImportValue] = useState("");
   const [importError, setImportError] = useState<string | null>(null);
@@ -90,4 +83,4 @@ const ThemeSection: React.FC<ThemeSectionProps> = () => {
 
 // -- Exports -------------------------------------------------------------------
 
-export { ThemeSection };
+export { ThemeSettings };

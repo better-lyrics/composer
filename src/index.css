@@ -343,6 +343,51 @@ input[type="range"].settings-slider::-moz-range-progress {
   background: var(--color-composer-accent);
 }
 
+/* Help search matches, painted with the Custom Highlight API; mirrors HighlightMatches */
+::highlight(help-match) {
+  color: var(--color-composer-accent-text);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-composer-accent) 70%, transparent);
+}
+
+/* Nudge the row or topic a link or search result jumped to; the target must be position: relative */
+[data-nudge]::before {
+  content: "";
+  position: absolute;
+  inset: 2px -12px;
+  border-radius: 10px;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--color-composer-accent) 8%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-composer-accent) 35%, transparent);
+  opacity: 0;
+  animation: nudge 1000ms ease-in-out 300ms forwards;
+}
+
+[data-help-topic][data-nudge]::before {
+  inset: -8px -12px;
+}
+
+@keyframes nudge {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes nudge-static {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 /* OverlayScrollbars: ensure tracks render above timeline content */
 .os-scrollbar {
   z-index: 200;
@@ -411,6 +456,11 @@ input[type="range"].settings-slider::-moz-range-progress {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  [data-nudge]::before {
+    animation-name: nudge-static;
+    animation-duration: 1000ms !important;
+    animation-timing-function: steps(1, end);
   }
   .is-snapped {
     transition: none;

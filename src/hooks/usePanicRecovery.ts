@@ -10,8 +10,8 @@ const SHORTCUT_ID = "global.panicRecovery";
 // -- Hook ---------------------------------------------------------------------
 
 // Registers a window-level keydown listener for the panic recovery shortcut.
-// Reads the binding from the shortcut registry so users can remap it via
-// Settings → Shortcuts. Bypasses the normal `useGlobalShortcuts` pipeline on
+// Reads the binding from the shortcut registry (`global.panicRecovery`) so users
+// can remap it like any other shortcut. Bypasses the normal `useGlobalShortcuts` pipeline on
 // purpose so it still fires when modals are open or the rest of the app is in
 // a weird state. Does NOT help when the main thread is fully frozen; for that
 // case the user must open /recover in a fresh tab. Documented in the help

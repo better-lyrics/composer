@@ -1,8 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, PROSE } from "@/ui/typography";
+import { PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { TimelineExtras } from "@/ui/help-sections/timeline-extras";
 import { ALT_KEY, MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Timeline -----------------------------------------------------------------
 
@@ -15,25 +17,23 @@ const TimelineSection: React.FC = () => (
       DAW or video editor before, this will feel familiar.
     </p>
 
-    <div>
-      <h4 className={HEADING}>Layout</h4>
+    <HelpTopic title="Layout">
       <p className={PROSE}>
         The waveform sits at the top. Below it, each lyrics line is a horizontal track. Word blocks sit on the tracks,
         positioned by their start and end times. The playhead (vertical line) follows the audio. The gutter on the left
         shows line numbers and agent colors. Click it to assign agents.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Navigation</h4>
+    <HelpTopic title="Navigation">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           A plain scroll wheel scrolls vertically through the lines. To move through time, scroll horizontally with a
           trackpad gesture.
         </li>
         <li>
-          Turn on "Scroll wheel scrolls timeline" in Settings, under Timeline, to swap the axes: a plain wheel then
-          scrolls the timeline horizontally and Shift + wheel scrolls vertically.
+          Turn on <SettingLink setting="timelineHorizontalScroll" /> to swap the axes: a plain wheel then scrolls the
+          timeline horizontally and Shift + wheel scrolls vertically.
         </li>
         <li>
           Scroll the wheel while the cursor is over the waveform strip to scrub the playhead through time, and the view
@@ -53,25 +53,24 @@ const TimelineSection: React.FC = () => (
           the view scrolls automatically during playback.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Audio scrub preview</h4>
+    <HelpTopic title="Audio scrub preview">
       <p className={PROSE}>
         When you scrub the playhead (drag it, or scroll the wheel over the waveform), Composer plays a short bit of
         audio at the playhead position, at normal pitch. It helps you find a specific word by ear without having to
         press play. Faster scrubs play more snippets, slower scrubs play fewer. The preview matches your main volume and
-        stays silent when the audio is muted. If it gets in the way, turn it off in Settings, under Playback.
+        stays silent when the audio is muted. If it gets in the way, turn off{" "}
+        <SettingLink setting="audioScrubPreview" />.
       </p>
       <p className={`${PROSE} mt-2`}>
         If you've separated the song into stems, scrubbing follows the stem you have selected: pick "Vocals" from the
         stem dropdown and the scrub previews vocals only, which makes it much easier to pin down a syllable boundary.
         The full track plays back as normal regardless of the stem choice.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Selecting words</h4>
+    <HelpTopic title="Selecting words">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Click a word block to select it. {MOD_KEY} + Click to add or remove from selection.</li>
         <li>Shift + Click a syllable to select every syllable in that word's group at once.</li>
@@ -86,10 +85,9 @@ const TimelineSection: React.FC = () => (
           Press <strong>Escape</strong> to deselect everything.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Editing words</h4>
+    <HelpTopic title="Editing words">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Double-click a word block to edit its text inline. Press Enter to confirm, Escape to cancel.</li>
         <li>Double-click on empty track space to create a new word at that position.</li>
@@ -119,10 +117,9 @@ const TimelineSection: React.FC = () => (
           keeps its duration, and the nudge stops at the neighboring word so nothing overlaps.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Copy, cut, paste</h4>
+    <HelpTopic title="Copy, cut, paste">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           {MOD_KEY} + C / X / V work as expected. When you paste, a ghost preview appears. Click to place the pasted
@@ -131,10 +128,9 @@ const TimelineSection: React.FC = () => (
         <li>{ALT_KEY} + drag selected words to duplicate them.</li>
         <li>Press Delete or Backspace to remove selected words.</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Moving words across lines and tracks</h4>
+    <HelpTopic title="Moving words across lines and tracks">
       <p className={PROSE}>
         Drag any word block onto another line to move it there. It can land on a different line's main track, on a
         background track, or on the background track of its own line. Multi-select moves the whole selection at once:
@@ -152,15 +148,14 @@ const TimelineSection: React.FC = () => (
           of an existing word just stays put.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Boundary dragging</h4>
+    <HelpTopic title="Boundary dragging">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Two flush syllables share one boundary: drag either edge and both move, staying flush. Once a gap opens, each
-          edge drags on its own. Turn on <strong>Syllables follow rolling edit</strong> in Settings to join them only
-          while Rolling is on.
+          edge drags on its own. Turn on <SettingLink setting="syllablesFollowRolling" /> to join them only while
+          Rolling is on.
         </li>
         <li>
           Hold <strong>{ALT_KEY}</strong> while dragging to flip the current mode: flush syllables open a gap, gapped
@@ -175,10 +170,9 @@ const TimelineSection: React.FC = () => (
           drag.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Snap (magnet)</h4>
+    <HelpTopic title="Snap (magnet)">
       <p className={PROSE}>
         Drag or resize a word and its edges lock onto nearby anchors: the begin and end of any other word (main or
         background track), line edges for line-synced lines, and the playhead. A yellow halo appears on the moving block
@@ -193,16 +187,18 @@ const TimelineSection: React.FC = () => (
           Hold <strong>{MOD_KEY}</strong> mid-drag to bypass snap. The toolbar magnet dims while bypass is active.
           Release the key and snap re-engages.
         </li>
-        <li>Adjust the snap distance in Settings, under Timeline. Range is 4 to 24 pixels, default 12.</li>
+        <li>
+          Adjust the snap distance with <SettingLink setting="timelineSnapThreshold" />. Range is 4 to 24 pixels,
+          default 12.
+        </li>
         <li>
           Snap won't push a block into a neighbor. If the closest anchor would cause overlap, it falls through to the
           next-best anchor or doesn't snap at all.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Snap points and marker mode</h4>
+    <HelpTopic title="Snap points and marker mode">
       <p className={PROSE}>
         Two kinds of snap marker can sit over the waveform. Dashed guide lines are vocal onsets, which Composer detects
         from the separated vocal stem, so they only show up once you have split out vocals and turned on "Snap to vocal
@@ -241,9 +237,9 @@ const TimelineSection: React.FC = () => (
           while hovering to remove it.
         </li>
         <li>
-          Turn on "Snap playhead to points" in Settings, under Timeline (on by default), and clicking or dragging the
-          playhead snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture.
-          Scroll-wheel scrubbing over the waveform stays smooth and is never snapped.
+          Turn on <SettingLink setting="snapPlayheadToPoints" /> (on by default), and clicking or dragging the playhead
+          snaps it to nearby custom pins and vocal onsets. Hold {MOD_KEY} to bypass it for one gesture. Scroll-wheel
+          scrubbing over the waveform stays smooth and is never snapped.
         </li>
         <li>
           Snap points are saved with your project and come back when you reopen it. Undo and redo treat placing, moving,
@@ -251,45 +247,7 @@ const TimelineSection: React.FC = () => (
           you share.
         </li>
       </ul>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Splitting and merging</h4>
-      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>
-          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
-          the splitter in syllable mode. Click between letters to mark where the word should break. The result is a
-          linked syllable group: the pieces stay tied together as one word. If the playhead is on the word when you
-          confirm a single split, the timing boundary snaps to the playhead position exactly.
-        </li>
-        <li>
-          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitWord")} /> (or right-click and pick{" "}
-          <strong>Split word</strong>) to open the splitter in word mode. This breaks one word into separate independent
-          words, joined by a space, rather than a linked syllable group.
-        </li>
-        <li>
-          To undo a syllable split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or
-          press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
-          collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
-        </li>
-        <li>
-          Select two or more adjacent words on the same line and press{" "}
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block. This
-          works even when the selected words have a space between them; the joining space is dropped.
-        </li>
-      </ul>
-    </div>
-
-    <div>
-      <h4 className={HEADING}>Syllable timing</h4>
-      <p className={PROSE}>
-        Syllables of a word can be timed flush against each other or with gaps between them. Gaps are useful for
-        staccato or rap delivery, and for per-character timing in Japanese, Chinese, or Korean lyrics. To close those
-        gaps, right-click a syllable and pick <strong>Snap syllables flush</strong>. It pulls every syllable group on
-        the line tight, so each syllable starts where the previous one ends. The item only shows up when a group has a
-        gap, and there is no keyboard shortcut for it.
-      </p>
-    </div>
+    </HelpTopic>
 
     <TimelineExtras />
   </div>

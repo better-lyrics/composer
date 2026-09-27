@@ -1,12 +1,13 @@
-import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Linked group extras ------------------------------------------------------
 
 const GroupsExtras: React.FC = () => (
   <>
-    <div>
-      <h4 className={HEADING}>What propagates and what doesn't</h4>
+    <HelpTopic title="What propagates and what doesn't">
       <p className={PROSE}>Linked across all instances:</p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Word text and line text edits.</li>
@@ -25,10 +26,9 @@ const GroupsExtras: React.FC = () => (
         <li>Banner shifts and arrow-key nudge.</li>
         <li>Anything you do on a line that's been detached.</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>The split-or-merge prompt</h4>
+    <HelpTopic title="The split-or-merge prompt">
       <p className={PROSE}>
         When a split or merge on a linked line would actually shift sibling word timings (sibling rhythms differ from
         the source), Composer pops a three-button modal: <strong>Apply to all</strong> (propagate with timing
@@ -38,12 +38,11 @@ const GroupsExtras: React.FC = () => (
       </p>
       <p className={`${PROSE} mt-2`}>
         Tick "Don't ask again" in the modal to default to your choice next time. Reset the preference from{" "}
-        <strong>Settings → Confirmations</strong>.
+        <SettingLink section="confirmations" />.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Detaching</h4>
+    <HelpTopic title="Detaching">
       <p className={PROSE}>
         Real songs aren't perfectly repetitive. The last chorus might add an extra "yeah" or land on a different agent.
         Two ways to break the link:
@@ -61,10 +60,9 @@ const GroupsExtras: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         Both are undoable: the toast that appears has an Undo button, or press {MOD_KEY} + Z.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Emptying an instance</h4>
+    <HelpTopic title="Emptying an instance">
       <p className={PROSE}>
         Click the banner to select every word in an instance, then press <strong>Delete</strong>. Composer clears the
         timed content and notices the instance is now empty across all its lines, so it strips the group attrs from
@@ -75,19 +73,17 @@ const GroupsExtras: React.FC = () => (
         Partial deletes don't trigger this: if one line of a multi-line instance still has timed words, the instance
         stays linked.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Deleting a group</h4>
+    <HelpTopic title="Deleting a group">
       <p className={PROSE}>
         Right-click any banner and pick <strong>Delete group</strong>. A confirmation modal warns you that all instances
         will become standalone (text and timing survive, they just stop syncing). Tick "Don't ask again" to skip the
-        modal next time, or restore the prompt from <strong>Settings → Confirmations</strong>.
+        modal next time, or restore the prompt from <SettingLink setting="confirmGroupDissolution" />.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>How groups look outside the Timeline</h4>
+    <HelpTopic title="How groups look outside the Timeline">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           <strong>Edit view</strong>: a colored divider with the group name and instance count appears before each
@@ -104,7 +100,7 @@ const GroupsExtras: React.FC = () => (
           ignore them; Composer reads them back exactly as saved.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
   </>
 );
 

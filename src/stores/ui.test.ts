@@ -1,80 +1,142 @@
-import { useUIStore } from "@/stores/ui";
+import { UI_INITIAL_STATE, useUIStore } from "@/stores/ui";
 import { beforeEach, describe, expect, it } from "vitest";
 
-// -- Setup --------------------------------------------------------------------
+// -- Setup ---------------------------------------------------------------------
 
 beforeEach(() => {
-  useUIStore.setState({ settingsOpen: false, settingsHighlight: null });
+  useUIStore.setState({ ...UI_INITIAL_STATE });
 });
 
-// -- Tests --------------------------------------------------------------------
+const state = () => useUIStore.getState();
+
+// -- Tests ---------------------------------------------------------------------
 
 describe("useUIStore", () => {
-  describe("defaults", () => {
-    it("starts with settingsOpen false and no highlight", () => {
-      const state = useUIStore.getState();
-      expect(state.settingsOpen).toBe(false);
-      expect(state.settingsHighlight).toBeNull();
-    });
-  });
-
   describe("openSettings", () => {
-    it("opens settings without a highlight when called with no arg", () => {
-      useUIStore.getState().openSettings();
-      const state = useUIStore.getState();
-      expect(state.settingsOpen).toBe(true);
-      expect(state.settingsHighlight).toBeNull();
+    it("opens on General with no target, query, or return point", () => {
+      state().openSettings();
+      expect(state()).toMatchObject({
+        settingsOpen: true,
+        settingsSection: "general",
+        settingsQuery: "",
+        settingsTarget: null,
+        settingsReturnTo: null,
+      });
     });
 
-    it("opens settings and stores the requested highlight section", () => {
-      useUIStore.getState().openSettings("bridge-section");
-      const state = useUIStore.getState();
-      expect(state.settingsOpen).toBe(true);
-      expect(state.settingsHighlight).toBe("bridge-section");
+    it("opens on the target setting's section and keeps the target", () => {
+      state().openSettings({ target: { setting: "timelineHorizontalScroll" } });
+      expect(state().settingsSection).toBe("timeline");
+      expect(state().settingsTarget).toEqual({ setting: "timelineHorizontalScroll" });
     });
 
-    it("overwrites a previous highlight when called again", () => {
-      useUIStore.setState({ settingsOpen: true, settingsHighlight: "bridge-section" });
-      useUIStore.getState().openSettings();
-      expect(useUIStore.getState().settingsHighlight).toBeNull();
+    it("opens on a section target", () => {
+      state().openSettings({ target: { section: "shortcuts" } });
+      expect(state().settingsSection).toBe("shortcuts");
+    });
+
+    it("closes Help and records the return point when given one", () => {
+      state().openHelp("timeline");
+      state().openSettings({
+        target: { setting: "followPlayhead" },
+        returnTo: { section: "timeline", scrollTop: 240 },
+      });
+      expect(state().helpOpen).toBe(false);
+      expect(state().settingsReturnTo).toEqual({ section: "timeline", scrollTop: 240 });
+    });
+
+    it("clears a search query left from before", () => {
+      state().openSettings();
+      state().setSettingsQuery("snap");
+      state().openSettings({ target: { setting: "youtubeBridge" } });
+      expect(state().settingsQuery).toBe("");
+    });
+
+    it("keeps the existing return point when retargeted while open", () => {
+      state().openSettings({ target: { setting: "followPlayhead" }, returnTo: { section: "timeline", scrollTop: 10 } });
+      state().openSettings({ target: { setting: "youtubeBridge" } });
+      expect(state().settingsReturnTo).toEqual({ section: "timeline", scrollTop: 10 });
     });
   });
 
   describe("closeSettings", () => {
-    it("closes settings and clears any highlight in flight", () => {
-      useUIStore.setState({ settingsOpen: true, settingsHighlight: "bridge-section" });
-      useUIStore.getState().closeSettings();
-      const state = useUIStore.getState();
-      expect(state.settingsOpen).toBe(false);
-      expect(state.settingsHighlight).toBeNull();
+    it("closes without reopening Help when there is no return point", () => {
+      state().openSettings();
+      state().closeSettings();
+      expect(state().settingsOpen).toBe(false);
+      expect(state().helpOpen).toBe(false);
+    });
+
+    it("reopens Help at the recorded location and clears the return point", () => {
+      state().openSettings({
+        target: { setting: "followPlayhead" },
+        returnTo: { section: "timeline", scrollTop: 240 },
+      });
+      state().closeSettings();
+      expect(state()).toMatchObject({
+        settingsOpen: false,
+        settingsTarget: null,
+        settingsReturnTo: null,
+        helpOpen: true,
+        helpLocation: { section: "timeline", scrollTop: 240 },
+      });
     });
   });
 
-  describe("clearHighlight", () => {
-    it("clears the highlight without touching settingsOpen", () => {
-      useUIStore.setState({ settingsOpen: true, settingsHighlight: "bridge-section" });
-      useUIStore.getState().clearHighlight();
-      const state = useUIStore.getState();
-      expect(state.settingsHighlight).toBeNull();
-      expect(state.settingsOpen).toBe(true);
+  describe("returning to a Help search", () => {
+    it("reopens Help with the search it came from", () => {
+      state().openSettings({
+        target: { setting: "timelineSnapThreshold" },
+        returnTo: { section: "timeline", scrollTop: 40, query: "snap threshold" },
+      });
+      state().closeSettings();
+      expect(state().helpLocation).toEqual({ section: "timeline", scrollTop: 40, query: "snap threshold" });
     });
 
-    it("is a noop when no highlight is set", () => {
-      useUIStore.getState().clearHighlight();
-      expect(useUIStore.getState().settingsHighlight).toBeNull();
-      expect(useUIStore.getState().settingsOpen).toBe(false);
+    it("opens Help fresh without a query", () => {
+      state().openHelp("timeline");
+      expect(state().helpLocation.query).toBeUndefined();
+    });
+  });
+
+  describe("section and query", () => {
+    it("changing section clears the query", () => {
+      state().openSettings();
+      state().setSettingsQuery("snap");
+      state().setSettingsSection("sync");
+      expect(state().settingsSection).toBe("sync");
+      expect(state().settingsQuery).toBe("");
+    });
+
+    it("consumeSettingsTarget clears only the target", () => {
+      state().openSettings({ target: { setting: "followPlayhead" } });
+      state().consumeSettingsTarget();
+      expect(state().settingsTarget).toBeNull();
+      expect(state().settingsOpen).toBe(true);
+    });
+  });
+
+  describe("help", () => {
+    it("opens Help at the top of the requested section", () => {
+      state().openHelp("best-practices");
+      expect(state().helpLocation).toEqual({ section: "best-practices", scrollTop: 0 });
+    });
+
+    it("opens Help at Getting Started by default", () => {
+      state().openHelp();
+      expect(state().helpLocation.section).toBe("getting-started");
+    });
+
+    it("closeHelp closes it", () => {
+      state().openHelp();
+      state().closeHelp();
+      expect(state().helpOpen).toBe(false);
     });
   });
 
   describe("invariants", () => {
-    it("settingsHighlight is null whenever settings is closed via closeSettings", () => {
-      useUIStore.getState().openSettings("bridge-section");
-      useUIStore.getState().closeSettings();
-      expect(useUIStore.getState().settingsHighlight).toBeNull();
-    });
-
-    it("does not persist across reloads (no persist middleware)", () => {
-      useUIStore.getState().openSettings("bridge-section");
+    it("does not persist across reloads", () => {
+      state().openSettings({ target: { setting: "youtubeBridge" } });
       expect(localStorage.getItem("composer-ui")).toBeNull();
     });
   });

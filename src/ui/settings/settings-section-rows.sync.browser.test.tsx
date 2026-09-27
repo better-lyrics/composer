@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
-import { SyncSection } from "@/ui/settings/sync-section";
+import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 
-describe("SyncSection", () => {
+describe("SettingsSectionRows (sync)", () => {
   it("renders the split character control, sliders, and granularity select", async () => {
-    const screen = await render(<SyncSection />);
+    const screen = await render(<SettingsSectionRows section="sync" />);
     await expect.element(screen.getByText("Split character")).toBeInTheDocument();
     await expect.element(screen.getByText("Re-record pre-roll")).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Default granularity" })).toBeInTheDocument();
@@ -14,7 +14,7 @@ describe("SyncSection", () => {
 
   it("updates the default granularity from the select", async () => {
     useSettingsStore.setState({ defaultGranularity: "word" });
-    const screen = await render(<SyncSection />);
+    const screen = await render(<SettingsSectionRows section="sync" />);
     await screen.getByRole("button", { name: "Default granularity" }).click();
     await screen.getByRole("option", { name: "Line" }).click();
     await expect.poll(() => useSettingsStore.getState().defaultGranularity).toBe("line");

@@ -1,19 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
-import { TimelineSection } from "@/ui/settings/timeline-section";
+import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
-describe("TimelineSection", () => {
+describe("SettingsSectionRows (timeline)", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
     expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(8);
   });
 
   it("flips the default rolling edit setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ defaultRollingEdit: false });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const toggle = screen.getByRole("switch", { name: "Default rolling edit mode" });
     await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();
@@ -22,7 +22,7 @@ describe("TimelineSection", () => {
   });
 
   it("starts with syllables following rolling edit off and flips it on when clicked", async () => {
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const toggle = screen.getByRole("switch", { name: "Syllables follow rolling edit" });
     await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();
@@ -32,7 +32,7 @@ describe("TimelineSection", () => {
 
   it("flips the default preview sidebar setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ defaultPreviewSidebar: false });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const toggle = screen.getByRole("switch", { name: "Default preview sidebar" });
     await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();
@@ -42,7 +42,7 @@ describe("TimelineSection", () => {
 
   it("flips the snap setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ timelineSnap: true });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const row = screen.getByText("Snap (magnet)").element().closest('[class*="justify-between"]');
     const toggle = row?.querySelector('[role="switch"]') as HTMLElement;
     toggle.click();
@@ -51,7 +51,7 @@ describe("TimelineSection", () => {
 
   it("flips the snap playhead to points setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ snapPlayheadToPoints: true });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const toggle = screen.getByRole("switch", { name: "Snap playhead to points" });
     await expect.element(toggle).toHaveAttribute("aria-checked", "true");
     await toggle.click();
@@ -61,14 +61,14 @@ describe("TimelineSection", () => {
 
   it("adopts the live timeline zoom when its Use current action is clicked", async () => {
     useTimelineStore.setState({ zoom: 260 });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     await screen.getByRole("button", { name: "Use current" }).first().click();
     await expect.poll(() => useSettingsStore.getState().defaultZoom).toBe(260);
   });
 
   it("flips the horizontal-scroll setting when its toggle is clicked", async () => {
     useSettingsStore.setState({ timelineHorizontalScroll: false });
-    const screen = await render(<TimelineSection />);
+    const screen = await render(<SettingsSectionRows section="timeline" />);
     const toggle = screen.getByRole("switch", { name: "Scroll wheel scrolls timeline" });
     await expect.element(toggle).toHaveAttribute("aria-checked", "false");
     await toggle.click();

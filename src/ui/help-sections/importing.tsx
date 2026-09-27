@@ -1,15 +1,16 @@
 import { LYRICS_FORMATS_DESCRIBED, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
+import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Importing ----------------------------------------------------------------
 
 const ImportSection: React.FC = () => (
   <div className="space-y-5">
-    <div>
-      <h4 className={HEADING}>Audio files</h4>
+    <HelpTopic title="Audio files">
       <p className={PROSE}>Supported formats: MP3, WAV, M4A, OGG, FLAC.</p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>Use the Import tab's drop zone, or drop a file directly onto the Timeline empty state.</li>
@@ -17,10 +18,9 @@ const ImportSection: React.FC = () => (
         <li>The file name auto-fills the project title in metadata.</li>
         <li>To replace audio, just drop a new file on the Import tab.</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>YouTube URLs</h4>
+    <HelpTopic title="YouTube URLs">
       <p className={PROSE}>
         Paste any YouTube link (full URL, share link, or just the video ID) into the Import tab. Composer downloads the
         audio once and keeps it in memory, so seeking and waveform rendering stay instant after that.
@@ -34,10 +34,9 @@ const ImportSection: React.FC = () => (
           some other way and drop the file into the Import tab.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>YouTube backends: Cobalt and Composer Bridge</h4>
+    <HelpTopic title="YouTube backends: Cobalt and Composer Bridge">
       <p className={PROSE}>
         YouTube audio doesn't come from YouTube directly. Composer routes the request through a small backend service
         that fetches the audio and hands it back. There are two options.
@@ -45,16 +44,17 @@ const ImportSection: React.FC = () => (
       <p className={`${PROSE} mt-2`}>
         <strong>Cobalt</strong> is the default. Composer ships with a public instance that handles verification
         automatically, but YouTube is currently blocking it. To get unblocked, add a working instance from
-        cobalt.directory in Settings → Advanced, or self-host. Each custom instance shows a small status icon next to
-        its name reflecting the last attempt, with the actual error in the tooltip if anything went wrong.
+        cobalt.directory in <SettingLink setting="cobaltInstances" />, or self-host. Each custom instance shows a small
+        status icon next to its name reflecting the last attempt, with the actual error in the tooltip if anything went
+        wrong.
       </p>
       <p className={`${PROSE} mt-3`}>
         <strong>Composer Bridge</strong>
         <span className="ml-2 text-[10px] tracking-wide text-composer-accent-text">Experimental</span>
         <br />A tiny binary you run on your own machine that downloads YouTube audio over your residential IP, so
         YouTube doesn't block it the way it blocks shared Cobalt hosts. Composer talks to it over localhost; nothing
-        leaves your machine. Toggle "Composer Bridge for YouTube" on in Settings → Advanced and every YouTube import
-        routes through the bridge instead of Cobalt.
+        leaves your machine. Turn on <SettingLink setting="youtubeBridge" /> and every YouTube import routes through the
+        bridge instead of Cobalt.
       </p>
       <ul className={`${PROSE} list-disc pl-4 mt-1.5 space-y-1`}>
         <li>
@@ -83,10 +83,9 @@ const ImportSection: React.FC = () => (
         </a>
         . The install script verifies the release checksum before unpacking.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Lyrics files</h4>
+    <HelpTopic title="Lyrics files">
       <p className={PROSE}>
         Open the lyrics modal from the import button in Edit or the Timeline header (or press{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline). It has three sections:
@@ -119,7 +118,7 @@ const ImportSection: React.FC = () => (
         example from the Better Lyrics extension), the values stick around and pre-fill the next time you open the
         modal. Clear them with "Reset fields" in the Search section.
       </p>
-    </div>
+    </HelpTopic>
   </div>
 );
 

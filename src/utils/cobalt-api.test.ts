@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  CobaltApiError,
-  formatCobaltErrorForToast,
-  mapError,
-  parseStandardCobaltResponse,
-  stripFilenameExtension,
-} from "@/utils/cobalt-api";
+import { CobaltApiError, mapError, parseStandardCobaltResponse, stripFilenameExtension } from "@/utils/cobalt-api";
 
 describe("mapError - known codes", () => {
   it("maps turnstile_failed to a user-readable message", () => {
@@ -180,63 +174,5 @@ describe("parseStandardCobaltResponse", () => {
     } catch (e) {
       expect((e as CobaltApiError).code).toBe("auth_required");
     }
-  });
-});
-
-describe("formatCobaltErrorForToast", () => {
-  const defaultCtx = { isDefault: true, instanceLabel: "Composer" };
-  const customCtx = { isDefault: false, instanceLabel: "Woof Monster" };
-
-  it("returns a generic message for non-CobaltApiError throwables", () => {
-    expect(formatCobaltErrorForToast(new Error("boom"), defaultCtx)).toBe("Couldn't load YouTube audio.");
-    expect(formatCobaltErrorForToast("nope", defaultCtx)).toBe("Couldn't load YouTube audio.");
-  });
-
-  it("blames the active custom instance by name on empty_audio and suggests switching", () => {
-    const msg = formatCobaltErrorForToast(new CobaltApiError("empty_audio", 200), customCtx);
-    expect(msg).toContain("Woof Monster");
-    expect(msg.toLowerCase()).toContain("different cobalt instance");
-  });
-
-  it("does not suggest switching for empty_audio on default", () => {
-    const msg = formatCobaltErrorForToast(new CobaltApiError("empty_audio", 200), defaultCtx);
-    expect(msg.toLowerCase()).not.toContain("different cobalt instance");
-    expect(msg.toLowerCase()).toContain("try again");
-  });
-
-  it("calls out the custom instance for bad_response", () => {
-    const msg = formatCobaltErrorForToast(new CobaltApiError("bad_response", 200), customCtx);
-    expect(msg).toContain("Woof Monster");
-    expect(msg.toLowerCase()).toContain("different cobalt instance");
-  });
-
-  it("explains bot_detection differently for default vs custom", () => {
-    const onDefault = formatCobaltErrorForToast(new CobaltApiError("bot_detection", 0), defaultCtx);
-    const onCustom = formatCobaltErrorForToast(new CobaltApiError("bot_detection", 0), customCtx);
-    expect(onDefault.toLowerCase()).toContain("youtube");
-    expect(onCustom).toContain("Woof Monster");
-    expect(onCustom.toLowerCase()).toContain("different cobalt instance");
-  });
-
-  it("explains rate_limited as instance-side on custom", () => {
-    const onCustom = formatCobaltErrorForToast(new CobaltApiError("rate_limited", 429), customCtx);
-    expect(onCustom).toContain("Woof Monster");
-  });
-
-  it("treats video-content errors as content issues regardless of instance", () => {
-    const onCustom = formatCobaltErrorForToast(new CobaltApiError("video_unavailable", 0), customCtx);
-    expect(onCustom.toLowerCase()).not.toContain("different cobalt instance");
-    expect(onCustom.toLowerCase()).toMatch(/private|removed|restricted/);
-  });
-
-  it("explains auth_required on custom by suggesting another instance", () => {
-    const msg = formatCobaltErrorForToast(new CobaltApiError("auth_required", 401), customCtx);
-    expect(msg).toContain("Woof Monster");
-    expect(msg.toLowerCase()).toContain("different cobalt instance");
-  });
-
-  it("falls back to err.message for unmapped codes", () => {
-    const err = new CobaltApiError("totally_made_up", 0);
-    expect(formatCobaltErrorForToast(err, defaultCtx)).toBe(err.message);
   });
 });

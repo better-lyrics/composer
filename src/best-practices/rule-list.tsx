@@ -1,6 +1,7 @@
 import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import { RuleCard } from "@/best-practices/rule-card";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Components ----------------------------------------------------------------
 
@@ -16,7 +17,9 @@ const RuleList: React.FC = () => (
         </h3>
         <div className="flex flex-col gap-2.5">
           {group.rules.map((rule) => (
-            <RuleCard key={rule.id} rule={rule} />
+            <HelpTopic key={rule.id} title={rule.title} showTitle={false}>
+              <RuleCard rule={rule} />
+            </HelpTopic>
           ))}
         </div>
       </section>

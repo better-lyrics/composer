@@ -1,3 +1,5 @@
+import type { SettingId } from "@/stores/settings-catalog";
+
 // -- Interfaces ----------------------------------------------------------------
 
 interface RuleExample {
@@ -10,6 +12,7 @@ interface Rule {
   title: string;
   body: string[];
   aside?: string;
+  asideSetting?: SettingId;
   example?: RuleExample;
 }
 

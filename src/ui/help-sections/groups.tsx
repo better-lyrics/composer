@@ -1,8 +1,10 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { GroupsExtras } from "@/ui/help-sections/groups-extras";
-import { HEADING, PROSE } from "@/ui/typography";
+import { PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Linked Groups ------------------------------------------------------------
 
@@ -14,17 +16,15 @@ const GroupsSection: React.FC = () => (
       timing, so you can shift one chorus by 5 seconds without moving the others.
     </p>
 
-    <div>
-      <h4 className={HEADING}>Why bother</h4>
+    <HelpTopic title="Why bother">
       <p className={PROSE}>
         If your song repeats the chorus four times, you'd otherwise edit four copies of every lyric tweak. Group them
         and a fix in one place lands in all four. Same for splitting a syllable, switching a word to background vocals,
         or reassigning an agent.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Creating a group</h4>
+    <HelpTopic title="Creating a group">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>Select the lines you want to group (click, then Shift-click the last line, or drag down the gutter).</li>
         <li>
@@ -37,10 +37,9 @@ const GroupsSection: React.FC = () => (
         </li>
         <li>The new group gets a color from the palette and shows up as a banner above the first line.</li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Adding more instances</h4>
+    <HelpTopic title="Adding more instances">
       <p className={PROSE}>
         Click the banner of the instance you want to copy, then press{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.duplicateAsLinked")} /> (or right-click the banner and
@@ -72,10 +71,9 @@ const GroupsSection: React.FC = () => (
         timing, agent and background vocals for the group's, landing where the selection already sat, or at the playhead
         when those lines had no timing yet. Composer asks before overwriting, and {MOD_KEY} + Z undoes it.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>The banner</h4>
+    <HelpTopic title="The banner">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           <strong>Click anywhere on it</strong>: selects every word in the instance. Use this before arrow-key nudge,
@@ -105,10 +103,9 @@ const GroupsSection: React.FC = () => (
           keyboard.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Keyboard shortcuts</h4>
+    <HelpTopic title="Keyboard shortcuts">
       <p className={PROSE}>
         Most of these act on the instance containing your current selection. Click a banner first to "focus" an
         instance.
@@ -134,7 +131,7 @@ const GroupsSection: React.FC = () => (
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeLeft")} /> /{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.nudgeRight")} />: nudge the current instance earlier or
-          later by the nudge amount in Settings.
+          later by <SettingLink setting="nudgeAmount" />.
         </li>
         <li>
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.pingSiblings")} />: ping every sibling instance.
@@ -156,11 +153,12 @@ const GroupsSection: React.FC = () => (
           start of the current instance without changing the selection.
         </li>
       </ul>
-      <p className={`${PROSE} mt-2`}>All of these are remappable in Settings → Shortcuts.</p>
-    </div>
+      <p className={`${PROSE} mt-2`}>
+        All of these are remappable in <SettingLink section="shortcuts" />.
+      </p>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Suggestions banner</h4>
+    <HelpTopic title="Suggestions banner">
       <p className={PROSE}>
         When the timeline detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
         banner appears under the toolbar. One suggestion shows inline with a Group them button. Multiple suggestions
@@ -171,10 +169,9 @@ const GroupsSection: React.FC = () => (
         Dismissals are per-project and content-based, so adding or removing unrelated lines elsewhere will not bring a
         suggestion back. Editing the actual text inside a dismissed block does, since the structure has changed.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Pasting between instances</h4>
+    <HelpTopic title="Pasting between instances">
       <p className={PROSE}>Two paste flows can land in an instance, and both behave the same way at the destination:</p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
@@ -191,7 +188,7 @@ const GroupsSection: React.FC = () => (
         aren't, Composer asks before inserting new rows, since that would shift everything below down by N. Add rows in
         the Edit view first if you want predictable layout.
       </p>
-    </div>
+    </HelpTopic>
 
     <GroupsExtras />
   </div>

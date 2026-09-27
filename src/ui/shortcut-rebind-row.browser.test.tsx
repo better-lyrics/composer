@@ -1,11 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
-import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
 import { detectConflicts, getEffectiveBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import type { ShortcutDefinition } from "@/stores/shortcut-registry";
 import { render } from "@/test/render";
+import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
+import { ShortcutRebindRow } from "@/ui/shortcut-rebind-row";
 import { isMac } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // Use an existing registry entry so `getEffectiveKeysArray` resolves it.
 import { getShortcutById } from "@/stores/shortcut-registry";
@@ -73,6 +74,24 @@ describe("ShortcutRebindRow", () => {
     await expect
       .element(screen.getByRole("button", { name: "Change shortcut for Show help, currently Unbound" }))
       .toBeInTheDocument();
+  });
+
+  describe("inside settings search", () => {
+    it("underlines the matched words in its description", async () => {
+      const screen = await render(
+        <SettingsSearchQueryContext value="help">
+          <ShortcutRebindRow definition={TEST_SHORTCUT} />
+        </SettingsSearchQueryContext>,
+      );
+      const marks = [...screen.container.querySelectorAll("mark")].map((mark) => mark.textContent?.toLowerCase());
+      expect(marks.length).toBeGreaterThan(0);
+      expect(marks.every((mark) => mark === "help")).toBe(true);
+    });
+
+    it("marks nothing outside search", async () => {
+      const screen = await render(<ShortcutRebindRow definition={TEST_SHORTCUT} />);
+      expect(screen.container.querySelector("mark")).toBeNull();
+    });
   });
 });
 

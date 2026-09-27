@@ -1,14 +1,51 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { HEADING, INLINE_CODE, PROSE } from "@/ui/typography";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { MOD_KEY } from "@/utils/platform";
+import { SettingLink } from "@/ui/setting-link";
+import { HelpTopic } from "@/ui/help-topic";
 
 // -- Timeline extras ----------------------------------------------------------
 
 const TimelineExtras: React.FC = () => (
   <>
-    <div>
-      <h4 className={HEADING}>Explicit words</h4>
+    <HelpTopic title="Splitting and merging">
+      <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitSyllable")} /> with a word selected to open
+          the splitter in syllable mode. Click between letters to mark where the word should break. The result is a
+          linked syllable group: the pieces stay tied together as one word. If the playhead is on the word when you
+          confirm a single split, the timing boundary snaps to the playhead position exactly.
+        </li>
+        <li>
+          Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.splitWord")} /> (or right-click and pick{" "}
+          <strong>Split word</strong>) to open the splitter in word mode. This breaks one word into separate independent
+          words, joined by a space, rather than a linked syllable group.
+        </li>
+        <li>
+          To undo a syllable split, right-click any syllable of the word and pick <strong>Merge syllables</strong>, or
+          press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeSyllablesIntoWord")} />. The syllable group
+          collapses back into one plain word that spans from the first syllable's start to the last syllable's end.
+        </li>
+        <li>
+          Select two or more adjacent words on the same line and press{" "}
+          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.mergeWords")} /> to merge them into one block. This
+          works even when the selected words have a space between them; the joining space is dropped.
+        </li>
+      </ul>
+    </HelpTopic>
+
+    <HelpTopic title="Syllable timing">
+      <p className={PROSE}>
+        Syllables of a word can be timed flush against each other or with gaps between them. Gaps are useful for
+        staccato or rap delivery, and for per-character timing in Japanese, Chinese, or Korean lyrics. To close those
+        gaps, right-click a syllable and pick <strong>Snap syllables flush</strong>. It pulls every syllable group on
+        the line tight, so each syllable starts where the previous one ends. The item only shows up when a group has a
+        gap, and there is no keyboard shortcut for it.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Explicit words">
       <p className={PROSE}>
         Mark a word as explicit so it carries the right flag through to export. Select one or more words and press{" "}
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleExplicit")} />, or right-click and pick{" "}
@@ -21,10 +58,9 @@ const TimelineExtras: React.FC = () => (
         words export as the <span className={INLINE_CODE}>composer:explicit="true"</span> attribute on the word's TTML
         span.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Right-click menus</h4>
+    <HelpTopic title="Right-click menus">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Right-click a word: Edit text, Split syllables, Split word. Merge words appears when multiple words are
@@ -38,18 +74,16 @@ const TimelineExtras: React.FC = () => (
           Right-click a group banner: Add instance, Shift to playhead, Rename, Recolor, Detach instance, Delete group.
         </li>
       </ul>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Linked groups</h4>
+    <HelpTopic title="Linked groups">
       <p className={PROSE}>
         Mark repeating sections (chorus, verse, bridge) as a group so structural edits fan out to every instance. See
         the <strong>Linked groups</strong> section in this help modal for the full walkthrough.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Header toolbar</h4>
+    <HelpTopic title="Header toolbar">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           <strong>Follow</strong> (<InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleFollow")} />
@@ -83,13 +117,12 @@ const TimelineExtras: React.FC = () => (
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
-        Follow, Rolling, Preview, and Snap remember their state across reloads. Override the per-session default in
-        Settings, under Timeline.
+        Follow, Rolling, Preview, and Snap remember their state across reloads. Override the per-session default in{" "}
+        <SettingLink section="timeline" />.
       </p>
-    </div>
+    </HelpTopic>
 
-    <div>
-      <h4 className={HEADING}>Other features</h4>
+    <HelpTopic title="Other features">
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
         <li>
           Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.insertLineBelow")} /> with a word selected to
@@ -97,7 +130,7 @@ const TimelineExtras: React.FC = () => (
         </li>
         <li>The info panel at the bottom shows details for the selected word, including background text editing.</li>
       </ul>
-    </div>
+    </HelpTopic>
   </>
 );
 
