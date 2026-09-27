@@ -1,5 +1,5 @@
 import type { Agent } from "@/domain/agent/model";
-import type { LyricLine } from "@/domain/line/model";
+import type { LyricLine, RawLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { LinkGroup } from "@/domain/group/template";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -42,7 +42,7 @@ function capHistory(history: HistoryEntry[]): HistoryEntry[] {
 
 function commitHistory(
   state: ProjectState,
-  changes: { lines?: LyricLine[]; groups?: LinkGroup[]; agents?: Agent[]; customSnapPoints?: SnapPoint[] },
+  changes: { lines?: RawLine[]; groups?: LinkGroup[]; agents?: Agent[]; customSnapPoints?: SnapPoint[] },
   options: { deriveText?: boolean } = {},
 ) {
   const splitChar = getSplitCharacter();

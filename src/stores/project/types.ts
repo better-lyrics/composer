@@ -97,7 +97,7 @@ interface MetadataActions {
   resetSongIdentity: (title: string) => void;
   restoreSongIdentity: (identity: SongIdentity) => void;
   replaceLyricsWithHistory: (input: {
-    lines: LyricLine[];
+    lines: RawLine[];
     groups: LinkGroup[];
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
