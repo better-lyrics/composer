@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createMemoryRouter, RouterProvider } from "react-router-dom";
+import { createMemoryRouter, RouterProvider, useRouteError } from "react-router-dom";
 import { ErrorFallbackPanel } from "@/pages/error-fallback";
+import { describeError } from "@/pages/error-presentation";
 import { render } from "@/test/render";
 import { allowConsole } from "@/test/console-guard";
 import { seedProject } from "@/test/idb";
@@ -9,19 +10,30 @@ const ThrowingRoute: React.FC = () => {
   throw new Error("Boom for test");
 };
 
+const RoutedErrorPanel: React.FC = () => <ErrorFallbackPanel details={describeError(useRouteError())} />;
+
 function renderFallback() {
-  const router = createMemoryRouter([{ path: "/", element: <ThrowingRoute />, errorElement: <ErrorFallbackPanel /> }], {
+  const router = createMemoryRouter([{ path: "/", element: <ThrowingRoute />, errorElement: <RoutedErrorPanel /> }], {
     initialEntries: ["/"],
   });
   return render(<RouterProvider router={router} />);
 }
 
 function renderMissingPage() {
-  const router = createMemoryRouter([{ path: "/", element: <div />, errorElement: <ErrorFallbackPanel /> }], {
+  const router = createMemoryRouter([{ path: "/", element: <div />, errorElement: <RoutedErrorPanel /> }], {
     initialEntries: ["/no-such-page"],
   });
   return render(<RouterProvider router={router} />);
 }
+
+describe("ErrorFallbackPanel", () => {
+  it("renders the presentation it is handed instead of describing the error again", async () => {
+    const screen = await render(<ErrorFallbackPanel details={describeError(new TypeError("Kaboom"))} />);
+    await expect.element(screen.getByRole("heading", { name: "Something broke" })).toBeInTheDocument();
+    await expect.element(screen.getByText("TypeError")).toBeInTheDocument();
+    await expect.element(screen.getByText("Kaboom")).toBeInTheDocument();
+  });
+});
 
 describe("ErrorFallback on a missing page", () => {
   beforeEach(() => {

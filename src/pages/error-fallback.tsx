@@ -2,7 +2,7 @@ import { downloadRecoveryFile } from "@/lib/recovery";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { Scroll } from "@/ui/scroll";
-import { describeError, safeStringify } from "@/pages/error-presentation";
+import { describeError, type ErrorPresentation, safeStringify } from "@/pages/error-presentation";
 import { PageHead } from "@/seo/page-head";
 import { IconChevronDown, IconChevronRight, IconDownload, IconHome2, IconRefresh } from "@tabler/icons-react";
 import { useState } from "react";
@@ -31,15 +31,11 @@ const GoHomeButton: React.FC<{ primary: boolean }> = ({ primary }) => (
   </Button>
 );
 
-const ErrorFallbackPanel: React.FC = () => {
-  const error = useRouteError();
-  const details = describeError(error);
+const ErrorFallbackPanel: React.FC<{ details: ErrorPresentation }> = ({ details }) => {
   const Icon = details.icon;
   const homeIsPrimary = details.primaryAction === "home";
   const [showDetails, setShowDetails] = useState(false);
   const [recoveryStatus, setRecoveryStatus] = useState<"idle" | "downloading" | "success" | "empty" | "failed">("idle");
-
-  console.error(LOG_PREFIX, "route error", error);
 
   const handleRecover = async () => {
     setRecoveryStatus("downloading");
@@ -134,12 +130,16 @@ const ErrorFallbackPanel: React.FC = () => {
 };
 
 const ErrorFallback: React.FC = () => {
-  const details = describeError(useRouteError());
+  const error = useRouteError();
+  const details = describeError(error);
   const { pathname } = useLocation();
+
+  console.error(LOG_PREFIX, "route error", error);
+
   return (
     <>
       <PageHead title={`${details.title} ・ Composer`} description={details.subtitle} path={pathname} />
-      <ErrorFallbackPanel />
+      <ErrorFallbackPanel details={details} />
     </>
   );
 };

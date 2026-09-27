@@ -74,3 +74,4 @@ function describeError(error: unknown): ErrorPresentation {
 // -- Exports -------------------------------------------------------------------
 
 export { describeError, safeStringify };
+export type { ErrorPresentation };
