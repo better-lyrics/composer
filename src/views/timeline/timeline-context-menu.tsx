@@ -8,7 +8,7 @@ import { useContextMenuTargets } from "@/views/timeline/use-context-menu-targets
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
 import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
-import { type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
+import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
 import { IconCommand } from "@tabler/icons-react";
 import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
@@ -109,7 +109,6 @@ function GroupingMenuSection({
 
 // -- Labels -------------------------------------------------------------------
 
-type ContextMenuState = NonNullable<ReturnType<typeof useTimelineStore.getState>["contextMenu"]>;
 type ExplicitToggleContext = NonNullable<ContextMenuTargets["explicitToggleContext"]>;
 
 function explicitToggleLabel({ allMarked, indices }: ExplicitToggleContext): string {

@@ -1,4 +1,4 @@
-import type { ReadableLine } from "@/domain/line/effective-words";
+import { effectiveTrackWords, type ReadableLine } from "@/domain/line/effective-words";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
@@ -25,8 +25,7 @@ interface MultiSelectionSummary {
 
 function selectedWord(selection: WordSelection, lines: readonly ReadableLine[]): WordTiming | undefined {
   const line = lines[selection.lineIndex];
-  const track = selection.type === "word" ? line?.words : line?.backgroundWords;
-  return track?.[selection.wordIndex];
+  return line ? effectiveTrackWords(line, selection.type)?.[selection.wordIndex] : undefined;
 }
 
 // -- Functions ----------------------------------------------------------------

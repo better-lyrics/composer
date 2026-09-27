@@ -89,9 +89,6 @@ const SyncPanel: React.FC = () => {
   const heldKeyCodeRef = useRef<string | null>(null);
   const holdPointerIdRef = useRef<number | null>(null);
 
-  const linesRef = useRef(lines);
-  linesRef.current = lines;
-
   const {
     handleTap,
     handleHoldStart,
@@ -145,14 +142,14 @@ const SyncPanel: React.FC = () => {
 
   const triggerRippleAtCurrentPosition = useCallback(() => {
     const { lineIndex: committedLineIndex, wordIndex: committedWordIndex } = cursor;
-    const lineId = linesRef.current[committedLineIndex]?.id;
+    const lineId = lines[committedLineIndex]?.id;
     if (!lineId) return;
     setRippleTarget((prev) => ({
       lineId,
       wordIndex: committedWordIndex,
       nonce: (prev?.nonce ?? 0) + 1,
     }));
-  }, [cursor]);
+  }, [cursor, lines]);
 
   const clearRippleTarget = useCallback(() => setRippleTarget(null), []);
 

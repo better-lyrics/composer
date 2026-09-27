@@ -58,7 +58,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
     [definition.id],
   );
 
-  const continueFromWarning = useCallback(
+  const applyCapturedBinding = useCallback(
     (binding: ShortcutBinding) => {
       const conflicts = detectConflicts(definition.id, binding);
       if (conflicts.length > 0) {
@@ -91,12 +91,12 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
         return;
       }
 
-      continueFromWarning(newBinding);
+      applyCapturedBinding(newBinding);
     };
 
     window.addEventListener("keydown", handleKeyDown, true);
     return () => window.removeEventListener("keydown", handleKeyDown, true);
-  }, [captureState.status, cancelCapture, continueFromWarning]);
+  }, [captureState.status, cancelCapture, applyCapturedBinding]);
 
   return (
     <>
@@ -137,7 +137,7 @@ const ShortcutRebindRow: React.FC<ShortcutRebindRowProps> = ({ definition }) => 
       {captureState.status === "warning" && (
         <BrowserWarningModal
           binding={captureState.newBinding}
-          onContinue={() => continueFromWarning(captureState.newBinding)}
+          onContinue={() => applyCapturedBinding(captureState.newBinding)}
           onCancel={cancelCapture}
         />
       )}
