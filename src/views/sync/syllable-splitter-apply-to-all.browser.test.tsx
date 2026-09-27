@@ -306,11 +306,12 @@ describe("regressions: apply-to-all confirm stacking", () => {
     await screen.getByRole("button", { name: "Split point 3" }).click();
     const popoverSplit = screen.getByRole("button", { name: "Split all" });
     await popoverSplit.click();
-    const dialog = document.querySelector("dialog[open]") as HTMLDialogElement;
+    const dialog = document.querySelector<HTMLDialogElement>("dialog[open]");
     await expect
       .poll(() => dialog?.textContent ?? document.querySelector("dialog[open]")?.textContent)
       .toContain("matching");
-    const openDialog = document.querySelector("dialog[open]") as HTMLDialogElement;
+    const openDialog = document.querySelector<HTMLDialogElement>("dialog[open]");
+    if (!openDialog) throw new Error("no open confirm dialog");
     const confirmButton = [...openDialog.querySelectorAll("button")].find((b) => b.textContent === "Split");
     if (!confirmButton) throw new Error("no confirm Split button");
     const rect = confirmButton.getBoundingClientRect();

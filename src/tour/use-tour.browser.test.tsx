@@ -57,7 +57,7 @@ function ShortcutsHarness() {
 const driverNextBtn = () => document.querySelector(".driver-popover-next-btn") as HTMLButtonElement | null;
 const driverProgress = () => document.querySelector(".driver-popover-progress-text")?.textContent ?? "";
 const driverTitle = () => document.querySelector(".driver-popover-title")?.textContent ?? "";
-const driverCloseBtn = () => document.querySelector(".driver-popover-close-btn") as HTMLButtonElement | null;
+const driverCloseBtn = () => document.querySelector<HTMLButtonElement>(".driver-popover-close-btn");
 const VIDEO_BTN_CLASS = "composer-tour-video-btn";
 const driverWatchBtn = () => document.querySelector(`.${VIDEO_BTN_CLASS}`) as HTMLButtonElement | null;
 

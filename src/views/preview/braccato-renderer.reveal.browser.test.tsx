@@ -23,7 +23,8 @@ function Harness({ ttml }: { ttml: string }) {
 describe("BraccatoRenderer inside Activity", () => {
   it("U12: revealing the Preview tab reuses the built lyrics view instead of rebuilding it", async () => {
     const screen = await render(<Harness ttml={buildSyncedTtml()} />);
-    const el = screen.container.querySelector("braccato-lyrics") as BraccatoLyricsElement;
+    const el = screen.container.querySelector<BraccatoLyricsElement>("braccato-lyrics");
+    if (!el) throw new Error("braccato-lyrics element not rendered");
     await expect.poll(() => el.querySelectorAll(".blyrics--line").length).toBeGreaterThan(0);
     const proto = Object.getPrototypeOf(el);
     const hostDescriptor = Object.getOwnPropertyDescriptor(proto, "host");
@@ -40,9 +41,11 @@ describe("BraccatoRenderer inside Activity", () => {
     const firstLineBefore = el.querySelector(".blyrics--line");
 
     setVisible(false);
-    await expect.poll(() => (screen.container.firstElementChild as HTMLElement | null)?.style.display).toBe("none");
+    await expect.poll(() => screen.container.querySelector<HTMLElement>(":scope > div")?.style.display).toBe("none");
     setVisible(true);
-    await expect.poll(() => (screen.container.firstElementChild as HTMLElement | null)?.style.display).not.toBe("none");
+    await expect
+      .poll(() => screen.container.querySelector<HTMLElement>(":scope > div")?.style.display)
+      .not.toBe("none");
     await expect.poll(() => el.querySelectorAll(".blyrics--line").length).toBeGreaterThan(0);
 
     expect(el.renderer).toBe(rendererBefore);
