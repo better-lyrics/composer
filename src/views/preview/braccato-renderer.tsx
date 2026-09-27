@@ -3,7 +3,9 @@ import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
+import { IconButton } from "@/ui/icon-button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
+import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
@@ -214,12 +216,22 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
             animate="visible"
             exit="exit"
             transition={springSnappy}
-            className="absolute bottom-6 left-1/2 z-10"
+            className={cn("absolute left-1/2 z-10", layout === "sidebar" ? "bottom-3" : "bottom-6")}
           >
-            <Button variant="secondary" hasIcon onClick={resumeAutoscroll} className="shadow-2xl backdrop-blur-md">
-              <IconArrowDown className="size-4" />
-              Resume autoscroll
-            </Button>
+            {layout === "sidebar" ? (
+              <IconButton
+                variant="secondary"
+                label="Resume autoscroll"
+                icon={<IconArrowDown className="size-4" />}
+                onClick={resumeAutoscroll}
+                className="shadow-2xl backdrop-blur-md"
+              />
+            ) : (
+              <Button variant="secondary" hasIcon onClick={resumeAutoscroll} className="shadow-2xl backdrop-blur-md">
+                <IconArrowDown className="size-4" />
+                Resume autoscroll
+              </Button>
+            )}
           </m.div>
         ) : null}
       </AnimatePresence>
