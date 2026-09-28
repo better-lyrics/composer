@@ -128,6 +128,31 @@ describe("D3 re-record from a clicked word", () => {
     expect(words.map((w) => w.text)).toEqual(["I ", "heard ", "the ", "rumors ", "going ", "round"]);
     for (const w of words.slice(0, 3)) expect(w.end - w.begin, `${w.text} keeps duration`).toBeGreaterThan(0);
   });
+
+  it("regression: moves a late tapped word earlier without snapping back to its old begin", async () => {
+    load([createLine({ id: "l0", text: "a b c" })]);
+    const screen = await render(
+      <>
+        <Toaster />
+        <SyncPanel />
+      </>,
+    );
+    await tapAt(1);
+    await tapAt(2);
+    await tapAt(3);
+    setIsPlaying(false);
+    await screen.getByRole("button", { name: "b", exact: true }).click();
+    await settle();
+    key({ key: " ", code: "Space" });
+    await tapAt(1.6);
+
+    expect(lines()[0].words?.map((w) => [w.begin, w.end])).toEqual([
+      [1, 1.6],
+      [1.6, 1.6 + 0.3],
+      [3, 3.3],
+    ]);
+    await expect.element(screen.getByText(/Early tap snapped/)).not.toBeInTheDocument();
+  });
 });
 
 describe("D5 tap behind the previous committed time", () => {

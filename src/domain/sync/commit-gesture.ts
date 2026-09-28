@@ -44,14 +44,14 @@ function closableSlot(lines: readonly LyricLine[], slot: SyncSlot): SyncSlot {
   return slot.wordIndex === null && words?.length ? { lineIndex: slot.lineIndex, wordIndex: words.length - 1 } : slot;
 }
 
-// A forward pass may shrink the slot it closes down to its begin; after a jump the previous slot stays whole.
+// A re-record may start inside the previous slot; one that lands before that slot begins is early and snaps to its end.
 function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word"): Anchor {
   const previous = previousSlot(lines, ctx.cursor, granularity);
   if (!previous) return { slot: null, floor: 0 };
-  const slot = ctx.jumped ? previous : closableSlot(lines, previous);
+  const slot = closableSlot(lines, previous);
   const bounds = slotBounds(lines, slot);
   if (!bounds) return { slot: null, floor: 0 };
-  return { slot, floor: ctx.jumped ? bounds.end : bounds.begin };
+  return { slot, floor: ctx.jumped && ctx.time <= bounds.begin ? bounds.end : bounds.begin };
 }
 
 function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
@@ -66,15 +66,15 @@ function closeSlot(line: LyricLine, slot: SyncSlot, end: number): Partial<LyricL
   return null;
 }
 
-// A tap ends the previous slot where it begins. A hold keeps the gap a release left and only trims an overlap.
-function closingTime(lines: readonly LyricLine[], slot: SyncSlot | null, begin: number, open: boolean): number {
-  const previous = open && slot ? slotBounds(lines, slot) : null;
+// A forward tap ends the previous slot where it begins. Holds and re-records keep its end and only trim an overlap.
+function closingTime(lines: readonly LyricLine[], slot: SyncSlot | null, begin: number, keepsEnd: boolean): number {
+  const previous = keepsEnd && slot ? slotBounds(lines, slot) : null;
   if (!previous || previous.begin === previous.end) return begin;
   return Math.min(previous.end, begin);
 }
 
 function closingUpdate(lines: readonly LyricLine[], slot: SyncSlot | null, end: number): LineUpdate | null {
-  if (!slot) return null;
+  if (!slot || slotBounds(lines, slot)?.end === end) return null;
   const line = lines[slot.lineIndex];
   const updates = closeSlot(line, slot, end);
   return updates ? { id: line.id, updates } : null;
@@ -117,14 +117,13 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
   let words = [...existing];
   words[cursor.wordIndex] = { ...existing[cursor.wordIndex], text, begin, end };
 
-  const closingSlot = ctx.jumped ? null : slot;
-  const closeAt = closingTime(lines, closingSlot, begin, open);
-  const sameLine = closingSlot && closingSlot.lineIndex === cursor.lineIndex ? closingSlot : null;
+  const closeAt = closingTime(lines, slot, begin, open || ctx.jumped);
+  const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;
   if (sameLine && sameLine.wordIndex !== null) words = closeSlotWords(words, sameLine.wordIndex, closeAt);
   words = enforceOrderAround(words, cursor.wordIndex);
 
   const background = cursor.wordIndex === 0 ? backgroundFor(line, begin) : {};
-  const crossLine = closingSlot && closingSlot.lineIndex !== cursor.lineIndex ? closingSlot : null;
+  const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
 
   return {
     update: { id: line.id, updates: { words, ...background } },
@@ -150,7 +149,7 @@ function writeLine(lines: readonly LyricLine[], ctx: GestureContext): SlotWrite 
   return {
     update: { id: line.id, updates },
     clampedTo: ctx.time < floor ? floor : null,
-    closes: closingUpdate(lines, ctx.jumped ? null : slot, begin),
+    closes: closingUpdate(lines, slot, closingTime(lines, slot, begin, ctx.jumped)),
   };
 }
 

@@ -227,11 +227,21 @@ describe("tap-line", () => {
     expectMonotonic(apply(lines, commit));
   });
 
-  it("rule 2: after a jump, a tap before the previous line's end is clamped to that end", () => {
-    const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 4 }), createLine({ id: "l1", text: "second" })];
-    const commit = run(lines, "tap-line", [1, 0], 3, true);
+  it("rule 2: after a jump, a tap before the previous line begins is clamped to that line's end", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 2, end: 4 }), createLine({ id: "l1", text: "second" })];
+    const commit = run(lines, "tap-line", [1, 0], 1, true);
     expect(commit?.clampedTo).toBe(4);
     expect(commit?.lineUpdates).toEqual([{ id: "l1", updates: { begin: 4, end: 4 } }]);
+  });
+
+  it("after a jump, a tap inside the previous line trims that line's end", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 4 }), createLine({ id: "l1", text: "second" })];
+    const commit = run(lines, "tap-line", [1, 0], 3, true);
+    expect(commit?.clampedTo).toBeNull();
+    expect(apply(lines, commit).map((l) => [l.begin, l.end])).toEqual([
+      [1, 3],
+      [3, 3],
+    ]);
   });
 
   it("after a jump the previous line is untouched", () => {
@@ -486,5 +496,45 @@ describe("hold gestures · regressions", () => {
       [9, 10],
     ]);
     expectMonotonic(lines);
+  });
+});
+
+describe("re-record after a jump · regressions", () => {
+  it("regression: moves a late tapped word earlier and trims the word before it", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3), word("c", 3, 3.3)] })];
+    const commit = run(lines, "tap-word", [0, 1], 1.6, true);
+    expect(commit?.clampedTo).toBeNull();
+    expect(apply(lines, commit)[0].words).toEqual([word("a ", 1, 1.6), word("b ", 1.6, 1.6 + DUR), word("c", 3, 3.3)]);
+  });
+
+  it("regression: moves the first word of a line earlier into the previous line's last word", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] }),
+      createLine({ id: "l1", text: "c", words: [word("c", 3, 4)] }),
+    ];
+    const after = apply(lines, run(lines, "tap-word", [1, 0], 2.5, true));
+    expect(after[0].words?.[1]).toEqual(word("b", 2, 2.5));
+    expect(after[1].words?.[0].begin).toBe(2.5);
+  });
+
+  it("regression: a re-held word can start earlier too", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] })];
+    const after = apply(lines, run(lines, "hold-start", [0, 1], 1.5, true));
+    expect(after[0].words).toEqual([word("a ", 1, 1.5), word("b", 1.5, 1.5)]);
+  });
+
+  it("a re-record tap at the previous word's begin is early and snaps to that word's end", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] })];
+    const commit = run(lines, "tap-word", [0, 1], 1, true);
+    expect(commit?.clampedTo).toBe(2);
+    expect(apply(lines, commit)[0].words?.[0]).toEqual(word("a ", 1, 2));
+  });
+
+  it("leaves the previous line out of the update when a re-record does not overlap it", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a", words: [word("a", 1, 2)] }),
+      createLine({ id: "l1", text: "b", words: [word("b", 3, 4)] }),
+    ];
+    expect(run(lines, "tap-word", [1, 0], 2.5, true)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
   });
 });
