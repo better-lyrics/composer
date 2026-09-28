@@ -88,8 +88,8 @@ describe("visible transliteration dash timing", () => {
       const previewParts = (previewLine.timedRomanization ?? []).filter(
         (part) => Boolean(part.isBackground) === background,
       );
+      expect(previewParts.map((part) => part.words)).toEqual(importedWordEdge ? ["to-", "  ", "do"] : ["to-", "do"]);
       expect(previewParts.map((part) => part.words).join("")).toBe(reading);
-      expect(previewParts[0].words).toBe("to-");
       expect(previewParts[0].startTimeMs).toBe(1000);
       expect(previewParts[0].durationMs).toBe(500);
     },

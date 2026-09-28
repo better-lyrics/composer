@@ -2,6 +2,7 @@ import { useExportTtml } from "@/hooks/use-export-ttml";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
 import { usePreviewSidebarResize } from "@/views/timeline/use-preview-sidebar-resize";
+import { useId } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -13,9 +14,11 @@ interface PreviewSidebarShellProps {
 
 const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) => {
   const { width, onPointerDown, onDoubleClick, onKeyDown } = usePreviewSidebarResize();
+  const sidebarId = useId();
 
   return (
     <aside
+      id={sidebarId}
       aria-label="Lyrics preview"
       style={{ width }}
       className="relative shrink-0 border-l border-composer-border bg-composer-bg-dark flex flex-col overflow-hidden"
@@ -23,6 +26,7 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
       <div
         role="separator"
         aria-label="Resize preview"
+        aria-controls={sidebarId}
         aria-orientation="vertical"
         aria-valuenow={width}
         aria-valuemin={PREVIEW_SIDEBAR_WIDTH.min}

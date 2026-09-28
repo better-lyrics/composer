@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
+import { Activity, useState } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -32,6 +33,22 @@ function pressAt(target: Element, clientX: number): void {
 function moveTo(clientX: number): void {
   document.dispatchEvent(new PointerEvent("pointermove", { clientX, bubbles: true }));
 }
+
+function cancelPointer(): void {
+  document.dispatchEvent(new PointerEvent("pointercancel", { bubbles: true }));
+}
+
+let setSidebarVisible: (visible: boolean) => void = () => {};
+
+const ToggleHarness: React.FC = () => {
+  const [visible, setVisible] = useState(true);
+  setSidebarVisible = setVisible;
+  return (
+    <Activity mode={visible ? "visible" : "hidden"}>
+      <TimelinePreviewSidebar />
+    </Activity>
+  );
+};
 
 function releaseAt(clientX: number): void {
   document.dispatchEvent(new PointerEvent("pointerup", { clientX, bubbles: true }));
@@ -110,6 +127,27 @@ describe("TimelinePreviewSidebar resize", () => {
     }
   });
 
+  it("jumps to the minimum and maximum widths with Home and End", async () => {
+    const { sidebar, separator } = await renderSidebar();
+    const handle = separator.element();
+    if (!(handle instanceof HTMLElement)) throw new Error("separator is not an element");
+    handle.focus();
+
+    await userEvent.keyboard("{Home}");
+    await expect.poll(() => sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.min}px`);
+    await userEvent.keyboard("{End}");
+
+    await expect.poll(() => sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.max}px`);
+    expect(useSettingsStore.getState().previewSidebarWidth).toBe(PREVIEW_SIDEBAR_WIDTH.max);
+  });
+
+  it("names the sidebar it resizes", async () => {
+    const { sidebar, separator } = await renderSidebar();
+
+    expect(sidebar.id).not.toBe("");
+    await expect.element(separator).toHaveAttribute("aria-controls", sidebar.id);
+  });
+
   describe("edge cases", () => {
     it("stops at the minimum and maximum widths", async () => {
       const { sidebar, separator } = await renderSidebar();
@@ -142,6 +180,51 @@ describe("TimelinePreviewSidebar resize", () => {
 
       expect(sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.default}px`);
       expect(useSettingsStore.getState().previewSidebarWidth).toBe(PREVIEW_SIDEBAR_WIDTH.default);
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: a cancelled pointer ends the drag without saving it", async () => {
+      const { sidebar, separator } = await renderSidebar();
+
+      pressAt(separator.element(), START_X);
+      moveTo(START_X - 100);
+      await expect.poll(() => sidebarWidth(sidebar)).toBe("420px");
+      cancelPointer();
+
+      await expect.poll(() => sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.default}px`);
+      moveTo(START_X - 200);
+      releaseAt(START_X - 200);
+      expect(sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.default}px`);
+      expect(useSettingsStore.getState().previewSidebarWidth).toBe(PREVIEW_SIDEBAR_WIDTH.default);
+    });
+
+    it("regression: hiding the sidebar mid-drag drops the unsaved width", async () => {
+      const screen = await render(<ToggleHarness />);
+      const separator = screen.getByRole("separator", { name: "Resize preview" });
+      pressAt(separator.element(), START_X);
+      moveTo(START_X - 100);
+      await expect.element(separator).toHaveAttribute("aria-valuenow", "420");
+
+      setSidebarVisible(false);
+      await expect.poll(() => screen.container.querySelector<HTMLElement>("aside")?.style.display).toBe("none");
+      setSidebarVisible(true);
+
+      await expect.element(separator).toHaveAttribute("aria-valuenow", String(PREVIEW_SIDEBAR_WIDTH.default));
+      expect(useSettingsStore.getState().previewSidebarWidth).toBe(PREVIEW_SIDEBAR_WIDTH.default);
+    });
+
+    it("regression: a second press replaces the first drag instead of stacking listeners", async () => {
+      const { sidebar, separator } = await renderSidebar();
+
+      pressAt(separator.element(), START_X);
+      pressAt(separator.element(), START_X);
+      moveTo(START_X - 40);
+      releaseAt(START_X - 40);
+      moveTo(START_X - 300);
+
+      await expect.poll(() => sidebarWidth(sidebar)).toBe(`${PREVIEW_SIDEBAR_WIDTH.default + 40}px`);
+      expect(useSettingsStore.getState().previewSidebarWidth).toBe(PREVIEW_SIDEBAR_WIDTH.default + 40);
     });
   });
 

@@ -6,6 +6,23 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 const KEYBOARD_STEP_PX = 16;
 
+// -- Helpers ------------------------------------------------------------------
+
+function keyboardWidth(key: string, width: number): number | null {
+  switch (key) {
+    case "ArrowLeft":
+      return width + KEYBOARD_STEP_PX;
+    case "ArrowRight":
+      return width - KEYBOARD_STEP_PX;
+    case "Home":
+      return PREVIEW_SIDEBAR_WIDTH.min;
+    case "End":
+      return PREVIEW_SIDEBAR_WIDTH.max;
+    default:
+      return null;
+  }
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function usePreviewSidebarResize() {
@@ -24,6 +41,7 @@ function usePreviewSidebarResize() {
     (e: React.PointerEvent) => {
       if (e.button !== 0) return;
       e.preventDefault();
+      cleanupRef.current?.();
       const startX = e.clientX;
       const startWidth = width;
       const widthAt = (clientX: number) => clampPreviewSidebarWidth(startWidth - (clientX - startX));
@@ -32,16 +50,19 @@ function usePreviewSidebarResize() {
       const handlePointerUp = (upEvent: PointerEvent) => {
         cleanupRef.current?.();
         persistWidth(widthAt(upEvent.clientX));
-        setDragWidth(null);
       };
+      const handlePointerCancel = () => cleanupRef.current?.();
 
       cleanupRef.current = () => {
         cleanupRef.current = null;
+        setDragWidth(null);
         document.removeEventListener("pointermove", handlePointerMove);
         document.removeEventListener("pointerup", handlePointerUp);
+        document.removeEventListener("pointercancel", handlePointerCancel);
       };
       document.addEventListener("pointermove", handlePointerMove);
       document.addEventListener("pointerup", handlePointerUp);
+      document.addEventListener("pointercancel", handlePointerCancel);
     },
     [width, persistWidth],
   );
@@ -50,10 +71,11 @@ function usePreviewSidebarResize() {
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const next = keyboardWidth(e.key, width);
+      if (next === null) return;
       e.preventDefault();
       e.stopPropagation();
-      persistWidth(width + (e.key === "ArrowLeft" ? KEYBOARD_STEP_PX : -KEYBOARD_STEP_PX));
+      persistWidth(next);
     },
     [width, persistWidth],
   );
