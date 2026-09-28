@@ -1,9 +1,9 @@
-import { userEvent } from "vitest/browser";
 import { useUIStore } from "@/stores/ui";
 import { HELP_CONTENT_SCROLLER_CSS, installStyleSheet } from "@/test/browser-css";
-import { describe, expect, it } from "vitest";
-import { HelpModal } from "@/ui/help-modal";
 import { render } from "@/test/render";
+import { HelpModal } from "@/ui/help-modal";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("HelpModal", () => {
   it("renders nothing when isOpen is false", async () => {
@@ -128,7 +128,9 @@ describe("HelpModal search", () => {
     await userEvent.keyboard("{Enter}");
     await expect.element(searchBox(screen)).toHaveValue("");
     await expect.element(screen.getByRole("button", { name: "Recovery" })).toHaveAttribute("aria-current", "page");
-    expect(document.querySelector('[data-help-topic="The app is frozen"]')?.hasAttribute("data-nudge")).toBe(true);
+    await expect
+      .poll(() => document.querySelector('[data-help-topic="The app is frozen"]')?.hasAttribute("data-nudge"))
+      .toBe(true);
   });
 
   it("opens a whole section from its group header", async () => {
