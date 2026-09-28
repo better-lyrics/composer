@@ -4,9 +4,9 @@ import { Button } from "@/ui/button";
 import { HELP_SECTIONS } from "@/ui/help-nav";
 import { HelpSearchResults } from "@/ui/help-search/help-search-results";
 import { HelpSectionContent } from "@/ui/help-sections";
-import { withMatchCounts } from "@/ui/nav-match-counts";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout } from "@/ui/modal-nav-layout";
+import { withMatchCounts } from "@/ui/nav-match-counts";
 import { NoMatches } from "@/ui/no-matches";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
@@ -76,15 +76,23 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
     if (query.trim()) viewportRef.current?.scrollTo({ top: 0 });
   }, [query]);
 
-  useLayoutEffect(() => {
+  const shownContentRef = useRef({ activeSection, isSearching });
+
+  const revealPendingTopic = useCallback(() => {
     const pending = pendingTopicRef.current;
     const viewport = viewportRef.current;
-    if (!pending || isSearching || !viewport || pending.section !== activeSection) return;
+    const { activeSection: shownSection, isSearching: showingResults } = shownContentRef.current;
+    if (!pending || showingResults || !viewport || pending.section !== shownSection) return;
     pendingTopicRef.current = null;
     const topic = viewport.querySelector<HTMLElement>(`[data-help-topic="${CSS.escape(pending.title)}"]`);
     viewport.scrollTop = 0;
     if (topic) revealElement(viewport, topic);
-  }, [activeSection, isSearching]);
+  }, []);
+
+  useLayoutEffect(() => {
+    shownContentRef.current = { activeSection, isSearching };
+    revealPendingTopic();
+  }, [activeSection, isSearching, revealPendingTopic]);
 
   const navSections = useMemo(
     () => (isSearching ? withMatchCounts(HELP_SECTIONS, counts) : HELP_SECTIONS),
@@ -102,6 +110,7 @@ const HelpModalBody: React.FC<HelpModalBodyProps> = ({ initialSection, initialSc
       contentClassName="p-6"
       contentInitialScrollTop={initialScrollTop}
       contentViewportRef={viewportRef}
+      onContentInitialized={revealPendingTopic}
     >
       <SettingLinkContext value={linkHost}>
         <div data-help-content>
