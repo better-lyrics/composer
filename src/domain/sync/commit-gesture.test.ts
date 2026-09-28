@@ -258,10 +258,22 @@ describe("hold gestures", () => {
     expect(after[0].words?.[1].end).toBe(6.1);
   });
 
-  it("rule 3: a forward hold-start mid-line closes the previous word in the same line", () => {
+  it("a forward hold-start mid-line trims an overlapping previous word in the same line", () => {
     const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1.3)] })];
-    const commit = run(lines, "hold-start", [0, 1], 2);
-    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 2), word("b", 2, 2)] } }]);
+    const commit = run(lines, "hold-start", [0, 1], 1.2);
+    expect(commit?.lineUpdates).toEqual([{ id: "l0", updates: { words: [word("a ", 1, 1.2), word("b", 1.2, 1.2)] } }]);
+  });
+
+  it("a forward hold-start closes a previous word that is still open", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1)] })];
+    const after = apply(lines, run(lines, "hold-start", [0, 1], 2));
+    expect(after[0].words?.[0]).toEqual(word("a ", 1, 2));
+  });
+
+  it("a forward hold-start closes an open line-synced previous line", () => {
+    const lines = [createLine({ id: "l0", text: "a", begin: 1, end: 1 }), createLine({ id: "l1", text: "b" })];
+    const after = apply(lines, run(lines, "hold-start", [1, 0], 2));
+    expect(after[0].end).toBe(2);
   });
 
   it("hold-start keeps the jumped flag until the hold ends", () => {
@@ -433,5 +445,46 @@ describe("ported behaviour", () => {
     ];
     const after = apply(lines, run(lines, "hold-end", [0, 0], 6));
     expect(after[0].words?.[0]).toEqual({ text: "one", begin: 5, end: 6, explicit: true, syllableGroupId: "g1" });
+  });
+});
+
+describe("hold gestures · regressions", () => {
+  it("regression: hold-start keeps the gap a release left in the same line", () => {
+    const lines = [createLine({ id: "l0", text: "oh my", words: [word("oh ", 1, 2)] })];
+    const after = apply(lines, run(lines, "hold-start", [0, 1], 3));
+    expect(after[0].words).toEqual([word("oh ", 1, 2), word("my", 3, 3)]);
+  });
+
+  it("regression: hold-start keeps the gap a release left on the previous line", () => {
+    const lines = [
+      createLine({ id: "l0", text: "beau|ti", words: [word("beau", 1, 2), word("ti", 2, 3)] }),
+      createLine({ id: "l1", text: "x y" }),
+    ];
+    const after = apply(lines, run(lines, "hold-start", [1, 0], 4));
+    expect(after[0].words?.[1]).toEqual(word("ti", 2, 3));
+    expect(after[1].words?.[0]).toEqual(word("x ", 4, 4));
+  });
+
+  it("regression: hold-start keeps a tapped word's provisional end when it ends before the hold", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 1.3)] })];
+    const after = apply(lines, run(lines, "hold-start", [0, 1], 2));
+    expect(after[0].words?.[0]).toEqual(word("a ", 1, 1.3));
+  });
+
+  it("gapless holds stay monotonic across a release and a new hold", () => {
+    let lines = [createLine({ id: "l0", text: "beau|ti|ful day" })];
+    lines = apply(lines, run(lines, "hold-start", [0, 0], 5));
+    lines = apply(lines, run(lines, "hold-tap", [0, 0], 6));
+    lines = apply(lines, run(lines, "hold-tap", [0, 1], 7));
+    lines = apply(lines, run(lines, "hold-end", [0, 2], 8));
+    lines = apply(lines, run(lines, "hold-start", [0, 3], 9));
+    lines = apply(lines, run(lines, "hold-end", [0, 3], 10));
+    expect(lines[0].words?.map((w) => [w.begin, w.end])).toEqual([
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      [9, 10],
+    ]);
+    expectMonotonic(lines);
   });
 });

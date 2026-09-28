@@ -125,6 +125,14 @@ describe("SyncPanel · keyboard hold release", () => {
     window.dispatchEvent(new KeyboardEvent(type, { key: "f", code: "KeyF", bubbles: true }));
   }
 
+  function pressTapKey(): void {
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: " ", code: "Space", bubbles: true }));
+  }
+
+  function wordTimings(): number[][] | undefined {
+    return useProjectStore.getState().lines[0].words?.map((w) => [w.begin, w.end]);
+  }
+
   it("closes the held word on keyup", async () => {
     loadPlayingProject();
     await render(<SyncPanel />);
@@ -184,5 +192,27 @@ describe("SyncPanel · keyboard hold release", () => {
 
     await expect.poll(() => useProjectStore.getState().lines[0].words?.length).toBe(1);
     expect(useProjectStore.getState().lines[0].words?.[0]?.end).toBe(7);
+  });
+
+  it("regression: keeps the gap after gapless syllables when the next hold starts", async () => {
+    loadPlayingProject("beau|ti day");
+    await render(<SyncPanel />);
+
+    pressHoldKey("keydown");
+    await expect.poll(() => wordTimings()).toEqual([[5, 5]]);
+    setCurrentTime(6);
+    pressTapKey();
+    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 6]]);
+    setCurrentTime(7);
+    pressHoldKey("keyup");
+    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7]]);
+
+    setCurrentTime(8);
+    pressHoldKey("keydown");
+    await expect.poll(() => wordTimings()?.length).toBe(3);
+    setCurrentTime(9);
+    pressHoldKey("keyup");
+
+    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7], [8, 9]]);
   });
 });
