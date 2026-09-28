@@ -530,6 +530,26 @@ describe("re-record after a jump · regressions", () => {
     expect(apply(lines, commit)[0].words?.[0]).toEqual(word("a ", 1, 2));
   });
 
+  it("regression: leaves a zero-length word on the previous line alone after a jump", () => {
+    const lines = [
+      createLine({ id: "l0", text: "a b", words: [word("a ", 10, 14), word("b", 14, 14)] }),
+      createLine({ id: "l1", text: "d", words: [word("d", 30, 31)] }),
+    ];
+    const commit = run(lines, "tap-word", [1, 0], 30, true);
+    expect(commit?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+  });
+
+  it("regression: leaves a zero-length word in the same line alone after a jump", () => {
+    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 1), word("b ", 1, 2), word("c", 2, 3)] })];
+    const after = apply(lines, run(lines, "tap-word", [0, 1], 1.5, true));
+    expect(after[0].words?.[0]).toEqual(word("a ", 1, 1));
+  });
+
+  it("regression: leaves an open previous line alone after a line-mode jump", () => {
+    const lines = [createLine({ id: "l0", text: "first", begin: 1, end: 1 }), createLine({ id: "l1", text: "second" })];
+    expect(run(lines, "tap-line", [1, 0], 3, true)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+  });
+
   it("leaves the previous line out of the update when a re-record does not overlap it", () => {
     const lines = [
       createLine({ id: "l0", text: "a", words: [word("a", 1, 2)] }),
