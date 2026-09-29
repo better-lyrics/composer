@@ -30,8 +30,8 @@ importers:
         specifier: ^1.0.8
         version: 1.0.8(@types/react@19.3.0)
       '@tabler/icons-react':
-        specifier: ^3.46.0
-        version: 3.46.0(react@19.3.0)
+        specifier: ^3.48.0
+        version: 3.48.0(react@19.3.0)
       '@tanstack/react-query':
         specifier: ^5.102.8
         version: 5.102.8(react@19.3.0)
@@ -87,8 +87,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
       react-virtuoso:
-        specifier: ^4.18.13
-        version: 4.18.13(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: ^4.18.15
+        version: 4.18.15(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       sonner:
         specifier: ^2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -118,8 +118,8 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(@types/react@19.3.0)
       '@vercel/og':
-        specifier: ^1.0.2
-        version: 1.0.2(@types/node@26.6.2)
+        specifier: ^1.0.3
+        version: 1.0.3(@types/node@26.6.2)
       '@vitejs/plugin-react':
         specifier: ^4.3.0
         version: 4.7.0(supports-color@7.2.0)(vite@6.4.3(@types/node@26.6.2)(jiti@2.7.0)(lightningcss@1.32.0)(yaml@2.9.0))
@@ -1273,13 +1273,13 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@tabler/icons-react@3.46.0':
-    resolution: {integrity: sha512-CCm7xJWhDT2PH4ZIFkP6AgYKtVhq0gpYkjUN+GVh1AzmIQaa77OW0bQPBPQiTE0PsXMR9oSxFqA3qBglzPyrVQ==}
+  '@tabler/icons-react@3.48.0':
+    resolution: {integrity: sha512-OCeAlpaWHEMV+EsgdVeGQ3YuKfmfnThZhc++CaZ/ujYzi5+/DONDQlX4OGvH1ikYhIfmc0grI4otJgHy7QAvng==}
     peerDependencies:
       react: '>= 16'
 
-  '@tabler/icons@3.46.0':
-    resolution: {integrity: sha512-f2RYFl3fzPwj5WO82x6en0dmkjefxEfOm16D1ByM6cj/McNiwOkL4VaPUoP9VVIrXAD9WnTSVFr70px703b//A==}
+  '@tabler/icons@3.48.0':
+    resolution: {integrity: sha512-lQk06gVHNVBnJp0UOgtth54mcZBJM7rdYKsAxKOProj1bbSAx+/xiuOWfHlyvgdL3M+Y+I0HINrjHa3ygp8eXQ==}
 
   '@tailwindcss/node@4.3.3':
     resolution: {integrity: sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg==}
@@ -1442,8 +1442,8 @@ packages:
       react:
         optional: true
 
-  '@vercel/og@1.0.2':
-    resolution: {integrity: sha512-xL22Oy3fZ1TjR2eYJ3A9dKFmaHSAnaHfQ3lREFOquAQIBydkjHqIZkndKQGphxXertZMcGBdIkJbAo/ty9uGdw==}
+  '@vercel/og@1.0.3':
+    resolution: {integrity: sha512-/iYJ34PDu4lty1TXdL86qHEw8viveHTllG1PWLuJX8tSFfqKL7kyVJeUORJmQ250bHB0h+alcalXUlza3c/NSA==}
     engines: {node: '>=22'}
 
   '@vitejs/plugin-react@4.7.0':
@@ -2307,8 +2307,8 @@ packages:
     peerDependencies:
       react: '>=16.8'
 
-  react-virtuoso@4.18.13:
-    resolution: {integrity: sha512-M4kP7zbV7JmLrnJYs0X2FBA8gnNlHisSYuKMyeJVYtWz31CAJeP57dgPJzfneUdKDKmL9SiqvcBQ32si8CfQSQ==}
+  react-virtuoso@4.18.15:
+    resolution: {integrity: sha512-YvmOV0PThfObKUzXbZvlCfIO04yvZ6gRXkSiib472qEypDyT2ZSfNtqHr1F7XY3UsHp43hJkDo8WiFq3irHQZA==}
     peerDependencies:
       react: '>=16 || >=17 || >= 18 || >= 19'
       react-dom: '>=16 || >=17 || >= 18 || >=19'
@@ -2345,8 +2345,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  satori@0.33.3:
-    resolution: {integrity: sha512-9dOJkLzIsBqEfaJZxn/u7dBtUcm6+rcNQ6qEWo600Ar50Cudq9mTzyW6fCiasbdV1N+dKuUAWGo+KzGOdS7+qg==}
+  satori@0.33.5:
+    resolution: {integrity: sha512-PNW6ktrQ8SM6kk7u4aOuTkkUewkzyTOrj+QeEzXSsnNMAdff4ire9CAqIz8+4C3rCiBtK8QTELv52AZEd1PbRw==}
     engines: {node: '>=16'}
 
   saxes@6.0.0:
@@ -3588,12 +3588,12 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tabler/icons-react@3.46.0(react@19.3.0)':
+  '@tabler/icons-react@3.48.0(react@19.3.0)':
     dependencies:
-      '@tabler/icons': 3.46.0
+      '@tabler/icons': 3.48.0
       react: 19.3.0
 
-  '@tabler/icons@3.46.0': {}
+  '@tabler/icons@3.48.0': {}
 
   '@tailwindcss/node@4.3.3':
     dependencies:
@@ -3738,10 +3738,10 @@ snapshots:
       '@lit/react': 1.0.8(@types/react@19.3.0)
       react: 19.3.0
 
-  '@vercel/og@1.0.2(@types/node@26.6.2)':
+  '@vercel/og@1.0.3(@types/node@26.6.2)':
     dependencies:
       '@resvg/resvg-wasm': 2.4.1
-      satori: 0.33.3
+      satori: 0.33.5
     optionalDependencies:
       sharp: 0.35.4(@types/node@26.6.2)
     transitivePeerDependencies:
@@ -4689,7 +4689,7 @@ snapshots:
       '@remix-run/router': 1.23.4
       react: 19.3.0
 
-  react-virtuoso@4.18.13(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+  react-virtuoso@4.18.15(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
     dependencies:
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
@@ -4741,7 +4741,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  satori@0.33.3:
+  satori@0.33.5:
     dependencies:
       '@shuding/opentype.js': 1.4.0-beta.0
       css-background-parser: 0.1.0
