@@ -223,9 +223,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       />
       <span className="font-semibold whitespace-nowrap">{group.label}</span>
       {hasOwnTiming && (
-        <span className="flex items-center gap-0.5 rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
-          <IconClock className="size-2.5" />
-          Own timing
+        <span className="flex min-w-0 items-center gap-0.5 overflow-hidden rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
+          <IconClock className="size-2.5 shrink-0" />
+          <span className="truncate">Own timing</span>
         </span>
       )}
       <span
