@@ -181,10 +181,10 @@ function mergeEditedTtmlLines(
   edit: EditedTtmlLines,
   keyIds: LineKeyIds = lineKeyIds(stored),
 ): LyricLine[] {
-  const edited = edit.lines;
-  const partners = pairEditedLines(
+  const { lines: edited, partners } = pairEditedLines(
     stored,
-    edited.map((_, index) => edit.lineKeys?.[index]),
+    edit.lines,
+    edit.lines.map((_, index) => edit.lineKeys?.[index]),
     keyIds,
   );
   const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));

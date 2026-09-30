@@ -80,6 +80,40 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
     });
   });
 
+  describe("regressions: a paragraph copied above its original", () => {
+    it("regression: the untouched original keeps its id and translation, the copy is new", () => {
+      const stored = [
+        createLine({ id: "c", text: "Charlie", begin: 1, end: 2 }),
+        translated("d", "Delta", 3, "D es", "manual"),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) => {
+        const [charlie = "", delta = ""] = paragraphs(ttml);
+        return ttml.replace(charlie, `${delta.replace(">Delta<", ">Delta copy<")}${charlie}`);
+      });
+      expect(merged.map((line) => line.text)).toEqual(["Delta copy", "Charlie", "Delta"]);
+      expect(merged[2]).toBe(stored[1]);
+      expect(merged[0]?.id).not.toBe("d");
+      expect(merged[0]?.translations).toBeUndefined();
+    });
+
+    it("pairs the first copy when no copy exports like the stored line", () => {
+      const stored = [translated("d", "Delta", 3, "D es", "manual")];
+      const merged = mergeEditedExport(stored, (ttml) => {
+        const [delta = ""] = paragraphs(ttml);
+        return ttml.replace(
+          delta,
+          `${delta.replace(">Delta<", ">Delta one<")}${delta.replace(">Delta<", ">Delta two<")}`,
+        );
+      });
+      expect(merged.map((line) => [line.id, line.text])).toEqual([
+        ["d", "Delta one"],
+        [merged[1]?.id, "Delta two"],
+      ]);
+      expect(merged[1]?.id).not.toBe("d");
+      expect(merged[0]?.translations?.es).toEqual(stored[0]?.translations?.es);
+    });
+  });
+
   describe("regressions: keys from an older export", () => {
     it("regression: pairs through the key map of the export the edit came from", () => {
       const before = [
