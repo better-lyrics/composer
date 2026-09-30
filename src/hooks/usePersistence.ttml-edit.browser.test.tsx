@@ -75,6 +75,12 @@ describe("usePersistence · hand-edited TTML", () => {
       await mountPersistence();
 
       expect(useProjectStore.getState().ttmlEditState).toEqual(kept);
+
+      const typedAgain = { ...kept, content: "<tt>hand edited again</tt>" };
+      useProjectStore.getState().setTtmlEditState(typedAgain);
+      await expect
+        .poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 })
+        .toEqual(typedAgain);
     });
 
     it("regression: loads an edit saved with a line key map by an earlier build", async () => {
