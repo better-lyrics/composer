@@ -214,25 +214,25 @@ function useSyncHandlers({
 
   const handleNudgeWord = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
+      nudgeWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordTime = useCallback(
     (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory),
+      setWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeWordEnd = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
+      nudgeWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordEndTime = useCallback(
     (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory),
+      setWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
@@ -289,25 +289,25 @@ function useSyncHandlers({
 
   const handleNudgeBgWord = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
+      nudgeBgWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordTime = useCallback(
     (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setBgWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory),
+      setBgWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeBgWordEnd = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory),
+      nudgeBgWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordEndTime = useCallback(
     (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setBgWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory),
+      setBgWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 

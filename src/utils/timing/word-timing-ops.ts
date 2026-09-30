@@ -1,3 +1,5 @@
+import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
@@ -23,6 +25,7 @@ interface NeighborContext {
   word: WordTiming;
   prevWord: WordTiming | undefined;
   nextWord: WordTiming | undefined;
+  range: TimeRange;
 }
 
 type WordMutator = (ctx: NeighborContext) => WordTiming;
@@ -52,6 +55,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     lineIdx: number,
     wordIdx: number,
     updateLineWithHistory: UpdateLineWithHistory,
+    groups: readonly LinkGroup[],
     mutator: WordMutator,
   ): void {
     const line = lines[lineIdx];
@@ -61,7 +65,13 @@ function createWordTimingOps(config: WordFieldConfig) {
 
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
-    updatedWords[wordIdx] = mutator({ word, prevWord: updatedWords[wordIdx - 1], nextWord: updatedWords[wordIdx + 1] });
+    const range = timeRangeResolver(lines, groups, Number.POSITIVE_INFINITY)(line);
+    updatedWords[wordIdx] = mutator({
+      word,
+      prevWord: updatedWords[wordIdx - 1],
+      nextWord: updatedWords[wordIdx + 1],
+      range,
+    });
 
     updateLineWithHistory(line.id, writeWords(line, updatedWords), {
       deriveText: false,
@@ -69,13 +79,13 @@ function createWordTimingOps(config: WordFieldConfig) {
     });
   }
 
-  function clampBegin({ word, prevWord }: NeighborContext, candidate: number): WordTiming {
-    const minBegin = prevWord?.end ?? 0;
+  function clampBegin({ word, prevWord, range }: NeighborContext, candidate: number): WordTiming {
+    const minBegin = prevWord?.end ?? range.min;
     return { ...word, begin: Math.min(word.end, Math.max(minBegin, candidate)) };
   }
 
-  function clampEnd({ word, nextWord }: NeighborContext, candidate: number): WordTiming {
-    const maxEnd = nextWord?.begin ?? Number.POSITIVE_INFINITY;
+  function clampEnd({ word, nextWord, range }: NeighborContext, candidate: number): WordTiming {
+    const maxEnd = nextWord?.begin ?? range.max;
     return { ...word, end: Math.min(maxEnd, Math.max(word.begin, candidate)) };
   }
 
@@ -85,8 +95,11 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
+    groups: readonly LinkGroup[] = [],
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampBegin(ctx, ctx.word.begin + delta));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) =>
+      clampBegin(ctx, ctx.word.begin + delta),
+    );
   }
 
   function setBegin(
@@ -95,8 +108,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     newBegin: number,
     updateLineWithHistory: UpdateLineWithHistory,
+    groups: readonly LinkGroup[] = [],
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampBegin(ctx, newBegin));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampBegin(ctx, newBegin));
   }
 
   function nudgeEnd(
@@ -105,8 +119,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
+    groups: readonly LinkGroup[] = [],
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, ctx.word.end + delta));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampEnd(ctx, ctx.word.end + delta));
   }
 
   function setEnd(
@@ -115,8 +130,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     newEnd: number,
     updateLineWithHistory: UpdateLineWithHistory,
+    groups: readonly LinkGroup[] = [],
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, (ctx) => clampEnd(ctx, newEnd));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampEnd(ctx, newEnd));
   }
 
   function setBoundary({

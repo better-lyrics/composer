@@ -1066,6 +1066,38 @@ describe("useSyncHandlers with shared timing", () => {
     expect(lineById("c0")).toMatchObject({ begin: 0, end: 2 });
   });
 
+  it("stops a first word nudge where the earliest instance reaches zero", async () => {
+    useProjectStore.setState({
+      lines: [
+        createLine({
+          id: "c0",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 3, end: 4 })],
+        }),
+        createLine({
+          id: "c1",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 1,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 10, end: 11 })],
+        }),
+      ],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    const { result, act } = await mountSyncHandlers();
+
+    await act(() => {
+      result.current.handleNudgeWord(1, 0, -5);
+    });
+
+    expect(lineById("c1")?.words?.[0].begin).toBe(7);
+    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+  });
+
   it("regression: nudges a line of an old group by the whole delta", async () => {
     seedSharedChorus(false);
     const { result, act } = await mountSyncHandlers({
