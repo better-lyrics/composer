@@ -1,10 +1,25 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
-import { isLinked } from "@/domain/instance/predicates";
-import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { type LinkedLine, isLinked } from "@/domain/instance/predicates";
+import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
+import { isStructurallyEqual } from "@/utils/structural-equal";
+
+// -- Types --------------------------------------------------------------------
+
+interface SharedTimingFanOut {
+  lines: LyricLine[];
+  rejected: boolean;
+  touchedGroupIds: string[];
+}
+
+interface FanOutSource {
+  line: LinkedLine;
+  group: LinkGroup;
+  instanceOrder: number[];
+}
 
 // -- Predicates ---------------------------------------------------------------
 
@@ -97,11 +112,106 @@ function placeSharedInstance(
   return copyInstanceTiming(lines, groupId, reference, instanceIdx, start - referenceStart);
 }
 
+// -- Fan out ------------------------------------------------------------------
+
+function timingChanged(before: LyricLine | undefined, after: LyricLine): boolean {
+  if (!before) return false;
+  return (
+    before.begin !== after.begin ||
+    before.end !== after.end ||
+    !isStructurallyEqual(before.words, after.words) ||
+    !isStructurallyEqual(before.backgroundWords, after.backgroundWords)
+  );
+}
+
+function hasNegativeTime(updates: LineUpdate["updates"]): boolean {
+  if (updates.begin !== undefined && updates.begin < 0) return true;
+  return [...(updates.words ?? []), ...(updates.backgroundWords ?? [])].some((word) => word.begin < 0);
+}
+
+function fanOutSources(
+  before: readonly LyricLine[],
+  after: readonly LyricLine[],
+  groups: readonly LinkGroup[],
+  changedIds: readonly string[],
+): FanOutSource[] {
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const beforeById = new Map(before.map((line) => [line.id, line]));
+  const afterById = new Map(after.map((line) => [line.id, line]));
+  const instanceOrderByGroup = new Map<string, number[]>();
+  const sources: FanOutSource[] = [];
+  for (const id of new Set(changedIds)) {
+    const line = afterById.get(id);
+    if (!line || !isLinked(line) || line.detached || !timingChanged(beforeById.get(id), line)) continue;
+    const group = groupsById.get(line.groupId);
+    if (!group || !sharesTiming(group, line.instanceIdx)) continue;
+    let instanceOrder = instanceOrderByGroup.get(group.id);
+    if (!instanceOrder) {
+      instanceOrder = sharedInstancesInLineOrder(before, group);
+      instanceOrderByGroup.set(group.id, instanceOrder);
+    }
+    sources.push({ line, group, instanceOrder });
+  }
+  return sources.toSorted(
+    (a, b) => a.instanceOrder.indexOf(a.line.instanceIdx) - b.instanceOrder.indexOf(b.line.instanceIdx),
+  );
+}
+
+function sharedTimingFanOut(
+  before: readonly LyricLine[],
+  after: LyricLine[],
+  groups: readonly LinkGroup[],
+  changedIds: readonly string[],
+): SharedTimingFanOut {
+  const unchanged: SharedTimingFanOut = { lines: after, rejected: false, touchedGroupIds: [] };
+  if (!groups.some((group) => group.sharesTiming)) return unchanged;
+  const sources = fanOutSources(before, after, groups, changedIds);
+  if (sources.length === 0) return unchanged;
+
+  const indexById = new Map(after.map((line, index) => [line.id, index]));
+  const claimedTemplateLines = new Set<string>();
+  const touchedGroupIds = new Set<string>();
+  const starts = new Map<string, number | null>();
+  const startBefore = (groupId: string, instanceIdx: number) => {
+    const key = `${groupId}:${instanceIdx}`;
+    if (!starts.has(key)) starts.set(key, instanceStart(before, groupId, instanceIdx));
+    return starts.get(key) ?? null;
+  };
+  let lines = after;
+
+  for (const { line: source, group, instanceOrder } of sources) {
+    const claimKey = `${group.id}:${source.templateLineIdx}`;
+    const sourceStart = startBefore(group.id, source.instanceIdx);
+    if (claimedTemplateLines.has(claimKey) || sourceStart === null) continue;
+    claimedTemplateLines.add(claimKey);
+    for (const targetIdx of instanceOrder) {
+      const targetStart = startBefore(group.id, targetIdx);
+      if (targetIdx === source.instanceIdx || targetStart === null) continue;
+      const target = attachedLinesOfInstance(after, group.id, targetIdx).find(
+        (line) => line.templateLineIdx === source.templateLineIdx,
+      );
+      if (!target) continue;
+      const updates = offsetTimingFields(source, targetStart - sourceStart);
+      if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
+      const copied = reconcileLine({ ...target, ...updates });
+      if (!timingChanged(target, copied)) continue;
+      const targetIndex = indexById.get(target.id);
+      if (targetIndex === undefined) continue;
+      if (lines === after) lines = [...after];
+      lines[targetIndex] = copied;
+      touchedGroupIds.add(group.id);
+    }
+  }
+  return lines === after ? unchanged : { lines, rejected: false, touchedGroupIds: [...touchedGroupIds] };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
   isSharedLine,
   placeSharedInstance,
   sharedInstancesInLineOrder,
+  sharedTimingFanOut,
   sharesTiming,
 };
+export type { SharedTimingFanOut };
