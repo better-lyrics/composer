@@ -356,9 +356,15 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
     clearContextMenu,
   );
   const isCollapsed = useTimelineStore.getState().collapsedInstances[`${target.groupId}:${target.instanceIdx}`];
+  const openGroup = useTimelineStore((s) => s.openGroup);
 
   return (
     <>
+      <MenuItem
+        label="Open group"
+        shortcut={getEffectiveKeysArray("timeline.openGroup")}
+        onClick={() => openGroup(target.groupId, target.instanceIdx)}
+      />
       <MenuItem
         label={isCollapsed ? "Expand instance" : "Collapse instance"}
         shortcut={getEffectiveKeysArray("timeline.toggleCollapseInstance")}

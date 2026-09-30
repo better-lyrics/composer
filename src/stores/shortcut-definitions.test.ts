@@ -75,6 +75,19 @@ describe("SHORTCUT_DEFINITIONS", () => {
     }
   });
 
+  it("registers the group focus shortcuts with their exact default bindings in the timeline scope", () => {
+    const expectedBindings: Record<string, ShortcutBinding> = {
+      "timeline.openGroup": { key: "Enter" },
+      "timeline.closeGroup": { key: "Escape" },
+    };
+    for (const [id, binding] of Object.entries(expectedBindings)) {
+      const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);
+      expect(definition, `missing definition for ${id}`).toBeDefined();
+      expect(definition?.scope).toBe("timeline");
+      expect(definition?.defaultBinding).toEqual(binding);
+    }
+  });
+
   it("registers the library shortcuts with their exact default bindings in the library scope", () => {
     const search = SHORTCUT_DEFINITIONS.find((d) => d.id === "library.focusSearch");
     const remove = SHORTCUT_DEFINITIONS.find((d) => d.id === "library.deleteSelection");

@@ -122,3 +122,22 @@ describe("TimelineContextMenu · group this line", () => {
     expect(store().groups[0].sharesTiming).toBeUndefined();
   });
 });
+
+describe("TimelineContextMenu · open group", () => {
+  beforeEach(seedProject);
+
+  it("opens the group on the banner's instance and closes the menu", async () => {
+    const screen = await render(<TimelineContextMenu />);
+
+    await screen.getByRole("button", { name: /^Open group/ }).click();
+
+    expect(useTimelineStore.getState().focusedGroup).toEqual({ groupId: "g1", hearInstanceIdx: 0 });
+    expect(useTimelineStore.getState().contextMenu).toBeNull();
+  });
+
+  it("shows the open group shortcut", async () => {
+    const screen = await render(<TimelineContextMenu />);
+
+    await expect.element(screen.getByRole("button", { name: /^Open group/ })).toHaveTextContent("↵");
+  });
+});

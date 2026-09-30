@@ -9,6 +9,7 @@ interface SegmentedOption<T extends string> {
   icon?: Icon;
   count?: number;
   iconOnly?: boolean;
+  disabled?: boolean;
 }
 
 interface SegmentedControlProps<T extends string> {
@@ -51,10 +52,12 @@ function SegmentedControl<T extends string>({
             aria-pressed={isSelected}
             aria-label={optionName(option)}
             title={option.iconOnly ? option.label : undefined}
+            disabled={option.disabled}
             onClick={() => onChange(option.value)}
             className={cn(
               "inline-flex items-center justify-center gap-1.5 px-3 text-sm rounded-md whitespace-nowrap transition-colors cursor-pointer",
               option.iconOnly && "w-8 px-0",
+              "disabled:cursor-not-allowed disabled:text-composer-text-faint disabled:line-through",
               isSelected
                 ? "bg-composer-button text-composer-text"
                 : "text-composer-text-muted hover:text-composer-text",

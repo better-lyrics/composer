@@ -1,3 +1,4 @@
+import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
@@ -6,6 +7,7 @@ import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { getWordsInInstance } from "@/views/timeline/utils";
 import { userEvent } from "vitest/browser";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -36,8 +38,14 @@ function seed() {
   useProjectStore.getState().clearHistory();
 }
 
+const PlayableTimeline: React.FC = () => {
+  useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} });
+  return <TimelinePanel />;
+};
+
 const focus = () => useTimelineStore.getState().focusedGroup;
-const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+const store = () => useProjectStore.getState();
+const lineById = (id: string) => store().lines.find((line) => line.id === id);
 
 function shownLineIndices(): number[] {
   return [...document.querySelectorAll<HTMLElement>('[data-track="word"]')].map((el) => Number(el.dataset.lineIndex));
@@ -71,16 +79,37 @@ beforeEach(seed);
 
 describe("TimelinePanel · group focus", () => {
   it("opens the group on a banner double-click and shows only that instance", async () => {
-    await renderOpen(1);
+    const screen = await renderOpen(1);
 
     await expect.poll(shownLineIndices).toEqual([2]);
     expect(document.querySelectorAll("[data-group-header]")).toHaveLength(0);
+    await expect.element(screen.getByRole("group", { name: "Hear" })).toBeVisible();
   });
 
-  it("opens only the own-timing instance", async () => {
-    await renderOpen(2);
+  it("opens only the own-timing instance, with Share timing in the bar", async () => {
+    const screen = await renderOpen(2);
 
     await expect.poll(shownLineIndices).toEqual([3]);
+    await expect.element(screen.getByRole("group", { name: "Hear" })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Share timing" })).toBeVisible();
+  });
+
+  it("switches the shown rows with the Hear switch", async () => {
+    const screen = await renderOpen(0);
+    await expect.poll(shownLineIndices).toEqual([0]);
+
+    await screen.getByRole("button", { name: "Chorus 2" }).click();
+
+    await expect.poll(shownLineIndices).toEqual([2]);
+  });
+
+  it("returns to the song from the Song crumb", async () => {
+    const screen = await renderOpen(0);
+
+    await screen.getByRole("button", { name: "Song" }).click();
+
+    await expect.poll(shownLineIndices).toEqual([0, 1, 2, 3]);
+    expect(document.querySelectorAll("[data-group-header]")).toHaveLength(3);
   });
 
   it("applies an edit in the open group to every placed shared instance", async () => {
@@ -98,6 +127,74 @@ describe("TimelinePanel · group focus", () => {
   });
 
   describe("keyboard", () => {
+    it("opens the group with Enter on a selected banner, without toggling playback", async () => {
+      await render(<PlayableTimeline />);
+      useTimelineStore.getState().setSelectedWords(getWordsInInstance(store().lines, "g1", 1));
+
+      await userEvent.keyboard("{Enter}");
+
+      await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
+      expect(useAudioStore.getState().isPlaying).toBe(false);
+    });
+
+    it("opens the group with Enter on a focused banner label", async () => {
+      await render(<TimelinePanel />);
+      await expect.poll(() => document.querySelectorAll("[data-group-header]").length).toBe(3);
+      document.querySelector<HTMLButtonElement>('[data-group-header="g1:2"] button')?.focus();
+
+      await userEvent.keyboard("{Enter}");
+
+      await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 2 });
+      expect(useTimelineStore.getState().contextMenu).toBeNull();
+    });
+
+    it("leaves Enter to play and pause when no banner is selected", async () => {
+      await render(<PlayableTimeline />);
+      useTimelineStore.getState().setSelectedWords([{ lineId: "c1", lineIndex: 2, wordIndex: 0, type: "word" }]);
+
+      await userEvent.keyboard("{Enter}");
+
+      await expect.poll(() => useAudioStore.getState().isPlaying).toBe(true);
+      expect(focus()).toBeNull();
+    });
+
+    it("closes the group with Escape", async () => {
+      await renderOpen(0);
+
+      await userEvent.keyboard("{Escape}");
+
+      await expect.poll(() => focus()).toBeNull();
+      await expect.poll(shownLineIndices).toEqual([0, 1, 2, 3]);
+    });
+
+    it("clears the selection with the first Escape and closes the group with the second", async () => {
+      await renderOpen(0);
+      pressSelectAll();
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toHaveLength(2);
+
+      await userEvent.keyboard("{Escape}");
+      await expect.poll(() => useTimelineStore.getState().selectedWords).toEqual([]);
+      expect(focus()).not.toBeNull();
+
+      await userEvent.keyboard("{Escape}");
+      await expect.poll(() => focus()).toBeNull();
+    });
+
+    it("closes an open menu before the group", async () => {
+      await renderOpen(0);
+      useTimelineStore.getState().setContextMenu({
+        x: 10,
+        y: 10,
+        target: { kind: "gutter", lineId: "c0", lineIndex: 0 },
+      });
+      await expect.poll(() => document.querySelector(".layer-floating")).not.toBeNull();
+
+      await userEvent.keyboard("{Escape}");
+
+      await expect.poll(() => useTimelineStore.getState().contextMenu).toBeNull();
+      expect(focus()).not.toBeNull();
+    });
+
     it("selects only the open instance with select all", async () => {
       await renderOpen(1);
 

@@ -47,4 +47,4 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
   }, []);
 }
 
-export { useKeyboardShortcuts };
+export { isTypingTarget, useKeyboardShortcuts };

@@ -20,6 +20,7 @@ import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-
 import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
+import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
@@ -39,6 +40,7 @@ import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-sto
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
+import { useGroupFocusShortcuts } from "@/views/timeline/use-group-focus-shortcuts";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -134,6 +136,7 @@ const TimelinePanel: React.FC = () => {
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
+  useGroupFocusShortcuts();
   useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
@@ -395,6 +398,7 @@ const TimelinePanel: React.FC = () => {
           <GroupingSuggestionsBanner />
           <SharedTimingSuggestionsBanner />
           <ExplicitSuggestionsBanner />
+          <GroupFocusBar />
 
           <div className="flex flex-1 overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden">

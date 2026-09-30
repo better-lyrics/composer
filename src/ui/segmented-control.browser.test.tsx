@@ -67,6 +67,35 @@ describe("SegmentedControl", () => {
     });
   });
 
+  describe("disabled options", () => {
+    const withDisabledWord = [
+      { value: "line", label: "Line" },
+      { value: "word", label: "Word", disabled: true },
+    ] as const;
+
+    it("disables an option marked disabled", async () => {
+      const screen = await render(
+        <SegmentedControl aria-label="Granularity" value="line" options={withDisabledWord} onChange={() => {}} />,
+      );
+      await expect.element(screen.getByRole("button", { name: "Word" })).toBeDisabled();
+      await expect.element(screen.getByRole("button", { name: "Line" })).toBeEnabled();
+    });
+
+    it("never reports a disabled option", async () => {
+      const changes: string[] = [];
+      const screen = await render(
+        <SegmentedControl
+          aria-label="Granularity"
+          value="line"
+          options={withDisabledWord}
+          onChange={(value) => changes.push(value)}
+        />,
+      );
+      await screen.getByRole("button", { name: "Word" }).click({ force: true });
+      expect(changes).toEqual([]);
+    });
+  });
+
   describe("invariants", () => {
     it("keeps exactly one option pressed", async () => {
       const screen = await render(<Harness />);

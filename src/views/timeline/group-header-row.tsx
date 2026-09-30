@@ -109,6 +109,8 @@ const GroupHeaderRowComponent: React.FC<GroupHeaderRowProps> = ({
       className="relative flex"
       style={{ height: GROUP_HEADER_HEIGHT }}
       data-group-header={`${group.id}:${instanceIdx}`}
+      data-group-id={group.id}
+      data-instance-idx={instanceIdx}
       onDoubleClick={renaming ? undefined : startRename}
     >
       <div

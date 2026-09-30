@@ -269,6 +269,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "c", shift: true },
   },
   {
+    id: "timeline.openGroup",
+    scope: "timeline",
+    description: "Open group",
+    defaultBinding: { key: "Enter" },
+  },
+  {
+    id: "timeline.closeGroup",
+    scope: "timeline",
+    description: "Close group",
+    defaultBinding: { key: "Escape" },
+  },
+  {
     id: "timeline.jumpPrevInstance",
     scope: "timeline",
     description: "Jump to previous instance of group",

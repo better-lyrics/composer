@@ -58,4 +58,5 @@ function useSharedTimingMenuActions(groupId: string, instanceIdx: number, clearC
 
 // -- Exports ------------------------------------------------------------------
 
-export { useSharedTimingMenuActions };
+export { SHARING_MENU_LABELS, applySharingMenuAction, sharingMenuAction, useSharedTimingMenuActions };
+export type { SharingMenuAction };

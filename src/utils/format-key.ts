@@ -11,6 +11,7 @@ function formatKey(key: string): string {
   if (key === "Space") return "Space";
   if (key === "Enter") return "↵";
   if (key === "Backspace") return "⌫";
+  if (key === "Escape") return "Esc";
   if (key === "ArrowLeft") return "←";
   if (key === "ArrowRight") return "→";
   if (key === "ArrowUp") return "↑";
