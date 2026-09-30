@@ -62,7 +62,7 @@ function Harness({ clipboard }: { clipboard: ClipboardData }) {
   );
 }
 
-function pointOnEmptyRow(container: HTMLElement) {
+function pointOnRow(container: HTMLElement, lineId: string, time: number) {
   const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
     lines: useProjectStore.getState().lines,
@@ -73,21 +73,28 @@ function pointOnEmptyRow(container: HTMLElement) {
     waveformHeight: WAVEFORM_HEIGHT + 1,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
-  const row = layout.lineTops.get("e");
-  if (!row) throw new Error("empty row has no layout");
+  const row = layout.lineTops.get(lineId);
+  if (!row) throw new Error(`row ${lineId} has no layout`);
   const rect = container.getBoundingClientRect();
-  return { clientX: rect.left + GUTTER_WIDTH + PASTE_TIME * zoom, clientY: rect.top + row.top + 2 };
+  return { clientX: rect.left + GUTTER_WIDTH + time * zoom, clientY: rect.top + row.top + 2 };
 }
 
-async function pasteOnEmptyRow(screen: Awaited<ReturnType<typeof render>>) {
+async function hoverRow(screen: Awaited<ReturnType<typeof render>>, lineId: string, time: number) {
   const container = screen.container.querySelector("div");
   if (!container) throw new Error("no scroll container");
-  const point = pointOnEmptyRow(container);
+  const point = pointOnRow(container, lineId, time);
   document.dispatchEvent(new MouseEvent("mousemove", point));
   const overlay = screen.getByRole("button", { name: "Place pasted content here" });
   await expect.element(overlay).toBeInTheDocument();
-  overlay.element().dispatchEvent(new MouseEvent("click", { ...point, bubbles: true, button: 0 }));
+  return { overlay: overlay.element(), point };
 }
+
+async function pasteOnRow(screen: Awaited<ReturnType<typeof render>>, lineId: string, time: number) {
+  const { overlay, point } = await hoverRow(screen, lineId, time);
+  overlay.dispatchEvent(new MouseEvent("click", { ...point, bubbles: true, button: 0 }));
+}
+
+const pasteOnEmptyRow = (screen: Awaited<ReturnType<typeof render>>) => pasteOnRow(screen, "e", PASTE_TIME);
 
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
@@ -154,6 +161,63 @@ describe("PastePreview · paste into a group that shares timing", () => {
 
       expect(lineById("e")?.groupId).toBeUndefined();
       expect(store().groups[0].ownTimingInstances).toEqual([0, 1]);
+    });
+  });
+});
+
+describe("PastePreview · paste words onto a line of a group that shares timing", () => {
+  const ZOOM = 20;
+  const wordClipboard: ClipboardData = {
+    entries: [{ word: createWord({ text: "z", begin: 0, end: 1 }), lineOffset: 0, trackType: "word" }],
+  };
+
+  function seedChorus(sharesTiming: boolean) {
+    useAudioStore.setState({ duration: 20 });
+    useTimelineStore.setState({ zoom: ZOOM });
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
+      lines: [chorusLine("c0", 0, 3, 1), chorusLine("c1", 1, 10, 1)],
+    });
+    useProjectStore.getState().clearHistory();
+  }
+
+  const ghostWidth = (overlay: Element) => {
+    const ghost = overlay.querySelector<HTMLElement>(".pointer-events-none");
+    if (!ghost) throw new Error("no ghost word");
+    return Number.parseFloat(ghost.style.width);
+  };
+
+  it("ends the pasted word where the latest instance reaches the song end", async () => {
+    seedChorus(true);
+    const screen = await render(<Harness clipboard={wordClipboard} />);
+
+    await pasteOnRow(screen, "c0", 12.5);
+
+    await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
+    expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.5, 5);
+    expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13, 5);
+    expect(lineById("c1")?.words?.[2].end).toBeCloseTo(20, 5);
+  });
+
+  it("previews the pasted word cut at the range end", async () => {
+    seedChorus(true);
+    const screen = await render(<Harness clipboard={wordClipboard} />);
+
+    const { overlay } = await hoverRow(screen, "c0", 12.5);
+
+    expect(ghostWidth(overlay)).toBeCloseTo(0.5 * ZOOM, 3);
+  });
+
+  describe("regressions", () => {
+    it("regression: a line of an old group still takes the pasted word up to the song end", async () => {
+      seedChorus(false);
+      const screen = await render(<Harness clipboard={wordClipboard} />);
+
+      expect(ghostWidth((await hoverRow(screen, "c0", 12.5)).overlay)).toBeCloseTo(ZOOM, 3);
+      await pasteOnRow(screen, "c0", 12.5);
+
+      await expect.poll(() => lineById("c0")?.words).toHaveLength(3);
+      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.5, 5);
     });
   });
 });

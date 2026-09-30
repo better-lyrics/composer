@@ -1,4 +1,5 @@
 import { withNewInstance } from "@/domain/group/own-timing";
+import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineTemplate } from "@/domain/group/template";
 import { pickedTemplateSource, templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
@@ -11,7 +12,7 @@ import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
-import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
+import { applyPasteToLines, pastedWordBounds, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
@@ -169,10 +170,11 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       const firstEntry = clipboard.entries[0];
       const timeDelta = cursorTime - firstEntry.word.begin;
 
-      const hasOverlap = pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
+      const rangeOf = timeRangeResolver(lines, useProjectStore.getState().groups, duration);
+      const hasOverlap = pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, rangeOf);
       if (hasOverlap) return;
 
-      const updates = applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, duration });
+      const updates = applyPasteToLines({ lines, clipboard, targetLineIndex, timeDelta, rangeOf });
       if (!updates) return;
 
       if (updates.length > 0) {
@@ -195,7 +197,9 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
   const focusedGroup = useTimelineStore((s) => s.focusedGroup);
   const lines = useProjectStore((s) => s.lines);
+  const groups = useProjectStore((s) => s.groups);
   const duration = useAudioStore((s) => s.duration);
+  const rangeOf = useMemo(() => timeRangeResolver(lines, groups, duration), [lines, groups, duration]);
 
   const layout = useMemo(
     () =>
@@ -227,9 +231,19 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const firstEntry = clipboard.entries[0];
   const timeDelta = cursorTime - firstEntry.word.begin;
 
-  const hasOverlap = isInstancePaste ? false : pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, duration);
+  const hasOverlap = isInstancePaste ? false : pasteOverlaps(clipboard, targetLineIndex, timeDelta, lines, rangeOf);
 
-  const ghosts = computeGhosts(clipboard, targetLineIndex, timeDelta, lines, zoom, duration, layout, defaultRowHeight);
+  const ghosts = computeGhosts(
+    clipboard,
+    targetLineIndex,
+    timeDelta,
+    lines,
+    zoom,
+    duration,
+    rangeOf,
+    layout,
+    defaultRowHeight,
+  );
 
   const scrollLeft = container.scrollLeft;
   const scrollTop = container.scrollTop;
@@ -276,6 +290,7 @@ function computeGhosts(
   lines: LyricLine[],
   zoom: number,
   duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
   layout: RowLayout,
   defaultRowHeight: number,
 ): GhostWord[] {
@@ -293,16 +308,19 @@ function computeGhosts(
     const outOfBounds = !targetLine || !targetPos;
     const isBg = entry.trackType === "bg";
 
-    const newBegin = Math.max(0, entry.word.begin + timeDelta);
-    const newEnd = Math.min(duration, entry.word.end + timeDelta);
+    const pasted = pastedWordBounds(
+      entry.word,
+      timeDelta,
+      targetLine ? rangeOf(targetLine) : { min: 0, max: duration },
+    );
 
-    const left = GUTTER_WIDTH + newBegin * zoom;
-    const width = Math.max((newEnd - newBegin) * zoom, 4);
+    const left = GUTTER_WIDTH + pasted.begin * zoom;
+    const width = Math.max((pasted.end - pasted.begin) * zoom, 4);
 
     let overlaps = outOfBounds;
     if (targetLine && !outOfBounds) {
       const existingWords = effectiveTrackWords(targetLine, isBg ? "bg" : "word") ?? [];
-      overlaps = existingWords.some((existing) => boundsOverlap({ begin: newBegin, end: newEnd }, existing));
+      overlaps = existingWords.some((existing) => boundsOverlap(pasted, existing));
     }
 
     let trackTop: number;
