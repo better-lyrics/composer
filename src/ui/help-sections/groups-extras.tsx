@@ -1,7 +1,9 @@
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
 import { INLINE_CODE, PROSE } from "@/ui/typography";
 import { MOD_KEY } from "@/utils/platform";
-import { SettingLink } from "@/ui/setting-link";
-import { HelpTopic } from "@/ui/help-topic";
 
 // -- Linked group extras ------------------------------------------------------
 
@@ -22,10 +24,46 @@ const GroupsExtras: React.FC = () => (
       </ul>
       <p className={`${PROSE} mt-2`}>Stays local to one instance:</p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1`}>
-        <li>Absolute begin and end times for each word.</li>
+        <li>Absolute begin and end times, except in a group that shares timing (below).</li>
         <li>Banner shifts and arrow-key nudge.</li>
         <li>Anything you do on a line that's been detached.</li>
       </ul>
+    </HelpTopic>
+
+    <HelpTopic title="Shared timing">
+      <p className={PROSE}>
+        New groups share their timing: sync one chorus and every other chorus follows, each anchored at its own start. A
+        timing edit in any shared instance reaches the others, and their banners pulse to show it. Turn this off for new
+        groups in <SettingLink setting="shareTimingInNewGroups" />.
+      </p>
+      <ul className={`${PROSE} list-disc pl-4 space-y-1 mt-2`}>
+        <li>
+          <strong>Placing an instance</strong>: an instance with no timing yet waits for a start. In Sync, one tap on
+          its first word places the whole instance and skips ahead. In the Timeline, right-click one of its lines and
+          pick <strong>Place at playhead</strong>.
+        </li>
+        <li>
+          <strong>One instance differs</strong>: right-click its banner and pick <strong>Use own timing</strong>. Its
+          banner shows an Own timing chip, and <strong>Share timing</strong> brings it back.
+        </li>
+        <li>
+          <strong>Song edges</strong>: a shared edit stops where the first or last instance would leave the song.
+        </li>
+        <li>
+          <strong>Older groups</strong> keep their own timing. Right-click a banner and pick{" "}
+          <strong>Share timing across group</strong>, or accept the suggestion at the top of the Timeline.
+        </li>
+      </ul>
+    </HelpTopic>
+
+    <HelpTopic title="Open a group">
+      <p className={PROSE}>
+        Double-click a banner, or select it and press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.openGroup")} />, to see one instance on its own. The bar
+        at the top lets you pick which instance you hear, and lists any instance with its own timing. Edits still reach
+        every shared instance. Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} /> or click{" "}
+        <strong>Song</strong> to go back.
+      </p>
     </HelpTopic>
 
     <HelpTopic title="The split-or-merge prompt">

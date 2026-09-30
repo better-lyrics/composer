@@ -1,5 +1,5 @@
-import { INLINE_CODE, PROSE } from "@/ui/typography";
 import { HelpTopic } from "@/ui/help-topic";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
 
 // -- TTML Standards -----------------------------------------------------------
 
@@ -53,7 +53,8 @@ const TtmlStandardsSection: React.FC = () => (
         <span className={INLINE_CODE}>&lt;tt&gt;</span> element and on <span className={INLINE_CODE}>&lt;p&gt;</span>{" "}
         elements that belong to a linked group. A <span className={INLINE_CODE}>&lt;composer:groups&gt;</span> block
         lives inside <span className={INLINE_CODE}>&lt;metadata&gt;</span> to declare the group registry (id, label,
-        color).
+        color). A group that shares timing adds <span className={INLINE_CODE}>sharesTiming="true"</span>, and{" "}
+        <span className={INLINE_CODE}>ownTimingInstances="1,3"</span> lists instances that keep their own timing.
       </p>
     </HelpTopic>
 
