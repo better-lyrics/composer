@@ -7,6 +7,7 @@ import { Slider } from "@/ui/slider";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
+import { SeekBarFocusBand } from "@/views/timeline/seek-bar-focus-band";
 import { IconPlayerPauseFilled, IconPlayerPlayFilled, IconVolume, IconVolume2, IconVolume3 } from "@tabler/icons-react";
 import { useCallback } from "react";
 
@@ -184,7 +185,9 @@ const AudioPlayer: React.FC = () => {
         onChange={seekTo}
         aria-label="Audio progress"
         className="flex-1"
-      />
+      >
+        <SeekBarFocusBand duration={duration} />
+      </Slider>
       <TimeDisplay current={currentTime} duration={duration} />
       <VolumeControl volume={volume} isMuted={isMuted} onChangeVolume={setVolume} onToggleMute={toggleMute} />
       <PlaybackRateControl

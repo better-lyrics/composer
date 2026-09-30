@@ -1,8 +1,11 @@
 import { AudioPlayer } from "@/audio/audio-player";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { describe, expect, it } from "vitest";
 
 function setupAudioSource() {
@@ -73,5 +76,34 @@ describe("AudioPlayer", () => {
     await screen.getByRole("button", { name: "Volume" }).click();
     await screen.getByRole("button", { name: "Mute" }).click();
     expect(useAudioStore.getState().isMuted).toBe(true);
+  });
+
+  it("marks the open group on the seek bar only on the Timeline tab", async () => {
+    setupAudioSource();
+    useProjectStore.setState({
+      activeTab: "timeline",
+      groups: [createGroup({ id: "g1", label: "Chorus", sharesTiming: true })],
+      lines: [
+        createLine({
+          id: "c0",
+          text: "go",
+          groupId: "g1",
+          instanceIdx: 0,
+          templateLineIdx: 0,
+          words: [createWord({ text: "go", begin: 15, end: 30 })],
+        }),
+      ],
+    });
+    const screen = await render(<AudioPlayer />);
+    const band = () => document.querySelector<HTMLElement>("[data-seek-bar-focus-band]");
+    expect(band()).toBeNull();
+
+    useTimelineStore.getState().openGroup("g1", 0);
+    await expect.poll(() => band()?.style.left).toBe("25%");
+    expect(band()?.style.width).toBe("25%");
+    expect(screen.getByRole("slider", { name: "Audio progress" }).element().contains(band())).toBe(true);
+
+    useProjectStore.setState({ activeTab: "preview" });
+    await expect.poll(band).toBeNull();
   });
 });
