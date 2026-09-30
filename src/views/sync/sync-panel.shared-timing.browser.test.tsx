@@ -231,6 +231,18 @@ describe("SyncPanel · shared instance anchor", () => {
       expect(screen.container.textContent).not.toContain("Tap to place");
     });
 
+    it("drops the skipped band once the whole song is synced", async () => {
+      load(song({ first: "word", verse: "word" }));
+      const screen = await render(<SyncPanel />);
+      await jumpToRow(screen, 3);
+      await tapAt(40, () => firstBegin("c1-0"));
+      await tapAt(50, () => firstBegin("v2"));
+      await tapAt(50.5, () => lineById("v2")?.words?.length);
+      setIsPlaying(false);
+      await expect.element(screen.getByText("Shared", { exact: true }).first()).toBeInTheDocument();
+      expect(screen.container.textContent).not.toContain("2 skipped");
+    });
+
     it("lists the skipped lines in the paused list, and Sync anyway gives the instance its own timing", async () => {
       load(song({ first: "word", verse: "word" }));
       const screen = await render(<SyncPanel />);

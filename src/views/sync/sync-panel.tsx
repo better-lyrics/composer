@@ -489,7 +489,7 @@ const SyncPanel: React.FC = () => {
                     onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
                     onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
                   />
-                  {skipped && skippedGroup && (
+                  {skipped && skippedGroup && !isComplete && (
                     <SkippedInstanceBand
                       groupId={skipped.groupId}
                       instanceIdx={skipped.instanceIdx}
