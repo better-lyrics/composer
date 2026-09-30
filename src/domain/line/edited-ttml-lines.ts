@@ -3,6 +3,8 @@ import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
+import { stripSplitCharacter } from "@/utils/split-character";
+import { generateLineTtml } from "@/utils/ttml";
 
 // -- Comparison ---------------------------------------------------------------
 
@@ -77,12 +79,18 @@ function mergedTiming(stored: LyricLine, edited: LyricLine): Pick<LyricLine, "wo
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
 }
 
+function mergedText(stored: LyricLine, edited: LyricLine): string {
+  return !edited.words && edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
+}
+
 function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+  if (generateLineTtml(stored) === generateLineTtml(edited)) return stored;
   const { translations: _translations, transliteration: _transliteration, ...editedFields } = edited;
   const translations = mergedTranslations(stored, edited);
   const transliteration = mergedTransliteration(stored, edited);
   return reconcileLine({
     ...editedFields,
+    text: mergedText(stored, edited),
     ...mergedBackground(stored, edited),
     ...mergedTiming(stored, edited),
     id: stored.id,
@@ -98,7 +106,8 @@ function storedPartners(stored: readonly LyricLine[], edited: readonly LyricLine
   if (exported.length === edited.length) return [...exported];
   const unused = new Set(exported);
   return edited.map((line) => {
-    const match = exported.find((candidate) => unused.has(candidate) && candidate.text === line.text);
+    const text = stripSplitCharacter(line.text);
+    const match = exported.find((candidate) => unused.has(candidate) && stripSplitCharacter(candidate.text) === text);
     if (match) unused.delete(match);
     return match;
   });

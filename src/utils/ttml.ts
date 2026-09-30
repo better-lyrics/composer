@@ -7,6 +7,7 @@ import { isLineTimed, syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
+import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { formatTime } from "@/utils/format-time";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
@@ -191,6 +192,10 @@ function generateProjectTtml({ metadata, agents, lines, groups }: ProjectTtmlSou
   return syncProgress(lines, "line").done > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : "";
 }
 
+function generateLineTtml(line: LyricLine): string {
+  return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines: [line], minify: true });
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { generateProjectTtml, generateTTML };
+export { generateLineTtml, generateProjectTtml, generateTTML };
