@@ -1,3 +1,7 @@
+import { isSharedLine } from "@/domain/group/shared-timing";
+import { instanceName } from "@/domain/instance/name";
+import { isLinked } from "@/domain/instance/predicates";
+import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -8,6 +12,16 @@ import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
+
+// -- Functions ----------------------------------------------------------------
+
+function sharedInstanceNameOf(lines: readonly LyricLine[], lineId: string): string | null {
+  const line = lines.find((candidate) => candidate.id === lineId);
+  const groupsById = new Map(useProjectStore.getState().groups.map((group) => [group.id, group]));
+  if (!line || !isLinked(line) || !isSharedLine(line, groupsById)) return null;
+  const group = groupsById.get(line.groupId);
+  return group ? instanceName(lines, group, line.instanceIdx) : null;
+}
 
 // -- Hook ---------------------------------------------------------------------
 
@@ -56,8 +70,10 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleDeleteLine = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return;
     const lineId = contextMenu.target.lineId;
+    const sharedName = sharedInstanceNameOf(rawLines, lineId);
     const newLines = rawLines.filter((l) => l.id !== lineId);
     setLinesWithHistory(newLines);
+    if (sharedName) showGroupActionToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
     clearContextMenu();
   }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
 
