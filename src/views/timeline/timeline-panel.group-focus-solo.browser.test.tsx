@@ -94,12 +94,16 @@ describe("TimelinePanel · open group playback", () => {
     expect(audio.paused).toBe(false);
   });
 
-  it("ends the solo when the playhead is moved outside the instance", async () => {
+  it("regression: stays open when the playhead moves outside, and play returns to the instance", async () => {
     await openSolo(0);
 
+    const seeked = new Promise((resolve) => audio.addEventListener("seeked", resolve, { once: true }));
     useAudioStore.getState().seekTo(4.5);
+    await seeked;
+    await audio.play();
 
-    await expect.poll(focus).toBeNull();
+    await expect.poll(() => audio.currentTime).toBeLessThan(1.5);
+    expect(focus()).toEqual({ groupId: "g1", hearInstanceIdx: 0 });
   });
 
   describe("keyboard", () => {
