@@ -1,6 +1,7 @@
 /**
  * @vitest-environment node
  */
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -11,6 +12,7 @@ import { applyWordMoveAcrossLines } from "./move-across-lines";
 // -- Helpers ------------------------------------------------------------------
 
 const DURATION = 60;
+const wholeSong = (): TimeRange => ({ min: 0, max: DURATION });
 
 function applyUpdates(lines: LyricLine[], updates: LineUpdate[]): LyricLine[] {
   return lines.map((line) => {
@@ -56,7 +58,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -95,7 +97,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -138,7 +140,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -177,7 +179,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -223,7 +225,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: moveW2,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -275,7 +277,7 @@ describe("applyWordMoveAcrossLines: happy paths", () => {
           word: fromB,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -318,7 +320,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -352,7 +354,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -384,7 +386,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -425,7 +427,7 @@ describe("applyWordMoveAcrossLines: rejections", () => {
           word: moveW2,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -462,7 +464,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -496,7 +498,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -538,7 +540,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: moveW2,
         },
       ],
-      DURATION,
+      wholeSong,
     );
 
     expect(result.ok).toBe(true);
@@ -577,7 +579,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: { text: "world", begin: 5, end: 5.5 },
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(JSON.stringify(input)).toBe(snapshot);
   });
@@ -607,7 +609,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: { text: "world", begin: 5, end: 5.5 },
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -636,7 +638,7 @@ describe("applyWordMoveAcrossLines: invariants", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -672,7 +674,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
@@ -703,7 +705,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
           word: { text: "moved", begin: 5, end: 5.5 },
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected reject");
@@ -732,7 +734,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
           word: moved,
         },
       ],
-      DURATION,
+      wholeSong,
     );
     expect(result.ok).toBe(true);
   });
@@ -743,7 +745,7 @@ describe("applyWordMoveAcrossLines: edge cases", () => {
       words: [{ text: "only", begin: 0, end: 0.5 }],
     });
     const input = [lineA];
-    const result = applyWordMoveAcrossLines(input, [], DURATION);
+    const result = applyWordMoveAcrossLines(input, [], wholeSong);
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates).toEqual([]);
@@ -774,7 +776,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "U", text: "untouched", words: [{ text: "untouched", begin: 9, end: 10 }] }),
     ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.map((u) => u.id)).toEqual(["A", "B"]);
   });
@@ -791,7 +793,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
       createLine({ id: "C", text: "Line synced only", begin: 17, end: 20 }),
     ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     if (!result.ok) throw new Error("expected ok");
     expect(result.updates.some((u) => u.id === "C")).toBe(false);
   });
@@ -807,7 +809,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       }),
       createLine({ id: "B", text: "delta", begin: 5, end: 5.4 }),
     ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     expect(result).toEqual({ ok: false, reject: "line-synced-target" });
   });
 
@@ -816,7 +818,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
       createLine({ id: "A", text: "Line synced only", begin: 1, end: 2 }),
       createLine({ id: "B", text: "delta", words: [{ text: "delta", begin: 5, end: 5.4 }] }),
     ]);
-    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], DURATION);
+    const result = applyWordMoveAcrossLines(lines, [moveAlphaTo("B")], wholeSong);
     expect(result).toEqual({ ok: false, reject: "line-synced-source" });
   });
 
@@ -837,7 +839,7 @@ describe("applyWordMoveAcrossLines: effective lines", () => {
           word: { text: "lead", begin: 6, end: 7 },
         },
       ],
-      DURATION,
+      wholeSong,
     );
     if (!result.ok) throw new Error("expected ok");
     const toB = result.updates.find((u) => u.id === "B")?.updates;

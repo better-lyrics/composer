@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { wouldDropCrossInstance } from "@/domain/instance/cross-instance";
 import { CLEARED_BACKGROUND, manualBackgroundWordEdit } from "@/domain/line/background";
 import { type ReadableLine, effectiveMainWordEdit, isLineSyncedSource } from "@/domain/line/effective-words";
@@ -104,7 +105,7 @@ function lineUpdateFor(
   line: ReadableLine,
   removals: SourceRemovals | undefined,
   inserts: TargetInserts | undefined,
-  duration: number,
+  rangeEnd: number,
 ): Partial<LyricLine> | null {
   let words = line.words;
   let backgroundWords = line.backgroundWords;
@@ -119,11 +120,11 @@ function lineUpdateFor(
     bgChanged = true;
   }
   if (inserts?.word.length) {
-    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word), duration);
+    words = resolveOverlapsForward(mergeWordsIntoTrack(words ?? [], inserts.word), rangeEnd);
     mainChanged = true;
   }
   if (inserts?.bg.length) {
-    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg), duration);
+    backgroundWords = resolveOverlapsForward(mergeWordsIntoTrack(backgroundWords ?? [], inserts.bg), rangeEnd);
     bgChanged = true;
   }
 
@@ -141,7 +142,11 @@ function lineUpdateFor(
 
 // -- Entry point --------------------------------------------------------------
 
-function applyWordMoveAcrossLines(lines: readonly ReadableLine[], moves: WordMove[], duration: number): MoveResult {
+function applyWordMoveAcrossLines(
+  lines: readonly ReadableLine[],
+  moves: WordMove[],
+  rangeOf: (line: LyricLine) => TimeRange,
+): MoveResult {
   if (moves.length === 0) return { ok: true, updates: [] };
 
   const linesById = new Map<string, ReadableLine>();
@@ -160,7 +165,7 @@ function applyWordMoveAcrossLines(lines: readonly ReadableLine[], moves: WordMov
     const removals = removeByLine.get(line.id);
     const inserts = insertByLine.get(line.id);
     if (!removals && !inserts) continue;
-    const lineUpdates = lineUpdateFor(line, removals, inserts, duration);
+    const lineUpdates = lineUpdateFor(line, removals, inserts, rangeOf(line).max);
     if (!lineUpdates) return { ok: false, reject: "line-synced-source" };
     if (Object.keys(lineUpdates).length > 0) updates.push({ id: line.id, updates: lineUpdates });
   }
