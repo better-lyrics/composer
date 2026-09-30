@@ -6,7 +6,8 @@ import type { LineUpdate, LooseLine, LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "@/domain/sync/cursor";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -56,6 +57,22 @@ function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granular
   const bounds = slotBounds(lines, slot);
   if (!bounds) return { slot: null, floor: 0 };
   return { slot, floor: ctx.jumped && ctx.time <= bounds.begin ? bounds.end : bounds.begin };
+}
+
+// A placed shared instance keeps the shared end of its last word, even when an undo lost the jump past it.
+function followsSkippedInstance(
+  lines: readonly LyricLine[],
+  ctx: GestureContext,
+  granularity: "line" | "word",
+): boolean {
+  const previous = previousSlot(lines, ctx.cursor, granularity);
+  if (!previous || !ctx.groups?.some((group) => group.sharesTiming)) return false;
+  const previousId = lines[previous.lineIndex].id;
+  return skippedSharedInstances(lines, ctx.groups).some((skipped) => skipped.lineIds.includes(previousId));
+}
+
+function withJumpPastSkipped(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word") {
+  return ctx.jumped || !followsSkippedInstance(lines, ctx, granularity) ? ctx : { ...ctx, jumped: true };
 }
 
 function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureContext): TimeRange {
@@ -114,7 +131,8 @@ function slotText(line: LyricLine, wordIndex: number): string | null {
   return trailingSpace[wordIndex] ? `${text} ` : text;
 }
 
-function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boolean): SlotWrite | null {
+function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open: boolean): SlotWrite | null {
+  const ctx = withJumpPastSkipped(lines, gestureCtx, "word");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
@@ -150,7 +168,8 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
 
 // -- Line slot writing ------------------------------------------------------------
 
-function writeLine(lines: readonly LyricLine[], ctx: GestureContext): SlotWrite | null {
+function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): SlotWrite | null {
+  const ctx = withJumpPastSkipped(lines, gestureCtx, "line");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;

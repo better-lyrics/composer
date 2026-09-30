@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
-import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
+import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { createGroup, createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const sharing = [createGroup({ id: "g1", sharesTiming: true })];
@@ -62,6 +62,42 @@ describe("commitGesture with a shared time range", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a tap after a placed shared instance never stretches its last word, even after an undo", () => {
+      const lines = [
+        chorusLine("c0", 0, { words: [word("chorus", 3, 5)] }),
+        createLine({ id: "x", text: "verse", words: [word("verse", 6, 7)] }),
+        chorusLine("c1", 1, { words: [word("chorus", 10, 12)] }),
+        createLine({ id: "y", text: "every" }),
+      ];
+      const commit = run(lines, "tap-word", 3, 20);
+      expect(commit?.lineUpdates.map((update) => update.id)).toEqual(["y"]);
+    });
+
+    it("regression: a tap before the end of a placed shared instance only trims the overlap", () => {
+      const lines = [
+        chorusLine("c0", 0, { words: [word("chorus", 3, 5)] }),
+        createLine({ id: "x", text: "verse", words: [word("verse", 6, 7)] }),
+        chorusLine("c1", 1, { words: [word("chorus", 10, 12)] }),
+        createLine({ id: "y", text: "every" }),
+      ];
+      expect(run(lines, "tap-word", 3, 11)?.lineUpdates).toContainEqual({
+        id: "c1",
+        updates: { words: [word("chorus", 10, 11)] },
+      });
+    });
+
+    it("still closes the last word of the first shared instance at the tap", () => {
+      const lines = [
+        chorusLine("c0", 0, { words: [word("chorus", 3, 3.3)] }),
+        createLine({ id: "y", text: "every" }),
+        chorusLine("c1", 1),
+      ];
+      expect(run(lines, "tap-word", 1, 6)?.lineUpdates).toContainEqual({
+        id: "c0",
+        updates: { words: [word("chorus", 3, 6)] },
+      });
+    });
+
     it("moves a line of an old group to the tap, as before", () => {
       const lines = [
         chorusLine("c0", 0, { begin: 3, end: 5 }),
