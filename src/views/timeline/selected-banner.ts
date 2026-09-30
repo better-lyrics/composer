@@ -1,5 +1,5 @@
 import { isLinked } from "@/domain/instance/predicates";
-import type { LyricLine } from "@/domain/line/model";
+import type { ReadableLine } from "@/domain/line/effective-words";
 import { isWordSelected } from "@/domain/selection/identity";
 import type { WordSelection } from "@/domain/selection/model";
 import { getWordsInInstance } from "@/views/timeline/utils";
@@ -13,7 +13,10 @@ interface InstanceRef {
 
 // -- Functions ----------------------------------------------------------------
 
-function selectedBannerInstance(lines: readonly LyricLine[], selectedWords: WordSelection[]): InstanceRef | null {
+function selectedBannerInstance(
+  lines: readonly ReadableLine[],
+  selectedWords: WordSelection[],
+): InstanceRef | null {
   const first = selectedWords[0];
   if (!first) return null;
   const line = lines.find((candidate) => candidate.id === first.lineId);
