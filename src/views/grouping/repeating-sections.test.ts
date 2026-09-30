@@ -3,7 +3,7 @@
  */
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { describe, expect, it } from "vitest";
-import { findRepeatingStandaloneSections } from "./repeating-sections";
+import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 
 function line(id: string, text: string, opts: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({ id, text, agentId: "v1", ...opts });

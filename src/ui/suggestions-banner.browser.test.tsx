@@ -1,5 +1,5 @@
 import { render } from "@/test/render";
-import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb } from "@tabler/icons-react";
 import { describe, expect, it, vi } from "vitest";
 

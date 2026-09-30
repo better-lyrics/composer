@@ -31,7 +31,7 @@ import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
-import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -285,6 +285,7 @@ const EditPanel: React.FC = () => {
   const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
+  const [isTypingLyrics, setIsTypingLyrics] = useState(false);
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -456,6 +457,7 @@ const EditPanel: React.FC = () => {
   }, [finalizeRun]);
 
   const handleTextareaBlur = useCallback(() => {
+    setIsTypingLyrics(false);
     finalizeRun();
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
@@ -640,8 +642,6 @@ const EditPanel: React.FC = () => {
 
       <BracketWarning count={bracketCount} />
 
-      <GroupingSuggestionsBanner className="rounded-lg border-b-0 px-3" />
-
       <AgentManager />
 
       <div className="flex flex-1 min-h-0 gap-4">
@@ -656,6 +656,7 @@ const EditPanel: React.FC = () => {
             ref={textareaRef}
             value={rawText}
             onChange={textareaChange.onChange}
+            onFocus={() => setIsTypingLyrics(true)}
             onBlur={handleTextareaBlur}
             onCompositionStart={textareaChange.onCompositionStart}
             onCompositionEnd={textareaChange.onCompositionEnd}
@@ -760,6 +761,8 @@ const EditPanel: React.FC = () => {
           </Scroll>
         </div>
       </div>
+
+      {!isTypingLyrics && <GroupingSuggestionsBanner className="rounded-lg border-b-0 px-3" />}
     </div>
   );
 };

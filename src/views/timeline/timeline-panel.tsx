@@ -22,7 +22,7 @@ import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
 import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";

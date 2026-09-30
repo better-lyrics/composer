@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { Toaster } from "sonner";
 import type { LyricLine } from "@/domain/line/model";
-import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";

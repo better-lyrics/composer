@@ -3,7 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { offerToShareTiming } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
-import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb, IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
 

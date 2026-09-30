@@ -1,8 +1,8 @@
 import { useProjectStore } from "@/stores/project";
 import { offerToShareTiming } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
-import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/timeline/repeating-sections";
-import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 

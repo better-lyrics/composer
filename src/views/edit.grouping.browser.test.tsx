@@ -45,6 +45,45 @@ describe("EditPanel · grouping suggestions", () => {
     await expect.poll(() => store().groups[0]?.sharesTiming).toBe(true);
   });
 
+  it("groups in one undo step", async () => {
+    useProjectStore.setState({ activeTab: "edit", lines: songWithTwoChoruses(), groups: [] });
+    store().clearHistory();
+    const screen = await render(<EditPanel />);
+    await screen.getByRole("button", { name: "Group them" }).click();
+    await expect.poll(() => store().groups).toHaveLength(1);
+
+    store().undo();
+
+    expect(store().groups).toEqual([]);
+    expect(store().lines.every((candidate) => candidate.groupId === undefined)).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: hides the suggestion while the lyrics are being typed", async () => {
+      useProjectStore.setState({ activeTab: "edit", lines: songWithTwoChoruses(), groups: [] });
+      const screen = await render(<EditPanel />);
+      await expect.element(screen.getByRole("button", { name: "Group them" })).toBeVisible();
+
+      screen.container.querySelector("textarea")?.focus();
+
+      await expect.element(screen.getByRole("button", { name: "Group them" })).not.toBeInTheDocument();
+      screen.container.querySelector("textarea")?.blur();
+      await expect.element(screen.getByRole("button", { name: "Group them" })).toBeVisible();
+    });
+
+    it("regression: sits below the editor so it never pushes the text down", async () => {
+      useProjectStore.setState({ activeTab: "edit", lines: songWithTwoChoruses(), groups: [] });
+      const screen = await render(<EditPanel />);
+      const button = screen.getByRole("button", { name: "Group them" });
+      await expect.element(button).toBeVisible();
+
+      const textarea = screen.container.querySelector("textarea");
+      if (!textarea) throw new Error("textarea not rendered");
+      const follows = textarea.compareDocumentPosition(button.element()) & Node.DOCUMENT_POSITION_FOLLOWING;
+      expect(follows).toBeTruthy();
+    });
+  });
+
   describe("edge cases", () => {
     it("offers nothing when no section repeats", async () => {
       useProjectStore.setState({ activeTab: "edit", lines: songWithTwoChoruses().slice(0, 4), groups: [] });
