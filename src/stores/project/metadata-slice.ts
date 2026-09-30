@@ -1,6 +1,7 @@
 import { withDefaultAgentNames } from "@/domain/agent/default-names";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
+import { changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
@@ -84,14 +85,14 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
       };
     }),
 
-  applyEditedLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
+  applyEditedLyricsWithHistory: (edited) =>
     set((state) => {
-      const changed = changedMetadata(state.metadata, metadata);
-      const assignment = agentsAfterImport(state.agents, agents, lines);
+      const write = editedLyricsWrite(state, edited);
+      if (!changesProject(state, write)) return state;
       return {
-        ...commitHistory(state, { lines: assignment.lines, groups, agents: assignment.agents }),
-        metadata: { ...state.metadata, ...changed },
-        importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, changed),
+        ...commitHistory(state, { lines: write.lines, groups: write.groups, agents: write.agents }),
+        metadata: { ...state.metadata, ...write.metadata },
+        importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, write.metadata),
       };
     }),
 

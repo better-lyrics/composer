@@ -1,6 +1,7 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
+import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
@@ -93,12 +94,7 @@ interface MetadataActions {
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
   }) => void;
-  applyEditedLyricsWithHistory: (input: {
-    lines: RawLine[];
-    groups: LinkGroup[];
-    agents: Agent[] | undefined;
-    metadata: Partial<ProjectMetadata>;
-  }) => void;
+  applyEditedLyricsWithHistory: (edited: EditedLyrics) => void;
   markSongDetailsImported: () => void;
   restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;
   clearUnexportedImport: () => void;

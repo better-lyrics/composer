@@ -48,6 +48,18 @@ describe("applyEditedLyricsWithHistory", () => {
       expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
     });
 
+    it("regression: writes nothing when the edit changes no lines, groups, agents or song details", () => {
+      seedProject();
+      useProjectStore.setState({ agents: DEFAULT_AGENTS, groups: [], isDirty: false });
+      const before = useProjectStore.getState();
+      apply({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      const after = useProjectStore.getState();
+      expect(after.lines).toBe(before.lines);
+      expect(after.metadata).toBe(before.metadata);
+      expect(after.isDirty).toBe(false);
+      expect(after.canUndo()).toBe(false);
+    });
+
     it("regression: never marks typed song details as imported", () => {
       seedProject();
       useProjectStore.setState({ importedMetadataKeys: [] });
