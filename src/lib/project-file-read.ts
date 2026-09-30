@@ -61,8 +61,8 @@ function parseBundle(projects: readonly unknown[]): ProjectFileContents {
 
 // -- Reading ------------------------------------------------------------------
 
-async function readProjectFileContents(file: File): Promise<ProjectFileContents> {
-  const parsed: unknown = JSON.parse(await file.text());
+function parseProjectFileContents(text: string): ProjectFileContents {
+  const parsed: unknown = JSON.parse(text);
   if (isProjectBundlePayload(parsed)) return parseBundle(parsed.projects);
   return { kind: "project", project: parseProjectFile(parsed) };
 }
@@ -78,5 +78,5 @@ function savedProjectFromFile(file: ProjectFile, savedAt: number): SavedProject 
 
 // -- Exports ------------------------------------------------------------------
 
-export { PROJECT_FILE_ACCEPT, isProjectFileName, readProjectFile, readProjectFileContents, savedProjectFromFile };
+export { PROJECT_FILE_ACCEPT, isProjectFileName, parseProjectFileContents, readProjectFile, savedProjectFromFile };
 export type { ProjectFileContents };

@@ -5,7 +5,7 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { hiddenProjectIdsSnapshot } from "@/lib/pending-deletions";
 import { flushPendingSave } from "@/lib/persistence-debounce";
 import type { ProjectFile } from "@/lib/project-file";
-import { type ProjectFileContents, readProjectFileContents, savedProjectFromFile } from "@/lib/project-file-read";
+import { type ProjectFileContents, parseProjectFileContents, savedProjectFromFile } from "@/lib/project-file-read";
 import {
   createProjectId,
   listProjectIndex,
@@ -16,6 +16,7 @@ import {
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { reportStorageWriteError } from "@/lib/storage-signals";
 import { useImportConflictStore } from "@/stores/import-conflict-store";
+import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { formatProjectCount } from "@/utils/project-count";
@@ -189,21 +190,32 @@ function openTtmlAsNewProject(content: string, fileName: string): string | null 
   }
   const id = createProject();
   const skipped = replaceWithTtmlLyrics(read.parsed);
+  useProjectStore.getState().clearHistory();
   toast(`Opened ${fileName} as a new project from its TTML`);
   if (skipped > 0) toast.warning(skippedLinesMessage(skipped));
   return id;
 }
 
+function reportUnreadableProjectFile(error: unknown): null {
+  console.error(LOG_PREFIX, "could not read the project file", error);
+  toast.error("Couldn't read that project file");
+  return null;
+}
+
 async function importProjectFile(file: File): Promise<string | null> {
+  let text: string;
+  try {
+    text = await file.text();
+  } catch (error) {
+    return reportUnreadableProjectFile(error);
+  }
   let contents: ProjectFileContents;
   try {
-    contents = await readProjectFileContents(file);
+    contents = parseProjectFileContents(text);
   } catch (error) {
-    const text = await file.text();
-    if (detectFileType("", text) === "ttml") return openTtmlAsNewProject(text, file.name);
-    console.error(LOG_PREFIX, "could not read the project file", error);
-    toast.error("Couldn't read that project file");
-    return null;
+    if (error instanceof SyntaxError && detectFileType("", text) === "ttml")
+      return openTtmlAsNewProject(text, file.name);
+    return reportUnreadableProjectFile(error);
   }
   if (contents.kind === "bundle") {
     try {

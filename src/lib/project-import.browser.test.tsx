@@ -19,7 +19,7 @@ import { saveInputTitled, seedStoredProject, songTitled, storedProject } from "@
 import { render } from "@/test/render";
 import { ImportConflictModalHost } from "@/ui/projects/import-conflict-modal";
 import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -37,6 +37,37 @@ function fileWithLine(text: string): ProjectFile {
     lines: [createLine({ text })],
     granularity: "word",
   };
+}
+
+const TTML_DOCUMENT =
+  '<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Cynic</ttm:title></metadata></head><body><div><p begin="0:01.458" end="0:03.324">Now</p></div></body></tt>';
+
+function captureLoggedErrors(pattern: RegExp): { text: () => string; stop: () => void } {
+  allowConsole(pattern);
+  const spy = vi.spyOn(console, "error");
+  return {
+    text: () =>
+      spy.mock.calls
+        .flat()
+        .map((arg) => (arg instanceof Error ? `${arg.name}: ${arg.message}` : String(arg)))
+        .join(" "),
+    stop: () => spy.mockRestore(),
+  };
+}
+
+class UnreadableFile extends File {
+  override text(): Promise<string> {
+    return Promise.reject(new DOMException("The file was moved after it was picked", "NotReadableError"));
+  }
+}
+
+function newerProjectWithExportEdit(): File {
+  const project = {
+    ...storedProject(songTitled("From the future")),
+    version: SAVED_PROJECT_VERSION + 1,
+    ttmlEditState: { source: TTML_DOCUMENT, content: TTML_DOCUMENT },
+  };
+  return new File([JSON.stringify(project)], "Future.ttml-project.json");
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -99,6 +130,37 @@ describe("importProjectFile", () => {
     });
   });
 
+  describe("TTML under a project file name", () => {
+    it("opens a valid TTML document named .json as a new project", async () => {
+      await seedStoredProject("a", { open: true, project: songTitled("Alpha") });
+      await restoreOpenProject();
+      const id = await importProjectFile(new File([TTML_DOCUMENT], "Cynic.json"));
+      expect(id).not.toBeNull();
+      expect(id).not.toBe("a");
+      expect(openProjectIdSnapshot()).toBe(id);
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+    });
+
+    it("starts the opened TTML project with nothing to undo", async () => {
+      const id = await importProjectFile(new File([TTML_DOCUMENT], "Cynic.json"));
+      expect(id).not.toBeNull();
+      expect(useProjectStore.getState().canUndo()).toBe(false);
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Now"]);
+    });
+
+    it("regression: a newer project file whose export edit holds TTML shows the project file error, not TTML", async () => {
+      const logged = captureLoggedErrors(/could not read the project file/);
+      const screen = await render(<Toaster />);
+      const id = await importProjectFile(newerProjectWithExportEdit());
+      expect(id).toBeNull();
+      await expect.element(screen.getByText("Couldn't read that project file")).toBeInTheDocument();
+      expect(screen.getByText(/as a new project from its TTML/).elements()).toHaveLength(0);
+      expect(logged.text()).toMatch(/Unsupported project version/);
+      logged.stop();
+      expect(await listProjectIndex()).toEqual([]);
+    });
+  });
+
   describe("error paths", () => {
     it("says so and imports nothing when the file cannot be read", async () => {
       allowConsole(/could not read the project file/);
@@ -106,6 +168,16 @@ describe("importProjectFile", () => {
       const id = await importProjectFile(new File(["not json"], "broken.ttml-project.json"));
       expect(id).toBeNull();
       await expect.element(screen.getByText("Couldn't read that project file")).toBeInTheDocument();
+      expect(await listProjectIndex()).toEqual([]);
+    });
+
+    it("says so, logs the cause and resolves when the file itself cannot be read", async () => {
+      const logged = captureLoggedErrors(/could not read the project file/);
+      const screen = await render(<Toaster />);
+      await expect(importProjectFile(new UnreadableFile(["{}"], "moved.ttml-project.json"))).resolves.toBeNull();
+      await expect.element(screen.getByText("Couldn't read that project file")).toBeInTheDocument();
+      expect(logged.text()).toMatch(/NotReadableError/);
+      logged.stop();
       expect(await listProjectIndex()).toEqual([]);
     });
   });
