@@ -169,6 +169,43 @@ describe("applyEditedTtml", () => {
     });
   });
 
+  describe("regressions: structural edits leave no override", () => {
+    function threeLines() {
+      useProjectStore.setState({
+        lines: [
+          createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
+          createLine({ id: "b", text: "Bravo", begin: 2, end: 3 }),
+          createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }),
+        ],
+      });
+      return generateProjectTtml(useProjectStore.getState(), 0);
+    }
+
+    it("regression: deleting a line keeps nothing in the export only", () => {
+      const edited = threeLines().replace(/\n\s*<p [^>]*>Bravo<\/p>/, "");
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: false });
+      expect(lineTexts()).toEqual(["Alpha", "Charlie"]);
+      expect(useProjectStore.getState().ttmlEditState).toBeNull();
+    });
+
+    it("regression: adding a line keeps nothing in the export only", () => {
+      const edited = threeLines().replace(
+        "\n    </div>",
+        '\n      <p begin="0:04.000" end="0:05.000" ttm:agent="v1">Delta</p>\n    </div>',
+      );
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: false });
+      expect(lineTexts()).toEqual(["Alpha", "Bravo", "Charlie", "Delta"]);
+    });
+
+    it("regression: reordering lines keeps nothing in the export only", () => {
+      const original = threeLines();
+      const [first = "", second = ""] = original.match(/<p [^>]*>[\s\S]*?<\/p>/g) ?? [];
+      const edited = original.replace(first, "\u0000").replace(second, first).replace("\u0000", second);
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: false });
+      expect(lineTexts()).toEqual(["Bravo", "Alpha", "Charlie"]);
+    });
+  });
+
   describe("error paths", () => {
     it("leaves the project alone when the text is not TTML", () => {
       const result = applyEditedTtml("CUSTOM EDITED CONTENT", 0);

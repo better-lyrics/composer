@@ -5,6 +5,7 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { generateProjectTtml } from "@/utils/ttml";
+import { canonicalLineKeys } from "@/utils/ttml-line-keys";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types --------------------------------------------------------------------
@@ -48,7 +49,7 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
   project.applyEditedLyricsWithHistory(editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed)));
   const regenerated = generateProjectTtml(useProjectStore.getState(), audioDuration);
-  const keptInExport = regenerated !== content;
+  const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);
   useProjectStore.getState().setTtmlEditState(keptInExport ? { source: regenerated, content } : null);
   return { status: "applied", skipped: skippedLineCount(read.parsed.issues), keptInExport };
 }
