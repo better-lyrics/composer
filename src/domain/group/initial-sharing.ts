@@ -52,12 +52,12 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
 // -- Sharing ------------------------------------------------------------------
 
 function instancesInLineOrder(lines: readonly LyricLine[], groupId: string): number[] {
-  const order: number[] = [];
+  const order = new Set<number>();
   for (const line of lines) {
     if (line.groupId !== groupId || line.detached || line.instanceIdx === undefined) continue;
-    if (!order.includes(line.instanceIdx)) order.push(line.instanceIdx);
+    order.add(line.instanceIdx);
   }
-  return order;
+  return [...order];
 }
 
 function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn: boolean): InitialSharing {

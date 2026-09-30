@@ -44,13 +44,12 @@ function isSharedLine(line: LyricLine, groupsById: ReadonlyMap<string, LinkGroup
 // -- Instances ----------------------------------------------------------------
 
 function sharedInstancesInLineOrder(lines: readonly LyricLine[], group: LinkGroup): number[] {
-  const order: number[] = [];
+  const order = new Set<number>();
   for (const line of lines) {
     if (line.groupId !== group.id || line.detached || line.instanceIdx === undefined) continue;
-    if (!sharesTiming(group, line.instanceIdx) || order.includes(line.instanceIdx)) continue;
-    order.push(line.instanceIdx);
+    if (sharesTiming(group, line.instanceIdx)) order.add(line.instanceIdx);
   }
-  return order;
+  return [...order];
 }
 
 function attachedLinesOfInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): LyricLine[] {
