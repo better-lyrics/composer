@@ -1,7 +1,8 @@
 import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LineUpdate, LooseLine, LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
@@ -218,14 +219,6 @@ function mergeUpdates(a: readonly LineUpdate[], b: readonly LineUpdate[]): LineU
   return [...merged].map(([id, updates]) => ({ id, updates }));
 }
 
-function applyUpdates(lines: readonly LyricLine[], updates: readonly LineUpdate[]): LyricLine[] {
-  const byId = new Map(updates.map((u) => [u.id, u.updates]));
-  return lines.map((line) => {
-    const update = byId.get(line.id);
-    return update ? reconcileLine({ ...line, ...update }) : line;
-  });
-}
-
 function slotWriteToUpdates(write: SlotWrite): LineUpdate[] {
   return write.closes ? [write.update, write.closes] : [write.update];
 }
@@ -264,7 +257,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     return { lineUpdates: [closed.update], nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
   }
 
-  const linesAfterClose = applyUpdates(lines, [closed.update]);
+  const linesAfterClose = applyLineUpdates(lines, [closed.update]);
   const opened = writeWord(linesAfterClose, { ...ctx, cursor: nextCursor, jumped: true, time: closed.closeEnd }, true);
   const lineUpdates = opened ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
   return { lineUpdates, nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
