@@ -259,6 +259,28 @@ describe("TimelinePanel · group focus", () => {
   });
 
   describe("regressions", () => {
+    it("regression: opens a line-synced instance with Shift+Enter after a banner click", async () => {
+      const lineSynced = (instanceIdx: number, begin: number) =>
+        createLine({
+          id: `s${instanceIdx}`,
+          text: "go now",
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+          begin,
+          end: begin + 2,
+        });
+      useProjectStore.setState({ lines: [lineSynced(0, 10), verse, lineSynced(1, 40)] });
+      await render(<PlayableTimeline />);
+      await expect.poll(() => document.querySelectorAll("[data-instance-key]").length).toBe(2);
+
+      await userEvent.click(banner(1));
+      await expect.poll(() => useTimelineStore.getState().selectedWords.map((word) => word.lineId)).toEqual(["s1"]);
+      await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
+
+      await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
+    });
+
     it("regression: a double-click on the group label still renames the group", async () => {
       const screen = await render(<TimelinePanel />);
       await expect.poll(() => document.querySelectorAll("[data-group-header]").length).toBe(3);

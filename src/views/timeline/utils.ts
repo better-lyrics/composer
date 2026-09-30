@@ -3,7 +3,7 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
-import { getEffectiveLines } from "@/domain/line/effective-words";
+import { effectiveTrackWords, getEffectiveLines } from "@/domain/line/effective-words";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
@@ -113,10 +113,9 @@ function getWordsInInstance(lines: readonly LyricLine[], groupId: string, instan
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
     const line = lines[lineIndex];
     if (line.groupId !== groupId || line.instanceIdx !== instanceIdx) continue;
-    if (line.words?.length) {
-      for (let wordIndex = 0; wordIndex < line.words.length; wordIndex++) {
-        out.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
-      }
+    const mainWordCount = effectiveTrackWords(line, "word")?.length ?? 0;
+    for (let wordIndex = 0; wordIndex < mainWordCount; wordIndex++) {
+      out.push({ lineId: line.id, lineIndex, wordIndex, type: "word" });
     }
     if (line.backgroundWords?.length) {
       for (let wordIndex = 0; wordIndex < line.backgroundWords.length; wordIndex++) {

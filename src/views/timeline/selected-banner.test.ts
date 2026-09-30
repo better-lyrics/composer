@@ -19,6 +19,9 @@ const chorusLine = (id: string, instanceIdx: number, begin: number) =>
     ],
   });
 
+const lineSyncedChorus = (id: string, instanceIdx: number, begin: number) =>
+  createLine({ id, text: "go now", groupId: "g2", instanceIdx, templateLineIdx: 0, begin, end: begin + 2 });
+
 const verse = createLine({ id: "v", text: "verse", words: [createWord({ text: "verse", begin: 5, end: 6 })] });
 const lines = [chorusLine("a", 0, 10), verse, chorusLine("b", 1, 40)];
 
@@ -61,6 +64,36 @@ describe("selectedBannerInstance", () => {
       const selection: WordSelection[] = [getWordsInInstance(lines, "g1", 0)[0], getWordsInInstance(lines, "g1", 1)[0]];
 
       expect(selectedBannerInstance(lines, selection)).toBeNull();
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: returns a line-synced instance whose banner was clicked", () => {
+      const syncedLines = [lineSyncedChorus("s0", 0, 10), verse, lineSyncedChorus("s1", 1, 40)];
+      const selection = getWordsInInstance(syncedLines, "g2", 1);
+
+      expect(selection).toEqual([{ lineId: "s1", lineIndex: 2, wordIndex: 0, type: "word" }]);
+      expect(selectedBannerInstance(syncedLines, selection)).toEqual({ groupId: "g2", instanceIdx: 1 });
+    });
+
+    it("regression: counts a line-synced row as one word next to a word-synced row", () => {
+      const mixed = [
+        chorusLine("a", 0, 10),
+        createLine({ id: "b", text: "la la", groupId: "g1", instanceIdx: 0, templateLineIdx: 1, begin: 12, end: 14 }),
+      ];
+      const selection = getWordsInInstance(mixed, "g1", 0);
+
+      expect(selection.map((word) => `${word.lineId}:${word.wordIndex}`)).toEqual(["a:0", "a:1", "b:0"]);
+      expect(selectedBannerInstance(mixed, selection)).toEqual({ groupId: "g1", instanceIdx: 0 });
+    });
+  });
+
+  describe("edge cases · untimed rows", () => {
+    it("selects nothing for an instance whose lines have no timing", () => {
+      const untimed = [createLine({ id: "u", text: "go", groupId: "g3", instanceIdx: 0, templateLineIdx: 0 })];
+
+      expect(getWordsInInstance(untimed, "g3", 0)).toEqual([]);
+      expect(selectedBannerInstance(untimed, [])).toBeNull();
     });
   });
 });
