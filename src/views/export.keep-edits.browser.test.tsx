@@ -57,7 +57,7 @@ function byId(id: string): LyricLine | undefined {
 // -- Constants ----------------------------------------------------------------
 
 const LYRICS_CHANGED =
-  "The lyrics changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
+  "The project changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
 
 // -- Tests --------------------------------------------------------------------
 

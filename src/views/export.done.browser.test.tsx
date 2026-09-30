@@ -8,7 +8,8 @@ import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
-const NOT_SYNCED = "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
+const NOT_SYNCED =
+  "Your edits only change the exported file. To apply edits to the lyrics, sync every line, then Regenerate and edit again.";
 const KEPT_IN_EXPORT = "Updated the lyrics from the TTML. Some edits only change the exported file.";
 const NOT_HELD_LINES = "Your edits only change the exported file because the TTML cannot hold some line details.";
 const NOT_HELD_SONG_DETAILS =

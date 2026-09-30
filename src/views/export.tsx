@@ -48,9 +48,9 @@ const NOT_HELD_MESSAGES: Record<ProjectPart, string> = {
   groups: "Your edits only change the exported file because the TTML cannot hold some line group details.",
 };
 const LYRICS_CHANGED_MESSAGE =
-  "The lyrics changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
+  "The project changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
 const NOT_SYNCED_MESSAGE =
-  "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
+  "Your edits only change the exported file. To apply edits to the lyrics, sync every line, then Regenerate and edit again.";
 
 // -- Helpers ------------------------------------------------------------------
 
