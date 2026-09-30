@@ -10,10 +10,10 @@ import { Scroll } from "@/ui/scroll";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
+import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
 import { TtmlEditor } from "@/views/export/ttml-editor";
-import { applyEditedTtml } from "@/views/lyrics-import-modal/import-lyrics";
 import {
   IconCheck,
   IconCopy,
@@ -31,22 +31,24 @@ import { toast } from "sonner";
 // -- Constants ----------------------------------------------------------------
 
 const APPLIED_MESSAGE = "Updated the lyrics from the TTML";
+const KEPT_IN_EXPORT_MESSAGE = "Updated the lyrics from the TTML. Some edits only change the exported file.";
 const EXPORT_ONLY_MESSAGE = "The lyrics stay as they were, so your edits only change the exported file.";
+const NOT_SYNCED_MESSAGE =
+  "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
 
 // -- Helpers ------------------------------------------------------------------
 
-function applyEditsToProject(
-  content: string,
-  duration: number,
-  setEditState: ReturnType<typeof useExportTtml>["setEditState"],
-): void {
+function applyEditsToProject(content: string, duration: number): void {
   const result = applyEditedTtml(content, duration);
+  if (result.status === "export-only") {
+    toast(NOT_SYNCED_MESSAGE);
+    return;
+  }
   if (result.status === "unreadable") {
     toast.error(`${result.message} ${EXPORT_ONLY_MESSAGE}`);
     return;
   }
-  setEditState(null);
-  toast(APPLIED_MESSAGE);
+  toast(result.keptInExport ? KEPT_IN_EXPORT_MESSAGE : APPLIED_MESSAGE);
   if (result.skipped > 0) toast.warning(skippedLinesMessage(result.skipped));
 }
 
@@ -68,6 +70,7 @@ const ExportPanel: React.FC = () => {
 
   const [copied, setCopied] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [sessionStartContent, setSessionStartContent] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions();
 
@@ -98,9 +101,15 @@ const ExportPanel: React.FC = () => {
   }, [exportContent, isExportable]);
 
   const handleEdit = useCallback(() => {
-    if (isEditing && editedContent !== null && !hasConflict) applyEditsToProject(editedContent, duration, setEditState);
-    setIsEditing((prev) => !prev);
-  }, [isEditing, editedContent, hasConflict, duration, setEditState]);
+    if (!isEditing) {
+      setSessionStartContent(exportContent);
+      setIsEditing(true);
+      return;
+    }
+    const changedThisSession = editedContent !== null && editedContent !== sessionStartContent;
+    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration);
+    setIsEditing(false);
+  }, [isEditing, exportContent, editedContent, sessionStartContent, hasConflict, duration]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);

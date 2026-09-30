@@ -39,8 +39,6 @@ interface ImportContext {
   onResult?: (parsed: ParseResult, source: ImportSourceInfo) => void;
 }
 
-type EditedTtmlApply = { status: "applied"; skipped: number } | { status: "unreadable"; message: string };
-
 type TtmlLyricsRead = { status: "readable"; parsed: ParseResult } | { status: "unreadable"; message: string };
 
 interface ImportLyricsInput {
@@ -50,8 +48,6 @@ interface ImportLyricsInput {
 }
 
 // -- Copy ---------------------------------------------------------------------
-
-const EDITED_TTML = "the edited TTML";
 
 function noLyricsMessage(filename: string, issues: ParseIssue[]): string {
   if (issues.some((issue) => issue.reason === "empty-document")) return `Could not read ${filename}.`;
@@ -140,12 +136,6 @@ function replaceWithTtmlLyrics(parsed: ParseResult): number {
   return skippedLineCount(parsed.issues);
 }
 
-function applyEditedTtml(content: string, audioDuration: number): EditedTtmlApply {
-  const read = readTtmlLyrics(content, EDITED_TTML, audioDuration);
-  if (read.status === "unreadable") return read;
-  return { status: "applied", skipped: replaceWithTtmlLyrics(read.parsed) };
-}
-
 async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean> {
   // accept= is only a dialog hint: an OS picker set to all files or a drop reaches here.
   if (!isSupportedLyricsFile(file.name)) {
@@ -187,5 +177,5 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
-export { applyEditedTtml, importLyrics, importLyricsFile, readTtmlLyrics, replaceWithTtmlLyrics, useImportContext };
+export { importLyrics, importLyricsFile, readTtmlLyrics, replaceWithTtmlLyrics, useImportContext };
 export type { ImportContext, ImportSourceInfo };
