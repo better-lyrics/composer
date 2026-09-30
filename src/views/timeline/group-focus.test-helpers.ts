@@ -1,4 +1,3 @@
-import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
@@ -7,6 +6,7 @@ import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { createElement } from "react";
 import { expect } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -36,13 +36,6 @@ function seedGroupFocusSong() {
   });
   useProjectStore.getState().clearHistory();
 }
-
-// -- Components ---------------------------------------------------------------
-
-const PlayableTimeline: React.FC = () => {
-  useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} });
-  return <TimelinePanel />;
-};
 
 // -- Queries ------------------------------------------------------------------
 
@@ -82,7 +75,7 @@ function pressSelectAll() {
 }
 
 async function renderOpen(instanceIdx: number) {
-  const screen = await render(<TimelinePanel />);
+  const screen = await render(createElement(TimelinePanel));
   await expect.poll(() => document.querySelectorAll("[data-instance-key]").length).toBe(3);
   await userEvent.dblClick(banner(instanceIdx));
   await expect.poll(() => focus()?.hearInstanceIdx).toBe(instanceIdx);
@@ -92,7 +85,6 @@ async function renderOpen(instanceIdx: number) {
 // -- Exports ------------------------------------------------------------------
 
 export {
-  PlayableTimeline,
   banner,
   chorus,
   focus,

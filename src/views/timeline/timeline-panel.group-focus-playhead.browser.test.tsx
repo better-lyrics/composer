@@ -1,5 +1,4 @@
 import { useAudioStore } from "@/stores/audio";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { stepFrames } from "@/test/frame-steps";
 import { FOCUS_SCROLL_MARGIN_PX } from "@/views/timeline/group-focus";
 import {
@@ -9,6 +8,7 @@ import {
   scrollContainer,
   seedGroupFocusSong,
 } from "@/views/timeline/group-focus.test-helpers";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(seedGroupFocusSong);

@@ -3,7 +3,6 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import {
-  PlayableTimeline,
   banner,
   chorus,
   focus,
@@ -16,6 +15,7 @@ import {
   store,
   verse,
 } from "@/views/timeline/group-focus.test-helpers";
+import { PlayableTimeline } from "@/views/timeline/group-focus.test-timeline";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";

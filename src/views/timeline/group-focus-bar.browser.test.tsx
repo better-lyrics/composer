@@ -4,8 +4,8 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { userEvent } from "vitest/browser";
 import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
