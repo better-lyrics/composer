@@ -100,7 +100,7 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
   });
 
   describe("edge cases", () => {
-    it("gives a rewritten line with no similar stored line a new id when the counts differ", () => {
+    it("keeps a rewritten line's id through its key when another line was deleted", () => {
       const stored = [
         createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
         createLine({ id: "k", text: "Kay", begin: 2, end: 3 }),
@@ -110,18 +110,24 @@ describe("mergeEditedTtmlLines · pairing edited lines", () => {
       const merged = mergeEditedExport(stored, (ttml) =>
         ttml.replace(paragraphs(ttml)[1] ?? "", "").replace(">Quebec<", ">Totally different<"),
       );
-      expect(merged.map((line) => line.text)).toEqual(["Alpha", "Totally different", "Zulu"]);
-      expect(["k", "q"]).not.toContain(merged[1]?.id);
+      expect(merged.map((line) => [line.id, line.text])).toEqual([
+        ["a", "Alpha"],
+        ["q", "Totally different"],
+        ["z", "Zulu"],
+      ]);
     });
 
-    it("still pairs a rewritten line by position when its gap has one line on each side", () => {
-      const stored = [
-        createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
-        createLine({ id: "k", text: "Kay", begin: 2, end: 3 }),
-        createLine({ id: "z", text: "Zulu", begin: 3, end: 4 }),
-      ];
-      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">Kay<", ">Totally different<"));
-      expect(merged.map((line) => line.id)).toEqual(["a", "k", "z"]);
+    it("gives a paragraph without a key a new line", () => {
+      const stored = [createLine({ id: "a", text: "Alpha", begin: 1, end: 2 })];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(/ itunes:key="L1"/, ""));
+      expect(merged).toHaveLength(1);
+      expect(merged[0]?.id).not.toBe("a");
+    });
+
+    it("gives a paragraph with a key the export never wrote a new line", () => {
+      const stored = [createLine({ id: "a", text: "Alpha", begin: 1, end: 2 })];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace('itunes:key="L1"', 'itunes:key="L9"'));
+      expect(merged[0]?.id).not.toBe("a");
     });
   });
 });

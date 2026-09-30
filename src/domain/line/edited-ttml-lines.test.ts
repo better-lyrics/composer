@@ -44,7 +44,7 @@ describe("mergeEditedTtmlLines", () => {
   });
 
   describe("edge cases", () => {
-    it("matches by text when lines were added, giving new lines their own ids", () => {
+    it("keeps stored lines paired when lines are added, giving new lines their own ids", () => {
       const stored = [
         createLine({ id: "a", text: "Hello", begin: 1, end: 2 }),
         createLine({ id: "b", text: "World", begin: 2, end: 3 }),
@@ -59,7 +59,7 @@ describe("mergeEditedTtmlLines", () => {
     });
 
     it("returns nothing for an empty edit", () => {
-      expect(mergeEditedTtmlLines([createLine({ text: "Hello", begin: 1, end: 2 })], [])).toEqual([]);
+      expect(mergeEditedTtmlLines([createLine({ text: "Hello", begin: 1, end: 2 })], { lines: [] })).toEqual([]);
     });
   });
 

@@ -42,7 +42,7 @@ describe("mergeEditedTtmlLines · line structure", () => {
       expect(merged[0]?.text).toBe("Hello there");
     });
 
-    it("pairs lines by text without their split characters when lines were added", () => {
+    it("keeps stored lines and their split characters paired when a line without a key is added", () => {
       const stored = [
         createLine({ id: "a", text: "Hel|lo", begin: 1, end: 2 }),
         createLine({ id: "b", text: "World", begin: 2, end: 3 }),
@@ -91,9 +91,9 @@ describe("mergeEditedTtmlLines · line structure", () => {
 
     it("keeps skipped lines when every exported line was deleted", () => {
       const blank = createLine({ id: "blank", text: "" });
-      expect(mergeEditedTtmlLines([createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank], [])).toEqual([
-        blank,
-      ]);
+      expect(
+        mergeEditedTtmlLines([createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank], { lines: [] }),
+      ).toEqual([blank]);
     });
   });
 

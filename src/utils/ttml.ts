@@ -3,7 +3,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
-import { isLineTimed, syncProgress } from "@/domain/line/sync-progress";
+import { syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
@@ -17,6 +17,7 @@ import {
   renderTranslationContent,
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
+import { keyedExportLines } from "@/utils/ttml-line-keys";
 import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
@@ -43,7 +44,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   const timingValue = timingGranularityOf(lines) === "word" ? "Word" : "Line";
 
   const parts: string[] = [];
-  const keyedLines = lines.filter(isLineTimed).map((line, index) => ({ line, key: `L${index + 1}` }));
+  const keyedLines = keyedExportLines(lines);
   const keyById = new Map(keyedLines.map(({ line, key }) => [line.id, key]));
 
   const language = normalizeLanguageTag(metadata.language ?? "");

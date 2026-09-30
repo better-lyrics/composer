@@ -10,6 +10,13 @@ import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
 
+// -- Types ------------------------------------------------------------------
+
+interface EditedTtmlLines {
+  lines: readonly LyricLine[];
+  lineKeys?: readonly (string | undefined)[];
+}
+
 // -- Comparison ---------------------------------------------------------------
 
 function sameExportedTime(a: number | undefined, b: number | undefined): boolean {
@@ -155,11 +162,6 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
 
 // -- Pairing ------------------------------------------------------------------
 
-function storedPartners(stored: readonly LyricLine[], edited: readonly LyricLine[]): (LyricLine | undefined)[] {
-  const exported = stored.filter(isSyncableLine);
-  return pairEditedLines(exported, edited).map((index) => (index === undefined ? undefined : exported[index]));
-}
-
 // -- Merge --------------------------------------------------------------------
 
 function skippedLinesAfter(
@@ -175,8 +177,12 @@ function skippedLinesAfter(
   return skippedAfter;
 }
 
-function mergeEditedTtmlLines(stored: readonly LyricLine[], edited: readonly LyricLine[]): LyricLine[] {
-  const partners = storedPartners(stored, edited);
+function mergeEditedTtmlLines(stored: readonly LyricLine[], edit: EditedTtmlLines): LyricLine[] {
+  const edited = edit.lines;
+  const partners = pairEditedLines(
+    stored,
+    edited.map((_, index) => edit.lineKeys?.[index]),
+  );
   const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));
   const merged = [...(skippedAfter.get(undefined) ?? [])];
   edited.forEach((line, index) => {
@@ -201,3 +207,4 @@ function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricL
 // -- Exports ------------------------------------------------------------------
 
 export { holdsEveryLine, mergeEditedTtmlLines };
+export type { EditedTtmlLines };

@@ -29,7 +29,7 @@ function editedLyricsFrom(parsed: ParseResult, lines: EditedLyrics["lines"]): Ed
 function partNotHeld(project: ProjectStore, audioDuration: number): ProjectPart | undefined {
   const own = readTtmlLyrics(generateProjectTtml(project, audioDuration), OWN_EXPORT, audioDuration);
   if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return "lines";
-  const roundTrip = editedLyricsFrom(own.parsed, mergeEditedTtmlLines(project.lines, own.parsed.lines));
+  const roundTrip = editedLyricsFrom(own.parsed, mergeEditedTtmlLines(project.lines, own.parsed));
   return changedParts(project, editedLyricsWrite(project, roundTrip))[0];
 }
 
@@ -46,9 +46,7 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
   if (read.status === "unreadable") return read;
   const notHeld = partNotHeld(project, audioDuration);
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
-  project.applyEditedLyricsWithHistory(
-    editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed.lines)),
-  );
+  project.applyEditedLyricsWithHistory(editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed)));
   const regenerated = generateProjectTtml(useProjectStore.getState(), audioDuration);
   const keptInExport = regenerated !== content;
   useProjectStore.getState().setTtmlEditState(keptInExport ? { source: regenerated, content } : null);
