@@ -1,0 +1,115 @@
+import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import type { LyricLine } from "@/domain/line/model";
+import { createLine } from "@/test/factories";
+import { PARSERS } from "@/utils/lyrics-parsers";
+import { generateTTML } from "@/utils/ttml";
+import { describe, expect, it } from "vitest";
+
+// -- Helpers ------------------------------------------------------------------
+
+const METADATA = { title: "Song", artists: [], album: "", duration: 0 };
+
+function exported(lines: LyricLine[]): string {
+  return generateTTML({ metadata: METADATA, agents: DEFAULT_AGENTS, lines });
+}
+
+function roundTrip(stored: LyricLine[], edit: (ttml: string) => string = (ttml) => ttml): LyricLine[] {
+  return mergeEditedTtmlLines(stored, PARSERS.ttml(edit(exported(stored))).lines);
+}
+
+const SPANISH = { language: "es", text: "Hola", origin: "manual" as const, sourceFingerprint: "fp-1" };
+
+// -- Tests --------------------------------------------------------------------
+
+describe("mergeEditedTtmlLines", () => {
+  it("keeps the stored lines as they were when nothing was edited", () => {
+    const stored = [
+      createLine({ id: "a", text: "Hello", begin: 1.2345, end: 2.5 }),
+      createLine({
+        id: "b",
+        text: "wo|rld",
+        words: [
+          { text: "wo", begin: 3, end: 3.5, syllableGroupId: "g1" },
+          { text: "rld", begin: 3.5, end: 4, syllableGroupId: "g1" },
+        ],
+      }),
+    ];
+    expect(roundTrip(stored)).toEqual(stored);
+  });
+
+  it("takes the edited text and keeps the stored line id", () => {
+    const stored = [
+      createLine({ id: "a", text: "Hello", begin: 1, end: 2 }),
+      createLine({ id: "b", text: "World", begin: 2, end: 3 }),
+    ];
+    const merged = roundTrip(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
+    expect(merged.map((line) => [line.id, line.text])).toEqual([
+      ["a", "Hello there"],
+      ["b", "World"],
+    ]);
+  });
+
+  it("takes an edited word timing", () => {
+    const stored = [createLine({ id: "a", text: "Hi", words: [{ text: "Hi", begin: 1, end: 2 }] })];
+    const merged = roundTrip(stored, (ttml) => ttml.replaceAll('end="0:02.000"', 'end="0:02.500"'));
+    expect(merged[0]?.words?.[0]?.end).toBe(2.5);
+  });
+
+  describe("regressions", () => {
+    it("regression: keeps a translation's origin when its text did not change", () => {
+      const stored = [{ ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), translations: { es: SPANISH } }];
+      expect(roundTrip(stored)[0]?.translations?.es).toEqual(SPANISH);
+    });
+
+    it("regression: takes an edited translation as the TTML gives it", () => {
+      const stored = [{ ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), translations: { es: SPANISH } }];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(">Hola<", ">Buenas<"));
+      expect(merged[0]?.translations?.es?.text).toBe("Buenas");
+    });
+
+    it("regression: does not store background words seeded from the line bounds", () => {
+      const stored = [
+        createLine({ id: "a", text: "Main", begin: 1, end: 2, backgroundText: "ooh", backgroundTextSource: "manual" }),
+      ];
+      const merged = roundTrip(stored);
+      expect(merged[0]?.backgroundText).toBe("ooh");
+      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(merged).toEqual(stored);
+    });
+  });
+
+  describe("edge cases", () => {
+    it("matches by text when lines were added, giving new lines their own ids", () => {
+      const stored = [
+        createLine({ id: "a", text: "Hello", begin: 1, end: 2 }),
+        createLine({ id: "b", text: "World", begin: 2, end: 3 }),
+      ];
+      const merged = roundTrip(stored, (ttml) =>
+        ttml.replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added</p></div>'),
+      );
+      expect(merged.map((line) => line.text)).toEqual(["Hello", "World", "Added"]);
+      expect(merged[0]?.id).toBe("a");
+      expect(merged[1]?.id).toBe("b");
+      expect(["a", "b"]).not.toContain(merged[2]?.id);
+    });
+
+    it("returns nothing for an empty edit", () => {
+      expect(mergeEditedTtmlLines([createLine({ text: "Hello", begin: 1, end: 2 })], [])).toEqual([]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("never reuses a stored id twice", () => {
+      const stored = [
+        createLine({ id: "a", text: "Same", begin: 1, end: 2 }),
+        createLine({ id: "b", text: "Same", begin: 2, end: 3 }),
+      ];
+      const merged = roundTrip(stored, (ttml) =>
+        ttml.replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Same</p></div>'),
+      );
+      const ids = merged.map((line) => line.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    });
+  });
+});

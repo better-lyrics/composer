@@ -1,0 +1,119 @@
+import type { TranslationTracks, TransliterationTrack } from "@/domain/language/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { isSyncableLine } from "@/domain/line/sync-progress";
+import type { WordTiming } from "@/domain/word/timing";
+import { formatTime } from "@/utils/format-time";
+
+// -- Comparison ---------------------------------------------------------------
+
+function sameExportedTime(a: number | undefined, b: number | undefined): boolean {
+  return a === b || (a !== undefined && b !== undefined && formatTime(a) === formatTime(b));
+}
+
+function sameExportedWords(
+  stored: readonly WordTiming[] | undefined,
+  edited: readonly WordTiming[] | undefined,
+): boolean {
+  if (!stored || !edited || stored.length !== edited.length) return false;
+  return stored.every((word, index) => {
+    const other = edited[index];
+    return (
+      other !== undefined &&
+      word.text === other.text &&
+      !!word.explicit === !!other.explicit &&
+      sameExportedTime(word.begin, other.begin) &&
+      sameExportedTime(word.end, other.end)
+    );
+  });
+}
+
+function sameAlternateText(
+  stored: { text: string; backgroundText?: string } | undefined,
+  edited: { text: string; backgroundText?: string } | undefined,
+): boolean {
+  return (
+    stored !== undefined &&
+    edited !== undefined &&
+    stored.text === edited.text &&
+    (stored.backgroundText ?? "") === (edited.backgroundText ?? "")
+  );
+}
+
+// -- Field merges -------------------------------------------------------------
+
+function mergedTranslations(stored: LyricLine, edited: LyricLine): TranslationTracks | undefined {
+  if (!edited.translations) return undefined;
+  const merged: TranslationTracks = {};
+  for (const [language, track] of Object.entries(edited.translations)) {
+    const kept = stored.translations?.[language];
+    merged[language] = kept && sameAlternateText(kept, track) ? kept : track;
+  }
+  return merged;
+}
+
+function mergedTransliteration(stored: LyricLine, edited: LyricLine): TransliterationTrack | undefined {
+  const kept = stored.transliteration;
+  const track = edited.transliteration;
+  return kept && track && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
+}
+
+function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLine> {
+  if (stored.backgroundText !== edited.backgroundText) return {};
+  const storedWords = stored.backgroundWords;
+  return {
+    backgroundTextSource: stored.backgroundTextSource,
+    backgroundWords: storedWords?.length
+      ? sameExportedWords(storedWords, edited.backgroundWords)
+        ? storedWords
+        : edited.backgroundWords
+      : undefined,
+  };
+}
+
+function mergedTiming(stored: LyricLine, edited: LyricLine): Pick<LyricLine, "words" | "begin" | "end"> {
+  if (edited.words) return { words: sameExportedWords(stored.words, edited.words) ? stored.words : edited.words };
+  const keepsBounds =
+    !stored.words && sameExportedTime(stored.begin, edited.begin) && sameExportedTime(stored.end, edited.end);
+  return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
+}
+
+function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+  const { translations: _translations, transliteration: _transliteration, ...editedFields } = edited;
+  const translations = mergedTranslations(stored, edited);
+  const transliteration = mergedTransliteration(stored, edited);
+  return reconcileLine({
+    ...editedFields,
+    ...mergedBackground(stored, edited),
+    ...mergedTiming(stored, edited),
+    id: stored.id,
+    ...(translations ? { translations } : {}),
+    ...(transliteration ? { transliteration } : {}),
+  });
+}
+
+// -- Pairing ------------------------------------------------------------------
+
+function storedPartners(stored: readonly LyricLine[], edited: readonly LyricLine[]): (LyricLine | undefined)[] {
+  const exported = stored.filter(isSyncableLine);
+  if (exported.length === edited.length) return [...exported];
+  const unused = new Set(exported);
+  return edited.map((line) => {
+    const match = exported.find((candidate) => unused.has(candidate) && candidate.text === line.text);
+    if (match) unused.delete(match);
+    return match;
+  });
+}
+
+// -- Merge --------------------------------------------------------------------
+
+function mergeEditedTtmlLines(stored: readonly LyricLine[], edited: readonly LyricLine[]): LyricLine[] {
+  const partners = storedPartners(stored, edited);
+  return edited.map((line, index) => {
+    const partner = partners[index];
+    return partner ? mergedLine(partner, line) : line;
+  });
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { mergeEditedTtmlLines };
