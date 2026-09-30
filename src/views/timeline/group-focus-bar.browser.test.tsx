@@ -44,7 +44,7 @@ describe("GroupFocusBar", () => {
   it("names the open instance in a toolbar", async () => {
     seed(sharingGroup, 1);
     const screen = await render(<GroupFocusBar />);
-    const toolbar = screen.getByRole("toolbar", { name: "Open group" });
+    const toolbar = screen.getByRole("group", { name: "Open group" });
 
     await expect.element(toolbar.getByText("Chorus 2", { exact: true })).toBeVisible();
     expect(document.querySelector("[data-group-focus-bar]")).not.toBeNull();
@@ -55,6 +55,7 @@ describe("GroupFocusBar", () => {
     const screen = await render(<GroupFocusBar />);
 
     await expect.element(screen.getByText("2 of 2")).toBeVisible();
+    expect(screen.getByText("2 of 2").element().textContent).toBe("Instance 2 of 2");
   });
 
   it("steps to the next instance and shows its span", async () => {

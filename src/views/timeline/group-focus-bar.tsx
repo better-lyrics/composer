@@ -69,7 +69,10 @@ const InstanceStepper: React.FC<OpenInstanceProps> = ({ group, lines, hearInstan
         disabled={previous === null}
         onClick={() => previous !== null && hearInstance(group.id, hearInstanceIdx, previous)}
       />
-      <span>{`${counted.indexOf(hearInstanceIdx) + 1} of ${counted.length}`}</span>
+      <span>
+        <span className="sr-only">Instance </span>
+        {`${counted.indexOf(hearInstanceIdx) + 1} of ${counted.length}`}
+      </span>
       <IconButton
         label="Next instance"
         variant="ghost"
@@ -149,9 +152,9 @@ const FocusedGroupBar: React.FC<Omit<OpenInstanceProps, "lines">> = ({ group, he
   return (
     <div
       data-group-focus-bar
-      role="toolbar"
+      role="group"
       aria-label="Open group"
-      className="flex h-8 shrink-0 select-none items-center gap-3 border-b border-composer-border pl-3 pr-2 text-xs"
+      className="flex h-10 shrink-0 select-none items-center gap-3 border-b border-composer-border pl-3 pr-2 text-xs"
       style={{ background: `color-mix(in srgb, ${group.color} 7%, var(--color-composer-bg-dark))` }}
     >
       <span className="flex items-center gap-1.5 font-semibold text-composer-text">
