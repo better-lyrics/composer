@@ -1,8 +1,8 @@
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
-import { isLineTimed } from "@/domain/line/sync-progress";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { keyedExportLines } from "@/utils/ttml-line-keys";
 import { expect } from "vitest";
 
 // -- Types --------------------------------------------------------------------
@@ -31,7 +31,7 @@ function required<T>(value: T | undefined, what: string): T {
 }
 
 function keyOf(project: EditedTtmlProject, line: LyricLine): string {
-  return `L${project.lines.filter(isLineTimed).indexOf(line) + 1}`;
+  return required(keyedExportLines(project.lines).find((keyed) => keyed.line === line)?.key, `key for ${line.id}`);
 }
 
 function paragraphOf(ttml: string, project: EditedTtmlProject, line: LyricLine): string {
@@ -54,7 +54,7 @@ function lineById(lines: readonly LyricLine[], id: string): LyricLine {
 }
 
 function timedAt(project: EditedTtmlProject, index: number): LyricLine {
-  return required(project.lines.filter(isLineTimed)[index], `timed line ${index}`);
+  return required(keyedExportLines(project.lines)[index]?.line, `exported line ${index}`);
 }
 
 function withoutElement(ttml: string, element: string): string {
