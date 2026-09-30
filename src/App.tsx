@@ -19,7 +19,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useUIStore } from "@/stores/ui";
 import { GuideCard } from "@/tour/guide-card";
-import { resetTour, useTour } from "@/tour/use-tour";
+import { useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -155,7 +155,6 @@ const AppShell: React.FC = () => {
         key={settingsOpen ? "settings-open" : "settings-closed"}
         isOpen={settingsOpen}
         onClose={closeSettings}
-        onResetTour={resetTour}
       />
       <Activity mode={isEditor ? "hidden" : "visible"}>
         <LibraryScreen />

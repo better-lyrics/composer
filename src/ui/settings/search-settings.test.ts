@@ -29,6 +29,11 @@ describe("searchSettings", () => {
     expect(search("confirmations").settings).toEqual(settingIdsInSection("confirmations"));
   });
 
+  it("finds the tour and settings reset rows", () => {
+    expect(search("onboarding").settings).toEqual(["resetTour"]);
+    expect(search("reset to defaults").settings).toContain("resetAllSettings");
+  });
+
   it("finds the storage protection row by a keyword not in its copy", () => {
     expect(search("persist").settings).toEqual(["storageProtection"]);
   });

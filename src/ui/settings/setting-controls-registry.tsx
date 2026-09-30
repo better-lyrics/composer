@@ -8,6 +8,7 @@ import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
 import type { SelectOption, SliderAction } from "@/ui/settings/setting-controls";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
 import { BackUpAllProjectsSetting, DeleteAllProjectsSetting } from "@/ui/settings/storage/backup-settings-setting";
+import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
 import { ProjectAudioListSetting } from "@/ui/settings/storage/project-audio-list-setting";
 import { KEEP_YOUTUBE_AUDIO_OPTIONS, STORAGE_LIMIT_OPTIONS } from "@/ui/settings/storage/storage-options";
 import { StorageProtectionSetting } from "@/ui/settings/storage/storage-protection-setting";
@@ -43,6 +44,8 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   autoExtractBackgroundVocals: TOGGLE,
   mergeStandaloneBackgroundLines: TOGGLE,
   preserveBracketsOnExtraction: TOGGLE,
+  resetTour: { kind: "custom", Component: ResetTourSetting },
+  resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
   libraryView: { kind: "custom", Component: LibraryViewSetting },
   librarySort: { kind: "select", options: LIBRARY_SORT_OPTIONS },
   launchScreen: { kind: "select", options: LAUNCH_SCREEN_OPTIONS },
