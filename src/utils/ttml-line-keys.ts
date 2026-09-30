@@ -1,5 +1,6 @@
+import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { hasMainLyrics } from "@/domain/line/predicates";
 
 // -- Types --------------------------------------------------------------------
 
@@ -29,8 +30,12 @@ function sortedTextItems(items: string): string {
 
 // -- Functions ----------------------------------------------------------------
 
+function isExportedLine(line: LyricLine): boolean {
+  return effectiveBounds(line) !== null && (hasMainLyrics(line) || !!line.backgroundText?.trim());
+}
+
 function keyedExportLines(lines: readonly LyricLine[]): KeyedLine[] {
-  return lines.filter(isLineTimed).map((line, index) => ({ line, key: `L${index + 1}` }));
+  return lines.filter(isExportedLine).map((line, index) => ({ line, key: `L${index + 1}` }));
 }
 
 function canonicalLineKeys(ttml: string): string {
@@ -54,4 +59,4 @@ function canonicalLineKeys(ttml: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { canonicalLineKeys, keyedExportLines };
+export { canonicalLineKeys, isExportedLine, keyedExportLines };

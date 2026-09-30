@@ -30,6 +30,23 @@ describe("keyedExportLines", () => {
   });
 });
 
+describe("keyedExportLines · the keys the export writes", () => {
+  it("regression: numbers only the lines the export writes, so the keys have no gaps", () => {
+    const timedBlank = createLine({ id: "timed-blank", text: "", begin: 1.5, end: 1.8 });
+    expect(keyedExportLines([ALPHA, timedBlank, BRAVO]).map(({ line, key }) => [line.id, key])).toEqual([
+      ["a", "L1"],
+      ["b", "L2"],
+    ]);
+    const keys = [...exported([ALPHA, timedBlank, BRAVO]).matchAll(/itunes:key="([^"]+)"/g)].map((match) => match[1]);
+    expect(keys).toEqual(["L1", "L2"]);
+  });
+
+  it("numbers a line with only a background text", () => {
+    const background = createLine({ id: "bg", text: "", begin: 1, end: 2, backgroundText: "ooh" });
+    expect(keyedExportLines([background]).map(({ key }) => key)).toEqual(["L1"]);
+  });
+});
+
 describe("canonicalLineKeys", () => {
   it("sees a deleted line's renumbered keys as the same document", () => {
     const edited = exported([ALPHA, BRAVO, CHARLIE])

@@ -160,8 +160,6 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
   return generateLineTtml(stored) === generateLineTtml(edited) ? stored : fieldMergedLine(stored, edited);
 }
 
-// -- Pairing ------------------------------------------------------------------
-
 // -- Merge --------------------------------------------------------------------
 
 function skippedLinesAfter(

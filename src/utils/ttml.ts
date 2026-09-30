@@ -2,7 +2,7 @@ import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
-import { hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
+import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
@@ -17,7 +17,7 @@ import {
   renderTranslationContent,
   renderTransliterationContent,
 } from "@/utils/ttml-alternate-content";
-import { keyedExportLines } from "@/utils/ttml-line-keys";
+import { isExportedLine, keyedExportLines } from "@/utils/ttml-line-keys";
 import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
@@ -139,7 +139,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
 
   for (const line of lines) {
     const timing = effectiveBounds(line);
-    if (!timing || (!hasMainLyrics(line) && !line.backgroundText?.trim())) continue;
+    if (!timing || !isExportedLine(line)) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
     const lineKey = keyById.get(line.id);
