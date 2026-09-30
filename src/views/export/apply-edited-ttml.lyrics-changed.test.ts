@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";
 
 // -- Tests --------------------------------------------------------------------
@@ -20,10 +21,13 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
     });
 
     it("regression: an edit kept over changed lyrics stays in the export only", () => {
-      useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
       const generated = generateProjectTtml(useProjectStore.getState(), 0);
       const edited = generated.replace(">Hello<", ">Hello there<");
-      useProjectStore.setState({ ttmlEditState: { source: generated, content: edited, lyricsChanged: true } });
+      useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hi", begin: 1, end: 2 })] });
+      const changed = generateProjectTtml(useProjectStore.getState(), 0);
+      useProjectStore.setState((state) => ({ ttmlEditState: keptTtmlEdit(state.ttmlEditState, changed) }));
       const before = useProjectStore.getState().lines;
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "lyrics-changed" });
       expect(useProjectStore.getState().lines).toBe(before);

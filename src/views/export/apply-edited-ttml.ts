@@ -6,6 +6,7 @@ import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { generateProjectTtml } from "@/utils/ttml";
 import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { crossedProjectChange } from "@/views/export/ttml-edit-state";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types --------------------------------------------------------------------
@@ -47,7 +48,7 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
   }
   if (read.status === "unreadable") return read;
   const edit = project.ttmlEditState;
-  if (edit && (edit.lyricsChanged || edit.source !== generateProjectTtml(project, audioDuration))) {
+  if (edit && crossedProjectChange(edit, generateProjectTtml(project, audioDuration))) {
     return { status: "export-only", reason: "lyrics-changed" };
   }
   const notHeld = partNotHeld(project, audioDuration);

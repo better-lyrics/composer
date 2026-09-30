@@ -14,6 +14,7 @@ import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
@@ -146,18 +147,12 @@ const ExportPanel: React.FC = () => {
   // makes the notice go away. It has to be a deliberate action: letting an
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
-    setEditState((prev) =>
-      prev === null ? prev : { source: generatedTtml, content: prev.content, lyricsChanged: true },
-    );
+    setEditState((prev) => keptTtmlEdit(prev, generatedTtml));
   }, [generatedTtml, setEditState]);
 
   const handleEditContent = useCallback(
     (content: string) => {
-      setEditState((prev) => {
-        if (prev !== null && hasConflict) return { ...prev, content };
-        const lyricsChanged = prev !== null && (prev.lyricsChanged || prev.source !== generatedTtml);
-        return { source: generatedTtml, content, ...(lyricsChanged ? { lyricsChanged: true as const } : {}) };
-      });
+      setEditState((prev) => typedTtmlEdit(prev, generatedTtml, content, hasConflict));
     },
     [generatedTtml, hasConflict, setEditState],
   );

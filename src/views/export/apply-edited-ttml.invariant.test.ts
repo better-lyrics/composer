@@ -5,17 +5,18 @@ import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
 function keptOverProjectChange(editCase: EditCase, atEditStart: EditedTtmlProject, fixture: EditedTtmlProject) {
   const source = generateProjectTtml(useProjectStore.getState(), 0);
-  useProjectStore.setState({ ttmlEditState: { source, content: editCase.edited } });
+  useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, source, editCase.edited, false) });
   const changed = editCase.projectChangeBeforeKeepingEdits?.(atEditStart.lines, fixture.lines) ?? atEditStart.lines;
   useProjectStore.setState({ lines: changed });
   const generated = generateProjectTtml(useProjectStore.getState(), 0);
-  useProjectStore.setState({ ttmlEditState: { source: generated, content: editCase.edited, lyricsChanged: true } });
+  useProjectStore.setState((state) => ({ ttmlEditState: keptTtmlEdit(state.ttmlEditState, generated) }));
   return changed;
 }
 
