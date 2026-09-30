@@ -9,6 +9,8 @@ const LYRICS_ELEMENT_CLASS: Record<LyricsLayout, string> = {
   sidebar: "block flex-1 w-full px-2",
 };
 
+const OUTSIDE_FOCUS_ATTRIBUTE = "data-outside-focus";
+
 // -- Exports -------------------------------------------------------------------
 
-export { LYRICS_ELEMENT_CLASS, type LyricsLayout };
+export { LYRICS_ELEMENT_CLASS, OUTSIDE_FOCUS_ATTRIBUTE, type LyricsLayout };

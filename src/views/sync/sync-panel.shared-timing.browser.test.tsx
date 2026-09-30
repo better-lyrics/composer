@@ -141,6 +141,17 @@ describe("SyncPanel · shared instance anchor", () => {
     expect(lineById("v2")?.words).toBeUndefined();
   });
 
+  it("regression: undoes a placing tap after pausing", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    setIsPlaying(false);
+    await expect.element(screen.getByText("2 skipped")).toBeInTheDocument();
+    await undo(() => firstBegin("c1-0"));
+    expect(lineById("c1-1")?.words).toBeUndefined();
+  });
+
   it("moves a placed Chorus 2, and undo returns both the timing and the cursor", async () => {
     load(song({ first: "word", verse: "word", second: "word", secondBegin: 60 }));
     const screen = await render(<SyncPanel />);

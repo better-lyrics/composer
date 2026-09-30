@@ -129,6 +129,12 @@ braccato-lyrics .blyrics-container {
   --blyrics-padding: 0.625rem;
 }
 
+/* An open group in the Timeline fades the preview lines outside it. filter composes with the
+   renderer's own opacity instead of overriding it. */
+[data-lyrics-layout] [data-outside-focus] {
+  filter: opacity(0.3);
+}
+
 /* Text selection */
 ::selection {
   background-color: color-mix(in srgb, var(--color-composer-accent) 40%, transparent);
