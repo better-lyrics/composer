@@ -1,5 +1,5 @@
 import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
-import { mainBounds } from "@/domain/line/bounds";
+import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { WordTiming } from "@/domain/word/timing";
@@ -13,7 +13,7 @@ function clampShiftDelta(lines: readonly LyricLine[], delta: number, range: Time
   let earliest = Number.POSITIVE_INFINITY;
   let latest = Number.NEGATIVE_INFINITY;
   for (const line of lines) {
-    const bounds = mainBounds(line);
+    const bounds = effectiveBounds(line) ?? bgBounds(line);
     if (!bounds) continue;
     earliest = Math.min(earliest, bounds.begin);
     latest = Math.max(latest, bounds.end);
