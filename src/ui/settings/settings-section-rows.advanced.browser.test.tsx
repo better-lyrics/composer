@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
+import { describe, expect, it } from "vitest";
 
 describe("SettingsSectionRows (advanced)", () => {
   it("renders the preview renderer select and the built-in Cobalt instance", async () => {

@@ -1,12 +1,12 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import {
+  SHORTCUT_REGISTRY,
   type ShortcutBinding,
   type ShortcutDefinition,
   type ShortcutScope,
-  SHORTCUT_REGISTRY,
   getShortcutById,
 } from "@/stores/shortcut-registry";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 // -- Types --------------------------------------------------------------------
 

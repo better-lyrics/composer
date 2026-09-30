@@ -2,6 +2,7 @@ import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { useProjectStore } from "@/stores/project";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type GroupFocus, adjacentHeardInstance } from "@/views/timeline/group-focus";
+import { hearInstance } from "@/views/timeline/hear-instance";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
@@ -13,7 +14,7 @@ function hearAdjacentInstance(focus: GroupFocus, direction: 1 | -1): void {
   const group = groups.find((candidate) => candidate.id === focus.groupId);
   if (!group) return;
   const next = adjacentHeardInstance(lines, group, focus.hearInstanceIdx, direction);
-  if (next !== null) useTimelineStore.getState().openGroup(focus.groupId, next);
+  if (next !== null) hearInstance(focus.groupId, focus.hearInstanceIdx, next);
 }
 
 // -- Functions ----------------------------------------------------------------

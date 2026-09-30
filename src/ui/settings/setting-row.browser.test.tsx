@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SettingRow } from "@/ui/settings/setting-row";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 const rowOf = (container: HTMLElement) => container.querySelector<HTMLElement>("[data-setting-id]");
 

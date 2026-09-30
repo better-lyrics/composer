@@ -1,5 +1,5 @@
-import { useState } from "react";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 

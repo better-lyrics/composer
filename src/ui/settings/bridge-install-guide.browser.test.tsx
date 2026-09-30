@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { type ClipboardStub, stubClipboard } from "@/test/clipboard";
 import { render } from "@/test/render";
 import { BridgeInstallGuide } from "@/ui/settings/bridge-install-guide";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 const EXPECTED_INSTALL_CMD =
   "curl -fsSL https://github.com/better-lyrics/composer-bridge/releases/latest/download/install.sh | sh";

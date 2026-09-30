@@ -79,6 +79,7 @@ describe("SHORTCUT_DEFINITIONS", () => {
     const expectedBindings: Record<string, ShortcutBinding> = {
       "timeline.openGroup": { key: "Enter", shift: true },
       "timeline.closeGroup": { key: "Escape" },
+      "timeline.toggleGroupLoop": { key: "l", shift: true },
     };
     for (const [id, binding] of Object.entries(expectedBindings)) {
       const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);

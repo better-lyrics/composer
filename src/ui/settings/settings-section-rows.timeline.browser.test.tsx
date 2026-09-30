@@ -1,14 +1,14 @@
-import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { describe, expect, it } from "vitest";
 
 describe("SettingsSectionRows (timeline)", () => {
   it("renders sliders and toggles for the timeline settings", async () => {
     const screen = await render(<SettingsSectionRows section="timeline" />);
     expect(screen.container.querySelectorAll('input[type="range"]').length).toBe(3);
-    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(9);
+    expect(screen.container.querySelectorAll('[role="switch"]').length).toBe(10);
   });
 
   it("starts with shared timing in new groups on and turns it off when clicked", async () => {

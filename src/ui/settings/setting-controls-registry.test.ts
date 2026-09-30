@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { DEFAULTS } from "@/stores/settings";
 import { SETTING_IDS, settingEntry } from "@/stores/settings-catalog";
 import { SETTING_CONTROLS } from "@/ui/settings/setting-controls-registry";
+import { describe, expect, it } from "vitest";
 
 const EXPECTED_TYPE = { toggle: "boolean", slider: "number", select: "string" } as const;
 

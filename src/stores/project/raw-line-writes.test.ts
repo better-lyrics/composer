@@ -1,9 +1,9 @@
-import { describe, expect, expectTypeOf, it } from "vitest";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { RawLine } from "@/domain/line/model";
 import type { commitHistory } from "@/stores/project/history-helpers";
 import type { ProjectStore } from "@/stores/project/types";
 import { createLine } from "@/test/factories";
+import { describe, expect, expectTypeOf, it } from "vitest";
 
 type ImportedLines = Parameters<ProjectStore["replaceLyricsWithHistory"]>[0]["lines"];
 type CommittedLines = NonNullable<Parameters<typeof commitHistory>[1]["lines"]>;

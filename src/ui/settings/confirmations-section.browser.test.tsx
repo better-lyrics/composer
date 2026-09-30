@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
+import { describe, expect, it } from "vitest";
 
 describe("ConfirmationsSection", () => {
   it("renders one switch per confirmation prompt", async () => {

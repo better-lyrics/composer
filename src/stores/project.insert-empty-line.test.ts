@@ -1,8 +1,8 @@
+import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { INITIAL_STATE, useProjectStore } from "@/stores/project";
 
 const LINE_SYNCED = { id: "ls", text: "Line synced only", agentId: "v1", begin: 17, end: 20 };
 const WORD_SYNCED = { id: "w", text: "hi", agentId: "v1", words: [{ text: "hi", begin: 0, end: 1 }] };

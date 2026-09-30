@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { DEFAULT_COBALT_INSTANCE_ID, useSettingsStore } from "@/stores/settings";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 const CUSTOM = { id: "self", label: "Self-hosted", url: "https://cobalt.example.com" };
 

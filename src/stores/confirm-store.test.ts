@@ -1,9 +1,9 @@
+import { useConfirmStore } from "@/stores/confirm-store";
+import { useSettingsStore } from "@/stores/settings";
 /**
  * @vitest-environment node
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { useConfirmStore } from "@/stores/confirm-store";
-import { useSettingsStore } from "@/stores/settings";
 
 beforeEach(() => {
   useConfirmStore.setState({ isOpen: false, options: null, resolve: null, queue: [] });

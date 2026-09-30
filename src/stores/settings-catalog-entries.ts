@@ -104,6 +104,13 @@ const SETTINGS_CATALOG = {
     keywords: ["group", "instance", "chorus", "linked", "repeat"],
     settingKey: "shareTimingInNewGroups",
   },
+  loopOpenGroup: {
+    section: "timeline",
+    label: "Loop an open group",
+    description: "Play an open group on repeat instead of stopping at its end.",
+    keywords: ["group", "instance", "chorus", "repeat", "solo"],
+    settingKey: "loopOpenGroup",
+  },
   timelineSnapThreshold: {
     section: "timeline",
     label: "Snap threshold",

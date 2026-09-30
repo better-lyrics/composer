@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useUIStore } from "@/stores/ui";
 import { render } from "@/test/render";
 import { BackToHelpChip } from "@/ui/settings/back-to-help-chip";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 describe("BackToHelpChip", () => {
   it("renders nothing without a return point", async () => {
