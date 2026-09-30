@@ -195,10 +195,16 @@ function generateProjectTtml({ metadata, agents, lines, groups }: ProjectTtmlSou
   return syncProgress(lines, "line").done > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : "";
 }
 
+const BODY_DURATION = /<body dur="[^"]*">/;
+
+function withoutAudioDuration(ttml: string): string {
+  return ttml.replace(BODY_DURATION, "<body>");
+}
+
 function generateLineTtml(line: LyricLine): string {
   return generateTTML({ metadata: normalizeLoadedMetadata(null), agents: [], lines: [line], minify: true });
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { generateLineTtml, generateProjectTtml, generateTTML };
+export { generateLineTtml, generateProjectTtml, generateTTML, withoutAudioDuration };

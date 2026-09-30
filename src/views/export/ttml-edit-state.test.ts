@@ -85,4 +85,37 @@ describe("ttml edit state", () => {
       expect(crossedProjectChange({ source: SOURCE, content: "a", lyricsChanged: true }, SOURCE)).toBe(true);
     });
   });
+
+  describe("regressions: the audio duration is not a project change", () => {
+    it("regression: a duration that arrives late does not cross a project change", () => {
+      expect(crossedProjectChange({ source: SOURCE, content: "a" }, exportOf(["Hello", "World"], 200))).toBe(false);
+    });
+
+    it("regression: missing audio after the edit started does not cross a project change", () => {
+      const withAudio = exportOf(["Hello", "World"], 200);
+      expect(crossedProjectChange({ source: withAudio, content: "a" }, SOURCE)).toBe(false);
+    });
+
+    it("regression: a relinked file with another duration does not cross a project change", () => {
+      const before = exportOf(["Hello", "World"], 200);
+      expect(crossedProjectChange({ source: before, content: "a" }, exportOf(["Hello", "World"], 201.5))).toBe(false);
+    });
+
+    it("regression: typing after a duration change does not mark the edit", () => {
+      const later = exportOf(["Hello", "World"], 200);
+      expect(typedTtmlEdit({ source: SOURCE, content: "a" }, later, "b", false)).toEqual({
+        source: later,
+        content: "b",
+      });
+    });
+
+    it("regression: keeping edits over a duration change does not mark the edit", () => {
+      const later = exportOf(["Hello", "World"], 200);
+      expect(keptTtmlEdit({ source: SOURCE, content: "a" }, later)).toEqual({ source: later, content: "a" });
+    });
+
+    it("regression: a duration change still counts together with a lyrics change", () => {
+      expect(crossedProjectChange({ source: SOURCE, content: "a" }, exportOf(["Hello", "Earth"], 200))).toBe(true);
+    });
+  });
 });

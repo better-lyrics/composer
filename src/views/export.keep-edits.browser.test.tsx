@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
@@ -56,6 +57,7 @@ function byId(id: string): LyricLine | undefined {
 
 // -- Constants ----------------------------------------------------------------
 
+const APPLIED = "Updated the lyrics from the TTML";
 const LYRICS_CHANGED =
   "The project changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
 
@@ -164,6 +166,24 @@ describe("ExportPanel · Done after the lyrics changed under an edit", () => {
 
       expect(useProjectStore.getState().lines).toBe(afterDelete);
       expect(byId("d")?.translations).toBeUndefined();
+    });
+  });
+
+  describe("regressions: the audio duration is not a project change", () => {
+    it("regression: a duration that arrives while editing leaves Done applying the edit", async () => {
+      useProjectStore.setState({ lines: namedLines() });
+      const screen = await renderPanel();
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      await editText(screen, "Charlie", "Charlie!");
+      useAudioStore.getState().setDuration(200);
+      await expect.poll(() => (editorOf(screen).element() as HTMLTextAreaElement).value).toContain('dur="');
+      await editText(screen, "Echo", "Echo!");
+      await screen.getByRole("button", { name: "Done" }).click();
+
+      await expect.element(screen.getByText(APPLIED)).toBeInTheDocument();
+      expect(byId("c")?.text).toBe("Charlie!");
+      expect(byId("e")?.text).toBe("Echo!");
+      expect(useProjectStore.getState().ttmlEditState).toBeNull();
     });
   });
 });

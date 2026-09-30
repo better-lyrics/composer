@@ -79,4 +79,37 @@ describe("applyEditedTtml · edits and the lyrics they were written against", ()
       expect(useProjectStore.getState().lines.find((line) => line.text === "Extra")).toEqual(created);
     });
   });
+
+  describe("regressions: the audio duration is not a project change", () => {
+    it("regression: an edit written before the audio duration arrived still applies", () => {
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const edited = generated.replace(">Hello<", ">Hello there<");
+      useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
+      expect(applyEditedTtml(edited, 200)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    });
+
+    it("regression: an edit written with audio still applies after the audio goes missing", () => {
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 200);
+      const edited = generated.replace(">Hello<", ">Hello there<");
+      useProjectStore.setState({ ttmlEditState: typedTtmlEdit(null, generated, edited, false) });
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello there"]);
+    });
+
+    it("regression: an edit typed on after a relink changed the duration still applies", () => {
+      useProjectStore.setState({ lines: [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 200);
+      const started = typedTtmlEdit(null, generated, generated.replace(">Hello<", ">Hello there<"), false);
+      const relinked = generateProjectTtml(useProjectStore.getState(), 180);
+      const edited = relinked.replace(">Hello<", ">Hello again<");
+      const typed = typedTtmlEdit(started, relinked, edited, false);
+      useProjectStore.setState({ ttmlEditState: typed });
+      expect(typed.lyricsChanged).toBeUndefined();
+      expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello again"]);
+    });
+  });
 });
