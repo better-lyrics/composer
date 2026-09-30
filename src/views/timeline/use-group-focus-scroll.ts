@@ -1,23 +1,7 @@
-import { useProjectStore } from "@/stores/project";
-import {
-  type GroupFocus,
-  type ScrollRange,
-  clampScrollLeft,
-  focusBounds,
-  focusScrollRange,
-} from "@/views/timeline/group-focus";
-import { useEffectiveFocus } from "@/views/timeline/effective-focus";
+import { type GroupFocus, clampScrollLeft } from "@/views/timeline/group-focus";
+import { currentFocusScrollRange, useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
-import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useRef } from "react";
-
-// -- Helpers -------------------------------------------------------------------
-
-function focusedScrollRange(container: HTMLElement, focus: GroupFocus): ScrollRange | null {
-  const bounds = focusBounds(useProjectStore.getState().lines, focus);
-  if (!bounds) return null;
-  return focusScrollRange(bounds, useTimelineStore.getState().zoom, container.clientWidth - GUTTER_WIDTH);
-}
 
 // -- Hook ----------------------------------------------------------------------
 
@@ -34,12 +18,12 @@ function useGroupFocusScroll(scrollContainerRef: RefObject<HTMLDivElement | null
       if (previous) scrollToInstanceHeader(previous.groupId, previous.hearInstanceIdx);
       return;
     }
-    const range = focusedScrollRange(container, focusedGroup);
+    const range = currentFocusScrollRange(container);
     container.scrollTop = 0;
     if (range) container.scrollLeft = range.min;
 
     const keepInsideInstance = () => {
-      const current = focusedScrollRange(container, focusedGroup);
+      const current = currentFocusScrollRange(container);
       if (!current) return;
       const clamped = clampScrollLeft(container.scrollLeft, current);
       if (clamped !== container.scrollLeft) container.scrollLeft = clamped;

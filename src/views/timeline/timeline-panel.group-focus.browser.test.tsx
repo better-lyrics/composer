@@ -3,8 +3,10 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createGroup, createLine, createWord } from "@/test/factories";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { isMac } from "@/utils/platform";
+import { FOCUS_SCROLL_MARGIN_PX } from "@/views/timeline/group-focus";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
@@ -255,6 +257,23 @@ describe("TimelinePanel · group focus", () => {
       container.scrollLeft = 0;
 
       await expect.poll(() => container.scrollLeft).toBeGreaterThan(40 * 50 - 100);
+    });
+
+    it("keeps the follow scroll inside the heard instance while playing elsewhere", async () => {
+      useTimelineStore.setState({ zoom: 50, followEnabled: true });
+      await renderOpen(1);
+      const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
+      if (!container) throw new Error("no scroll container");
+      await expect.poll(() => container.scrollLeft).toBeGreaterThan(40 * 50 - 100);
+
+      useAudioStore.setState({ currentTime: 20, isPlaying: true });
+      const samples: number[] = [];
+      for (let frame = 0; frame < 10; frame++) {
+        await stepFrames(1);
+        samples.push(container.scrollLeft);
+      }
+
+      expect(Math.min(...samples)).toBeGreaterThanOrEqual(40 * 50 - FOCUS_SCROLL_MARGIN_PX - 1);
     });
   });
 
