@@ -1,4 +1,6 @@
 import indexCss from "@/index.css?raw";
+import { compile } from "tailwindcss";
+import tailwindThemeCss from "tailwindcss/theme.css?raw";
 
 // The browser project has no Tailwind, so a rule a test observes is lifted from src/index.css and installed by hand.
 
@@ -47,6 +49,15 @@ function installStyleSheet(css: string): HTMLStyleElement {
   return style;
 }
 
+async function installUtilitiesUsedIn(root: Element): Promise<HTMLStyleElement> {
+  const classNames = new Set<string>();
+  for (const element of [root, ...root.querySelectorAll("*")]) {
+    for (const className of element.classList) classNames.add(className);
+  }
+  const compiler = await compile(`${tailwindThemeCss}\n@tailwind utilities;`);
+  return installStyleSheet(compiler.build([...classNames]));
+}
+
 // -- Rules ---------------------------------------------------------------------
 
 const THEME_TOKENS_CSS = `:root {${extractCssBlock(/@theme\s*\{/)}}`;
@@ -73,6 +84,7 @@ export {
   HELP_CONTENT_SCROLLER_CSS,
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
+  installUtilitiesUsedIn,
   POSITION_UTILITIES_CSS,
   TEXT_COLOR_UTILITIES_CSS,
   THEME_TOKENS_CSS,

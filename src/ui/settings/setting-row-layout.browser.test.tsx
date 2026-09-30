@@ -1,6 +1,8 @@
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
-import { describe, expect, it } from "vitest";
+import { SettingText } from "@/ui/settings/setting-text";
+import { afterEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -19,6 +21,13 @@ async function renderRow(width: number) {
     </div>,
   );
 }
+
+let utilities: HTMLStyleElement | undefined;
+
+afterEach(() => {
+  utilities?.remove();
+  utilities = undefined;
+});
 
 // -- Tests --------------------------------------------------------------------
 
@@ -46,6 +55,28 @@ describe("SettingRowLayout", () => {
       expect(row?.className).toContain("py-0");
       expect(row?.className).not.toContain("py-3");
       expect(row?.className).toContain("gap-8");
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: a lone long text wraps inside a narrow row instead of overflowing it", async () => {
+      const screen = await render(
+        <div style={{ width: 240 }}>
+          <SettingRowLayout>
+            <SettingText id="projectAudioList" />
+          </SettingRowLayout>
+        </div>,
+      );
+      utilities = await installUtilitiesUsedIn(screen.container);
+      const text = screen.getByText("Audio by project").element().closest("div") as HTMLElement;
+      expect(text.getBoundingClientRect().width).toBeLessThanOrEqual(240);
+    });
+
+    it("regression: keeps the control at its own width next to a long text", async () => {
+      const screen = await renderRow(240);
+      utilities = await installUtilitiesUsedIn(screen.container);
+      expect(screen.getByTestId("control").element().getBoundingClientRect().width).toBe(140);
+      expect(screen.getByTestId("text").element().getBoundingClientRect().width).toBeLessThan(240 - 140);
     });
   });
 });
