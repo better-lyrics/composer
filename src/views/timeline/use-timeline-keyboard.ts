@@ -16,7 +16,7 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { MOD_KEY } from "@/utils/platform";
 import { pluralize } from "@/utils/pluralize";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -642,6 +642,11 @@ function useTimelineKeyboard(
           const partitioned = partitionNudgeSelections(rawLines, nudgeSel);
           const rangeOf = timeRangeResolver(rawLines, groups, duration);
           const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
+          if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
+            const wholeSong = timeRangeResolver(rawLines, [], duration);
+            const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
+            if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
+          }
           if (result.updates.length === 0) break;
           if (result.updates.length === 1) {
             useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {

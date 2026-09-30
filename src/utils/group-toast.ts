@@ -6,6 +6,7 @@ import { toast } from "sonner";
 // -- Constants -----------------------------------------------------------------
 
 const GROUP_TOAST_DURATION_MS = 8000;
+const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -34,6 +35,10 @@ function offerToShareTiming(newGroups: readonly LinkGroup[]): void {
   });
 }
 
+function showSharedSongEdgeToast(): void {
+  toast("Stopped where a shared instance reaches the song edge", { id: SHARED_SONG_EDGE_TOAST_ID });
+}
+
 // -- Exports -------------------------------------------------------------------
 
-export { offerToShareTiming, showGroupActionToast };
+export { offerToShareTiming, showGroupActionToast, showSharedSongEdgeToast };

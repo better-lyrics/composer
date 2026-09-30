@@ -19,6 +19,7 @@ import {
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
+import { Toaster } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -82,6 +83,37 @@ describe("TimelinePanel · group focus", () => {
     expect(lineById("c0")?.words?.[0].begin).toBeCloseTo(10 + delta);
     expect(lineById("c2")?.words?.[0].begin).toBe(70);
     expect(lineById("v")?.words?.[0].begin).toBe(20);
+  });
+
+  it("says why a shared nudge stops where another instance reaches the song end", async () => {
+    useAudioStore.setState({ duration: 42.02 });
+    const screen = await render(
+      <>
+        <PlayableTimeline />
+        <Toaster />
+      </>,
+    );
+    useTimelineStore.getState().setSelectedWords(getWordsInInstance(store().lines, "g1", 0));
+
+    press("ArrowRight");
+
+    await expect.element(screen.getByText("Stopped where a shared instance reaches the song edge")).toBeVisible();
+  });
+
+  it("edge case: stays quiet when the song end itself stops a nudge", async () => {
+    useAudioStore.setState({ duration: 21.02 });
+    const screen = await render(
+      <>
+        <PlayableTimeline />
+        <Toaster />
+      </>,
+    );
+    useTimelineStore.getState().setSelectedWords([{ lineId: "v", lineIndex: 1, wordIndex: 0, type: "word" }]);
+
+    press("ArrowRight");
+
+    await expect.poll(() => lineById("v")?.words?.[0].end).toBeCloseTo(21.02);
+    expect(screen.container.ownerDocument.body.textContent).not.toContain("Stopped where");
   });
 
   describe("keyboard", () => {
