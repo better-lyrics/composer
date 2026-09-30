@@ -1,7 +1,7 @@
 import { syncProgress } from "@/domain/line/sync-progress";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { generateTTML } from "@/utils/ttml";
+import { generateProjectTtml } from "@/utils/ttml";
 import { useMemo } from "react";
 
 function useGeneratedTtml() {
@@ -13,8 +13,8 @@ function useGeneratedTtml() {
 
   const progress = useMemo(() => syncProgress(lines, "line"), [lines]);
   const content = useMemo(
-    () => (progress.done > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : ""),
-    [metadata, agents, lines, groups, duration, progress.done],
+    () => generateProjectTtml({ metadata, agents, lines, groups }, duration),
+    [metadata, agents, lines, groups, duration],
   );
 
   return { content, duration, lineCount: progress.total, syncedLineCount: progress.done, title: metadata.title };

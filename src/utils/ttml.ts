@@ -1,9 +1,9 @@
 import type { Agent } from "@/domain/agent/model";
-import { hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
 import type { LinkGroup } from "@/domain/group/template";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
-import { isLineTimed } from "@/domain/line/sync-progress";
+import { hasMainLyrics, isWordSynced } from "@/domain/line/predicates";
+import { isLineTimed, syncProgress } from "@/domain/line/sync-progress";
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
@@ -185,6 +185,12 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   return parts.join(nl);
 }
 
+type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "groups">;
+
+function generateProjectTtml({ metadata, agents, lines, groups }: ProjectTtmlSource, duration: number): string {
+  return syncProgress(lines, "line").done > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : "";
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { generateTTML };
+export { generateProjectTtml, generateTTML };
