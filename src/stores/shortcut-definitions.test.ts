@@ -77,7 +77,7 @@ describe("SHORTCUT_DEFINITIONS", () => {
 
   it("registers the group focus shortcuts with their exact default bindings in the timeline scope", () => {
     const expectedBindings: Record<string, ShortcutBinding> = {
-      "timeline.openGroup": { key: "Enter" },
+      "timeline.openGroup": { key: "Enter", shift: true },
       "timeline.closeGroup": { key: "Escape" },
     };
     for (const [id, binding] of Object.entries(expectedBindings)) {

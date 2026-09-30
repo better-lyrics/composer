@@ -272,7 +272,7 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     id: "timeline.openGroup",
     scope: "timeline",
     description: "Open group",
-    defaultBinding: { key: "Enter" },
+    defaultBinding: { key: "Enter", shift: true },
   },
   {
     id: "timeline.closeGroup",

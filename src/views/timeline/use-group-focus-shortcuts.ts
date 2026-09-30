@@ -52,7 +52,6 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
 
 function useGroupFocusShortcuts(): void {
   useEffect(() => {
-    // Capture runs before the global Enter play/pause listener, which Enter on a banner must not reach.
     window.addEventListener("keydown", handleGroupFocusKeyDown, { capture: true });
     return () => window.removeEventListener("keydown", handleGroupFocusKeyDown, { capture: true });
   }, []);

@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import {
   assignBinding,
   bindingToKeys,
@@ -6,6 +5,8 @@ import {
   getEffectiveBinding,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
+import { SHORTCUT_REGISTRY } from "@/stores/shortcut-registry";
+import { describe, expect, it } from "vitest";
 
 describe("assignBinding", () => {
   it("sets the binding", () => {
@@ -69,6 +70,18 @@ describe("bindingToKeys", () => {
   describe("edge cases", () => {
     it("returns no keys for an unbound shortcut", () => {
       expect(bindingToKeys({ key: "" })).toEqual([]);
+    });
+  });
+});
+
+describe("default bindings", () => {
+  describe("invariants", () => {
+    it("never conflict with each other", () => {
+      useShortcutBindingsStore.setState({ overrides: {} });
+      const conflicts = SHORTCUT_REGISTRY.flatMap((definition) =>
+        detectConflicts(definition.id, definition.defaultBinding).map((other) => `${definition.id} / ${other.id}`),
+      );
+      expect(conflicts).toEqual([]);
     });
   });
 });

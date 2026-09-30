@@ -8,8 +8,8 @@ import { isMac } from "@/utils/platform";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
-import { userEvent } from "vitest/browser";
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -127,25 +127,35 @@ describe("TimelinePanel · group focus", () => {
   });
 
   describe("keyboard", () => {
-    it("opens the group with Enter on a selected banner, without toggling playback", async () => {
+    it("opens the group with Shift+Enter on a selected banner, without toggling playback", async () => {
       await render(<PlayableTimeline />);
       useTimelineStore.getState().setSelectedWords(getWordsInInstance(store().lines, "g1", 1));
 
-      await userEvent.keyboard("{Enter}");
+      await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
 
       await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
       expect(useAudioStore.getState().isPlaying).toBe(false);
     });
 
-    it("opens the group with Enter on a focused banner label", async () => {
+    it("opens the group with Shift+Enter on a focused banner label", async () => {
       await render(<TimelinePanel />);
       await expect.poll(() => document.querySelectorAll("[data-group-header]").length).toBe(3);
       document.querySelector<HTMLButtonElement>('[data-group-header="g1:2"] button')?.focus();
 
-      await userEvent.keyboard("{Enter}");
+      await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
 
       await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 2 });
       expect(useTimelineStore.getState().contextMenu).toBeNull();
+    });
+
+    it("leaves Enter to play and pause even with a banner selected", async () => {
+      await render(<PlayableTimeline />);
+      useTimelineStore.getState().setSelectedWords(getWordsInInstance(store().lines, "g1", 1));
+
+      await userEvent.keyboard("{Enter}");
+
+      await expect.poll(() => useAudioStore.getState().isPlaying).toBe(true);
+      expect(focus()).toBeNull();
     });
 
     it("leaves Enter to play and pause when no banner is selected", async () => {
