@@ -2,7 +2,7 @@ import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
@@ -36,7 +36,10 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
     return;
   }
   if (action === "share-timing") {
-    store.setInstanceOwnTiming(group.id, instanceIdx, false);
+    if (!store.setInstanceOwnTiming(group.id, instanceIdx, false)) {
+      showSharingBlockedToast(name);
+      return;
+    }
     const after = useProjectStore.getState().lines;
     const replaced = after.some((line, index) => !isStructurallyEqual(line, store.lines[index]));
     showGroupActionToast(

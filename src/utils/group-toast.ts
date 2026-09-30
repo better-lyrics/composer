@@ -42,10 +42,25 @@ function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: numbe
   });
 }
 
+function showPlacementBlockedToast(): void {
+  toast.error("Not enough room in the song to place this instance here");
+}
+
+function showSharingBlockedToast(name: string): void {
+  toast.error(`${name} keeps its own timing: sync one instance fully first`);
+}
+
 function showSharedSongEdgeToast(): void {
   toast("Stopped where a shared instance reaches the song edge", { id: SHARED_SONG_EDGE_TOAST_ID });
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { offerToShareTiming, showGroupActionToast, showGroupedToast, showSharedSongEdgeToast };
+export {
+  offerToShareTiming,
+  showGroupActionToast,
+  showGroupedToast,
+  showSharedSongEdgeToast,
+  showPlacementBlockedToast,
+  showSharingBlockedToast,
+};

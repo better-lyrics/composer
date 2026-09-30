@@ -1,5 +1,6 @@
 import {
   attachedLinesOfInstance,
+  endsAfter,
   hasNegativeTime,
   instanceOffset,
   isInstanceFullyTimed,
@@ -52,6 +53,7 @@ function placeSharedInstance(
   groupId: string,
   instanceIdx: number,
   anchorTime: number,
+  songEnd = Number.POSITIVE_INFINITY,
 ): LineUpdate[] {
   const group = sharedGroup(groups, groupId, instanceIdx);
   const reference = group ? referenceInstance(lines, group, instanceIdx) : null;
@@ -62,7 +64,8 @@ function placeSharedInstance(
   );
   const referenceTime = referenceLine ? mainBounds(referenceLine)?.begin : undefined;
   if (referenceTime === undefined) return [];
-  return copyInstanceTiming(lines, groupId, reference, instanceIdx, anchorTime - referenceTime);
+  const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, anchorTime - referenceTime);
+  return updates.some((update) => endsAfter(update.updates, songEnd)) ? [] : updates;
 }
 
 function realignSharedInstance(

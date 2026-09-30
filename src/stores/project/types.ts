@@ -196,10 +196,16 @@ interface GroupActions {
   removeInstance: (groupId: string, instanceIdx: number) => void;
   detachLine: (lineId: string) => void;
   shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
-  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => void;
+  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => boolean;
   shareGroupTiming: (groupId: string) => void;
   shareAllInstances: (groupId: string) => void;
-  placeInstance: (groupId: string, instanceIdx: number, start: number, precedingUpdates?: LineUpdate[]) => boolean;
+  placeInstance: (
+    groupId: string,
+    instanceIdx: number,
+    start: number,
+    duration: number,
+    precedingUpdates?: LineUpdate[],
+  ) => boolean;
 }
 
 // -- Composed Store -----------------------------------------------------------

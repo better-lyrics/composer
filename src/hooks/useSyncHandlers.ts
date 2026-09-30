@@ -13,6 +13,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
@@ -96,7 +97,15 @@ function useSyncHandlers({
       };
       const anchor = anchorGesture(lines, gesture, ctx);
       const { placeInstance } = useProjectStore.getState();
-      if (anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, anchor.precedingUpdates)) {
+      const duration = useAudioStore.getState().duration;
+      if (
+        anchor &&
+        !placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, duration, anchor.precedingUpdates)
+      ) {
+        showPlacementBlockedToast();
+        return false;
+      }
+      if (anchor) {
         const placed = useProjectStore.getState();
         const anchorUndo = {
           resume: anchor.resumeCursor,

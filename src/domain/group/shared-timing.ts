@@ -117,6 +117,11 @@ function hasNegativeTime(updates: LineUpdate["updates"]): boolean {
   return [...(updates.words ?? []), ...(updates.backgroundWords ?? [])].some((word) => word.begin < 0);
 }
 
+function endsAfter(updates: LineUpdate["updates"], songEnd: number): boolean {
+  if (updates.end !== undefined && updates.end > songEnd) return true;
+  return [...(updates.words ?? []), ...(updates.backgroundWords ?? [])].some((word) => word.end > songEnd);
+}
+
 function fanOutSources(
   before: readonly LyricLine[],
   after: readonly LyricLine[],
@@ -235,6 +240,7 @@ function timeRangeResolver(
 
 export {
   attachedLinesOfInstance,
+  endsAfter,
   hasNegativeTime,
   instanceOffset,
   instanceStart,

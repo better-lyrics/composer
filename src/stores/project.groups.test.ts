@@ -535,6 +535,30 @@ describe("project store · shiftInstance", () => {
     expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 120, end: 122 });
   });
 
+  it("regression: adds no undo step when the song end leaves no room to move", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.setState({
+      lines: [
+        {
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          id: "a",
+          text: "one",
+          templateLineIdx: 0,
+          begin: 100,
+          end: 110,
+        },
+      ],
+    });
+    useProjectStore.getState().clearHistory();
+    const historyBefore = useProjectStore.getState().history;
+
+    useProjectStore.getState().shiftInstance("g1", 0, 5, 110);
+
+    expect(useProjectStore.getState().history).toBe(historyBefore);
+  });
+
   it("is undoable", () => {
     useProjectStore.getState().addGroup(seedGroup("g1"));
     useProjectStore.setState({

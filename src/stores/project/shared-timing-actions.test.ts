@@ -29,6 +29,7 @@ function seed(groups: LinkGroup[], lines: LyricLine[]) {
   useProjectStore.setState({ groups, lines, isDirtySinceHistory: true });
 }
 
+const SONG_LENGTH = 300;
 const store = () => useProjectStore.getState();
 const lineById = (id: string) => store().lines.find((line) => line.id === id);
 const groupById = (id: string) => store().groups.find((group) => group.id === id);
@@ -106,6 +107,17 @@ describe("setInstanceOwnTiming", () => {
       expect(lineById("c1")?.words).toBeUndefined();
     });
 
+    it("keeps a timed instance on its own timing and reports false when no instance is fully timed", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0), chorus(1, 40)]);
+      expect(store().setInstanceOwnTiming("g1", 1, false)).toBe(false);
+      expect(groupById("g1")?.ownTimingInstances).toEqual([1]);
+    });
+
+    it("reports true when the instance takes the shared timing", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
+      expect(store().setInstanceOwnTiming("g1", 1, false)).toBe(true);
+    });
+
     it("does not list an instance twice", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
       store().setInstanceOwnTiming("g1", 1, true);
@@ -134,7 +146,7 @@ describe("shareGroupTiming", () => {
 describe("placeInstance", () => {
   it("fills an unplaced instance at the start as one undo step", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
-    store().placeInstance("g1", 1, 40);
+    store().placeInstance("g1", 1, 40, SONG_LENGTH);
     expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
     store().undo();
     expect(lineById("c1")?.words).toBeUndefined();
@@ -142,7 +154,7 @@ describe("placeInstance", () => {
 
   it("moves a placed instance without moving the others", () => {
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1, 40)]);
-    expect(store().placeInstance("g1", 1, 50)).toBe(true);
+    expect(store().placeInstance("g1", 1, 50, SONG_LENGTH)).toBe(true);
     expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(50, 6);
     expect(lineById("c0")?.words?.[0]?.begin).toBeCloseTo(10, 6);
   });
@@ -151,7 +163,7 @@ describe("placeInstance", () => {
     const verse = createLine({ id: "v", text: "Walking", words: [{ text: "Walking", begin: 20, end: 21 }] });
     seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
     const preceding = [{ id: "v", updates: { words: [{ text: "Walking", begin: 20, end: 39 }] } }];
-    expect(store().placeInstance("g1", 1, 40, preceding)).toBe(true);
+    expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, preceding)).toBe(true);
     expect(lineById("v")?.words?.[0]?.end).toBe(39);
     expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
     store().undo();
@@ -170,23 +182,40 @@ describe("placeInstance", () => {
         ],
       },
     };
-    store().placeInstance("g1", 1, 40, [closeLastWord]);
+    store().placeInstance("g1", 1, 40, SONG_LENGTH, [closeLastWord]);
     expect(lineById("c1")?.words?.[1]?.end).toBeCloseTo(42, 6);
   });
 
   it("keeps the line text, because placing only writes timing", () => {
     const partial = createLine({ id: "p", text: "one two three", words: [{ text: "one ", begin: 1, end: 2 }] });
     seed([createGroup({ id: "g1", sharesTiming: true })], [partial, chorus(0, 10), chorus(1)]);
-    store().placeInstance("g1", 1, 40);
+    store().placeInstance("g1", 1, 40, SONG_LENGTH);
     expect(lineById("p")?.text).toBe("one two three");
   });
 
   describe("edge cases", () => {
+    it("writes nothing and reports false when the instance would run past the song end", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
+      const before = store().lines;
+      expect(store().placeInstance("g1", 1, 99.5, 100)).toBe(false);
+      expect(store().lines).toBe(before);
+    });
+
+    it("places an instance that ends exactly at the song end", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
+      expect(store().placeInstance("g1", 1, 99, 100)).toBe(true);
+    });
+
+    it("places without an end limit while the song length is unknown", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
+      expect(store().placeInstance("g1", 1, 500, 0)).toBe(true);
+    });
+
     it("writes nothing and reports false when there is no timed reference", () => {
       seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0), chorus(1)]);
       const before = store().lines;
       const firstWordOnly = { id: "c0", updates: { words: [{ text: "I ", begin: 1, end: 2 }] } };
-      expect(store().placeInstance("g1", 1, 40, [firstWordOnly])).toBe(false);
+      expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, [firstWordOnly])).toBe(false);
       expect(store().lines).toBe(before);
     });
   });
@@ -236,6 +265,12 @@ describe("shareAllInstances", () => {
       store().shareAllInstances("g1");
       expect(lineById("c2")?.words).toBeUndefined();
       expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    });
+
+    it("keeps a timed instance on its own timing when no instance is fully timed", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0, 1] })], [chorus(0), chorus(1, 40)]);
+      store().shareAllInstances("g1");
+      expect(groupById("g1")?.ownTimingInstances).toEqual([1]);
     });
 
     it("changes nothing for an unknown group", () => {

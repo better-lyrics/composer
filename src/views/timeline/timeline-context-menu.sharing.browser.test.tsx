@@ -74,6 +74,23 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
   });
 
+  it("keeps own timing and says why when no instance is fully timed", async () => {
+    seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "c0", text: "go now", groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+        chorus(1, 40),
+      ],
+    });
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: "Share timing" }).click();
+
+    await expect
+      .element(screen.getByText("Chorus 2 keeps its own timing: sync one instance fully first"))
+      .toBeVisible();
+    expect(group().ownTimingInstances).toEqual([1]);
+  });
+
   it("shares timing across an old group", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
     const screen = await renderMenu();

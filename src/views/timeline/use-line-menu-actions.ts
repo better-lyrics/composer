@@ -5,7 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
 import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
@@ -52,9 +52,10 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     if (!placeAtPlayheadInfo) return;
     const audio = useAudioStore.getState();
     const playheadTime = audio.audioElement?.currentTime ?? audio.currentTime;
-    useProjectStore
-      .getState()
-      .placeInstance(placeAtPlayheadInfo.groupId, placeAtPlayheadInfo.instanceIdx, playheadTime);
+    const { groupId, instanceIdx } = placeAtPlayheadInfo;
+    if (!useProjectStore.getState().placeInstance(groupId, instanceIdx, playheadTime, audio.duration)) {
+      showPlacementBlockedToast();
+    }
     clearContextMenu();
   }, [placeAtPlayheadInfo, clearContextMenu]);
 

@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
@@ -7,6 +6,8 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
+import { Toaster } from "sonner";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -73,6 +74,21 @@ describe("TimelineContextMenu · place at playhead", () => {
     await screen.getByRole("button", { name: "Place at playhead" }).click();
 
     await expect.poll(() => wordBegins("c1")).toEqual([30, 31.5]);
+  });
+
+  it("says there is no room and writes nothing when the instance would run past the song end", async () => {
+    seed(gutterOf("c1", 1));
+    useAudioStore.setState({ currentTime: 59.5 });
+    const screen = await render(
+      <>
+        <TimelineContextMenu />
+        <Toaster />
+      </>,
+    );
+    await screen.getByRole("button", { name: "Place at playhead" }).click();
+
+    await expect.element(screen.getByText("Not enough room in the song to place this instance here")).toBeVisible();
+    expect(wordBegins("c1")).toBeUndefined();
   });
 
   it("places at the playhead, not the clicked time, from the track menu", async () => {
