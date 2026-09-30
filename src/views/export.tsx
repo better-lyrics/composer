@@ -28,6 +28,13 @@ import { Highlight } from "prism-react-renderer";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
+// -- Types --------------------------------------------------------------------
+
+interface EditingSession {
+  projectSession: number;
+  startContent: string;
+}
+
 // -- Constants ----------------------------------------------------------------
 
 const APPLIED_MESSAGE = "Updated the lyrics from the TTML";
@@ -73,9 +80,11 @@ const ExportPanel: React.FC = () => {
     title,
   } = useExportTtml();
 
+  const projectSession = useProjectStore((state) => state.projectSession);
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [sessionStartContent, setSessionStartContent] = useState<string | null>(null);
+  const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
+  const session = editingSession?.projectSession === projectSession ? editingSession : null;
+  const isEditing = session !== null;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions();
 
@@ -106,19 +115,18 @@ const ExportPanel: React.FC = () => {
   }, [exportContent, isExportable]);
 
   const handleEdit = useCallback(() => {
-    if (!isEditing) {
-      setSessionStartContent(exportContent);
-      setIsEditing(true);
+    if (!session) {
+      setEditingSession({ projectSession, startContent: exportContent });
       return;
     }
-    const changedThisSession = editedContent !== null && editedContent !== sessionStartContent;
+    const changedThisSession = editedContent !== null && editedContent !== session.startContent;
     if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration);
-    setIsEditing(false);
-  }, [isEditing, exportContent, editedContent, sessionStartContent, hasConflict, duration]);
+    setEditingSession(null);
+  }, [session, projectSession, exportContent, editedContent, hasConflict, duration]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
-    setIsEditing(false);
+    setEditingSession(null);
   }, [setEditState]);
 
   // Resolving a conflict rebases the edit onto the current output, which is what

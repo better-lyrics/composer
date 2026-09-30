@@ -166,6 +166,25 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
     });
   });
 
+  describe("project switches", () => {
+    it("regression: switching projects ends the editing session, so Done never applies the next project's saved edit", async () => {
+      useProjectStore.setState({ lines: [createLine({ text: "Project A", begin: 0, end: 1 })] });
+      const screen = await renderPanel();
+      await startEditing(screen);
+      useProjectStore.getState().reset();
+      useProjectStore.setState({ lines: [createLine({ text: "Project B", begin: 0, end: 1 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const saved = generated.replace(">Project B<", ">Project B saved edit<");
+      useProjectStore.setState({ ttmlEditState: { source: generated, content: saved } });
+      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+      await startEditing(screen);
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+      expect(lineTexts()).toEqual(["Project B"]);
+      expect(useProjectStore.getState().ttmlEditState?.content).toBe(saved);
+    });
+  });
+
   describe("edge cases", () => {
     it("does not apply a saved edit when nothing changed in this editing session", async () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 0, end: 1 })] });
