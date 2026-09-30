@@ -1,8 +1,8 @@
 import type { Agent } from "@/domain/agent/model";
-import type { LyricLine, RawLine } from "@/domain/line/model";
-import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine, RawLine } from "@/domain/line/model";
+import { withDerivedText } from "@/domain/line/reconstruct-text";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import type { HistoryEntry, ProjectState } from "@/stores/project/types";
@@ -74,10 +74,15 @@ function commitHistory(
   };
 }
 
+function changedLineIds(before: readonly RawLine[], after: readonly RawLine[]): string[] {
+  const beforeById = new Map(before.map((line) => [line.id, line]));
+  return after.filter((line) => beforeById.get(line.id) !== line).map((line) => line.id);
+}
+
 function commitSharedTimingHistory(
   state: ProjectState,
   lines: RawLine[],
-  changedIds: readonly string[],
+  changedIds: readonly string[] = changedLineIds(state.lines, lines),
   options: { deriveText?: boolean } = {},
 ) {
   const shared = sharedTimingFanOut(state.lines, lines, state.groups, changedIds);
