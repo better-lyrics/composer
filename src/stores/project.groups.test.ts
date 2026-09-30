@@ -1,10 +1,12 @@
+import type { LineTemplate, LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import type { LineTemplate, LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
 import { beforeEach, describe, expect, it } from "vitest";
+
+const SONG_LENGTH = 300;
 
 beforeEach(() => {
   useProjectStore.getState().reset();
@@ -412,7 +414,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 1, 5);
+    useProjectStore.getState().shiftInstance("g1", 1, 5, SONG_LENGTH);
 
     const lines = useProjectStore.getState().lines;
     const i0 = lines.find((l) => l.id === "a0");
@@ -442,7 +444,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, 2);
+    useProjectStore.getState().shiftInstance("g1", 0, 2, SONG_LENGTH);
 
     const bg = useProjectStore.getState().lines[0].backgroundWords?.[0];
     expect(bg?.begin).toBeCloseTo(32);
@@ -468,7 +470,7 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, -10.5);
+    useProjectStore.getState().shiftInstance("g1", 0, -10.5, SONG_LENGTH);
 
     expect(useProjectStore.getState().lines[0]).toMatchObject({
       begin: 0,
@@ -487,11 +489,50 @@ describe("project store · shiftInstance", () => {
       ],
     });
 
-    useProjectStore.getState().shiftInstance("g1", 0, -2);
+    useProjectStore.getState().shiftInstance("g1", 0, -2, SONG_LENGTH);
 
     const [a, b] = useProjectStore.getState().lines;
     expect(a).toMatchObject({ begin: 0, end: 2 });
     expect(b).toMatchObject({ begin: 2.5, end: 3.5 });
+  });
+
+  it("regression: an instance shifted past the song end stops there as a whole", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    const member = { agentId: "v1", groupId: "g1", instanceIdx: 0 };
+    useProjectStore.setState({
+      lines: [
+        { ...member, id: "a", text: "one", templateLineIdx: 0, begin: 100, end: 102 },
+        { ...member, id: "b", text: "two", templateLineIdx: 1, begin: 103, end: 105 },
+      ],
+    });
+
+    useProjectStore.getState().shiftInstance("g1", 0, 20, 110);
+
+    const [a, b] = useProjectStore.getState().lines;
+    expect(a).toMatchObject({ begin: 105, end: 107 });
+    expect(b).toMatchObject({ begin: 108, end: 110 });
+  });
+
+  it("edge case: shifts without an end limit while the song length is unknown", () => {
+    useProjectStore.getState().addGroup(seedGroup("g1"));
+    useProjectStore.setState({
+      lines: [
+        {
+          agentId: "v1",
+          groupId: "g1",
+          instanceIdx: 0,
+          id: "a",
+          text: "one",
+          templateLineIdx: 0,
+          begin: 100,
+          end: 102,
+        },
+      ],
+    });
+
+    useProjectStore.getState().shiftInstance("g1", 0, 20, 0);
+
+    expect(useProjectStore.getState().lines[0]).toMatchObject({ begin: 120, end: 122 });
   });
 
   it("is undoable", () => {
@@ -512,7 +553,7 @@ describe("project store · shiftInstance", () => {
     });
     useProjectStore.getState().clearHistory();
 
-    useProjectStore.getState().shiftInstance("g1", 0, 5);
+    useProjectStore.getState().shiftInstance("g1", 0, 5, SONG_LENGTH);
     expect(useProjectStore.getState().lines[0].begin).toBeCloseTo(15);
 
     useProjectStore.getState().undo();
@@ -546,7 +587,7 @@ describe("project store · shiftInstance", () => {
     });
     useProjectStore.getState().clearHistory();
 
-    useProjectStore.getState().shiftInstance("g1", 0, 0.5);
+    useProjectStore.getState().shiftInstance("g1", 0, 0.5, SONG_LENGTH);
     const after = useProjectStore.getState().lines;
     expect(after.find((l) => l.id === "live")?.words?.[0].begin).toBeCloseTo(10.5);
     expect(after.find((l) => l.id === "stale-detached")?.words?.[0].begin).toBeCloseTo(10);

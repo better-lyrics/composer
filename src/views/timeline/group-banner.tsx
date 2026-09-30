@@ -1,6 +1,7 @@
-import { useProjectStore } from "@/stores/project";
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -90,7 +91,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === group.id)) {
           const deltaSeconds = dx / zoom;
           if (Math.abs(deltaSeconds) > 0.001) {
-            useProjectStore.getState().shiftInstance(group.id, instanceIdx, deltaSeconds);
+            useProjectStore
+              .getState()
+              .shiftInstance(group.id, instanceIdx, deltaSeconds, useAudioStore.getState().duration);
           }
         } else {
           // treat as click: select all words in this instance (so nudge works on it)

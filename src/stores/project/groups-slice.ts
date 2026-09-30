@@ -14,6 +14,7 @@ import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
@@ -162,10 +163,11 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       }),
     ),
 
-  shiftInstance: (groupId, instanceIdx, deltaSeconds) =>
+  shiftInstance: (groupId, instanceIdx, deltaSeconds, duration) =>
     set((state) => {
       const isMember = (line: LyricLine) => belongsToInstance(line, groupId, instanceIdx) && !line.detached;
-      const delta = clampShiftDelta(state.lines.filter(isMember), deltaSeconds);
+      const songRange = { min: 0, max: songEndOrUnbounded(duration) };
+      const delta = clampShiftDelta(state.lines.filter(isMember), deltaSeconds, songRange);
       return commitHistory(state, {
         lines: state.lines.map((line) =>
           isMember(line) ? reconcileLine({ ...line, ...shiftLineTiming(line, delta) }) : line,

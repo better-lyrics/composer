@@ -28,8 +28,8 @@ import { centerTimeScrollLeft, revealTimeScrollLeft } from "@/views/timeline/coo
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
-import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
+import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
@@ -693,7 +693,9 @@ function useTimelineKeyboard(
           const delta = playheadTime - bounds.begin;
           if (Math.abs(delta) < 0.001) break;
           e.preventDefault();
-          useProjectStore.getState().shiftInstance(inst.groupId, inst.instanceIdx, delta);
+          useProjectStore
+            .getState()
+            .shiftInstance(inst.groupId, inst.instanceIdx, delta, useAudioStore.getState().duration);
           break;
         }
         case "timeline.jumpPrevSnapPoint":

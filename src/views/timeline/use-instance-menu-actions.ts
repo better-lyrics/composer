@@ -78,7 +78,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const bounds = instanceBounds(instanceLines);
     if (!bounds) return;
     const delta = playheadTime - bounds.begin;
-    useProjectStore.getState().shiftInstance(groupId, instanceIdx, delta);
+    useProjectStore.getState().shiftInstance(groupId, instanceIdx, delta, useAudioStore.getState().duration);
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 

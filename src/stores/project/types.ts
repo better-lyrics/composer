@@ -195,7 +195,7 @@ interface GroupActions {
   addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
   removeInstance: (groupId: string, instanceIdx: number) => void;
   detachLine: (lineId: string) => void;
-  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number) => void;
+  shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
   setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => void;
   shareGroupTiming: (groupId: string) => void;
   shareAllInstances: (groupId: string) => void;
