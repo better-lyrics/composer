@@ -92,7 +92,7 @@ function useTimelineKeyboard(
       const { selectedWords, zoom, rowHeights, defaultRowHeight } = useTimelineStore.getState();
       const selectedWord = selectedWords[0] ?? null;
       const fromPlayhead = !selectedWord;
-      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge);
+      const targetWord = selectedWord ?? findBoundaryTarget(lines, currentTime, edge, currentEffectiveFocus());
       if (!targetWord) {
         toast(edge === "begin" ? "No word starts after the playhead" : "No word ends before the playhead");
         return;
@@ -325,7 +325,7 @@ function useTimelineKeyboard(
           e.preventDefault();
           const audioEl = useAudioStore.getState().audioElement;
           const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const matches = findWordsAtTime(lines, currentTime);
+          const matches = findWordsAtTime(lines, currentTime, currentEffectiveFocus());
           const next = pickNextWordAtPlayhead(matches, useTimelineStore.getState().selectedWords);
           if (!next) {
             toast("No word under the playhead");

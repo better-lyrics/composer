@@ -205,6 +205,34 @@ describe("TimelinePanel · group focus", () => {
       expect(focus()).not.toBeNull();
     });
 
+    it("selects nothing under the playhead outside the open instance", async () => {
+      await renderOpen(1);
+      useAudioStore.setState({ currentTime: 20.5 });
+
+      press("a", { code: "KeyA" });
+
+      expect(useTimelineStore.getState().selectedWords).toEqual([]);
+    });
+
+    it("selects the open instance's word under the playhead", async () => {
+      await renderOpen(1);
+      useAudioStore.setState({ currentTime: 40.5 });
+
+      press("a", { code: "KeyA" });
+
+      await expect.poll(() => useTimelineStore.getState().selectedWords.map((word) => word.lineId)).toEqual(["c1"]);
+    });
+
+    it("sets a word begin from the playhead only inside the open instance", async () => {
+      await renderOpen(1);
+      useAudioStore.setState({ currentTime: 15 });
+
+      press("[", { code: "BracketLeft" });
+
+      await expect.poll(() => lineById("c1")?.words?.[0].begin).not.toBe(40);
+      expect(lineById("v")?.words?.[0].begin).toBe(20);
+    });
+
     it("selects only the open instance with select all", async () => {
       await renderOpen(1);
 
