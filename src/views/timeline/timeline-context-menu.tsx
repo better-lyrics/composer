@@ -1,20 +1,20 @@
-import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { GROUP_COLORS } from "@/utils/group-colors";
 import { formatKey } from "@/utils/format-key";
+import { GROUP_COLORS } from "@/utils/group-colors";
 import { isMac } from "@/utils/platform";
+import { pluralize } from "@/utils/pluralize";
+import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type ContextMenuTargets, useContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useGroupMenuActions } from "@/views/timeline/use-group-menu-actions";
 import { useInstanceMenuActions } from "@/views/timeline/use-instance-menu-actions";
 import { useLineMenuActions } from "@/views/timeline/use-line-menu-actions";
 import { useSharedTimingMenuActions } from "@/views/timeline/use-shared-timing-menu-actions";
-import { type ContextMenuState, type ContextMenuTarget, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useWordMenuActions } from "@/views/timeline/use-word-menu-actions";
+import { FloatingPortal, flip, shift, size, useFloating } from "@floating-ui/react";
 import { IconCommand } from "@tabler/icons-react";
-import { flip, FloatingPortal, shift, size, useFloating } from "@floating-ui/react";
 import { useEffect, useLayoutEffect } from "react";
-import { pluralize } from "@/utils/pluralize";
 
 function MenuItem({
   label,
@@ -408,7 +408,7 @@ function GroupBannerMenuSection({ targets, clearContextMenu, target }: SectionPr
         </>
       )}
       <MenuDivider />
-      <MenuItem label="Rename" shortcut={["Double Click"]} onClick={handleRenameStart} />
+      <MenuItem label="Rename" onClick={handleRenameStart} />
       <MenuDivider />
       <p className="px-3 pt-1.5 pb-1 text-xs text-composer-text-muted">Recolor</p>
       <div className="px-3 pb-1.5 grid grid-cols-5 gap-1.5">

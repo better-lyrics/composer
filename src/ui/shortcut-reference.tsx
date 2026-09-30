@@ -129,6 +129,8 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
         description: "Jump to start of current instance",
         shortcutId: "timeline.jumpToInstanceStart",
       },
+      { keys: ["Shift", "Enter"], description: "Open the selected group", shortcutId: "timeline.openGroup" },
+      { keys: ["Escape"], description: "Close the open group", shortcutId: "timeline.closeGroup" },
       { keys: ["ArrowLeft"], description: "Nudge selected words / instance earlier" },
       { keys: ["ArrowRight"], description: "Nudge selected words / instance later" },
       { keys: ["Mod", "Shift", "D"], description: "Detach current instance", shortcutId: "timeline.detachInstance" },
