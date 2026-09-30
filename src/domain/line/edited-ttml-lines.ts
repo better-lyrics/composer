@@ -1,4 +1,5 @@
 import type { TranslationTracks, TransliterationTrack } from "@/domain/language/model";
+import { mainBounds } from "@/domain/line/bounds";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
@@ -59,8 +60,22 @@ function mergedTransliteration(stored: LyricLine, edited: LyricLine): Transliter
   return kept && track && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
 }
 
+function hasSeededBackgroundWords(stored: LyricLine, edited: LyricLine): boolean {
+  const words = edited.backgroundWords;
+  const bounds = mainBounds(edited);
+  return (
+    !stored.backgroundWords?.length &&
+    words?.length === 1 &&
+    bounds !== null &&
+    sameExportedTime(words[0]?.begin, bounds.begin) &&
+    sameExportedTime(words[0]?.end, bounds.end)
+  );
+}
+
 function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLine> {
-  if (stored.backgroundText !== edited.backgroundText) return {};
+  if (stored.backgroundText !== edited.backgroundText) {
+    return hasSeededBackgroundWords(stored, edited) ? { backgroundWords: undefined } : {};
+  }
   const storedWords = stored.backgroundWords;
   return {
     backgroundTextSource: stored.backgroundTextSource,

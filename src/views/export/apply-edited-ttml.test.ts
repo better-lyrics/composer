@@ -107,6 +107,22 @@ describe("applyEditedTtml", () => {
     });
   });
 
+  describe("background vocals", () => {
+    it("regression: a second Done still applies after editing a background text that has no word timing", () => {
+      useProjectStore.setState({
+        lines: [
+          createLine({ text: "Hello", begin: 1, end: 2, backgroundText: "ooh yeah", backgroundTextSource: "manual" }),
+        ],
+      });
+      const first = generateProjectTtml(useProjectStore.getState(), 0).replace(">ooh yeah<", ">ooh no<");
+      expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines[0]?.backgroundWords).toBeUndefined();
+      const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello there"]);
+    });
+  });
+
   describe("song details", () => {
     it("regression: leaves the imported song detail flags as they were", () => {
       useProjectStore.setState({ importedMetadataKeys: [], hasUnexportedImport: false });
