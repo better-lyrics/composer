@@ -16,6 +16,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
@@ -243,37 +244,83 @@ function useSyncHandlers({
 
   const handleNudgeWord = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
+      nudgeWordBegin(
+        lines,
+        lineIdx,
+        wordIdx,
+        delta,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordTime = useCallback(
     (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
+      setWordBegin(
+        lines,
+        lineIdx,
+        wordIdx,
+        newBegin,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeWordEnd = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
+      nudgeWordEnd(
+        lines,
+        lineIdx,
+        wordIdx,
+        delta,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleSetWordEndTime = useCallback(
     (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory, useProjectStore.getState().groups),
+      setWordEnd(
+        lines,
+        lineIdx,
+        wordIdx,
+        newEnd,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeLine = useCallback(
     (lineIdx: number, delta: number) =>
-      nudgeLineBegin(lines, lineIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
+      nudgeLineBegin(
+        lines,
+        lineIdx,
+        delta,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleSetLineTime = useCallback(
     (lineIdx: number, newBegin: number) =>
-      setLineBegin(lines, lineIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
+      setLineBegin(
+        lines,
+        lineIdx,
+        newBegin,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
@@ -286,7 +333,11 @@ function useSyncHandlers({
         return;
       }
       const line = lines[slot.lineIndex];
-      const range = timeRangeResolver(lines, useProjectStore.getState().groups, Number.POSITIVE_INFINITY)(line);
+      const range = timeRangeResolver(
+        lines,
+        useProjectStore.getState().groups,
+        songEndOrUnbounded(useAudioStore.getState().duration),
+      )(line);
       updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
         deriveText: false,
         propagateToSiblings: false,
@@ -318,25 +369,57 @@ function useSyncHandlers({
 
   const handleNudgeBgWord = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordBegin(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
+      nudgeBgWordBegin(
+        lines,
+        lineIdx,
+        wordIdx,
+        delta,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordTime = useCallback(
     (lineIdx: number, wordIdx: number, newBegin: number) =>
-      setBgWordBegin(lines, lineIdx, wordIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
+      setBgWordBegin(
+        lines,
+        lineIdx,
+        wordIdx,
+        newBegin,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleNudgeBgWordEnd = useCallback(
     (lineIdx: number, wordIdx: number, delta: number) =>
-      nudgeBgWordEnd(lines, lineIdx, wordIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
+      nudgeBgWordEnd(
+        lines,
+        lineIdx,
+        wordIdx,
+        delta,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
   const handleSetBgWordEndTime = useCallback(
     (lineIdx: number, wordIdx: number, newEnd: number) =>
-      setBgWordEnd(lines, lineIdx, wordIdx, newEnd, updateLineWithHistory, useProjectStore.getState().groups),
+      setBgWordEnd(
+        lines,
+        lineIdx,
+        wordIdx,
+        newEnd,
+        updateLineWithHistory,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      ),
     [lines, updateLineWithHistory],
   );
 
