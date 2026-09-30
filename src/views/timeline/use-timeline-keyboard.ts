@@ -16,9 +16,8 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast, showSharedSongEdgeToast } from "@/utils/group-toast";
+import { showGroupActionToast, showGroupedToast, showSharedSongEdgeToast } from "@/utils/group-toast";
 import { MOD_KEY } from "@/utils/platform";
-import { pluralize } from "@/utils/pluralize";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
@@ -480,9 +479,7 @@ function useTimelineKeyboard(
             break;
           }
           projectState.addGroupWithLines(result.group, result.updatedLines);
-          const totalCount = filled.expanded.size;
-          const grouped = `Grouped ${pluralize(totalCount, "line")}`;
-          toast.success(filled.addedCount > 0 ? `${grouped} (filled ${pluralize(filled.addedCount, "gap")})` : grouped);
+          showGroupedToast(result.group, filled.expanded.size, filled.addedCount);
           break;
         }
         case "timeline.duplicateAsLinked": {

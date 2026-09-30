@@ -35,10 +35,17 @@ function offerToShareTiming(newGroups: readonly LinkGroup[]): void {
   });
 }
 
+function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: number): void {
+  const grouped = `Grouped ${pluralize(lineCount, "line")}`;
+  toast.success(filledGaps > 0 ? `${grouped} (filled ${pluralize(filledGaps, "gap")})` : grouped, {
+    description: group.sharesTiming ? "Instances of this group share their timing" : undefined,
+  });
+}
+
 function showSharedSongEdgeToast(): void {
   toast("Stopped where a shared instance reaches the song edge", { id: SHARED_SONG_EDGE_TOAST_ID });
 }
 
 // -- Exports -------------------------------------------------------------------
 
-export { offerToShareTiming, showGroupActionToast, showSharedSongEdgeToast };
+export { offerToShareTiming, showGroupActionToast, showGroupedToast, showSharedSongEdgeToast };
