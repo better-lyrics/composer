@@ -1,3 +1,4 @@
+import type { LinkGroup } from "@/domain/group/template";
 import { useProjectStore } from "@/stores/project";
 import {
   type GroupFocus,
@@ -35,6 +36,17 @@ function useEffectiveFocus(): GroupFocus | null {
   return useProjectStore((s) => effectiveFocus(s.lines, focusedGroup));
 }
 
+function useEffectiveFocusGroup(): LinkGroup | undefined {
+  const focus = useEffectiveFocus();
+  return useProjectStore((s) => (focus ? s.groups.find((group) => group.id === focus.groupId) : undefined));
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { currentEffectiveFocus, currentFocusScrollRange, scrollToFocusStart, useEffectiveFocus };
+export {
+  currentEffectiveFocus,
+  currentFocusScrollRange,
+  scrollToFocusStart,
+  useEffectiveFocus,
+  useEffectiveFocusGroup,
+};

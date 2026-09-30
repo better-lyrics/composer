@@ -33,39 +33,39 @@ describe("TimelinePanel · group focus", () => {
 
     await expect.poll(shownLineIndices).toEqual([2]);
     expect(document.querySelectorAll("[data-group-header]")).toHaveLength(0);
-    await expect.element(screen.getByRole("group", { name: "Hear" })).toBeVisible();
+    await expect.element(screen.getByRole("button", { name: "Next instance" })).toBeVisible();
   });
 
   it("opens only the own-timing instance, with Share timing in the bar", async () => {
     const screen = await renderOpen(2);
 
     await expect.poll(shownLineIndices).toEqual([3]);
-    await expect.element(screen.getByRole("group", { name: "Hear" })).not.toBeInTheDocument();
+    await expect.element(screen.getByRole("button", { name: "Next instance" })).not.toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Share timing" })).toBeVisible();
   });
 
-  it("switches the shown rows with the Hear switch", async () => {
+  it("switches the shown rows with the instance stepper", async () => {
     const screen = await renderOpen(0);
     await expect.poll(shownLineIndices).toEqual([0]);
 
-    await screen.getByRole("button", { name: "Chorus 2" }).click();
+    await screen.getByRole("button", { name: "Next instance" }).click();
 
     await expect.poll(shownLineIndices).toEqual([2]);
   });
 
-  it("moves the playhead to the same moment in the instance chosen with the Hear switch", async () => {
+  it("moves the playhead to the same moment in the instance chosen with the stepper", async () => {
     const screen = await renderOpen(0);
     useAudioStore.getState().seekTo(10.5);
 
-    await screen.getByRole("button", { name: "Chorus 2" }).click();
+    await screen.getByRole("button", { name: "Next instance" }).click();
 
     await expect.poll(() => useAudioStore.getState().currentTime).toBeCloseTo(40.5);
   });
 
-  it("returns to the song from the Song crumb", async () => {
+  it("returns to the song with Done", async () => {
     const screen = await renderOpen(0);
 
-    await screen.getByRole("button", { name: "Song" }).click();
+    await screen.getByRole("button", { name: /^Done/ }).click();
 
     await expect.poll(shownLineIndices).toEqual([0, 1, 2, 3]);
     expect(document.querySelectorAll("[data-group-header]")).toHaveLength(3);

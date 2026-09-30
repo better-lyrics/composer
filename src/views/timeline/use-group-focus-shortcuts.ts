@@ -1,11 +1,11 @@
 import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
-import { useSettingsStore } from "@/stores/settings";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { toggleGroupLoop } from "@/views/timeline/toggle-group-loop";
 import { useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
@@ -48,8 +48,7 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
 
   if (matched === "timeline.toggleGroupLoop" && focus !== null) {
     event.preventDefault();
-    const settings = useSettingsStore.getState();
-    settings.set("loopOpenGroup", !settings.loopOpenGroup);
+    toggleGroupLoop();
     return;
   }
 

@@ -131,6 +131,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
       },
       { keys: ["Shift", "Enter"], description: "Open the selected group", shortcutId: "timeline.openGroup" },
       { keys: ["Escape"], description: "Close the open group", shortcutId: "timeline.closeGroup" },
+      { keys: ["Shift", "L"], description: "Loop the open group", shortcutId: "timeline.toggleGroupLoop" },
       { keys: ["ArrowLeft"], description: "Nudge selected words / instance earlier" },
       { keys: ["ArrowRight"], description: "Nudge selected words / instance later" },
       { keys: ["Mod", "Shift", "D"], description: "Detach current instance", shortcutId: "timeline.detachInstance" },
