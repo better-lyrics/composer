@@ -1,4 +1,5 @@
 import { useSettingsStore } from "@/stores/settings";
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { SelectSetting, SettingsGroup, SliderSetting, ToggleSetting } from "@/ui/settings/setting-controls";
 import { describe, expect, it } from "vitest";
@@ -9,6 +10,27 @@ import { userEvent } from "vitest/browser";
 function setRangeValue(input: HTMLInputElement, value: number): void {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, String(value));
   input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+async function sliderControlsWidth(rowWidth: number): Promise<number> {
+  const screen = await render(
+    <div style={{ width: rowWidth }}>
+      <SliderSetting
+        id="defaultZoom"
+        min={20}
+        max={500}
+        step={20}
+        format={(v) => `${v} px/s`}
+        action={{ label: "Use current", onClick: () => {} }}
+      />
+    </div>,
+  );
+  const utilities = await installUtilitiesUsedIn(screen.container);
+  const controls = screen.getByRole("button", { name: "Use current" }).element().parentElement as HTMLElement;
+  const width = controls.getBoundingClientRect().width;
+  utilities.remove();
+  await screen.unmount();
+  return width;
 }
 
 const GRANULARITY_OPTIONS = [
@@ -65,6 +87,13 @@ describe("SliderSetting", () => {
     );
     await screen.getByRole("button", { name: "Use current" }).click();
     await expect.poll(() => invoked).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: keeps the value and its action at full width when the row is narrow", async () => {
+      const wide = await sliderControlsWidth(800);
+      expect(await sliderControlsWidth(220)).toBe(wide);
+    });
   });
 });
 

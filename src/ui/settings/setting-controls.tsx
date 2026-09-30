@@ -38,7 +38,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
 
   return (
     <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-center justify-between gap-8">
+      <SettingRowLayout className="py-0">
         <SettingText id={id} />
         <div className="flex items-center gap-2">
           {action && (
@@ -54,7 +54,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
             {format ? format(value) : value}
           </span>
         </div>
-      </div>
+      </SettingRowLayout>
       <input
         type="range"
         aria-label={settingEntry(id).label}
