@@ -97,6 +97,13 @@ const SETTINGS_CATALOG = {
     description: "Include detected vocal onset anchors as snap targets in the timeline.",
     settingKey: "vocalOnsetSnap",
   },
+  shareTimingInNewGroups: {
+    section: "timeline",
+    label: "Share timing in new groups",
+    description: "New groups keep the same timing in every instance, anchored at each instance's start.",
+    keywords: ["group", "instance", "chorus", "linked", "repeat"],
+    settingKey: "shareTimingInNewGroups",
+  },
   timelineSnapThreshold: {
     section: "timeline",
     label: "Snap threshold",

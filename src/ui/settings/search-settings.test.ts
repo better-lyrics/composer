@@ -17,6 +17,10 @@ describe("searchSettings", () => {
     );
   });
 
+  it("finds the shared group timing setting by a keyword not in its copy", () => {
+    expect(search("chorus").settings).toContain("shareTimingInNewGroups");
+  });
+
   it("requires every term to match", () => {
     expect(search("snap playhead").settings).toEqual(["snapPlayheadToPoints"]);
   });

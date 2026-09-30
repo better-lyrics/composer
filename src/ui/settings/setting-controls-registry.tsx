@@ -86,6 +86,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   },
   timelineSnap: TOGGLE,
   vocalOnsetSnap: TOGGLE,
+  shareTimingInNewGroups: TOGGLE,
   timelineSnapThreshold: { kind: "slider", min: 4, max: 24, step: 1, format: (v) => `${v}px` },
   snapPlayheadToPoints: TOGGLE,
   followPlayhead: TOGGLE,
