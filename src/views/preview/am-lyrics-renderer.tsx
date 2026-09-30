@@ -112,7 +112,6 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
   const latestFocusRangeRef = useRef(focusRange);
-  latestFocusRangeRef.current = focusRange;
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
 
@@ -199,6 +198,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
   useEffect(() => {
     const el = elementRef.current;
     const range = focusBegin === undefined || focusEnd === undefined ? null : { begin: focusBegin, end: focusEnd };
+    latestFocusRangeRef.current = range;
     if (el) markLinesOutsideFocus(el, range);
   }, [focusBegin, focusEnd]);
 

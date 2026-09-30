@@ -88,7 +88,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const latestLyricsRef = useRef(lyrics);
   const latestSongwritersRef = useRef(songwriters);
   const latestFocusRangeRef = useRef(focusRange);
-  latestFocusRangeRef.current = focusRange;
   const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
@@ -206,6 +205,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   useEffect(() => {
     const element = elementRef.current;
     const range = focusBegin === undefined || focusEnd === undefined ? null : { begin: focusBegin, end: focusEnd };
+    latestFocusRangeRef.current = range;
     if (element) markLinesOutsideFocus(element, range);
   }, [focusBegin, focusEnd]);
 
