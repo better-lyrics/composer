@@ -6,6 +6,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { generateLineTtml } from "@/utils/ttml";
+import { hasAlternateText } from "@/utils/ttml-alternate-content";
 
 // -- Comparison ---------------------------------------------------------------
 
@@ -45,19 +46,22 @@ function sameAlternateText(
 // -- Field merges -------------------------------------------------------------
 
 function mergedTranslations(stored: LyricLine, edited: LyricLine): TranslationTracks | undefined {
-  if (!edited.translations) return undefined;
   const merged: TranslationTracks = {};
-  for (const [language, track] of Object.entries(edited.translations)) {
+  for (const [language, track] of Object.entries(stored.translations ?? {})) {
+    if (!hasAlternateText(track) && !edited.translations?.[language]) merged[language] = track;
+  }
+  for (const [language, track] of Object.entries(edited.translations ?? {})) {
     const kept = stored.translations?.[language];
     merged[language] = kept && sameAlternateText(kept, track) ? kept : track;
   }
-  return merged;
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 function mergedTransliteration(stored: LyricLine, edited: LyricLine): TransliterationTrack | undefined {
   const kept = stored.transliteration;
   const track = edited.transliteration;
-  return kept && track && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
+  if (!track) return kept && !hasAlternateText(kept) ? kept : undefined;
+  return kept && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
 }
 
 function hasSeededBackgroundWords(stored: LyricLine, edited: LyricLine): boolean {

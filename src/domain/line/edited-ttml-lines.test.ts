@@ -108,6 +108,48 @@ describe("mergeEditedTtmlLines", () => {
     });
   });
 
+  describe("regressions: empty language tracks", () => {
+    const EMPTY_FRENCH = { language: "fr", text: "", origin: "manual" as const, sourceFingerprint: "fp-2" };
+    const EMPTY_ROMAJI = {
+      language: "ja-Latn",
+      text: "",
+      origin: "manual" as const,
+      sourceFingerprint: "fp-3",
+      segments: [],
+    };
+
+    it("regression: keeps an empty translation track the export leaves out", () => {
+      const stored = [
+        {
+          ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }),
+          translations: { es: SPANISH, fr: EMPTY_FRENCH },
+        },
+      ];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
+      expect(merged[0]?.translations).toEqual({ es: SPANISH, fr: EMPTY_FRENCH });
+    });
+
+    it("regression: keeps empty translation tracks on a line with no other translation", () => {
+      const stored = [
+        { ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), translations: { fr: EMPTY_FRENCH } },
+      ];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
+      expect(merged[0]?.translations).toEqual({ fr: EMPTY_FRENCH });
+    });
+
+    it("regression: keeps an empty transliteration track the export leaves out", () => {
+      const stored = [{ ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), transliteration: EMPTY_ROMAJI }];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(">Hello<", ">Hello there<"));
+      expect(merged[0]?.transliteration).toEqual(EMPTY_ROMAJI);
+    });
+
+    it("drops a translation the edit removed", () => {
+      const stored = [{ ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), translations: { es: SPANISH } }];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(/<iTunesMetadata[\s\S]*<\/iTunesMetadata>/, ""));
+      expect(merged[0]?.translations).toBeUndefined();
+    });
+  });
+
   describe("regressions: split characters", () => {
     it("regression: keeps an unedited line-synced line exactly as stored, split characters included", () => {
       const stored = [

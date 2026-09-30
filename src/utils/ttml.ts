@@ -12,7 +12,11 @@ import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import { formatTime } from "@/utils/format-time";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
 import { stripSplitCharacter } from "@/utils/split-character";
-import { renderTranslationContent, renderTransliterationContent } from "@/utils/ttml-alternate-content";
+import {
+  hasAlternateText,
+  renderTranslationContent,
+  renderTransliterationContent,
+} from "@/utils/ttml-alternate-content";
 import { emitWordSpan, escapeXml, escapeXmlAttribute } from "@/utils/ttml-markup";
 
 // -- Constants ----------------------------------------------------------------
@@ -82,14 +86,12 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   const translationLanguages = new Set<string>();
   for (const { line } of keyedLines) {
     for (const [language, track] of Object.entries(line.translations ?? {})) {
-      if (track.text.trim() || track.backgroundText?.trim()) {
+      if (hasAlternateText(track)) {
         translationLanguages.add(language);
       }
     }
   }
-  const transliterationLines = keyedLines.filter(
-    ({ line }) => line.transliteration?.text.trim() || line.transliteration?.backgroundText?.trim(),
-  );
+  const transliterationLines = keyedLines.filter(({ line }) => hasAlternateText(line.transliteration));
   if (translationLanguages.size > 0 || transliterationLines.length > 0) {
     parts.push(`${ind(3)}<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal">`);
     if (translationLanguages.size > 0) {
@@ -98,7 +100,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
         parts.push(`${ind(5)}<translation xml:lang="${escapeXml(language)}" type="subtitle">`);
         for (const { line, key } of keyedLines) {
           const track = line.translations?.[language];
-          if (track && (track.text.trim() || track.backgroundText?.trim())) {
+          if (track && hasAlternateText(track)) {
             parts.push(
               `${ind(6)}<text for="${key}">${renderTranslationContent(line, track.text, track.backgroundText)}</text>`,
             );

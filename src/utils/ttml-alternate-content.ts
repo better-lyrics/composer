@@ -9,6 +9,10 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
 
+function hasAlternateText(track: { text: string; backgroundText?: string } | undefined): boolean {
+  return !!track && (!!track.text.trim() || !!track.backgroundText?.trim());
+}
+
 function backgroundInsertionIndex(
   placement: BackgroundPlacement,
   chunkCount: number,
@@ -86,4 +90,4 @@ function renderTransliterationContent(rawLine: LyricLine): string {
   return mergeBackgroundMarkup(mainChunks, backgroundContent, insertionIndex);
 }
 
-export { renderTranslationContent, renderTransliterationContent };
+export { hasAlternateText, renderTranslationContent, renderTransliterationContent };
