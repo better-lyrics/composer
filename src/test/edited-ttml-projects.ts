@@ -96,7 +96,9 @@ function chorusSong(): EditedTtmlProject {
         ],
       }),
     ],
-    groups: [createGroup({ id: "g1", label: "Chorus", templateVersion: 2, sharesTiming: true, ownTimingInstances: [1] })],
+    groups: [
+      createGroup({ id: "g1", label: "Chorus", templateVersion: 2, sharesTiming: true, ownTimingInstances: [1] }),
+    ],
     agents: [
       { id: "v1", type: "person", name: "Ana" },
       { id: "v2", type: "group" },

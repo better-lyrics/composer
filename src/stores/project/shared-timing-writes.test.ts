@@ -51,7 +51,9 @@ afterEach(() => {
 describe("shared timing in history writes", () => {
   it("updateLinesWithHistory copies a timing edit to the placed sibling", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
-    useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
     expect(secondWordBegin("c1")).toBeCloseTo(40.7, 6);
   });
 
@@ -63,7 +65,9 @@ describe("shared timing in history writes", () => {
 
   it("makes the edit and its copies one undo step", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
-    useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
     useProjectStore.getState().undo();
     expect(secondWordBegin("c0")).toBeCloseTo(10.5, 6);
     expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
@@ -73,14 +77,18 @@ describe("shared timing in history writes", () => {
     seed(createGroup({ id: "g1", sharesTiming: true }));
     const notified: (readonly string[])[] = [];
     unsubscribe = subscribeSharedTimingCopied((groupIds) => notified.push(groupIds));
-    useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
+    useProjectStore
+      .getState()
+      .updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
     expect(notified).toEqual([["g1"]]);
   });
 
   describe("edge cases", () => {
     it("leaves the sibling of an old group where it was", () => {
       seed(createGroup({ id: "g1" }));
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
+      useProjectStore
+        .getState()
+        .updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
       expect(secondWordBegin("c1")).toBeCloseTo(40.5, 6);
     });
 
@@ -98,7 +106,9 @@ describe("shared timing in history writes", () => {
       seed(createGroup({ id: "g1" }));
       const notified: (readonly string[])[] = [];
       unsubscribe = subscribeSharedTimingCopied((groupIds) => notified.push(groupIds));
-      useProjectStore.getState().updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
+      useProjectStore
+        .getState()
+        .updateLinesWithHistory([{ id: "c0", updates: { words: nudgedSecondWord(0.2) } }], TIMING_WRITE);
       expect(notified).toEqual([]);
     });
   });

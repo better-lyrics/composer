@@ -81,7 +81,8 @@ function offsetWords(words: readonly WordTiming[] | undefined, offset: number): 
 
 function offsetTimingFields(source: LyricLine, offset: number): LineUpdate["updates"] {
   const backgroundWords = offsetWords(source.backgroundWords, offset);
-  if (source.words) return { words: offsetWords(source.words, offset), backgroundWords, begin: undefined, end: undefined };
+  if (source.words)
+    return { words: offsetWords(source.words, offset), backgroundWords, begin: undefined, end: undefined };
   if (source.begin !== undefined) {
     return { begin: source.begin + offset, end: source.end + offset, backgroundWords, words: undefined };
   }

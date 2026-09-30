@@ -156,4 +156,9 @@ export {
   canUndoFrom,
   commitHistory,
   commitPendingEdit,
-  commitSharedTimingHistory, commitSnapPointEdit, MAX_HISTORY_SIZE, redoState, undoState };
+  commitSharedTimingHistory,
+  commitSnapPointEdit,
+  MAX_HISTORY_SIZE,
+  redoState,
+  undoState,
+};
