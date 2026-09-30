@@ -1,5 +1,7 @@
+import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,6 +23,10 @@ function isEmptyMetadataValue(value: ProjectMetadata[MetadataKey]): boolean {
   if (Array.isArray(value)) return value.length === 0;
   if (typeof value === "object") return Object.keys(value).length === 0;
   return false;
+}
+
+function comparableValue(key: MetadataKey, value: ProjectMetadata[MetadataKey]): unknown {
+  return key === "language" && typeof value === "string" ? (normalizeLanguageTag(value) ?? value) : value;
 }
 
 function withValue<K extends MetadataKey>(
@@ -57,7 +63,8 @@ function importedKeysAfterWrite(importedKeys: readonly MetadataKey[], patch: Par
 function changedMetadata(current: ProjectMetadata, incoming: Partial<ProjectMetadata>): Partial<ProjectMetadata> {
   return Object.fromEntries(
     Object.entries(filledMetadata(incoming)).filter(
-      ([key, value]) => isMetadataKey(key) && JSON.stringify(current[key]) !== JSON.stringify(value),
+      ([key, value]) =>
+        isMetadataKey(key) && !isStructurallyEqual(comparableValue(key, current[key]), comparableValue(key, value)),
     ),
   );
 }

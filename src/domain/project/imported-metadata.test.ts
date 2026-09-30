@@ -131,4 +131,14 @@ describe("changedMetadata", () => {
       expect(changedMetadata(current, { artists: ["A"] })).toEqual({});
     });
   });
+
+  describe("regressions", () => {
+    it("regression: sees a language tag in its canonical casing as unchanged", () => {
+      expect(changedMetadata({ ...current, language: "en-us" }, { language: "en-US" })).toEqual({});
+    });
+
+    it("regression: still sees a different language as changed", () => {
+      expect(changedMetadata({ ...current, language: "en-us" }, { language: "fr" })).toEqual({ language: "fr" });
+    });
+  });
 });
