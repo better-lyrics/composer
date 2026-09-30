@@ -12,6 +12,7 @@ interface EditCase {
   touched: readonly string[];
   deleted?: readonly string[];
   reordered?: boolean;
+  lossless?: boolean;
   expectTaken: (lines: readonly LyricLine[]) => void;
 }
 
@@ -52,6 +53,19 @@ function lineById(lines: readonly LyricLine[], id: string): LyricLine {
 
 function timedAt(project: EditedTtmlProject, index: number): LyricLine {
   return required(project.lines.filter(isLineTimed)[index], `timed line ${index}`);
+}
+
+function withoutElement(ttml: string, element: string): string {
+  const at = ttml.indexOf(element);
+  if (at < 0) return ttml;
+  const lineStart = ttml.lastIndexOf("\n", at);
+  return ttml.slice(0, lineStart) + ttml.slice(at + element.length);
+}
+
+function removeParagraph(ttml: string, project: EditedTtmlProject, line: LyricLine): string {
+  const key = keyOf(project, line);
+  const references = ttml.match(new RegExp(`<text for="${key}">[\\s\\S]*?</text>`, "g")) ?? [];
+  return [paragraphOf(ttml, project, line), ...references].reduce(withoutElement, ttml);
 }
 
 function swapParagraphs(ttml: string, project: EditedTtmlProject, first: LyricLine, second: LyricLine): string {
@@ -99,5 +113,15 @@ function editLineText(
 
 // -- Exports ------------------------------------------------------------------
 
-export { editLineText, editParagraph, keyOf, lineById, paragraphOf, required, swapParagraphs, timedAt };
+export {
+  editLineText,
+  editParagraph,
+  keyOf,
+  lineById,
+  paragraphOf,
+  removeParagraph,
+  required,
+  swapParagraphs,
+  timedAt,
+};
 export type { EditOperation };

@@ -1,200 +1,17 @@
-import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
-import { isLineTimed } from "@/domain/line/sync-progress";
 import { useProjectStore } from "@/stores/project";
-import {
-  type EditOperation,
-  editLineText,
-  editParagraph,
-  keyOf,
-  lineById,
-  paragraphOf,
-  required,
-  swapParagraphs,
-  timedAt,
-} from "@/test/edited-ttml-edits";
+import { lineById } from "@/test/edited-ttml-edits";
+import { LINE_IDENTITY_OPERATIONS } from "@/test/edited-ttml-identity-operations";
+import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
 import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
-import { formatTime } from "@/utils/format-time";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { describe, expect, it } from "vitest";
-
-// -- Operations ---------------------------------------------------------------
-
-const ADDED_LINE =
-  '<p begin="0:30.000" end="0:31.000" ttm:agent="v1">Brand new line<span ttm:role="x-bg"><span begin="0:30.000" end="0:31.000">new ooh</span></span></p>';
-
-const OPERATIONS: readonly EditOperation[] = [
-  {
-    name: "change a word's text",
-    edit: (project, ttml) => {
-      const line = required(project.lines.find(isWordSynced), "word-synced line");
-      return { ...editLineText(ttml, project, line), touched: [line.id] };
-    },
-  },
-  {
-    name: "change a line's timing",
-    edit: (project, ttml) => {
-      const line = required(project.lines.find(isLineSynced), "line-synced line");
-      const end = required(line.end, "line end");
-      const change = (p: string) => {
-        const openTag = p.slice(0, p.indexOf(">") + 1);
-        return p.replace(openTag, openTag.replace(`end="${formatTime(end)}"`, `end="${formatTime(end + 0.25)}"`));
-      };
-      return {
-        edited: editParagraph(ttml, project, line, change),
-        touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).end).toBeCloseTo(end + 0.25, 3),
-      };
-    },
-  },
-  {
-    name: "add a line with a background",
-    edit: (_project, ttml) => ({
-      edited: ttml.replace("</div>", `${ADDED_LINE}</div>`),
-      touched: [],
-      expectTaken: (lines) => {
-        const added = required(
-          lines.find((line) => line.text === "Brand new line"),
-          "added line",
-        );
-        expect(added).toMatchObject({ begin: 30, end: 31, backgroundText: "new ooh" });
-        expect(added.backgroundWords).toBeUndefined();
-      },
-    }),
-  },
-  {
-    name: "delete a line",
-    edit: (project, ttml) => {
-      const line = timedAt(project, 1);
-      return {
-        edited: ttml.replace(paragraphOf(ttml, project, line), ""),
-        touched: [],
-        deleted: [line.id],
-        expectTaken: (lines) => expect(lines.some((candidate) => candidate.id === line.id)).toBe(false),
-      };
-    },
-  },
-  {
-    name: "reorder two lines",
-    edit: (project, ttml) => {
-      const first = timedAt(project, 1);
-      const second = timedAt(project, 2);
-      return {
-        edited: swapParagraphs(ttml, project, first, second),
-        touched: [],
-        reordered: true,
-        expectTaken: (lines) => {
-          const order = lines.filter(isLineTimed).map((line) => line.id);
-          expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
-        },
-      };
-    },
-  },
-  {
-    name: "edit a translation",
-    edit: (project, ttml) => {
-      const line = required(
-        project.lines.find((candidate) => Object.values(candidate.translations ?? {}).some((track) => track.text)),
-        "translated line",
-      );
-      const [language, track] = required(
-        Object.entries(line.translations ?? {}).find(([, candidate]) => candidate.text),
-        "translation",
-      );
-      const text = `<text for="${keyOf(project, line)}">${track.text}`;
-      if (!ttml.includes(text)) throw new Error("translation not exported");
-      return {
-        edited: ttml.replace(text, `${text} again`),
-        touched: [line.id],
-        expectTaken: (lines) =>
-          expect(lineById(lines, line.id).translations?.[language]?.text).toBe(`${track.text} again`),
-      };
-    },
-  },
-  {
-    name: "edit a background",
-    edit: (project, ttml) => {
-      const line = required(
-        project.lines.find((candidate) => candidate.backgroundText),
-        "background",
-      );
-      const last = line.backgroundWords?.at(-1)?.text.trimEnd() ?? line.backgroundText;
-      return {
-        edited: editParagraph(ttml, project, line, (p) =>
-          p.replace(`>${last}</span></span>`, `>${last}h</span></span>`),
-        ),
-        touched: [line.id],
-        expectTaken: (lines) => expect(lineById(lines, line.id).backgroundText).toBe(`${line.backgroundText}h`),
-      };
-    },
-  },
-  {
-    name: "edit the title",
-    edit: (project, ttml) => ({
-      edited: ttml.replace(`<ttm:title>${project.metadata.title}<`, `<ttm:title>${project.metadata.title} (Live)<`),
-      touched: [],
-      expectTaken: () => expect(useProjectStore.getState().metadata.title).toBe(`${project.metadata.title} (Live)`),
-    }),
-  },
-];
-
-const COMBINED_OPERATIONS: readonly EditOperation[] = [
-  {
-    name: "delete a line and edit its neighbour",
-    edit: (project, ttml) => {
-      const deleted = timedAt(project, 1);
-      const line = timedAt(project, 2);
-      const textEdit = editLineText(ttml, project, line);
-      return {
-        edited: textEdit.edited.replace(paragraphOf(ttml, project, deleted), ""),
-        touched: [line.id],
-        deleted: [deleted.id],
-        expectTaken: textEdit.expectTaken,
-      };
-    },
-  },
-  {
-    name: "add a line before an edited line",
-    edit: (project, ttml) => {
-      const line = timedAt(project, 1);
-      const textEdit = editLineText(ttml, project, line);
-      const edited = paragraphOf(textEdit.edited, project, line);
-      return {
-        edited: textEdit.edited.replace(edited, `${ADDED_LINE}${edited}`),
-        touched: [line.id],
-        expectTaken: (lines) => {
-          textEdit.expectTaken(lines);
-          const ids = lines.map((candidate) => candidate.id);
-          expect(ids.indexOf(line.id)).toBe(lines.findIndex((candidate) => candidate.text === "Brand new line") + 1);
-        },
-      };
-    },
-  },
-  {
-    name: "reorder two lines and edit one",
-    edit: (project, ttml) => {
-      const first = timedAt(project, 1);
-      const second = timedAt(project, 2);
-      const textEdit = editLineText(ttml, project, first);
-      return {
-        edited: swapParagraphs(textEdit.edited, project, first, second),
-        touched: [first.id],
-        reordered: true,
-        expectTaken: (lines) => {
-          textEdit.expectTaken(lines);
-          const order = lines.filter(isLineTimed).map((line) => line.id);
-          expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
-        },
-      };
-    },
-  },
-];
 
 // -- Tests --------------------------------------------------------------------
 
 describe("applyEditedTtml · invariants", () => {
   for (const fixture of EDITED_TTML_PROJECTS) {
-    for (const operation of [...OPERATIONS, ...COMBINED_OPERATIONS]) {
+    for (const operation of [...OPERATIONS, ...COMBINED_OPERATIONS, ...LINE_IDENTITY_OPERATIONS]) {
       it(`${fixture().name}: ${operation.name} changes only what the edit changed`, () => {
         const project = fixture();
         useProjectStore.setState({
@@ -205,7 +22,9 @@ describe("applyEditedTtml · invariants", () => {
         });
         const editCase = operation.edit(project, generateProjectTtml(useProjectStore.getState(), 0));
 
-        expect(applyEditedTtml(editCase.edited, 0)).toMatchObject({ status: "applied" });
+        const result = applyEditedTtml(editCase.edited, 0);
+        expect(result).toMatchObject({ status: "applied" });
+        if (editCase.lossless) expect(result).toMatchObject({ keptInExport: false });
 
         const state = useProjectStore.getState();
         const skipped = new Set([...editCase.touched, ...(editCase.deleted ?? [])]);
