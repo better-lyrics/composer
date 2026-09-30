@@ -260,6 +260,8 @@ function timeRangeResolver(
 // -- Exports ------------------------------------------------------------------
 
 export {
+  instanceStart,
+  isInstanceFullyTimed,
   isSharedLine,
   placeSharedInstance,
   sharedInstancesInLineOrder,
