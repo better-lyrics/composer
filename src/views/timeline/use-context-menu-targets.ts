@@ -1,9 +1,11 @@
+import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import {
   createGroupFromSelection,
   fillSelectionGaps,
@@ -72,7 +74,12 @@ function useContextMenuTargets() {
     if (selectionTouchesAnyGroup(rawLines, selectedLineIds)) return null;
     const filled = fillSelectionGaps(rawLines, selectedLineIds);
     if (!filled) return null;
-    const result = createGroupFromSelection(rawLines, filled.expanded, useProjectStore.getState().groups);
+    const result = createGroupFromSelection(
+      rawLines,
+      filled.expanded,
+      useProjectStore.getState().groups,
+      useSettingsStore.getState().shareTimingInNewGroups,
+    );
     if (!result) return null;
     return {
       selectedLineIds: filled.expanded,
@@ -92,7 +99,11 @@ function useContextMenuTargets() {
     const options = useProjectStore.getState().groups.flatMap((group) => {
       const firstInstanceIdx = instanceIndicesOf(rawLines, group.id)[0];
       if (firstInstanceIdx === undefined) return [];
-      const template = instanceToTemplate(rawLines, group.id, firstInstanceIdx);
+      const template = instanceToTemplate(
+        rawLines,
+        group.id,
+        templateSourceInstance(rawLines, group, firstInstanceIdx),
+      );
       return template.length === selectedLineIds.size ? [{ group, template }] : [];
     });
     if (options.length === 0) return null;

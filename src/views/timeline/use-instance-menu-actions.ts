@@ -1,3 +1,4 @@
+import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import type { WordSelection } from "@/domain/selection/model";
@@ -51,7 +52,8 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       playheadTime,
     });
     if (placement.kind === "fill") {
-      useProjectStore.getState().setLinesWithHistory(placement.updatedLines);
+      const { groups, setLinesWithHistory } = useProjectStore.getState();
+      setLinesWithHistory(placement.updatedLines, withNewInstance(groups, groupId, placement.instanceIdx));
       toast.success("Linked instance placed in empty rows");
     } else if (placement.kind === "insert") {
       useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);

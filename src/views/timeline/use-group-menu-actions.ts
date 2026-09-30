@@ -1,3 +1,4 @@
+import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -79,11 +80,14 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         selectedLineIds,
         playheadTime,
       });
-      if (!result.ok || !result.updatedLines) {
+      if (!result.ok || !result.updatedLines || result.instanceIdx === undefined) {
         toast.error(result.reason ? CONFORM_FAILURE_MESSAGE[result.reason] : "Could not conform those lines");
         return;
       }
-      useProjectStore.getState().setLinesWithHistory(result.updatedLines);
+      projectState.setLinesWithHistory(
+        result.updatedLines,
+        withNewInstance(projectState.groups, groupId, result.instanceIdx),
+      );
       showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
     [conformableSelection, confirm, clearContextMenu],

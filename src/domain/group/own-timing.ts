@@ -17,6 +17,10 @@ function withOwnTiming(group: LinkGroup, instanceIdx: number, own: boolean): Lin
   });
 }
 
+function withNewInstance(groups: readonly LinkGroup[], groupId: string, instanceIdx: number): LinkGroup[] {
+  return groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, false) : group));
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { withOwnTiming, withSharing };
+export { withNewInstance, withOwnTiming, withSharing };

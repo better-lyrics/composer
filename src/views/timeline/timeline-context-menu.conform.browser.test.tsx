@@ -218,3 +218,68 @@ describe("TimelineContextMenu conform to group", () => {
     expect(useProjectStore.getState().lines).toBe(before);
   });
 });
+
+describe("TimelineContextMenu conform to a group that shares timing", () => {
+  beforeEach(() => {
+    seedProject();
+    const [c1, c2, l3, l4] = useProjectStore.getState().lines;
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [0, 1] })],
+      lines: [
+        c1,
+        c2,
+        l3,
+        l4,
+        createLine({
+          id: "s1",
+          text: DARK,
+          words: [createWord({ text: DARK, begin: 40, end: 42 })],
+          groupId: "g1",
+          instanceIdx: 2,
+          templateLineIdx: 0,
+        }),
+        createLine({
+          id: "s2",
+          text: MORNING,
+          words: [createWord({ text: MORNING, begin: 43, end: 45 })],
+          groupId: "g1",
+          instanceIdx: 2,
+          templateLineIdx: 1,
+        }),
+      ],
+    });
+    useProjectStore.getState().clearHistory();
+  });
+
+  async function conformToChorus() {
+    openGutterMenu(["l3", "l4"]);
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: 'Conform to "Chorus"' }).click();
+    await screen.getByRole("button", { name: "Conform", exact: true }).click();
+    await expect.poll(() => useProjectStore.getState().lines[2].groupId).toBe("g1");
+  }
+
+  it("copies the timing of a shared instance, not an own-timing one", async () => {
+    await conformToChorus();
+
+    expect(useProjectStore.getState().lines[3].words?.[0].begin).toBe(23);
+  });
+
+  describe("regressions", () => {
+    it("regression: the new instance does not inherit a removed instance's own timing", async () => {
+      await conformToChorus();
+
+      expect(useProjectStore.getState().lines[2].instanceIdx).toBe(1);
+      expect(useProjectStore.getState().groups[0].ownTimingInstances).toEqual([0]);
+    });
+
+    it("regression: undo restores the lines and the group in one step", async () => {
+      await conformToChorus();
+
+      useProjectStore.getState().undo();
+
+      expect(useProjectStore.getState().lines[2].groupId).toBeUndefined();
+      expect(useProjectStore.getState().groups[0].ownTimingInstances).toEqual([0, 1]);
+    });
+  });
+});

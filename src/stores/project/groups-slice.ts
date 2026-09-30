@@ -1,6 +1,6 @@
 import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
-import { withOwnTiming, withSharing } from "@/domain/group/own-timing";
+import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
 import { instanceStart, placeSharedInstance } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
@@ -139,7 +139,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
 
       return commitHistory(state, {
         lines: insertedLines,
-        groups: state.groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, false) : group)),
+        groups: withNewInstance(state.groups, groupId, instanceIdx),
       });
     }),
 

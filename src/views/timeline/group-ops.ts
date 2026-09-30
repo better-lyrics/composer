@@ -1,3 +1,4 @@
+import { initialSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, type LinkGroup, wordsToTemplate } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
@@ -73,6 +74,7 @@ function createGroupFromSelection(
   lines: LyricLine[],
   selectedLineIds: ReadonlySet<string>,
   existingGroups: LinkGroup[],
+  shareTimingInNewGroups: boolean,
   options: { label?: string } = {},
 ): CreateGroupResult | null {
   if (!lineIdsAreContiguous(lines, selectedLineIds)) return null;
@@ -82,8 +84,6 @@ function createGroupFromSelection(
   const usedColors = existingGroups.map((g) => g.color);
   const color = pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
   const label = options.label ?? `Group ${existingGroups.length + 1}`;
-
-  const group: LinkGroup = { id: groupId, label, color, templateVersion: 1 };
 
   let templateLineIdx = 0;
   const updatedLines = lines.map((line) => {
@@ -97,6 +97,14 @@ function createGroupFromSelection(
     templateLineIdx++;
     return updated;
   });
+
+  const group: LinkGroup = {
+    id: groupId,
+    label,
+    color,
+    templateVersion: 1,
+    ...initialSharing(updatedLines, groupId, shareTimingInNewGroups),
+  };
 
   return { group, updatedLines };
 }

@@ -1,4 +1,6 @@
+import { withNewInstance } from "@/domain/group/own-timing";
 import type { LineTemplate } from "@/domain/group/template";
+import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -106,7 +108,8 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
           return true;
         }
         if (decision.kind === "fill") {
-          useProjectStore.getState().setLinesWithHistory(decision.updatedLines);
+          const { groups, setLinesWithHistory } = useProjectStore.getState();
+          setLinesWithHistory(decision.updatedLines, withNewInstance(groups, groupId, decision.instanceIdx));
           useTimelineStore.getState().setPasteMode({ status: "idle" });
           useTimelineStore.getState().clearSelection();
           toast.success(successMessage);
@@ -150,7 +153,8 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
             cancelLabel: "Paste as words",
           });
           if (ok) {
-            const template = instanceToTemplate(lines, match.groupId, match.instanceIdx);
+            const sourceIdx = templateSourceInstance(lines, group, match.instanceIdx);
+            const template = instanceToTemplate(lines, match.groupId, sourceIdx);
             await placeInstance(match.groupId, template, `Linked as another ${groupLabel}`);
             return;
           }

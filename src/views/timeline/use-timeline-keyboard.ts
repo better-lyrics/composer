@@ -1,3 +1,4 @@
+import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
@@ -463,7 +464,12 @@ function useTimelineKeyboard(
             toast.error("Some lines in this range are already part of a group");
             break;
           }
-          const result = createGroupFromSelection(projectState.lines, filled.expanded, projectState.groups);
+          const result = createGroupFromSelection(
+            projectState.lines,
+            filled.expanded,
+            projectState.groups,
+            useSettingsStore.getState().shareTimingInNewGroups,
+          );
           if (!result) {
             toast.error("Could not create group from this selection");
             break;
@@ -510,7 +516,10 @@ function useTimelineKeyboard(
             playheadTime,
           });
           if (placement.kind === "fill") {
-            projectState.setLinesWithHistory(placement.updatedLines);
+            projectState.setLinesWithHistory(
+              placement.updatedLines,
+              withNewInstance(projectState.groups, groupId, placement.instanceIdx),
+            );
             toast.success("Linked instance placed in empty rows");
           } else if (placement.kind === "insert") {
             projectState.addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);
