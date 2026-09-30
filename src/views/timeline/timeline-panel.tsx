@@ -1,3 +1,4 @@
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { isWordSelected } from "@/domain/selection/identity";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { useAudioStore } from "@/stores/audio";
@@ -322,7 +323,7 @@ const TimelinePanel: React.FC = () => {
             <IconMusic className="size-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
             <p className="text-composer-text-secondary">Drop audio file here</p>
             <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
-            <p className="mt-4 text-xs text-composer-text-muted">Supports MP3, WAV, M4A, OGG, FLAC</p>
+            <p className="mt-4 text-xs text-composer-text-muted">Supports {AUDIO_FORMATS_PROSE}</p>
           </FileDropZone>
         </div>
       </div>

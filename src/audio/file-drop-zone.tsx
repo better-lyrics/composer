@@ -1,4 +1,5 @@
-import { PROJECT_FILE_ACCEPT, isProjectFileName } from "@/lib/project-file-read";
+import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
+import { PROJECT_FILE_ACCEPT, PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
 import { cn } from "@/utils/cn";
 import { useCallback, useId, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -15,25 +16,7 @@ interface FileDropZoneProps {
 
 // -- Constants ----------------------------------------------------------------
 
-const ACCEPTED_AUDIO_TYPES = [
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/wave",
-  "audio/x-wav",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
-  "audio/ogg",
-  "audio/flac",
-];
-
-const ACCEPTED_AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "ogg", "flac"];
-
-const ACCEPTED_AUDIO_EXTENSION_REGEX = new RegExp(String.raw`\.(${ACCEPTED_AUDIO_EXTENSIONS.join("|")})$`, "i");
-
-const UNSUPPORTED_AUDIO_FILE_MESSAGE = `Unsupported file type. Use ${ACCEPTED_AUDIO_EXTENSIONS.map((ext) => `.${ext}`).join(" ")}`;
-const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (.json)`;
+const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 
 // -- Component ----------------------------------------------------------------
 
@@ -48,7 +31,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProje
         onProjectFileDrop(file);
         return;
       }
-      if (ACCEPTED_AUDIO_TYPES.includes(file.type) || ACCEPTED_AUDIO_EXTENSION_REGEX.test(file.name)) {
+      if (isSupportedAudioFile(file)) {
         onFileDrop(file);
         return;
       }

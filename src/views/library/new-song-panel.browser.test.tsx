@@ -129,6 +129,7 @@ describe("NewSongPanel", () => {
   it("says the drop zone takes project files too", async () => {
     const screen = await renderPanel();
     await expect.element(screen.getByText("Drop an audio or project file, or choose one")).toBeInTheDocument();
+    await expect.element(screen.getByText("MP3, WAV, M4A, OGG, FLAC", { exact: true })).toBeInTheDocument();
   });
 
   describe("edge cases", () => {

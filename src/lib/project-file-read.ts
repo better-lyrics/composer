@@ -12,14 +12,18 @@ type ProjectFileContents =
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[ProjectFileRead]";
-const PROJECT_FILE_ACCEPT = ".json,.ttml-project.json";
+const PROJECT_FILE_EXTENSIONS: readonly string[] = [".json", ".ttml-project.json"];
+const PROJECT_FILE_ACCEPT = PROJECT_FILE_EXTENSIONS.join(",");
+const PROJECT_FILE_EXTENSIONS_LABEL = PROJECT_FILE_EXTENSIONS.filter(
+  (extension) => !PROJECT_FILE_EXTENSIONS.some((other) => other !== extension && extension.endsWith(other)),
+).join(" ");
 const SUPPORTED_VERSIONS: readonly number[] = Array.from({ length: SAVED_PROJECT_VERSION }, (_, index) => index + 1);
 
 // -- Parsing ------------------------------------------------------------------
 
 function isProjectFileName(name: string): boolean {
   const lowered = name.toLowerCase();
-  return PROJECT_FILE_ACCEPT.split(",").some((extension) => lowered.endsWith(extension));
+  return PROJECT_FILE_EXTENSIONS.some((extension) => lowered.endsWith(extension));
 }
 
 function isProjectFilePayload(value: unknown): value is SavedProject & { projectId?: unknown } {
@@ -78,5 +82,5 @@ function savedProjectFromFile(file: ProjectFile, savedAt: number): SavedProject 
 
 // -- Exports ------------------------------------------------------------------
 
-export { PROJECT_FILE_ACCEPT, isProjectFileName, parseProjectFileContents, readProjectFile, savedProjectFromFile };
+export { PROJECT_FILE_ACCEPT, PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName, parseProjectFileContents, readProjectFile, savedProjectFromFile };
 export type { ProjectFileContents };

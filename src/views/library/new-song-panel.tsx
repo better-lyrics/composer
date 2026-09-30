@@ -1,3 +1,4 @@
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { useStartNewSong } from "@/hooks/useStartNewSong";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
@@ -133,7 +134,7 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
         </span>
         <span className="flex flex-col text-left">
           <strong className="text-sm font-medium">Drop an audio or project file, or choose one</strong>
-          <small className="text-xs text-composer-text-muted">MP3, FLAC, WAV, M4A, OGG</small>
+          <small className="text-xs text-composer-text-muted">{AUDIO_FORMATS_PROSE}</small>
         </span>
       </FileDropZone>
       <NewSongLink onCreate={startWithVideo} />
