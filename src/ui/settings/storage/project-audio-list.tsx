@@ -3,11 +3,10 @@ import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { type AudioFilter, hasStoredYouTubeAudio, storedAudioProjects } from "@/domain/storage/stored-audio";
 import { clearVocalStems, clearYouTubeAudio, removeAudioFromProject } from "@/lib/storage-actions";
 import { useConfirm } from "@/stores/confirm-store";
-import { useSettingsStore } from "@/stores/settings";
-import { settingDescription, settingEntry } from "@/stores/settings-catalog";
 import { Button } from "@/ui/button";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
+import { SettingText } from "@/ui/settings/setting-text";
 import { ProjectAudioRow } from "@/ui/settings/storage/project-audio-row";
 import { AUDIO_FILTER_OPTIONS } from "@/ui/settings/storage/storage-options";
 import { formatProjectCount } from "@/utils/project-count";
@@ -67,8 +66,6 @@ const ProjectAudioList: React.FC<ProjectAudioListProps> = ({
 }) => {
   const [filter, setFilter] = useState<AudioFilter>("all");
   const confirm = useConfirm();
-  const { label } = settingEntry("projectAudioList");
-  const description = useSettingsStore((state) => settingDescription("projectAudioList", state));
   const showYouTube = hasStoredYouTubeAudio(entries);
   const [wasYouTubeStored, setWasYouTubeStored] = useState(showYouTube);
   if (showYouTube !== wasYouTubeStored) {
@@ -99,10 +96,7 @@ const ProjectAudioList: React.FC<ProjectAudioListProps> = ({
   return (
     <div className="flex flex-col gap-3">
       <SettingRowLayout className="py-0">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <span className="text-sm font-medium text-composer-text">{label}</span>
-          <span className="text-xs text-composer-text-muted text-pretty">{description}</span>
-        </div>
+        <SettingText id="projectAudioList" />
         {showYouTube && (
           <SegmentedControl
             aria-label="Filter audio"

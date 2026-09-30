@@ -6,6 +6,7 @@ import { indexEntry } from "@/test/index-entries";
 import { seedStoredProject } from "@/test/projects";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
+import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
 import { ProjectAudioList } from "@/ui/settings/storage/project-audio-list";
 import { Toaster, toast } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -112,6 +113,15 @@ describe("ProjectAudioList", () => {
   });
 
   describe("regressions", () => {
+    it("regression: highlights a settings search in the row label and description", async () => {
+      const screen = await render(
+        <SettingsSearchQueryContext value="audio">{listElement()}</SettingsSearchQueryContext>,
+      );
+      await expect.element(screen.getByText("Audio by project")).toBeInTheDocument();
+      const marks = [...screen.container.querySelectorAll("mark")].map((mark) => mark.textContent);
+      expect(marks).toEqual(["Audio", "audio"]);
+    });
+
     it("resets the filter to All once YouTube audio disappears, so it does not jump back when it reappears", async () => {
       const screen = await renderList();
       await screen.getByRole("button", { name: "YouTube", exact: true }).click();
