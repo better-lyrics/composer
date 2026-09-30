@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { findRepeatingStandaloneSections, type RepeatingSection } from "@/views/timeline/repeating-sections";
 import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { offerToShareTiming } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
@@ -23,13 +24,15 @@ const GroupingSuggestionsBanner: React.FC = () => {
     for (const s of visible) dismissSuggestion(s.fingerprint);
   };
 
-  const acceptOne = (s: RepeatingSection) => {
-    groupRepeatingSections(s.starts, s.length);
+  const groupSections = (sections: readonly RepeatingSection[]) => {
+    const existingIds = new Set(useProjectStore.getState().groups.map((group) => group.id));
+    for (const s of sections) groupRepeatingSections(s.starts, s.length);
+    offerToShareTiming(useProjectStore.getState().groups.filter((group) => !existingIds.has(group.id)));
   };
 
-  const acceptAll = (visible: RepeatingSection[]) => {
-    for (const s of visible) groupRepeatingSections(s.starts, s.length);
-  };
+  const acceptOne = (s: RepeatingSection) => groupSections([s]);
+
+  const acceptAll = (visible: RepeatingSection[]) => groupSections(visible);
 
   return (
     // react-doctor-disable-next-line react-doctor/no-render-prop-children

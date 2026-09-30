@@ -190,6 +190,22 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       }),
     ),
 
+  shareAllInstances: (groupId) =>
+    set((state) => {
+      const group = state.groups.find((candidate) => candidate.id === groupId);
+      if (!group) return state;
+      const groups = state.groups.map((candidate) =>
+        candidate.id === groupId ? withSharing(candidate, { sharesTiming: true }) : candidate,
+      );
+      let lines = state.lines;
+      for (const instanceIdx of group.ownTimingInstances ?? []) {
+        const start = instanceStart(lines, groupId, instanceIdx);
+        if (start === null) continue;
+        lines = applyLineUpdates(lines, placeSharedInstance(lines, groups, groupId, instanceIdx, start));
+      }
+      return commitHistory(state, { groups, lines });
+    }),
+
   placeInstance: (groupId, instanceIdx, start) =>
     set((state) => {
       const placed = placeSharedInstance(state.lines, state.groups, groupId, instanceIdx, start);

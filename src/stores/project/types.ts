@@ -198,6 +198,7 @@ interface GroupActions {
   shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number) => void;
   setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => void;
   shareGroupTiming: (groupId: string) => void;
+  shareAllInstances: (groupId: string) => void;
   placeInstance: (groupId: string, instanceIdx: number, start: number) => void;
 }
 

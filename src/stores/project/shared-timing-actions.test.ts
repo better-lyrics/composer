@@ -150,3 +150,62 @@ describe("addInstance", () => {
     expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
   });
 });
+
+describe("shareAllInstances", () => {
+  it("shares every instance and gives each one the shared timing at its start", () => {
+    seed(
+      [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1, 2] })],
+      [chorus(0, 10), chorus(1, 40, 0.3), chorus(2, 70, -0.2)],
+    );
+    store().shareAllInstances("g1");
+    expect(groupById("g1")).toMatchObject({ sharesTiming: true });
+    expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
+    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    expect(lineById("c2")?.words?.[1]?.begin).toBeCloseTo(70.5, 6);
+  });
+
+  it("is one undo step", () => {
+    seed(
+      [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1, 2] })],
+      [chorus(0, 10), chorus(1, 40, 0.3), chorus(2, 70, -0.2)],
+    );
+    store().shareAllInstances("g1");
+    store().undo();
+    expect(groupById("g1")?.ownTimingInstances).toEqual([1, 2]);
+    expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.8, 6);
+    expect(lineById("c2")?.words?.[1]?.begin).toBeCloseTo(70.3, 6);
+  });
+
+  describe("edge cases", () => {
+    it("leaves an unplaced instance unplaced", () => {
+      seed(
+        [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1, 2] })],
+        [chorus(0, 10), chorus(1, 40, 0.3), chorus(2)],
+      );
+      store().shareAllInstances("g1");
+      expect(lineById("c2")?.words).toBeUndefined();
+      expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
+    });
+
+    it("changes nothing for an unknown group", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
+      const before = store();
+      store().shareAllInstances("missing");
+      expect(store().lines).toBe(before.lines);
+      expect(store().groups).toBe(before.groups);
+    });
+  });
+
+  describe("invariants", () => {
+    it("does not move instances that already shared timing", () => {
+      seed(
+        [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })],
+        [chorus(0, 10), chorus(1, 40, 0.3), chorus(2, 70)],
+      );
+      const sharedBefore = lineById("c2");
+      store().shareAllInstances("g1");
+      expect(lineById("c0")?.words).toEqual(chorus(0, 10).words);
+      expect(lineById("c2")).toBe(sharedBefore);
+    });
+  });
+});
