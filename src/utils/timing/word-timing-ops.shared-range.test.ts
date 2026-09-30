@@ -3,8 +3,8 @@ import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
-import { nudgeBgWordBegin } from "@/utils/timing/bg-word-timing";
-import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
+import { nudgeBgWordBegin, nudgeBgWordEnd } from "@/utils/timing/bg-word-timing";
+import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordBoundary, setWordEnd } from "@/utils/timing/word-timing";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -86,6 +86,59 @@ describe("word timing ops with a shared time range", () => {
       nudgeWordBegin(store().lines, 1, 0, -15, store().updateLineWithHistory);
 
       expect(lineById("c1")?.words?.[0].begin).toBe(10);
+    });
+  });
+});
+
+describe("word timing ops with a song end", () => {
+  const SONG_END = 12;
+
+  it("stops a last word end where the latest instance reaches the song end", () => {
+    seed(true);
+
+    nudgeWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, SONG_END);
+
+    expect(lineById("c0")?.words?.[1].end).toBe(5);
+    expect(lineById("c1")?.words?.[1].end).toBe(12);
+  });
+
+  it("stops a last word set past the range", () => {
+    seed(true);
+
+    setWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, SONG_END);
+
+    expect(lineById("c0")?.words?.[1].end).toBe(5);
+    expect(lineById("c1")?.words?.[1].end).toBe(12);
+  });
+
+  it("stops a last background word end where the latest instance reaches the song end", () => {
+    seed(true);
+
+    nudgeBgWordEnd(store().lines, 0, 0, 100, store().updateLineWithHistory, store().groups, SONG_END);
+
+    expect(lineById("c0")?.backgroundWords?.[0].end).toBe(5);
+    expect(lineById("c1")?.backgroundWords?.[0].end).toBe(12);
+  });
+
+  describe("edge cases", () => {
+    it.each([0, Number.NaN])("treats a song length of %s as no song end", (duration) => {
+      seed(true);
+
+      nudgeWordEnd(store().lines, 0, 1, 100, store().updateLineWithHistory, store().groups, duration);
+
+      expect(lineById("c0")?.words?.[1].end).toBe(104);
+      expect(lineById("c1")?.words?.[1].end).toBe(111);
+    });
+  });
+
+  describe("regressions", () => {
+    it("moves a last word of an old group without touching its sibling", () => {
+      seed(false);
+
+      nudgeWordEnd(store().lines, 0, 1, 3, store().updateLineWithHistory, store().groups, SONG_END);
+
+      expect(lineById("c0")?.words?.[1].end).toBe(7);
+      expect(lineById("c1")?.words?.[1].end).toBe(11);
     });
   });
 });

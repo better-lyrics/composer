@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types --------------------------------------------------------------------
 
@@ -56,6 +57,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     wordIdx: number,
     updateLineWithHistory: UpdateLineWithHistory,
     groups: readonly LinkGroup[],
+    duration: number,
     mutator: WordMutator,
   ): void {
     const line = lines[lineIdx];
@@ -65,7 +67,7 @@ function createWordTimingOps(config: WordFieldConfig) {
 
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
-    const range = timeRangeResolver(lines, groups, Number.POSITIVE_INFINITY)(line);
+    const range = timeRangeResolver(lines, groups, songEndOrUnbounded(duration))(line);
     updatedWords[wordIdx] = mutator({
       word,
       prevWord: updatedWords[wordIdx - 1],
@@ -96,8 +98,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
     groups: readonly LinkGroup[] = [],
+    duration = Number.POSITIVE_INFINITY,
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) =>
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) =>
       clampBegin(ctx, ctx.word.begin + delta),
     );
   }
@@ -109,8 +112,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     newBegin: number,
     updateLineWithHistory: UpdateLineWithHistory,
     groups: readonly LinkGroup[] = [],
+    duration = Number.POSITIVE_INFINITY,
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampBegin(ctx, newBegin));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) => clampBegin(ctx, newBegin));
   }
 
   function nudgeEnd(
@@ -120,8 +124,11 @@ function createWordTimingOps(config: WordFieldConfig) {
     delta: number,
     updateLineWithHistory: UpdateLineWithHistory,
     groups: readonly LinkGroup[] = [],
+    duration = Number.POSITIVE_INFINITY,
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampEnd(ctx, ctx.word.end + delta));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) =>
+      clampEnd(ctx, ctx.word.end + delta),
+    );
   }
 
   function setEnd(
@@ -131,8 +138,9 @@ function createWordTimingOps(config: WordFieldConfig) {
     newEnd: number,
     updateLineWithHistory: UpdateLineWithHistory,
     groups: readonly LinkGroup[] = [],
+    duration = Number.POSITIVE_INFINITY,
   ): void {
-    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, (ctx) => clampEnd(ctx, newEnd));
+    mutateWord(lines, lineIdx, wordIdx, updateLineWithHistory, groups, duration, (ctx) => clampEnd(ctx, newEnd));
   }
 
   function setBoundary({
