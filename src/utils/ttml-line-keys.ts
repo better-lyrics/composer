@@ -12,8 +12,8 @@ interface KeyedLine {
 // -- Constants ----------------------------------------------------------------
 
 const PARAGRAPH_OPENING_TAG = /<p\b[^>]*>/g;
-const LINE_KEY_ATTRIBUTE = /\s+itunes:key="([^"]*)"/;
-const TEXT_REFERENCE = /<text for="([^"]*)">/g;
+const LINE_KEY_ATTRIBUTE = /\s+itunes:key=(["'])(.*?)\1/;
+const TEXT_REFERENCE = /<text for=(["'])(.*?)\1>/g;
 const ALTERNATE_CONTAINER = /(<(translation|transliteration)\b[^>]*>)([\s\S]*?)(\s*<\/\2>)/g;
 const CANONICAL_TEXT_ITEM = /(\s*)<text for="#(\d+)">[\s\S]*?<\/text>/g;
 
@@ -43,11 +43,11 @@ function canonicalLineKeys(ttml: string): string {
   let ordinal = 0;
   const withoutKeys = ttml.replace(PARAGRAPH_OPENING_TAG, (tag) => {
     ordinal++;
-    const key = tag.match(LINE_KEY_ATTRIBUTE)?.[1];
+    const key = tag.match(LINE_KEY_ATTRIBUTE)?.[2];
     if (key !== undefined && !ordinalByKey.has(key)) ordinalByKey.set(key, ordinal);
     return tag.replace(LINE_KEY_ATTRIBUTE, "");
   });
-  const referenced = withoutKeys.replace(TEXT_REFERENCE, (tag, key: string) => {
+  const referenced = withoutKeys.replace(TEXT_REFERENCE, (tag, _quote: string, key: string) => {
     const paragraph = ordinalByKey.get(key);
     return paragraph === undefined ? tag : `<text for="#${paragraph}">`;
   });

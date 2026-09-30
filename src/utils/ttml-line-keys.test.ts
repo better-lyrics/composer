@@ -82,6 +82,13 @@ describe("canonicalLineKeys", () => {
       expect(canonicalLineKeys(edited)).not.toBe(canonicalLineKeys(exported([ALPHA])));
     });
 
+    it("regression: accepts single-quoted line keys and references", () => {
+      const edited = exported([ALPHA, BRAVO])
+        .replaceAll(/itunes:key="(L\d)"/g, "itunes:key='$1'")
+        .replaceAll(/<text for="(L\d)">/g, "<text for='$1'>");
+      expect(canonicalLineKeys(edited)).toBe(canonicalLineKeys(exported([ALPHA, BRAVO])));
+    });
+
     it("leaves a document without keys as it is", () => {
       const plain = '<tt><body><div><p begin="0:01.000" end="0:02.000">One</p></div></body></tt>';
       expect(canonicalLineKeys(plain)).toBe(plain);
