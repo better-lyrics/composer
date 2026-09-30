@@ -16,20 +16,45 @@ function sameExportedTime(a: number | undefined, b: number | undefined): boolean
   return a === b || (a !== undefined && b !== undefined && formatTime(a) === formatTime(b));
 }
 
-function sameExportedWords(
-  stored: readonly WordTiming[] | undefined,
-  edited: readonly WordTiming[] | undefined,
-): boolean {
-  if (!stored || !edited || stored.length !== edited.length) return false;
-  return stored.every((word, index) => {
-    const other = edited[index];
-    return (
-      other !== undefined &&
-      word.text === other.text &&
-      !!word.explicit === !!other.explicit &&
-      sameExportedTime(word.begin, other.begin) &&
-      sameExportedTime(word.end, other.end)
-    );
+function exportedWordText(words: readonly WordTiming[], index: number): string {
+  const text = words[index]?.text ?? "";
+  return index < words.length - 1 ? text : text.trimEnd();
+}
+
+function sameExportedWord(stored: readonly WordTiming[], edited: readonly WordTiming[], index: number): boolean {
+  const word = stored[index];
+  const other = edited[index];
+  return (
+    word !== undefined &&
+    other !== undefined &&
+    exportedWordText(stored, index) === exportedWordText(edited, index) &&
+    !!word.explicit === !!other.explicit &&
+    sameExportedTime(word.begin, other.begin) &&
+    sameExportedTime(word.end, other.end)
+  );
+}
+
+function sameWordSpacing(stored: readonly WordTiming[], edited: readonly WordTiming[]): boolean {
+  return (
+    stored.length === edited.length &&
+    stored.every(
+      (word, index) => index === stored.length - 1 || word.text.endsWith(" ") === edited[index]?.text.endsWith(" "),
+    )
+  );
+}
+
+function inSyllableGroupOf(word: WordTiming, stored: WordTiming): WordTiming {
+  const { syllableGroupId: _inferred, ...rest } = word;
+  return stored.syllableGroupId === undefined ? rest : { ...rest, syllableGroupId: stored.syllableGroupId };
+}
+
+function mergedWords(stored: WordTiming[] | undefined, edited: WordTiming[] | undefined): WordTiming[] | undefined {
+  if (!stored || !edited || !sameWordSpacing(stored, edited)) return edited;
+  if (stored.every((_, index) => sameExportedWord(stored, edited, index))) return stored;
+  return edited.map((word, index) => {
+    const kept = stored[index];
+    if (!kept) return word;
+    return sameExportedWord(stored, edited, index) ? kept : inSyllableGroupOf(word, kept);
   });
 }
 
@@ -86,7 +111,7 @@ function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLi
   if (seeded) return { backgroundTextSource: stored.backgroundTextSource, backgroundWords: storedWords };
   return {
     backgroundTextSource: stored.backgroundTextSource,
-    backgroundWords: sameExportedWords(storedWords, edited.backgroundWords) ? storedWords : edited.backgroundWords,
+    backgroundWords: mergedWords(storedWords, edited.backgroundWords),
   };
 }
 
@@ -97,7 +122,7 @@ function withoutSeededBackground(line: LyricLine): LyricLine {
 }
 
 function mergedTiming(stored: LyricLine, edited: LyricLine): Pick<LyricLine, "words" | "begin" | "end"> {
-  if (edited.words) return { words: sameExportedWords(stored.words, edited.words) ? stored.words : edited.words };
+  if (edited.words) return { words: mergedWords(stored.words, edited.words) ?? edited.words };
   const keepsBounds =
     !stored.words && sameExportedTime(stored.begin, edited.begin) && sameExportedTime(stored.end, edited.end);
   return keepsBounds ? { begin: stored.begin, end: stored.end } : { begin: edited.begin, end: edited.end };
