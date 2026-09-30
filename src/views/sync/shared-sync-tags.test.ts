@@ -47,8 +47,8 @@ describe("sharedSyncTags", () => {
 
   it("marks placed and skipped lines behind the cursor as shared", () => {
     expect(tagsAt(song(40), 5)).toEqual({
-      "c1-0": { label: "Shared", color: "#ff0000", placement: "below" },
-      "c1-1": { label: "Shared", color: "#ff0000", placement: "below" },
+      "c1-0": { label: "Chorus 2 · shared", color: "#ff0000", placement: "below" },
+      "c1-1": { label: "Chorus 2 · shared", color: "#ff0000", placement: "below" },
     });
   });
 
@@ -76,7 +76,7 @@ describe("sharedSyncTags", () => {
     });
 
     it("keeps only the shared tags once the cursor is past the end", () => {
-      expect(tagsAt(song(40), 6)).toMatchObject({ "c1-0": { label: "Shared" } });
+      expect(tagsAt(song(40), 6)).toMatchObject({ "c1-0": { label: "Chorus 2 · shared" } });
     });
   });
 });

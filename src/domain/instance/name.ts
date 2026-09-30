@@ -5,7 +5,8 @@ import type { LyricLine } from "@/domain/line/model";
 // -- Functions ----------------------------------------------------------------
 
 function instanceName(lines: readonly LyricLine[], group: LinkGroup, instanceIdx: number): string {
-  return `${group.label} ${instanceOrdinal(lines, group.id, instanceIdx)}`;
+  const ordinal = instanceOrdinal(lines, group.id, instanceIdx);
+  return /\d$/.test(group.label) ? `${group.label} #${ordinal}` : `${group.label} ${ordinal}`;
 }
 
 // -- Exports ------------------------------------------------------------------

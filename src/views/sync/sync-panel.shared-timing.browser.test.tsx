@@ -226,7 +226,7 @@ describe("SyncPanel · shared instance anchor", () => {
       await jumpToRow(screen, 3);
       await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
       await tapAt(40, () => firstBegin("c1-0"));
-      await expect.element(screen.getByText("Shared").first()).toBeInTheDocument();
+      await expect.element(screen.getByText("Chorus 2 · shared").first()).toBeInTheDocument();
       expect(screen.container.textContent).not.toContain("Tap to place");
     });
 

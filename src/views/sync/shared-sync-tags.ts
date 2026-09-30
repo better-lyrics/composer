@@ -1,7 +1,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
-import { nextSyncableLineIndex, type SyncCursor } from "@/domain/sync/cursor";
+import { type SyncCursor, nextSyncableLineIndex } from "@/domain/sync/cursor";
 import { type SharedAnchor, sharedAnchorAt } from "@/domain/sync/shared-anchor";
 
 // -- Types --------------------------------------------------------------------
@@ -25,11 +25,13 @@ function sharedSyncTags(
   skippedLineIds: ReadonlySet<string>,
 ): Map<string, SharedSyncTag> {
   const tags = new Map<string, SharedSyncTag>();
-  const colorById = new Map(groups.map((group) => [group.id, group.color]));
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
   for (let i = 0; i < Math.min(cursor.lineIndex, lines.length); i++) {
     const line = lines[i];
-    const color = line.groupId ? colorById.get(line.groupId) : undefined;
-    if (color && skippedLineIds.has(line.id)) tags.set(line.id, { label: "Shared", color, placement: "below" });
+    const group = line.groupId ? groupsById.get(line.groupId) : undefined;
+    if (!group || line.instanceIdx === undefined || !skippedLineIds.has(line.id)) continue;
+    const label = `${instanceName(lines, group, line.instanceIdx)} · shared`;
+    tags.set(line.id, { label, color: group.color, placement: "below" });
   }
 
   const current = sharedAnchorAt(lines, groups, cursor);
