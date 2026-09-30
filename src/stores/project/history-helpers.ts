@@ -1,8 +1,10 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine, RawLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
+import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { SnapPoint } from "@/domain/snap-point/model";
+import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import type { HistoryEntry, ProjectState } from "@/stores/project/types";
 import { getSplitCharacter } from "@/utils/split-character";
 
@@ -72,6 +74,18 @@ function commitHistory(
   };
 }
 
+function commitSharedTimingHistory(
+  state: ProjectState,
+  lines: RawLine[],
+  changedIds: readonly string[],
+  options: { deriveText?: boolean } = {},
+) {
+  const shared = sharedTimingFanOut(state.lines, lines, state.groups, changedIds);
+  if (shared.rejected) return state;
+  if (shared.touchedGroupIds.length) notifySharedTimingCopied(shared.touchedGroupIds);
+  return commitHistory(state, { lines: shared.lines }, options);
+}
+
 function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {
   if (!state.isDirtySinceHistory) return {};
   const newHistory = state.history.slice(0, state.historyIndex + 1);
@@ -138,4 +152,8 @@ function canUndoFrom(state: ProjectState): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { canUndoFrom, commitHistory, commitPendingEdit, commitSnapPointEdit, MAX_HISTORY_SIZE, redoState, undoState };
+export {
+  canUndoFrom,
+  commitHistory,
+  commitPendingEdit,
+  commitSharedTimingHistory, commitSnapPointEdit, MAX_HISTORY_SIZE, redoState, undoState };

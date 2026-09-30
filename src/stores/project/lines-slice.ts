@@ -5,7 +5,7 @@ import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitHistory, commitSharedTimingHistory } from "@/stores/project/history-helpers";
 import {
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
@@ -95,7 +95,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(state, newLines, [id], historyOptions);
     }),
 
   updateLinesWithHistory: (updates, options = {}) =>
@@ -134,7 +134,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
       }
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(
+        state,
+        newLines,
+        updates.map((update) => update.id),
+        historyOptions,
+      );
     }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
