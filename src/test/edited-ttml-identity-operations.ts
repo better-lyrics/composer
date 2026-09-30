@@ -8,8 +8,10 @@ import {
   removeParagraph,
   required,
   swapParagraphs,
+  timedAt,
 } from "@/test/edited-ttml-edits";
 import type { EditedTtmlProject } from "@/test/edited-ttml-projects";
+import { createLine } from "@/test/factories";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { expect } from "vitest";
 
@@ -67,6 +69,7 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
       return {
         edited: ttml.replace(original, `${original}\n      ${copy}`),
         touched: [],
+        lossless: true,
         expectTaken: (lines) => {
           const added = required(
             lines.find((candidate) => candidate.text === `${text} again`),
@@ -92,6 +95,33 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
           textEdit.expectTaken(lines);
           expect(lineById(lines, first.id)).toMatchObject({ groupId: first.groupId, instanceIdx: first.instanceIdx });
         },
+      };
+    },
+  },
+  {
+    name: "keep edits after a line is deleted in the project",
+    edit: (project, ttml) => {
+      const removed = timedAt(project, 1);
+      const line = timedAt(project, 2);
+      return {
+        ...editLineText(ttml, project, line),
+        touched: [line.id],
+        deleted: [removed.id],
+        projectChangeBeforeKeepingEdits: (lines) => lines.filter((candidate) => candidate.id !== removed.id),
+      };
+    },
+  },
+  {
+    name: "keep edits after a line is added in the project",
+    edit: (project, ttml) => {
+      const line = timedAt(project, 2);
+      const after = timedAt(project, 0);
+      const added = createLine({ id: "added-in-project", text: "Added in the project", begin: 0.1, end: 0.2 });
+      return {
+        ...editLineText(ttml, project, line),
+        touched: [line.id],
+        projectChangeBeforeKeepingEdits: (lines) =>
+          lines.flatMap((candidate) => (candidate === after ? [candidate, added] : [candidate])),
       };
     },
   },

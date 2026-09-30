@@ -13,6 +13,7 @@ interface EditCase {
   deleted?: readonly string[];
   reordered?: boolean;
   lossless?: boolean;
+  projectChangeBeforeKeepingEdits?: (lines: LyricLine[]) => LyricLine[];
   expectTaken: (lines: readonly LyricLine[]) => void;
 }
 
@@ -124,4 +125,4 @@ export {
   swapParagraphs,
   timedAt,
 };
-export type { EditOperation };
+export type { EditCase, EditOperation };

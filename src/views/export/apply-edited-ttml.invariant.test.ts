@@ -1,11 +1,28 @@
 import { useProjectStore } from "@/stores/project";
-import { lineById } from "@/test/edited-ttml-edits";
+import { type EditCase, lineById } from "@/test/edited-ttml-edits";
 import { LINE_IDENTITY_OPERATIONS } from "@/test/edited-ttml-identity-operations";
 import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
-import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
+import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { keptTtmlEdits, startedTtmlEdit } from "@/views/export/ttml-edit-keys";
 import { describe, expect, it } from "vitest";
+
+// -- Helpers ------------------------------------------------------------------
+
+function keptEditsAfter(editCase: EditCase, project: EditedTtmlProject): string {
+  const started = startedTtmlEdit(
+    null,
+    generateProjectTtml(useProjectStore.getState(), 0),
+    editCase.edited,
+    project.lines,
+  );
+  useProjectStore.setState({ lines: editCase.projectChangeBeforeKeepingEdits?.(project.lines) ?? project.lines });
+  const current = useProjectStore.getState();
+  const kept = keptTtmlEdits(started, generateProjectTtml(current, 0), current.lines);
+  useProjectStore.setState({ ttmlEditState: kept });
+  return kept.content;
+}
 
 // -- Tests --------------------------------------------------------------------
 
@@ -21,8 +38,9 @@ describe("applyEditedTtml · invariants", () => {
           metadata: project.metadata,
         });
         const editCase = operation.edit(project, generateProjectTtml(useProjectStore.getState(), 0));
+        const content = editCase.projectChangeBeforeKeepingEdits ? keptEditsAfter(editCase, project) : editCase.edited;
 
-        const result = applyEditedTtml(editCase.edited, 0);
+        const result = applyEditedTtml(content, 0);
         expect(result).toMatchObject({ status: "applied" });
         if (editCase.lossless) expect(result).toMatchObject({ keptInExport: false });
 

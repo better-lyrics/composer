@@ -77,6 +77,29 @@ describe("ExportPanel · Done after keeping edits through a conflict", () => {
       expect(byId("e")).toMatchObject({ text: "Echo!", translations: stored[4]?.translations });
     });
 
+    it("regression: a later project change after Keep my edits merges cleanly and Done keeps every untouched line", async () => {
+      const stored = namedLines();
+      useProjectStore.setState({ lines: stored });
+      const screen = await renderPanel();
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      await editText(screen, "Charlie", "Charlie!");
+      useProjectStore.setState((state) => ({ lines: state.lines.filter((line) => line.id !== "b") }));
+      await screen.getByRole("button", { name: "Keep my edits" }).click();
+      await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
+      useProjectStore.setState((state) => ({
+        lines: state.lines.map((line) => (line.id === "e" ? { ...line, text: "Echo changed" } : line)),
+      }));
+      await expect.poll(() => (editorOf(screen).element() as HTMLTextAreaElement).value).toContain("Echo changed");
+      expect(screen.container.querySelector("[role=alert]")).toBeNull();
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+
+      expect(byId("a")).toEqual(stored[0]);
+      expect(byId("d")).toEqual(stored[3]);
+      expect(byId("c")).toMatchObject({ text: "Charlie!", translations: stored[2]?.translations });
+      expect(byId("e")).toMatchObject({ text: "Echo changed", translations: stored[4]?.translations });
+    });
+
     it("regression: syncing a middle line after an export-only Done, then Keep my edits and Done, keeps every line the kept edit holds", async () => {
       useProjectStore.setState({ lines: namedLines(["Bravo"]) });
       const screen = await renderPanel();
