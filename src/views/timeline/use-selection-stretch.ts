@@ -1,5 +1,6 @@
-import { timeRangeResolver } from "@/domain/group/shared-timing";
-import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { sharedTimingFanOut, timeRangeResolver } from "@/domain/group/shared-timing";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
+import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -53,18 +54,20 @@ function writePreviewLines(lines: LyricLine[]): void {
   useProjectStore.getState().setTransientLines(lines);
 }
 
-// Applies stretch updates to the pre-drag snapshot, mirroring how
-// updateLinesWithHistory reconciles each line (no sibling propagation — the
-// commit opts out of it too).
+// Applies stretch updates to the pre-drag snapshot the way updateLinesWithHistory will commit them: each line
+// reconciled, no sibling propagation, and shared group timing copied, so the preview matches the release.
 function applyStretchUpdates(
   snapshotLines: LyricLine[],
   updates: ReadonlyArray<{ id: string; updates: Partial<LyricLine> }>,
 ): LyricLine[] {
-  const updatesById = new Map(updates.map((u) => [u.id, u.updates]));
-  return snapshotLines.map((line) => {
-    const lineUpdates = updatesById.get(line.id);
-    return lineUpdates ? reconcileLine({ ...line, ...lineUpdates }) : line;
-  });
+  const applied = applyLineUpdates(snapshotLines, updates);
+  const shared = sharedTimingFanOut(
+    snapshotLines,
+    applied,
+    useProjectStore.getState().groups,
+    updates.map((update) => update.id),
+  );
+  return shared.rejected ? snapshotLines.slice() : shared.lines;
 }
 
 // -- Hook ----------------------------------------------------------------------
