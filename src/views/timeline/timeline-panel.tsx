@@ -25,6 +25,7 @@ import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
 import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
@@ -388,6 +389,7 @@ const TimelinePanel: React.FC = () => {
         <div data-tour="timeline-panel" className="flex flex-col flex-1 overflow-hidden select-none">
           <TimelineHeader onImportLyrics={openLyricsModal} scrollContainerRef={scrollContainerRef} />
           <GroupingSuggestionsBanner />
+          <SharedTimingSuggestionsBanner />
           <ExplicitSuggestionsBanner />
 
           <div className="flex flex-1 overflow-hidden">

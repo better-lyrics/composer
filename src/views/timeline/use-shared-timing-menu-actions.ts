@@ -1,9 +1,9 @@
-import { sharedInstancesInLineOrder, sharesTiming } from "@/domain/group/shared-timing";
+import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -39,11 +39,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
     showGroupActionToast(`${name} shares timing again`);
     return;
   }
-  store.shareGroupTiming(group.id);
-  const { lines, groups } = useProjectStore.getState();
-  const shared = groups.find((candidate) => candidate.id === group.id);
-  const count = shared ? sharedInstancesInLineOrder(lines, shared).length : 0;
-  showGroupActionToast(`${group.label} shares timing in ${pluralize(count, "instance")}`);
+  shareGroupTimingWithUndo(group.id);
 }
 
 // -- Hook ---------------------------------------------------------------------
