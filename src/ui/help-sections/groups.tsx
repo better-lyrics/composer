@@ -161,8 +161,9 @@ const GroupsSection: React.FC = () => (
 
     <HelpTopic title="Suggestions banner">
       <p className={PROSE}>
-        When the timeline detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
-        banner appears under the toolbar. One suggestion shows inline with a Group them button. Multiple suggestions
+        When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
+        banner appears in Edit and under the Timeline toolbar. Group them in Edit, before you sync, so each chorus
+        shares its timing from the first tap. One suggestion shows inline with a Group them button. Multiple suggestions
         collapse into a Review N button that opens a modal with each block previewed and a per-row Group / dismiss
         action, plus a Group all button.
       </p>

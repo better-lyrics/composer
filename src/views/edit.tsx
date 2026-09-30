@@ -31,6 +31,7 @@ import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
 import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -638,6 +639,8 @@ const EditPanel: React.FC = () => {
       )}
 
       <BracketWarning count={bracketCount} />
+
+      <GroupingSuggestionsBanner className="rounded-lg border-b-0 px-3" />
 
       <AgentManager />
 

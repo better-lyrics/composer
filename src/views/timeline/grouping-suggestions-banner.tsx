@@ -1,8 +1,8 @@
 import { useProjectStore } from "@/stores/project";
-import { findRepeatingStandaloneSections, type RepeatingSection } from "@/views/timeline/repeating-sections";
-import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
 import { offerToShareTiming } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
+import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/timeline/repeating-sections";
+import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -10,7 +10,7 @@ const INLINE_LINE_MAX = 32;
 const MODAL_LINE_MAX = 80;
 const MODAL_LINE_LIMIT = 6;
 
-const GroupingSuggestionsBanner: React.FC = () => {
+const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className }) => {
   const lines = useProjectStore((s) => s.lines);
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
   const groupRepeatingSections = useProjectStore((s) => s.groupRepeatingSections);
@@ -64,6 +64,7 @@ const GroupingSuggestionsBanner: React.FC = () => {
       onDismiss={dismissOne}
       onAcceptAll={acceptAll}
       onDismissAll={dismissAll}
+      className={className}
     />
   );
 };

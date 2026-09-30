@@ -2,6 +2,7 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { Modal } from "@/ui/modal";
 import { Scroll } from "@/ui/scroll";
+import { cn } from "@/utils/cn";
 import type { Icon } from "@tabler/icons-react";
 import { IconX } from "@tabler/icons-react";
 import { useMemo, useState } from "react";
@@ -33,6 +34,7 @@ interface SuggestionsBannerProps<T extends { fingerprint: string }> {
   onDismiss: (suggestion: T) => void;
   onAcceptAll: (visible: T[]) => void;
   onDismissAll: (visible: T[]) => void;
+  className?: string;
 }
 
 interface SuggestionsModalProps<T extends { fingerprint: string }> {
@@ -92,6 +94,7 @@ function SuggestionsBanner<T extends { fingerprint: string }>(props: Suggestions
     onDismiss,
     onAcceptAll,
     onDismissAll,
+    className,
   } = props;
   const [modalOpen, setModalOpen] = useState(false);
 
@@ -104,7 +107,11 @@ function SuggestionsBanner<T extends { fingerprint: string }>(props: Suggestions
 
   if (visible.length === 0) return null;
 
-  const shellClass = `flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border ${accentClass} text-sm`;
+  const shellClass = cn(
+    "flex items-center justify-between gap-3 px-4 py-2 border-b border-composer-border text-sm",
+    accentClass,
+    className,
+  );
 
   return (
     <>
