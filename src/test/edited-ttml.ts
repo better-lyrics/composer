@@ -24,4 +24,4 @@ function mergeEditedExport(stored: LyricLine[], edit: (ttml: string) => string =
 
 // -- Exports ------------------------------------------------------------------
 
-export { exportedTtml, mergeEditedExport, ownExportLines };
+export { mergeEditedExport, ownExportLines };
