@@ -115,12 +115,29 @@ function storedPartners(stored: readonly LyricLine[], edited: readonly LyricLine
 
 // -- Merge --------------------------------------------------------------------
 
+function skippedLinesAfter(
+  stored: readonly LyricLine[],
+  kept: ReadonlySet<LyricLine>,
+): Map<LyricLine | undefined, LyricLine[]> {
+  const skippedAfter = new Map<LyricLine | undefined, LyricLine[]>();
+  let anchor: LyricLine | undefined;
+  for (const line of stored) {
+    if (kept.has(line)) anchor = line;
+    else if (!isSyncableLine(line)) skippedAfter.set(anchor, [...(skippedAfter.get(anchor) ?? []), line]);
+  }
+  return skippedAfter;
+}
+
 function mergeEditedTtmlLines(stored: readonly LyricLine[], edited: readonly LyricLine[]): LyricLine[] {
   const partners = storedPartners(stored, edited);
-  return edited.map((line, index) => {
+  const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));
+  const merged = [...(skippedAfter.get(undefined) ?? [])];
+  edited.forEach((line, index) => {
     const partner = partners[index];
-    return partner ? mergedLine(partner, line) : line;
+    merged.push(partner ? mergedLine(partner, line) : line);
+    if (partner) merged.push(...(skippedAfter.get(partner) ?? []));
   });
+  return merged;
 }
 
 // -- Exports ------------------------------------------------------------------

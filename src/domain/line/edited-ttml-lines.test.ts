@@ -116,6 +116,48 @@ describe("mergeEditedTtmlLines", () => {
     });
   });
 
+  describe("regressions: lines the export skips", () => {
+    it("regression: keeps blank, whitespace-only and split-character-only lines in place", () => {
+      const stored = [
+        createLine({ id: "a", text: "One", begin: 1, end: 2 }),
+        createLine({ id: "blank", text: "" }),
+        createLine({ id: "b", text: "Two", begin: 2, end: 3 }),
+        createLine({ id: "spaces", text: "   " }),
+        createLine({ id: "split", text: "|" }),
+        createLine({ id: "c", text: "Three", begin: 3, end: 4 }),
+      ];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(">Two<", ">Two2<"));
+      expect(merged.map((line) => line.id)).toEqual(["a", "blank", "b", "spaces", "split", "c"]);
+      expect(merged[1]).toBe(stored[1]);
+      expect(merged[3]).toBe(stored[3]);
+      expect(merged[4]).toBe(stored[4]);
+      expect(merged[2]?.text).toBe("Two2");
+    });
+
+    it("regression: keeps lines before the first exported line at the start", () => {
+      const stored = [createLine({ id: "blank", text: "" }), createLine({ id: "a", text: "One", begin: 1, end: 2 })];
+      expect(roundTrip(stored)).toEqual(stored);
+    });
+
+    it("regression: keeps a skipped line when the line before it was deleted", () => {
+      const stored = [
+        createLine({ id: "a", text: "One", begin: 1, end: 2 }),
+        createLine({ id: "b", text: "Two", begin: 2, end: 3 }),
+        createLine({ id: "blank", text: "" }),
+        createLine({ id: "c", text: "Three", begin: 3, end: 4 }),
+      ];
+      const merged = roundTrip(stored, (ttml) => ttml.replace(/<p[^>]*>Two<\/p>/, ""));
+      expect(merged.map((line) => line.id)).toEqual(["a", "blank", "c"]);
+    });
+
+    it("keeps skipped lines when every exported line was deleted", () => {
+      const blank = createLine({ id: "blank", text: "" });
+      expect(mergeEditedTtmlLines([createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank], [])).toEqual([
+        blank,
+      ]);
+    });
+  });
+
   describe("edge cases", () => {
     it("matches by text when lines were added, giving new lines their own ids", () => {
       const stored = [
