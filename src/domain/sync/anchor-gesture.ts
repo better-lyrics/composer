@@ -82,4 +82,4 @@ function storedSyncPosition(
 // -- Exports ------------------------------------------------------------------
 
 export { anchorGesture, storedSyncPosition };
-export type { AnchorGesture, AnchorUndo };
+export type { AnchorUndo };

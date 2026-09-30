@@ -74,5 +74,5 @@ function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn:
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialSharing, instancesInLineOrder, SAME_TIMING_TOLERANCE_SECONDS };
+export { initialSharing, instancesInLineOrder };
 export type { InitialSharing };

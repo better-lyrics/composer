@@ -270,4 +270,4 @@ export {
   timeRangeResolver,
   UNBOUNDED_TIME_RANGE,
 };
-export type { SharedTimingFanOut, TimeRange };
+export type { TimeRange };
