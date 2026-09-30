@@ -42,6 +42,17 @@ describe("useStorageProtection", () => {
     await expect.poll(() => latest.status).toBe(granted ? "protected" : "unprotected");
   });
 
+  it("asks the browser once when protection is requested twice in a row", async () => {
+    const persist = spyOnPersist();
+    await render(<ProtectionProbe />);
+    await expect.poll(() => latest?.status).toBeDefined();
+    const first = latest.protect();
+    const second = latest.protect();
+    await Promise.all([first, second]);
+    expect(persist).toHaveBeenCalledTimes(1);
+    await expect.poll(() => latest.isProtecting).toBe(false);
+  });
+
   describe("edge cases", () => {
     it("tells a Chromium user when the browser declines, and says nothing when it grants", async () => {
       const persist = spyOnPersist();

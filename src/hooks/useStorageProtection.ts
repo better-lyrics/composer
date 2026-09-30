@@ -1,13 +1,14 @@
 import { type StorageProtection, readStorageProtection, requestStorageProtection } from "@/lib/browser-storage";
 import { BROWSER_KIND, type BrowserKind } from "@/utils/platform";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
 
 interface StorageProtectionState {
   status: StorageProtection | undefined;
+  isProtecting: boolean;
   protect: () => Promise<void>;
 }
 
@@ -35,7 +36,10 @@ function useStorageProtection(browser: BrowserKind = BROWSER_KIND): StorageProte
 
   const declinedMessage = browser === "chromium" ? CHROMIUM_DECLINED_MESSAGE : DECLINED_MESSAGE;
 
-  const protect = useCallback(async () => {
+  const [isProtecting, setIsProtecting] = useState(false);
+  const requestRef = useRef<Promise<void> | null>(null);
+
+  const askBrowser = useCallback(async () => {
     try {
       const status = await requestStorageProtection();
       queryClient.setQueryData(STORAGE_PROTECTION_QUERY_KEY, status);
@@ -46,7 +50,18 @@ function useStorageProtection(browser: BrowserKind = BROWSER_KIND): StorageProte
     }
   }, [queryClient, declinedMessage]);
 
-  return { status: data, protect };
+  const protect = useCallback(() => {
+    if (requestRef.current) return requestRef.current;
+    setIsProtecting(true);
+    const request = askBrowser().finally(() => {
+      requestRef.current = null;
+      setIsProtecting(false);
+    });
+    requestRef.current = request;
+    return request;
+  }, [askBrowser]);
+
+  return { status: data, isProtecting, protect };
 }
 
 // -- Exports ------------------------------------------------------------------

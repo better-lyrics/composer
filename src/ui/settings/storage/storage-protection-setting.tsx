@@ -5,9 +5,16 @@ import { BROWSER_KIND } from "@/utils/platform";
 // -- Component ----------------------------------------------------------------
 
 const StorageProtectionSetting: React.FC = () => {
-  const { status, protect } = useStorageProtection();
+  const { status, isProtecting, protect } = useStorageProtection();
 
-  return <StorageProtectionRow status={status} browser={BROWSER_KIND} onProtect={() => void protect()} />;
+  return (
+    <StorageProtectionRow
+      status={status}
+      browser={BROWSER_KIND}
+      isProtecting={isProtecting}
+      onProtect={() => void protect()}
+    />
+  );
 };
 
 // -- Exports ------------------------------------------------------------------

@@ -50,9 +50,9 @@ describe("StorageProtectionRow", () => {
       await expect.element(screen.getByText("Install page as app", { exact: true })).toBeInTheDocument();
       const description = screen.getByText("Install page as app", { exact: true }).element().parentElement;
       expect(description?.textContent).toBe(
-        "The browser can clear your projects when disk space runs low. To turn it on, use Install page as app in the browser menu or bookmark Composer, then ask again. This doesn't work in Incognito.",
+        `${UNPROTECTED} To turn it on, use Install page as app in the browser menu or bookmark Composer, then ask again. This doesn't work in Incognito.`,
       );
-      expect(screen.getByText(UNPROTECTED).elements()).toHaveLength(0);
+      expect(screen.getByText(UNPROTECTED, { exact: true }).elements()).toHaveLength(0);
     });
 
     it("still asks again when clicked", async () => {
@@ -62,6 +62,46 @@ describe("StorageProtectionRow", () => {
       );
       await screen.getByRole("button", { name: "Protect storage" }).click();
       expect(asked).toBe(1);
+    });
+  });
+
+  describe("asking", () => {
+    it("disables Protect storage while the browser is being asked", async () => {
+      let asked = 0;
+      const screen = await render(
+        <StorageProtectionRow status="unprotected" browser="other" isProtecting onProtect={() => asked++} />,
+      );
+      await expect.element(screen.getByRole("button", { name: "Protect storage" })).toBeDisabled();
+      await userEvent.keyboard("{Tab}{Enter}");
+      expect(asked).toBe(0);
+    });
+
+    it("announces the status and moves focus to it once protection is on", async () => {
+      const screen = await render(<StorageProtectionRow status="unprotected" browser="other" onProtect={() => {}} />);
+      await screen.getByRole("button", { name: "Protect storage" }).click();
+      await screen.rerender(
+        <StorageProtectionRow status="unprotected" browser="other" isProtecting onProtect={() => {}} />,
+      );
+      await screen.rerender(<StorageProtectionRow status="protected" browser="other" onProtect={() => {}} />);
+      const status = screen.getByRole("status");
+      await expect.element(status).toHaveTextContent("On");
+      await expect.element(status).toHaveFocus();
+    });
+
+    it("keeps focus on the button when the browser declines", async () => {
+      const screen = await render(<StorageProtectionRow status="unprotected" browser="other" onProtect={() => {}} />);
+      await screen.getByRole("button", { name: "Protect storage" }).click();
+      await screen.rerender(
+        <StorageProtectionRow status="unprotected" browser="other" isProtecting onProtect={() => {}} />,
+      );
+      await screen.rerender(<StorageProtectionRow status="unprotected" browser="other" onProtect={() => {}} />);
+      await expect.element(screen.getByRole("button", { name: "Protect storage" })).toHaveFocus();
+    });
+
+    it("leaves focus alone when the status changes without a request from this row", async () => {
+      const screen = await render(<StorageProtectionRow status="unprotected" browser="other" onProtect={() => {}} />);
+      await screen.rerender(<StorageProtectionRow status="protected" browser="other" onProtect={() => {}} />);
+      await expect.element(screen.getByRole("status")).not.toHaveFocus();
     });
   });
 
