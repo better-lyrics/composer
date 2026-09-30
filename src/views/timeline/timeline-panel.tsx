@@ -1,54 +1,54 @@
-import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
-import { isWordSelected } from "@/domain/selection/identity";
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { useAudioStore } from "@/stores/audio";
-import { useProjectStore } from "@/stores/project";
 import { getAgentColor } from "@/domain/agent/colors";
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
+import { mainBounds } from "@/domain/line/bounds";
+import { getEffectiveLines } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
 import { trackWords } from "@/domain/line/tracks";
+import { isWordSelected } from "@/domain/selection/identity";
 import { boundsOverlap } from "@/domain/word/overlap";
-import { selfKey } from "@/views/timeline/snap";
-import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
-import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
-import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
-import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
+import {
+  type SyllablePosition,
+  expandSelectionToGroupmates,
+  getSyllablePositions,
+} from "@/domain/word/syllable-groups";
+import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
+import { useAudioStore } from "@/stores/audio";
 import { useImportModal } from "@/stores/import-modal-store";
+import { useProjectStore } from "@/stores/project";
+import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
+import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { EmptyTimelineImport } from "@/views/timeline/empty-timeline-import";
+import { ExplicitSuggestionsBanner } from "@/views/timeline/explicit-suggestions-banner";
+import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
+import { GroupingSuggestionsBanner } from "@/views/timeline/grouping-suggestions-banner";
 import { MarqueeSelection } from "@/views/timeline/marquee-selection";
 import { PastePreview } from "@/views/timeline/paste-preview";
-import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
-import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
-import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
-import { TimelineHeader } from "@/views/timeline/timeline-header";
-import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
+import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
+import { selfKey } from "@/views/timeline/snap";
 import { SnapGuideline } from "@/views/timeline/snap-guideline";
 import { SnapMarkersOverlay } from "@/views/timeline/snap-markers-overlay";
+import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
+import { TimelineHeader } from "@/views/timeline/timeline-header";
+import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { TimelinePlayhead } from "@/views/timeline/timeline-playhead";
 import { TimelinePreviewSidebar } from "@/views/timeline/timeline-preview-sidebar";
 import { TimelineRows } from "@/views/timeline/timeline-rows";
-import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
-import { HoverSizedDragGhost, TimelineDragOverlay } from "@/views/timeline/drag-ghost";
-import { trackSnapModifier } from "@/views/timeline/drag-track-snap";
 import { useMarquee } from "@/views/timeline/use-marquee";
-import {
-  expandSelectionToGroupmates,
-  getSyllablePositions,
-  type SyllablePosition,
-} from "@/domain/word/syllable-groups";
+import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelinePan } from "@/views/timeline/use-timeline-pan";
+import { useTimelineSnap } from "@/views/timeline/use-timeline-snap";
 import { useTimelineWheel } from "@/views/timeline/use-timeline-wheel";
-import { mainBounds } from "@/domain/line/bounds";
-import { getEffectiveLines } from "@/domain/line/effective-words";
-import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";
-import { BLOCK_INSET_PX, bgTrackHeight } from "@/views/timeline/row-geometry";
 import { computeRowLayout, distributeLinesTiming } from "@/views/timeline/utils";
-import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
-import { IconMusic } from "@tabler/icons-react";
+import { WordEditOverlay } from "@/views/timeline/word-edit-overlay";
 import { DndContext } from "@dnd-kit/core";
+import { IconMusic } from "@tabler/icons-react";
 import { useOverlayScrollbars } from "overlayscrollbars-react";
 import "overlayscrollbars/overlayscrollbars.css";
 import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";

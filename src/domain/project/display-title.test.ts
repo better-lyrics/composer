@@ -1,4 +1,10 @@
-import { displayArtists, displayTitle, hasArtists, quotedTitle, youtubeSourceTitle } from "@/domain/project/display-title";
+import {
+  displayArtists,
+  displayTitle,
+  hasArtists,
+  quotedTitle,
+  youtubeSourceTitle,
+} from "@/domain/project/display-title";
 import { describe, expect, it } from "vitest";
 
 describe("displayTitle", () => {

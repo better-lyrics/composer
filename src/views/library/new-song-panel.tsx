@@ -1,5 +1,5 @@
-import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { useStartNewSong } from "@/hooks/useStartNewSong";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { importProjectFile, importProjectFromInput } from "@/lib/project-import";

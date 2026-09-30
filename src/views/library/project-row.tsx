@@ -1,4 +1,4 @@
-import { displayArtists, hasArtists, displayTitle } from "@/domain/project/display-title";
+import { displayArtists, displayTitle, hasArtists } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import { IconButton } from "@/ui/icon-button";

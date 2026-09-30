@@ -1,6 +1,6 @@
-import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { FileDropZone } from "@/audio/file-drop-zone";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
+import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
 import { useBridgeThumb } from "@/hooks/useBridgeThumb";
 import { useLoadAudioFile } from "@/hooks/useLoadAudioFile";

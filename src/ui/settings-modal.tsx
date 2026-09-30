@@ -101,11 +101,7 @@ const SettingsModalBody: React.FC = () => {
       >
         <div data-settings-content>
           <SettingsSearchQueryContext value={settingsQuery}>
-            {results ? (
-              <SettingsSearchResults results={results} />
-            ) : (
-              <SectionContent section={settingsSection} />
-            )}
+            {results ? <SettingsSearchResults results={results} /> : <SectionContent section={settingsSection} />}
           </SettingsSearchQueryContext>
         </div>
       </ModalNavLayout>

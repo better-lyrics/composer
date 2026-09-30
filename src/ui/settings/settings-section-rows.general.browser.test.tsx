@@ -1,9 +1,9 @@
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { render } from "@/test/render";
+import { TOUR_RESUME_KEY, TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
-import { TOUR_RESUME_KEY, TOUR_SEEN_KEY } from "@/tour/use-tour";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 

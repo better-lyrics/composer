@@ -82,5 +82,12 @@ function savedProjectFromFile(file: ProjectFile, savedAt: number): SavedProject 
 
 // -- Exports ------------------------------------------------------------------
 
-export { PROJECT_FILE_ACCEPT, PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName, parseProjectFileContents, readProjectFile, savedProjectFromFile };
+export {
+  PROJECT_FILE_ACCEPT,
+  PROJECT_FILE_EXTENSIONS_LABEL,
+  isProjectFileName,
+  parseProjectFileContents,
+  readProjectFile,
+  savedProjectFromFile,
+};
 export type { ProjectFileContents };

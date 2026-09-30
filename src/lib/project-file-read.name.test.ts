@@ -35,7 +35,10 @@ describe("PROJECT_FILE_EXTENSIONS_LABEL", () => {
     it("covers every accepted extension", () => {
       const labelled = PROJECT_FILE_EXTENSIONS_LABEL.split(" ");
       for (const extension of PROJECT_FILE_ACCEPT.split(",")) {
-        expect(labelled.some((label) => extension.endsWith(label)), extension).toBe(true);
+        expect(
+          labelled.some((label) => extension.endsWith(label)),
+          extension,
+        ).toBe(true);
       }
     });
   });
