@@ -196,6 +196,9 @@ interface GroupActions {
   removeInstance: (groupId: string, instanceIdx: number) => void;
   detachLine: (lineId: string) => void;
   shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number) => void;
+  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => void;
+  shareGroupTiming: (groupId: string) => void;
+  placeInstance: (groupId: string, instanceIdx: number, start: number) => void;
 }
 
 // -- Composed Store -----------------------------------------------------------

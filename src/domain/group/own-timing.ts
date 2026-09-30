@@ -1,0 +1,22 @@
+import type { InitialSharing } from "@/domain/group/initial-sharing";
+import type { LinkGroup } from "@/domain/group/template";
+
+// -- Functions ----------------------------------------------------------------
+
+function withSharing(group: LinkGroup, sharing: InitialSharing): LinkGroup {
+  const { sharesTiming: _sharesTiming, ownTimingInstances: _ownTimingInstances, ...rest } = group;
+  return { ...rest, ...sharing };
+}
+
+function withOwnTiming(group: LinkGroup, instanceIdx: number, own: boolean): LinkGroup {
+  const others = (group.ownTimingInstances ?? []).filter((idx) => idx !== instanceIdx);
+  const ownTimingInstances = own ? [...others, instanceIdx].toSorted((a, b) => a - b) : others;
+  return withSharing(group, {
+    ...(group.sharesTiming ? { sharesTiming: true } : {}),
+    ...(ownTimingInstances.length ? { ownTimingInstances } : {}),
+  });
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { withOwnTiming, withSharing };

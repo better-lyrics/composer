@@ -1,11 +1,16 @@
+import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
+import { withOwnTiming, withSharing } from "@/domain/group/own-timing";
+import { instanceStart, placeSharedInstance } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
+import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
 import type { StateCreator } from "zustand";
 
@@ -70,7 +75,13 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
         return line;
       });
 
-      const group: LinkGroup = { id: groupId, label, color, templateVersion: 1 };
+      const group: LinkGroup = {
+        id: groupId,
+        label,
+        color,
+        templateVersion: 1,
+        ...initialSharing(updatedLines, groupId, useSettingsStore.getState().shareTimingInNewGroups),
+      };
 
       return commitHistory(state, { groups: [...state.groups, group], lines: updatedLines });
     }),
@@ -126,7 +137,10 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
           ? [...state.lines, ...newLines]
           : [...state.lines.slice(0, insertAtIndex), ...newLines, ...state.lines.slice(insertAtIndex)];
 
-      return commitHistory(state, { lines: insertedLines });
+      return commitHistory(state, {
+        lines: insertedLines,
+        groups: state.groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, false) : group)),
+      });
     }),
 
   removeInstance: (groupId, instanceIdx) =>
@@ -155,6 +169,32 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
           isMember(line) ? reconcileLine({ ...line, ...shiftLineTiming(line, delta) }) : line,
         ),
       });
+    }),
+
+  setInstanceOwnTiming: (groupId, instanceIdx, own) =>
+    set((state) => {
+      const groups = state.groups.map((group) =>
+        group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group,
+      );
+      const start = own ? null : instanceStart(state.lines, groupId, instanceIdx);
+      const placed = start === null ? [] : placeSharedInstance(state.lines, groups, groupId, instanceIdx, start);
+      return commitHistory(state, { groups, lines: applyLineUpdates(state.lines, placed) });
+    }),
+
+  shareGroupTiming: (groupId) =>
+    set((state) =>
+      commitHistory(state, {
+        groups: state.groups.map((group) =>
+          group.id === groupId ? withSharing(group, initialSharing(state.lines, groupId, true)) : group,
+        ),
+      }),
+    ),
+
+  placeInstance: (groupId, instanceIdx, start) =>
+    set((state) => {
+      const placed = placeSharedInstance(state.lines, state.groups, groupId, instanceIdx, start);
+      if (placed.length === 0) return state;
+      return commitHistory(state, { lines: applyLineUpdates(state.lines, placed) });
     }),
 });
 
