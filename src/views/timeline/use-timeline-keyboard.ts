@@ -1,3 +1,4 @@
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -155,7 +156,7 @@ function useTimelineKeyboard(
         edge,
         time: currentTime,
         minDuration: useSettingsStore.getState().minWordDuration,
-        duration,
+        range: timeRangeResolver(useProjectStore.getState().lines, useProjectStore.getState().groups, duration)(line),
         rolling: useTimelineStore.getState().rollingEditMode,
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory: useProjectStore.getState().updateLineWithHistory,

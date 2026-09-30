@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineInfoPanel } from "@/views/timeline/timeline-info-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -254,5 +254,32 @@ describe("TimelineInfoPanel selection copy", () => {
     const screen = await render(<TimelineInfoPanel />);
     await expect.poll(() => screen.container.textContent ?? "").toContain("selected");
     expect(screen.container.textContent).toContain("2 words, 1 line selected");
+  });
+});
+
+describe("TimelineInfoPanel cursor buttons · shared time range", () => {
+  const chorus = (id: string, instanceIdx: number, begin: number) =>
+    createLine({
+      id,
+      text: "go",
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+      words: [createWord({ text: "go", begin, end: begin + 1 })],
+    });
+
+  it("stops Set Begin where the earliest shared instance reaches zero", async () => {
+    useAudioStore.setState({ currentTime: 1, duration: 20 });
+    useProjectStore.setState({
+      lines: [chorus("c0", 0, 3), chorus("c1", 1, 10)],
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+    });
+    useTimelineStore.setState({ selectedWords: [{ lineId: "c1", lineIndex: 1, wordIndex: 0, type: "word" }] });
+    const screen = await render(<TimelineInfoPanel />);
+
+    await screen.getByRole("button", { name: /Set Begin/ }).click();
+
+    await expect.poll(() => useProjectStore.getState().lines[1].words?.[0].begin).toBe(7);
+    expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(0);
   });
 });

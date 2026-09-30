@@ -1,3 +1,4 @@
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { timedTransliterationSlice } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { isWordSelected } from "@/domain/selection/identity";
@@ -145,6 +146,9 @@ const WordTrack: React.FC<WordTrackProps> = ({
       const syllablesFollowRollingAtStart = useSettingsStore.getState().syllablesFollowRolling;
       const minWordDuration = useSettingsStore.getState().minWordDuration;
       const boundaryEdge: BoundaryEdge = edge === "left" ? "begin" : "end";
+      const { lines: rawLines, groups } = useProjectStore.getState();
+      const rawLine = rawLines.find((line) => line.id === lineId);
+      const range = rawLine ? timeRangeResolver(rawLines, groups, duration)(rawLine) : { min: 0, max: duration };
 
       setResizing(true);
       lastPointerRef.current = { clientX: startX, clientY: 0 };
@@ -194,7 +198,7 @@ const WordTrack: React.FC<WordTrackProps> = ({
           time: edgeAtStart + (rawDeltaPx + snapShiftPx) / zoom,
           minDuration: minWordDuration,
           rollNeighbour: adjacentWordIndex !== null,
-          duration,
+          range,
         });
 
         const adjacent =

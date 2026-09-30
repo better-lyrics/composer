@@ -39,7 +39,7 @@ interface SetBoundaryInput {
   minDuration: number;
   rolling: boolean;
   syllablesFollowRolling: boolean;
-  duration?: number;
+  range?: TimeRange;
   updateLineWithHistory: UpdateLineWithHistory;
 }
 
@@ -144,7 +144,7 @@ function createWordTimingOps(config: WordFieldConfig) {
     minDuration,
     rolling,
     syllablesFollowRolling,
-    duration,
+    range,
     updateLineWithHistory,
   }: SetBoundaryInput): void {
     const line = lines[lineIdx];
@@ -160,7 +160,7 @@ function createWordTimingOps(config: WordFieldConfig) {
       syllablesFollowRolling,
       syllablePositions: getSyllablePositions(words),
     });
-    const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, duration });
+    const clamped = clampBoundaryTime({ words, wordIndex: wordIdx, edge, time, minDuration, rollNeighbour, range });
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
 

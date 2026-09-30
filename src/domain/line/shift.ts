@@ -1,4 +1,4 @@
-import type { TimeRange } from "@/domain/group/shared-timing";
+import { type TimeRange, UNBOUNDED_TIME_RANGE } from "@/domain/group/shared-timing";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
@@ -8,10 +8,8 @@ function shiftWords(words: readonly WordTiming[], delta: number): WordTiming[] {
   return words.map((w) => ({ ...w, begin: Math.max(0, w.begin + delta), end: Math.max(0, w.end + delta) }));
 }
 
-const NO_END_LIMIT: TimeRange = { min: 0, max: Number.POSITIVE_INFINITY };
-
 // Lines shifted together stop at the range edges as a whole, so a shift past an edge never shortens or overlaps them.
-function clampShiftDelta(lines: readonly LyricLine[], delta: number, range: TimeRange = NO_END_LIMIT): number {
+function clampShiftDelta(lines: readonly LyricLine[], delta: number, range: TimeRange = UNBOUNDED_TIME_RANGE): number {
   let earliest = Number.POSITIVE_INFINITY;
   let latest = Number.NEGATIVE_INFINITY;
   for (const line of lines) {

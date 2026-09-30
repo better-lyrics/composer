@@ -26,6 +26,10 @@ interface FanOutSource {
   instanceOrder: number[];
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const UNBOUNDED_TIME_RANGE: TimeRange = { min: 0, max: Number.POSITIVE_INFINITY };
+
 // -- Predicates ---------------------------------------------------------------
 
 function sharesTiming(group: LinkGroup | undefined, instanceIdx: number | undefined): boolean {
@@ -261,5 +265,6 @@ export {
   sharedTimingFanOut,
   sharesTiming,
   timeRangeResolver,
+  UNBOUNDED_TIME_RANGE,
 };
 export type { SharedTimingFanOut, TimeRange };

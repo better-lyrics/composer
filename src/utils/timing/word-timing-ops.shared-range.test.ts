@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { nudgeBgWordBegin } from "@/utils/timing/bg-word-timing";
-import { nudgeWordBegin, nudgeWordEnd, setWordBegin } from "@/utils/timing/word-timing";
+import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordBoundary } from "@/utils/timing/word-timing";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 
@@ -85,6 +86,50 @@ describe("word timing ops with a shared time range", () => {
       nudgeWordBegin(store().lines, 1, 0, -15, store().updateLineWithHistory);
 
       expect(lineById("c1")?.words?.[0].begin).toBe(10);
+    });
+  });
+});
+
+describe("setWordBoundary with a shared time range", () => {
+  const setBoundary = (lineIdx: number, edge: "begin" | "end", wordIdx: number, time: number) =>
+    setWordBoundary({
+      lines: store().lines,
+      lineIdx,
+      wordIdx,
+      edge,
+      time,
+      minDuration: 0.05,
+      rolling: false,
+      syllablesFollowRolling: false,
+      range: timeRangeResolver(store().lines, store().groups, 12)(store().lines[lineIdx]),
+      updateLineWithHistory: store().updateLineWithHistory,
+    });
+
+  it("stops a first word begin where the earliest instance reaches zero", () => {
+    seed(true);
+
+    setBoundary(1, "begin", 0, 1);
+
+    expect(lineById("c1")?.words?.[0].begin).toBe(7);
+    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+  });
+
+  it("stops a last word end where the latest instance reaches the song end", () => {
+    seed(true);
+
+    setBoundary(0, "end", 1, 100);
+
+    expect(lineById("c0")?.words?.[1].end).toBe(5);
+    expect(lineById("c1")?.words?.[1].end).toBe(12);
+  });
+
+  describe("regressions", () => {
+    it("stops a line of an old group at zero, as before", () => {
+      seed(false);
+
+      setBoundary(1, "begin", 0, -1);
+
+      expect(lineById("c1")?.words?.[0].begin).toBe(0);
     });
   });
 });
