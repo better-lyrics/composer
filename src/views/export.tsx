@@ -41,7 +41,12 @@ const NOT_SYNCED_MESSAGE =
 function applyEditsToProject(content: string, duration: number): void {
   const result = applyEditedTtml(content, duration);
   if (result.status === "export-only") {
+    if (result.reason === "not-held") {
+      toast(EXPORT_ONLY_MESSAGE);
+      return;
+    }
     toast(NOT_SYNCED_MESSAGE);
+    if (result.message) toast.error(result.message);
     return;
   }
   if (result.status === "unreadable") {
