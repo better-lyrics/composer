@@ -1,5 +1,6 @@
 import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 
@@ -11,6 +12,10 @@ interface MetadataAfterImport {
   metadata: ProjectMetadata;
   importedKeys: MetadataKey[];
 }
+
+// -- Constants ----------------------------------------------------------------
+
+const EXPORTED_AS_META_PAIRS: ReadonlySet<MetadataKey> = new Set(["artists", "songwriters", "extra"]);
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -25,16 +30,18 @@ function isEmptyMetadataValue(value: ProjectMetadata[MetadataKey]): boolean {
   return false;
 }
 
-function comparableValue(key: MetadataKey, value: ProjectMetadata[MetadataKey]): unknown {
-  return key === "language" && typeof value === "string" ? (normalizeLanguageTag(value) ?? value) : value;
-}
-
 function withValue<K extends MetadataKey>(
   metadata: ProjectMetadata,
   key: K,
   value: ProjectMetadata[K],
 ): ProjectMetadata {
   return { ...metadata, [key]: value };
+}
+
+function comparableValue(key: MetadataKey, value: ProjectMetadata[MetadataKey]): unknown {
+  if (key === "language" && typeof value === "string") return normalizeLanguageTag(value) ?? value;
+  if (EXPORTED_AS_META_PAIRS.has(key)) return toComposerMeta(withValue(normalizeLoadedMetadata(null), key, value));
+  return value;
 }
 
 // -- Functions ----------------------------------------------------------------

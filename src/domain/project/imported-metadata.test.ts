@@ -140,5 +140,25 @@ describe("changedMetadata", () => {
     it("regression: still sees a different language as changed", () => {
       expect(changedMetadata({ ...current, language: "en-us" }, { language: "fr" })).toEqual({ language: "fr" });
     });
+
+    it("regression: sees the artists without a blank artist row as unchanged", () => {
+      expect(changedMetadata({ ...current, artists: ["A", ""] }, { artists: ["A"] })).toEqual({});
+    });
+
+    it("regression: sees the songwriters without a blank row as unchanged", () => {
+      expect(changedMetadata({ ...current, songwriters: ["", "W"] }, { songwriters: ["W"] })).toEqual({});
+    });
+
+    it("regression: sees custom fields without a blank value as unchanged", () => {
+      expect(changedMetadata({ ...current, extra: { mood: "calm", note: "" } }, { extra: { mood: "calm" } })).toEqual(
+        {},
+      );
+    });
+
+    it("regression: still sees an added artist next to a blank row as changed", () => {
+      expect(changedMetadata({ ...current, artists: ["A", ""] }, { artists: ["A", "B"] })).toEqual({
+        artists: ["A", "B"],
+      });
+    });
   });
 });

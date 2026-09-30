@@ -149,6 +149,17 @@ describe("applyEditedTtml", () => {
       expect(useProjectStore.getState().metadata.language).toBe("en-us");
     });
 
+    it("regression: applies an edit to a project with a blank artist row", () => {
+      useProjectStore.setState({
+        lines: [createLine({ text: "Hello", begin: 1, end: 2 })],
+        metadata: { title: "Song", artists: ["Ana", ""], album: "", duration: 0 },
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello there"]);
+      expect(useProjectStore.getState().metadata.artists).toEqual(["Ana", ""]);
+    });
+
     it("regression: applies an edit to a project where a translation was removed", () => {
       useProjectStore.setState({
         lines: [
