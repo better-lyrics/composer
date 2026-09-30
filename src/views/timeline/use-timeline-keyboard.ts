@@ -626,9 +626,10 @@ function useTimelineKeyboard(
           e.preventDefault();
           const nudgeAmount = useSettingsStore.getState().nudgeAmount;
           const requestedDelta = matched === "timeline.nudgeLeft" ? -nudgeAmount : nudgeAmount;
-          const rawLines = useProjectStore.getState().lines;
+          const { lines: rawLines, groups } = useProjectStore.getState();
           const partitioned = partitionNudgeSelections(rawLines, nudgeSel);
-          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, duration);
+          const rangeOf = timeRangeResolver(rawLines, groups, duration);
+          const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
           if (result.updates.length === 0) break;
           if (result.updates.length === 1) {
             useProjectStore.getState().updateLineWithHistory(result.updates[0].id, result.updates[0].updates, {

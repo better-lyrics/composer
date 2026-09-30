@@ -1,3 +1,4 @@
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { lineRowHeight } from "@/views/timeline/row-geometry";
 import { isLinked } from "@/domain/instance/predicates";
@@ -253,7 +254,7 @@ function shiftSelectionsTogether(
   rawLines: LyricLine[],
   partitioned: PartitionedSelections,
   requestedDelta: number,
-  duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
 ): NudgeResult {
   if (requestedDelta === 0) return { appliedDelta: 0, updates: [] };
   const wordHasSelection = partitioned.wordSynced.length > 0;
@@ -261,8 +262,8 @@ function shiftSelectionsTogether(
   if (!wordHasSelection && !lineHasSelection) return { appliedDelta: 0, updates: [] };
   const direction = requestedDelta < 0 ? -1 : 1;
 
-  const wordProbe = nudgeSelectedWords(rawLines, partitioned.wordSynced, requestedDelta, duration);
-  const lineProbe = shiftLineSyncedRows(rawLines, partitioned.lineSynced, requestedDelta, duration);
+  const wordProbe = nudgeSelectedWords(rawLines, partitioned.wordSynced, requestedDelta, rangeOf);
+  const lineProbe = shiftLineSyncedRows(rawLines, partitioned.lineSynced, requestedDelta, rangeOf);
   const wordMag = wordHasSelection ? Math.abs(wordProbe.appliedDelta) : Number.POSITIVE_INFINITY;
   const lineMag = lineHasSelection ? Math.abs(lineProbe.appliedDelta) : Number.POSITIVE_INFINITY;
   const unifiedMag = Math.min(wordMag, lineMag, Math.abs(requestedDelta));
@@ -273,11 +274,11 @@ function shiftSelectionsTogether(
   const wordFinal =
     !wordHasSelection || Math.abs(wordProbe.appliedDelta) === unifiedMag
       ? wordProbe
-      : nudgeSelectedWords(rawLines, partitioned.wordSynced, unifiedDelta, duration);
+      : nudgeSelectedWords(rawLines, partitioned.wordSynced, unifiedDelta, rangeOf);
   const lineFinal =
     !lineHasSelection || Math.abs(lineProbe.appliedDelta) === unifiedMag
       ? lineProbe
-      : shiftLineSyncedRows(rawLines, partitioned.lineSynced, unifiedDelta, duration);
+      : shiftLineSyncedRows(rawLines, partitioned.lineSynced, unifiedDelta, rangeOf);
 
   return { appliedDelta: unifiedDelta, updates: [...wordFinal.updates, ...lineFinal.updates] };
 }
@@ -286,7 +287,7 @@ function shiftLineSyncedRows(
   rawLines: LyricLine[],
   selections: ReadonlyArray<NudgeSelection>,
   requestedDelta: number,
-  duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
 ): NudgeResult {
   if (selections.length === 0 || requestedDelta === 0) {
     return { appliedDelta: 0, updates: [] };
@@ -300,7 +301,8 @@ function shiftLineSyncedRows(
     const line = linesById.get(sel.lineId);
     if (!line || line.begin === undefined || line.end === undefined) continue;
     targets.push(line);
-    const headroom = direction < 0 ? line.begin : duration - line.end;
+    const range = rangeOf(line);
+    const headroom = direction < 0 ? line.begin - range.min : range.max - line.end;
     if (headroom < allowedMagnitude) allowedMagnitude = headroom;
     if (allowedMagnitude <= 0) return { appliedDelta: 0, updates: [] };
   }
@@ -317,7 +319,7 @@ function nudgeSelectedWords(
   lines: LyricLine[],
   selections: ReadonlyArray<NudgeSelection>,
   requestedDelta: number,
-  duration: number,
+  rangeOf: (line: LyricLine) => TimeRange,
 ): NudgeResult {
   if (selections.length === 0 || requestedDelta === 0) {
     return { appliedDelta: 0, updates: [] };
@@ -347,11 +349,12 @@ function nudgeSelectedWords(
 
   for (const group of groups.values()) {
     const wordsArray = trackWords(group.line, group.type) ?? [];
+    const range = rangeOf(group.line);
     for (const idx of group.indices) {
       const word = wordsArray[idx];
       let headroom: number;
       if (direction < 0) {
-        let prevEnd = 0;
+        let prevEnd = range.min;
         for (let i = idx - 1; i >= 0; i--) {
           if (!group.indices.has(i)) {
             prevEnd = wordsArray[i].end;
@@ -360,7 +363,7 @@ function nudgeSelectedWords(
         }
         headroom = word.begin - prevEnd;
       } else {
-        let nextBegin = duration;
+        let nextBegin = range.max;
         for (let i = idx + 1; i < wordsArray.length; i++) {
           if (!group.indices.has(i)) {
             nextBegin = wordsArray[i].begin;

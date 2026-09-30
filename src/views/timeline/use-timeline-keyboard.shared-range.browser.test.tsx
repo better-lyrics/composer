@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -69,6 +70,19 @@ describe("useTimelineKeyboard · shared time range", () => {
     expect(lineById("c0")?.words?.[0].begin).toBe(0);
   });
 
+  it("stops a left nudge of a whole line where the earliest instance reaches zero", async () => {
+    useSettingsStore.setState({ nudgeAmount: 5 });
+    await armSharedTimeline({
+      sharesTiming: true,
+      selection: [firstWordOf("c1", 1), { ...firstWordOf("c1", 1), wordIndex: 1 }],
+    });
+
+    pressKey("ArrowLeft");
+
+    await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(7);
+    expect(lineById("c0")?.words?.[0].begin).toBe(0);
+  });
+
   describe("regressions", () => {
     it("regression: sets a begin of an old group line to the playhead", async () => {
       await armSharedTimeline({ sharesTiming: false, selection: [firstWordOf("c1", 1)], currentTime: 1 });
@@ -76,6 +90,19 @@ describe("useTimelineKeyboard · shared time range", () => {
       pressKey("[");
 
       await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(1);
+      expect(lineById("c0")?.words?.[0].begin).toBe(3);
+    });
+
+    it("regression: nudges a whole line of an old group by the full amount", async () => {
+      useSettingsStore.setState({ nudgeAmount: 5 });
+      await armSharedTimeline({
+        sharesTiming: false,
+        selection: [firstWordOf("c1", 1), { ...firstWordOf("c1", 1), wordIndex: 1 }],
+      });
+
+      pressKey("ArrowLeft");
+
+      await expect.poll(() => lineById("c1")?.words?.[0].begin).toBe(5);
       expect(lineById("c0")?.words?.[0].begin).toBe(3);
     });
   });
