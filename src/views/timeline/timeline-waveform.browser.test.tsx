@@ -1,12 +1,17 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
-import { installStyleSheet, WAVEFORM_SWEEP_ANIMATION, WAVEFORM_SWEEP_CSS } from "@/test/browser-css";
-import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { TOKEN_VAR } from "@/domain/theme/model";
 import { useAudioStore } from "@/stores/audio";
-import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
+import {
+  WAVEFORM_SWEEP_ANIMATION,
+  WAVEFORM_SWEEP_CSS,
+  installStyleSheet,
+  installUtilitiesUsedIn,
+} from "@/test/browser-css";
 import { render } from "@/test/render";
 import { readToken } from "@/utils/theme/read-token";
-import { TOKEN_VAR } from "@/domain/theme/model";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
 function setupWaveformAudio(duration = 30) {
   useAudioStore.setState({
@@ -476,5 +481,21 @@ describe("TimelineWaveform loading dots", () => {
       expect(fadeMs).toBeGreaterThan(0);
       expect(FADE_SETTLE_MS).toBeGreaterThan(fadeMs);
     });
+  });
+});
+
+describe("TimelineWaveform · stacking", () => {
+  it("regression: keeps the played waveform canvas under overlays that follow it", async () => {
+    setupWaveformAudio(6);
+    const audio = document.createElement("audio");
+    audio.src = bufferToBlobUrl(makeSineBuffer(6));
+    useAudioStore.setState({ audioElement: audio });
+    const screen = await render(<TimelineWaveform />);
+    const fade = screen.container.querySelector<HTMLElement>("[data-waveform-fade]");
+    if (!fade) throw new Error("waveform layer not rendered");
+    const utilities = await installUtilitiesUsedIn(screen.container);
+
+    expect(getComputedStyle(fade).isolation).toBe("isolate");
+    utilities.remove();
   });
 });
