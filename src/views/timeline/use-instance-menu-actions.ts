@@ -9,6 +9,7 @@ import { MOD_KEY } from "@/utils/platform";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
+import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
@@ -81,13 +82,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
 
   const handlePingSiblings = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-    const { groupId } = contextMenu.target;
-    useTimelineStore.getState().setPingingGroupId(groupId);
-    window.setTimeout(() => {
-      if (useTimelineStore.getState().pingingGroupId === groupId) {
-        useTimelineStore.getState().setPingingGroupId(null);
-      }
-    }, 700);
+    pingGroup(contextMenu.target.groupId);
     clearContextMenu();
   }, [contextMenu, clearContextMenu]);
 

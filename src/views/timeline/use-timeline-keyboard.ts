@@ -30,6 +30,7 @@ import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confi
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
+import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
@@ -620,12 +621,7 @@ function useTimelineKeyboard(
             break;
           }
           e.preventDefault();
-          useTimelineStore.getState().setPingingGroupId(inst.groupId);
-          window.setTimeout(() => {
-            if (useTimelineStore.getState().pingingGroupId === inst.groupId) {
-              useTimelineStore.getState().setPingingGroupId(null);
-            }
-          }, 700);
+          pingGroup(inst.groupId);
           break;
         }
         case "timeline.nudgeLeft":

@@ -1,3 +1,4 @@
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
@@ -10,7 +11,7 @@ import { useCallback } from "react";
 // -- Hook ---------------------------------------------------------------------
 
 function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
-  const { lines, gutterLineGroupInfo } = targets;
+  const { lines, gutterLineGroupInfo, placeAtPlayheadInfo } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
@@ -31,6 +32,16 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     });
     clearContextMenu();
   }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
+
+  const handlePlaceAtPlayhead = useCallback(() => {
+    if (!placeAtPlayheadInfo) return;
+    const audio = useAudioStore.getState();
+    const playheadTime = audio.audioElement?.currentTime ?? audio.currentTime;
+    useProjectStore
+      .getState()
+      .placeInstance(placeAtPlayheadInfo.groupId, placeAtPlayheadInfo.instanceIdx, playheadTime);
+    clearContextMenu();
+  }, [placeAtPlayheadInfo, clearContextMenu]);
 
   const handleAddLine = useCallback(
     (position: "above" | "below") => {
@@ -74,6 +85,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   return {
     handlePlaceLineHere,
+    handlePlaceAtPlayhead,
     handleAddLine,
     handleDeleteLine,
     handleDetachLine,

@@ -1,5 +1,12 @@
+import {
+  instanceStart,
+  isInstanceFullyTimed,
+  isSharedLine,
+  sharedInstancesInLineOrder,
+} from "@/domain/group/shared-timing";
 import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
@@ -150,6 +157,21 @@ function useContextMenuTargets() {
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
+  const placeAtPlayheadInfo = useMemo(() => {
+    if (!contextMenu || (contextMenu.target.kind !== "gutter" && contextMenu.target.kind !== "track")) return null;
+    const { lineId } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    const groups = useProjectStore.getState().groups;
+    const group = groups.find((candidate) => candidate.id === line?.groupId);
+    if (!line || !group || !isLinked(line) || !isSharedLine(line, new Map([[group.id, group]]))) return null;
+    const { instanceIdx } = line;
+    if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
+    const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+    );
+    return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
+  }, [contextMenu, rawLines]);
+
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const updates = computeSplitIntoWordsUpdates(splitTargetsForMenu(contextMenu.target, selectedWords), rawLines);
@@ -167,6 +189,7 @@ function useContextMenuTargets() {
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeAtPlayheadInfo,
     splitIntoWordsInfo,
   };
 }

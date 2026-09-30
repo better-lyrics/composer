@@ -38,6 +38,7 @@ import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-sto
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { useMarquee } from "@/views/timeline/use-marquee";
+import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
 import { useTimelineDnd } from "@/views/timeline/use-timeline-dnd";
 import { useTimelineFrameWake } from "@/views/timeline/use-timeline-frame-wake";
@@ -117,6 +118,7 @@ const TimelinePanel: React.FC = () => {
   const lastDragPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
   const getLastDragPointer = useCallback(() => lastDragPointerRef.current, []);
   useSnapBypass({ active: activeDrag !== null, getLastPointer: getLastDragPointer });
+  useSharedTimingPing();
 
   useEffect(() => {
     if (!activeDrag) return;

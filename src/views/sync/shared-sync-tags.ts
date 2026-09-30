@@ -1,5 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { instanceOrdinal } from "@/domain/instance/enumerate";
+import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
 import { nextSyncableLineIndex, type SyncCursor } from "@/domain/sync/cursor";
 import { type SharedAnchor, sharedAnchorAt } from "@/domain/sync/shared-anchor";
@@ -42,9 +42,8 @@ function sharedSyncTags(
   const next = nextIndex < lines.length ? sharedAnchorAt(lines, groups, { lineIndex: nextIndex, wordIndex: 0 }) : null;
   const nextGroup = anchorGroup(groups, next);
   if (next && nextGroup) {
-    const ordinal = instanceOrdinal(lines, next.groupId, next.instanceIdx);
     tags.set(lines[nextIndex].id, {
-      label: `${nextGroup.label} ${ordinal}`,
+      label: instanceName(lines, nextGroup, next.instanceIdx),
       color: nextGroup.color,
       placement: "below",
     });
