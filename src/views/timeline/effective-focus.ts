@@ -22,6 +22,12 @@ function currentFocusScrollRange(container: HTMLElement): ScrollRange | null {
   return focusScrollRange(bounds, useTimelineStore.getState().zoom, container.clientWidth - GUTTER_WIDTH);
 }
 
+function scrollToFocusStart(container: HTMLElement): void {
+  const range = currentFocusScrollRange(container);
+  container.scrollTop = 0;
+  if (range) container.scrollLeft = range.min;
+}
+
 // -- Hooks --------------------------------------------------------------------
 
 function useEffectiveFocus(): GroupFocus | null {
@@ -31,4 +37,4 @@ function useEffectiveFocus(): GroupFocus | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { currentEffectiveFocus, currentFocusScrollRange, useEffectiveFocus };
+export { currentEffectiveFocus, currentFocusScrollRange, scrollToFocusStart, useEffectiveFocus };

@@ -11,6 +11,7 @@ import { SegmentedControl } from "@/ui/segmented-control";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
 import { useEffectiveFocus } from "@/views/timeline/effective-focus";
+import { canHearInstance } from "@/views/timeline/group-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   SHARING_MENU_LABELS,
@@ -34,7 +35,7 @@ const HearSwitch: React.FC<FocusedGroupProps> = ({ group, lines, hearInstanceIdx
   const options = instanceIndicesOf(lines, group.id).map((instanceIdx) => ({
     value: String(instanceIdx),
     label: instanceName(lines, group, instanceIdx),
-    disabled: !sharesTiming(group, instanceIdx) || instanceStart(lines, group.id, instanceIdx) === null,
+    disabled: !canHearInstance(lines, group, instanceIdx),
   }));
 
   return (

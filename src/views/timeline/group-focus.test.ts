@@ -1,6 +1,8 @@
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import {
   FOCUS_SCROLL_MARGIN_PX,
+  adjacentHeardInstance,
+  canHearInstance,
   clampScrollLeft,
   effectiveFocus,
   focusBounds,
@@ -130,5 +132,79 @@ describe("clampScrollLeft", () => {
 
   it("moves a value past the range to the end", () => {
     expect(clampScrollLeft(900, range)).toBe(300);
+  });
+});
+
+describe("heard instances", () => {
+  const group = createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [3] });
+  const unplaced = createLine({ id: "u", text: "go now", groupId: "g1", instanceIdx: 2, templateLineIdx: 0 });
+  const song = [
+    chorusLine("a", 0, 10),
+    verse,
+    chorusLine("b", 1, 40),
+    unplaced,
+    chorusLine("own", 3, 70),
+    chorusLine("c", 4, 90),
+  ];
+
+  describe("canHearInstance", () => {
+    it("hears a placed shared instance", () => {
+      expect(canHearInstance(song, group, 1)).toBe(true);
+    });
+
+    it("does not hear an own-timing instance", () => {
+      expect(canHearInstance(song, group, 3)).toBe(false);
+    });
+
+    it("does not hear a shared instance that is not placed", () => {
+      expect(canHearInstance(song, group, 2)).toBe(false);
+    });
+
+    describe("edge cases", () => {
+      it("does not hear any instance of a group that does not share timing", () => {
+        expect(canHearInstance(song, createGroup({ id: "g1" }), 0)).toBe(false);
+      });
+
+      it("does not hear an instance that has no lines", () => {
+        expect(canHearInstance(song, group, 9)).toBe(false);
+      });
+    });
+  });
+
+  describe("adjacentHeardInstance", () => {
+    it("steps to the next heard instance, past the ones that cannot be heard", () => {
+      expect(adjacentHeardInstance(song, group, 1, 1)).toBe(4);
+    });
+
+    it("steps to the previous heard instance", () => {
+      expect(adjacentHeardInstance(song, group, 4, -1)).toBe(1);
+    });
+
+    it("wraps around at both ends", () => {
+      expect(adjacentHeardInstance(song, group, 4, 1)).toBe(0);
+      expect(adjacentHeardInstance(song, group, 0, -1)).toBe(4);
+    });
+
+    describe("edge cases", () => {
+      it("returns null from an own-timing instance", () => {
+        expect(adjacentHeardInstance(song, group, 3, 1)).toBeNull();
+      });
+
+      it("returns null when only one instance can be heard", () => {
+        expect(adjacentHeardInstance([chorusLine("a", 0, 10), unplaced], group, 0, 1)).toBeNull();
+      });
+    });
+
+    describe("invariants", () => {
+      it("only ever returns an instance that can be heard", () => {
+        for (const from of [0, 1, 4]) {
+          for (const direction of [1, -1] as const) {
+            const next = adjacentHeardInstance(song, group, from, direction);
+            expect(next).not.toBeNull();
+            expect(canHearInstance(song, group, next ?? -1)).toBe(true);
+          }
+        }
+      });
+    });
   });
 });

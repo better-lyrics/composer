@@ -1,8 +1,7 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
-import type { WordSelection } from "@/domain/selection/model";
+import { linesOfInstance } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast } from "@/utils/group-toast";
@@ -10,8 +9,8 @@ import { MOD_KEY } from "@/utils/platform";
 import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instance-to-clipboard";
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
+import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
-import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -92,25 +91,7 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
   const handleJumpToInstanceOffset = useCallback(
     (direction: 1 | -1) => {
       if (!contextMenu || contextMenu.target.kind !== "group-banner") return;
-      const { groupId, instanceIdx } = contextMenu.target;
-      const projectLines = useProjectStore.getState().lines;
-      const sorted = instanceIndicesOf(projectLines, groupId);
-      if (sorted.length < 2) return;
-      const here = sorted.indexOf(instanceIdx);
-      const next = sorted[(here + direction + sorted.length) % sorted.length];
-      const wordsInNext: WordSelection[] = [];
-      for (let li = 0; li < projectLines.length; li++) {
-        const line = projectLines[li];
-        if (line.groupId !== groupId || line.instanceIdx !== next) continue;
-        for (let wi = 0; wi < (line.words?.length ?? 0); wi++) {
-          wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
-        }
-        for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++) {
-          wordsInNext.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "bg" });
-        }
-      }
-      useTimelineStore.getState().setSelectedWords(wordsInNext);
-      scrollToInstanceHeader(groupId, next);
+      jumpToAdjacentInstance(contextMenu.target.groupId, contextMenu.target.instanceIdx, direction);
       clearContextMenu();
     },
     [contextMenu, clearContextMenu],

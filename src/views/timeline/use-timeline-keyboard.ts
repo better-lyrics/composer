@@ -29,22 +29,18 @@ import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instanc
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
-import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
+import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
+import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { adjacentSnapPoint } from "@/views/timeline/snap-marker-math";
 import { splitLinesIntoWords } from "@/views/timeline/split-lines-into-words";
 import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { useTimelineClipboard } from "@/views/timeline/use-timeline-clipboard";
-import {
-  computeRowLayout,
-  getWordsInInstance,
-  partitionNudgeSelections,
-  shiftSelectionsTogether,
-} from "@/views/timeline/utils";
+import { computeRowLayout, partitionNudgeSelections, shiftSelectionsTogether } from "@/views/timeline/utils";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
@@ -577,22 +573,20 @@ function useTimelineKeyboard(
         case "timeline.jumpPrevInstance":
         case "timeline.jumpNextInstance": {
           const projectLines = useProjectStore.getState().lines;
-          const inst = currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
+          const focus = currentEffectiveFocus();
+          const inst = focus
+            ? { groupId: focus.groupId, instanceIdx: focus.hearInstanceIdx }
+            : currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {
             toast.error("Select words inside one instance first");
             break;
           }
-          const all = instanceIndicesOf(projectLines, inst.groupId);
-          if (all.length < 2) {
+          if (instanceIndicesOf(projectLines, inst.groupId).length < 2) {
             toast.error("This group has only one instance");
             break;
           }
-          const here = all.indexOf(inst.instanceIdx);
-          const dir = matched === "timeline.jumpNextInstance" ? 1 : -1;
-          const nextIdx = all[(here + dir + all.length) % all.length];
           e.preventDefault();
-          useTimelineStore.getState().setSelectedWords(getWordsInInstance(projectLines, inst.groupId, nextIdx));
-          scrollToInstanceHeader(inst.groupId, nextIdx);
+          jumpToAdjacentInstance(inst.groupId, inst.instanceIdx, matched === "timeline.jumpNextInstance" ? 1 : -1);
           break;
         }
         case "timeline.detachInstance": {
@@ -658,6 +652,12 @@ function useTimelineKeyboard(
           break;
         }
         case "timeline.jumpToInstanceStart": {
+          const focusScrollContainer = scrollContainerRef.current;
+          if (currentEffectiveFocus() && focusScrollContainer) {
+            e.preventDefault();
+            scrollToFocusStart(focusScrollContainer);
+            break;
+          }
           const projectLines = useProjectStore.getState().lines;
           const inst = currentInstanceFromSelection(projectLines, useTimelineStore.getState().selectedWords);
           if (!inst) {

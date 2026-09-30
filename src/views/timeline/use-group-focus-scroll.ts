@@ -1,5 +1,5 @@
 import { type GroupFocus, clampScrollLeft } from "@/views/timeline/group-focus";
-import { currentFocusScrollRange, useEffectiveFocus } from "@/views/timeline/effective-focus";
+import { currentFocusScrollRange, scrollToFocusStart, useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { type RefObject, useEffect, useRef } from "react";
 
@@ -18,9 +18,7 @@ function useGroupFocusScroll(scrollContainerRef: RefObject<HTMLDivElement | null
       if (previous) scrollToInstanceHeader(previous.groupId, previous.hearInstanceIdx);
       return;
     }
-    const range = currentFocusScrollRange(container);
-    container.scrollTop = 0;
-    if (range) container.scrollLeft = range.min;
+    scrollToFocusStart(container);
 
     const keepInsideInstance = () => {
       const current = currentFocusScrollRange(container);

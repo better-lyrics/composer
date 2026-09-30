@@ -1,5 +1,7 @@
+import { instanceStart, sharesTiming } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import type { Bounds } from "@/domain/word/bounds";
@@ -31,6 +33,23 @@ function effectiveFocus(lines: readonly LyricLine[], focus: GroupFocus | null): 
   return lines.some((line) => isInFocus(line, focus)) ? focus : null;
 }
 
+function canHearInstance(lines: readonly LyricLine[], group: LinkGroup, instanceIdx: number): boolean {
+  return sharesTiming(group, instanceIdx) && instanceStart(lines, group.id, instanceIdx) !== null;
+}
+
+function adjacentHeardInstance(
+  lines: readonly LyricLine[],
+  group: LinkGroup,
+  heardInstanceIdx: number,
+  direction: 1 | -1,
+): number | null {
+  if (!canHearInstance(lines, group, heardInstanceIdx)) return null;
+  const heard = instanceIndicesOf(lines, group.id).filter((instanceIdx) => canHearInstance(lines, group, instanceIdx));
+  if (heard.length < 2) return null;
+  const here = heard.indexOf(heardInstanceIdx);
+  return heard[(here + direction + heard.length) % heard.length];
+}
+
 function focusBounds(lines: readonly LyricLine[], focus: GroupFocus): Bounds | null {
   return instanceBounds(linesOfInstance(lines, focus.groupId, focus.hearInstanceIdx));
 }
@@ -47,5 +66,14 @@ function clampScrollLeft(scrollLeft: number, range: ScrollRange): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { FOCUS_SCROLL_MARGIN_PX, clampScrollLeft, effectiveFocus, focusBounds, focusScrollRange, isInFocus };
+export {
+  FOCUS_SCROLL_MARGIN_PX,
+  adjacentHeardInstance,
+  canHearInstance,
+  clampScrollLeft,
+  effectiveFocus,
+  focusBounds,
+  focusScrollRange,
+  isInFocus,
+};
 export type { GroupFocus, ScrollRange };
