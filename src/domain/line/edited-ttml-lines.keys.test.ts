@@ -1,9 +1,8 @@
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { mergeEditedTtmlLines, mergedLineIdsByKey } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
 import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { PARSERS } from "@/utils/lyrics-parsers";
-import { lineKeyIds } from "@/utils/ttml-line-keys";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -114,41 +113,35 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
     });
   });
 
-  describe("regressions: keys from an older export", () => {
-    it("regression: pairs through the key map of the export the edit came from", () => {
-      const before = [
-        translated("a", "Alpha", 1, "Uno", "manual"),
-        translated("b", "Bravo", 2, "Dos", "google"),
-        translated("c", "Charlie", 3, "Tres", "manual"),
-      ];
-      const content = exportedTtml(before).replace(">Charlie<", ">Charlie!<");
-      const now = [before[0], before[2]].filter((line) => line !== undefined);
-      const merged = mergeEditedTtmlLines(now, PARSERS.ttml(content), lineKeyIds(before));
-      expect(merged[0]).toBe(now[0]);
-      expect(merged[1]?.id).not.toBe("c");
-      expect(merged[1]?.text).toBe("Bravo");
-      expect(merged[2]).toMatchObject({ id: "c", text: "Charlie!", translations: before[2]?.translations });
+  describe("deletes", () => {
+    it("deletes a line whose paragraph the edit removed", () => {
+      const stored = [translated("a", "Alpha", 1, "Uno", "manual"), translated("b", "Bravo", 2, "Dos", "google")];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(paragraphs(ttml)[1] ?? "", ""));
+      expect(merged.map((line) => line.id)).toEqual(["a"]);
     });
   });
+});
 
-  describe("regressions: lines the edit never knew", () => {
-    it("regression: keeps a stored line the edit's key map never had, after its preceding line", () => {
-      const before = [translated("a", "Alpha", 1, "Uno", "manual"), translated("c", "Charlie", 3, "Tres", "manual")];
-      const content = exportedTtml(before).replace(">Charlie<", ">Charlie!<");
-      const bravo = translated("b", "Bravo", 2, "Dos", "google");
-      const now = [before[0], bravo, before[1]].filter((line) => line !== undefined);
-      const merged = mergeEditedTtmlLines(now, PARSERS.ttml(content), lineKeyIds(before));
-      expect(merged.map((line) => line.id)).toEqual(["a", "b", "c"]);
-      expect(merged[1]).toBe(bravo);
-      expect(merged[2]?.text).toBe("Charlie!");
-    });
+describe("mergedLineIdsByKey", () => {
+  it("maps each edited key to the id its merged line gets", () => {
+    const stored = [translated("a", "Alpha", 1, "Uno", "manual"), translated("b", "Bravo", 2, "Dos", "google")];
+    const edit = PARSERS.ttml(
+      exportedTtml(stored).replace(
+        "\n    </div>",
+        '\n      <p begin="0:05.000" end="0:06.000" itunes:key="X" ttm:agent="v1">Extra</p>\n    </div>',
+      ),
+    );
+    const ids = mergedLineIdsByKey(stored, edit);
+    const extra = mergeEditedTtmlLines(stored, edit).find((line) => line.text === "Extra");
+    expect(ids).toEqual({ L1: "a", L2: "b", X: edit.lines[2]?.id });
+    expect(extra?.id).toBe(ids.X);
+  });
 
-    it("still deletes a line the edit knew and no longer holds", () => {
-      const before = [translated("a", "Alpha", 1, "Uno", "manual"), translated("b", "Bravo", 2, "Dos", "google")];
-      const content = exportedTtml(before).replace(paragraphs(exportedTtml(before))[1] ?? "", "");
-      expect(mergeEditedTtmlLines(before, PARSERS.ttml(content), lineKeyIds(before)).map((line) => line.id)).toEqual([
-        "a",
-      ]);
-    });
+  it("maps a repeated key to the stored line it paired with", () => {
+    const stored = [translated("d", "Delta", 3, "D es", "manual")];
+    const ttml = exportedTtml(stored);
+    const [delta = ""] = paragraphs(ttml);
+    const edit = PARSERS.ttml(ttml.replace(delta, `${delta.replace(">Delta<", ">Delta copy<")}${delta}`));
+    expect(mergedLineIdsByKey(stored, edit)).toEqual({ L1: "d" });
   });
 });

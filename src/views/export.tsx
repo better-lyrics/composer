@@ -14,7 +14,6 @@ import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
-import { keptTtmlEdits, startedTtmlEdit } from "@/views/export/ttml-edit-keys";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
@@ -48,8 +47,8 @@ const NOT_HELD_MESSAGES: Record<ProjectPart, string> = {
   agents: "Your edits only change the exported file because the TTML cannot hold some singer details.",
   groups: "Your edits only change the exported file because the TTML cannot hold some line group details.",
 };
-const STALE_KEYS_MESSAGE =
-  "Your edits only change the exported file because the TTML no longer matches the lyrics line by line. Regenerate to edit them again.";
+const LYRICS_CHANGED_MESSAGE =
+  "The lyrics changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
 const NOT_SYNCED_MESSAGE =
   "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
 
@@ -62,8 +61,8 @@ function applyEditsToProject(content: string, duration: number): void {
       toast(NOT_HELD_MESSAGES[result.part]);
       return;
     }
-    if (result.reason === "stale-keys") {
-      toast(STALE_KEYS_MESSAGE);
+    if (result.reason === "lyrics-changed") {
+      toast(LYRICS_CHANGED_MESSAGE);
       return;
     }
     toast(NOT_SYNCED_MESSAGE);
@@ -148,7 +147,7 @@ const ExportPanel: React.FC = () => {
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
     setEditState((prev) =>
-      prev === null ? prev : keptTtmlEdits(prev, generatedTtml, useProjectStore.getState().lines),
+      prev === null ? prev : { source: generatedTtml, content: prev.content, lyricsChanged: true },
     );
   }, [generatedTtml, setEditState]);
 
@@ -156,7 +155,8 @@ const ExportPanel: React.FC = () => {
     (content: string) => {
       setEditState((prev) => {
         if (prev !== null && hasConflict) return { ...prev, content };
-        return startedTtmlEdit(prev, generatedTtml, content, useProjectStore.getState().lines);
+        const lyricsChanged = prev !== null && (prev.lyricsChanged || prev.source !== generatedTtml);
+        return { source: generatedTtml, content, ...(lyricsChanged ? { lyricsChanged: true as const } : {}) };
       });
     },
     [generatedTtml, hasConflict, setEditState],

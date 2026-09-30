@@ -69,24 +69,20 @@ describe("usePersistence · hand-edited TTML", () => {
   });
 
   describe("regressions", () => {
-    const KEYED_EDIT = { ...EDIT, lineKeyIds: { L1: "L1-line", L2: "other-line" } };
-
-    it("regression: saves the line keys the edit started from", async () => {
+    it("regression: saves and restores that the lyrics changed under the edit", async () => {
+      const kept = { ...EDIT, lyricsChanged: true as const };
+      await seedProject(savedProject({ ttmlEditState: kept }));
       await mountPersistence();
 
-      useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
-      useProjectStore.getState().setTtmlEditState(KEYED_EDIT);
-
-      await expect
-        .poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 })
-        .toEqual(KEYED_EDIT);
+      expect(useProjectStore.getState().ttmlEditState).toEqual(kept);
     });
 
-    it("regression: restores the line keys and an unknown numbering across a reload", async () => {
-      await seedProject(savedProject({ ttmlEditState: { ...EDIT, lineKeyIds: null } }));
+    it("regression: loads an edit saved with a line key map by an earlier build", async () => {
+      await seedProject(savedProject({ ttmlEditState: { ...EDIT, lineKeyIds: { L1: "L1" } } }));
       await mountPersistence();
 
-      expect(useProjectStore.getState().ttmlEditState).toEqual({ ...EDIT, lineKeyIds: null });
+      expect(useProjectStore.getState().ttmlEditState).toMatchObject(EDIT);
+      expect(useProjectStore.getState().lines).toHaveLength(1);
     });
   });
 

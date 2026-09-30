@@ -63,10 +63,6 @@ function lineKeyIds(lines: readonly LyricLine[]): LineKeyIds {
   return Object.fromEntries(keyedExportLines(lines).map(({ line, key }) => [key, line.id]));
 }
 
-function pickLineKeyIds(keyIds: LineKeyIds, keep: (id: string) => boolean): LineKeyIds {
-  return Object.fromEntries(Object.entries(keyIds).filter(([, id]) => keep(id)));
-}
-
 function renumberLineKeys(ttml: string, from: LineKeyIds, to: LineKeyIds): string {
   const keyById = new Map(Object.entries(to).map(([key, id]) => [id, key] as const));
   const renamed = new Map<string, string>();
@@ -91,5 +87,5 @@ function renumberLineKeys(ttml: string, from: LineKeyIds, to: LineKeyIds): strin
 
 // -- Exports ------------------------------------------------------------------
 
-export { canonicalLineKeys, isExportedLine, keyedExportLines, lineKeyIds, pickLineKeyIds, renumberLineKeys };
+export { canonicalLineKeys, isExportedLine, keyedExportLines, lineKeyIds, renumberLineKeys };
 export type { LineKeyIds };

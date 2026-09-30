@@ -5,24 +5,18 @@ import { COMBINED_OPERATIONS, OPERATIONS } from "@/test/edited-ttml-operations";
 import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
-import { keptTtmlEdits, startedTtmlEdit } from "@/views/export/ttml-edit-keys";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function keptEditsAfter(editCase: EditCase, atEditStart: EditedTtmlProject, fixture: EditedTtmlProject): string {
-  const started = startedTtmlEdit(
-    null,
-    generateProjectTtml(useProjectStore.getState(), 0),
-    editCase.edited,
-    atEditStart.lines,
-  );
-  const changed = editCase.projectChangeBeforeKeepingEdits?.(atEditStart.lines, fixture.lines);
-  useProjectStore.setState({ lines: changed ?? atEditStart.lines });
-  const current = useProjectStore.getState();
-  const kept = keptTtmlEdits(started, generateProjectTtml(current, 0), current.lines);
-  useProjectStore.setState({ ttmlEditState: kept });
-  return kept.content;
+function keptOverProjectChange(editCase: EditCase, atEditStart: EditedTtmlProject, fixture: EditedTtmlProject) {
+  const source = generateProjectTtml(useProjectStore.getState(), 0);
+  useProjectStore.setState({ ttmlEditState: { source, content: editCase.edited } });
+  const changed = editCase.projectChangeBeforeKeepingEdits?.(atEditStart.lines, fixture.lines) ?? atEditStart.lines;
+  useProjectStore.setState({ lines: changed });
+  const generated = generateProjectTtml(useProjectStore.getState(), 0);
+  useProjectStore.setState({ ttmlEditState: { source: generated, content: editCase.edited, lyricsChanged: true } });
+  return changed;
 }
 
 // -- Tests --------------------------------------------------------------------
@@ -42,11 +36,14 @@ describe("applyEditedTtml · invariants", () => {
           metadata: project.metadata,
         });
         const editCase = operation.edit(atEditStart, generateProjectTtml(useProjectStore.getState(), 0));
-        const content = editCase.projectChangeBeforeKeepingEdits
-          ? keptEditsAfter(editCase, atEditStart, project)
-          : editCase.edited;
+        if (editCase.projectChangeBeforeKeepingEdits) {
+          const changed = keptOverProjectChange(editCase, atEditStart, project);
+          expect(applyEditedTtml(editCase.edited, 0)).toEqual({ status: "export-only", reason: "lyrics-changed" });
+          expect(useProjectStore.getState().lines).toBe(changed);
+          return;
+        }
 
-        const result = applyEditedTtml(content, 0);
+        const result = applyEditedTtml(editCase.edited, 0);
         expect(result).toMatchObject({ status: "applied" });
         if (editCase.lossless) expect(result).toMatchObject({ keptInExport: false });
 

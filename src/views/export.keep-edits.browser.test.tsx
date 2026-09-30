@@ -54,53 +54,38 @@ function byId(id: string): LyricLine | undefined {
   return useProjectStore.getState().lines.find((line) => line.id === id);
 }
 
+// -- Constants ----------------------------------------------------------------
+
+const LYRICS_CHANGED =
+  "The lyrics changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
+
 // -- Tests --------------------------------------------------------------------
 
-describe("ExportPanel · Done after keeping edits through a conflict", () => {
+describe("ExportPanel · Done after the lyrics changed under an edit", () => {
+  async function doneShowsLyricsChanged(screen: Screen) {
+    await screen.getByRole("button", { name: "Done" }).click();
+    await expect.element(screen.getByText(LYRICS_CHANGED)).toBeInTheDocument();
+  }
+
   describe("regressions", () => {
-    it("regression: a line deleted in the project, then Keep my edits and Done, keeps every untouched line", async () => {
-      const stored = namedLines();
-      useProjectStore.setState({ lines: stored });
+    it("regression: a line deleted in the project, then Keep my edits and Done, leaves the lyrics as they are", async () => {
+      useProjectStore.setState({ lines: namedLines() });
       const screen = await renderPanel();
       await screen.getByRole("button", { name: /Edit$/ }).click();
       await editText(screen, "Charlie", "Charlie!");
       useProjectStore.setState((state) => ({ lines: state.lines.filter((line) => line.id !== "b") }));
+      const afterDelete = useProjectStore.getState().lines;
       await screen.getByRole("button", { name: "Keep my edits" }).click();
       await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
       await editText(screen, "Echo", "Echo!");
-      await screen.getByRole("button", { name: "Done" }).click();
-      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+      await doneShowsLyricsChanged(screen);
 
-      expect(byId("a")).toEqual(stored[0]);
-      expect(byId("d")).toEqual(stored[3]);
-      expect(byId("c")).toMatchObject({ text: "Charlie!", translations: stored[2]?.translations });
-      expect(byId("e")).toMatchObject({ text: "Echo!", translations: stored[4]?.translations });
+      expect(useProjectStore.getState().lines).toBe(afterDelete);
+      expect(byId("b")).toBeUndefined();
+      expect(useProjectStore.getState().ttmlEditState?.content).toContain("Echo!");
     });
 
-    it("regression: a later project change after Keep my edits merges cleanly and Done keeps every untouched line", async () => {
-      const stored = namedLines();
-      useProjectStore.setState({ lines: stored });
-      const screen = await renderPanel();
-      await screen.getByRole("button", { name: /Edit$/ }).click();
-      await editText(screen, "Charlie", "Charlie!");
-      useProjectStore.setState((state) => ({ lines: state.lines.filter((line) => line.id !== "b") }));
-      await screen.getByRole("button", { name: "Keep my edits" }).click();
-      await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
-      useProjectStore.setState((state) => ({
-        lines: state.lines.map((line) => (line.id === "e" ? { ...line, text: "Echo changed" } : line)),
-      }));
-      await expect.poll(() => (editorOf(screen).element() as HTMLTextAreaElement).value).toContain("Echo changed");
-      expect(screen.container.querySelector("[role=alert]")).toBeNull();
-      await screen.getByRole("button", { name: "Done" }).click();
-      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
-
-      expect(byId("a")).toEqual(stored[0]);
-      expect(byId("d")).toEqual(stored[3]);
-      expect(byId("c")).toMatchObject({ text: "Charlie!", translations: stored[2]?.translations });
-      expect(byId("e")).toMatchObject({ text: "Echo changed", translations: stored[4]?.translations });
-    });
-
-    it("regression: syncing a middle line after an export-only Done, then Keep my edits and Done, keeps the synced line and every untouched line", async () => {
+    it("regression: syncing a middle line after an export-only Done, then Keep my edits and Done, keeps the synced line", async () => {
       useProjectStore.setState({ lines: namedLines(["Bravo"]) });
       const screen = await renderPanel();
       await screen.getByRole("button", { name: /Edit$/ }).click();
@@ -114,21 +99,34 @@ describe("ExportPanel · Done after keeping edits through a conflict", () => {
       await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
       await screen.getByRole("button", { name: /Edit$/ }).click();
       await editText(screen, "Echo", "Echo!");
+      await doneShowsLyricsChanged(screen);
+
+      expect(useProjectStore.getState().lines).toBe(synced);
+      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
+    });
+
+    it("regression: a clean change after Keep my edits still leaves the synced line in place on Done", async () => {
+      useProjectStore.setState({ lines: namedLines(["Bravo"]) });
+      const screen = await renderPanel();
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      await editText(screen, "Delta", "Delta!");
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
 
+      useProjectStore.setState({ lines: namedLines() });
+      await screen.getByRole("button", { name: "Keep my edits" }).click();
+      await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
+      useProjectStore.getState().setMetadata({ title: "Renamed" });
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      await editText(screen, "Echo", "Echo!");
+      await doneShowsLyricsChanged(screen);
+
+      expect(byId("b")).toMatchObject({ id: "b", text: "Bravo", begin: 1, end: 2 });
       expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "c", "d", "e"]);
-      expect(byId("a")).toEqual(synced[0]);
-      expect(byId("b")).toEqual(synced[1]);
-      expect(byId("b")).toMatchObject({ text: "Bravo", begin: 1, end: 2 });
-      expect(byId("c")).toEqual(synced[2]);
-      expect(byId("d")).toMatchObject({ text: "Delta!", translations: synced[3]?.translations });
-      expect(byId("e")).toMatchObject({ text: "Echo!", translations: synced[4]?.translations });
     });
 
     it("regression: a line added to the project after the edit started survives Keep my edits and Done", async () => {
-      const stored = namedLines();
-      useProjectStore.setState({ lines: stored });
+      useProjectStore.setState({ lines: namedLines() });
       const screen = await renderPanel();
       await screen.getByRole("button", { name: /Edit$/ }).click();
       await editText(screen, "Charlie", "Charlie!");
@@ -136,14 +134,36 @@ describe("ExportPanel · Done after keeping edits through a conflict", () => {
       useProjectStore.setState((state) => ({
         lines: state.lines.flatMap((line) => (line.id === "b" ? [line, added] : [line])),
       }));
+      const withAdded = useProjectStore.getState().lines;
       await screen.getByRole("button", { name: "Keep my edits" }).click();
       await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
-      await screen.getByRole("button", { name: "Done" }).click();
-      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+      await doneShowsLyricsChanged(screen);
 
-      expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "n", "c", "d", "e"]);
+      expect(useProjectStore.getState().lines).toBe(withAdded);
       expect(byId("n")).toEqual(added);
-      expect(byId("c")).toMatchObject({ text: "Charlie!", translations: stored[2]?.translations });
+    });
+
+    it("regression: a translation typed into the TTML never lands on another line after a clean change", async () => {
+      useProjectStore.setState({
+        lines: NAMES.map((name, index) =>
+          createLine({ id: name[0]?.toLowerCase(), text: name, begin: index, end: index + 1 }),
+        ),
+      });
+      const screen = await renderPanel();
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      const textarea = editorOf(screen);
+      const withTranslation = (textarea.element() as HTMLTextAreaElement).value.replace(
+        "</metadata>",
+        '<iTunesMetadata xmlns="http://music.apple.com/lyric-ttml-internal"><translations><translation xml:lang="es" type="subtitle"><text for="L3">Charlie es</text></translation></translations></iTunesMetadata></metadata>',
+      );
+      await textarea.fill(withTranslation);
+      useProjectStore.setState((state) => ({ lines: state.lines.filter((line) => line.id !== "a") }));
+      await expect.poll(() => (textarea.element() as HTMLTextAreaElement).value).not.toContain(">Alpha<");
+      const afterDelete = useProjectStore.getState().lines;
+      await doneShowsLyricsChanged(screen);
+
+      expect(useProjectStore.getState().lines).toBe(afterDelete);
+      expect(byId("d")?.translations).toBeUndefined();
     });
   });
 });

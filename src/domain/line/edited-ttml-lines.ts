@@ -163,42 +163,30 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
 
 // -- Merge --------------------------------------------------------------------
 
-function isOutsideEdit(line: LyricLine, knownIds: ReadonlySet<string>): boolean {
-  return !isSyncableLine(line) || !knownIds.has(line.id);
-}
-
-function linesOutsideEdit(stored: readonly LyricLine[], keyIds: LineKeyIds): LyricLine[] {
-  const knownIds = new Set(Object.values(keyIds));
-  return stored.filter((line) => isOutsideEdit(line, knownIds));
-}
-
 function skippedLinesAfter(
   stored: readonly LyricLine[],
   kept: ReadonlySet<LyricLine>,
-  keyIds: LineKeyIds,
 ): Map<LyricLine | undefined, LyricLine[]> {
-  const outside = new Set(linesOutsideEdit(stored, keyIds));
   const skippedAfter = new Map<LyricLine | undefined, LyricLine[]>();
   let anchor: LyricLine | undefined;
   for (const line of stored) {
     if (kept.has(line)) anchor = line;
-    else if (outside.has(line)) skippedAfter.set(anchor, [...(skippedAfter.get(anchor) ?? []), line]);
+    else if (!isSyncableLine(line)) skippedAfter.set(anchor, [...(skippedAfter.get(anchor) ?? []), line]);
   }
   return skippedAfter;
 }
 
-function mergeEditedTtmlLines(
-  stored: readonly LyricLine[],
-  edit: EditedTtmlLines,
-  keyIds: LineKeyIds = lineKeyIds(stored),
-): LyricLine[] {
-  const { lines: edited, partners } = pairEditedLines(
-    stored,
-    edit.lines,
-    edit.lines.map((_, index) => edit.lineKeys?.[index]),
-    keyIds,
-  );
-  const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)), keyIds);
+function pairedWithStored(stored: readonly LyricLine[], edit: EditedTtmlLines) {
+  return pairEditedLines(stored, edit.lines, editedKeys(edit), lineKeyIds(stored));
+}
+
+function editedKeys(edit: EditedTtmlLines): (string | undefined)[] {
+  return edit.lines.map((_, index) => edit.lineKeys?.[index]);
+}
+
+function mergeEditedTtmlLines(stored: readonly LyricLine[], edit: EditedTtmlLines): LyricLine[] {
+  const { lines: edited, partners } = pairedWithStored(stored, edit);
+  const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));
   const merged = [...(skippedAfter.get(undefined) ?? [])];
   edited.forEach((line, index) => {
     const partner = partners[index];
@@ -206,6 +194,20 @@ function mergeEditedTtmlLines(
     if (partner) merged.push(...(skippedAfter.get(partner) ?? []));
   });
   return merged;
+}
+
+function mergedLineIdsByKey(stored: readonly LyricLine[], edit: EditedTtmlLines): LineKeyIds {
+  const { lines, partners } = pairedWithStored(stored, edit);
+  const keys = editedKeys(edit);
+  const ids: Record<string, string> = {};
+  lines.forEach((line, index) => {
+    const key = keys[index];
+    if (key === undefined) return;
+    const partner = partners[index];
+    if (partner) ids[key] = partner.id;
+    else if (!(key in ids)) ids[key] = line.id;
+  });
+  return ids;
 }
 
 function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[]): boolean {
@@ -221,4 +223,4 @@ function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricL
 
 // -- Exports ------------------------------------------------------------------
 
-export { holdsEveryLine, linesOutsideEdit, mergeEditedTtmlLines };
+export { holdsEveryLine, mergeEditedTtmlLines, mergedLineIdsByKey };
