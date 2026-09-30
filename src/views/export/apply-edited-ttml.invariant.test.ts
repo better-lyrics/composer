@@ -1,61 +1,22 @@
-import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import { useProjectStore } from "@/stores/project";
-import { EDITED_TTML_PROJECTS, type EditedTtmlProject } from "@/test/edited-ttml-projects";
+import {
+  type EditOperation,
+  editLineText,
+  editParagraph,
+  keyOf,
+  lineById,
+  paragraphOf,
+  required,
+  swapParagraphs,
+  timedAt,
+} from "@/test/edited-ttml-edits";
+import { EDITED_TTML_PROJECTS } from "@/test/edited-ttml-projects";
 import { formatTime } from "@/utils/format-time";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { describe, expect, it } from "vitest";
-
-// -- Types --------------------------------------------------------------------
-
-interface EditCase {
-  edited: string;
-  touched: readonly string[];
-  deleted?: readonly string[];
-  reordered?: boolean;
-  expectTaken: (lines: readonly LyricLine[]) => void;
-}
-
-interface EditOperation {
-  name: string;
-  edit: (project: EditedTtmlProject, ttml: string) => EditCase;
-}
-
-// -- Helpers ------------------------------------------------------------------
-
-function required<T>(value: T | undefined, what: string): T {
-  if (value === undefined) throw new Error(`fixture has no ${what}`);
-  return value;
-}
-
-function keyOf(project: EditedTtmlProject, line: LyricLine): string {
-  return `L${project.lines.filter(isLineTimed).indexOf(line) + 1}`;
-}
-
-function paragraphOf(ttml: string, project: EditedTtmlProject, line: LyricLine): string {
-  const paragraph = new RegExp(`<p [^>]*itunes:key="${keyOf(project, line)}"[^>]*>[\\s\\S]*?</p>`);
-  return required(ttml.match(paragraph)?.[0], `paragraph for ${line.id}`);
-}
-
-function editParagraph(ttml: string, project: EditedTtmlProject, line: LyricLine, change: (p: string) => string) {
-  const paragraph = paragraphOf(ttml, project, line);
-  const changed = change(paragraph);
-  if (changed === paragraph) throw new Error(`edit did not change ${line.id}`);
-  return ttml.replace(paragraph, changed);
-}
-
-function lineById(lines: readonly LyricLine[], id: string): LyricLine {
-  return required(
-    lines.find((line) => line.id === id),
-    `line ${id}`,
-  );
-}
-
-function timedAt(project: EditedTtmlProject, index: number): LyricLine {
-  return required(project.lines.filter(isLineTimed)[index], `timed line ${index}`);
-}
 
 // -- Operations ---------------------------------------------------------------
 
@@ -67,17 +28,7 @@ const OPERATIONS: readonly EditOperation[] = [
     name: "change a word's text",
     edit: (project, ttml) => {
       const line = required(project.lines.find(isWordSynced), "word-synced line");
-      const words = line.words ?? [];
-      const first = required(words[0], "word").text.trim();
-      return {
-        edited: editParagraph(ttml, project, line, (p) => p.replace(`>${first}</span>`, `>${first}X</span>`)),
-        touched: [line.id],
-        expectTaken: (lines) => {
-          const after = lineById(lines, line.id).words ?? [];
-          expect(after[0]?.text.trim()).toBe(`${first}X`);
-          expect(after.slice(1)).toEqual(words.slice(1));
-        },
-      };
+      return { ...editLineText(ttml, project, line), touched: [line.id] };
     },
   },
   {
@@ -128,10 +79,8 @@ const OPERATIONS: readonly EditOperation[] = [
     edit: (project, ttml) => {
       const first = timedAt(project, 1);
       const second = timedAt(project, 2);
-      const a = paragraphOf(ttml, project, first);
-      const b = paragraphOf(ttml, project, second);
       return {
-        edited: ttml.replace(a, "\u0000").replace(b, a).replace("\u0000", b),
+        edited: swapParagraphs(ttml, project, first, second),
         touched: [],
         reordered: true,
         expectTaken: (lines) => {
@@ -189,11 +138,63 @@ const OPERATIONS: readonly EditOperation[] = [
   },
 ];
 
+const COMBINED_OPERATIONS: readonly EditOperation[] = [
+  {
+    name: "delete a line and edit its neighbour",
+    edit: (project, ttml) => {
+      const deleted = timedAt(project, 1);
+      const line = timedAt(project, 2);
+      const textEdit = editLineText(ttml, project, line);
+      return {
+        edited: textEdit.edited.replace(paragraphOf(ttml, project, deleted), ""),
+        touched: [line.id],
+        deleted: [deleted.id],
+        expectTaken: textEdit.expectTaken,
+      };
+    },
+  },
+  {
+    name: "add a line before an edited line",
+    edit: (project, ttml) => {
+      const line = timedAt(project, 1);
+      const textEdit = editLineText(ttml, project, line);
+      const edited = paragraphOf(textEdit.edited, project, line);
+      return {
+        edited: textEdit.edited.replace(edited, `${ADDED_LINE}${edited}`),
+        touched: [line.id],
+        expectTaken: (lines) => {
+          textEdit.expectTaken(lines);
+          const ids = lines.map((candidate) => candidate.id);
+          expect(ids.indexOf(line.id)).toBe(lines.findIndex((candidate) => candidate.text === "Brand new line") + 1);
+        },
+      };
+    },
+  },
+  {
+    name: "reorder two lines and edit one",
+    edit: (project, ttml) => {
+      const first = timedAt(project, 1);
+      const second = timedAt(project, 2);
+      const textEdit = editLineText(ttml, project, first);
+      return {
+        edited: swapParagraphs(textEdit.edited, project, first, second),
+        touched: [first.id],
+        reordered: true,
+        expectTaken: (lines) => {
+          textEdit.expectTaken(lines);
+          const order = lines.filter(isLineTimed).map((line) => line.id);
+          expect(order.indexOf(second.id)).toBe(order.indexOf(first.id) - 1);
+        },
+      };
+    },
+  },
+];
+
 // -- Tests --------------------------------------------------------------------
 
 describe("applyEditedTtml · invariants", () => {
   for (const fixture of EDITED_TTML_PROJECTS) {
-    for (const operation of OPERATIONS) {
+    for (const operation of [...OPERATIONS, ...COMBINED_OPERATIONS]) {
       it(`${fixture().name}: ${operation.name} changes only what the edit changed`, () => {
         const project = fixture();
         useProjectStore.setState({
