@@ -66,11 +66,23 @@ function isInstanceFullyTimed(lines: readonly LyricLine[], groupId: string, inst
   return syncable.length > 0 && syncable.every(isLineFullyTimed);
 }
 
-function referenceInstance(lines: readonly LyricLine[], group: LinkGroup, excluding: number): number | null {
-  const reference = sharedInstancesInLineOrder(lines, group).find(
-    (instanceIdx) => instanceIdx !== excluding && isInstanceFullyTimed(lines, group.id, instanceIdx),
+// Offset between two instances, measured only over template lines timed in both, so a line missing from one
+// instance never shifts the anchor.
+function instanceOffset(lines: readonly LyricLine[], groupId: string, from: number, to: number): number | null {
+  const toByTemplateLine = new Map(
+    attachedLinesOfInstance(lines, groupId, to).map((line) => [line.templateLineIdx, line]),
   );
-  return reference ?? null;
+  const fromCommon: LyricLine[] = [];
+  const toCommon: LyricLine[] = [];
+  for (const line of attachedLinesOfInstance(lines, groupId, from)) {
+    const match = toByTemplateLine.get(line.templateLineIdx);
+    if (!match || !instanceBounds([line]) || !instanceBounds([match])) continue;
+    fromCommon.push(line);
+    toCommon.push(match);
+  }
+  const fromStart = instanceBounds(fromCommon)?.begin;
+  const toStart = instanceBounds(toCommon)?.begin;
+  return fromStart === undefined || toStart === undefined ? null : toStart - fromStart;
 }
 
 // -- Timing fields ------------------------------------------------------------
@@ -87,39 +99,6 @@ function offsetTimingFields(source: LyricLine, offset: number): LineUpdate["upda
     return { begin: source.begin + offset, end: source.end + offset, backgroundWords, words: undefined };
   }
   return { words: undefined, begin: undefined, end: undefined, backgroundWords };
-}
-
-function copyInstanceTiming(
-  lines: readonly LyricLine[],
-  groupId: string,
-  fromIdx: number,
-  toIdx: number,
-  offset: number,
-): LineUpdate[] {
-  const sourceByTemplateLine = new Map(
-    attachedLinesOfInstance(lines, groupId, fromIdx).map((line) => [line.templateLineIdx, line]),
-  );
-  return attachedLinesOfInstance(lines, groupId, toIdx).flatMap((target) => {
-    const source = sourceByTemplateLine.get(target.templateLineIdx);
-    return source ? [{ id: target.id, updates: offsetTimingFields(source, offset) }] : [];
-  });
-}
-
-// -- Placing ------------------------------------------------------------------
-
-function placeSharedInstance(
-  lines: readonly LyricLine[],
-  groups: readonly LinkGroup[],
-  groupId: string,
-  instanceIdx: number,
-  start: number,
-): LineUpdate[] {
-  const group = groups.find((candidate) => candidate.id === groupId);
-  if (!group || !sharesTiming(group, instanceIdx)) return [];
-  const reference = referenceInstance(lines, group, instanceIdx);
-  const referenceStart = reference === null ? null : instanceStart(lines, groupId, reference);
-  if (reference === null || referenceStart === null) return [];
-  return copyInstanceTiming(lines, groupId, reference, instanceIdx, start - referenceStart);
 }
 
 // -- Fan out ------------------------------------------------------------------
@@ -181,27 +160,26 @@ function sharedTimingFanOut(
   const indexById = new Map(after.map((line, index) => [line.id, index]));
   const claimedTemplateLines = new Set<string>();
   const touchedGroupIds = new Set<string>();
-  const starts = new Map<string, number | null>();
-  const startBefore = (groupId: string, instanceIdx: number) => {
-    const key = `${groupId}:${instanceIdx}`;
-    if (!starts.has(key)) starts.set(key, instanceStart(before, groupId, instanceIdx));
-    return starts.get(key) ?? null;
+  const offsets = new Map<string, number | null>();
+  const offsetBefore = (groupId: string, from: number, to: number) => {
+    const key = `${groupId}:${from}:${to}`;
+    if (!offsets.has(key)) offsets.set(key, instanceOffset(before, groupId, from, to));
+    return offsets.get(key) ?? null;
   };
   let lines = after;
 
   for (const { line: source, group, instanceOrder } of sources) {
     const claimKey = `${group.id}:${source.templateLineIdx}`;
-    const sourceStart = startBefore(group.id, source.instanceIdx);
-    if (claimedTemplateLines.has(claimKey) || sourceStart === null) continue;
+    if (claimedTemplateLines.has(claimKey)) continue;
     claimedTemplateLines.add(claimKey);
     for (const targetIdx of instanceOrder) {
-      const targetStart = startBefore(group.id, targetIdx);
-      if (targetIdx === source.instanceIdx || targetStart === null) continue;
+      const offset = targetIdx === source.instanceIdx ? null : offsetBefore(group.id, source.instanceIdx, targetIdx);
+      if (offset === null) continue;
       const target = attachedLinesOfInstance(after, group.id, targetIdx).find(
         (line) => line.templateLineIdx === source.templateLineIdx,
       );
       if (!target) continue;
-      const updates = offsetTimingFields(source, targetStart - sourceStart);
+      const updates = offsetTimingFields(source, offset);
       if (hasNegativeTime(updates)) return { ...unchanged, rejected: true };
       const copied = reconcileLine({ ...target, ...updates });
       if (!timingChanged(target, copied)) continue;
@@ -224,12 +202,9 @@ function sharedTimeRange(
   duration: number,
 ): TimeRange {
   const range = { min: 0, max: duration };
-  const sourceStart = instanceStart(lines, group.id, instanceIdx);
-  if (sourceStart === null) return range;
   for (const otherIdx of sharedInstancesInLineOrder(lines, group)) {
-    const otherStart = otherIdx === instanceIdx ? null : instanceStart(lines, group.id, otherIdx);
-    if (otherStart === null) continue;
-    const offset = otherStart - sourceStart;
+    const offset = otherIdx === instanceIdx ? null : instanceOffset(lines, group.id, instanceIdx, otherIdx);
+    if (offset === null) continue;
     range.min = Math.max(range.min, -offset);
     range.max = Math.min(range.max, duration - offset);
   }
@@ -260,10 +235,13 @@ function timeRangeResolver(
 // -- Exports ------------------------------------------------------------------
 
 export {
+  attachedLinesOfInstance,
+  hasNegativeTime,
+  instanceOffset,
   instanceStart,
   isInstanceFullyTimed,
   isSharedLine,
-  placeSharedInstance,
+  offsetTimingFields,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,

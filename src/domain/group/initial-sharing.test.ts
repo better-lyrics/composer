@@ -75,6 +75,32 @@ describe("initialSharing", () => {
       });
     });
 
+    it("regression: gives a half-synced instance that differs its own timing when none is fully timed", () => {
+      const half = (instanceIdx: number, begin: number) =>
+        createLine({
+          id: `h${instanceIdx}`,
+          text: "I want you",
+          words: [
+            { text: "I ", begin, end: begin + 0.4 },
+            { text: "want ", begin: begin + (instanceIdx === 0 ? 0.5 : 0.8), end: begin + 1.2 },
+          ],
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+        });
+      expect(initialSharing([half(0, 10), half(1, 40)], "g1", true)).toEqual({
+        sharesTiming: true,
+        ownTimingInstances: [1],
+      });
+    });
+
+    it("shares half-synced instances that match when none is fully timed", () => {
+      const lines = [chorus(0, 0, 10), { ...chorus(1, 0, 40), text: "I want you", id: "x" }];
+      expect(initialSharing([{ ...lines[0], text: "I want you" }, lines[1]], "g1", true)).toEqual({
+        sharesTiming: true,
+      });
+    });
+
     it("shares every instance when none is fully timed", () => {
       expect(initialSharing([chorus(0, 0), chorus(1, 0)], "g1", true)).toEqual({ sharesTiming: true });
     });

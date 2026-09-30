@@ -1,7 +1,8 @@
 import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
-import { instanceStart, placeSharedInstance, sharedTimingFanOut } from "@/domain/group/shared-timing";
+import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
+import { sharedTimingFanOut } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
@@ -177,9 +178,8 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       const groups = state.groups.map((group) =>
         group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group,
       );
-      const start = own ? null : instanceStart(state.lines, groupId, instanceIdx);
-      const placed = start === null ? [] : placeSharedInstance(state.lines, groups, groupId, instanceIdx, start);
-      return commitHistory(state, { groups, lines: applyLineUpdates(state.lines, placed) });
+      const placed = own ? [] : realignSharedInstance(state.lines, groups, groupId, instanceIdx);
+      return commitHistory(state, { groups, lines: applyLineUpdates(state.lines, placed) }, { deriveText: false });
     }),
 
   shareGroupTiming: (groupId) =>
@@ -200,11 +200,9 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       );
       let lines = state.lines;
       for (const instanceIdx of group.ownTimingInstances ?? []) {
-        const start = instanceStart(lines, groupId, instanceIdx);
-        if (start === null) continue;
-        lines = applyLineUpdates(lines, placeSharedInstance(lines, groups, groupId, instanceIdx, start));
+        lines = applyLineUpdates(lines, realignSharedInstance(lines, groups, groupId, instanceIdx));
       }
-      return commitHistory(state, { groups, lines });
+      return commitHistory(state, { groups, lines }, { deriveText: false });
     }),
 
   placeInstance: (groupId, instanceIdx, start, precedingUpdates = []) => {

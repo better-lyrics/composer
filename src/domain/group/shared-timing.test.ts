@@ -1,6 +1,5 @@
 import {
   isSharedLine,
-  placeSharedInstance,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,
@@ -93,166 +92,6 @@ describe("sharedInstancesInLineOrder", () => {
 
     it("is empty for an old group", () => {
       expect(sharedInstancesInLineOrder([chorus(0, 0, 1)], createGroup({ id: "g1" }))).toEqual([]);
-    });
-  });
-});
-
-describe("placeSharedInstance", () => {
-  const sharing = [createGroup({ id: "g1", sharesTiming: true })];
-  const wordTimes = (line: LyricLine | Partial<LyricLine> | undefined) =>
-    line?.words?.map((word) => [word.begin, word.end]);
-  const expectTimes = (actual: number[][] | undefined, expected: number[][]) => {
-    expect(actual).toHaveLength(expected.length);
-    expected.forEach(([begin, end], i) => {
-      expect(actual?.[i]?.[0]).toBeCloseTo(begin, 6);
-      expect(actual?.[i]?.[1]).toBeCloseTo(end, 6);
-    });
-  };
-
-  it("fills an instance with no timing from the reference instance", () => {
-    const updates = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
-    expect(updates.map((update) => update.id)).toEqual(["c1-0"]);
-    expectTimes(wordTimes(updates[0]?.updates), [
-      [40, 40.4],
-      [40.5, 41],
-    ]);
-  });
-
-  it("moves an instance that is already timed", () => {
-    const filled = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
-    const moved = placeSharedInstance([chorus(0, 0, 10), chorus(1, 0, 20)], sharing, "g1", 1, 40);
-    expect(moved).toEqual(filled);
-  });
-
-  it("places line-synced lines and background words", () => {
-    const lines = [
-      chorus(0, 0, 10),
-      createLine({
-        id: "c0-1",
-        text: "Oh",
-        begin: 12,
-        end: 14,
-        backgroundText: "ah",
-        backgroundWords: [{ text: "ah", begin: 12.5, end: 13 }],
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 1,
-      }),
-      chorus(1, 0),
-      createLine({ id: "c1-1", text: "Oh", backgroundText: "ah", groupId: "g1", instanceIdx: 1, templateLineIdx: 1 }),
-    ];
-    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40);
-    const lineSynced = updates.find((update) => update.id === "c1-1")?.updates;
-    expect(lineSynced?.begin).toBeCloseTo(42, 6);
-    expect(lineSynced?.end).toBeCloseTo(44, 6);
-    expect(lineSynced?.words).toBeUndefined();
-    expectTimes(
-      lineSynced?.backgroundWords?.map((word) => [word.begin, word.end]),
-      [[42.5, 43]],
-    );
-  });
-
-  it("anchors at the instance start, not at the first line's start", () => {
-    const lines = [chorus(0, 0, 11), chorus(0, 1, 10), chorus(1, 0), chorus(1, 1)];
-    const updates = placeSharedInstance(lines, sharing, "g1", 1, 40);
-    expectTimes(wordTimes(updates.find((update) => update.id === "c1-0")?.updates), [
-      [41, 41.4],
-      [41.5, 42],
-    ]);
-    expectTimes(wordTimes(updates.find((update) => update.id === "c1-1")?.updates), [
-      [40, 40.4],
-      [40.5, 41],
-    ]);
-  });
-
-  describe("edge cases", () => {
-    it("returns nothing when no other shared instance is fully timed", () => {
-      const partial = createLine({
-        id: "c0-0",
-        text: "I want",
-        words: [{ text: "I ", begin: 10, end: 10.4 }],
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      });
-      expect(placeSharedInstance([partial, chorus(1, 0)], sharing, "g1", 1, 40)).toEqual([]);
-    });
-
-    it("returns nothing for an own-timing target", () => {
-      const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
-      expect(placeSharedInstance([chorus(0, 0, 10), chorus(1, 0)], groups, "g1", 1, 40)).toEqual([]);
-    });
-
-    it("returns nothing for an old group or a missing group", () => {
-      const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      expect(placeSharedInstance(lines, [createGroup({ id: "g1" })], "g1", 1, 40)).toEqual([]);
-      expect(placeSharedInstance(lines, sharing, "missing", 1, 40)).toEqual([]);
-    });
-
-    it("skips detached lines of the target", () => {
-      const lines = [chorus(0, 0, 10), chorus(0, 1, 11), chorus(1, 0), { ...chorus(1, 1), detached: true }];
-      expect(placeSharedInstance(lines, sharing, "g1", 1, 40).map((update) => update.id)).toEqual(["c1-0"]);
-    });
-
-    it("never uses an own-timing instance as the reference", () => {
-      const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0] })];
-      const lines = [chorus(0, 0, 10), chorus(1, 0), chorus(2, 0)];
-      expect(placeSharedInstance(lines, groups, "g1", 2, 40)).toEqual([]);
-    });
-
-    it("uses the first fully timed shared instance in line order", () => {
-      const reference = createLine({
-        id: "c3-0",
-        text: "I want",
-        words: [
-          { text: "I ", begin: 5, end: 5.2 },
-          { text: "want", begin: 5.3, end: 6 },
-        ],
-        groupId: "g1",
-        instanceIdx: 3,
-        templateLineIdx: 0,
-      });
-      const updates = placeSharedInstance([reference, chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1, 40);
-      expectTimes(wordTimes(updates[0]?.updates), [
-        [40, 40.2],
-        [40.3, 41],
-      ]);
-    });
-  });
-
-  describe("invariants", () => {
-    it("does not mutate its input", () => {
-      const lines = [chorus(0, 0, 10), chorus(1, 0, 20)];
-      const snapshot = structuredClone(lines);
-      placeSharedInstance(lines, sharing, "g1", 1, 40);
-      expect(lines).toEqual(snapshot);
-    });
-
-    it("gives equal updates when placed twice at the same start", () => {
-      const lines = [chorus(0, 0, 10), chorus(1, 0)];
-      expect(placeSharedInstance(lines, sharing, "g1", 1, 40)).toEqual(
-        placeSharedInstance(lines, sharing, "g1", 1, 40),
-      );
-    });
-
-    it("keeps word text and syllable structure from the reference", () => {
-      const reference = createLine({
-        id: "c0-0",
-        text: "a|way",
-        words: [
-          { text: "a", begin: 10, end: 10.2, syllableGroupId: "s1" },
-          { text: "way", begin: 10.2, end: 10.6, syllableGroupId: "s1" },
-        ],
-        groupId: "g1",
-        instanceIdx: 0,
-        templateLineIdx: 0,
-      });
-      const target = createLine({ id: "c1-0", text: "a|way", groupId: "g1", instanceIdx: 1, templateLineIdx: 0 });
-      const words = placeSharedInstance([reference, target], sharing, "g1", 1, 40)[0]?.updates.words;
-      expect(words?.map((word) => [word.text, word.syllableGroupId])).toEqual([
-        ["a", "s1"],
-        ["way", "s1"],
-      ]);
     });
   });
 });
@@ -422,6 +261,27 @@ describe("sharedTimingFanOut", () => {
     });
   });
 
+  describe("instances with different lines", () => {
+    it("regression: anchors on lines both instances have when one instance lost a line", () => {
+      const before = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
+      const after = edit(before, "c0-1", nudgeWord(0, 0.5));
+      expectTimes(times(byId(sharedTimingFanOut(before, after, sharing, ["c0-1"]).lines, "c1-1")), [
+        [54.5, 54.9],
+        [54.5, 55],
+      ]);
+    });
+
+    it("regression: an edit from the shorter instance lands on the matching line", () => {
+      const before = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
+      const after = edit(before, "c1-1", nudgeWord(0, 0.5));
+      expectTimes(times(byId(sharedTimingFanOut(before, after, sharing, ["c1-1"]).lines, "c0-1")), [
+        [14.5, 14.9],
+        [14.5, 15],
+      ]);
+      expect(byId(sharedTimingFanOut(before, after, sharing, ["c1-1"]).lines, "c0-0")).toBe(before[0]);
+    });
+  });
+
   describe("song start guard", () => {
     it("rejects a batch that would move a copy below zero", () => {
       const before = [chorus(0, 0, 10), chorus(1, 0, 0.05)];
@@ -492,6 +352,12 @@ describe("timeRangeResolver", () => {
     const range = timeRangeResolver(lines, sharing, 60)(lines[1]);
     expect(range.min).toBeCloseTo(10 - 0.2, 6);
     expect(range.max).toBe(60);
+  });
+
+  it("regression: measures room from lines both instances have", () => {
+    const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
+    const range = timeRangeResolver(lines, sharing, 60)(lines[1]);
+    expect(range.max).toBeCloseTo(60 - 40, 6);
   });
 
   describe("edge cases", () => {

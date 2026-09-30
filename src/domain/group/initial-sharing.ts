@@ -1,6 +1,10 @@
-import { instanceStart, isInstanceFullyTimed } from "@/domain/group/shared-timing";
+import {
+  attachedLinesOfInstance,
+  instanceOffset,
+  instanceStart,
+  isInstanceFullyTimed,
+} from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { linesOfInstance } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 
@@ -28,14 +32,12 @@ function sameWords(a: readonly WordTiming[] | undefined, b: readonly WordTiming[
 }
 
 function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source: number, other: number): boolean {
-  const sourceStart = instanceStart(lines, groupId, source);
-  const otherStart = instanceStart(lines, groupId, other);
-  if (sourceStart === null || otherStart === null) return false;
-  const offset = otherStart - sourceStart;
-  const attached = (instanceIdx: number) =>
-    linesOfInstance(lines, groupId, instanceIdx).filter((line) => !line.detached);
-  const sourceByTemplateLine = new Map(attached(source).map((line) => [line.templateLineIdx, line]));
-  return attached(other).every((line) => {
+  const offset = instanceOffset(lines, groupId, source, other);
+  if (offset === null) return false;
+  const sourceByTemplateLine = new Map(
+    attachedLinesOfInstance(lines, groupId, source).map((line) => [line.templateLineIdx, line]),
+  );
+  return attachedLinesOfInstance(lines, groupId, other).every((line) => {
     const match = sourceByTemplateLine.get(line.templateLineIdx);
     if (!match) return true;
     return (
@@ -61,7 +63,8 @@ function instancesInLineOrder(lines: readonly LyricLine[], groupId: string): num
 function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn: boolean): InitialSharing {
   if (!settingOn) return {};
   const order = instancesInLineOrder(lines, groupId);
-  const source = order.find((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx));
+  const timed = order.filter((instanceIdx) => instanceStart(lines, groupId, instanceIdx) !== null);
+  const source = timed.find((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx)) ?? timed[0];
   if (source === undefined) return { sharesTiming: true };
   const ownTimingInstances = order.filter(
     (instanceIdx) =>
