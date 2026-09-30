@@ -1,6 +1,6 @@
-import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasMainLyrics } from "@/domain/line/predicates";
+import { isLineTimed } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------
 
@@ -33,7 +33,7 @@ function sortedTextItems(items: string): string {
 // -- Functions ----------------------------------------------------------------
 
 function isExportedLine(line: LyricLine): boolean {
-  return effectiveBounds(line) !== null && (hasMainLyrics(line) || !!line.backgroundText?.trim());
+  return isLineTimed(line) && (hasMainLyrics(line) || !!line.backgroundText?.trim());
 }
 
 function keyedExportLines(lines: readonly LyricLine[]): KeyedLine[] {
