@@ -57,6 +57,31 @@ describe("mergeEditedTtmlLines · word timing", () => {
     });
   });
 
+  describe("regressions: background text", () => {
+    it("regression: editing one background word's text keeps the other background words as stored", () => {
+      const stored = [
+        createLine({
+          id: "a",
+          text: "Main",
+          begin: 1,
+          end: 3,
+          backgroundText: "yeah o|oh",
+          backgroundWords: [
+            { text: "yeah ", begin: 1.0004, end: 1.5 },
+            { text: "o", begin: 1.5, end: 1.8, syllableGroupId: "b1" },
+            { text: "oh", begin: 1.8, end: 2.0004, syllableGroupId: "b1" },
+          ],
+        }),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(">oh</span></span>", ">ohh</span></span>"));
+      const words = merged[0]?.backgroundWords ?? [];
+      expect(words[0]).toBe(stored[0]?.backgroundWords?.[0]);
+      expect(words[1]).toBe(stored[0]?.backgroundWords?.[1]);
+      expect(words[2]).toEqual({ text: "ohh", begin: 1.8, end: 2, syllableGroupId: "b1" });
+      expect(merged[0]?.backgroundText).toBe("yeah o|ohh");
+    });
+  });
+
   describe("edge cases", () => {
     it("takes every edited word when the edit changes the number of words", () => {
       const stored = [syllableLine()];

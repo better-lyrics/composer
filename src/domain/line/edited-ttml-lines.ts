@@ -107,7 +107,9 @@ function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined
 function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLine> {
   const storedWords = stored.backgroundWords;
   const seeded = hasSeededBackgroundWords(storedWords, edited);
-  if (stored.backgroundText !== edited.backgroundText) return seeded ? { backgroundWords: undefined } : {};
+  if (stored.backgroundText !== edited.backgroundText) {
+    return { backgroundWords: seeded ? undefined : mergedWords(storedWords, edited.backgroundWords) };
+  }
   if (seeded) return { backgroundTextSource: stored.backgroundTextSource, backgroundWords: storedWords };
   return {
     backgroundTextSource: stored.backgroundTextSource,
