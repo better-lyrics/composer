@@ -25,4 +25,4 @@ const isChromium =
 const BROWSER_KIND: BrowserKind = isChromium ? "chromium" : "other";
 
 export type { BrowserKind };
-export { isMac, MOD_KEY, ALT_KEY, isChromium, isChromiumBrands, BROWSER_KIND };
+export { isMac, MOD_KEY, ALT_KEY, isChromiumBrands, BROWSER_KIND };

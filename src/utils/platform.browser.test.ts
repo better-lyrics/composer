@@ -1,8 +1,8 @@
-import { isChromium } from "@/utils/platform";
+import { BROWSER_KIND } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
-describe("isChromium", () => {
-  it("is true in this project's real browser tests (Chromium)", () => {
-    expect(isChromium).toBe(true);
+describe("BROWSER_KIND", () => {
+  it("is chromium in this project's real browser tests (Chromium)", () => {
+    expect(BROWSER_KIND).toBe("chromium");
   });
 });

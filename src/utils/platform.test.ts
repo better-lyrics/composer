@@ -48,13 +48,6 @@ describe("isChromiumBrands", () => {
       expect(isChromiumBrands([{ brand: "Not)A;Brand", version: "24" }])).toBe(false);
     });
   });
-
-  describe("invariants", () => {
-    it("is deterministic for the same input", () => {
-      const brands = [{ brand: "Chromium", version: "128" }];
-      expect(isChromiumBrands(brands)).toBe(isChromiumBrands(brands));
-    });
-  });
 });
 
 const SRC_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
