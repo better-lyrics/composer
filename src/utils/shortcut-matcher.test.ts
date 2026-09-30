@@ -1,7 +1,12 @@
 import { assignBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
 import { isMac } from "@/utils/platform";
-import { bindingFromKeyboardEvent, findMatchingShortcut, matchesShortcutBinding } from "@/utils/shortcut-matcher";
+import {
+  bindingFromKeyboardEvent,
+  findMatchingShortcut,
+  isReservedBrowserShortcut,
+  matchesShortcutBinding,
+} from "@/utils/shortcut-matcher";
 import { describe, expect, it } from "vitest";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
@@ -142,6 +147,18 @@ describe("bindingFromKeyboardEvent", () => {
 
     it.each(["Shift", "Alt", "Control", "Meta", "AltGraph", "CapsLock"])("ignores a bare %s", (key) => {
       expect(bindingFromKeyboardEvent(keydown({ key }))).toBeNull();
+    });
+  });
+});
+
+describe("isReservedBrowserShortcut", () => {
+  it("flags a browser shortcut the app does not own", () => {
+    expect(isReservedBrowserShortcut({ key: "t", mod: true })).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: never flags Mod+S, which the app owns for saving", () => {
+      expect(isReservedBrowserShortcut({ key: "s", mod: true })).toBe(false);
     });
   });
 });

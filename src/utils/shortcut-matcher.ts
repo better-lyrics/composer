@@ -126,7 +126,6 @@ const RESERVED_BROWSER_SHORTCUTS: ShortcutBinding[] = [
 
   // Page actions
   { key: "p", mod: true },
-  { key: "s", mod: true },
   { key: "d", mod: true },
 
   // Developer tools
