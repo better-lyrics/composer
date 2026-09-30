@@ -8,12 +8,13 @@ import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defa
 import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
 import type { WordTiming } from "@/domain/word/timing";
+import type { LineKeyIds } from "@/utils/ttml-line-keys";
 
 // -- Store-local Types --------------------------------------------------------
 
 type GranularityMode = "line" | "word";
 type EditorMode = "simple" | "advanced";
-type TtmlEditState = { source: string; content: string } | null;
+type TtmlEditState = { source: string; content: string; lineKeyIds?: LineKeyIds | null } | null;
 
 interface HistoryEntry {
   lines: LyricLine[];

@@ -1,6 +1,9 @@
+import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
-import { mergeEditedExport } from "@/test/edited-ttml";
+import { exportedTtml, mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
+import { PARSERS } from "@/utils/lyrics-parsers";
+import { lineKeyIds } from "@/utils/ttml-line-keys";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -74,6 +77,23 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
       expect(merged[1]?.text).toBe("Bravo again");
       expect(merged[1]?.id).not.toBe("b");
       expect(merged[1]?.translations).toBeUndefined();
+    });
+  });
+
+  describe("regressions: keys from an older export", () => {
+    it("regression: pairs through the key map of the export the edit came from", () => {
+      const before = [
+        translated("a", "Alpha", 1, "Uno", "manual"),
+        translated("b", "Bravo", 2, "Dos", "google"),
+        translated("c", "Charlie", 3, "Tres", "manual"),
+      ];
+      const content = exportedTtml(before).replace(">Charlie<", ">Charlie!<");
+      const now = [before[0], before[2]].filter((line) => line !== undefined);
+      const merged = mergeEditedTtmlLines(now, PARSERS.ttml(content), lineKeyIds(before));
+      expect(merged[0]).toBe(now[0]);
+      expect(merged[1]?.id).not.toBe("c");
+      expect(merged[1]?.text).toBe("Bravo");
+      expect(merged[2]).toMatchObject({ id: "c", text: "Charlie!", translations: before[2]?.translations });
     });
   });
 });

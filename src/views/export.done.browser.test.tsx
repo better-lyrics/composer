@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { generateProjectTtml } from "@/utils/ttml";
+import { lineKeyIds } from "@/utils/ttml-line-keys";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
@@ -101,6 +102,7 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       expect(useProjectStore.getState().ttmlEditState).toEqual({
         source: generateProjectTtml(useProjectStore.getState(), 0),
         content: edited,
+        lineKeyIds: lineKeyIds(useProjectStore.getState().lines),
       });
       expect(screen.container.querySelector("pre")?.textContent).not.toContain("Kept title");
     });

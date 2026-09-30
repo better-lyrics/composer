@@ -5,7 +5,8 @@ import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { generateProjectTtml } from "@/utils/ttml";
-import { canonicalLineKeys } from "@/utils/ttml-line-keys";
+import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { contentLineKeyIds } from "@/views/export/ttml-edit-keys";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Types --------------------------------------------------------------------
@@ -14,6 +15,7 @@ type EditedTtmlApply =
   | { status: "applied"; skipped: number; keptInExport: boolean }
   | { status: "export-only"; reason: "not-synced"; message?: string }
   | { status: "export-only"; reason: "not-held"; part: ProjectPart }
+  | { status: "export-only"; reason: "stale-keys" }
   | { status: "unreadable"; message: string };
 
 // -- Constants ----------------------------------------------------------------
@@ -45,12 +47,23 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
       : { status: "export-only", reason: "not-synced" };
   }
   if (read.status === "unreadable") return read;
+  const generated = generateProjectTtml(project, audioDuration);
+  const keyIds = contentLineKeyIds(project.ttmlEditState, content, project.lines, generated);
+  if (keyIds === null) return { status: "export-only", reason: "stale-keys" };
   const notHeld = partNotHeld(project, audioDuration);
   if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
-  project.applyEditedLyricsWithHistory(editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed)));
-  const regenerated = generateProjectTtml(useProjectStore.getState(), audioDuration);
+  project.applyEditedLyricsWithHistory(
+    editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed, keyIds)),
+  );
+  const applied = useProjectStore.getState();
+  const regenerated = generateProjectTtml(applied, audioDuration);
   const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);
-  useProjectStore.getState().setTtmlEditState(keptInExport ? { source: regenerated, content } : null);
+  const appliedKeyIds = lineKeyIds(applied.lines);
+  applied.setTtmlEditState(
+    keptInExport
+      ? { source: regenerated, content: renumberLineKeys(content, keyIds, appliedKeyIds), lineKeyIds: appliedKeyIds }
+      : null,
+  );
   return { status: "applied", skipped: skippedLineCount(read.parsed.issues), keptInExport };
 }
 

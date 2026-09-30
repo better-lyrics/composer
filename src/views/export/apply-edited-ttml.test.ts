@@ -2,6 +2,7 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
+import { lineKeyIds } from "@/utils/ttml-line-keys";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -103,7 +104,11 @@ describe("applyEditedTtml", () => {
       useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
       const generated = generateProjectTtml(useProjectStore.getState(), 0);
       const edited = generated.replace("<div>", "<div><!-- note -->");
-      const editState = { source: generated, content: edited };
+      const editState = {
+        source: generated,
+        content: edited,
+        lineKeyIds: lineKeyIds(useProjectStore.getState().lines),
+      };
       useProjectStore.setState({ ttmlEditState: editState, isDirty: false });
       const before = useProjectStore.getState().lines;
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: true });
@@ -126,7 +131,11 @@ describe("applyEditedTtml", () => {
       expect(lineTexts()).toEqual(["Hello there"]);
       expect(useProjectStore.getState().metadata.title).toBe("Kept title");
       const regenerated = generateProjectTtml(useProjectStore.getState(), 0);
-      expect(useProjectStore.getState().ttmlEditState).toEqual({ source: regenerated, content: edited });
+      expect(useProjectStore.getState().ttmlEditState).toEqual({
+        source: regenerated,
+        content: edited,
+        lineKeyIds: lineKeyIds(useProjectStore.getState().lines),
+      });
     });
   });
 
@@ -203,6 +212,44 @@ describe("applyEditedTtml", () => {
       const edited = original.replace(first, "\u0000").replace(second, first).replace("\u0000", second);
       expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: false });
       expect(lineTexts()).toEqual(["Bravo", "Alpha", "Charlie"]);
+    });
+  });
+
+  describe("regressions: line keys of an older export", () => {
+    it("regression: keeps an edit whose line keys are unknown in the export only", () => {
+      useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      const editState = { source: "an older export", content: edited, lineKeyIds: null };
+      useProjectStore.setState({ ttmlEditState: editState });
+      const before = useProjectStore.getState().lines;
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "stale-keys" });
+      expect(useProjectStore.getState().lines).toBe(before);
+      expect(useProjectStore.getState().ttmlEditState).toBe(editState);
+    });
+
+    it("regression: an edit kept in the export follows the new line keys after Done", () => {
+      useProjectStore.setState({
+        lines: [
+          createLine({ id: "a", text: "Alpha", begin: 1, end: 2 }),
+          createLine({ id: "b", text: "Bravo", begin: 2, end: 3 }),
+          createLine({ id: "c", text: "Charlie", begin: 3, end: 4 }),
+        ],
+        metadata: { title: "Kept title", artists: [], album: "", duration: 0 },
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0)
+        .replace(/\n\s*<p [^>]*>Bravo<\/p>/, "")
+        .replace(/<ttm:title>[^<]*<\/ttm:title>/, "");
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied", keptInExport: true });
+      const kept = useProjectStore.getState().ttmlEditState;
+      expect(kept?.lineKeyIds).toEqual({ L1: "a", L2: "c" });
+      expect(kept?.content).toContain('itunes:key="L2" ttm:agent="v1">Charlie<');
+      const again = kept?.content.replace(">Charlie<", ">Charlie!<") ?? "";
+      useProjectStore.getState().setTtmlEditState({ ...kept, source: kept?.source ?? "", content: again });
+      expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines.map((line) => [line.id, line.text])).toEqual([
+        ["a", "Alpha"],
+        ["c", "Charlie!"],
+      ]);
     });
   });
 

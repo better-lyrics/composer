@@ -68,6 +68,28 @@ describe("usePersistence · hand-edited TTML", () => {
     await expect.poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 }).toBeNull();
   });
 
+  describe("regressions", () => {
+    const KEYED_EDIT = { ...EDIT, lineKeyIds: { L1: "L1-line", L2: "other-line" } };
+
+    it("regression: saves the line keys the edit started from", async () => {
+      await mountPersistence();
+
+      useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
+      useProjectStore.getState().setTtmlEditState(KEYED_EDIT);
+
+      await expect
+        .poll(async () => (await loadOpenProjectRecord())?.ttmlEditState, { timeout: 2000 })
+        .toEqual(KEYED_EDIT);
+    });
+
+    it("regression: restores the line keys and an unknown numbering across a reload", async () => {
+      await seedProject(savedProject({ ttmlEditState: { ...EDIT, lineKeyIds: null } }));
+      await mountPersistence();
+
+      expect(useProjectStore.getState().ttmlEditState).toEqual({ ...EDIT, lineKeyIds: null });
+    });
+  });
+
   describe("edge cases", () => {
     it("restores no edit for a project saved before the field existed", async () => {
       await seedProject(savedProject());

@@ -14,6 +14,7 @@ import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
+import { keptTtmlEdits, startedTtmlEdit } from "@/views/export/ttml-edit-keys";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
@@ -47,6 +48,8 @@ const NOT_HELD_MESSAGES: Record<ProjectPart, string> = {
   agents: "Your edits only change the exported file because the TTML cannot hold some singer details.",
   groups: "Your edits only change the exported file because the TTML cannot hold some line group details.",
 };
+const STALE_KEYS_MESSAGE =
+  "Your edits only change the exported file because the TTML no longer matches the lyrics line by line. Regenerate to edit them again.";
 const NOT_SYNCED_MESSAGE =
   "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
 
@@ -57,6 +60,10 @@ function applyEditsToProject(content: string, duration: number): void {
   if (result.status === "export-only") {
     if (result.reason === "not-held") {
       toast(NOT_HELD_MESSAGES[result.part]);
+      return;
+    }
+    if (result.reason === "stale-keys") {
+      toast(STALE_KEYS_MESSAGE);
       return;
     }
     toast(NOT_SYNCED_MESSAGE);
@@ -140,14 +147,16 @@ const ExportPanel: React.FC = () => {
   // makes the notice go away. It has to be a deliberate action: letting an
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
-    setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
+    setEditState((prev) =>
+      prev === null ? prev : keptTtmlEdits(prev, generatedTtml, useProjectStore.getState().lines),
+    );
   }, [generatedTtml, setEditState]);
 
   const handleEditContent = useCallback(
     (content: string) => {
       setEditState((prev) => {
         if (prev !== null && hasConflict) return { ...prev, content };
-        return { source: generatedTtml, content };
+        return startedTtmlEdit(prev, generatedTtml, content, useProjectStore.getState().lines);
       });
     },
     [generatedTtml, hasConflict, setEditState],

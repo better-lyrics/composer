@@ -9,6 +9,7 @@ import { stripSplitCharacter } from "@/utils/split-character";
 import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
+import { type LineKeyIds, lineKeyIds } from "@/utils/ttml-line-keys";
 
 // -- Types ------------------------------------------------------------------
 
@@ -175,11 +176,16 @@ function skippedLinesAfter(
   return skippedAfter;
 }
 
-function mergeEditedTtmlLines(stored: readonly LyricLine[], edit: EditedTtmlLines): LyricLine[] {
+function mergeEditedTtmlLines(
+  stored: readonly LyricLine[],
+  edit: EditedTtmlLines,
+  keyIds: LineKeyIds = lineKeyIds(stored),
+): LyricLine[] {
   const edited = edit.lines;
   const partners = pairEditedLines(
     stored,
     edited.map((_, index) => edit.lineKeys?.[index]),
+    keyIds,
   );
   const skippedAfter = skippedLinesAfter(stored, new Set(partners.filter((partner) => partner !== undefined)));
   const merged = [...(skippedAfter.get(undefined) ?? [])];
