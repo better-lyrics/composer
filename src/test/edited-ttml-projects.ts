@@ -96,7 +96,7 @@ function chorusSong(): EditedTtmlProject {
         ],
       }),
     ],
-    groups: [createGroup({ id: "g1", label: "Chorus", templateVersion: 2 })],
+    groups: [createGroup({ id: "g1", label: "Chorus", templateVersion: 2, sharesTiming: true, ownTimingInstances: [1] })],
     agents: [
       { id: "v1", type: "person", name: "Ana" },
       { id: "v2", type: "group" },
@@ -148,7 +148,7 @@ function transliteratedSong(): EditedTtmlProject {
       createLine({ id: "gap", text: "" }),
       createLine({ id: "last", text: "Mata ne", begin: 6, end: 7 }),
     ],
-    groups: [createGroup({ id: "g2", label: "Hook", templateVersion: 1 })],
+    groups: [createGroup({ id: "g2", label: "Hook", templateVersion: 1, sharesTiming: true })],
     agents: DEFAULT_AGENTS,
     metadata: { title: "Transliterated song", artists: ["Ken"], album: "", duration: 0, language: "ja" },
   };
