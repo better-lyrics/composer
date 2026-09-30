@@ -26,6 +26,15 @@ describe("startedTtmlEdit", () => {
     });
   });
 
+  it("regression: keeps the lines an unchanged edit knew when the edit continues", () => {
+    const generated = exported([ALPHA, BRAVO, CHARLIE]);
+    const previous = { source: generated, content: "kept", lineKeyIds: { L1: "a", L3: "c" } };
+    expect(startedTtmlEdit(previous, generated, "typed", [ALPHA, BRAVO, CHARLIE]).lineKeyIds).toEqual({
+      L1: "a",
+      L3: "c",
+    });
+  });
+
   it("keeps an unknown numbering unknown", () => {
     const stale = { source: "old", content: "old edit", lineKeyIds: null };
     expect(startedTtmlEdit(stale, "new", "edited", [ALPHA]).lineKeyIds).toBeNull();
@@ -45,6 +54,13 @@ describe("keptTtmlEdits", () => {
   });
 
   describe("regressions", () => {
+    it("regression: records only the lines the kept edit knew", () => {
+      const before = [ALPHA, CHARLIE];
+      const edit = startedTtmlEdit(null, exported(before), exported(before), before);
+      const now = [ALPHA, BRAVO, CHARLIE];
+      expect(keptTtmlEdits(edit, exported(now), now).lineKeyIds).toEqual({ L1: "a", L3: "c" });
+    });
+
     it("regression: marks the keys unknown for a saved edit without a numbering", () => {
       const kept = keptTtmlEdits({ source: "older export", content: "old edit" }, exported([ALPHA]), [ALPHA]);
       expect(kept).toEqual({ source: exported([ALPHA]), content: "old edit", lineKeyIds: null });

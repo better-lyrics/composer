@@ -2,6 +2,7 @@ import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
 import { generateProjectTtml } from "@/utils/ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
+import { keptTtmlEdits, startedTtmlEdit } from "@/views/export/ttml-edit-keys";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -141,6 +142,33 @@ describe("applyEditedTtml · whether the export holds the project", () => {
       expect(applyEditedTtml(again, 0)).toEqual({ status: "export-only", reason: "not-synced" });
       expect(useProjectStore.getState().lines).toBe(applied);
       expect(again).toContain(">no|w<");
+    });
+  });
+
+  describe("regressions: lines outside a kept edit", () => {
+    it("regression: a second Done still keeps a line the edit never knew", () => {
+      const alpha = createLine({ id: "a", text: "Alpha", begin: 1, end: 2 });
+      const bravo = createLine({ id: "b", text: "Bravo", begin: 2, end: 3 });
+      const charlie = createLine({ id: "c", text: "Charlie", begin: 3, end: 4 });
+      useProjectStore.setState({ lines: [alpha, charlie] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const started = startedTtmlEdit(null, generated, generated.replace(">Charlie<", ">Charlie!<"), [alpha, charlie]);
+      useProjectStore.setState({ lines: [alpha, bravo, charlie] });
+      const kept = keptTtmlEdits(started, generateProjectTtml(useProjectStore.getState(), 0), [alpha, bravo, charlie]);
+      useProjectStore.setState({ ttmlEditState: kept });
+
+      expect(applyEditedTtml(kept.content, 0)).toMatchObject({ status: "applied", keptInExport: true });
+      const afterFirst = useProjectStore.getState().ttmlEditState;
+      expect(afterFirst?.lineKeyIds).toEqual({ L1: "a", L3: "c" });
+
+      const again = afterFirst?.content.replace(">Charlie!<", ">Charlie!!<") ?? "";
+      useProjectStore.setState({ ttmlEditState: { ...kept, ...afterFirst, content: again } });
+      expect(applyEditedTtml(again, 0)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines.map((line) => [line.id, line.text])).toEqual([
+        ["a", "Alpha"],
+        ["b", "Bravo"],
+        ["c", "Charlie!!"],
+      ]);
     });
   });
 });

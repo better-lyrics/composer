@@ -130,4 +130,25 @@ describe("mergeEditedTtmlLines · pairing by line key", () => {
       expect(merged[2]).toMatchObject({ id: "c", text: "Charlie!", translations: before[2]?.translations });
     });
   });
+
+  describe("regressions: lines the edit never knew", () => {
+    it("regression: keeps a stored line the edit's key map never had, after its preceding line", () => {
+      const before = [translated("a", "Alpha", 1, "Uno", "manual"), translated("c", "Charlie", 3, "Tres", "manual")];
+      const content = exportedTtml(before).replace(">Charlie<", ">Charlie!<");
+      const bravo = translated("b", "Bravo", 2, "Dos", "google");
+      const now = [before[0], bravo, before[1]].filter((line) => line !== undefined);
+      const merged = mergeEditedTtmlLines(now, PARSERS.ttml(content), lineKeyIds(before));
+      expect(merged.map((line) => line.id)).toEqual(["a", "b", "c"]);
+      expect(merged[1]).toBe(bravo);
+      expect(merged[2]?.text).toBe("Charlie!");
+    });
+
+    it("still deletes a line the edit knew and no longer holds", () => {
+      const before = [translated("a", "Alpha", 1, "Uno", "manual"), translated("b", "Bravo", 2, "Dos", "google")];
+      const content = exportedTtml(before).replace(paragraphs(exportedTtml(before))[1] ?? "", "");
+      expect(mergeEditedTtmlLines(before, PARSERS.ttml(content), lineKeyIds(before)).map((line) => line.id)).toEqual([
+        "a",
+      ]);
+    });
+  });
 });

@@ -1,11 +1,11 @@
-import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { holdsEveryLine, linesOutsideEdit, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { type EditedLyrics, type ProjectPart, changedParts, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
 import { generateProjectTtml } from "@/utils/ttml";
-import { canonicalLineKeys, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { canonicalLineKeys, lineKeyIds, pickLineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
 import { contentLineKeyIds } from "@/views/export/ttml-edit-keys";
 import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 
@@ -58,7 +58,8 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
   const applied = useProjectStore.getState();
   const regenerated = generateProjectTtml(applied, audioDuration);
   const keptInExport = canonicalLineKeys(regenerated) !== canonicalLineKeys(content);
-  const appliedKeyIds = lineKeyIds(applied.lines);
+  const outsideIds = new Set(linesOutsideEdit(project.lines, keyIds).map((line) => line.id));
+  const appliedKeyIds = pickLineKeyIds(lineKeyIds(applied.lines), (id) => !outsideIds.has(id));
   applied.setTtmlEditState(
     keptInExport
       ? { source: regenerated, content: renumberLineKeys(content, keyIds, appliedKeyIds), lineKeyIds: appliedKeyIds }

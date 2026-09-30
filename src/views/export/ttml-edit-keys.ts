@@ -1,6 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { TtmlEditState } from "@/stores/project/types";
-import { type LineKeyIds, lineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
+import { type LineKeyIds, lineKeyIds, pickLineKeyIds, renumberLineKeys } from "@/utils/ttml-line-keys";
 
 // -- Types --------------------------------------------------------------------
 
@@ -21,7 +21,9 @@ function startedTtmlEdit(
   content: string,
   lines: readonly LyricLine[],
 ): TtmlEdit {
-  return { source: generated, content, lineKeyIds: previous?.lineKeyIds === null ? null : lineKeyIds(lines) };
+  if (previous?.lineKeyIds === null) return { source: generated, content, lineKeyIds: null };
+  const continued = previous?.source === generated ? previous.lineKeyIds : undefined;
+  return { source: generated, content, lineKeyIds: continued ?? lineKeyIds(lines) };
 }
 
 function keptTtmlEdits(edit: TtmlEdit, generated: string, lines: readonly LyricLine[]): TtmlEdit {
@@ -30,7 +32,12 @@ function keptTtmlEdits(edit: TtmlEdit, generated: string, lines: readonly LyricL
     return { source: generated, content: edit.content, lineKeyIds: from };
   }
   const to = lineKeyIds(lines);
-  return { source: generated, content: renumberLineKeys(edit.content, from, to), lineKeyIds: to };
+  const knownIds = new Set(Object.values(from));
+  return {
+    source: generated,
+    content: renumberLineKeys(edit.content, from, to),
+    lineKeyIds: pickLineKeyIds(to, (id) => knownIds.has(id)),
+  };
 }
 
 function contentLineKeyIds(

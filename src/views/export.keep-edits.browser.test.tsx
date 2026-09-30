@@ -100,7 +100,7 @@ describe("ExportPanel · Done after keeping edits through a conflict", () => {
       expect(byId("e")).toMatchObject({ text: "Echo changed", translations: stored[4]?.translations });
     });
 
-    it("regression: syncing a middle line after an export-only Done, then Keep my edits and Done, keeps every line the kept edit holds", async () => {
+    it("regression: syncing a middle line after an export-only Done, then Keep my edits and Done, keeps the synced line and every untouched line", async () => {
       useProjectStore.setState({ lines: namedLines(["Bravo"]) });
       const screen = await renderPanel();
       await screen.getByRole("button", { name: /Edit$/ }).click();
@@ -117,11 +117,33 @@ describe("ExportPanel · Done after keeping edits through a conflict", () => {
       await screen.getByRole("button", { name: "Done" }).click();
       await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
 
-      expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "c", "d", "e"]);
+      expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "c", "d", "e"]);
       expect(byId("a")).toEqual(synced[0]);
+      expect(byId("b")).toEqual(synced[1]);
+      expect(byId("b")).toMatchObject({ text: "Bravo", begin: 1, end: 2 });
       expect(byId("c")).toEqual(synced[2]);
       expect(byId("d")).toMatchObject({ text: "Delta!", translations: synced[3]?.translations });
       expect(byId("e")).toMatchObject({ text: "Echo!", translations: synced[4]?.translations });
+    });
+
+    it("regression: a line added to the project after the edit started survives Keep my edits and Done", async () => {
+      const stored = namedLines();
+      useProjectStore.setState({ lines: stored });
+      const screen = await renderPanel();
+      await screen.getByRole("button", { name: /Edit$/ }).click();
+      await editText(screen, "Charlie", "Charlie!");
+      const added = createLine({ id: "n", text: "New line", begin: 1.5, end: 1.9 });
+      useProjectStore.setState((state) => ({
+        lines: state.lines.flatMap((line) => (line.id === "b" ? [line, added] : [line])),
+      }));
+      await screen.getByRole("button", { name: "Keep my edits" }).click();
+      await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+
+      expect(useProjectStore.getState().lines.map((line) => line.id)).toEqual(["a", "b", "n", "c", "d", "e"]);
+      expect(byId("n")).toEqual(added);
+      expect(byId("c")).toMatchObject({ text: "Charlie!", translations: stored[2]?.translations });
     });
   });
 });
