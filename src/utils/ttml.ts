@@ -77,8 +77,10 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   if (groups && groups.length > 0) {
     parts.push(`${ind(3)}<composer:groups>`);
     for (const g of groups) {
+      const sharing = g.sharesTiming ? ` sharesTiming="true"` : "";
+      const ownTiming = g.ownTimingInstances?.length ? ` ownTimingInstances="${g.ownTimingInstances.join(",")}"` : "";
       parts.push(
-        `${ind(4)}<composer:group id="${escapeXmlAttribute(g.id)}" label="${escapeXmlAttribute(g.label)}" color="${escapeXmlAttribute(g.color)}" templateVersion="${g.templateVersion}"/>`,
+        `${ind(4)}<composer:group id="${escapeXmlAttribute(g.id)}" label="${escapeXmlAttribute(g.label)}" color="${escapeXmlAttribute(g.color)}" templateVersion="${g.templateVersion}"${sharing}${ownTiming}/>`,
       );
     }
     parts.push(`${ind(3)}</composer:groups>`);

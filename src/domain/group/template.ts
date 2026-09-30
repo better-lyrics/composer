@@ -7,6 +7,8 @@ interface LinkGroup {
   label: string;
   color: string;
   templateVersion: number;
+  sharesTiming?: true;
+  ownTimingInstances?: number[];
 }
 
 interface WordTemplate {

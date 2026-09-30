@@ -33,6 +33,8 @@ interface FactoryGroupOptions {
   label?: string;
   color?: string;
   templateVersion?: number;
+  sharesTiming?: true;
+  ownTimingInstances?: number[];
 }
 
 let lineCounter = 0;
@@ -79,6 +81,8 @@ function createGroup(opts: FactoryGroupOptions = {}) {
     label: opts.label ?? `Group ${groupCounter}`,
     color: opts.color ?? "#a3c9ff",
     templateVersion: opts.templateVersion ?? 0,
+    ...(opts.sharesTiming ? { sharesTiming: opts.sharesTiming } : {}),
+    ...(opts.ownTimingInstances ? { ownTimingInstances: opts.ownTimingInstances } : {}),
   };
 }
 

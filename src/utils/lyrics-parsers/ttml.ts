@@ -107,7 +107,19 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const color = el.getAttribute("color") ?? "#9ca3af";
     const versionStr = el.getAttribute("templateVersion");
     const templateVersion = versionStr ? Number.parseInt(versionStr, 10) || 1 : 1;
-    groups.push({ id, label, color, templateVersion });
+    const ownTimingInstances = (el.getAttribute("ownTimingInstances") ?? "")
+      .split(",")
+      .filter((part) => part.trim() !== "")
+      .map(Number)
+      .filter((instanceIdx) => Number.isInteger(instanceIdx) && instanceIdx >= 0);
+    groups.push({
+      id,
+      label,
+      color,
+      templateVersion,
+      ...(el.getAttribute("sharesTiming") === "true" ? { sharesTiming: true as const } : {}),
+      ...(ownTimingInstances.length ? { ownTimingInstances } : {}),
+    });
   }
 
   // Parse lyrics - look for <p> elements with timing
