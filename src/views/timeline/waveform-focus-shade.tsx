@@ -6,7 +6,7 @@ import { useFocusRange } from "@/views/timeline/use-focus-range";
 
 // -- Constants -----------------------------------------------------------------
 
-const SHADE = "pointer-events-none absolute top-0 bg-composer-bg-dark/70";
+const SHADE = "pointer-events-none absolute top-0 z-3 bg-composer-bg-dark/70";
 
 // -- Component -----------------------------------------------------------------
 

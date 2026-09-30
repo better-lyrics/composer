@@ -136,11 +136,7 @@ const TimelineWaveform: React.FC = () => {
         style={{ width: totalWidth, height: WAVEFORM_HEIGHT - 1, opacity: ws ? 0 : 1 }}
       />
       {audioElement && (
-        <div
-          data-waveform-fade
-          className="isolate transition-opacity duration-150 ease-in"
-          style={{ opacity: ws ? 1 : 0 }}
-        >
+        <div data-waveform-fade className="transition-opacity duration-150 ease-in" style={{ opacity: ws ? 1 : 0 }}>
           <WavesurferPlayer
             key={waveformKey}
             height={WAVEFORM_HEIGHT}

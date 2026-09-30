@@ -1,5 +1,6 @@
 import { TOKEN_VAR } from "@/domain/theme/model";
 import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { bufferToBlobUrl, createAudioFile, makeSineBuffer } from "@/test/audio-fixtures";
 import {
   WAVEFORM_SWEEP_ANIMATION,
@@ -7,11 +8,15 @@ import {
   installStyleSheet,
   installUtilitiesUsedIn,
 } from "@/test/browser-css";
+import { createGroup, createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { readToken } from "@/utils/theme/read-token";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { FADE_SETTLE_MS, TimelineWaveform } from "@/views/timeline/timeline-waveform";
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+
+// wavesurfer.js draws its played-progress canvas at this z-index.
+const WAVESURFER_PROGRESS_Z_INDEX = 2;
 
 function setupWaveformAudio(duration = 30) {
   useAudioStore.setState({
@@ -485,17 +490,21 @@ describe("TimelineWaveform loading dots", () => {
 });
 
 describe("TimelineWaveform · stacking", () => {
-  it("regression: keeps the played waveform canvas under overlays that follow it", async () => {
+  it("regression: draws the open group shade above the played waveform canvas", async () => {
     setupWaveformAudio(6);
-    const audio = document.createElement("audio");
-    audio.src = bufferToBlobUrl(makeSineBuffer(6));
-    useAudioStore.setState({ audioElement: audio });
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1", sharesTiming: true })],
+      lines: [
+        createLine({ id: "c0", text: "go", groupId: "g1", instanceIdx: 0, templateLineIdx: 0, begin: 2, end: 3 }),
+      ],
+    });
+    useTimelineStore.getState().openGroup("g1", 0);
     const screen = await render(<TimelineWaveform />);
-    const fade = screen.container.querySelector<HTMLElement>("[data-waveform-fade]");
-    if (!fade) throw new Error("waveform layer not rendered");
+    const shade = screen.container.querySelector<HTMLElement>('[data-waveform-focus-shade="before"]');
+    if (!shade) throw new Error("shade not rendered");
     const utilities = await installUtilitiesUsedIn(screen.container);
 
-    expect(getComputedStyle(fade).isolation).toBe("isolate");
+    expect(Number(getComputedStyle(shade).zIndex)).toBeGreaterThan(WAVESURFER_PROGRESS_Z_INDEX);
     utilities.remove();
   });
 });
