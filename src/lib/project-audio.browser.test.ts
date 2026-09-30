@@ -101,7 +101,15 @@ describe("removeCachedYouTubeAudio", () => {
 
     it("never removes audio the guard reports as in use, checked inside the same transaction", async () => {
       await seedYouTube("guarded");
-      expect(await removeCachedYouTubeAudio(["guarded"], () => true)).toEqual({ projects: 0, bytes: 0 });
+      const checked: string[] = [];
+      let inUse = false;
+      const removal = removeCachedYouTubeAudio(["guarded"], (id) => {
+        checked.push(id);
+        return inUse;
+      });
+      inUse = true;
+      expect(await removal).toEqual({ projects: 0, bytes: 0 });
+      expect(checked).toEqual(["guarded"]);
       expect(await loadProjectAudio("guarded")).toBeDefined();
     });
   });
