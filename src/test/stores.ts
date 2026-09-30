@@ -63,6 +63,7 @@ async function resetAllStores(): Promise<void> {
     markerMode: false,
     hoveredSnapPointId: null,
     collapsedInstances: {},
+    focusedGroup: null,
     pingingGroupId: null,
     renamingGroupId: null,
     renamingInstanceIdx: null,

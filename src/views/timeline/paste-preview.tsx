@@ -69,7 +69,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
       const container = scrollContainerRef.current;
       if (!container) return;
 
-      const { zoom, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+      const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
       const lines = useProjectStore.getState().lines;
       const duration = useAudioStore.getState().duration;
       const layout = computeRowLayout({
@@ -77,6 +77,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         rowHeights,
         defaultRowHeight,
         collapsedInstances,
+        focusedGroup,
         waveformHeight: ROWS_START_Y,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       });
@@ -192,6 +193,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
   const rowHeights = useTimelineStore((s) => s.rowHeights);
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
+  const focusedGroup = useTimelineStore((s) => s.focusedGroup);
   const lines = useProjectStore((s) => s.lines);
   const duration = useAudioStore((s) => s.duration);
 
@@ -202,10 +204,11 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
         rowHeights,
         defaultRowHeight,
         collapsedInstances,
+        focusedGroup,
         waveformHeight: ROWS_START_Y,
         groupHeaderHeight: GROUP_HEADER_HEIGHT,
       }),
-    [lines, rowHeights, defaultRowHeight, collapsedInstances],
+    [lines, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup],
   );
 
   const container = scrollContainerRef.current;

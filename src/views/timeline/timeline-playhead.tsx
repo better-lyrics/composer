@@ -71,13 +71,14 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
         lastFollowedLineRef.current = activeLineIndex;
-        const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+        const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
 
         const layout = computeRowLayout({
           lines,
           rowHeights,
           defaultRowHeight,
           collapsedInstances,
+          focusedGroup,
           waveformHeight: WAVEFORM_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });

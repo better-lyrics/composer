@@ -11,6 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
+import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -54,7 +55,7 @@ interface LineEffectiveRow {
 
 type EffectiveRow = GroupHeaderRow | LineEffectiveRow;
 
-function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
+function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): EffectiveRow[] {
   const effective = getEffectiveLines(lines);
   const rows: EffectiveRow[] = [];
   let bufferStart = 0;
@@ -95,7 +96,8 @@ function getEffectiveRows(lines: LyricLine[]): EffectiveRow[] {
   }
   flushBuffer(effective.length);
 
-  return rows;
+  if (focus === null) return rows;
+  return rows.filter((row) => row.kind === "line" && isInFocus(row.line, focus));
 }
 
 interface WordSelectionRef {
@@ -129,6 +131,7 @@ interface RowLayoutInput {
   rowHeights: Record<string, number>;
   defaultRowHeight: number;
   collapsedInstances: Record<string, boolean>;
+  focusedGroup: GroupFocus | null;
   waveformHeight: number;
   groupHeaderHeight: number;
 }
@@ -152,6 +155,7 @@ function computeRowLayout({
   rowHeights,
   defaultRowHeight,
   collapsedInstances,
+  focusedGroup,
   waveformHeight,
   groupHeaderHeight,
 }: RowLayoutInput): RowLayout {
@@ -161,7 +165,8 @@ function computeRowLayout({
   let lastInstanceKey: string | null = null;
 
   for (const line of lines) {
-    const inst = isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
+    if (!isInFocus(line, focusedGroup)) continue;
+    const inst = focusedGroup === null && isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
 
     if (inst !== lastInstanceKey && inst !== null) {
       headerTops.set(inst, { top: rowTop, height: groupHeaderHeight });

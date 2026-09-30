@@ -11,6 +11,7 @@ describe("getLineAndTrackAtY", () => {
     rowHeights: {},
     defaultRowHeight: 40,
     collapsedInstances: {},
+    focusedGroup: null,
     waveformHeight: 100,
     groupHeaderHeight: 20,
   });

@@ -29,6 +29,7 @@ import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instanc
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
+import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
 import { pingGroup } from "@/views/timeline/ping-group";
@@ -109,12 +110,13 @@ function useTimelineKeyboard(
       const scrollContainer = scrollContainerRef.current;
 
       if (fromPlayhead && scrollContainer) {
-        const collapsedInstances = useTimelineStore.getState().collapsedInstances;
+        const { collapsedInstances, focusedGroup } = useTimelineStore.getState();
         const layout = computeRowLayout({
           lines,
           rowHeights,
           defaultRowHeight,
           collapsedInstances,
+          focusedGroup,
           waveformHeight: WAVEFORM_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });
@@ -213,8 +215,10 @@ function useTimelineKeyboard(
       if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         const allSelections: WordSelection[] = [];
+        const { focusedGroup } = useTimelineStore.getState();
         for (let li = 0; li < lines.length; li++) {
           const line = lines[li];
+          if (!isInFocus(line, focusedGroup)) continue;
           for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
           for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)
@@ -288,12 +292,13 @@ function useTimelineKeyboard(
 
           if (activeLineIndex >= 0) {
             const line = lines[activeLineIndex];
-            const collapsedInstances = useTimelineStore.getState().collapsedInstances;
+            const { collapsedInstances, focusedGroup } = useTimelineStore.getState();
             const layout = computeRowLayout({
               lines,
               rowHeights,
               defaultRowHeight,
               collapsedInstances,
+              focusedGroup,
               waveformHeight: WAVEFORM_HEIGHT,
               groupHeaderHeight: GROUP_HEADER_HEIGHT,
             });

@@ -38,6 +38,7 @@ import { TimelineRows } from "@/views/timeline/timeline-rows";
 import { WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { TimelineSyllableSplitter } from "@/views/timeline/timeline-syllable-splitter";
 import { TimelineWaveform } from "@/views/timeline/timeline-waveform";
+import { useGroupFocusScroll } from "@/views/timeline/use-group-focus-scroll";
 import { useMarquee } from "@/views/timeline/use-marquee";
 import { useSharedTimingPing } from "@/views/timeline/use-shared-timing-ping";
 import { useSnapBypass } from "@/views/timeline/use-snap-bypass";
@@ -133,6 +134,7 @@ const TimelinePanel: React.FC = () => {
   const { marqueeRect, handleMarqueeMouseDown } = useMarquee(scrollContainerRef);
   const openLyricsModal = useCallback(() => openImportModal(), [openImportModal]);
   useTimelineKeyboard(scrollContainerRef, effectiveLines, duration, openLyricsModal);
+  useGroupFocusScroll(scrollContainerRef);
   useTimelineWheel(scrollContainerRef, !!source && lines.length > 0);
   useTimelineFrameWake(scrollContainerRef, contentRef, !!source && lines.length > 0);
 
@@ -199,7 +201,8 @@ const TimelinePanel: React.FC = () => {
 
   const dragCells = useMemo(() => {
     if (!activeDrag) return null;
-    const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+    const { selectedWords, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } =
+      useTimelineStore.getState();
     const inSelection = isWordSelected(selectedWords, activeDrag.lineId, activeDrag.wordIndex, activeDrag.trackType);
 
     const layout = computeRowLayout({
@@ -207,6 +210,7 @@ const TimelinePanel: React.FC = () => {
       rowHeights,
       defaultRowHeight,
       collapsedInstances,
+      focusedGroup,
       waveformHeight: WAVEFORM_HEIGHT,
       groupHeaderHeight: GROUP_HEADER_HEIGHT,
     });

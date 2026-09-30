@@ -115,6 +115,15 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   const handleBadgeMouseEnter = useCallback(() => setPingingGroupId(group.id), [group.id, setPingingGroupId]);
   const handleBadgeMouseLeave = useCallback(() => setPingingGroupId(null), [setPingingGroupId]);
 
+  const openGroup = useTimelineStore((s) => s.openGroup);
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      openGroup(group.id, instanceIdx);
+    },
+    [group.id, instanceIdx, openGroup],
+  );
+
   const setContextMenu = useTimelineStore((s) => s.setContextMenu);
   const toggleInstanceCollapsed = useTimelineStore((s) => s.toggleInstanceCollapsed);
   const handleChevronPointerDown = useCallback((e: React.PointerEvent) => {
@@ -187,6 +196,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       onPointerDown={handlePointerDown}
       onMouseDown={(e) => e.stopPropagation()}
       onContextMenu={handleContextMenu}
+      onDoubleClick={handleDoubleClick}
       style={{
         left,
         width,

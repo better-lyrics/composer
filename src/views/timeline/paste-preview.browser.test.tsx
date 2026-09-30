@@ -63,12 +63,13 @@ function Harness({ clipboard }: { clipboard: ClipboardData }) {
 }
 
 function pointOnEmptyRow(container: HTMLElement) {
-  const { zoom, rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+  const { zoom, rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
     lines: useProjectStore.getState().lines,
     rowHeights,
     defaultRowHeight,
     collapsedInstances,
+    focusedGroup,
     waveformHeight: WAVEFORM_HEIGHT + 1,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });

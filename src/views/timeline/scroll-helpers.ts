@@ -10,13 +10,14 @@ import { computeRowLayout } from "@/views/timeline/utils";
 function scrollToInstanceHeader(groupId: string, instanceIdx: number): void {
   const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
   if (!container) return;
-  const { rowHeights, defaultRowHeight, collapsedInstances, zoom } = useTimelineStore.getState();
+  const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup, zoom } = useTimelineStore.getState();
   const projectLines = useProjectStore.getState().lines;
   const layout = computeRowLayout({
     lines: projectLines,
     rowHeights,
     defaultRowHeight,
     collapsedInstances,
+    focusedGroup,
     waveformHeight: WAVEFORM_HEIGHT,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });
