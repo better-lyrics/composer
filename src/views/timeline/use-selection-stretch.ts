@@ -1,3 +1,4 @@
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -109,10 +110,10 @@ function useSelectionStretchDrag({ onDragEnd }: UseSelectionStretchOptions = {})
       cleanupRef.current?.();
       cleanupRef.current = null;
 
-      const snapshotLines = useProjectStore.getState().lines;
+      const { lines: snapshotLines, groups } = useProjectStore.getState();
       const selection = useTimelineStore.getState().selectedWords;
       const options = {
-        duration: useAudioStore.getState().duration,
+        rangeOf: timeRangeResolver(snapshotLines, groups, useAudioStore.getState().duration),
         minWordDuration: useSettingsStore.getState().minWordDuration,
       };
       const plan = planStretchDrag(snapshotLines, selection, { lineId, type, wordIndex, edge }, options);

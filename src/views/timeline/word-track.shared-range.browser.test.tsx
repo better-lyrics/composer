@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { WordTiming } from "@/domain/word/timing";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -23,9 +25,17 @@ const chorus = (id: string, instanceIdx: number, begin: number) =>
     ],
   });
 
-async function renderSharedTrack(sharesTiming: boolean) {
+async function renderSharedTrack(sharesTiming: boolean, selectWholeLine = false) {
   const calls: Partial<WordTiming>[] = [];
-  useTimelineStore.setState({ rollingEditMode: false, zoom: 100 });
+  useTimelineStore.setState({
+    rollingEditMode: false,
+    zoom: 100,
+    selectedWords: selectWholeLine
+      ? [0, 1].map((wordIndex) => ({ lineId: "c1", lineIndex: 1, wordIndex, type: "word" as const }))
+      : [],
+  });
+  useAudioStore.setState({ duration: 20 });
+  useSettingsStore.setState({ minWordDuration: 0.1 });
   const source = chorus("c1", 1, 10);
   useProjectStore.setState({
     lines: [chorus("c0", 0, 3), source, chorus("c2", 2, 16)],
@@ -52,8 +62,10 @@ function dragEdgeBy(block: HTMLElement, edge: "left" | "right", offsetPx: number
   if (!handle) throw new Error(`word block has no ${edge} edge handle`);
   handle.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, button: 0, clientX: GESTURE_START_X }));
   document.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientX: GESTURE_START_X + offsetPx }));
-  document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true, clientX: GESTURE_START_X + offsetPx }));
 }
+
+const wordsOf = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id)?.words ?? [];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -74,6 +86,15 @@ describe("WordTrack boundary drag in a shared group", () => {
 
     await expect.poll(() => calls.length).toBe(1);
     expect(calls[0].end).toBe(14);
+  });
+
+  it("stops a selection stretch where the latest instance reaches the song end", async () => {
+    const { blocks } = await renderSharedTrack(true, true);
+
+    dragEdgeBy(blocks[1], "right", 900);
+
+    await expect.poll(() => wordsOf("c1")[1]?.end).toBeCloseTo(14, 5);
+    expect(wordsOf("c2")[1]?.end).toBeCloseTo(20, 5);
   });
 
   describe("regressions", () => {
