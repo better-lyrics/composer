@@ -108,9 +108,23 @@ describe("applyEditedTtml", () => {
       });
       const before = useProjectStore.getState().lines;
       const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
-      expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held" });
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held", part: "lines" });
       expect(useProjectStore.getState().lines).toBe(before);
       expect(useProjectStore.getState().canUndo()).toBe(false);
+    });
+  });
+
+  describe("projects the export cannot hold: song details", () => {
+    it("regression: names the song details when a custom field uses a reserved key", () => {
+      useProjectStore.setState({
+        lines: [createLine({ text: "Hello", begin: 1, end: 2 })],
+        metadata: { title: "Song", artists: [], album: "Real album", duration: 0, extra: { album: "Other album" } },
+      });
+      const before = useProjectStore.getState().metadata;
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held", part: "metadata" });
+      expect(useProjectStore.getState().metadata).toBe(before);
+      expect(lineTexts()).toEqual(["Hello"]);
     });
   });
 

@@ -10,7 +10,9 @@ import { describe, expect, it } from "vitest";
 
 const NOT_SYNCED = "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
 const KEPT_IN_EXPORT = "Updated the lyrics from the TTML. Some edits only change the exported file.";
-const EXPORT_ONLY = "The lyrics stay as they were, so your edits only change the exported file.";
+const NOT_HELD_LINES = "Your edits only change the exported file because the TTML cannot hold some line details.";
+const NOT_HELD_SONG_DETAILS =
+  "Your edits only change the exported file because the TTML cannot hold some song details.";
 const APPLIED = "Updated the lyrics from the TTML";
 
 // -- Helpers ------------------------------------------------------------------
@@ -148,9 +150,22 @@ describe("ExportPanel · Done applies edits only when the TTML holds the whole p
       const edited = generated.replace(">World<", ">World2<");
       await textarea.fill(edited);
       await screen.getByRole("button", { name: "Done" }).click();
-      await expect.element(screen.getByText(EXPORT_ONLY)).toBeInTheDocument();
+      await expect.element(screen.getByText(NOT_HELD_LINES)).toBeInTheDocument();
       expect(useProjectStore.getState().lines).toBe(before);
       expect(useProjectStore.getState().ttmlEditState?.content).toBe(edited);
+    });
+
+    it("regression: a custom field with a reserved key names the song details", async () => {
+      useProjectStore.setState({
+        lines: [createLine({ text: "Hello", begin: 0, end: 1 })],
+        metadata: { title: "Song", artists: [], album: "Real album", duration: 0, extra: { album: "Other album" } },
+      });
+      const screen = await renderPanel();
+      const { textarea, generated } = await startEditing(screen);
+      await textarea.fill(generated.replace(">Hello<", ">Hello there<"));
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByText(NOT_HELD_SONG_DETAILS)).toBeInTheDocument();
+      expect(lineTexts()).toEqual(["Hello"]);
     });
 
     it("regression: a partly synced project with an unreadable edit also shows the XML error", async () => {

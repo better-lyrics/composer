@@ -1,6 +1,6 @@
 import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
-import { type EditedLyrics, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { type EditedLyrics, type ProjectPart, changedParts, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { useProjectStore } from "@/stores/project";
 import type { ProjectStore } from "@/stores/project/types";
 import { type ParseResult, skippedLineCount } from "@/utils/lyrics-parsers/shared";
@@ -12,7 +12,7 @@ import { readTtmlLyrics } from "@/views/lyrics-import-modal/import-lyrics";
 type EditedTtmlApply =
   | { status: "applied"; skipped: number; keptInExport: boolean }
   | { status: "export-only"; reason: "not-synced"; message?: string }
-  | { status: "export-only"; reason: "not-held" }
+  | { status: "export-only"; reason: "not-held"; part: ProjectPart }
   | { status: "unreadable"; message: string };
 
 // -- Constants ----------------------------------------------------------------
@@ -26,11 +26,11 @@ function editedLyricsFrom(parsed: ParseResult, lines: EditedLyrics["lines"]): Ed
   return { lines, groups: parsed.groups ?? [], agents: parsed.agents, metadata: parsed.metadata };
 }
 
-function exportHoldsProject(project: ProjectStore, audioDuration: number): boolean {
+function partNotHeld(project: ProjectStore, audioDuration: number): ProjectPart | undefined {
   const own = readTtmlLyrics(generateProjectTtml(project, audioDuration), OWN_EXPORT, audioDuration);
-  if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return false;
+  if (own.status === "unreadable" || !holdsEveryLine(project.lines, own.parsed.lines)) return "lines";
   const roundTrip = editedLyricsFrom(own.parsed, mergeEditedTtmlLines(project.lines, own.parsed.lines));
-  return !changesProject(project, editedLyricsWrite(project, roundTrip));
+  return changedParts(project, editedLyricsWrite(project, roundTrip))[0];
 }
 
 // -- Apply --------------------------------------------------------------------
@@ -44,7 +44,8 @@ function applyEditedTtml(content: string, audioDuration: number): EditedTtmlAppl
       : { status: "export-only", reason: "not-synced" };
   }
   if (read.status === "unreadable") return read;
-  if (!exportHoldsProject(project, audioDuration)) return { status: "export-only", reason: "not-held" };
+  const notHeld = partNotHeld(project, audioDuration);
+  if (notHeld) return { status: "export-only", reason: "not-held", part: notHeld };
   project.applyEditedLyricsWithHistory(
     editedLyricsFrom(read.parsed, mergeEditedTtmlLines(project.lines, read.parsed.lines)),
   );

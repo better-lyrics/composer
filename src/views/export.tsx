@@ -1,3 +1,4 @@
+import type { ProjectPart } from "@/domain/project/edited-lyrics";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
@@ -40,6 +41,12 @@ interface EditingSession {
 const APPLIED_MESSAGE = "Updated the lyrics from the TTML";
 const KEPT_IN_EXPORT_MESSAGE = "Updated the lyrics from the TTML. Some edits only change the exported file.";
 const EXPORT_ONLY_MESSAGE = "The lyrics stay as they were, so your edits only change the exported file.";
+const NOT_HELD_MESSAGES: Record<ProjectPart, string> = {
+  lines: "Your edits only change the exported file because the TTML cannot hold some line details.",
+  metadata: "Your edits only change the exported file because the TTML cannot hold some song details.",
+  agents: "Your edits only change the exported file because the TTML cannot hold some singer details.",
+  groups: "Your edits only change the exported file because the TTML cannot hold some line group details.",
+};
 const NOT_SYNCED_MESSAGE =
   "Your edits only change the exported file. Sync every line to let Done apply them to the lyrics.";
 
@@ -49,7 +56,7 @@ function applyEditsToProject(content: string, duration: number): void {
   const result = applyEditedTtml(content, duration);
   if (result.status === "export-only") {
     if (result.reason === "not-held") {
-      toast(EXPORT_ONLY_MESSAGE);
+      toast(NOT_HELD_MESSAGES[result.part]);
       return;
     }
     toast(NOT_SYNCED_MESSAGE);

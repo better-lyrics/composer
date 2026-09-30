@@ -23,6 +23,8 @@ interface ProjectLyrics {
   metadata: ProjectMetadata;
 }
 
+type ProjectPart = "lines" | "metadata" | "agents" | "groups";
+
 interface EditedLyricsWrite {
   lines: RawLine[];
   groups: LinkGroup[];
@@ -55,16 +57,21 @@ function editedLyricsWrite(current: ProjectLyrics, edited: EditedLyrics): Edited
   };
 }
 
+function changedParts(current: ProjectLyrics, write: EditedLyricsWrite): ProjectPart[] {
+  const changes: [ProjectPart, boolean][] = [
+    ["lines", !isStructurallyEqual(current.lines, write.lines)],
+    ["metadata", Object.keys(write.metadata).length > 0],
+    ["agents", !isStructurallyEqual(current.agents, write.agents)],
+    ["groups", !isStructurallyEqual(current.groups, write.groups)],
+  ];
+  return changes.flatMap(([part, changed]) => (changed ? [part] : []));
+}
+
 function changesProject(current: ProjectLyrics, write: EditedLyricsWrite): boolean {
-  return (
-    Object.keys(write.metadata).length > 0 ||
-    !isStructurallyEqual(current.lines, write.lines) ||
-    !isStructurallyEqual(current.groups, write.groups) ||
-    !isStructurallyEqual(current.agents, write.agents)
-  );
+  return changedParts(current, write).length > 0;
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { changesProject, editedLyricsWrite };
-export type { EditedLyrics };
+export { changedParts, changesProject, editedLyricsWrite };
+export type { EditedLyrics, ProjectPart };

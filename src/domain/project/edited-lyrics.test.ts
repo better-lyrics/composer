@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
+import { changedParts, changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -93,5 +93,29 @@ describe("changesProject", () => {
       const reordered = { ...sameEdit(current), lines };
       expect(changesProject(current, editedLyricsWrite(current, reordered))).toBe(false);
     });
+  });
+});
+
+describe("changedParts", () => {
+  it("names nothing for an edit that repeats the project", () => {
+    const current = project();
+    expect(changedParts(current, editedLyricsWrite(current, sameEdit(current)))).toEqual([]);
+  });
+
+  it("names every part the edit changes, lines first", () => {
+    const current = project();
+    const edit = {
+      lines: [{ ...current.lines[0], text: "Hi" }],
+      groups: [createGroup({ id: "g1", label: "Chorus 2" })],
+      agents: current.agents.map((agent) => ({ ...agent, name: "Renamed" })),
+      metadata: { title: "Other" },
+    };
+    expect(changedParts(current, editedLyricsWrite(current, edit))).toEqual(["lines", "metadata", "agents", "groups"]);
+  });
+
+  it("names only the song details when only they change", () => {
+    const current = project();
+    const edit = { ...sameEdit(current), metadata: { album: "New album" } };
+    expect(changedParts(current, editedLyricsWrite(current, edit))).toEqual(["metadata"]);
   });
 });
