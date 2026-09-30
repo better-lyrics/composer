@@ -13,12 +13,13 @@ interface EditCase {
   deleted?: readonly string[];
   reordered?: boolean;
   lossless?: boolean;
-  projectChangeBeforeKeepingEdits?: (lines: LyricLine[]) => LyricLine[];
+  projectChangeBeforeKeepingEdits?: (lines: LyricLine[], fixtureLines: LyricLine[]) => LyricLine[];
   expectTaken: (lines: readonly LyricLine[]) => void;
 }
 
 interface EditOperation {
   name: string;
+  linesAtEditStart?: (project: EditedTtmlProject) => LyricLine[];
   edit: (project: EditedTtmlProject, ttml: string) => EditCase;
 }
 

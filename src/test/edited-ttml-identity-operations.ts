@@ -1,4 +1,4 @@
-import type { LyricLine } from "@/domain/line/model";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineTimed } from "@/domain/line/sync-progress";
 import {
   type EditOperation,
@@ -37,6 +37,10 @@ function groupInstancePair(project: EditedTtmlProject): [LyricLine, LyricLine] {
     if (line.groupId && other) return [line, other];
   }
   throw new Error("fixture has no group with two instances");
+}
+
+function untimed(line: LyricLine): LyricLine {
+  return reconcileLine({ ...line, words: undefined, begin: undefined, end: undefined, backgroundWords: undefined });
 }
 
 // -- Operations ---------------------------------------------------------------
@@ -117,11 +121,32 @@ const LINE_IDENTITY_OPERATIONS: readonly EditOperation[] = [
       const line = timedAt(project, 2);
       const after = timedAt(project, 0);
       const added = createLine({ id: "added-in-project", text: "Added in the project", begin: 0.1, end: 0.2 });
+      const textEdit = editLineText(ttml, project, line);
       return {
-        ...editLineText(ttml, project, line),
+        ...textEdit,
         touched: [line.id],
         projectChangeBeforeKeepingEdits: (lines) =>
           lines.flatMap((candidate) => (candidate === after ? [candidate, added] : [candidate])),
+        expectTaken: (lines) => {
+          textEdit.expectTaken(lines);
+          expect(lines[lines.indexOf(lineById(lines, after.id)) + 1]).toEqual(added);
+        },
+      };
+    },
+  },
+  {
+    name: "keep edits after a line that was untimed when the edit started is synced",
+    linesAtEditStart: (project) => {
+      const synced = timedAt(project, 1);
+      return project.lines.map((line) => (line === synced ? untimed(line) : line));
+    },
+    edit: (project, ttml) => {
+      const line = timedAt(project, 1);
+      const textEdit = editLineText(ttml, project, line);
+      return {
+        ...textEdit,
+        touched: [line.id],
+        projectChangeBeforeKeepingEdits: (_lines, fixtureLines) => fixtureLines,
       };
     },
   },

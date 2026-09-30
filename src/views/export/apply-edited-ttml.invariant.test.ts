@@ -10,14 +10,15 @@ import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
-function keptEditsAfter(editCase: EditCase, project: EditedTtmlProject): string {
+function keptEditsAfter(editCase: EditCase, atEditStart: EditedTtmlProject, fixture: EditedTtmlProject): string {
   const started = startedTtmlEdit(
     null,
     generateProjectTtml(useProjectStore.getState(), 0),
     editCase.edited,
-    project.lines,
+    atEditStart.lines,
   );
-  useProjectStore.setState({ lines: editCase.projectChangeBeforeKeepingEdits?.(project.lines) ?? project.lines });
+  const changed = editCase.projectChangeBeforeKeepingEdits?.(atEditStart.lines, fixture.lines);
+  useProjectStore.setState({ lines: changed ?? atEditStart.lines });
   const current = useProjectStore.getState();
   const kept = keptTtmlEdits(started, generateProjectTtml(current, 0), current.lines);
   useProjectStore.setState({ ttmlEditState: kept });
@@ -31,14 +32,19 @@ describe("applyEditedTtml · invariants", () => {
     for (const operation of [...OPERATIONS, ...COMBINED_OPERATIONS, ...LINE_IDENTITY_OPERATIONS]) {
       it(`${fixture().name}: ${operation.name} changes only what the edit changed`, () => {
         const project = fixture();
+        const atEditStart = operation.linesAtEditStart
+          ? { ...project, lines: operation.linesAtEditStart(project) }
+          : project;
         useProjectStore.setState({
-          lines: project.lines,
+          lines: atEditStart.lines,
           groups: project.groups,
           agents: project.agents,
           metadata: project.metadata,
         });
-        const editCase = operation.edit(project, generateProjectTtml(useProjectStore.getState(), 0));
-        const content = editCase.projectChangeBeforeKeepingEdits ? keptEditsAfter(editCase, project) : editCase.edited;
+        const editCase = operation.edit(atEditStart, generateProjectTtml(useProjectStore.getState(), 0));
+        const content = editCase.projectChangeBeforeKeepingEdits
+          ? keptEditsAfter(editCase, atEditStart, project)
+          : editCase.edited;
 
         const result = applyEditedTtml(content, 0);
         expect(result).toMatchObject({ status: "applied" });
