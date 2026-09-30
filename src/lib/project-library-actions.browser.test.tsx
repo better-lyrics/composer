@@ -163,13 +163,22 @@ describe("exportProjectFiles", () => {
   });
 
   describe("error paths", () => {
-    it("stops after the first failure, keeping any file already downloaded", async () => {
+    it("downloads every loadable file, then throws the first failure", async () => {
       await seedStoredProject("a", { project: songTitled("Alpha") });
       const downloads = watchDownloads();
       await expect(exportProjectFiles(["a", "missing"])).rejects.toThrow(/not stored/);
       await expect.poll(() => downloads.names().length).toBe(1);
       downloads.stop();
       expect(downloads.names()[0]).toMatch(/^Alpha-/);
+    });
+
+    it("still downloads the files after a failure that comes first", async () => {
+      await seedStoredProject("b", { project: songTitled("Bravo") });
+      const downloads = watchDownloads();
+      await expect(exportProjectFiles(["missing", "b"])).rejects.toThrow(/not stored/);
+      await expect.poll(() => downloads.names().length).toBe(1);
+      downloads.stop();
+      expect(downloads.names()[0]).toMatch(/^Bravo-/);
     });
 
     it("regression: reports a failed save instead of exporting a stale record", async () => {
