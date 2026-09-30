@@ -1,7 +1,9 @@
+import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
 import { mainBounds } from "@/domain/line/bounds";
 import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "@/domain/sync/cursor";
 import { enforceOrderAround } from "@/domain/word/order";
@@ -17,6 +19,7 @@ interface GestureContext {
   jumped: boolean;
   time: number;
   defaultWordDuration: number;
+  groups?: readonly LinkGroup[];
 }
 
 interface GestureCommit {
@@ -52,6 +55,10 @@ function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granular
   const bounds = slotBounds(lines, slot);
   if (!bounds) return { slot: null, floor: 0 };
   return { slot, floor: ctx.jumped && ctx.time <= bounds.begin ? bounds.end : bounds.begin };
+}
+
+function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureContext): TimeRange {
+  return timeRangeResolver(lines, ctx.groups ?? [], Number.POSITIVE_INFINITY)(line);
 }
 
 function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
@@ -114,7 +121,9 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
   const existing = line.words ?? [];
   if (text === null || cursor.wordIndex > existing.length) return null;
 
-  const { slot, floor } = anchorBefore(lines, ctx, "word");
+  const anchor = anchorBefore(lines, ctx, "word");
+  const { slot } = anchor;
+  const floor = Math.max(anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const nextWord = existing[cursor.wordIndex + 1];
   const provisional = open ? begin : begin + ctx.defaultWordDuration;
@@ -145,11 +154,15 @@ function writeLine(lines: readonly LyricLine[], ctx: GestureContext): SlotWrite 
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
 
-  const { slot, floor } = anchorBefore(lines, ctx, "line");
-  const begin = Math.max(ctx.time, floor);
+  const anchor = anchorBefore(lines, ctx, "line");
+  const { slot } = anchor;
+  const range = rangeOfLine(lines, line, ctx);
+  const floor = Math.max(anchor.floor, range.min);
   const oldMain = mainBounds(line);
+  const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
+  const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   const updates: Partial<LyricLine> = oldMain
-    ? shiftLineTiming(line, begin - oldMain.begin)
+    ? shiftLineTiming(line, delta)
     : { begin, end: begin, ...backgroundFor(line, begin) };
 
   return {

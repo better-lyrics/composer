@@ -4,7 +4,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { DEFAULTS, useSettingsStore } from "@/stores/settings";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { createLine, createWord } from "@/test/factories";
+import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import type { SyncState } from "@/utils/sync-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
@@ -1036,5 +1036,48 @@ describe("sync-panel bg-init contract", () => {
     expect(useProjectStore.getState().lines[0].backgroundText).toBe(BG_TEXT);
     expect(useProjectStore.getState().lines[0].text).toBe(ORIGINAL_LINE_TEXT);
     expect(useProjectStore.getState().lines[0].backgroundWords).toBeUndefined();
+  });
+});
+
+describe("useSyncHandlers with shared timing", () => {
+  function seedSharedChorus(sharesTiming: boolean): void {
+    const chorus = (id: string, instanceIdx: number, begin: number) =>
+      createLine({ id, text: "chorus", groupId: "g1", instanceIdx, templateLineIdx: 0, begin, end: begin + 2 });
+    useProjectStore.setState({
+      lines: [chorus("c0", 0, 3), createLine({ id: "x", text: "verse", begin: 6, end: 7 }), chorus("c1", 1, 10)],
+      groups: [createGroup({ id: "g1", ...(sharesTiming ? { sharesTiming: true } : {}) })],
+    });
+  }
+
+  const lineById = (id: string) => useProjectStore.getState().lines.find((line) => line.id === id);
+
+  it("stops a nudge of the last synced line where the earliest instance reaches zero", async () => {
+    seedSharedChorus(true);
+    const { result, act } = await mountSyncHandlers({
+      granularity: "line",
+      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+    });
+
+    await act(() => {
+      result.current.handleNudgeLastSynced(-5);
+    });
+
+    expect(lineById("c1")).toMatchObject({ begin: 7, end: 9 });
+    expect(lineById("c0")).toMatchObject({ begin: 0, end: 2 });
+  });
+
+  it("regression: nudges a line of an old group by the whole delta", async () => {
+    seedSharedChorus(false);
+    const { result, act } = await mountSyncHandlers({
+      granularity: "line",
+      initialSyncState: { position: { lineIndex: 3, wordIndex: 0 }, isActive: true },
+    });
+
+    await act(() => {
+      result.current.handleNudgeLastSynced(-5);
+    });
+
+    expect(lineById("c1")).toMatchObject({ begin: 5, end: 7 });
+    expect(lineById("c0")).toMatchObject({ begin: 3, end: 5 });
   });
 });

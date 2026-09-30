@@ -1,3 +1,4 @@
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
@@ -81,6 +82,7 @@ function useSyncHandlers({
         jumped: !!syncState.jumpedToPosition,
         time: readTapTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
+        groups: useProjectStore.getState().groups,
       });
       if (!commit) return false;
       updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
@@ -235,12 +237,14 @@ function useSyncHandlers({
   );
 
   const handleNudgeLine = useCallback(
-    (lineIdx: number, delta: number) => nudgeLineBegin(lines, lineIdx, delta, updateLineWithHistory),
+    (lineIdx: number, delta: number) =>
+      nudgeLineBegin(lines, lineIdx, delta, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
   const handleSetLineTime = useCallback(
-    (lineIdx: number, newBegin: number) => setLineBegin(lines, lineIdx, newBegin, updateLineWithHistory),
+    (lineIdx: number, newBegin: number) =>
+      setLineBegin(lines, lineIdx, newBegin, updateLineWithHistory, useProjectStore.getState().groups),
     [lines, updateLineWithHistory],
   );
 
@@ -253,7 +257,8 @@ function useSyncHandlers({
         return;
       }
       const line = lines[slot.lineIndex];
-      updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta) }], {
+      const range = timeRangeResolver(lines, useProjectStore.getState().groups, Number.POSITIVE_INFINITY)(line);
+      updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
         deriveText: false,
         propagateToSiblings: false,
       });

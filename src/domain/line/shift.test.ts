@@ -85,3 +85,41 @@ describe("shiftLineTiming", () => {
     expect(shiftLineTiming(line, 1)).toEqual({ backgroundWords: [word("oh", 2, 3)] });
   });
 });
+
+describe("time range", () => {
+  it("stops the earliest main begin at the range start", () => {
+    const lines = [createLine({ text: "a", begin: 10, end: 12 })];
+    expect(clampShiftDelta(lines, -5, { min: 7, max: 60 })).toBe(-3);
+  });
+
+  it("stops the latest main end at the range end", () => {
+    const lines = [createLine({ text: "a", begin: 10, end: 12 }), createLine({ text: "b", begin: 13, end: 15 })];
+    expect(clampShiftDelta(lines, 10, { min: 0, max: 20 })).toBe(5);
+  });
+
+  it("moves a shared line only as far as the range allows, keeping its length", () => {
+    const line = createLine({ text: "a b", words: [word("a ", 10, 11), word("b", 11, 12)] });
+    expect(shiftLineTiming(line, -5, { min: 8, max: 60 })).toEqual({ words: [word("a ", 8, 9), word("b", 9, 10)] });
+    expect(shiftLineTiming(line, 50, { min: 0, max: 14 })).toEqual({ words: [word("a ", 12, 13), word("b", 13, 14)] });
+  });
+
+  describe("edge cases", () => {
+    it("keeps a delta that stays inside the range", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 2, { min: 5, max: 20 })).toBe(2);
+    });
+
+    it("prefers the start when the lines are longer than the range", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], 3, { min: 9, max: 15 })).toBe(-1);
+    });
+  });
+
+  describe("regressions", () => {
+    it("has no end limit by default, so a line outside a group moves as before", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 1e6)).toBe(1e6);
+      expect(shiftLineTiming(createLine({ text: "a", begin: 10, end: 12 }), 1e6)).toEqual({
+        begin: 1e6 + 10,
+        end: 1e6 + 12,
+      });
+    });
+  });
+});
