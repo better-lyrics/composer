@@ -1,6 +1,6 @@
 import { withDefaultAgentNames } from "@/domain/agent/default-names";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
-import { importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
+import { changedMetadata, importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
 import { createDismissalsInitialState } from "@/stores/project/dismissals-slice";
@@ -81,6 +81,17 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
         importedMetadataKeys: next.importedKeys,
         hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,
         ttmlEditState: null,
+      };
+    }),
+
+  applyEditedLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
+    set((state) => {
+      const changed = changedMetadata(state.metadata, metadata);
+      const assignment = agentsAfterImport(state.agents, agents, lines);
+      return {
+        ...commitHistory(state, { lines: assignment.lines, groups, agents: assignment.agents }),
+        metadata: { ...state.metadata, ...changed },
+        importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, changed),
       };
     }),
 

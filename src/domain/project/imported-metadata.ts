@@ -54,7 +54,15 @@ function importedKeysAfterWrite(importedKeys: readonly MetadataKey[], patch: Par
   return importedKeys.filter((key) => !(key in patch));
 }
 
+function changedMetadata(current: ProjectMetadata, incoming: Partial<ProjectMetadata>): Partial<ProjectMetadata> {
+  return Object.fromEntries(
+    Object.entries(filledMetadata(incoming)).filter(
+      ([key, value]) => isMetadataKey(key) && JSON.stringify(current[key]) !== JSON.stringify(value),
+    ),
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { filledMetadata, importedKeysAfterWrite, isMetadataKey, metadataAfterImport };
+export { changedMetadata, filledMetadata, importedKeysAfterWrite, isMetadataKey, metadataAfterImport };
 export type { MetadataKey };

@@ -93,6 +93,12 @@ interface MetadataActions {
     agents: Agent[] | undefined;
     metadata: Partial<ProjectMetadata>;
   }) => void;
+  applyEditedLyricsWithHistory: (input: {
+    lines: RawLine[];
+    groups: LinkGroup[];
+    agents: Agent[] | undefined;
+    metadata: Partial<ProjectMetadata>;
+  }) => void;
   markSongDetailsImported: () => void;
   restoreImportedMetadataKeys: (keys: MetadataKey[]) => void;
   clearUnexportedImport: () => void;

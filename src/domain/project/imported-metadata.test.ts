@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import {
+  changedMetadata,
   filledMetadata,
   importedKeysAfterWrite,
   isMetadataKey,
@@ -7,6 +7,7 @@ import {
 } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -109,6 +110,25 @@ describe("importedKeysAfterWrite", () => {
 
     it("keeps every key for an empty write", () => {
       expect(importedKeysAfterWrite(["title"], {})).toEqual(["title"]);
+    });
+  });
+});
+
+describe("changedMetadata", () => {
+  const current = { title: "Song", artists: ["A"], album: "", duration: 0 };
+
+  it("keeps only the values that differ from the current metadata", () => {
+    expect(changedMetadata(current, { title: "Song", artists: ["A", "B"] })).toEqual({ artists: ["A", "B"] });
+  });
+
+  describe("edge cases", () => {
+    it("never clears a value the incoming patch leaves empty or out", () => {
+      expect(changedMetadata(current, { title: "", album: "" })).toEqual({});
+      expect(changedMetadata(current, {})).toEqual({});
+    });
+
+    it("sees the same artists in a new array as unchanged", () => {
+      expect(changedMetadata(current, { artists: ["A"] })).toEqual({});
     });
   });
 });
