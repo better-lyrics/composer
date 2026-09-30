@@ -86,7 +86,9 @@ function storedSyncPosition(
   position: HistoryPosition,
 ): { position: SyncCursor; jumped: boolean } {
   const undo = state.anchorUndo;
-  if (undo && undo.resume === state.position && isPlacingUndone(undo, position)) {
+  const atResume =
+    undo?.resume.lineIndex === state.position.lineIndex && undo.resume.wordIndex === state.position.wordIndex;
+  if (undo && atResume && isPlacingUndone(undo, position)) {
     return { position: undo.anchor, jumped: undo.jumped };
   }
   return { position: state.position, jumped: !!state.jumpedToPosition };

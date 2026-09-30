@@ -135,6 +135,7 @@ function useSyncHandlers({
   }, [runGesture, granularity, setShowPulse]);
 
   const handleHoldStart = useCallback(() => {
+    ignoreNextHoldEndRef.current = false;
     runGesture("hold-start");
   }, [runGesture]);
 
@@ -151,6 +152,7 @@ function useSyncHandlers({
   }, [runGesture, setShowPulse]);
 
   const handleReset = useCallback(async () => {
+    ignoreNextHoldEndRef.current = false;
     if (lines.some(hasAnyTiming)) {
       const ok = await confirm({
         title: "Reset all sync timing?",

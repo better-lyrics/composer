@@ -187,6 +187,12 @@ describe("storedSyncPosition", () => {
       expect(storedSyncPosition(state, at([placed, { name: "a" }, { name: "b" }], 1)).position).toBe(resume);
     });
 
+    it("regression: returns the anchor slot when the resume position was rebuilt with the same place", () => {
+      const rebuilt = { lineIndex: resume.lineIndex, wordIndex: resume.wordIndex };
+      const state = { position: rebuilt, jumpedToPosition: true, anchorUndo };
+      expect(storedSyncPosition(state, at([before, placed], 0)).position).toEqual({ lineIndex: 3, wordIndex: 0 });
+    });
+
     it("keeps the resume position once the placing is too old to undo", () => {
       const state = { position: resume, jumpedToPosition: true, anchorUndo };
       expect(storedSyncPosition(state, at([{ name: "a" }, { name: "b" }], 0)).position).toBe(resume);
@@ -195,7 +201,7 @@ describe("storedSyncPosition", () => {
 
   describe("invariants", () => {
     it("ignores the record once the cursor has moved", () => {
-      const moved = { lineIndex: 5, wordIndex: 0 };
+      const moved = { lineIndex: 6, wordIndex: 1 };
       expect(storedSyncPosition({ position: moved, anchorUndo }, at([before, placed], 0))).toEqual({
         position: moved,
         jumped: false,
