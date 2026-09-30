@@ -1,6 +1,7 @@
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { assignBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
-import { bindingFromKeyboardEvent, findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { isMac } from "@/utils/platform";
+import { bindingFromKeyboardEvent, findMatchingShortcut, matchesShortcutBinding } from "@/utils/shortcut-matcher";
 import { describe, expect, it } from "vitest";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
@@ -60,6 +61,33 @@ describe("findMatchingShortcut", () => {
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
+    });
+  });
+});
+
+describe("matchesShortcutBinding", () => {
+  const modS = (init: KeyboardEventInit = {}) =>
+    keydown({ key: "s", code: "KeyS", metaKey: isMac, ctrlKey: !isMac, ...init });
+
+  it("matches the shortcut's binding", () => {
+    expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(true);
+  });
+
+  it("matches held-key repeats that findMatchingShortcut ignores", () => {
+    expect(matchesShortcutBinding(modS({ repeat: true }), "global.saveNow")).toBe(true);
+    expect(findMatchingShortcut(modS({ repeat: true }), "global")).toBeNull();
+  });
+
+  describe("edge cases", () => {
+    it("does not match other keys or a missing modifier", () => {
+      expect(matchesShortcutBinding(keydown({ key: "s", code: "KeyS" }), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "d", code: "KeyD" }), "global.saveNow")).toBe(false);
+    });
+
+    it("follows a remapped binding", () => {
+      assignBinding("global.saveNow", { key: "k", mod: true, shift: true });
+      expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "k", code: "KeyK", shiftKey: true }), "global.saveNow")).toBe(true);
     });
   });
 });

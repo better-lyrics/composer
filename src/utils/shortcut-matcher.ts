@@ -98,6 +98,10 @@ function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): strin
   return null;
 }
 
+function matchesShortcutBinding(event: KeyboardEvent, id: string): boolean {
+  return matchesBinding(event, getEffectiveBinding(id));
+}
+
 // -- Reserved Browser Shortcuts -----------------------------------------------
 
 const RESERVED_BROWSER_SHORTCUTS: ShortcutBinding[] = [
@@ -158,4 +162,4 @@ function isReservedBrowserShortcut(binding: ShortcutBinding): boolean {
 
 // -- Exports ------------------------------------------------------------------
 
-export { bindingFromKeyboardEvent, findMatchingShortcut, isReservedBrowserShortcut };
+export { bindingFromKeyboardEvent, findMatchingShortcut, isReservedBrowserShortcut, matchesShortcutBinding };

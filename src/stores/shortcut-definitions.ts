@@ -105,7 +105,6 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     scope: "global",
     description: "Save now",
     defaultBinding: { key: "s", mod: true },
-    repeatable: true,
   },
   {
     id: "library.focusSearch",
