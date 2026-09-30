@@ -1,81 +1,28 @@
-import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { createAudioFile } from "@/test/audio-fixtures";
-import { createGroup, createLine, createWord } from "@/test/factories";
-import { stepFrames } from "@/test/frame-steps";
+import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
-import { isMac } from "@/utils/platform";
-import { FOCUS_SCROLL_MARGIN_PX } from "@/views/timeline/group-focus";
+import {
+  PlayableTimeline,
+  banner,
+  focus,
+  lineById,
+  press,
+  pressSelectAll,
+  renderOpen,
+  seedGroupFocusSong,
+  shownLineIndices,
+  store,
+  chorus,
+  verse,
+} from "@/views/timeline/group-focus.test-helpers";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
 import { beforeEach, describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
-// -- Fixtures -----------------------------------------------------------------
-
-const chorus = (instanceIdx: number, begin: number) =>
-  createLine({
-    id: `c${instanceIdx}`,
-    text: "go now",
-    groupId: "g1",
-    instanceIdx,
-    templateLineIdx: 0,
-    words: [
-      createWord({ text: "go ", begin, end: begin + 1 }),
-      createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
-    ],
-  });
-
-const verse = createLine({ id: "v", text: "verse", words: [createWord({ text: "verse", begin: 20, end: 21 })] });
-
-function seed() {
-  useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, duration: 120 });
-  useProjectStore.setState({
-    activeTab: "timeline",
-    groups: [createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [2] })],
-    lines: [chorus(0, 10), verse, chorus(1, 40), chorus(2, 70)],
-  });
-  useProjectStore.getState().clearHistory();
-}
-
-const PlayableTimeline: React.FC = () => {
-  useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} });
-  return <TimelinePanel />;
-};
-
-const focus = () => useTimelineStore.getState().focusedGroup;
-const store = () => useProjectStore.getState();
-const lineById = (id: string) => store().lines.find((line) => line.id === id);
-
-function shownLineIndices(): number[] {
-  return [...document.querySelectorAll<HTMLElement>('[data-track="word"]')].map((el) => Number(el.dataset.lineIndex));
-}
-
-function banner(instanceIdx: number): HTMLElement {
-  const el = document.querySelector<HTMLElement>(`[data-instance-key="g1:${instanceIdx}"]`);
-  if (!el) throw new Error(`banner ${instanceIdx} not rendered`);
-  return el;
-}
-
-function press(key: string, init: KeyboardEventInit = {}) {
-  window.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...init }));
-}
-
-function pressSelectAll() {
-  press("a", { code: "KeyA", metaKey: isMac, ctrlKey: !isMac });
-}
-
-async function renderOpen(instanceIdx: number) {
-  const screen = await render(<TimelinePanel />);
-  await expect.poll(() => document.querySelectorAll("[data-instance-key]").length).toBe(3);
-  await userEvent.dblClick(banner(instanceIdx));
-  await expect.poll(() => focus()?.hearInstanceIdx).toBe(instanceIdx);
-  return screen;
-}
-
-beforeEach(seed);
+beforeEach(seedGroupFocusSong);
 
 // -- Tests --------------------------------------------------------------------
 
@@ -207,34 +154,6 @@ describe("TimelinePanel · group focus", () => {
       expect(focus()).not.toBeNull();
     });
 
-    it("selects nothing under the playhead outside the open instance", async () => {
-      await renderOpen(1);
-      useAudioStore.setState({ currentTime: 20.5 });
-
-      press("a", { code: "KeyA" });
-
-      expect(useTimelineStore.getState().selectedWords).toEqual([]);
-    });
-
-    it("selects the open instance's word under the playhead", async () => {
-      await renderOpen(1);
-      useAudioStore.setState({ currentTime: 40.5 });
-
-      press("a", { code: "KeyA" });
-
-      await expect.poll(() => useTimelineStore.getState().selectedWords.map((word) => word.lineId)).toEqual(["c1"]);
-    });
-
-    it("sets a word begin from the playhead only inside the open instance", async () => {
-      await renderOpen(1);
-      useAudioStore.setState({ currentTime: 15 });
-
-      press("[", { code: "BracketLeft" });
-
-      await expect.poll(() => lineById("c1")?.words?.[0].begin).not.toBe(40);
-      expect(lineById("v")?.words?.[0].begin).toBe(20);
-    });
-
     it("selects only the open instance with select all", async () => {
       await renderOpen(1);
 
@@ -243,37 +162,6 @@ describe("TimelinePanel · group focus", () => {
       await expect
         .poll(() => useTimelineStore.getState().selectedWords.map((word) => word.lineId))
         .toEqual(["c1", "c1"]);
-    });
-  });
-
-  describe("scroll", () => {
-    it("scrolls to the heard instance and keeps the scroll inside it", async () => {
-      useTimelineStore.setState({ zoom: 50 });
-      await renderOpen(1);
-      const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
-      if (!container) throw new Error("no scroll container");
-
-      await expect.poll(() => container.scrollLeft).toBeGreaterThan(40 * 50 - 100);
-      container.scrollLeft = 0;
-
-      await expect.poll(() => container.scrollLeft).toBeGreaterThan(40 * 50 - 100);
-    });
-
-    it("keeps the follow scroll inside the heard instance while playing elsewhere", async () => {
-      useTimelineStore.setState({ zoom: 50, followEnabled: true });
-      await renderOpen(1);
-      const container = document.querySelector<HTMLDivElement>("[data-scroll-container]");
-      if (!container) throw new Error("no scroll container");
-      await expect.poll(() => container.scrollLeft).toBeGreaterThan(40 * 50 - 100);
-
-      useAudioStore.setState({ currentTime: 20, isPlaying: true });
-      const samples: number[] = [];
-      for (let frame = 0; frame < 10; frame++) {
-        await stepFrames(1);
-        samples.push(container.scrollLeft);
-      }
-
-      expect(Math.min(...samples)).toBeGreaterThanOrEqual(40 * 50 - FOCUS_SCROLL_MARGIN_PX - 1);
     });
   });
 
