@@ -141,3 +141,69 @@ describe("TimelineContextMenu · open group", () => {
     await expect.element(screen.getByRole("button", { name: /^Open group/ })).toHaveTextContent("↵");
   });
 });
+
+describe("TimelineContextMenu · add word here in a group that shares timing", () => {
+  const chorus = (id: string, instanceIdx: number, begin: number) =>
+    createLine({
+      id,
+      text: "go now",
+      words: [
+        createWord({ text: "go ", begin, end: begin + 1 }),
+        createWord({ text: "now", begin: begin + 1, end: begin + 2 }),
+      ],
+      groupId: "g1",
+      instanceIdx,
+      templateLineIdx: 0,
+    });
+
+  function seedChorus(sharesTiming: boolean, backgroundText?: string) {
+    useAudioStore.setState({ duration: 20 });
+    useSettingsStore.setState({ defaultWordDuration: 1, minWordDuration: 0.05 });
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1", label: "Chorus", ...(sharesTiming ? { sharesTiming: true } : {}) })],
+      lines: [{ ...chorus("c0", 0, 3), ...(backgroundText ? { backgroundText } : {}) }, chorus("c1", 1, 10)],
+    });
+    useProjectStore.getState().clearHistory();
+  }
+
+  async function addWordHere(type: "word" | "bg", time: number) {
+    useTimelineStore.setState({
+      contextMenu: { x: 100, y: 100, target: { kind: "track", lineId: "c0", lineIndex: 0, time, type } },
+    });
+    const screen = await render(<TimelineContextMenu />);
+    await screen.getByRole("button", { name: "Add word here" }).click();
+  }
+
+  it("keeps the new word inside the range where the latest instance reaches the song end", async () => {
+    seedChorus(true);
+
+    await addWordHere("word", 12.9);
+
+    await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
+    expect(lineById("c0")?.words?.[2]).toMatchObject({ begin: 12, end: 13 });
+    expect(lineById("c1")?.words?.[2]).toMatchObject({ begin: 19, end: 20 });
+  });
+
+  it("ends timed background text where the latest instance reaches the song end", async () => {
+    seedChorus(true, "oh yeah no");
+    useSettingsStore.setState({ defaultWordDuration: 0.2 });
+
+    await addWordHere("bg", 12.9);
+
+    await expect.poll(() => lineById("c0")?.backgroundWords?.length).toBe(3);
+    expect(lineById("c0")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(13);
+    expect(lineById("c1")?.backgroundWords?.at(-1)?.end).toBeLessThanOrEqual(20);
+  });
+
+  describe("regressions", () => {
+    it("regression: a line of an old group still places the word up to the song end", async () => {
+      seedChorus(false);
+
+      await addWordHere("word", 12.9);
+
+      await expect.poll(() => lineById("c0")?.words?.length).toBe(3);
+      expect(lineById("c0")?.words?.[2].begin).toBeCloseTo(12.4, 5);
+      expect(lineById("c0")?.words?.[2].end).toBeCloseTo(13.4, 5);
+    });
+  });
+});
