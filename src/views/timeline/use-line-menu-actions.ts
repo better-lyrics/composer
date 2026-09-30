@@ -3,6 +3,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
@@ -46,7 +47,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleAddLine = useCallback(
     (position: "above" | "below") => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-      useProjectStore.getState().insertEmptyLineWithHistory(contextMenu.target.lineId, position);
+      insertEmptyLine(contextMenu.target.lineId, position);
       clearContextMenu();
     },
     [contextMenu, clearContextMenu],

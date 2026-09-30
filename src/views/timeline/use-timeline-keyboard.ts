@@ -33,6 +33,7 @@ import { currentEffectiveFocus, scrollToFocusStart } from "@/views/timeline/effe
 import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
+import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { jumpToAdjacentInstance } from "@/views/timeline/jump-to-instance";
 import { pingGroup } from "@/views/timeline/ping-group";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
@@ -371,7 +372,7 @@ function useTimelineKeyboard(
           const { selectedWords: nSel } = useTimelineStore.getState();
           if (nSel.length === 0) break;
           const position = matched === "timeline.insertLineAbove" ? "above" : "below";
-          useProjectStore.getState().insertEmptyLineWithHistory(nSel[0].lineId, position);
+          insertEmptyLine(nSel[0].lineId, position);
           break;
         }
         case "timeline.editWord": {
