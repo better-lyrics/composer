@@ -160,6 +160,23 @@ describe("applyEditedTtml", () => {
       expect(useProjectStore.getState().metadata.artists).toEqual(["Ana", ""]);
     });
 
+    it("regression: applies an edit to a project with a singer whose name was cleared", () => {
+      useProjectStore.setState({
+        lines: [
+          createLine({ text: "Hello", begin: 1, end: 2, agentId: "v1" }),
+          createLine({ text: "World", begin: 2, end: 3, agentId: "v2" }),
+        ],
+        agents: [
+          { id: "v1", type: "person", name: "Ana" },
+          { id: "v2", type: "person", name: undefined },
+        ],
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello", "World2"]);
+      expect(useProjectStore.getState().agents[1]?.name).toBeUndefined();
+    });
+
     it("regression: applies an edit to a project where a translation was removed", () => {
       useProjectStore.setState({
         lines: [

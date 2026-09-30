@@ -1,4 +1,5 @@
 import type { Agent, AgentType } from "@/domain/agent/model";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { reconstructLineText } from "@/domain/line/reconstruct-text";
@@ -11,8 +12,8 @@ import { COMPOSER_NAMESPACES } from "@/utils/lyrics-parsers/composer-namespace";
 import { type ParseResult, generateLineId } from "@/utils/lyrics-parsers/shared";
 import { parseTtmlAlternates } from "@/utils/lyrics-parsers/ttml-alternates";
 import { declareMissingNamespaces, extractTimedWords, parseTtmlTimestamp } from "@/utils/lyrics-parsers/ttml-helpers";
-import { parseXmlDocument } from "@/utils/xml-document";
 import { getSplitCharacter } from "@/utils/split-character";
+import { parseXmlDocument } from "@/utils/xml-document";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -85,7 +86,7 @@ function parseTtml(content: string, _fallbackDuration?: number): ParseResult {
     const id = el.getAttribute("xml:id");
     const type = (el.getAttribute("type") as AgentType) || "person";
     const nameEl = el.getElementsByTagName("ttm:name")[0];
-    const name = nameEl?.textContent || `Voice ${agents.length + 1}`;
+    const name = nameEl?.textContent || placeholderAgentName(agents.length);
     if (id) {
       agents.push({ id, type, name });
     }

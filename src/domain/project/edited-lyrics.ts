@@ -1,5 +1,6 @@
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
 import type { Agent } from "@/domain/agent/model";
+import { placeholderAgentName } from "@/domain/agent/placeholder-name";
 import type { LinkGroup } from "@/domain/group/template";
 import type { RawLine } from "@/domain/line/model";
 import { changedMetadata } from "@/domain/project/imported-metadata";
@@ -29,10 +30,23 @@ interface EditedLyricsWrite {
   metadata: Partial<ProjectMetadata>;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+function withUnnamedAgentsKept(current: readonly Agent[], incoming: Agent[] | undefined): Agent[] | undefined {
+  const currentById = new Map(current.map((agent) => [agent.id, agent] as const));
+  return incoming?.map((agent, position) => {
+    const existing = currentById.get(agent.id);
+    return existing && !existing.name && agent.name === placeholderAgentName(position)
+      ? { ...agent, name: existing.name }
+      : agent;
+  });
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function editedLyricsWrite(current: ProjectLyrics, edited: EditedLyrics): EditedLyricsWrite {
-  const assignment = agentsAfterImport(current.agents, edited.agents, edited.lines);
+  const agents = withUnnamedAgentsKept(current.agents, edited.agents);
+  const assignment = agentsAfterImport(current.agents, agents, edited.lines);
   return {
     lines: assignment.lines,
     groups: edited.groups,

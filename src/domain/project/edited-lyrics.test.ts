@@ -32,6 +32,22 @@ describe("editedLyricsWrite", () => {
     expect(write.metadata).toEqual({ title: "New" });
   });
 
+  describe("regressions", () => {
+    it("regression: keeps a singer without a name unnamed when the edit reads it with the placeholder name", () => {
+      const current = { ...project(), agents: [{ id: "v1", type: "person" as const }] };
+      const edit = { ...sameEdit(current), agents: [{ id: "v1", type: "person" as const, name: "Voice 1" }] };
+      const write = editedLyricsWrite(current, edit);
+      expect(write.agents[0]?.name).toBeUndefined();
+      expect(changesProject(current, write)).toBe(false);
+    });
+
+    it("takes a real name the edit gives a singer without a name", () => {
+      const current = { ...project(), agents: [{ id: "v1", type: "person" as const }] };
+      const edit = { ...sameEdit(current), agents: [{ id: "v1", type: "person" as const, name: "Ana" }] };
+      expect(editedLyricsWrite(current, edit).agents[0]?.name).toBe("Ana");
+    });
+  });
+
   it("keeps the stored agents when the edit declares none", () => {
     const current = project();
     expect(editedLyricsWrite(current, { ...sameEdit(current), agents: undefined }).agents).toEqual(DEFAULT_AGENTS);
