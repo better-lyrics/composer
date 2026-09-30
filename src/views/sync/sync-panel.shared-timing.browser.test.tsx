@@ -200,4 +200,33 @@ describe("SyncPanel · shared instance anchor", () => {
       expect(lineById("c0-1")?.words?.[1]?.end).toBe(12);
     });
   });
+
+  describe("labels", () => {
+    it("asks for the placing tap, then marks the skipped lines as shared", async () => {
+      load(song({ first: "word", verse: "word" }));
+      const screen = await render(<SyncPanel />);
+      await jumpToRow(screen, 3);
+      await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
+      await tapAt(40, () => firstBegin("c1-0"));
+      await expect.element(screen.getByText("Shared").first()).toBeInTheDocument();
+      expect(screen.container.textContent).not.toContain("Tap to place");
+    });
+
+    it("lists the skipped lines in the paused list, and Sync anyway gives the instance its own timing", async () => {
+      load(song({ first: "word", verse: "word" }));
+      const screen = await render(<SyncPanel />);
+      await jumpToRow(screen, 3);
+      await tapAt(40, () => firstBegin("c1-0"));
+      setIsPlaying(false);
+      await expect.element(screen.getByText("2 skipped")).toBeInTheDocument();
+      expect(screen.getByText("Shared", { exact: true }).elements()).toHaveLength(2);
+      await screen.getByRole("button", { name: "Sync anyway" }).click();
+      expect(useProjectStore.getState().groups[0].ownTimingInstances).toEqual([1]);
+      await expect.element(screen.getByText("2 skipped")).not.toBeInTheDocument();
+      setIsPlaying(true);
+      await tapAt(47, () => firstBegin("c1-0"));
+      expect(firstBegin("c1-0")).toBe(47);
+      expect(firstBegin("c0-0")).toBe(10);
+    });
+  });
 });

@@ -25,9 +25,11 @@ import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scroll
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
+import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
+import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 
 // -- Components ---------------------------------------------------------------
 
@@ -57,25 +59,6 @@ const SyncPanel: React.FC = () => {
     () => lines.map((line) => ({ ...line, ...getLanguageDisplayLine(line, textVariant) })),
     [lines, textVariant],
   );
-
-  const linkInfoByLineId = useMemo(() => {
-    const groupsById = new Map(groups.map((g) => [g.id, g]));
-    const positions = instancePositionsByLineId(lines);
-    const out = new Map<string, ScrollableLineLinkInfo>();
-    for (const line of lines) {
-      if (!isLinked(line)) continue;
-      const group = groupsById.get(line.groupId);
-      const position = positions.get(line.id);
-      if (!group || !position) continue;
-      out.set(line.id, {
-        color: group.color,
-        label: group.label,
-        ordinal: position.ordinal,
-        totalInstances: position.count,
-      });
-    }
-    return out;
-  }, [lines, groups]);
 
   const [syncState, setSyncState] = useState<SyncState>({
     position: { lineIndex: 0, wordIndex: 0 },
@@ -124,6 +107,37 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
+
+  const { skippedLineIds, skippedByLastLineId, sharedTags } = useSharedSyncView(lines, groups, cursor);
+
+  const linkInfoByLineId = useMemo(() => {
+    const groupsById = new Map(groups.map((g) => [g.id, g]));
+    const positions = instancePositionsByLineId(lines);
+    const out = new Map<string, ScrollableLineLinkInfo>();
+    for (const line of lines) {
+      if (!isLinked(line)) continue;
+      const group = groupsById.get(line.groupId);
+      const position = positions.get(line.id);
+      if (!group || !position) continue;
+      out.set(line.id, {
+        color: group.color,
+        label: group.label,
+        ordinal: position.ordinal,
+        totalInstances: position.count,
+        shared: skippedLineIds.has(line.id),
+      });
+    }
+    return out;
+  }, [lines, groups, skippedLineIds]);
+
+  const carouselLines = useMemo(
+    () =>
+      displayLines.map((line) => {
+        const sharedTag = sharedTags.get(line.id);
+        return sharedTag ? { ...line, sharedTag } : line;
+      }),
+    [displayLines, sharedTags],
+  );
 
   const stopSessionAtSongEnd = useEffectEvent(() => {
     setSyncState((prev) => ({ ...prev, isActive: false }));
@@ -437,42 +451,55 @@ const SyncPanel: React.FC = () => {
             {lines.map((line, index) => {
               const displayLine = displayLines[index];
               const timing = effectiveBounds(line);
+              const skipped = skippedByLastLineId.get(line.id);
+              const skippedGroup = skipped && groups.find((group) => group.id === skipped.groupId);
               return (
-                <ScrollableLine
-                  key={line.id}
-                  lineId={line.id}
-                  lineNumber={index + 1}
-                  text={line.text}
-                  displayText={displayLine.text}
-                  displayWordTexts={displayLine.wordTexts}
-                  isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
-                  agentId={line.agentId}
-                  backgroundText={line.backgroundText}
-                  displayBackgroundText={displayLine.backgroundText}
-                  displayBackgroundWordTexts={displayLine.backgroundWordTexts}
-                  backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
-                  words={displayLine.words ?? line.words}
-                  lineBegin={timing?.begin}
-                  lineEnd={timing?.end}
-                  granularity={granularity}
-                  currentTime={currentTime}
-                  editMode={editMode}
-                  linkInfo={linkInfoByLineId.get(line.id)}
-                  onClick={() => handleJumpToLine(index)}
-                  onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
-                  onClickBgWord={(wordIdx) => handleJumpToBgWord(index, wordIdx)}
-                  onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
-                  onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
-                  onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
-                  onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
-                  onNudgeLine={(delta) => handleNudgeLine(index, delta)}
-                  onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
-                  onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
-                  onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
-                  onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
-                  onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
-                  onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
-                />
+                <Fragment key={line.id}>
+                  <ScrollableLine
+                    lineId={line.id}
+                    lineNumber={index + 1}
+                    text={line.text}
+                    displayText={displayLine.text}
+                    displayWordTexts={displayLine.wordTexts}
+                    isCurrent={editMode ? index === playingLineIndex : index === lineIndex}
+                    agentId={line.agentId}
+                    backgroundText={line.backgroundText}
+                    displayBackgroundText={displayLine.backgroundText}
+                    displayBackgroundWordTexts={displayLine.backgroundWordTexts}
+                    backgroundWords={displayLine.backgroundWords ?? line.backgroundWords}
+                    words={displayLine.words ?? line.words}
+                    lineBegin={timing?.begin}
+                    lineEnd={timing?.end}
+                    granularity={granularity}
+                    currentTime={currentTime}
+                    editMode={editMode}
+                    linkInfo={linkInfoByLineId.get(line.id)}
+                    onClick={() => handleJumpToLine(index)}
+                    onClickWord={(wordIdx) => handleJumpToWord(index, wordIdx)}
+                    onClickBgWord={(wordIdx) => handleJumpToBgWord(index, wordIdx)}
+                    onNudgeWord={(wordIdx, delta) => handleNudgeWord(index, wordIdx, delta)}
+                    onSetWordTime={(wordIdx, newBegin) => handleSetWordTime(index, wordIdx, newBegin)}
+                    onNudgeWordEnd={(wordIdx, delta) => handleNudgeWordEnd(index, wordIdx, delta)}
+                    onSetWordEndTime={(wordIdx, newEnd) => handleSetWordEndTime(index, wordIdx, newEnd)}
+                    onNudgeLine={(delta) => handleNudgeLine(index, delta)}
+                    onSetLineTime={(newBegin) => handleSetLineTime(index, newBegin)}
+                    onSplitWord={(wordIdx, newWords) => handleSplitWord(index, wordIdx, newWords)}
+                    onNudgeBgWord={(wordIdx, delta) => handleNudgeBgWord(index, wordIdx, delta)}
+                    onSetBgWordTime={(wordIdx, newBegin) => handleSetBgWordTime(index, wordIdx, newBegin)}
+                    onNudgeBgWordEnd={(wordIdx, delta) => handleNudgeBgWordEnd(index, wordIdx, delta)}
+                    onSetBgWordEndTime={(wordIdx, newEnd) => handleSetBgWordEndTime(index, wordIdx, newEnd)}
+                  />
+                  {skipped && skippedGroup && (
+                    <SkippedInstanceBand
+                      groupId={skipped.groupId}
+                      instanceIdx={skipped.instanceIdx}
+                      firstLineIndex={skipped.firstLineIndex}
+                      skippedCount={skipped.syncableLineCount}
+                      color={skippedGroup.color}
+                      onJumpToLine={handleJumpToLine}
+                    />
+                  )}
+                </Fragment>
               );
             })}
           </div>
@@ -509,7 +536,7 @@ const SyncPanel: React.FC = () => {
             )
           ) : (
             <SyncCarousel
-              lines={displayLines}
+              lines={carouselLines}
               lineIndex={lineIndex}
               wordIndex={wordIndex}
               granularity={granularity}

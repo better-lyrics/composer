@@ -4,6 +4,8 @@ import { syncCarouselTransition } from "@/utils/animationVariants";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { splitIntoWords } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
+import type { SharedSyncTag } from "@/views/sync/shared-sync-tags";
+import { IconLink } from "@tabler/icons-react";
 import { AnimatePresence, m } from "motion/react";
 import { useMemo } from "react";
 
@@ -43,6 +45,7 @@ interface SyncCarouselProps {
     displayWordTexts?: string[];
     words?: WordTiming[];
     begin?: number;
+    sharedTag?: SharedSyncTag;
   }>;
   lineIndex: number;
   wordIndex: number;
@@ -115,6 +118,20 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
   });
 };
 
+const SharedTagSlot: React.FC<{ tag: SharedSyncTag | undefined }> = ({ tag }) => (
+  <span className="flex items-center h-4.5 select-none">
+    {tag && (
+      <span
+        className="inline-flex items-center gap-1 h-4.5 pl-1.5 pr-2 rounded-full text-[11px]"
+        style={{ color: tag.color, background: `color-mix(in srgb, ${tag.color} 16%, transparent)` }}
+      >
+        <IconLink className="size-2.5" />
+        {tag.label}
+      </span>
+    )}
+  </span>
+);
+
 const SyncCarousel: React.FC<SyncCarouselProps> = ({
   lines,
   lineIndex,
@@ -152,8 +169,9 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
               animate={{ opacity, scale }}
               transition={syncCarouselTransition}
               style={{ height: LINE_HEIGHT }}
-              className="flex items-center justify-center w-full shrink-0"
+              className="flex flex-col items-center justify-center gap-1 w-full shrink-0"
             >
+              <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
               <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
                 {granularity === "line" ? (
                   <m.span
@@ -177,6 +195,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
                   />
                 )}
               </div>
+              <SharedTagSlot tag={line.sharedTag?.placement === "below" ? line.sharedTag : undefined} />
             </m.div>
           );
         })}

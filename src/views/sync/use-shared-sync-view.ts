@@ -1,0 +1,32 @@
+import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
+import type { SyncCursor } from "@/domain/sync/cursor";
+import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { sharedSyncTags } from "@/views/sync/shared-sync-tags";
+import { useMemo } from "react";
+
+// -- Hooks --------------------------------------------------------------------
+
+function useSharedSyncView(lines: readonly LyricLine[], groups: readonly LinkGroup[], cursor: SyncCursor) {
+  const skippedInstances = useMemo(() => skippedSharedInstances(lines, groups), [lines, groups]);
+  const skippedLineIds = useMemo(
+    () => new Set(skippedInstances.flatMap((instance) => instance.lineIds)),
+    [skippedInstances],
+  );
+  const skippedByLastLineId = useMemo(
+    () =>
+      new Map<string, SkippedInstance>(
+        skippedInstances.map((instance) => [lines[instance.lastLineIndex].id, instance]),
+      ),
+    [skippedInstances, lines],
+  );
+  const sharedTags = useMemo(
+    () => sharedSyncTags(lines, groups, cursor, skippedLineIds),
+    [lines, groups, cursor, skippedLineIds],
+  );
+  return { skippedLineIds, skippedByLastLineId, sharedTags };
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { useSharedSyncView };

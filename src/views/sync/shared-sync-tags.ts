@@ -1,0 +1,58 @@
+import type { LinkGroup } from "@/domain/group/template";
+import { instanceOrdinal } from "@/domain/instance/enumerate";
+import type { LyricLine } from "@/domain/line/model";
+import { nextSyncableLineIndex, type SyncCursor } from "@/domain/sync/cursor";
+import { type SharedAnchor, sharedAnchorAt } from "@/domain/sync/shared-anchor";
+
+// -- Types --------------------------------------------------------------------
+
+interface SharedSyncTag {
+  label: string;
+  color: string;
+  placement: "above" | "below";
+}
+
+// -- Functions ----------------------------------------------------------------
+
+function anchorGroup(groups: readonly LinkGroup[], anchor: SharedAnchor | null): LinkGroup | undefined {
+  return anchor ? groups.find((group) => group.id === anchor.groupId) : undefined;
+}
+
+function sharedSyncTags(
+  lines: readonly LyricLine[],
+  groups: readonly LinkGroup[],
+  cursor: SyncCursor,
+  skippedLineIds: ReadonlySet<string>,
+): Map<string, SharedSyncTag> {
+  const tags = new Map<string, SharedSyncTag>();
+  const colorById = new Map(groups.map((group) => [group.id, group.color]));
+  for (let i = 0; i < Math.min(cursor.lineIndex, lines.length); i++) {
+    const line = lines[i];
+    const color = line.groupId ? colorById.get(line.groupId) : undefined;
+    if (color && skippedLineIds.has(line.id)) tags.set(line.id, { label: "Shared", color, placement: "below" });
+  }
+
+  const current = sharedAnchorAt(lines, groups, cursor);
+  const currentGroup = anchorGroup(groups, current);
+  if (currentGroup) {
+    tags.set(lines[cursor.lineIndex].id, { label: "Tap to place", color: currentGroup.color, placement: "above" });
+  }
+
+  const nextIndex = nextSyncableLineIndex(lines, cursor.lineIndex);
+  const next = nextIndex < lines.length ? sharedAnchorAt(lines, groups, { lineIndex: nextIndex, wordIndex: 0 }) : null;
+  const nextGroup = anchorGroup(groups, next);
+  if (next && nextGroup) {
+    const ordinal = instanceOrdinal(lines, next.groupId, next.instanceIdx);
+    tags.set(lines[nextIndex].id, {
+      label: `${nextGroup.label} ${ordinal}`,
+      color: nextGroup.color,
+      placement: "below",
+    });
+  }
+  return tags;
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { sharedSyncTags };
+export type { SharedSyncTag };
