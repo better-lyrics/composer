@@ -1,4 +1,4 @@
-import { displayArtists, displayTitle } from "@/domain/project/display-title";
+import { displayArtists, hasArtists, displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import { IconButton } from "@/ui/icon-button";
@@ -91,7 +91,7 @@ const ProjectCardContent: React.FC<ProjectItemProps> = ({
         <div
           className={cn(
             "truncate text-[13px]",
-            project.artists.length > 0 ? "text-composer-text-muted" : "text-composer-text-faint",
+            hasArtists(project.artists) ? "text-composer-text-muted" : "text-composer-text-faint",
           )}
         >
           {displayArtists(project.artists)}

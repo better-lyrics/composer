@@ -62,6 +62,15 @@ describe("ProjectCard", () => {
   });
 
   describe("edge cases", () => {
+    it("regression: styles a blank artist like a missing one", async () => {
+      const missing = await renderCard({ artists: [] });
+      const missingClass = missing.getByText("No artist").element().className;
+      await missing.unmount();
+      const blank = await renderCard({ artists: [""] });
+      await expect.element(blank.getByText("No artist")).toBeInTheDocument();
+      expect(blank.getByText("No artist").element().className).toBe(missingClass);
+    });
+
     it("says No lyrics for a project without lines", async () => {
       const screen = await renderCard({ lineCount: 0, syncedLineCount: 0 });
       await expect.element(screen.getByText("No lyrics")).toBeInTheDocument();

@@ -1,4 +1,4 @@
-import { displayArtists, displayTitle, quotedTitle, youtubeSourceTitle } from "@/domain/project/display-title";
+import { displayArtists, displayTitle, hasArtists, quotedTitle, youtubeSourceTitle } from "@/domain/project/display-title";
 import { describe, expect, it } from "vitest";
 
 describe("displayTitle", () => {
@@ -41,6 +41,37 @@ describe("displayArtists", () => {
   describe("edge cases", () => {
     it("falls back to No artist for an empty list", () => {
       expect(displayArtists([])).toBe("No artist");
+    });
+
+    it("falls back to No artist when every artist is blank", () => {
+      expect(displayArtists([""])).toBe("No artist");
+      expect(displayArtists(["", " "])).toBe("No artist");
+    });
+
+    it("skips blank artists between named ones", () => {
+      expect(displayArtists(["Lady Gaga", "", "Bruno Mars"])).toBe("Lady Gaga, Bruno Mars");
+    });
+  });
+});
+
+describe("hasArtists", () => {
+  it("is true when an artist is named", () => {
+    expect(hasArtists(["M83"])).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("is false for an empty list or only blank artists", () => {
+      expect(hasArtists([])).toBe(false);
+      expect(hasArtists([""])).toBe(false);
+      expect(hasArtists([" ", ""])).toBe(false);
+    });
+  });
+
+  describe("invariants", () => {
+    it("is false exactly when displayArtists shows the fallback", () => {
+      for (const artists of [[], [""], ["M83"], ["", "M83"], [" "]]) {
+        expect(hasArtists(artists)).toBe(displayArtists(artists) !== "No artist");
+      }
     });
   });
 });

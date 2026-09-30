@@ -8,8 +8,16 @@ function quotedTitle(title: string): string {
   return `“${displayTitle(title)}”`;
 }
 
+function namedArtists(artists: readonly string[]): string[] {
+  return artists.filter((artist) => artist.trim() !== "");
+}
+
+function hasArtists(artists: readonly string[]): boolean {
+  return namedArtists(artists).length > 0;
+}
+
 function displayArtists(artists: readonly string[]): string {
-  return artists.join(", ") || "No artist";
+  return namedArtists(artists).join(", ") || "No artist";
 }
 
 function youtubeSourceTitle(title: string, videoId: string): string {
@@ -18,4 +26,4 @@ function youtubeSourceTitle(title: string, videoId: string): string {
 
 // -- Exports ------------------------------------------------------------------
 
-export { displayTitle, quotedTitle, displayArtists, youtubeSourceTitle };
+export { displayTitle, quotedTitle, displayArtists, hasArtists, youtubeSourceTitle };

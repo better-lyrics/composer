@@ -1,4 +1,4 @@
-import { displayArtists, displayTitle } from "@/domain/project/display-title";
+import { displayArtists, hasArtists, displayTitle } from "@/domain/project/display-title";
 import type { ProjectIndexEntry } from "@/domain/project/index-entry";
 import { hasLyrics, progressDescription, projectStage, syncedPercent } from "@/domain/project/progress";
 import { IconButton } from "@/ui/icon-button";
@@ -125,7 +125,7 @@ const ProjectRowContent: React.FC<ProjectItemProps> = ({
         >
           {title}
         </button>
-        <div className={cn("truncate text-[13px]", project.artists.length > 0 ? ROW_MUTED : ROW_PLACEHOLDER)}>
+        <div className={cn("truncate text-[13px]", hasArtists(project.artists) ? ROW_MUTED : ROW_PLACEHOLDER)}>
           {displayArtists(project.artists)}
         </div>
       </div>

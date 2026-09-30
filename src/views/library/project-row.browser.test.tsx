@@ -77,6 +77,15 @@ describe("ProjectRow", () => {
   });
 
   describe("edge cases", () => {
+    it("regression: styles a blank artist like a missing one", async () => {
+      const missing = await renderRow({ artists: [] });
+      const missingClass = missing.getByText("No artist").element().className;
+      await missing.unmount();
+      const blank = await renderRow({ artists: [""] });
+      await expect.element(blank.getByText("No artist")).toBeInTheDocument();
+      expect(blank.getByText("No artist").element().className).toBe(missingClass);
+    });
+
     it("falls back for a missing artist, album, title and lyrics", async () => {
       const screen = await renderRow({ title: "", artists: [], album: "", lineCount: 0, syncedLineCount: 0 });
       await expect.element(screen.getByRole("button", { name: "Untitled", exact: true })).toBeInTheDocument();
