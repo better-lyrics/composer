@@ -2,6 +2,7 @@ import type { TranslationTracks, TransliterationTrack } from "@/domain/language/
 import { mainBounds } from "@/domain/line/bounds";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+import { lcsPairs, wordKey } from "@/domain/word/alignment";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -125,15 +126,40 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
 
 // -- Pairing ------------------------------------------------------------------
 
+function indexesBetween(start: number, end: number): number[] {
+  return Array.from({ length: Math.max(0, end - start - 1) }, (_, offset) => start + 1 + offset);
+}
+
 function storedPartners(stored: readonly LyricLine[], edited: readonly LyricLine[]): (LyricLine | undefined)[] {
   const exported = stored.filter(isSyncableLine);
-  if (exported.length === edited.length) return [...exported];
-  const unused = new Set(exported);
-  return edited.map((line) => {
-    const text = stripSplitCharacter(line.text);
-    const match = exported.find((candidate) => unused.has(candidate) && stripSplitCharacter(candidate.text) === text);
-    if (match) unused.delete(match);
-    return match;
+  const storedKeys = exported.map((line) => wordKey(line.text));
+  const editedKeys = edited.map((line) => wordKey(line.text));
+  const partnerIndex = new Map<number, number>();
+  const paired = new Set<number>();
+  const pair = (editedIndex: number, storedIndex: number) => {
+    partnerIndex.set(editedIndex, storedIndex);
+    paired.add(storedIndex);
+  };
+  const anchors = lcsPairs(storedKeys, editedKeys);
+  for (const [storedIndex, editedIndex] of anchors) pair(editedIndex, storedIndex);
+  editedKeys.forEach((key, editedIndex) => {
+    if (partnerIndex.has(editedIndex)) return;
+    const moved = storedKeys.findIndex((storedKey, storedIndex) => !paired.has(storedIndex) && storedKey === key);
+    if (moved >= 0) pair(editedIndex, moved);
+  });
+  const bounds: [number, number][] = [[-1, -1], ...anchors, [exported.length, edited.length]];
+  bounds.slice(1).forEach(([storedEnd, editedEnd], gap) => {
+    const [storedStart, editedStart] = bounds[gap] ?? [-1, -1];
+    const freeStored = indexesBetween(storedStart, storedEnd).filter((index) => !paired.has(index));
+    const freeEdited = indexesBetween(editedStart, editedEnd).filter((index) => !partnerIndex.has(index));
+    freeEdited.forEach((editedIndex, offset) => {
+      const storedIndex = freeStored[offset];
+      if (storedIndex !== undefined) pair(editedIndex, storedIndex);
+    });
+  });
+  return edited.map((_, editedIndex) => {
+    const storedIndex = partnerIndex.get(editedIndex);
+    return storedIndex === undefined ? undefined : exported[storedIndex];
   });
 }
 

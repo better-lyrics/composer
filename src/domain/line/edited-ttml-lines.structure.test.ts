@@ -3,6 +3,18 @@ import { mergeEditedExport } from "@/test/edited-ttml";
 import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
+// -- Helpers ------------------------------------------------------------------
+
+const PARAGRAPH = /<p [^>]*>[\s\S]*?<\/p>/g;
+
+function swapFirstTwoParagraphs(ttml: string): string {
+  const [first, second] = ttml.match(PARAGRAPH) ?? [];
+  if (!first || !second) throw new Error("expected two paragraphs");
+  return ttml.replace(first, "\u0000").replace(second, first).replace("\u0000", second);
+}
+
+const SPANISH = { language: "es", text: "Hola", origin: "manual" as const, sourceFingerprint: "fp-1" };
+
 // -- Tests --------------------------------------------------------------------
 
 describe("mergeEditedTtmlLines · line structure", () => {
@@ -82,6 +94,78 @@ describe("mergeEditedTtmlLines · line structure", () => {
       expect(mergeEditedTtmlLines([createLine({ id: "a", text: "One", begin: 1, end: 2 }), blank], [])).toEqual([
         blank,
       ]);
+    });
+  });
+
+  describe("regressions: pairing", () => {
+    it("regression: reordered lines keep their ids and split characters", () => {
+      const stored = [
+        createLine({ id: "a", text: "Hel|lo", begin: 1, end: 2 }),
+        createLine({ id: "b", text: "Wor|ld", begin: 2, end: 3 }),
+        createLine({ id: "c", text: "End", begin: 3, end: 4 }),
+      ];
+      const merged = mergeEditedExport(stored, swapFirstTwoParagraphs);
+      expect(merged.map((line) => [line.id, line.text])).toEqual([
+        ["b", "Wor|ld"],
+        ["a", "Hel|lo"],
+        ["c", "End"],
+      ]);
+      expect(merged[0]).toBe(stored[1]);
+      expect(merged[1]).toBe(stored[0]);
+    });
+
+    it("regression: deleting one copy of a repeated line keeps the other copy and the blank lines in place", () => {
+      const stored = [
+        createLine({ id: "chorus-1", text: "La|la", begin: 1, end: 2 }),
+        createLine({ id: "blank-1", text: "" }),
+        createLine({ id: "verse", text: "Verse", begin: 2, end: 3 }),
+        createLine({ id: "chorus-2", text: "Lal|a", begin: 3, end: 4 }),
+        createLine({ id: "blank-2", text: "" }),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) => ttml.replace(/<p [^>]*>Lala<\/p>/, ""));
+      expect(merged.map((line) => line.id)).toEqual(["blank-1", "verse", "chorus-2", "blank-2"]);
+      expect(merged[2]).toBe(stored[3]);
+    });
+
+    it("regression: adding a line and editing another in one edit keeps the edited line's stored data", () => {
+      const stored = [
+        {
+          ...createLine({
+            id: "one",
+            text: "One",
+            begin: 1,
+            end: 2,
+            backgroundText: "ooh",
+            backgroundTextSource: "extraction",
+          }),
+          translations: { es: SPANISH },
+        },
+        createLine({ id: "blank", text: "" }),
+        createLine({ id: "two", text: "Two", begin: 2, end: 3 }),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml
+          .replace(">One<", ">One!<")
+          .replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Three</p></div>'),
+      );
+      expect(merged.map((line) => line.text)).toEqual(["One!", "", "Two", "Three"]);
+      expect(merged.slice(0, 3).map((line) => line.id)).toEqual(["one", "blank", "two"]);
+      expect(merged[0]?.translations?.es).toEqual(SPANISH);
+      expect(merged[0]?.backgroundTextSource).toBe("extraction");
+      expect(merged[0]?.backgroundWords).toBeUndefined();
+    });
+
+    it("pairs an edited line with the stored line at its place between unchanged lines", () => {
+      const stored = [
+        createLine({ id: "a", text: "One", begin: 1, end: 2 }),
+        createLine({ id: "b", text: "Two", begin: 2, end: 3 }),
+        createLine({ id: "c", text: "Three", begin: 3, end: 4 }),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml.replace(">Two<", ">Deux<").replace("<div>", '<div><p begin="0:00.000" end="0:01.000">Zero</p>'),
+      );
+      expect(merged.map((line) => line.text)).toEqual(["Zero", "One", "Deux", "Three"]);
+      expect(merged.slice(1).map((line) => line.id)).toEqual(["a", "b", "c"]);
     });
   });
 });
