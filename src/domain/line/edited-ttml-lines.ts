@@ -207,4 +207,3 @@ function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricL
 // -- Exports ------------------------------------------------------------------
 
 export { holdsEveryLine, mergeEditedTtmlLines };
-export type { EditedTtmlLines };

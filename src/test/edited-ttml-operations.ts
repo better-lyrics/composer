@@ -201,4 +201,4 @@ const COMBINED_OPERATIONS: readonly EditOperation[] = [
 
 // -- Exports ------------------------------------------------------------------
 
-export { ADDED_LINE, COMBINED_OPERATIONS, OPERATIONS };
+export { COMBINED_OPERATIONS, OPERATIONS };
