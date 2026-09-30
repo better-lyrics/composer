@@ -29,6 +29,7 @@ import { copyInstanceToClipboardAndPreview } from "@/views/timeline/copy-instanc
 import { decideAddInstancePlacement } from "@/views/timeline/decide-add-instance-placement";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { resolveExplicitSelectionToggle } from "@/views/timeline/explicit-selection-toggle";
+import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { isInFocus } from "@/views/timeline/group-focus";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { createGroupFromSelection, fillSelectionGaps, instanceToTemplate } from "@/views/timeline/group-ops";
@@ -215,10 +216,10 @@ function useTimelineKeyboard(
       if (e.code === "KeyA" && (e.metaKey || e.ctrlKey) && !e.repeat) {
         e.preventDefault();
         const allSelections: WordSelection[] = [];
-        const { focusedGroup } = useTimelineStore.getState();
+        const focus = currentEffectiveFocus();
         for (let li = 0; li < lines.length; li++) {
           const line = lines[li];
-          if (!isInFocus(line, focusedGroup)) continue;
+          if (!isInFocus(line, focus)) continue;
           for (let wi = 0; wi < (line.words?.length ?? 0); wi++)
             allSelections.push({ lineId: line.id, lineIndex: li, wordIndex: wi, type: "word" });
           for (let wi = 0; wi < (line.backgroundWords?.length ?? 0); wi++)

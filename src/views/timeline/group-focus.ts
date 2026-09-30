@@ -26,6 +26,11 @@ function isInFocus(line: LyricLine, focus: GroupFocus | null): boolean {
   return focus === null || belongsToInstance(line, focus.groupId, focus.hearInstanceIdx);
 }
 
+function effectiveFocus(lines: readonly LyricLine[], focus: GroupFocus | null): GroupFocus | null {
+  if (focus === null) return null;
+  return lines.some((line) => isInFocus(line, focus)) ? focus : null;
+}
+
 function focusBounds(lines: readonly LyricLine[], focus: GroupFocus): Bounds | null {
   return instanceBounds(linesOfInstance(lines, focus.groupId, focus.hearInstanceIdx));
 }
@@ -42,5 +47,5 @@ function clampScrollLeft(scrollLeft: number, range: ScrollRange): number {
 
 // -- Exports ------------------------------------------------------------------
 
-export { FOCUS_SCROLL_MARGIN_PX, clampScrollLeft, focusBounds, focusScrollRange, isInFocus };
+export { FOCUS_SCROLL_MARGIN_PX, clampScrollLeft, effectiveFocus, focusBounds, focusScrollRange, isInFocus };
 export type { GroupFocus, ScrollRange };

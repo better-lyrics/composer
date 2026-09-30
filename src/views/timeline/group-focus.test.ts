@@ -2,6 +2,7 @@ import { createLine, createWord } from "@/test/factories";
 import {
   FOCUS_SCROLL_MARGIN_PX,
   clampScrollLeft,
+  effectiveFocus,
   focusBounds,
   focusScrollRange,
   isInFocus,
@@ -42,6 +43,32 @@ describe("isInFocus", () => {
   describe("edge cases", () => {
     it("keeps nothing for a group that has no lines", () => {
       expect(lines.some((line) => isInFocus(line, { groupId: "gone", hearInstanceIdx: 0 }))).toBe(false);
+    });
+  });
+});
+
+describe("effectiveFocus", () => {
+  it("keeps a focus whose instance still has lines", () => {
+    const focus = { groupId: "g1", hearInstanceIdx: 1 };
+
+    expect(effectiveFocus(lines, focus)).toBe(focus);
+  });
+
+  it("returns null when nothing is focused", () => {
+    expect(effectiveFocus(lines, null)).toBeNull();
+  });
+
+  describe("edge cases", () => {
+    it("returns null for a focus on an instance that has no lines", () => {
+      expect(effectiveFocus(lines, { groupId: "g1", hearInstanceIdx: 7 })).toBeNull();
+    });
+
+    it("returns null for a focus on a group that is gone", () => {
+      expect(effectiveFocus(lines, { groupId: "gone", hearInstanceIdx: 0 })).toBeNull();
+    });
+
+    it("returns null for an empty song", () => {
+      expect(effectiveFocus([], { groupId: "g1", hearInstanceIdx: 0 })).toBeNull();
     });
   });
 });

@@ -10,6 +10,7 @@ import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SegmentedControl } from "@/ui/segmented-control";
 import { formatTime } from "@/utils/format-time";
 import { pluralize } from "@/utils/pluralize";
+import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import {
   SHARING_MENU_LABELS,
@@ -124,7 +125,7 @@ const FocusedGroupBar: React.FC<Omit<FocusedGroupProps, "lines">> = ({ group, he
 };
 
 const GroupFocusBar: React.FC = () => {
-  const focusedGroup = useTimelineStore((s) => s.focusedGroup);
+  const focusedGroup = useEffectiveFocus();
   const group = useProjectStore((s) => s.groups.find((candidate) => candidate.id === focusedGroup?.groupId));
   if (!focusedGroup || !group) return null;
   return <FocusedGroupBar group={group} hearInstanceIdx={focusedGroup.hearInstanceIdx} />;

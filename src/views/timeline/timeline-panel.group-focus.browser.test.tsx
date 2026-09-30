@@ -245,12 +245,25 @@ describe("TimelinePanel · group focus", () => {
   });
 
   describe("edge cases", () => {
-    it("closes the group when its instance goes away", async () => {
+    it("shows the whole song when the open instance goes away", async () => {
       await renderOpen(1);
 
       useProjectStore.setState({ lines: [chorus(0, 10), verse] });
 
-      await expect.poll(() => focus()).toBeNull();
+      await expect.poll(shownLineIndices).toEqual([0, 1]);
+      expect(document.querySelectorAll("[data-group-header]")).toHaveLength(1);
+      expect(document.querySelector("[data-group-focus-bar]")).toBeNull();
+    });
+
+    it("opens another group with Shift+Enter after the open instance goes away", async () => {
+      await renderOpen(1);
+      useProjectStore.setState({ lines: [chorus(0, 10), verse] });
+      await expect.poll(shownLineIndices).toEqual([0, 1]);
+      useTimelineStore.getState().setSelectedWords(getWordsInInstance(store().lines, "g1", 0));
+
+      await userEvent.keyboard("{Shift>}{Enter}{/Shift}");
+
+      await expect.poll(() => focus()).toEqual({ groupId: "g1", hearInstanceIdx: 0 });
     });
   });
 });

@@ -5,8 +5,8 @@ import {
   clampScrollLeft,
   focusBounds,
   focusScrollRange,
-  isInFocus,
 } from "@/views/timeline/group-focus";
+import { useEffectiveFocus } from "@/views/timeline/effective-focus";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { GUTTER_WIDTH, useTimelineStore } from "@/views/timeline/timeline-store";
 import { type RefObject, useEffect, useRef } from "react";
@@ -22,16 +22,8 @@ function focusedScrollRange(container: HTMLElement, focus: GroupFocus): ScrollRa
 // -- Hook ----------------------------------------------------------------------
 
 function useGroupFocusScroll(scrollContainerRef: RefObject<HTMLDivElement | null>): void {
-  const focusedGroup = useTimelineStore((s) => s.focusedGroup);
-  const closeGroup = useTimelineStore((s) => s.closeGroup);
-  const focusHasLines = useProjectStore(
-    (s) => focusedGroup === null || s.lines.some((line) => isInFocus(line, focusedGroup)),
-  );
+  const focusedGroup = useEffectiveFocus();
   const previousFocusRef = useRef<GroupFocus | null>(null);
-
-  useEffect(() => {
-    if (!focusHasLines) closeGroup();
-  }, [focusHasLines, closeGroup]);
 
   useEffect(() => {
     const previous = previousFocusRef.current;

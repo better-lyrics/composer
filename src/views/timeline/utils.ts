@@ -11,7 +11,7 @@ import type { WordTiming } from "@/domain/word/timing";
 import { formatTime as formatTimeBase } from "@/utils/format-time";
 import { expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import { distributeWordsInLine } from "@/utils/sync-helpers";
-import { type GroupFocus, isInFocus } from "@/views/timeline/group-focus";
+import { type GroupFocus, effectiveFocus, isInFocus } from "@/views/timeline/group-focus";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -96,8 +96,9 @@ function getEffectiveRows(lines: LyricLine[], focus: GroupFocus | null = null): 
   }
   flushBuffer(effective.length);
 
-  if (focus === null) return rows;
-  return rows.filter((row) => row.kind === "line" && isInFocus(row.line, focus));
+  const shownFocus = effectiveFocus(lines, focus);
+  if (shownFocus === null) return rows;
+  return rows.filter((row) => row.kind === "line" && isInFocus(row.line, shownFocus));
 }
 
 interface WordSelectionRef {
@@ -163,10 +164,11 @@ function computeRowLayout({
   const headerTops = new Map<string, HeaderPosition>();
   let rowTop = waveformHeight;
   let lastInstanceKey: string | null = null;
+  const shownFocus = effectiveFocus(lines, focusedGroup);
 
   for (const line of lines) {
-    if (!isInFocus(line, focusedGroup)) continue;
-    const inst = focusedGroup === null && isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
+    if (!isInFocus(line, shownFocus)) continue;
+    const inst = shownFocus === null && isLinked(line) ? `${line.groupId}:${line.instanceIdx}` : null;
 
     if (inst !== lastInstanceKey && inst !== null) {
       headerTops.set(inst, { top: rowTop, height: groupHeaderHeight });

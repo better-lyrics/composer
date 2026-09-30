@@ -60,6 +60,10 @@ describe("getEffectiveRows · group focus", () => {
     expect(rows.map((row) => (row.kind === "line" ? row.lineIndex : -1))).toEqual([3, 4]);
   });
 
+  it("shows every row with headers for a focus on a missing instance", () => {
+    expect(getEffectiveRows(lines, { groupId: "g1", hearInstanceIdx: 9 })).toEqual(getEffectiveRows(lines));
+  });
+
   it("shows every row with headers when nothing is focused", () => {
     expect(getEffectiveRows(lines, null)).toHaveLength(getEffectiveRows(lines).length);
     expect(getEffectiveRows(lines).filter((row) => row.kind === "group-header")).toHaveLength(2);
@@ -80,14 +84,20 @@ describe("computeRowLayout · group focus", () => {
       expect(layoutLineIds(layoutFor(focusOnSecond, { "g1:1": true }))).toEqual(["b0", "b1"]);
     });
 
-    it("lays out nothing for a focus on a missing instance", () => {
-      expect(layoutFor({ groupId: "g1", hearInstanceIdx: 9 }).lineTops.size).toBe(0);
+    it("lays out the whole song for a focus on a missing instance", () => {
+      expect(layoutLineIds(layoutFor({ groupId: "g1", hearInstanceIdx: 9 }))).toEqual(layoutLineIds(layoutFor(null)));
+      expect(layoutFor({ groupId: "g1", hearInstanceIdx: 9 }).headerTops.size).toBe(2);
     });
   });
 
   describe("invariants", () => {
     it("agrees with getEffectiveRows on which lines are shown", () => {
-      for (const focus of [null, focusOnSecond, { groupId: "g1", hearInstanceIdx: 0 }]) {
+      for (const focus of [
+        null,
+        focusOnSecond,
+        { groupId: "g1", hearInstanceIdx: 0 },
+        { groupId: "g1", hearInstanceIdx: 9 },
+      ]) {
         const rowIds = getEffectiveRows(lines, focus).flatMap((row) => (row.kind === "line" ? [row.line.id] : []));
         expect(layoutLineIds(layoutFor(focus))).toEqual(rowIds);
       }

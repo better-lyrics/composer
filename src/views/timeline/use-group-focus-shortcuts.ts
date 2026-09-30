@@ -2,6 +2,7 @@ import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
 import { type InstanceRef, selectedBannerInstance } from "@/views/timeline/selected-banner";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -30,8 +31,9 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
 
   const matched = findMatchingShortcut(event, "timeline");
   const timeline = useTimelineStore.getState();
+  const focus = currentEffectiveFocus();
 
-  if (matched === "timeline.openGroup" && timeline.focusedGroup === null) {
+  if (matched === "timeline.openGroup" && focus === null) {
     const instance =
       focusedBannerInstance(event.target) ??
       selectedBannerInstance(useProjectStore.getState().lines, timeline.selectedWords);
@@ -42,7 +44,7 @@ function handleGroupFocusKeyDown(event: KeyboardEvent): void {
     return;
   }
 
-  if (matched === "timeline.closeGroup" && timeline.focusedGroup !== null && !escapeBelongsElsewhere(event.target)) {
+  if (matched === "timeline.closeGroup" && focus !== null && !escapeBelongsElsewhere(event.target)) {
     event.preventDefault();
     timeline.closeGroup();
   }
