@@ -22,10 +22,10 @@ import {
 } from "@/utils/sync-helpers";
 import { readToken } from "@/utils/theme/read-token";
 import { ScrollableLine, type ScrollableLineLinkInfo } from "@/views/sync/scrollable-line";
+import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
-import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
@@ -108,7 +108,7 @@ const SyncPanel: React.FC = () => {
     setIsPlaying,
   });
 
-  const { skippedLineIds, skippedByLastLineId, sharedTags } = useSharedSyncView(lines, groups, cursor);
+  const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(lines, groups, cursor);
 
   const linkInfoByLineId = useMemo(() => {
     const groupsById = new Map(groups.map((g) => [g.id, g]));
@@ -558,7 +558,7 @@ const SyncPanel: React.FC = () => {
           showGestureCircles && (
             <SyncGestureControls
               currentWord={currentWord}
-              displayWord={displayLines[lineIndex]?.wordTexts?.[wordIndex]}
+              displayWord={placingName ?? displayLines[lineIndex]?.wordTexts?.[wordIndex]}
               isHolding={isHolding}
               handleHoldPointerDown={handleHoldPointerDown}
               handleHoldPointerRelease={handleHoldPointerRelease}

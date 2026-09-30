@@ -1,6 +1,6 @@
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
-import { sharedSyncTags } from "@/views/sync/shared-sync-tags";
+import { placingInstanceName, sharedSyncTags } from "@/views/sync/shared-sync-tags";
 import { describe, expect, it } from "vitest";
 
 const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
@@ -77,6 +77,22 @@ describe("sharedSyncTags", () => {
 
     it("keeps only the shared tags once the cursor is past the end", () => {
       expect(tagsAt(song(40), 6)).toMatchObject({ "c1-0": { label: "Chorus 2 · shared" } });
+    });
+  });
+});
+
+describe("placingInstanceName", () => {
+  it("names the instance the tap on its first word places", () => {
+    expect(placingInstanceName(song(), groups, { lineIndex: 3, wordIndex: 0 })).toBe("Chorus 2");
+  });
+
+  describe("edge cases", () => {
+    it("is null on a line that places nothing", () => {
+      expect(placingInstanceName(song(), groups, { lineIndex: 2, wordIndex: 0 })).toBeNull();
+    });
+
+    it("is null past the first word of the anchor line", () => {
+      expect(placingInstanceName(song(), groups, { lineIndex: 3, wordIndex: 1 })).toBeNull();
     });
   });
 });

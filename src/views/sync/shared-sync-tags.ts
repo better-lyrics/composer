@@ -53,7 +53,13 @@ function sharedSyncTags(
   return tags;
 }
 
+function placingInstanceName(lines: readonly LyricLine[], groups: readonly LinkGroup[], cursor: SyncCursor) {
+  const anchor = sharedAnchorAt(lines, groups, cursor);
+  const group = anchorGroup(groups, anchor);
+  return anchor && group ? instanceName(lines, group, anchor.instanceIdx) : null;
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { sharedSyncTags };
+export { placingInstanceName, sharedSyncTags };
 export type { SharedSyncTag };

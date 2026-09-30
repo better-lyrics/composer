@@ -225,6 +225,7 @@ describe("SyncPanel · shared instance anchor", () => {
       const screen = await render(<SyncPanel />);
       await jumpToRow(screen, 3);
       await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
+      await expect.element(screen.getByText("Chorus 2", { exact: true })).toBeInTheDocument();
       await tapAt(40, () => firstBegin("c1-0"));
       await expect.element(screen.getByText("Chorus 2 · shared").first()).toBeInTheDocument();
       expect(screen.container.textContent).not.toContain("Tap to place");
