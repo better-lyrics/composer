@@ -12,6 +12,7 @@ import { createLinesInitialState } from "@/stores/project/lines-slice";
 import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice";
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
@@ -106,7 +107,7 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
   setTtmlEditState: (editState) =>
     set((state) => {
       const next = typeof editState === "function" ? editState(state.ttmlEditState) : editState;
-      return next === state.ttmlEditState ? state : { ttmlEditState: next, isDirty: true };
+      return isStructurallyEqual(next, state.ttmlEditState) ? state : { ttmlEditState: next, isDirty: true };
     }),
 });
 

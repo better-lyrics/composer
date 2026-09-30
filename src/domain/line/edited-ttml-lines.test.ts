@@ -1,5 +1,5 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
+import { holdsEveryLine, mergeEditedTtmlLines } from "@/domain/line/edited-ttml-lines";
 import type { LyricLine } from "@/domain/line/model";
 import { isProjectFullySynced } from "@/domain/line/sync-progress";
 import { createLine } from "@/test/factories";
@@ -260,6 +260,52 @@ describe("mergeEditedTtmlLines", () => {
       );
       const ids = merged.map((line) => line.id);
       expect(new Set(ids).size).toBe(ids.length);
+    });
+  });
+});
+
+describe("holdsEveryLine", () => {
+  function ownExport(stored: LyricLine[]): LyricLine[] {
+    return PARSERS.ttml(exported(stored)).lines;
+  }
+
+  it("holds a project the export carries in full", () => {
+    const stored = [
+      createLine({ id: "a", text: "Hel|lo world", begin: 1, end: 2, backgroundText: "ooh" }),
+      createLine({ id: "blank", text: "" }),
+      {
+        ...createLine({
+          id: "b",
+          text: "wo|rld",
+          words: [
+            { text: "wo", begin: 3, end: 3.5, syllableGroupId: "g1" },
+            { text: "rld", begin: 3.5, end: 4, syllableGroupId: "g1" },
+          ],
+        }),
+        translations: {
+          es: SPANISH,
+          fr: { language: "fr", text: "", origin: "manual" as const, sourceFingerprint: "x" },
+        },
+      },
+    ];
+    expect(holdsEveryLine(stored, ownExport(stored))).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: does not hold a line with a field the export does not carry", () => {
+      const stored = [
+        { ...createLine({ id: "a", text: "Hello", begin: 1, end: 2 }), detached: true },
+        createLine({ id: "b", text: "World", begin: 2, end: 3 }),
+      ];
+      expect(holdsEveryLine(stored, ownExport(stored))).toBe(false);
+    });
+  });
+
+  describe("error paths", () => {
+    it("does not hold when the export has a different number of lines", () => {
+      const stored = [createLine({ id: "a", text: "Hello", begin: 1, end: 2 })];
+      expect(holdsEveryLine(stored, [])).toBe(false);
+      expect(holdsEveryLine(stored, [...ownExport(stored), ...ownExport(stored)])).toBe(false);
     });
   });
 });

@@ -82,12 +82,87 @@ describe("applyEditedTtml", () => {
       });
     });
 
+    it("regression: also says why the edit cannot be read", () => {
+      const result = applyEditedTtml("not xml at all", 0);
+      expect(result).toMatchObject({ status: "export-only", reason: "not-synced" });
+      if (result.status === "export-only" && result.reason === "not-synced")
+        expect(result.message).toMatch(/edited TTML/);
+    });
+
     it("regression: never touches the project and keeps the edit for the export", () => {
       const before = useProjectStore.getState().lines;
-      expect(applyEditedTtml(TWO_LINES, 0)).toEqual({ status: "export-only" });
+      expect(applyEditedTtml(TWO_LINES, 0)).toEqual({ status: "export-only", reason: "not-synced" });
       expect(useProjectStore.getState().lines).toBe(before);
       expect(useProjectStore.getState().ttmlEditState).toEqual({ source: "<tt/>", content: TWO_LINES });
       expect(useProjectStore.getState().canUndo()).toBe(false);
+    });
+  });
+
+  describe("projects the export cannot hold", () => {
+    it("regression: a project with a field the export does not carry stays as it was", () => {
+      useProjectStore.setState({
+        lines: [
+          { ...createLine({ text: "Hello", begin: 1, end: 2 }), detached: true },
+          createLine({ text: "World", begin: 2, end: 3 }),
+        ],
+      });
+      const before = useProjectStore.getState().lines;
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "export-only", reason: "not-held" });
+      expect(useProjectStore.getState().lines).toBe(before);
+      expect(useProjectStore.getState().canUndo()).toBe(false);
+    });
+  });
+
+  describe("projects the export holds", () => {
+    it("applies an edit to a project with full song details, named singers, groups and translations", () => {
+      useProjectStore.setState({
+        lines: [
+          {
+            ...createLine({ text: "Hello", begin: 1, end: 2, agentId: "v1" }),
+            groupId: "g1",
+            instanceIdx: 0,
+            templateLineIdx: 0,
+            translations: { es: { language: "es", text: "Hola", origin: "manual", sourceFingerprint: "fp" } },
+          },
+          createLine({ text: "World", begin: 2, end: 3, agentId: "v2" }),
+        ],
+        groups: [{ id: "g1", label: "Chorus", color: "#ff0000", templateVersion: 1 }],
+        agents: [
+          { id: "v1", type: "person", name: "Ana" },
+          { id: "v2", type: "group", name: "Ben" },
+        ],
+        metadata: {
+          title: "Song",
+          artists: ["Ana", "Ben"],
+          album: "Album",
+          duration: 0,
+          isrc: "USRC17607839",
+          songwriters: ["Cara"],
+          language: "en-us",
+          extra: { mood: "calm" },
+        },
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 180).replace(">World<", ">World2<");
+      expect(applyEditedTtml(edited, 180)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello", "World2"]);
+      expect(useProjectStore.getState().metadata.language).toBe("en-us");
+    });
+  });
+
+  describe("edits that change nothing in the project", () => {
+    it("regression: adds no undo step and keeps the edit in the export", () => {
+      useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
+      const generated = generateProjectTtml(useProjectStore.getState(), 0);
+      const edited = generated.replace("<div>", "<div><!-- note -->");
+      const editState = { source: generated, content: edited };
+      useProjectStore.setState({ ttmlEditState: editState, isDirty: false });
+      const before = useProjectStore.getState().lines;
+      expect(applyEditedTtml(edited, 0)).toEqual({ status: "applied", skipped: 0, keptInExport: true });
+      expect(useProjectStore.getState().lines).toBe(before);
+      expect(useProjectStore.getState().canUndo()).toBe(false);
+      expect(useProjectStore.getState().ttmlEditState).toBe(editState);
+      expect(useProjectStore.getState().isDirty).toBe(false);
     });
   });
 

@@ -5,6 +5,7 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { formatTime } from "@/utils/format-time";
 import { stripSplitCharacter } from "@/utils/split-character";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import { generateLineTtml } from "@/utils/ttml";
 import { hasAlternateText } from "@/utils/ttml-alternate-content";
 
@@ -102,8 +103,7 @@ function mergedText(stored: LyricLine, edited: LyricLine): string {
   return !edited.words && edited.text === stripSplitCharacter(stored.text) ? stored.text : edited.text;
 }
 
-function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
-  if (generateLineTtml(stored) === generateLineTtml(edited)) return stored;
+function fieldMergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
   const { translations: _translations, transliteration: _transliteration, ...editedFields } = edited;
   const translations = mergedTranslations(stored, edited);
   const transliteration = mergedTransliteration(stored, edited);
@@ -116,6 +116,10 @@ function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
     ...(translations ? { translations } : {}),
     ...(transliteration ? { transliteration } : {}),
   });
+}
+
+function mergedLine(stored: LyricLine, edited: LyricLine): LyricLine {
+  return generateLineTtml(stored) === generateLineTtml(edited) ? stored : fieldMergedLine(stored, edited);
 }
 
 // -- Pairing ------------------------------------------------------------------
@@ -159,6 +163,17 @@ function mergeEditedTtmlLines(stored: readonly LyricLine[], edited: readonly Lyr
   return merged;
 }
 
+function holdsEveryLine(stored: readonly LyricLine[], ownExport: readonly LyricLine[]): boolean {
+  const exported = stored.filter(isSyncableLine);
+  return (
+    exported.length === ownExport.length &&
+    exported.every((line, index) => {
+      const form = ownExport[index];
+      return form !== undefined && isStructurallyEqual(fieldMergedLine(line, form), line);
+    })
+  );
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { mergeEditedTtmlLines };
+export { holdsEveryLine, mergeEditedTtmlLines };
