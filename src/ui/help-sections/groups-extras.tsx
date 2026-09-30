@@ -59,18 +59,17 @@ const GroupsExtras: React.FC = () => (
     <HelpTopic title="Open a group">
       <p className={PROSE}>
         Double-click a banner, or select it and press{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.openGroup")} />, to see one instance on its own. The strip
-        at the top names the instance. Step to the other shared instances with its arrows, or with{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevInstance")} /> and{" "}
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextInstance")} />. The playhead stays at the same
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.openGroup")} />, to see one instance on its own, zoomed to
+        fit. Closing it brings back your zoom. The strip at the top names the instance. Step to the other shared
+        instances with its arrows, or with <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevInstance")} />{" "}
+        and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextInstance")} />. The playhead stays at the same
         moment of the instance. Edits still reach every shared instance.
       </p>
       <p className={`${PROSE} mt-2`}>
         Playback stays inside the instance. Play starts at its first word, and at its end playback stops and goes back
         to the start. Turn on <strong>Loop</strong> (
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />) to play it again and again. Move
-        the playhead outside the instance to end this. The waveform and the seek bar shade everything outside the
-        instance, and Preview fades the other lines.
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />) to play it again and again. The
+        waveform and the seek bar shade everything outside the instance, and Preview fades the other lines.
       </p>
       <p className={`${PROSE} mt-2`}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} /> or click <strong>Done</strong> to

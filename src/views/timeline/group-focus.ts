@@ -60,6 +60,12 @@ function focusScrollRange(span: Bounds, zoom: number, visibleTrackWidth: number)
   return { min, max };
 }
 
+function fittedFocusZoom(span: Bounds, visibleTrackWidth: number): number | null {
+  const room = visibleTrackWidth - 2 * FOCUS_SCROLL_MARGIN_PX;
+  const length = span.end - span.begin;
+  return room > 0 && length > 0 ? room / length : null;
+}
+
 function clampScrollLeft(scrollLeft: number, range: ScrollRange): number {
   return Math.min(range.max, Math.max(range.min, scrollLeft));
 }
@@ -72,6 +78,7 @@ export {
   canHearInstance,
   clampScrollLeft,
   effectiveFocus,
+  fittedFocusZoom,
   focusBounds,
   focusScrollRange,
   isInFocus,

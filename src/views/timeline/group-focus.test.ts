@@ -5,6 +5,7 @@ import {
   canHearInstance,
   clampScrollLeft,
   effectiveFocus,
+  fittedFocusZoom,
   focusBounds,
   focusScrollRange,
   isInFocus,
@@ -205,6 +206,22 @@ describe("heard instances", () => {
           }
         }
       });
+    });
+  });
+});
+
+describe("fittedFocusZoom", () => {
+  it("fits the instance and its margins into the visible track", () => {
+    expect(fittedFocusZoom({ begin: 40, end: 50 }, 1000 + 2 * FOCUS_SCROLL_MARGIN_PX)).toBe(100);
+  });
+
+  describe("edge cases", () => {
+    it("returns null for an instance with no length", () => {
+      expect(fittedFocusZoom({ begin: 40, end: 40 }, 1000)).toBeNull();
+    });
+
+    it("returns null when the track has no room past its margins", () => {
+      expect(fittedFocusZoom({ begin: 40, end: 50 }, 2 * FOCUS_SCROLL_MARGIN_PX)).toBeNull();
     });
   });
 });

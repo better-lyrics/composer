@@ -1,6 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { FOCUS_SCROLL_MARGIN_PX } from "@/views/timeline/group-focus";
 import {
   chorus,
   focus,
@@ -83,9 +84,10 @@ describe("TimelinePanel · instance jumps in an open group", () => {
       await render(<TimelinePanel />);
       await expect.poll(() => document.querySelectorAll("[data-instance-key]").length).toBe(3);
       useTimelineStore.getState().openGroup("g1", 1);
-      await expect.poll(() => scrollContainer().scrollLeft).toBeGreaterThan(40 * 50 - 100);
+      await expect.poll(() => useTimelineStore.getState().zoom).not.toBe(50);
+      useTimelineStore.setState({ zoom: 50 });
       const container = scrollContainer();
-      const start = container.scrollLeft;
+      const start = 40 * 50 - FOCUS_SCROLL_MARGIN_PX;
       container.scrollLeft = start + 200;
       await expect.poll(() => container.scrollLeft).toBeGreaterThan(start);
 
