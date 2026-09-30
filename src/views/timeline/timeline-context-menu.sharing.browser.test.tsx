@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import type { LinkGroup } from "@/domain/group/template";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
@@ -6,6 +5,7 @@ import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { Toaster } from "sonner";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -63,7 +63,15 @@ describe("TimelineContextMenu · banner sharing items", () => {
 
     await expect.poll(() => group().ownTimingInstances).toBeUndefined();
     expect(secondWordBegin("c1")).toBeCloseTo(41.5, 6);
-    await expect.element(screen.getByText("Chorus 2 shares timing again")).toBeVisible();
+    await expect.element(screen.getByText("Chorus 2 shares timing again. Its own timing was replaced.")).toBeVisible();
+  });
+
+  it("edge case: says nothing was replaced when the own timing already matched", async () => {
+    seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: "Share timing" }).click();
+
+    await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
   });
 
   it("shares timing across an old group", async () => {
