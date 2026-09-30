@@ -55,7 +55,8 @@ function mergedTranslations(stored: LyricLine, edited: LyricLine): TranslationTr
     const kept = stored.translations?.[language];
     merged[language] = kept && sameAlternateText(kept, track) ? kept : track;
   }
-  return Object.keys(merged).length > 0 ? merged : undefined;
+  if (Object.keys(merged).length > 0) return merged;
+  return stored.translations && Object.keys(stored.translations).length === 0 ? stored.translations : undefined;
 }
 
 function mergedTransliteration(stored: LyricLine, edited: LyricLine): TransliterationTrack | undefined {

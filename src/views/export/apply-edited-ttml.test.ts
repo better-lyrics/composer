@@ -148,6 +148,18 @@ describe("applyEditedTtml", () => {
       expect(lineTexts()).toEqual(["Hello", "World2"]);
       expect(useProjectStore.getState().metadata.language).toBe("en-us");
     });
+
+    it("regression: applies an edit to a project where a translation was removed", () => {
+      useProjectStore.setState({
+        lines: [
+          { ...createLine({ text: "Hello", begin: 1, end: 2 }), translations: {} },
+          createLine({ text: "World", begin: 2, end: 3 }),
+        ],
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">World<", ">World2<");
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello", "World2"]);
+    });
   });
 
   describe("edits that change nothing in the project", () => {
