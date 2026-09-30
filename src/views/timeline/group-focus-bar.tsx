@@ -1,8 +1,9 @@
-import { instanceStart, sharedInstancesInLineOrder, sharesTiming } from "@/domain/group/shared-timing";
+import { instanceOffset, instanceStart, sharedInstancesInLineOrder, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
@@ -38,6 +39,14 @@ const HearSwitch: React.FC<FocusedGroupProps> = ({ group, lines, hearInstanceIdx
     disabled: !canHearInstance(lines, group, instanceIdx),
   }));
 
+  const hear = (value: string) => {
+    const instanceIdx = Number(value);
+    const offset = instanceOffset(lines, group.id, hearInstanceIdx, instanceIdx);
+    const audio = useAudioStore.getState();
+    if (offset !== null) audio.seekTo((audio.audioElement?.currentTime ?? audio.currentTime) + offset);
+    openGroup(group.id, instanceIdx);
+  };
+
   return (
     <>
       <span className="text-composer-text-muted">Hear</span>
@@ -45,7 +54,7 @@ const HearSwitch: React.FC<FocusedGroupProps> = ({ group, lines, hearInstanceIdx
         aria-label="Hear"
         value={String(hearInstanceIdx)}
         options={options}
-        onChange={(value) => openGroup(group.id, Number(value))}
+        onChange={hear}
         className="h-7"
       />
     </>

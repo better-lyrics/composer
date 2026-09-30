@@ -5,6 +5,7 @@ import { render } from "@/test/render";
 import {
   PlayableTimeline,
   banner,
+  chorus,
   focus,
   lineById,
   press,
@@ -13,7 +14,6 @@ import {
   seedGroupFocusSong,
   shownLineIndices,
   store,
-  chorus,
   verse,
 } from "@/views/timeline/group-focus.test-helpers";
 import { TimelinePanel } from "@/views/timeline/timeline-panel";
@@ -50,6 +50,15 @@ describe("TimelinePanel · group focus", () => {
     await screen.getByRole("button", { name: "Chorus 2" }).click();
 
     await expect.poll(shownLineIndices).toEqual([2]);
+  });
+
+  it("moves the playhead to the same moment in the instance chosen with the Hear switch", async () => {
+    const screen = await renderOpen(0);
+    useAudioStore.getState().seekTo(10.5);
+
+    await screen.getByRole("button", { name: "Chorus 2" }).click();
+
+    await expect.poll(() => useAudioStore.getState().currentTime).toBeCloseTo(40.5);
   });
 
   it("returns to the song from the Song crumb", async () => {
