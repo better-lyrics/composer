@@ -19,7 +19,8 @@ function clampShiftDelta(lines: readonly LyricLine[], delta: number, range: Time
     latest = Math.max(latest, bounds.end);
   }
   if (!Number.isFinite(earliest)) return delta;
-  return Math.max(range.min - earliest, Math.min(delta, range.max - latest));
+  if (delta > 0) return Math.max(0, Math.min(delta, range.max - latest));
+  return Math.min(0, Math.max(delta, range.min - earliest));
 }
 
 // Background words move with the main vocal so they keep their place relative to it.

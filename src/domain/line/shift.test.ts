@@ -36,6 +36,23 @@ describe("clampShiftDelta", () => {
     expect(clampShiftDelta([createLine({ text: "a", begin: 5, end: 6 })], 3)).toBe(3);
   });
 
+  describe("regressions", () => {
+    it("regression: never moves a line past the song end backward on a forward nudge", () => {
+      const pastEnd = [createLine({ text: "a", begin: 179, end: 181 })];
+      expect(clampShiftDelta(pastEnd, 0.05, { min: 0, max: 180 })).toBe(0);
+    });
+
+    it("regression: never moves a line before the range start forward on a backward nudge", () => {
+      const beforeStart = [createLine({ text: "a", begin: 4, end: 6 })];
+      expect(clampShiftDelta(beforeStart, -0.05, { min: 5, max: 180 })).toBe(0);
+    });
+
+    it("still lets a line past the song end move back toward it", () => {
+      const pastEnd = [createLine({ text: "a", begin: 179, end: 181 })];
+      expect(clampShiftDelta(pastEnd, -2, { min: 0, max: 180 })).toBe(-2);
+    });
+  });
+
   describe("edge cases", () => {
     it("does not clamp when no line has main timing", () => {
       expect(clampShiftDelta([createLine({ text: "a" })], -4)).toBe(-4);
@@ -108,8 +125,9 @@ describe("time range", () => {
       expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 2, { min: 5, max: 20 })).toBe(2);
     });
 
-    it("prefers the start when the lines are longer than the range", () => {
-      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], 3, { min: 9, max: 15 })).toBe(-1);
+    it("stays put when the lines are longer than the range, instead of moving against the request", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], 3, { min: 9, max: 15 })).toBe(0);
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], -3, { min: 9, max: 15 })).toBe(-1);
     });
   });
 
