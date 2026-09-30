@@ -1,13 +1,14 @@
 import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
-import { instanceStart, placeSharedInstance } from "@/domain/group/shared-timing";
+import { instanceStart, placeSharedInstance, sharedTimingFanOut } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
+import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
 import { commitHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
@@ -24,7 +25,7 @@ function createGroupsInitialState(): GroupsState {
 
 // -- Slice --------------------------------------------------------------------
 
-const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupActions> = (set) => ({
+const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupActions> = (set, get) => ({
   ...createGroupsInitialState(),
 
   setGroups: (groups) => set({ groups: Array.isArray(groups) ? groups : [], isDirty: true, isDirtySinceHistory: true }),
@@ -206,12 +207,21 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       return commitHistory(state, { groups, lines });
     }),
 
-  placeInstance: (groupId, instanceIdx, start) =>
-    set((state) => {
-      const placed = placeSharedInstance(state.lines, state.groups, groupId, instanceIdx, start);
-      if (placed.length === 0) return state;
-      return commitHistory(state, { lines: applyLineUpdates(state.lines, placed) });
-    }),
+  placeInstance: (groupId, instanceIdx, start, precedingUpdates = []) => {
+    const state = get();
+    const preceded = sharedTimingFanOut(
+      state.lines,
+      applyLineUpdates(state.lines, precedingUpdates),
+      state.groups,
+      precedingUpdates.map((update) => update.id),
+    );
+    if (preceded.rejected) return false;
+    const placed = placeSharedInstance(preceded.lines, state.groups, groupId, instanceIdx, start);
+    if (placed.length === 0) return false;
+    if (preceded.touchedGroupIds.length) notifySharedTimingCopied(preceded.touchedGroupIds);
+    set(commitHistory(state, { lines: applyLineUpdates(preceded.lines, placed) }, { deriveText: false }));
+    return true;
+  },
 });
 
 // -- Exports ------------------------------------------------------------------

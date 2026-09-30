@@ -199,7 +199,7 @@ interface GroupActions {
   setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => void;
   shareGroupTiming: (groupId: string) => void;
   shareAllInstances: (groupId: string) => void;
-  placeInstance: (groupId: string, instanceIdx: number, start: number) => void;
+  placeInstance: (groupId: string, instanceIdx: number, start: number, precedingUpdates?: LineUpdate[]) => boolean;
 }
 
 // -- Composed Store -----------------------------------------------------------

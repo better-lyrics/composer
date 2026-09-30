@@ -1,6 +1,7 @@
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
@@ -17,6 +18,7 @@ interface SyncState {
   // two meet, which is right in a forward pass but stretches an already-correct
   // line when the user jumped back to re-record this one.
   jumpedToPosition?: boolean;
+  anchorUndo?: AnchorUndo;
 }
 
 // -- Constants ----------------------------------------------------------------

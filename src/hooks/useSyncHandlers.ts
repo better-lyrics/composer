@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
@@ -16,7 +17,7 @@ import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpe
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -37,6 +38,10 @@ interface UseSyncHandlersProps {
 const EARLY_TAP_TOAST_ID = "sync-early-tap";
 
 // -- Helpers --------------------------------------------------------------------
+
+function toastEarlyTap(clampedTo: number | null): void {
+  if (clampedTo !== null) toast(`Early tap snapped to ${formatTimeMs(clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
+}
 
 function triggerPulse(setShowPulse: (show: boolean) => void): void {
   setShowPulse(true);
@@ -60,9 +65,12 @@ function useSyncHandlers({
   const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
+  const historyIndex = useProjectStore((s) => s.historyIndex);
+  const ignoreNextHoldEndRef = useRef(false);
+  const { position, jumped } = storedSyncPosition(syncState, historyIndex);
   const cursor = useMemo(
-    () => resolveSyncCursor(lines, syncState.position, !!syncState.jumpedToPosition, granularity),
-    [lines, syncState.position, syncState.jumpedToPosition, granularity],
+    () => resolveSyncCursor(lines, position, jumped, granularity),
+    [lines, position, jumped, granularity],
   );
   const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
@@ -77,22 +85,36 @@ function useSyncHandlers({
 
   const runGesture = useCallback(
     (gesture: SyncGesture): boolean => {
-      const commit = commitGesture(lines, gesture, {
+      const ctx = {
         cursor,
-        jumped: !!syncState.jumpedToPosition,
+        jumped,
         time: readTapTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         groups: useProjectStore.getState().groups,
-      });
+      };
+      const anchor = anchorGesture(lines, gesture, ctx);
+      const { placeInstance } = useProjectStore.getState();
+      if (anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, anchor.precedingUpdates)) {
+        const anchorUndo = {
+          resume: anchor.resumeCursor,
+          anchor: anchor.anchorCursor,
+          jumped,
+          historyIndex: useProjectStore.getState().historyIndex,
+        };
+        // Jumped, so the next tap trims an overlap with the placed instance instead of stretching its shared last word.
+        setSyncState((prev) => ({ ...prev, position: anchor.resumeCursor, jumpedToPosition: true, anchorUndo }));
+        ignoreNextHoldEndRef.current = gesture === "hold-start";
+        toastEarlyTap(anchor.clampedTo);
+        return true;
+      }
+      const commit = commitGesture(lines, gesture, ctx);
       if (!commit) return false;
       updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
       setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
-      if (commit.clampedTo !== null) {
-        toast(`Early tap snapped to ${formatTimeMs(commit.clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
-      }
+      toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, syncState.jumpedToPosition, readTapTime, updateLinesWithHistory, setSyncState],
+    [lines, cursor, jumped, readTapTime, updateLinesWithHistory, setSyncState],
   );
 
   const handleTap = useCallback(() => {
@@ -104,6 +126,10 @@ function useSyncHandlers({
   }, [runGesture]);
 
   const handleHoldEnd = useCallback(() => {
+    if (ignoreNextHoldEndRef.current) {
+      ignoreNextHoldEndRef.current = false;
+      return;
+    }
     if (runGesture("hold-end")) triggerPulse(setShowPulse);
   }, [runGesture, setShowPulse]);
 
@@ -148,10 +174,10 @@ function useSyncHandlers({
       ...prev,
       position: { lineIndex: startLine, wordIndex: startWord },
       isActive: true,
-      jumpedToPosition: startLine === cursorLine ? prev.jumpedToPosition : false,
+      jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
     setIsPlaying(true);
-  }, [lines, cursor, setIsPlaying, setSyncState]);
+  }, [lines, cursor, jumped, setIsPlaying, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so

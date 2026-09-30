@@ -266,4 +266,4 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 // -- Exports ------------------------------------------------------------------
 
 export { commitGesture };
-export type { GestureCommit, SyncGesture };
+export type { GestureCommit, GestureContext, SyncGesture };

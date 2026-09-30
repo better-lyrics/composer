@@ -139,6 +139,57 @@ describe("placeInstance", () => {
     store().undo();
     expect(lineById("c1")?.words).toBeUndefined();
   });
+
+  it("moves a placed instance without moving the others", () => {
+    seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1, 40)]);
+    expect(store().placeInstance("g1", 1, 50)).toBe(true);
+    expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(50, 6);
+    expect(lineById("c0")?.words?.[0]?.begin).toBeCloseTo(10, 6);
+  });
+
+  it("applies the preceding updates and the placement as one undo step", () => {
+    const verse = createLine({ id: "v", text: "Walking", words: [{ text: "Walking", begin: 20, end: 21 }] });
+    seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), verse, chorus(1)]);
+    const preceding = [{ id: "v", updates: { words: [{ text: "Walking", begin: 20, end: 39 }] } }];
+    expect(store().placeInstance("g1", 1, 40, preceding)).toBe(true);
+    expect(lineById("v")?.words?.[0]?.end).toBe(39);
+    expect(lineById("c1")?.words?.[0]?.begin).toBeCloseTo(40, 6);
+    store().undo();
+    expect(lineById("v")?.words?.[0]?.end).toBe(21);
+    expect(lineById("c1")?.words).toBeUndefined();
+  });
+
+  it("copies a preceding edit on a shared instance before placing, so the placed copy includes it", () => {
+    seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
+    const closeLastWord = {
+      id: "c0",
+      updates: {
+        words: [
+          { text: "I ", begin: 10, end: 10.4 },
+          { text: "want", begin: 10.5, end: 12 },
+        ],
+      },
+    };
+    store().placeInstance("g1", 1, 40, [closeLastWord]);
+    expect(lineById("c1")?.words?.[1]?.end).toBeCloseTo(42, 6);
+  });
+
+  it("keeps the line text, because placing only writes timing", () => {
+    const partial = createLine({ id: "p", text: "one two three", words: [{ text: "one ", begin: 1, end: 2 }] });
+    seed([createGroup({ id: "g1", sharesTiming: true })], [partial, chorus(0, 10), chorus(1)]);
+    store().placeInstance("g1", 1, 40);
+    expect(lineById("p")?.text).toBe("one two three");
+  });
+
+  describe("edge cases", () => {
+    it("writes nothing and reports false when there is no timed reference", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0), chorus(1)]);
+      const before = store().lines;
+      const firstWordOnly = { id: "c0", updates: { words: [{ text: "I ", begin: 1, end: 2 }] } };
+      expect(store().placeInstance("g1", 1, 40, [firstWordOnly])).toBe(false);
+      expect(store().lines).toBe(before);
+    });
+  });
 });
 
 describe("addInstance", () => {
