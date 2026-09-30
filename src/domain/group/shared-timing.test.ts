@@ -4,6 +4,7 @@ import {
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,
+  timeRangeResolver,
 } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -467,6 +468,63 @@ describe("sharedTimingFanOut", () => {
     it("keeps lines outside the group by reference", () => {
       const lines = sharedTimingFanOut(before, after, sharing, ["c1-1", "c1-0"]).lines;
       expect(byId(lines, "gap")).toBe(byId(after, "gap"));
+    });
+  });
+});
+
+describe("timeRangeResolver", () => {
+  const sharing = [createGroup({ id: "g1", sharesTiming: true })];
+
+  it("gives a line that is not shared the whole song", () => {
+    const outside = createLine({ id: "x", text: "Hey", begin: 1, end: 2 });
+    expect(timeRangeResolver([outside, chorus(0, 0, 10)], sharing, 60)(outside)).toEqual({ min: 0, max: 60 });
+  });
+
+  it("narrows the end by the room left after the last instance", () => {
+    const lines = [chorus(0, 0, 10), chorus(1, 0, 58.7)];
+    const range = timeRangeResolver(lines, sharing, 60)(lines[0]);
+    expect(range.min).toBe(0);
+    expect(range.max).toBeCloseTo(60 - (58.7 - 10), 6);
+  });
+
+  it("narrows the start by the room left before the first instance", () => {
+    const lines = [chorus(0, 0, 0.2), chorus(1, 0, 10)];
+    const range = timeRangeResolver(lines, sharing, 60)(lines[1]);
+    expect(range.min).toBeCloseTo(10 - 0.2, 6);
+    expect(range.max).toBe(60);
+  });
+
+  describe("edge cases", () => {
+    it("keeps an infinite end infinite", () => {
+      const lines = [chorus(0, 0, 10), chorus(1, 0, 40)];
+      expect(timeRangeResolver(lines, sharing, Number.POSITIVE_INFINITY)(lines[0]).max).toBe(Number.POSITIVE_INFINITY);
+    });
+
+    it("ignores own-timing and unplaced siblings", () => {
+      const groups = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
+      const lines = [chorus(0, 0, 10), chorus(1, 0, 59), chorus(2, 0)];
+      expect(timeRangeResolver(lines, groups, 60)(lines[0])).toEqual({ min: 0, max: 60 });
+    });
+
+    it("gives an unplaced shared line the whole song", () => {
+      const lines = [chorus(0, 0), chorus(1, 0, 59)];
+      expect(timeRangeResolver(lines, sharing, 60)(lines[0])).toEqual({ min: 0, max: 60 });
+    });
+
+    it("gives an old group the whole song", () => {
+      const lines = [chorus(0, 0, 10), chorus(1, 0, 59)];
+      expect(timeRangeResolver(lines, [createGroup({ id: "g1" })], 60)(lines[0])).toEqual({ min: 0, max: 60 });
+    });
+  });
+
+  describe("invariants", () => {
+    it("keeps every placed copy inside the song for a time inside the range", () => {
+      const lines = [chorus(0, 0, 3), chorus(1, 0, 10), chorus(2, 0, 55)];
+      const range = timeRangeResolver(lines, sharing, 60)(lines[1]);
+      for (const offset of [3 - 10, 0, 55 - 10]) {
+        expect(range.min + offset).toBeGreaterThanOrEqual(-1e-9);
+        expect(range.max + offset).toBeLessThanOrEqual(60 + 1e-9);
+      }
     });
   });
 });

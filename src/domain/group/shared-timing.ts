@@ -15,6 +15,11 @@ interface SharedTimingFanOut {
   touchedGroupIds: string[];
 }
 
+interface TimeRange {
+  min: number;
+  max: number;
+}
+
 interface FanOutSource {
   line: LinkedLine;
   group: LinkGroup;
@@ -205,6 +210,48 @@ function sharedTimingFanOut(
   return lines === after ? unchanged : { lines, rejected: false, touchedGroupIds: [...touchedGroupIds] };
 }
 
+// -- Time range ---------------------------------------------------------------
+
+function sharedTimeRange(
+  lines: readonly LyricLine[],
+  group: LinkGroup,
+  instanceIdx: number,
+  duration: number,
+): TimeRange {
+  const range = { min: 0, max: duration };
+  const sourceStart = instanceStart(lines, group.id, instanceIdx);
+  if (sourceStart === null) return range;
+  for (const otherIdx of sharedInstancesInLineOrder(lines, group)) {
+    const otherStart = otherIdx === instanceIdx ? null : instanceStart(lines, group.id, otherIdx);
+    if (otherStart === null) continue;
+    const offset = otherStart - sourceStart;
+    range.min = Math.max(range.min, -offset);
+    range.max = Math.min(range.max, duration - offset);
+  }
+  return range;
+}
+
+function timeRangeResolver(
+  lines: readonly LyricLine[],
+  groups: readonly LinkGroup[],
+  duration: number,
+): (line: LyricLine) => TimeRange {
+  const groupsById = new Map(groups.map((group) => [group.id, group]));
+  const rangeByInstance = new Map<string, TimeRange>();
+  const wholeSong: TimeRange = { min: 0, max: duration };
+  return (line) => {
+    if (!isLinked(line) || !isSharedLine(line, groupsById)) return wholeSong;
+    const key = `${line.groupId}:${line.instanceIdx}`;
+    let range = rangeByInstance.get(key);
+    const group = groupsById.get(line.groupId);
+    if (!range && group) {
+      range = sharedTimeRange(lines, group, line.instanceIdx, duration);
+      rangeByInstance.set(key, range);
+    }
+    return range ?? wholeSong;
+  };
+}
+
 // -- Exports ------------------------------------------------------------------
 
 export {
@@ -213,5 +260,6 @@ export {
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,
+  timeRangeResolver,
 };
-export type { SharedTimingFanOut };
+export type { SharedTimingFanOut, TimeRange };
