@@ -44,5 +44,50 @@ describe("mergeEditedTtmlLines · background vocals", () => {
       );
       expect(merged[0]?.backgroundWords?.map((word) => [word.text, word.begin, word.end])).toEqual([["ahh", 1.2, 1.8]]);
     });
+
+    it("regression: a line the edit adds with a background text stores only the text", () => {
+      const stored = [createLine({ id: "a", text: "One", begin: 1, end: 2 })];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml.replace(
+          "</div>",
+          '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">New<span ttm:role="x-bg"><span begin="0:04.000" end="0:05.000">ooh</span></span></p></div>',
+        ),
+      );
+      expect(merged[1]?.text).toBe("New");
+      expect(merged[1]?.backgroundText).toBe("ooh");
+      expect(merged[1]?.backgroundWords).toBeUndefined();
+      expect(isProjectFullySynced(merged)).toBe(true);
+    });
+
+    it("regression: an edited line next to an added line stores no seeded background words", () => {
+      const stored = [
+        createLine({
+          id: "a",
+          text: "One",
+          begin: 1,
+          end: 2,
+          backgroundText: "ooh yeah",
+          backgroundTextSource: "manual",
+        }),
+      ];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml
+          .replace(">One<", ">One!<")
+          .replace("</div>", '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Two</p></div>'),
+      );
+      expect(merged[0]?.backgroundWords).toBeUndefined();
+      expect(isProjectFullySynced(merged)).toBe(true);
+    });
+
+    it("takes background word timing the edit gave a line without background words", () => {
+      const stored = [createLine({ id: "a", text: "Hello", begin: 1, end: 2, backgroundText: "ooh" })];
+      const merged = mergeEditedExport(stored, (ttml) =>
+        ttml.replace(
+          '<span begin="0:01.000" end="0:02.000">ooh</span>',
+          '<span begin="0:01.200" end="0:01.800">ooh</span>',
+        ),
+      );
+      expect(merged[0]?.backgroundWords?.map((word) => [word.text, word.begin, word.end])).toEqual([["ooh", 1.2, 1.8]]);
+    });
   });
 });

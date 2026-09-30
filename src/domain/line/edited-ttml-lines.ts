@@ -67,11 +67,11 @@ function mergedTransliteration(stored: LyricLine, edited: LyricLine): Transliter
   return kept && kept.language === track.language && sameAlternateText(kept, track) ? kept : track;
 }
 
-function hasSeededBackgroundWords(stored: LyricLine, edited: LyricLine): boolean {
+function hasSeededBackgroundWords(storedWords: readonly WordTiming[] | undefined, edited: LyricLine): boolean {
   const words = edited.backgroundWords;
   const bounds = mainBounds(edited);
   return (
-    !stored.backgroundWords?.length &&
+    !storedWords?.length &&
     words?.length === 1 &&
     bounds !== null &&
     sameExportedTime(words[0]?.begin, bounds.begin) &&
@@ -80,18 +80,20 @@ function hasSeededBackgroundWords(stored: LyricLine, edited: LyricLine): boolean
 }
 
 function mergedBackground(stored: LyricLine, edited: LyricLine): Partial<LyricLine> {
-  if (stored.backgroundText !== edited.backgroundText) {
-    return hasSeededBackgroundWords(stored, edited) ? { backgroundWords: undefined } : {};
-  }
   const storedWords = stored.backgroundWords;
+  const seeded = hasSeededBackgroundWords(storedWords, edited);
+  if (stored.backgroundText !== edited.backgroundText) return seeded ? { backgroundWords: undefined } : {};
+  if (seeded) return { backgroundTextSource: stored.backgroundTextSource, backgroundWords: storedWords };
   return {
     backgroundTextSource: stored.backgroundTextSource,
-    backgroundWords: storedWords?.length
-      ? sameExportedWords(storedWords, edited.backgroundWords)
-        ? storedWords
-        : edited.backgroundWords
-      : undefined,
+    backgroundWords: sameExportedWords(storedWords, edited.backgroundWords) ? storedWords : edited.backgroundWords,
   };
+}
+
+function withoutSeededBackground(line: LyricLine): LyricLine {
+  if (!hasSeededBackgroundWords(undefined, line)) return line;
+  const { backgroundWords: _seeded, ...rest } = line;
+  return rest;
 }
 
 function mergedTiming(stored: LyricLine, edited: LyricLine): Pick<LyricLine, "words" | "begin" | "end"> {
@@ -184,7 +186,7 @@ function mergeEditedTtmlLines(stored: readonly LyricLine[], edited: readonly Lyr
   const merged = [...(skippedAfter.get(undefined) ?? [])];
   edited.forEach((line, index) => {
     const partner = partners[index];
-    merged.push(partner ? mergedLine(partner, line) : line);
+    merged.push(partner ? mergedLine(partner, line) : withoutSeededBackground(line));
     if (partner) merged.push(...(skippedAfter.get(partner) ?? []));
   });
   return merged;

@@ -208,6 +208,19 @@ describe("applyEditedTtml", () => {
       expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
       expect(lineTexts()).toEqual(["Hello there"]);
     });
+
+    it("regression: a second Done still applies after adding a line with a background text", () => {
+      useProjectStore.setState({ lines: [createLine({ text: "Hello", begin: 1, end: 2 })] });
+      const first = generateProjectTtml(useProjectStore.getState(), 0).replace(
+        "</div>",
+        '<p begin="0:04.000" end="0:05.000" ttm:agent="v1">Added<span ttm:role="x-bg"><span begin="0:04.000" end="0:05.000">ooh</span></span></p></div>',
+      );
+      expect(applyEditedTtml(first, 0)).toMatchObject({ status: "applied" });
+      expect(useProjectStore.getState().lines[1]?.backgroundWords).toBeUndefined();
+      const second = generateProjectTtml(useProjectStore.getState(), 0).replace(">Hello<", ">Hello there<");
+      expect(applyEditedTtml(second, 0)).toMatchObject({ status: "applied" });
+      expect(lineTexts()).toEqual(["Hello there", "Added"]);
+    });
   });
 
   describe("song details", () => {
