@@ -100,4 +100,4 @@ function editLineText(
 // -- Exports ------------------------------------------------------------------
 
 export { editLineText, editParagraph, keyOf, lineById, paragraphOf, required, swapParagraphs, timedAt };
-export type { EditCase, EditOperation };
+export type { EditOperation };
