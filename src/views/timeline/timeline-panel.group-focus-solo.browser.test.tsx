@@ -125,6 +125,19 @@ describe("TimelinePanel · open group playback", () => {
   });
 
   describe("edge cases", () => {
+    it("keeps the solo when stepping to another instance from a playhead outside both", async () => {
+      await openSolo(0);
+      const seeked = new Promise((resolve) => audio.addEventListener("seeked", resolve, { once: true }));
+      useAudioStore.getState().seekTo(0.2);
+      await seeked;
+
+      const { hearInstance } = await import("@/views/timeline/hear-instance");
+      hearInstance("g1", 0, 1);
+
+      await expect.poll(() => audio.currentTime).toBeCloseTo(2.2, 1);
+      expect(focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
+    });
+
     it("keeps the solo when switching to another instance moves the playhead there", async () => {
       await openSolo(0);
       useAudioStore.getState().seekTo(1.1);
