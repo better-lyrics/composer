@@ -22,6 +22,7 @@ function escapeBelongsElsewhere(target: EventTarget | null): boolean {
   const { contextMenu, editingWord, renamingGroupId, pasteMode, selectedWords } = useTimelineStore.getState();
   if (contextMenu || editingWord || renamingGroupId !== null) return true;
   if (pasteMode.status !== "idle" || selectedWords.length > 0) return true;
+  if (document.querySelector('[data-word-block][aria-pressed="true"]') !== null) return true;
   return target instanceof Element && target.closest("[data-floating-ui-portal]") !== null;
 }
 

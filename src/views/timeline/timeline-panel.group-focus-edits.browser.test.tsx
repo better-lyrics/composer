@@ -8,6 +8,7 @@ import {
 } from "@/views/timeline/group-focus.test-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -43,6 +44,31 @@ describe("TimelinePanel · editing lines in an open group", () => {
 
       await expect.poll(() => store().lines).toHaveLength(5);
       expect(lineIds().indexOf("c1")).toBe(3);
+      await expect.poll(() => focus()).toBeNull();
+    });
+  });
+
+  describe("word drag", () => {
+    it("cancels a word drag with Escape and keeps the group open", async () => {
+      await renderOpen(1);
+      const block = document.querySelector<HTMLElement>('[data-track="word"][data-line-index="2"] [data-word-block]');
+      if (!block) throw new Error("word block not rendered");
+      const rect = block.getBoundingClientRect();
+      const start = { clientX: rect.left + 4, clientY: rect.top + rect.height / 2 };
+      const pointer = { bubbles: true, cancelable: true, isPrimary: true, pointerId: 1, button: 0 };
+
+      block.dispatchEvent(new PointerEvent("pointerdown", { ...pointer, ...start }));
+      document.dispatchEvent(new PointerEvent("pointermove", { ...pointer, ...start, clientX: start.clientX + 40 }));
+      await expect.poll(() => document.body.style.cursor).toBe("grabbing");
+
+      await userEvent.keyboard("{Escape}");
+
+      await expect.poll(() => document.body.style.cursor).not.toBe("grabbing");
+      expect(focus()).toEqual({ groupId: "g1", hearInstanceIdx: 1 });
+      expect(store().lines.find((line) => line.id === "c1")?.words?.[0].begin).toBe(40);
+
+      await userEvent.keyboard("{Escape}");
+
       await expect.poll(() => focus()).toBeNull();
     });
   });
