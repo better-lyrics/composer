@@ -446,7 +446,7 @@ const SyncPanel: React.FC = () => {
 
       {/* Main sync area */}
       {showScrollableView ? (
-        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overscroll-contain">
           <div className="py-2">
             {lines.map((line, index) => {
               const displayLine = displayLines[index];
