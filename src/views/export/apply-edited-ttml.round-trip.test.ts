@@ -118,4 +118,29 @@ describe("applyEditedTtml · whether the export holds the project", () => {
       expect(lineTexts()).toEqual(["Hello", "World2"]);
     });
   });
+
+  describe("accepted limits", () => {
+    it("a split character typed inside one word leaves the line partly synced, and nothing is lost", () => {
+      useProjectStore.setState({
+        lines: [
+          createLine({
+            text: "End now",
+            words: [
+              { text: "End ", begin: 1, end: 1.5 },
+              { text: "now", begin: 1.5, end: 2 },
+            ],
+          }),
+        ],
+      });
+      const edited = generateProjectTtml(useProjectStore.getState(), 0).replace(">now<", ">no|w<");
+      expect(applyEditedTtml(edited, 0)).toMatchObject({ status: "applied" });
+      const applied = useProjectStore.getState().lines;
+      expect(applied[0]?.words?.map((word) => word.text)).toEqual(["End ", "no|w"]);
+
+      const again = generateProjectTtml(useProjectStore.getState(), 0);
+      expect(applyEditedTtml(again, 0)).toEqual({ status: "export-only", reason: "not-synced" });
+      expect(useProjectStore.getState().lines).toBe(applied);
+      expect(again).toContain(">no|w<");
+    });
+  });
 });
