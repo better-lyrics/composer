@@ -1,6 +1,3 @@
-import { createRef } from "react";
-import { beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordSelection } from "@/domain/selection/model";
@@ -9,8 +6,11 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { isMac } from "@/utils/platform";
-import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { useTimelineKeyboard } from "@/views/timeline/use-timeline-keyboard";
+import { createRef } from "react";
+import { beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -83,6 +83,27 @@ describe("useTimelineKeyboard · shared timing", () => {
 
     await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].sharesTiming).toBeUndefined();
+  });
+
+  it("gives a duplicate of an own-timing instance the shared timing", async () => {
+    const sharedChorus = createLine({
+      id: "c2",
+      text: "go now",
+      groupId: "g1",
+      instanceIdx: 2,
+      templateLineIdx: 0,
+      words: [createWord({ text: "go ", begin: 40, end: 41 }), createWord({ text: "now", begin: 41.5, end: 42.5 })],
+    });
+    await armTimeline({
+      lines: [chorus, createLine({ id: "e", text: "" }), sharedChorus],
+      groups: [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0] })],
+      selection: chorusSelection,
+    });
+
+    pressModKey("d");
+
+    await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
+    expect(lineById("e")?.words?.[1].begin).toBe(7.5);
   });
 
   describe("regressions", () => {

@@ -1,4 +1,4 @@
-import { isInstanceFullyTimed, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
+import { isInstanceFullyTimed, sharedInstancesInLineOrder, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 
@@ -10,6 +10,11 @@ function templateSourceInstance(lines: readonly LyricLine[], group: LinkGroup | 
   return shared.find((instanceIdx) => isInstanceFullyTimed(lines, group.id, instanceIdx)) ?? shared[0] ?? fallback;
 }
 
+function pickedTemplateSource(lines: readonly LyricLine[], group: LinkGroup | undefined, picked: number): number {
+  if (!group?.sharesTiming || sharesTiming(group, picked)) return picked;
+  return templateSourceInstance(lines, group, picked);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { templateSourceInstance };
+export { pickedTemplateSource, templateSourceInstance };

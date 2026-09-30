@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -6,6 +5,7 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { TimelineContextMenu } from "@/views/timeline/timeline-context-menu";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -66,6 +66,33 @@ describe("TimelineContextMenu · add instance to a group that shares timing", ()
       expect(lineById("e")?.groupId).toBeUndefined();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
     });
+  });
+});
+
+describe("TimelineContextMenu · add instance from an own-timing banner", () => {
+  beforeEach(() => {
+    seedProject();
+    useProjectStore.setState({
+      groups: [createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [0] })],
+      lines: [
+        ...store().lines,
+        createLine({
+          id: "c2",
+          text: "go now",
+          words: [createWord({ text: "go ", begin: 40, end: 41 }), createWord({ text: "now", begin: 41.5, end: 42.5 })],
+          groupId: "g1",
+          instanceIdx: 2,
+          templateLineIdx: 0,
+        }),
+      ],
+    });
+    useProjectStore.getState().clearHistory();
+  });
+
+  it("gives the new instance the shared timing, not the clicked banner's", async () => {
+    await addInstanceAtPlayhead();
+
+    expect(lineById("e")?.words?.[1].begin).toBe(7.5);
   });
 });
 

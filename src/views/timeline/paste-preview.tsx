@@ -1,6 +1,6 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import type { LineTemplate } from "@/domain/group/template";
-import { templateSourceInstance } from "@/domain/group/template-source";
+import { pickedTemplateSource, templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
@@ -135,7 +135,8 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
 
       if (clipboard.sourceInstance) {
         const { groupId, instanceIdx } = clipboard.sourceInstance;
-        const template = instanceToTemplate(lines, groupId, instanceIdx);
+        const group = useProjectStore.getState().groups.find((candidate) => candidate.id === groupId);
+        const template = instanceToTemplate(lines, groupId, pickedTemplateSource(lines, group, instanceIdx));
         await placeInstance(groupId, template, "Linked instance added");
         return;
       }

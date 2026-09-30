@@ -1,5 +1,6 @@
 import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -505,7 +506,12 @@ function useTimelineKeyboard(
 
           const audioEl = useAudioStore.getState().audioElement;
           const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-          const template = instanceToTemplate(projectState.lines, groupId, sourceInstanceIdx);
+          const group = projectState.groups.find((candidate) => candidate.id === groupId);
+          const template = instanceToTemplate(
+            projectState.lines,
+            groupId,
+            pickedTemplateSource(projectState.lines, group, sourceInstanceIdx),
+          );
           if (template.length === 0) {
             toast.error("Could not derive instance template");
             break;

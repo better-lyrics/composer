@@ -1,4 +1,5 @@
 import { withNewInstance } from "@/domain/group/own-timing";
+import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
 import type { WordSelection } from "@/domain/selection/model";
@@ -40,8 +41,9 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
     const { groupId, instanceIdx } = contextMenu.target;
     const audioEl = useAudioStore.getState().audioElement;
     const playheadTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
-    const projectLines = useProjectStore.getState().lines;
-    const template = instanceToTemplate(projectLines, groupId, instanceIdx);
+    const { lines: projectLines, groups } = useProjectStore.getState();
+    const group = groups.find((candidate) => candidate.id === groupId);
+    const template = instanceToTemplate(projectLines, groupId, pickedTemplateSource(projectLines, group, instanceIdx));
     if (template.length === 0) {
       toast.error("Could not derive instance template");
       return;
@@ -53,8 +55,9 @@ function useInstanceMenuActions(clearContextMenu: () => void) {
       playheadTime,
     });
     if (placement.kind === "fill") {
-      const { groups, setLinesWithHistory } = useProjectStore.getState();
-      setLinesWithHistory(placement.updatedLines, withNewInstance(groups, groupId, placement.instanceIdx));
+      useProjectStore
+        .getState()
+        .setLinesWithHistory(placement.updatedLines, withNewInstance(groups, groupId, placement.instanceIdx));
       toast.success("Linked instance placed in empty rows");
     } else if (placement.kind === "insert") {
       useProjectStore.getState().addInstance(groupId, template, placement.instanceStart, placement.insertAtIndex);

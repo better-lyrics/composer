@@ -1,5 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { useRef } from "react";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -9,8 +7,10 @@ import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { PastePreview } from "@/views/timeline/paste-preview";
 import type { ClipboardData } from "@/views/timeline/selection-types";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
+import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { useRef } from "react";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -117,6 +117,16 @@ describe("PastePreview · paste into a group that shares timing", () => {
 
     await pasteOnEmptyRow(screen);
     await screen.getByRole("button", { name: "Link as instance" }).click();
+
+    await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
+    expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
+  });
+
+  it("gives an instance pasted from an own-timing copy the shared timing", async () => {
+    const clipboard = { entries: entriesOf(ownTimingChorus), sourceInstance: { groupId: "g1", instanceIdx: 0 } };
+    const screen = await render(<Harness clipboard={clipboard} />);
+
+    await pasteOnEmptyRow(screen);
 
     await expect.poll(() => lineById("e")?.instanceIdx).toBe(1);
     expect(lineById("e")?.words?.[1].begin).toBe(PASTE_TIME + 1);
