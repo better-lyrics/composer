@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -7,6 +6,7 @@ import { createGroup, createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -153,6 +153,24 @@ describe("SyncPanel · shared instance anchor", () => {
     await tapAt(45, () => firstBegin("c1-0"));
     expect(firstBegin("c1-1")).toBe(46);
     expect(lineById("v2")?.words).toBeUndefined();
+  });
+
+  it("regression: keeps the cursor on the anchor slot when an edit follows the undo", async () => {
+    load(song({ first: "word", verse: "word", second: "word", secondBegin: 60 }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    await undo(() => firstBegin("c1-0"));
+    const verse = lineById("v1");
+    useProjectStore
+      .getState()
+      .updateLineWithHistory(
+        "v1",
+        { words: verse?.words?.map((word) => ({ ...word, end: word.end + 0.05 })) },
+        { deriveText: false, propagateToSiblings: false },
+      );
+    await tapAt(45, () => firstBegin("c1-0"));
+    expect(firstBegin("c1-1")).toBe(46);
   });
 
   it("places Chorus 2 on a hold, and the release writes nothing", async () => {

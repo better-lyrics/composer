@@ -6,14 +6,14 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
+import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpers";
+import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
@@ -65,9 +65,10 @@ function useSyncHandlers({
   const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
+  const history = useProjectStore((s) => s.history);
   const historyIndex = useProjectStore((s) => s.historyIndex);
   const ignoreNextHoldEndRef = useRef(false);
-  const { position, jumped } = storedSyncPosition(syncState, historyIndex);
+  const { position, jumped } = storedSyncPosition(syncState, { history, historyIndex });
   const cursor = useMemo(
     () => resolveSyncCursor(lines, position, jumped, granularity),
     [lines, position, jumped, granularity],
@@ -95,11 +96,13 @@ function useSyncHandlers({
       const anchor = anchorGesture(lines, gesture, ctx);
       const { placeInstance } = useProjectStore.getState();
       if (anchor && placeInstance(anchor.groupId, anchor.instanceIdx, anchor.start, anchor.precedingUpdates)) {
+        const placed = useProjectStore.getState();
         const anchorUndo = {
           resume: anchor.resumeCursor,
           anchor: anchor.anchorCursor,
           jumped,
-          historyIndex: useProjectStore.getState().historyIndex,
+          placedEntry: placed.history[placed.historyIndex],
+          previousEntry: placed.history[placed.historyIndex - 1],
         };
         // Jumped, so the next tap trims an overlap with the placed instance instead of stretching its shared last word.
         setSyncState((prev) => ({ ...prev, position: anchor.resumeCursor, jumpedToPosition: true, anchorUndo }));

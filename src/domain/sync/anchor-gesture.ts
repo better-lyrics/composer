@@ -3,8 +3,8 @@ import { belongsToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
-import { commitGesture, type GestureContext, type SyncGesture } from "@/domain/sync/commit-gesture";
-import { advanceCursor, type SyncCursor } from "@/domain/sync/cursor";
+import { type GestureContext, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import { type SyncCursor, advanceCursor } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 
 // -- Types --------------------------------------------------------------------
@@ -23,6 +23,12 @@ interface AnchorUndo {
   resume: SyncCursor;
   anchor: SyncCursor;
   jumped: boolean;
+  placedEntry: object;
+  previousEntry: object | undefined;
+}
+
+interface HistoryPosition {
+  history: readonly object[];
   historyIndex: number;
 }
 
@@ -67,13 +73,20 @@ function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
   };
 }
 
-// An instance that was already timed is fully timed again after undo, so the cursor cannot find the anchor slot by its missing timing.
+// An undone placing leaves the instance fully timed again when it was moved, so its missing timing cannot find the
+// anchor slot. The placing stands while its history entry is at or before the current one, or once it is too old to keep.
+function isPlacingUndone(undo: AnchorUndo, { history, historyIndex }: HistoryPosition): boolean {
+  const placedAt = history.indexOf(undo.placedEntry);
+  if (placedAt !== -1) return placedAt > historyIndex;
+  return undo.previousEntry !== undefined && history.includes(undo.previousEntry);
+}
+
 function storedSyncPosition(
   state: StoredSyncPosition,
-  historyIndex: number,
+  position: HistoryPosition,
 ): { position: SyncCursor; jumped: boolean } {
   const undo = state.anchorUndo;
-  if (undo && undo.resume === state.position && historyIndex < undo.historyIndex) {
+  if (undo && undo.resume === state.position && isPlacingUndone(undo, position)) {
     return { position: undo.anchor, jumped: undo.jumped };
   }
   return { position: state.position, jumped: !!state.jumpedToPosition };
