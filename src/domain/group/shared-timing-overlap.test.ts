@@ -1,4 +1,3 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
@@ -11,6 +10,7 @@ import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { stretchSelections } from "@/views/timeline/stretch-selection";
 import { nudgeSelectedWords } from "@/views/timeline/utils";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 

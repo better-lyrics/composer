@@ -2,7 +2,7 @@ import { withNewInstance } from "@/domain/group/own-timing";
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { instanceCount, instanceIndicesOf, linesOfInstance } from "@/domain/instance/enumerate";
+import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveBounds } from "@/domain/line/bounds";
@@ -582,7 +582,7 @@ function useTimelineKeyboard(
             toast.error("Select words inside one instance first");
             break;
           }
-          if (instanceIndicesOf(projectLines, inst.groupId).length < 2) {
+          if (instanceCount(projectLines, inst.groupId) < 2) {
             toast.error("This group has only one instance");
             break;
           }
