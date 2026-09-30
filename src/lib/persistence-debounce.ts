@@ -76,6 +76,10 @@ function saveOpenProjectNow(): Promise<void> {
   return flushPendingSave();
 }
 
+function saveNow(): Promise<void> {
+  return pendingSave ? flushPendingSave() : saveOpenProjectNow();
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { debouncedSave, cancelPendingSave, flushPendingSave, flushPendingSaveQuietly, saveOpenProjectNow };
+export { debouncedSave, cancelPendingSave, flushPendingSave, flushPendingSaveQuietly, saveNow, saveOpenProjectNow };

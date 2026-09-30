@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -65,6 +65,7 @@ describe("SHORTCUT_DEFINITIONS", () => {
     const expectedBindings: Record<string, ShortcutBinding> = {
       "global.openProjectSwitcher": { key: "o", mod: true },
       "global.newProject": { key: "n", mod: true, alt: true },
+      "global.saveNow": { key: "s", mod: true },
     };
     for (const [id, binding] of Object.entries(expectedBindings)) {
       const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);

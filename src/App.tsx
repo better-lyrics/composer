@@ -10,6 +10,7 @@ import { usePersistence } from "@/hooks/usePersistence";
 import { useProjectChannel } from "@/hooks/useProjectChannel";
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { useResolveYouTubeTunnel } from "@/hooks/useResolveYouTubeTunnel";
+import { useSaveShortcut } from "@/hooks/useSaveShortcut";
 import { useStorageMaintenance } from "@/hooks/useStorageMaintenance";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
 import { appQueryClient } from "@/lib/app-query-client";
@@ -100,6 +101,7 @@ const AppShell: React.FC = () => {
   useStorageMaintenance();
   useProjectChannel();
   useProjectShortcuts(isEditor);
+  useSaveShortcut(isEditor);
   useImportFromHash();
   useResolveYouTubeTunnel();
   useImportFromQuery();
