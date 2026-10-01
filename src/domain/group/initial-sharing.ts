@@ -1,9 +1,9 @@
 import {
   attachedLinesOfInstance,
+  firstFullyTimedInstance,
   instanceOffset,
   instanceStart,
   instancesInLineOrder,
-  isInstanceFullyTimed,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
@@ -56,7 +56,7 @@ function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn:
   if (!settingOn) return {};
   const order = instancesInLineOrder(lines, groupId);
   const timed = order.filter((instanceIdx) => instanceStart(lines, groupId, instanceIdx) !== null);
-  const source = timed.find((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx)) ?? timed[0];
+  const source = firstFullyTimedInstance(lines, groupId, timed) ?? timed[0];
   if (source === undefined) return { sharesTiming: true };
   const ownTimingInstances = order.filter(
     (instanceIdx) =>

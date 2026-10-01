@@ -3,7 +3,7 @@ import {
   endsAfter,
   hasNegativeTime,
   instanceOffset,
-  isInstanceFullyTimed,
+  firstFullyTimedInstance,
   offsetTimingFields,
   sharedInstancesInLineOrder,
   sharesTiming,
@@ -16,10 +16,8 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 // -- Helpers ------------------------------------------------------------------
 
 function referenceInstance(lines: readonly LyricLine[], group: LinkGroup, excluding: number): number | null {
-  const reference = sharedInstancesInLineOrder(lines, group).find(
-    (instanceIdx) => instanceIdx !== excluding && isInstanceFullyTimed(lines, group.id, instanceIdx),
-  );
-  return reference ?? null;
+  const others = sharedInstancesInLineOrder(lines, group).filter((instanceIdx) => instanceIdx !== excluding);
+  return firstFullyTimedInstance(lines, group.id, others) ?? null;
 }
 
 function sharedGroup(groups: readonly LinkGroup[], groupId: string, instanceIdx: number): LinkGroup | null {

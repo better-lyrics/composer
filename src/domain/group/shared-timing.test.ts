@@ -1,4 +1,5 @@
 import {
+  firstFullyTimedInstance,
   instancesInLineOrder,
   isSharedLine,
   sharedInstancesInLineOrder,
@@ -443,6 +444,25 @@ describe("wholeSongRange", () => {
     it("has no end for an unknown duration", () => {
       expect(wholeSongRange(0)).toEqual({ min: 0, max: Number.POSITIVE_INFINITY });
       expect(wholeSongRange(Number.NaN)).toEqual({ min: 0, max: Number.POSITIVE_INFINITY });
+    });
+  });
+});
+
+describe("firstFullyTimedInstance", () => {
+  it("picks the first fully timed instance in the order given", () => {
+    const lines = [chorus(0, 0), chorus(1, 0, 10), chorus(2, 0, 20)];
+    expect(firstFullyTimedInstance(lines, "g1", [0, 2, 1])).toBe(2);
+  });
+
+  describe("edge cases", () => {
+    it("skips a partly timed instance", () => {
+      const lines = [chorus(0, 0, 1), chorus(0, 1), chorus(1, 0, 10), chorus(1, 1, 12)];
+      expect(firstFullyTimedInstance(lines, "g1", [0, 1])).toBe(1);
+    });
+
+    it("is undefined when no candidate is fully timed or there are no candidates", () => {
+      expect(firstFullyTimedInstance([chorus(0, 0)], "g1", [0])).toBeUndefined();
+      expect(firstFullyTimedInstance([chorus(0, 0, 1)], "g1", [])).toBeUndefined();
     });
   });
 });

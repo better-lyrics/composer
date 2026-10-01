@@ -68,6 +68,15 @@ function isInstanceFullyTimed(lines: readonly LyricLine[], groupId: string, inst
   return syncable.length > 0 && syncable.every(isLineFullyTimed);
 }
 
+// The instance that holds the timing to copy from: the first fully timed one among the candidates.
+function firstFullyTimedInstance(
+  lines: readonly LyricLine[],
+  groupId: string,
+  candidates: readonly number[],
+): number | undefined {
+  return candidates.find((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx));
+}
+
 // Offset between two instances, measured only over template lines timed in both, so a line missing from one
 // instance never shifts the anchor.
 function instanceOffset(lines: readonly LyricLine[], groupId: string, from: number, to: number): number | null {
@@ -248,6 +257,7 @@ function timeRangeResolver(
 export {
   attachedLinesOfInstance,
   endsAfter,
+  firstFullyTimedInstance,
   hasNegativeTime,
   instanceOffset,
   instanceStart,

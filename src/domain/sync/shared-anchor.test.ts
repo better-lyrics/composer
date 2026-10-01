@@ -1,4 +1,5 @@
 import { createGroup, createLine } from "@/test/factories";
+import { placeSharedInstance } from "@/domain/group/shared-placement";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 import { describe, expect, it } from "vitest";
 
@@ -97,6 +98,19 @@ describe("sharedAnchorAt", () => {
     it("skips blank lines inside the instance when finding its first line", () => {
       const lines = [chorus(0, 0, 10), { ...chorus(1, 0), text: "" }, chorus(1, 1)];
       expect(sharedAnchorAt(lines, sharing, { lineIndex: 2, wordIndex: 0 })?.instanceIdx).toBe(1);
+    });
+  });
+
+  describe("invariants", () => {
+    it("only offers an anchor that placement can copy timing to", () => {
+      const songs = [song(), song(30), [chorus(0, 0), chorus(0, 1), chorus(1, 0, 30), chorus(1, 1, 31)]];
+      for (const lines of songs) {
+        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+          const anchor = sharedAnchorAt(lines, sharing, { lineIndex, wordIndex: 0 });
+          if (!anchor) continue;
+          expect(placeSharedInstance(lines, sharing, anchor.groupId, anchor.instanceIdx, 50)).not.toEqual([]);
+        }
+      }
     });
   });
 });

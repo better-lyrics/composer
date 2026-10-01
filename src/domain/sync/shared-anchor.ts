@@ -1,6 +1,6 @@
 import {
   instanceStart,
-  isInstanceFullyTimed,
+  firstFullyTimedInstance,
   isSharedLine,
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
@@ -33,14 +33,10 @@ function resumeLineIndexAfter(lines: readonly LyricLine[], anchorIndex: number, 
 
 function hasTimedReference(lines: readonly LyricLine[], group: LinkGroup, instanceIdx: number): boolean {
   const order = sharedInstancesInLineOrder(lines, group);
-  const position = order.indexOf(instanceIdx);
   const unplaced = instanceStart(lines, group.id, instanceIdx) === null;
-  return order.some(
-    (otherIdx, otherPosition) =>
-      otherIdx !== instanceIdx &&
-      (otherPosition < position || unplaced) &&
-      isInstanceFullyTimed(lines, group.id, otherIdx),
-  );
+  const candidates = unplaced ? order : order.slice(0, Math.max(order.indexOf(instanceIdx), 0));
+  const others = candidates.filter((otherIdx) => otherIdx !== instanceIdx);
+  return firstFullyTimedInstance(lines, group.id, others) !== undefined;
 }
 
 // The first word of a shared instance places the whole instance when another shared instance already holds the timing.

@@ -1,4 +1,4 @@
-import { instanceStart, instancesInLineOrder, isInstanceFullyTimed } from "@/domain/group/shared-timing";
+import { firstFullyTimedInstance, instanceStart, instancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
@@ -18,7 +18,7 @@ interface SharedTimingSuggestion {
 function sharedTimingSuggestion(lines: readonly LyricLine[], group: LinkGroup): SharedTimingSuggestion | null {
   if (group.sharesTiming) return null;
   const order = instancesInLineOrder(lines, group.id);
-  const source = order.find((instanceIdx) => isInstanceFullyTimed(lines, group.id, instanceIdx));
+  const source = firstFullyTimedInstance(lines, group.id, order);
   if (source === undefined) return null;
   const untimedCount = order.filter((instanceIdx) => instanceStart(lines, group.id, instanceIdx) === null).length;
   if (untimedCount === 0) return null;
