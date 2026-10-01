@@ -202,6 +202,31 @@ describe("useVocalOnsetSnapPoints", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: retries detection when snapping is turned off and on after an error", async () => {
+      await render(<HookHarness />);
+      useSeparationStore.setState({ stemUrls: { vocals: createUnreadableUrl() } });
+      await expect.poll(() => useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("error");
+
+      useSettingsStore.getState().set("vocalOnsetSnap", false);
+      const statuses = recordDetectionStatuses();
+      useSettingsStore.getState().set("vocalOnsetSnap", true);
+
+      await expect.poll(() => statuses).toContain("processing");
+    });
+
+    it("regression: clears the error status while snapping is off", async () => {
+      await render(<HookHarness />);
+      useSeparationStore.setState({ stemUrls: { vocals: createUnreadableUrl() } });
+      await expect.poll(() => useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("error");
+
+      useSettingsStore.getState().set("vocalOnsetSnap", false);
+
+      expect(useTimelineStore.getState().vocalOnsetDetectionStatus).toBe("idle");
+      expect(useTimelineStore.getState().vocalOnsetDetectionError).toBeNull();
+    });
+  });
+
   describe("onset cache", () => {
     it("stores detected onsets with the stem job", async () => {
       const jobKey = await storeSeparatedJob("cache-a");

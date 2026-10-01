@@ -59,6 +59,7 @@ function useVocalOnsetSnapPoints(): void {
         (error: unknown) => {
           if (!isCurrent() || isAbort(error)) return;
           running = null;
+          appliedVocalsUrl = null;
           useTimelineStore
             .getState()
             .setVocalOnsetDetectionStatus("error", error instanceof Error ? error.message : String(error));
@@ -77,6 +78,7 @@ function useVocalOnsetSnapPoints(): void {
         return;
       }
       if (!useSettingsStore.getState().vocalOnsetSnap) {
+        if (timeline.vocalOnsetDetectionStatus === "error") timeline.setVocalOnsetDetectionStatus("idle");
         if (!running) return;
         cancelRunning();
         appliedVocalsUrl = null;
