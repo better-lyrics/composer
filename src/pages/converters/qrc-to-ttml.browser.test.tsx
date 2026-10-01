@@ -7,7 +7,7 @@ import { userEvent } from "vitest/browser";
 // -- Helpers ------------------------------------------------------------------
 
 function outputText(container: HTMLElement): string {
-  return container.querySelector("pre")?.textContent ?? "";
+  return container.querySelector("pre:not([aria-hidden])")?.textContent ?? "";
 }
 
 async function renderConverter() {

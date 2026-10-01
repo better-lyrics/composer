@@ -2,6 +2,8 @@ import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
+import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { StatusChip } from "@/ui/status-chip";
 import { EDITOR_PATH, LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
@@ -26,6 +28,8 @@ interface ConverterViewProps {
 }
 
 const TTML_EXTENSION = /\.ttml$/i;
+const OUTPUT_PANE_CLASS =
+  "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -91,14 +95,15 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               Load sample
             </button>
           </div>
-          <textarea
+          <LyricsCodeEditor
             id="converter-input"
             aria-label="Converter input"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
             spellCheck={false}
-            className="flex-1 min-h-[280px] md:min-h-[420px] font-mono text-sm bg-composer-bg-dark border border-composer-border rounded-lg p-3 text-composer-text placeholder:text-composer-text-muted resize-y focus:outline-none focus:border-composer-accent cursor-text select-text"
+            frameClassName="flex-1 min-h-[280px] md:min-h-[420px] rounded-lg bg-composer-bg-dark resize-y overflow-hidden"
+            className="font-mono text-sm border border-composer-border rounded-lg p-3 focus:outline-none focus:border-composer-accent cursor-text select-text"
           />
           <div className="mt-3 flex items-center gap-2">
             <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
@@ -128,16 +133,24 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               </Button>
             </div>
           </div>
-          <pre
-            className={cn(
-              "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border",
-              error
-                ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text select-text whitespace-pre-wrap break-words"
-                : "bg-composer-bg-dark border-composer-border text-composer-text select-text",
-            )}
-          >
-            {error || ttml || "Paste input to see TTML output"}
-          </pre>
+          {ttml ? (
+            <LyricsCode
+              code={ttml}
+              format="ttml"
+              className={cn(OUTPUT_PANE_CLASS, "bg-composer-bg-dark border-composer-border")}
+            />
+          ) : (
+            <pre
+              className={cn(
+                OUTPUT_PANE_CLASS,
+                error
+                  ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text whitespace-pre-wrap break-words"
+                  : "bg-composer-bg-dark border-composer-border text-composer-text",
+              )}
+            >
+              {error || "Paste input to see TTML output"}
+            </pre>
+          )}
           <div role="status">
             {skippedLines > 0 && (
               <StatusChip tone="warning" icon={IconAlertTriangle} className="mt-3">
