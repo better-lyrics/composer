@@ -1,4 +1,5 @@
 import indexCss from "@/index.css?raw";
+import highlightCss from "@braccato/highlight/highlight.css?raw";
 import { compile } from "tailwindcss";
 import tailwindThemeCss from "tailwindcss/theme.css?raw";
 
@@ -77,6 +78,12 @@ const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WA
 
 const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 
+const LYRICS_CODE_CSS = [
+  highlightCss,
+  `.bh,.bh-edit {${extractCssBlock(/\.bh,\s*\.bh-edit\s*\{/)}}`,
+  utilityRule("lyrics-code-frame"),
+].join("\n");
+
 // -- Exports -------------------------------------------------------------------
 
 export {
@@ -85,6 +92,7 @@ export {
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
   installUtilitiesUsedIn,
+  LYRICS_CODE_CSS,
   POSITION_UTILITIES_CSS,
   TEXT_COLOR_UTILITIES_CSS,
   THEME_TOKENS_CSS,
