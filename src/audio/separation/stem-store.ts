@@ -21,6 +21,7 @@ interface StemRemoval {
 
 const MAX_ENTRIES = 3;
 const STEM_CACHE_VERSION = 2;
+const ONSETS_CACHE_VERSION = 1;
 
 // -- Module state -------------------------------------------------------------
 
@@ -52,6 +53,10 @@ function stemJobKey(audioHash: string, variant: VocalModelVariant): string {
   return `${audioHash}|${variant}|v${STEM_CACHE_VERSION}`;
 }
 
+function onsetsKey(jobKey: string): string {
+  return `${jobKey}|onsets|v${ONSETS_CACHE_VERSION}`;
+}
+
 // -- Reads --------------------------------------------------------------------
 
 async function getStem(audioHash: string, stem: Stem, variant: VocalModelVariant): Promise<Blob | null> {
@@ -64,6 +69,17 @@ async function hasStems(audioHash: string, variant: VocalModelVariant): Promise<
   if (!vocals) return false;
   const instrumental = await getStem(audioHash, "instrumental", variant);
   return instrumental !== null;
+}
+
+function isOnsetList(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((point) => typeof point === "number");
+}
+
+async function getStemJobOnsets(jobKey: string): Promise<number[] | null> {
+  const record = await getFromStore<StemRecord>(STEM_STORE_NAME, onsetsKey(jobKey));
+  if (!record) return null;
+  const parsed: unknown = JSON.parse(await record.blob.text());
+  return isOnsetList(parsed) ? parsed : null;
 }
 
 async function readStemRecords(): Promise<StemRecord[]> {
@@ -109,6 +125,37 @@ async function putStem(audioHash: string, stem: Stem, variant: VocalModelVariant
   }
   notifyStorageSignal("media-stored");
   await evictIfOverCapacity();
+}
+
+async function putStemJobOnsets(jobKey: string, onsets: readonly number[]): Promise<boolean> {
+  const key = onsetsKey(jobKey);
+  // createdAt 0 keeps derived data from making the job look newer to eviction.
+  const record: StemRecord = {
+    blob: new Blob([JSON.stringify(onsets)], { type: "application/json" }),
+    createdAt: 0,
+    jobKey,
+  };
+  let written = false;
+  try {
+    await runTransaction([STEM_STORE_NAME], "readwrite", (tx) => {
+      const store = tx.objectStore(STEM_STORE_NAME);
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        if (cursor.key !== key && (cursor.value as StemRecord).jobKey === jobKey) {
+          store.put(record, key);
+          written = true;
+          return;
+        }
+        cursor.continue();
+      };
+    });
+  } catch (error) {
+    reportStorageWriteError(error);
+    throw error;
+  }
+  return written;
 }
 
 // -- Removal ------------------------------------------------------------------
@@ -158,8 +205,10 @@ async function evictIfOverCapacity(): Promise<void> {
 export {
   stemJobKey,
   getStem,
+  getStemJobOnsets,
   hasStems,
   putStem,
+  putStemJobOnsets,
   listStemJobs,
   removeStemJobs,
   clearStemCache,

@@ -3,10 +3,12 @@ import {
   clearStemCache,
   endLoadingStemJob,
   getStem,
+  getStemJobOnsets,
   hasStems,
   isStemJobLoading,
   listStemJobs,
   putStem,
+  putStemJobOnsets,
   removeStemJobs,
   stemJobKey,
 } from "@/audio/separation/stem-store";
@@ -113,6 +115,69 @@ describe("stem store", () => {
       }
       const keys = (await listStemJobs()).map((job) => job.jobKey).toSorted();
       expect(keys).toEqual(["b", "c", "d"].map((hash) => stemJobKey(hash, "fp32")).toSorted());
+    });
+  });
+});
+
+describe("stem job onsets", () => {
+  const job = stemJobKey("h1", "fp32");
+
+  it("round-trips the onsets of a separated job", async () => {
+    await separate("h1");
+    expect(await putStemJobOnsets(job, [0.5, 1.25, 3])).toBe(true);
+    expect(await getStemJobOnsets(job)).toEqual([0.5, 1.25, 3]);
+  });
+
+  it("keeps the onsets out of the job's created-at time and stem count", async () => {
+    await separate("h1", 10, 20);
+    const [before] = await listStemJobs();
+    await putStemJobOnsets(job, [1]);
+    const jobs = await listStemJobs();
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]?.createdAt).toBe(before?.createdAt);
+    expect(await hasStems("h1", "fp32")).toBe(true);
+  });
+
+  describe("edge cases", () => {
+    it("reads nothing for a job that has no cached onsets", async () => {
+      await separate("h1");
+      expect(await getStemJobOnsets(job)).toBeNull();
+    });
+
+    it("round-trips an empty onset list as empty, not missing", async () => {
+      await separate("h1");
+      await putStemJobOnsets(job, []);
+      expect(await getStemJobOnsets(job)).toEqual([]);
+    });
+
+    it("keeps the onsets of each variant apart", async () => {
+      await separate("h1");
+      await putStemJobOnsets(job, [2]);
+      expect(await getStemJobOnsets(stemJobKey("h1", "fp16"))).toBeNull();
+    });
+  });
+
+  describe("invariants", () => {
+    it("never writes onsets for a job whose stems are gone, so no orphan job appears", async () => {
+      expect(await putStemJobOnsets(job, [1, 2])).toBe(false);
+      expect(await listStemJobs()).toEqual([]);
+      expect(await getStemJobOnsets(job)).toBeNull();
+    });
+
+    it("removes the onsets together with their job", async () => {
+      await separate("h1");
+      await putStemJobOnsets(job, [1]);
+      await removeStemJobs([job]);
+      expect(await getStemJobOnsets(job)).toBeNull();
+      expect(await listStemJobs()).toEqual([]);
+    });
+
+    it("does not signal media stored for onsets", async () => {
+      await separate("h1");
+      const { seen, stop } = recordSignals();
+      await putStemJobOnsets(job, [1]);
+      stop();
+      expect(seen).toEqual([]);
     });
   });
 });
