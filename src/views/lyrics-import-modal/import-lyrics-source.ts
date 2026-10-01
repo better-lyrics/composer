@@ -1,6 +1,6 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
-import { importProjectContents, reportUnreadableProjectFile } from "@/lib/project-import";
+import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
@@ -77,13 +77,14 @@ async function importProjectFileForLyrics(
   fileName: string | null,
   ctx: ImportContext,
 ): Promise<boolean> {
+  if (contents.kind === "bundle" && contents.projects.length === 0) {
+    return restoreBundleContents(contents.projects, contents.unreadable);
+  }
   const choice = await askChoice(projectFileChoice(contents, fileName));
   if (choice === "cancel") return false;
-  if (choice === "use-lyrics") {
-    return contents.kind === "project" && importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
-  }
-  const openedId = await importProjectContents(contents);
-  return choice === "restore-backup" || openedId !== null;
+  if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
+  if (choice === "use-lyrics") return importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);
+  return (await importProjectContents(contents)) !== null;
 }
 
 async function importProjectNamedFile(fileName: string, text: string, ctx: ImportContext): Promise<boolean> {

@@ -220,14 +220,21 @@ async function importProjectFile(file: File): Promise<string | null> {
   return importProjectContents(contents);
 }
 
+async function restoreBundleContents(projects: readonly ProjectFile[], unreadable: number): Promise<boolean> {
+  try {
+    const result = await restoreProjectBundle(projects, unreadable);
+    showBundleRestoreToast(result);
+    return result.restored > 0;
+  } catch (error) {
+    console.error(LOG_PREFIX, "could not restore the backup", error);
+    toast.error("Couldn't restore that backup");
+    return false;
+  }
+}
+
 async function importProjectContents(contents: ProjectFileContents): Promise<string | null> {
   if (contents.kind === "bundle") {
-    try {
-      showBundleRestoreToast(await restoreProjectBundle(contents.projects, contents.unreadable));
-    } catch (error) {
-      console.error(LOG_PREFIX, "could not restore the backup", error);
-      toast.error("Couldn't restore that backup");
-    }
+    await restoreBundleContents(contents.projects, contents.unreadable);
     return null;
   }
   const projectFile = contents.project;
@@ -274,6 +281,7 @@ export {
   restoreProjectBundle,
   showBundleRestoreToast,
   importProjectContents,
+  restoreBundleContents,
   importProjectFile,
   importProjectFromInput,
   reportUnreadableProjectFile,

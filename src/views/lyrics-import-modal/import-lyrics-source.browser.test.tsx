@@ -160,6 +160,35 @@ describe("importLyricsFile with a project file", () => {
       expect(lineTexts()).toEqual(["Alpha line one", "Alpha line two"]);
     });
 
+    it("regression: a backup with no readable project shows the existing error and asks nothing", async () => {
+      allowConsole(/skipped a project the backup could not read/);
+      const screen = await renderHosts();
+      const unreadable = JSON.stringify({
+        format: "composer-project-bundle",
+        version: 1,
+        exportedAt: 1,
+        projects: [{}],
+      });
+      const pending = importLyricsFile(new File([unreadable], "broken.ttml-projects.json"), fileImportContext());
+      await expect(pending).resolves.toBe(false);
+      await expect.element(screen.getByText("Couldn't read any project in that backup")).toBeInTheDocument();
+      expect(document.querySelector('[role="alertdialog"]')).toBeNull();
+    });
+
+    it("regression: reports a restore that adds nothing as not imported", async () => {
+      const screen = await renderHosts();
+      const backup = backupFileNamed("again.json", ["One"]);
+      const first = importLyricsFile(backup, fileImportContext());
+      await screen.getByRole("button", { name: "Restore backup" }).click();
+      await expect(first).resolves.toBe(true);
+      const second = importLyricsFile(backup, fileImportContext());
+      await screen.getByRole("button", { name: "Restore backup" }).click();
+      await expect(second).resolves.toBe(false);
+      await expect
+        .element(screen.getByText("Every project in this backup is already in your library"))
+        .toBeInTheDocument();
+    });
+
     it("cancelling a backup restores nothing", async () => {
       const screen = await renderHosts();
       const pending = importLyricsFile(backupFileNamed("backup.json", ["One"]), fileImportContext());
