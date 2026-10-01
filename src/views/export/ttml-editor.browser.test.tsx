@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { useState } from "react";
-import { TtmlEditor } from "@/views/export/ttml-editor";
 import { render } from "@/test/render";
+import { TtmlEditor } from "@/views/export/ttml-editor";
+import { useState } from "react";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -72,5 +72,45 @@ describe("TtmlEditor · XML status", () => {
     const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
     await screen.getByRole("textbox", { name: "Edit TTML content" }).fill(VALID.replace("Hello", "Hi"));
     await expect.element(screen.getByRole("alert")).not.toBeInTheDocument();
+  });
+});
+
+describe("TtmlEditor · highlighting", () => {
+  const VALID = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hello</p></div></body></tt>`;
+
+  function layerIn(container: HTMLElement): HTMLElement | null {
+    return container.querySelector<HTMLElement>(".bh-edit > .bh-layer");
+  }
+
+  it("highlights the TTML under the textarea", async () => {
+    const screen = await render(<EditorHarness initialValue={VALID} generatedTtml={VALID} />);
+    const layer = layerIn(screen.container);
+    expect(layer?.textContent).toBe(VALID);
+    expect([...(layer?.querySelectorAll(".bh-timestamp") ?? [])].map((stamp) => stamp.textContent)).toEqual([
+      "00:01.000",
+      "00:02.000",
+    ]);
+  });
+
+  it("keeps highlighting a TTML edit that no longer looks like TTML", async () => {
+    const fragment = `<p begin="00:01.000" end="00:02.000">Hello</p>`;
+    const screen = await render(<EditorHarness initialValue={fragment} generatedTtml={VALID} />);
+    expect(layerIn(screen.container)?.querySelectorAll(".bh-timestamp")).toHaveLength(2);
+  });
+
+  it("re-highlights when the value is replaced from outside", async () => {
+    const screen = await render(<TtmlEditor value={VALID} generatedTtml={VALID} onChange={() => {}} />);
+    const replaced = VALID.replace("Hello", "Regenerated");
+    await screen.rerender(<TtmlEditor value={replaced} generatedTtml={replaced} onChange={() => {}} />);
+    expect(layerIn(screen.container)?.textContent).toBe(replaced);
+  });
+
+  it("highlights again after hiding the diff", async () => {
+    const edited = VALID.replace("Hello", "Edited");
+    const screen = await render(<EditorHarness initialValue={edited} generatedTtml={VALID} />);
+    await screen.getByRole("button", { name: "View diff" }).click();
+    expect(layerIn(screen.container)).toBeNull();
+    await screen.getByRole("button", { name: "Hide diff" }).click();
+    await expect.poll(() => layerIn(screen.container)?.textContent).toBe(edited);
   });
 });
