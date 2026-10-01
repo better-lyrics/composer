@@ -4,6 +4,7 @@ import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -55,6 +56,7 @@ interface GroupsState {
 
 interface UiState {
   granularity: GranularityMode;
+  exportTiming: TimingGranularity;
   editorMode: EditorMode;
   activeTab: ProjectTab;
   syllableSplitDefaults: SyllableSplitDefaults;
@@ -111,6 +113,7 @@ interface AgentActions {
 
 interface UiActions {
   setGranularity: (mode: GranularityMode) => void;
+  setExportTiming: (timing: TimingGranularity) => void;
   setEditorMode: (mode: EditorMode) => void;
   setActiveTab: (tab: ProjectTab) => void;
   setSyllableSplitDefaults: (defaults: SyllableSplitDefaults) => void;

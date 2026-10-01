@@ -5,6 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import type { MetadataKey } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import type { SyllableSplitDefaults } from "@/domain/project/syllable-split-defaults";
 import type { ProjectTab } from "@/domain/project/tab";
 import type { SnapPoint } from "@/domain/snap-point/model";
@@ -23,6 +24,7 @@ interface ProjectSaveInput {
   lines: LyricLine[];
   groups: LinkGroup[];
   granularity: GranularityMode;
+  exportTiming: TimingGranularity;
   syllableSplitDefaults: SyllableSplitDefaults;
   audioSource: SavedAudioSource | undefined;
   dismissedSuggestions: string[];
