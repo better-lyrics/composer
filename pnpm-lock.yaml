@@ -40,7 +40,7 @@ importers:
         version: 1.7.1(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.0)
       '@wavesurfer/react':
         specifier: ^1.0.12
-        version: 1.0.12(react@19.3.0)(wavesurfer.js@7.12.11)
+        version: 1.0.12(react@19.3.0)(wavesurfer.js@8.0.1)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -96,8 +96,8 @@ importers:
         specifier: ^3.7.0
         version: 3.7.0
       wavesurfer.js:
-        specifier: ^7.12.11
-        version: 7.12.11
+        specifier: ^8.0.1
+        version: 8.0.1
       zustand:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(react@19.3.0)
@@ -2700,8 +2700,8 @@ packages:
     resolution: {integrity: sha512-3hu+tD8YzSLGuFYtPRb48vdhKMi0KQV5sn+uWr8+7dMEq/2G/dtLrdDinkLjqq5TIbIBjYJ4Ax/n3YiaW7QM8A==}
     engines: {node: 20 || >=22}
 
-  wavesurfer.js@7.12.11:
-    resolution: {integrity: sha512-Sx0yZIz7jRJ9J9p7UL+pl9y0UQBB6UN/XNo+R7Gy4tCR5xZI9jMyA0dnt1R8TMVSQ4LZ10SeB2HJYQ+dV2dPSA==}
+  wavesurfer.js@8.0.1:
+    resolution: {integrity: sha512-h0OnRWSVTqIYLSw3/IVrBtsun/xw9L5u4FA3bjfSDTFMX/xswVWS1JwK4fFu3ulmxRUSHg8zQORl6zENG983eg==}
 
   webidl-conversions@7.0.0:
     resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
@@ -3874,10 +3874,10 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.1.1
 
-  '@wavesurfer/react@1.0.12(react@19.3.0)(wavesurfer.js@7.12.11)':
+  '@wavesurfer/react@1.0.12(react@19.3.0)(wavesurfer.js@8.0.1)':
     dependencies:
       react: 19.3.0
-      wavesurfer.js: 7.12.11
+      wavesurfer.js: 8.0.1
 
   agent-base@7.1.4: {}
 
@@ -5061,7 +5061,7 @@ snapshots:
 
   walk-up-path@4.0.0: {}
 
-  wavesurfer.js@7.12.11: {}
+  wavesurfer.js@8.0.1: {}
 
   webidl-conversions@7.0.0: {}
 
