@@ -12,7 +12,7 @@ import { markPersistenceSettled } from "@/lib/persistence-settled";
 import { setProjectLastTab } from "@/lib/project-repository";
 import { isRestoringProject } from "@/lib/project-restore";
 import { buildSaveInput, hadStoredAudio, storedAudioFile } from "@/lib/project-snapshot";
-import { trackSave } from "@/lib/save-status";
+import { getSaveStatus, trackSave } from "@/lib/save-status";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
@@ -129,13 +129,10 @@ function usePersistence(): void {
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Always flush; only the leave prompt is gated on real lyrics, so audio-only reloads are not nagged.
       flushPendingSaveQuietly();
-      const state = useProjectStore.getState();
-      if (state.isDirty && state.lines.length > 0) {
-        e.preventDefault();
-        return "";
-      }
+      if (getSaveStatus() === "saved") return;
+      e.preventDefault();
+      return "";
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
