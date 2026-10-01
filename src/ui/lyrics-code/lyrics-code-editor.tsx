@@ -1,5 +1,5 @@
 import { cn } from "@/utils/cn";
-import { type EditorHandle, type EditorOptions, type LyricFormat, attachEditor, layerText } from "@braccato/highlight";
+import { type EditorHandle, type LyricFormat, attachEditor, layerText } from "@braccato/highlight";
 import { useCallback, useLayoutEffect, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -35,13 +35,12 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
   ...textareaProps
 }) => {
   const editorRef = useRef<EditorHandle | null>(null);
-  // attachEditor reads format from this object on every render, so a new format applies without moving the textarea.
-  const editorOptions = useRef<EditorOptions>({ format });
+  const latestFormat = useRef(format);
 
   const attachToFrame = useCallback((frame: HTMLDivElement) => {
     const textarea = frame.querySelector("textarea");
     if (!textarea) return;
-    const editor = keepingFocus(textarea, () => attachEditor(textarea, editorOptions.current));
+    const editor = keepingFocus(textarea, () => attachEditor(textarea, { format: latestFormat.current }));
     editorRef.current = editor;
     // React restores a rejected controlled value in its root listener without a commit, so check once input has bubbled past it.
     const resyncAfterInput = (event: Event) => {
@@ -58,9 +57,8 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
   }, []);
 
   useLayoutEffect(() => {
-    if (editorOptions.current.format === format) return;
-    editorOptions.current.format = format;
-    editorRef.current?.refresh();
+    latestFormat.current = format;
+    editorRef.current?.setFormat(format);
   }, [format]);
 
   useLayoutEffect(() => {
