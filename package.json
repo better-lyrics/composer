@@ -37,7 +37,7 @@
     "driver.js": "^1.8.0",
     "lit": "^3.3.3",
     "motion": "^13.2.0",
-    "music-metadata": "^11.15.0",
+    "music-metadata": "^11.16.1",
     "nanoid": "^6.0.1",
     "node-diff3": "^3.2.1",
     "obscenity": "^0.4.6",
