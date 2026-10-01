@@ -2,6 +2,7 @@ import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { Button } from "@/ui/button";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { IconArrowLeft, IconUpload } from "@tabler/icons-react";
 
 // -- Types --------------------------------------------------------------------
@@ -30,7 +31,7 @@ function countNonEmptyLines(text: string): number {
 
 // -- Constants ----------------------------------------------------------------
 
-const PASTE_PLACEHOLDER = `Paste lyrics here, one line per line. Use | to split syllables. A whole ${LYRICS_FORMATS_PROSE} file works too.`;
+const PASTE_PLACEHOLDER = `Paste lyrics here, one line per line. Use | to split syllables. A whole ${LYRICS_FORMATS_PROSE} file works too, and so does ${PROJECT_FILE_PROSE}.`;
 
 // -- Component ----------------------------------------------------------------
 

@@ -38,10 +38,10 @@ describe("PasteSection", () => {
     expect((textarea.element() as HTMLTextAreaElement).placeholder).toMatch(/Paste lyrics here/i);
   });
 
-  it("says a whole lyrics file can be pasted, naming every supported format", async () => {
+  it("says a whole lyrics or project file can be pasted, naming every supported format", async () => {
     const screen = await render(<Controlled />);
     const placeholder = (screen.getByLabelText("Lyrics text").element() as HTMLTextAreaElement).placeholder;
-    expect(placeholder).toContain("A whole .txt, .lrc, .srt, .ttml, .qrc file works too.");
+    expect(placeholder).toContain("A whole .txt, .lrc, .srt, .ttml, .qrc file works too, and so does a project file (.json).");
   });
 
   it("autofocuses the textarea on mount", async () => {

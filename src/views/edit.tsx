@@ -1,33 +1,35 @@
+import { getAgentColor } from "@/domain/agent/colors";
+import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import { backgroundFields } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import type { WordTiming } from "@/domain/word/timing";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useConfirm } from "@/stores/confirm-store";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields } from "@/domain/line/background";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { pluralWord, pluralize } from "@/utils/pluralize";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
-import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
+import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
-import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
-import { pluralize, pluralWord } from "@/utils/pluralize";
+import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -37,7 +39,7 @@ const RUN_DEBOUNCE_MS = 500;
 
 const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time...
 
-Or drag and drop a lyrics file (${LYRICS_FORMATS_PROSE})`;
+Or drag and drop a lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE}`;
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 

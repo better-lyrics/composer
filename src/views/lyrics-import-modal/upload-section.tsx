@@ -1,14 +1,14 @@
+import { Button } from "@/ui/button";
+import { cn } from "@/utils/cn";
+import {
+  LYRICS_IMPORT_ACCEPT_ATTRIBUTE,
+  LYRICS_IMPORT_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
+  isLyricsImportFileName,
+} from "@/views/lyrics-import-modal/accepted-files";
 import { IconArrowLeft, IconClipboardText, IconMusic } from "@tabler/icons-react";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
-import {
-  isSupportedLyricsFile,
-  LYRICS_FILE_ACCEPT_ATTRIBUTE,
-  LYRICS_FORMATS_COMPACT,
-  UNSUPPORTED_LYRICS_FILE_MESSAGE,
-} from "@/domain/lyrics-file/supported-formats";
-import { Button } from "@/ui/button";
-import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
 
@@ -26,8 +26,8 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
 
   const acceptFile = useCallback(
     (file: File) => {
-      if (!isSupportedLyricsFile(file.name)) {
-        toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
+      if (!isLyricsImportFileName(file.name)) {
+        toast.error(UNSUPPORTED_LYRICS_IMPORT_MESSAGE);
         return;
       }
       void onFile(file);
@@ -112,14 +112,14 @@ const UploadSection: React.FC<UploadSectionProps> = ({ onFile, onSwitchToSearch,
           or <span className="text-composer-accent-text underline decoration-composer-accent/40">click to browse</span>
         </div>
         <div className="mt-1 font-mono text-[10.5px] tracking-tight text-composer-text-muted">
-          {LYRICS_FORMATS_COMPACT}
+          {LYRICS_IMPORT_FORMATS_COMPACT}
         </div>
       </button>
       <input
         ref={fileInputRef}
         type="file"
         aria-label="Import lyrics file"
-        accept={LYRICS_FILE_ACCEPT_ATTRIBUTE}
+        accept={LYRICS_IMPORT_ACCEPT_ATTRIBUTE}
         onChange={handleInputChange}
         className="sr-only"
       />

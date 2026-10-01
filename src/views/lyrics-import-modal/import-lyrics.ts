@@ -1,7 +1,9 @@
-import { UNSUPPORTED_LYRICS_FILE_MESSAGE, isSupportedLyricsFile } from "@/domain/lyrics-file/supported-formats";
+import { hasAnyTiming } from "@/domain/line/predicates";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { filledMetadata } from "@/domain/project/imported-metadata";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import type { ProjectFile } from "@/lib/project-file";
 import { useAudioStore } from "@/stores/audio";
 import { type ConfirmOptions, useConfirm } from "@/stores/confirm-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
@@ -136,13 +138,26 @@ function replaceWithTtmlLyrics(parsed: ParseResult): number {
   return skippedLineCount(parsed.issues);
 }
 
-async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean> {
-  // accept= is only a dialog hint: an OS picker set to all files or a drop reaches here.
-  if (!isSupportedLyricsFile(file.name)) {
-    toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
+function importProjectLyrics(project: ProjectFile, filename: string, ctx: ImportContext): boolean {
+  if (!hasLyricLines(project.lines)) {
+    toast.error(noLyricsMessage(filename, []));
     return false;
   }
-  return importLyrics({ filename: file.name, content: await file.text() }, ctx);
+  const groups = project.groups ?? [];
+  const metadata = filledMetadata(project.metadata);
+  useProjectStore
+    .getState()
+    .replaceLyricsWithHistory({ lines: project.lines, groups, agents: project.agents, metadata });
+  const parsed: ParseResult = {
+    lines: project.lines,
+    metadata,
+    hasTimingData: project.lines.some(hasAnyTiming),
+    issues: [],
+    agents: project.agents,
+    groups,
+  };
+  ctx.onResult?.(parsed, { label: ctx.sourceLabel, filename });
+  return true;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -177,5 +192,5 @@ function useImportContext(sourceLabel: string): ImportContext {
 
 // -- Exports ------------------------------------------------------------------
 
-export { importLyrics, importLyricsFile, readTtmlLyrics, replaceWithTtmlLyrics, useImportContext };
+export { importLyrics, importProjectLyrics, readTtmlLyrics, replaceWithTtmlLyrics, useImportContext };
 export type { ImportContext, ImportSourceInfo };

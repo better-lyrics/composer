@@ -1,10 +1,12 @@
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
-import { UNSUPPORTED_LYRICS_FILE_MESSAGE } from "@/domain/lyrics-file/supported-formats";
 import { useProjectStore } from "@/stores/project";
+import { PROJECT_FILE_NAME, projectFileNamed } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { render } from "@/test/render";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { EditPanel } from "@/views/edit";
+import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE } from "@/views/lyrics-import-modal/accepted-files";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -88,7 +90,45 @@ describe("EditPanel file drop", () => {
 
     dropFile(getEditPanel(), new File(["binary"], "cover.png", { type: "image/png" }));
 
-    await expect.element(screen.getByText(UNSUPPORTED_LYRICS_FILE_MESSAGE)).toBeInTheDocument();
+    await expect.element(screen.getByText(UNSUPPORTED_LYRICS_IMPORT_MESSAGE)).toBeInTheDocument();
+  });
+
+  it("asks how to use a dropped project file, and Cancel leaves the lyrics alone", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(
+      <>
+        <EditPanel />
+        <ChoiceModalHost />
+      </>,
+    );
+
+    dropFile(getEditPanel(), projectFileNamed());
+
+    await expect
+      .element(screen.getByRole("alertdialog", { name: `${PROJECT_FILE_NAME} is a Composer project` }))
+      .toBeInTheDocument();
+    await screen.getByRole("button", { name: "Cancel" }).click();
+    expect(useProjectStore.getState().lines).toEqual([]);
+  });
+
+  it("takes a dropped project file's lyrics into the editor", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(
+      <>
+        <EditPanel />
+        <ChoiceModalHost />
+      </>,
+    );
+
+    dropFile(getEditPanel(), projectFileNamed());
+    await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+
+    await expect
+      .element(screen.getByText(`Imported 2 lines from ${PROJECT_FILE_NAME} with 1 timed line`))
+      .toBeInTheDocument();
+    expect((screen.container.querySelector("textarea") as HTMLTextAreaElement).value).toContain(
+      "In these stolen moments",
+    );
   });
 
   it("accepts an uppercase extension on a dropped file", async () => {
@@ -114,7 +154,7 @@ describe("EditPanel file drop", () => {
 });
 
 describe("EditPanel placeholder copy", () => {
-  it("names every supported lyrics format in the textarea placeholder", async () => {
+  it("names every supported lyrics format and project files in the textarea placeholder", async () => {
     useProjectStore.setState({ lines: [] });
     const screen = await render(<EditPanel />);
     const textarea = (await screen.container.querySelector("textarea")) as HTMLTextAreaElement | null;
@@ -122,5 +162,6 @@ describe("EditPanel placeholder copy", () => {
     for (const label of [".txt", ".lrc", ".srt", ".ttml", ".qrc"]) {
       expect(textarea.placeholder).toContain(label);
     }
+    expect(textarea.placeholder).toContain("project file (.json)");
   });
 });

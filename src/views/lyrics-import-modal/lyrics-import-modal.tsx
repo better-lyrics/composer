@@ -1,22 +1,23 @@
-import { IconFileImport, IconUpload } from "@tabler/icons-react";
-import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
 import { type ImportModalSection, useImportModalState, useImportModalStore } from "@/stores/import-modal-store";
-import { isAbortError } from "@/utils/abort-error";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
+import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
 import {
-  isSupportedLyricsFile,
-  LYRICS_FORMATS_COMPACT,
-  UNSUPPORTED_LYRICS_FILE_MESSAGE,
-} from "@/domain/lyrics-file/supported-formats";
-import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
+  LYRICS_IMPORT_FORMATS_COMPACT,
+  UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
+  isLyricsImportFileName,
+} from "@/views/lyrics-import-modal/accepted-files";
+import { importLyrics, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile, importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { PasteSection } from "@/views/lyrics-import-modal/paste-section";
 import { SearchSection } from "@/views/lyrics-import-modal/search-section";
 import { payloadToContent, syntheticFilenameForResult } from "@/views/lyrics-import-modal/shell-helpers";
 import { UploadSection } from "@/views/lyrics-import-modal/upload-section";
-import { importLyrics, importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { IconFileImport, IconUpload } from "@tabler/icons-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 
 // -- Component ----------------------------------------------------------------
 
@@ -48,10 +49,7 @@ const LyricsImportModalShell: React.FC = () => {
 
   const handleImportPaste = useCallback(async () => {
     if (pasteText.trim().length === 0) return;
-    const ok = await importLyrics(
-      { filename: "pasted text", content: pasteText },
-      { ...importContext, sourceLabel: "Paste" },
-    );
+    const ok = await importLyricsText(pasteText, { ...importContext, sourceLabel: "Paste" });
     if (ok) close();
   }, [close, importContext, pasteText]);
 
@@ -143,8 +141,8 @@ const LyricsImportModalShell: React.FC = () => {
     setIsModalDragOver(false);
     const file = e.dataTransfer.files[0];
     if (!file) return;
-    if (!isSupportedLyricsFile(file.name)) {
-      toast.error(UNSUPPORTED_LYRICS_FILE_MESSAGE);
+    if (!isLyricsImportFileName(file.name)) {
+      toast.error(UNSUPPORTED_LYRICS_IMPORT_MESSAGE);
       return;
     }
     setPendingFile(file);
@@ -240,7 +238,7 @@ const LyricsImportModalShell: React.FC = () => {
           <IconUpload size={32} stroke={1.5} className="text-composer-accent" />
           <div className="text-sm font-medium text-composer-text">Drop lyrics file to import</div>
           <div className="font-mono text-[10.5px] tracking-tight text-composer-text opacity-50">
-            {LYRICS_FORMATS_COMPACT}
+            {LYRICS_IMPORT_FORMATS_COMPACT}
           </div>
         </div>
       </div>

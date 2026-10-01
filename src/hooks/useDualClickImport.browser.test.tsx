@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from "vitest";
-import { Toaster } from "sonner";
-import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
+import { PROJECT_FILE_NAME, projectFileNamed } from "@/test/project-file-fixtures";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { render } from "@/test/render";
+import { ChoiceModalHost } from "@/ui/choice-modal";
+import { LYRICS_IMPORT_ACCEPT_ATTRIBUTE } from "@/views/lyrics-import-modal/accepted-files";
+import { Toaster } from "sonner";
+import { describe, expect, it, vi } from "vitest";
 
 // -- Harness ------------------------------------------------------------------
 
@@ -83,13 +85,22 @@ describe("useDualClickImport · double click", () => {
 });
 
 describe("useDualClickImport · hidden input", () => {
-  it("renders a screen-reader-friendly hidden file input that accepts the supported extensions", async () => {
+  it("renders a screen-reader-friendly hidden file input that accepts lyrics and project files", async () => {
     const screen = await render(<Harness onOpen={() => {}} />);
     const input = (await screen.getByLabelText("Direct lyrics upload picker").element()) as HTMLInputElement;
     expect(input).toBeInstanceOf(HTMLInputElement);
     expect(input.type).toBe("file");
-    expect(input.accept).toBe(LYRICS_FILE_ACCEPT_ATTRIBUTE);
-    expect(input.accept.split(",")).toEqual([".txt", ".lrc", ".srt", ".ttml", ".qrc", ".xml"]);
+    expect(input.accept).toBe(LYRICS_IMPORT_ACCEPT_ATTRIBUTE);
+    expect(input.accept.split(",")).toEqual([
+      ".txt",
+      ".lrc",
+      ".srt",
+      ".ttml",
+      ".qrc",
+      ".xml",
+      ".json",
+      ".ttml-project.json",
+    ]);
     expect(input.tabIndex).toBe(-1);
     expect(input.className).toContain("sr-only");
   });
@@ -167,6 +178,25 @@ describe("useDualClickImport · file pick wiring", () => {
     dispatchFileChange(input, new File([WANDERLUST_QRC], "wanderlust.qrc", { type: "application/octet-stream" }));
 
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(84);
+  });
+
+  it("asks how to use a picked project file, then takes its lyrics", async () => {
+    useProjectStore.setState({ lines: [] });
+    const screen = await render(
+      <>
+        <ChoiceModalHost />
+        <Harness onOpen={() => {}} />
+      </>,
+    );
+
+    dispatchFileChange(getHiddenFileInput(), projectFileNamed());
+
+    await expect
+      .element(screen.getByRole("alertdialog", { name: `${PROJECT_FILE_NAME} is a Composer project` }))
+      .toBeInTheDocument();
+    await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
+    expect(useImportModalStore.getState().lastImportResult?.source.filename).toBe(PROJECT_FILE_NAME);
   });
 
   it("ignores a change event with no files attached (does not throw, does not touch project)", async () => {

@@ -1,6 +1,7 @@
+import { LYRICS_IMPORT_ACCEPT_ATTRIBUTE } from "@/views/lyrics-import-modal/accepted-files";
+import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { useCallback, useRef } from "react";
-import { LYRICS_FILE_ACCEPT_ATTRIBUTE } from "@/domain/lyrics-file/supported-formats";
-import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -54,7 +55,7 @@ function useDualClickImport(openModal: () => void): DualClickImportHandlers {
       ref={fileInputRef}
       type="file"
       aria-label="Direct lyrics upload picker"
-      accept={LYRICS_FILE_ACCEPT_ATTRIBUTE}
+      accept={LYRICS_IMPORT_ACCEPT_ATTRIBUTE}
       onChange={handleFileChange}
       className="sr-only"
       tabIndex={-1}

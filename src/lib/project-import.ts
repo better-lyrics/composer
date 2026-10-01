@@ -217,6 +217,10 @@ async function importProjectFile(file: File): Promise<string | null> {
       return openTtmlAsNewProject(text, file.name);
     return reportUnreadableProjectFile(error);
   }
+  return importProjectContents(contents);
+}
+
+async function importProjectContents(contents: ProjectFileContents): Promise<string | null> {
   if (contents.kind === "bundle") {
     try {
       showBundleRestoreToast(await restoreProjectBundle(contents.projects, contents.unreadable));
@@ -269,7 +273,9 @@ export {
   replaceProjectFromFile,
   restoreProjectBundle,
   showBundleRestoreToast,
+  importProjectContents,
   importProjectFile,
   importProjectFromInput,
+  reportUnreadableProjectFile,
 };
 export type { ImportConflict, BundleRestore, ProjectFileSummary };
