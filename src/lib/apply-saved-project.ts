@@ -28,6 +28,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.setLines(project.lines ?? []);
   state.setGroups(project.groups ?? []);
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
+  state.setExportTiming(project.exportTiming === "line" ? "line" : "word");
   state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
   state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);

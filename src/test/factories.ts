@@ -93,6 +93,7 @@ function createProjectSaveInput(overrides: Partial<ProjectSaveInput> = {}): Proj
     lines: [{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }],
     groups: [],
     granularity: "word",
+    exportTiming: "word",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
     audioSource: { kind: "file", name: "silence.mp3" },
     dismissedSuggestions: [],

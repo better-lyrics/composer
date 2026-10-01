@@ -9,6 +9,7 @@ import type { StateCreator } from "zustand";
 function createUiInitialState(): UiState {
   return {
     granularity: useSettingsStore.getState().defaultGranularity,
+    exportTiming: "word",
     editorMode: "simple",
     activeTab: "import",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
@@ -22,6 +23,8 @@ const createUiSlice: StateCreator<ProjectStore, [], [], UiState & UiActions> = (
   ...createUiInitialState(),
 
   setGranularity: (granularity) => set({ granularity, isDirty: true }),
+
+  setExportTiming: (exportTiming) => set({ exportTiming, isDirty: true }),
 
   setEditorMode: (editorMode) => set({ editorMode }),
 

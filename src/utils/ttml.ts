@@ -1,6 +1,6 @@
 import type { Agent } from "@/domain/agent/model";
 import type { LinkGroup } from "@/domain/group/template";
-import { effectiveBounds } from "@/domain/line/bounds";
+import { bgBounds, effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isWordSynced } from "@/domain/line/predicates";
 import { syncProgress } from "@/domain/line/sync-progress";
@@ -8,7 +8,7 @@ import { normalizeLanguageTag } from "@/domain/project/language";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { toComposerMeta } from "@/domain/project/metadata-ttml";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
-import { timingGranularityOf } from "@/domain/project/timing-granularity";
+import { type TimingGranularity, timingGranularityOf } from "@/domain/project/timing-granularity";
 import { formatTime } from "@/utils/format-time";
 import { COMPOSER_NS } from "@/utils/lyrics-parsers/composer-namespace";
 import { stripSplitCharacter } from "@/utils/split-character";
@@ -35,13 +35,15 @@ interface TTMLOptions {
   groups?: LinkGroup[];
   minify?: boolean;
   duration?: number;
+  timing?: TimingGranularity;
 }
 
-function generateTTML({ metadata, agents, lines, groups, minify = false, duration }: TTMLOptions): string {
+function generateTTML({ metadata, agents, lines, groups, minify = false, duration, timing }: TTMLOptions): string {
   const nl = minify ? "" : "\n";
   const ind = (n: number) => (minify ? "" : "  ".repeat(n));
 
-  const timingValue = timingGranularityOf(lines) === "word" ? "Word" : "Line";
+  const writesWords = timing !== "line";
+  const timingValue = writesWords && timingGranularityOf(lines) === "word" ? "Word" : "Line";
 
   const parts: string[] = [];
   const keyedLines = keyedExportLines(lines);
@@ -123,7 +125,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
       for (const [language, languageLines] of byLanguage) {
         parts.push(`${ind(5)}<transliteration xml:lang="${escapeXml(language)}">`);
         for (const { line, key } of languageLines) {
-          parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line)}</text>`);
+          parts.push(`${ind(6)}<text for="${key}">${renderTransliterationContent(line, writesWords)}</text>`);
         }
         parts.push(`${ind(5)}</transliteration>`);
       }
@@ -140,8 +142,8 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
   parts.push(`${ind(2)}<div>`);
 
   for (const line of lines) {
-    const timing = effectiveBounds(line);
-    if (!timing || !isExportedLine(line)) continue;
+    const lineTiming = effectiveBounds(line);
+    if (!lineTiming || !isExportedLine(line)) continue;
 
     const agentAttr = line.agentId ? ` ttm:agent="${escapeXmlAttribute(line.agentId)}"` : "";
     const lineKey = keyById.get(line.id);
@@ -151,7 +153,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
       : "";
     let content = "";
 
-    if (isWordSynced(line) && line.words) {
+    if (writesWords && isWordSynced(line) && line.words) {
       const words = line.words;
       const wordCount = words.length;
       for (let i = 0; i < wordCount; i++) {
@@ -164,7 +166,7 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
       content = escapeXml(stripSplitCharacter(line.text));
     }
 
-    if (line.backgroundText && line.backgroundWords?.length) {
+    if (writesWords && line.backgroundText && line.backgroundWords?.length) {
       const bgWords = line.backgroundWords;
       const bgCount = bgWords.length;
       let bgContent = "";
@@ -176,11 +178,12 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
       }
       content += `<span ttm:role="x-bg">${bgContent}</span>`;
     } else if (line.backgroundText) {
-      content += `<span ttm:role="x-bg"><span begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}">${escapeXml(line.backgroundText)}</span></span>`;
+      const bgTiming = bgBounds(line) ?? lineTiming;
+      content += `<span ttm:role="x-bg"><span begin="${formatTime(bgTiming.begin)}" end="${formatTime(bgTiming.end)}">${escapeXml(stripSplitCharacter(line.backgroundText))}</span></span>`;
     }
 
     parts.push(
-      `${ind(3)}<p begin="${formatTime(timing.begin)}" end="${formatTime(timing.end)}"${keyAttr}${agentAttr}${groupAttr}>${content}</p>`,
+      `${ind(3)}<p begin="${formatTime(lineTiming.begin)}" end="${formatTime(lineTiming.end)}"${keyAttr}${agentAttr}${groupAttr}>${content}</p>`,
     );
   }
 
@@ -193,8 +196,14 @@ function generateTTML({ metadata, agents, lines, groups, minify = false, duratio
 
 type ProjectTtmlSource = Pick<TTMLOptions, "metadata" | "agents" | "lines" | "groups">;
 
-function generateProjectTtml({ metadata, agents, lines, groups }: ProjectTtmlSource, duration: number): string {
-  return syncProgress(lines, "line").done > 0 ? generateTTML({ metadata, agents, lines, groups, duration }) : "";
+function generateProjectTtml(
+  { metadata, agents, lines, groups }: ProjectTtmlSource,
+  duration: number,
+  timing?: TimingGranularity,
+): string {
+  return syncProgress(lines, "line").done > 0
+    ? generateTTML({ metadata, agents, lines, groups, duration, timing })
+    : "";
 }
 
 const BODY_DURATION = /<body dur="[^"]*">/;

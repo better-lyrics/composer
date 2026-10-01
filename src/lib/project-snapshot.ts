@@ -47,6 +47,7 @@ function currentSaveInput(): ProjectSaveInput {
     lines: projectState.lines,
     groups: projectState.groups,
     granularity: projectState.granularity,
+    exportTiming: projectState.exportTiming,
     syllableSplitDefaults: projectState.syllableSplitDefaults,
     audioSource: toSavedAudioSource(audioState.source) ?? audioState.expectedAudio ?? undefined,
     dismissedSuggestions: projectState.dismissedSuggestions,
