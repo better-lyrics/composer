@@ -1,4 +1,4 @@
-import { HOP_LENGTH, N_FFT, stft } from "@/audio/separation/stft";
+import { HOP_LENGTH, N_FFT, forEachStftFrame, stftFrameCount } from "@/audio/separation/stft";
 
 interface DetectVocalOnsetsOptions {
   sampleRate: number;
@@ -45,22 +45,20 @@ function spectralFlux(
   novelty: Float32Array;
   rms: Float32Array;
 } {
-  const spec = stft(mono);
-  const novelty = new Float32Array(spec.numFrames);
-  const rms = new Float32Array(spec.numFrames);
+  const numFrames = stftFrameCount(mono.length);
+  const numBins = N_FFT / 2 + 1;
+  const novelty = new Float32Array(numFrames);
+  const rms = new Float32Array(numFrames);
   const minBin = Math.max(1, Math.floor((opts.minFrequency * N_FFT) / sampleRate));
-  const maxBin = Math.min(spec.numBins - 1, Math.ceil((opts.maxFrequency * N_FFT) / sampleRate));
+  const maxBin = Math.min(numBins - 1, Math.ceil((opts.maxFrequency * N_FFT) / sampleRate));
   const usedBinCount = Math.max(1, maxBin - minBin + 1);
-  const prevMag = new Float32Array(spec.numBins);
+  const prevMag = new Float32Array(numBins);
   let maxNovelty = 0;
 
-  for (let frame = 0; frame < spec.numFrames; frame++) {
+  forEachStftFrame(mono, (frame, real, imag) => {
     let flux = 0;
     for (let bin = minBin; bin <= maxBin; bin++) {
-      const idx = frame * spec.numBins + bin;
-      const re = spec.real[idx];
-      const im = spec.imag[idx];
-      const mag = Math.log1p(opts.compression * Math.hypot(re, im));
+      const mag = Math.log1p(opts.compression * Math.hypot(real[bin], imag[bin]));
       const diff = mag - prevMag[bin];
       if (diff > 0) flux += diff;
       prevMag[bin] = mag;
@@ -69,7 +67,7 @@ function spectralFlux(
     rms[frame] = frameRms(mono, frame);
     novelty[frame] = flux / usedBinCount;
     maxNovelty = Math.max(maxNovelty, novelty[frame]);
-  }
+  });
 
   if (maxNovelty > 0) {
     for (let i = 0; i < novelty.length; i++) novelty[i] /= maxNovelty;
