@@ -26,7 +26,7 @@ describe("AudioEngine scrub-preview integration", () => {
     useAudioStore.setState({ source: null });
   });
 
-  it("installs a decoded buffer into scrub-preview when a file source loads", async () => {
+  it("decodes the loaded file for scrub-preview on the first scrub", async () => {
     await render(<AudioEngine />);
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() } });
     await waitForBufferInstalled();

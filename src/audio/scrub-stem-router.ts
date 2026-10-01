@@ -1,17 +1,42 @@
+import { decodeSourceAudio } from "@/audio/decoded-source-audio";
 import { scrubPreview } from "@/audio/scrub-preview";
 import type { Stem } from "@/audio/separation/types";
+
+// -- Types ---------------------------------------------------------------------
+type LazyAudio = () => Promise<AudioBuffer>;
 
 // -- Constants -----------------------------------------------------------------
 const LOG_PREFIX = "[ScrubStemRouter]";
 
 // -- State ---------------------------------------------------------------------
-const cache: Map<Stem, AudioBuffer> = new Map();
+const cache: Map<Stem, LazyAudio> = new Map();
 let activeStem: Stem | null = null;
-let selectionToken = 0;
 
 // -- Helpers -------------------------------------------------------------------
-function activate(stem: Stem, buf: AudioBuffer): void {
-  scrubPreview.useBuffer(buf);
+function lazyAudio(readSource: () => Promise<Blob>): LazyAudio {
+  let decoding: Promise<AudioBuffer> | null = null;
+  return () => {
+    if (!decoding) {
+      const attempt = readSource().then(decodeSourceAudio);
+      decoding = attempt;
+      attempt.catch(() => {
+        if (decoding === attempt) decoding = null;
+      });
+    }
+    return decoding;
+  };
+}
+
+async function fetchStem(url: string): Promise<Blob> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`fetch failed: ${response.status} ${response.statusText}`);
+  }
+  return response.blob();
+}
+
+function activate(stem: Stem, audio: LazyAudio): void {
+  scrubPreview.useLazyBuffer(audio);
   activeStem = stem;
 }
 
@@ -20,21 +45,13 @@ function deactivate(): void {
   activeStem = null;
 }
 
-async function fetchAndDecode(url: string): Promise<AudioBuffer> {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`fetch failed: ${response.status} ${response.statusText}`);
-  }
-  const bytes = await response.arrayBuffer();
-  return scrubPreview.decode(bytes);
-}
-
 // -- Public API ----------------------------------------------------------------
-function setOriginalBuffer(buffer: AudioBuffer | null): void {
-  if (buffer) {
-    cache.set("original", buffer);
+function setOriginalSource(source: Blob | null): void {
+  if (source) {
+    const audio = lazyAudio(async () => source);
+    cache.set("original", audio);
     if (activeStem === "original" || activeStem === null) {
-      activate("original", buffer);
+      activate("original", audio);
     }
     return;
   }
@@ -45,13 +62,7 @@ function setOriginalBuffer(buffer: AudioBuffer | null): void {
 }
 
 function selectStem(stem: Stem, getUrl: () => string | undefined): void {
-  selectionToken += 1;
-  const myToken = selectionToken;
-
-  if (stem === activeStem) {
-    const alreadyRouted = cache.get(stem);
-    if (alreadyRouted) return;
-  }
+  if (stem === activeStem && cache.has(stem)) return;
   const cached = cache.get(stem);
   if (cached) {
     activate(stem, cached);
@@ -68,22 +79,14 @@ function selectStem(stem: Stem, getUrl: () => string | undefined): void {
     return;
   }
 
-  void fetchAndDecode(url)
-    .then((buf) => {
-      if (myToken !== selectionToken) return;
-      cache.set(stem, buf);
-      activate(stem, buf);
-    })
-    .catch((err) => {
-      if (myToken !== selectionToken) return;
-      console.warn(LOG_PREFIX, `failed to load stem "${stem}":`, err);
-    });
+  const audio = lazyAudio(() => fetchStem(url));
+  cache.set(stem, audio);
+  activate(stem, audio);
 }
 
 function clearCache(): void {
   cache.clear();
   activeStem = null;
-  selectionToken += 1;
   scrubPreview.useBuffer(null);
 }
 
@@ -91,6 +94,6 @@ function getActiveStem(): Stem | null {
   return activeStem;
 }
 
-const scrubStemRouter = { setOriginalBuffer, selectStem, clearCache, getActiveStem };
+const scrubStemRouter = { setOriginalSource, selectStem, clearCache, getActiveStem };
 
 export { scrubStemRouter };

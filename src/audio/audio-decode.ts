@@ -1,4 +1,4 @@
-import { cropAudioBufferHead, parseLamePriming } from "@/audio/lame-priming";
+import { decodeSourceAudio } from "@/audio/decoded-source-audio";
 import { encodeWavOffThread } from "@/audio/pcm-worker-host";
 
 // -- Helpers ------------------------------------------------------------------
@@ -26,20 +26,8 @@ function copyChannels(audio: AudioBuffer): Float32Array[] {
 // Rejects if the browser cannot decode the file; the caller falls back to
 // the original file.
 async function decodeAudioToWav(file: File): Promise<Blob> {
-  const arrayBuffer = await file.arrayBuffer();
-  const priming = parseLamePriming(arrayBuffer);
-  const ctx = new AudioContext();
-  try {
-    const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-    const startSample =
-      priming.samples > 0 && priming.sampleRate > 0
-        ? Math.round((priming.samples * audioBuffer.sampleRate) / priming.sampleRate)
-        : 0;
-    const cropped = cropAudioBufferHead(audioBuffer, startSample, ctx);
-    return encodeWavOffThread(copyChannels(cropped), cropped.sampleRate);
-  } finally {
-    void ctx.close();
-  }
+  const decoded = await decodeSourceAudio(file);
+  return encodeWavOffThread(copyChannels(decoded), decoded.sampleRate);
 }
 
 // -- Exports ------------------------------------------------------------------

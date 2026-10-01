@@ -248,6 +248,7 @@ describe("AudioEngine", () => {
       });
       await waitFor(() => scrubStemRouter.getActiveStem() === "vocals", 5000);
       scrubPreview.play(0.05, 1);
+      await waitFor(() => scrubPreview.getActiveSnippet() !== null, 5000);
       expect(scrubPreview.getActiveSnippet()?.time).toBe(0);
 
       useSeparationStore.setState({ currentStem: "original" });
