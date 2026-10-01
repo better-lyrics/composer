@@ -1,5 +1,6 @@
 import { displayArtists, displayTitle } from "@/domain/project/display-title";
 import { type ProgressCounts, hasLyrics, syncedLinesLabel } from "@/domain/project/progress";
+import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
 import type { ImportConflict, ProjectFileSummary } from "@/lib/project-import";
 import { askChoice } from "@/stores/choice-store";
 import { ProjectArt } from "@/ui/projects/project-art";
@@ -52,6 +53,7 @@ const ImportConflictSummary: React.FC<ImportConflictSummaryProps> = ({ existing,
 function askImportConflict(conflict: ImportConflict, fileSummary: ProjectFileSummary): Promise<ImportConflictChoice> {
   return askChoice({
     title: "Project already in your library",
+    busyMessage: FINISH_IMPORT_FIRST,
     body: <ImportConflictSummary existing={conflict.existing} fileSummary={fileSummary} askedAt={Date.now()} />,
     options: [
       { value: "keep-both", label: "Keep both", variant: "secondary" },

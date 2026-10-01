@@ -1,7 +1,9 @@
 import { askChoice, useChoiceStore } from "@/stores/choice-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
+import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
+import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -11,6 +13,7 @@ function askUseOrOpen() {
   return askChoice({
     title: "Song.ttml-project.json is a project file",
     body: "Use its lyrics in this project, or open it as its own project.",
+    busyMessage: "Finish the current import first",
     options: [
       { value: "open", label: "Open as its own project", variant: "secondary" },
       { value: "use", label: "Use its lyrics here", variant: "primary" },
@@ -22,6 +25,7 @@ function askKeepOrReplace() {
   return askChoice({
     title: "Project already in your library",
     body: "Alpha",
+    busyMessage: "Finish the current import first",
     options: [
       { value: "keep-both", label: "Keep both", variant: "secondary" },
       { value: "replace", label: "Replace project", variant: "destructive" },
@@ -120,11 +124,33 @@ describe("ChoiceModalHost", () => {
       await expect.poll(isAnyModalOpen).toBe(false);
     });
 
+    it("tells the user why a second prompt was refused, in the caller's words", async () => {
+      allowConsole(/a choice prompt is already open/);
+      const screen = await render(
+        <>
+          <ChoiceModalHost />
+          <Toaster />
+        </>,
+      );
+      const first = askUseOrOpen();
+      const second = askChoice({
+        title: "Another",
+        body: "Body",
+        busyMessage: "Finish choosing first",
+        options: [{ value: "go", label: "Go", variant: "primary" }],
+      });
+      await expect(second).resolves.toBe("cancel");
+      await expect.element(screen.getByText("Finish choosing first")).toBeInTheDocument();
+      useChoiceStore.getState().answer("cancel");
+      await first;
+    });
+
     it("offers a single option with Cancel", async () => {
       const screen = await render(<ChoiceModalHost />);
       const pending = askChoice({
         title: "Backup.json is a backup",
         body: "Restore its 3 projects?",
+        busyMessage: "Finish the current import first",
         options: [{ value: "restore", label: "Restore backup", variant: "primary" }],
       });
       await screen.getByRole("button", { name: "Restore backup" }).click();

@@ -1,4 +1,5 @@
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
+import { FINISH_IMPORT_FIRST } from "@/lib/import-busy-message";
 import { type ProjectFileContents, isProjectFileName, parseProjectFileContents } from "@/lib/project-file-read";
 import { importProjectContents, reportUnreadableProjectFile, restoreBundleContents } from "@/lib/project-import";
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
@@ -41,7 +42,10 @@ function choiceTitle(fileName: string | null, noun: string): string {
   return fileName ? `${fileName} is a ${noun}` : `You pasted a ${noun}`;
 }
 
-function projectFileChoice(contents: ProjectFileContents, fileName: string | null): ChoiceRequest<ProjectFileUse> {
+function projectFileChoice(
+  contents: ProjectFileContents,
+  fileName: string | null,
+): Omit<ChoiceRequest<ProjectFileUse>, "busyMessage"> {
   if (contents.kind === "bundle") {
     return {
       title: choiceTitle(fileName, "Composer backup"),
@@ -80,7 +84,7 @@ async function importProjectFileForLyrics(
   if (contents.kind === "bundle" && contents.projects.length === 0) {
     return restoreBundleContents(contents.projects, contents.unreadable);
   }
-  const choice = await askChoice(projectFileChoice(contents, fileName));
+  const choice = await askChoice({ ...projectFileChoice(contents, fileName), busyMessage: FINISH_IMPORT_FIRST });
   if (choice === "cancel") return false;
   if (contents.kind === "bundle") return restoreBundleContents(contents.projects, contents.unreadable);
   if (choice === "use-lyrics") return importProjectLyrics(contents.project, fileName ?? PASTED_PROJECT_NAME, ctx);

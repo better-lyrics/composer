@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 const KEEP_OR_REPLACE = {
   title: "Project already in your library",
   body: "Alpha",
+  busyMessage: "Finish the current import first",
   options: [
     { value: "keep-both", label: "Keep both", variant: "secondary" },
     { value: "replace", label: "Replace project", variant: "destructive" },

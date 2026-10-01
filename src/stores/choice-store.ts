@@ -15,6 +15,7 @@ interface ChoiceOption<T extends string> {
 interface ChoiceRequest<T extends string> {
   title: string;
   body: ReactNode;
+  busyMessage: string;
   options: readonly ChoiceOption<T>[];
 }
 
@@ -48,7 +49,7 @@ const useChoiceStore = create<ChoiceState>((set, get) => ({
 function askChoice<T extends string>(request: ChoiceRequest<T>): Promise<ChoiceAnswer<T>> {
   if (useChoiceStore.getState().request) {
     console.warn(LOG_PREFIX, "a choice prompt is already open; cancelling the second one");
-    toast.warning("Finish the current import first");
+    toast.warning(request.busyMessage);
     return Promise.resolve("cancel");
   }
   return new Promise<ChoiceAnswer<T>>((resolve) => {
