@@ -3,8 +3,8 @@ import type { Bounds } from "@/domain/word/bounds";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
+import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout, OUTSIDE_FOCUS_ATTRIBUTE } from "@/views/preview/lyrics-layout";
-import { isOutsideSolo } from "@/views/timeline/solo-playback";
 import type { AmLyrics as AmLyricsElement } from "@uimaxbai/am-lyrics";
 import { useEffect, useRef, useState } from "react";
 
@@ -27,11 +27,9 @@ function ensureRegistered(): Promise<void> {
   return registerPromise;
 }
 
-function markLinesOutsideFocus(el: AmLyricsElement, focusRange: Bounds | null): void {
-  for (const line of el.shadowRoot?.querySelectorAll<HTMLElement>(".lyrics-line[data-start-time]") ?? []) {
-    const startSeconds = Number(line.dataset.startTime) / 1000;
-    line.toggleAttribute(OUTSIDE_FOCUS_ATTRIBUTE, focusRange !== null && isOutsideSolo(startSeconds, focusRange));
-  }
+function timedLines(el: AmLyricsElement): TimedLineElement[] {
+  const lines = el.shadowRoot?.querySelectorAll<HTMLElement>(".lyrics-line[data-start-time]") ?? [];
+  return Array.from(lines, (line) => ({ element: line, startSeconds: Number(line.dataset.startTime) / 1000 }));
 }
 
 function markMatchingAlternateElements(el: AmLyricsElement): void {
@@ -112,6 +110,9 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
   latestTtmlRef.current = ttmlString;
   latestDurationMsRef.current = durationSeconds * 1000;
   const latestFocusRangeRef = useRef(focusRange);
+  useFocusFade(focusRange, latestFocusRangeRef, (range) => {
+    if (elementRef.current) markLinesOutsideFocus(timedLines(elementRef.current), range);
+  });
   // react-doctor-disable-next-line react-doctor/rerender-state-only-in-handlers
   const [isRegistered, setIsRegistered] = useState(false);
 
@@ -136,7 +137,7 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
     el.className = LYRICS_ELEMENT_CLASS[layout];
     const matchingAlternateObserver = new MutationObserver(() => {
       markMatchingAlternateElements(el);
-      markLinesOutsideFocus(el, latestFocusRangeRef.current);
+      markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
     });
 
     const handleLineClick = (event: Event) => {
@@ -192,15 +193,6 @@ const AmLyricsRenderer: React.FC<AmLyricsRendererProps> = ({
     if (!el) return;
     el.songDurationMs = durationSeconds * 1000;
   }, [durationSeconds]);
-
-  const focusBegin = focusRange?.begin;
-  const focusEnd = focusRange?.end;
-  useEffect(() => {
-    const el = elementRef.current;
-    const range = focusBegin === undefined || focusEnd === undefined ? null : { begin: focusBegin, end: focusEnd };
-    latestFocusRangeRef.current = range;
-    if (el) markLinesOutsideFocus(el, range);
-  }, [focusBegin, focusEnd]);
 
   useRendererAudioSync(
     elementRef,

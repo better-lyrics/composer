@@ -25,10 +25,6 @@ function soloPlaybackEnd(time: number, bounds: Bounds, loop: boolean): SoloEndSt
   return isAtEnd(time, bounds) ? { seekTo: bounds.begin, pause: !loop } : null;
 }
 
-function isOutsideSolo(time: number, bounds: Bounds): boolean {
-  return time < bounds.begin - END_TOLERANCE_SECONDS || time > bounds.end + END_TOLERANCE_SECONDS;
-}
-
 // -- Exports ------------------------------------------------------------------
 
-export { isOutsideSolo, soloPlaybackEnd, soloPlayStart };
+export { soloPlaybackEnd, soloPlayStart };

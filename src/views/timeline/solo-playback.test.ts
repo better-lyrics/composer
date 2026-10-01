@@ -1,4 +1,4 @@
-import { isOutsideSolo, soloPlayStart, soloPlaybackEnd } from "@/views/timeline/solo-playback";
+import { soloPlayStart, soloPlaybackEnd } from "@/views/timeline/solo-playback";
 import { describe, expect, it } from "vitest";
 
 const chorus = { begin: 40, end: 48 };
@@ -44,18 +44,5 @@ describe("soloPlaybackEnd", () => {
     it("treats a time a hair before the end as the end", () => {
       expect(soloPlaybackEnd(47.998, chorus, false)).toEqual({ seekTo: 40, pause: true });
     });
-  });
-});
-
-describe("isOutsideSolo", () => {
-  it("is true before and after the instance", () => {
-    expect(isOutsideSolo(39, chorus)).toBe(true);
-    expect(isOutsideSolo(49, chorus)).toBe(true);
-  });
-
-  it("is false inside the instance, including both edges", () => {
-    expect(isOutsideSolo(40, chorus)).toBe(false);
-    expect(isOutsideSolo(44, chorus)).toBe(false);
-    expect(isOutsideSolo(48, chorus)).toBe(false);
   });
 });

@@ -8,8 +8,8 @@ import { IconButton } from "@/ui/icon-button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
-import { LYRICS_ELEMENT_CLASS, type LyricsLayout, OUTSIDE_FOCUS_ATTRIBUTE } from "@/views/preview/lyrics-layout";
-import { isOutsideSolo } from "@/views/timeline/solo-playback";
+import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
+import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
 import { TTMLParser } from "@braccato/parsers";
@@ -70,13 +70,8 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
   if (decorated) renderer.relayout();
 }
 
-function markLinesOutsideFocus(el: BraccatoLyricsElement, focusRange: Bounds | null): void {
-  for (const line of el.renderer?.lines ?? []) {
-    line.lyricElement.toggleAttribute(
-      OUTSIDE_FOCUS_ATTRIBUTE,
-      focusRange !== null && isOutsideSolo(line.time, focusRange),
-    );
-  }
+function timedLines(el: BraccatoLyricsElement): TimedLineElement[] {
+  return (el.renderer?.lines ?? []).map((line) => ({ element: line.lyricElement, startSeconds: line.time }));
 }
 
 // -- Component ----------------------------------------------------------------
@@ -88,6 +83,9 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const latestLyricsRef = useRef(lyrics);
   const latestSongwritersRef = useRef(songwriters);
   const latestFocusRangeRef = useRef(focusRange);
+  useFocusFade(focusRange, latestFocusRangeRef, (range) => {
+    if (elementRef.current) markLinesOutsideFocus(timedLines(elementRef.current), range);
+  });
   const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
@@ -140,7 +138,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const handleLyricsLoaded = useCallback((event: Event) => {
     const el = event.currentTarget as BraccatoLyricsElement;
     decorateAlternateTracks(el, latestLyricsRef.current);
-    markLinesOutsideFocus(el, latestFocusRangeRef.current);
+    markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
   }, []);
 
   const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[], songwriters: readonly string[]) => {
@@ -158,7 +156,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
     // A rebuild that moves the scroll position fires one scroll the reader never made.
     rebuildScrollTopRef.current = el.scrollTop === scrollTopBefore ? null : el.scrollTop;
     decorateAlternateTracks(el, next);
-    markLinesOutsideFocus(el, latestFocusRangeRef.current);
+    markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
   }, []);
 
   // Activity re-attaches this ref on every reveal; re-initializing the same element rebuilds its lines.
@@ -199,15 +197,6 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
     const element = elementRef.current;
     if (element) applyLyrics(element, lyrics, songwriters);
   }, [lyrics, songwriters, applyLyrics]);
-
-  const focusBegin = focusRange?.begin;
-  const focusEnd = focusRange?.end;
-  useEffect(() => {
-    const element = elementRef.current;
-    const range = focusBegin === undefined || focusEnd === undefined ? null : { begin: focusBegin, end: focusEnd };
-    latestFocusRangeRef.current = range;
-    if (element) markLinesOutsideFocus(element, range);
-  }, [focusBegin, focusEnd]);
 
   // Binding `source` would make braccato own the clock, and it only polls during
   // playback, freezing the preview whenever the timeline is scrubbed paused.
