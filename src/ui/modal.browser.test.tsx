@@ -68,6 +68,27 @@ describe("Modal", () => {
     expect(closeCalls).toBeGreaterThan(0);
   });
 
+  it("regression: Escape closes only the modal on top of the stack", async () => {
+    const closed: string[] = [];
+    const Stack: React.FC<{ showSecond: boolean }> = ({ showSecond }) => (
+      <>
+        <Modal isOpen onClose={() => closed.push("first")} title="First">
+          <div>One</div>
+        </Modal>
+        <Modal isOpen={showSecond} onClose={() => closed.push("second")} title="Second">
+          <div>Two</div>
+        </Modal>
+      </>
+    );
+    const screen = await render(<Stack showSecond={false} />);
+    await screen.rerender(<Stack showSecond />);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closed).toEqual(["second"]);
+    await screen.rerender(<Stack showSecond={false} />);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closed).toEqual(["second", "first"]);
+  });
+
   it("closes when the overlay backdrop is clicked", async () => {
     let closeCalls = 0;
     await render(

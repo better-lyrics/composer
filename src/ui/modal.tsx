@@ -20,6 +20,14 @@ interface ModalProps {
   describedById?: string;
 }
 
+// -- Escape order -------------------------------------------------------------
+
+const escapeOrder: symbol[] = [];
+
+function isTopModal(token: symbol): boolean {
+  return escapeOrder[escapeOrder.length - 1] === token;
+}
+
 // -- Component ----------------------------------------------------------------
 
 const Modal: React.FC<ModalProps> = ({
@@ -50,8 +58,10 @@ const Modal: React.FC<ModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    const token = Symbol("modal");
+    escapeOrder.push(token);
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
+      if (e.key === "Escape" && isTopModal(token)) onCloseRef.current();
     };
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
@@ -59,6 +69,7 @@ const Modal: React.FC<ModalProps> = ({
     push();
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      escapeOrder.splice(escapeOrder.indexOf(token), 1);
       document.body.style.overflow = "";
       pop();
     };

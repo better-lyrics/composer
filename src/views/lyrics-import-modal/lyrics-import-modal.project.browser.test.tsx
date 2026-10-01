@@ -85,6 +85,16 @@ describe("LyricsImportModal with project files", () => {
     expect(useProjectStore.getState().lines).toEqual([]);
   });
 
+  it("regression: Escape on the choice cancels it and keeps the modal open", async () => {
+    const screen = await render(host());
+    await dropIntoUpload(screen, projectFileNamed());
+    await expect.element(screen.getByRole("alertdialog")).toBeInTheDocument();
+    await userEvent.keyboard("{Escape}");
+    await expect.element(screen.getByRole("alertdialog")).not.toBeInTheDocument();
+    expect(useImportModalStore.getState().isOpen).toBe(true);
+    await expect.element(screen.getByText(/Ready to import/i)).toBeInTheDocument();
+  });
+
   it("names the project file extension on the modal drop overlay", async () => {
     const screen = await render(host());
     useImportModalStore.getState().open({ section: "upload" });
