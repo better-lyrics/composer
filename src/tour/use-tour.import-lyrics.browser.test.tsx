@@ -57,6 +57,8 @@ async function clickDriver(selector: string) {
   driverButton(selector)?.click();
 }
 
+const DRIVER_TRANSITION_MS = 400;
+
 let providerSnapshot: readonly LyricsSearchProvider[] = [];
 
 beforeAll(() => emulateReducedMotion("reduce"));
@@ -172,6 +174,24 @@ describe("tour Import Lyrics steps", () => {
       await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
       await expect.poll(importDialog).toBeNull();
       await expect.poll(() => useModalStackStore.getState().count).toBe(0);
+    });
+
+    it("regression: closing the tour while it is still moving onto the modal step closes the modal", async () => {
+      await emulateReducedMotion("no-preference");
+      try {
+        await resumeAt("edit-import");
+        await expect.poll(driverTitle).toBe("Import lyrics you already have");
+        await new Promise((resolve) => setTimeout(resolve, DRIVER_TRANSITION_MS));
+        await stepFrames(2);
+        driverButton(".driver-popover-next-btn")?.click();
+        await expect.poll(driverTitle).toBe("Search, paste, or upload");
+        driverButton(".driver-popover-close-btn")?.click();
+        await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
+        await expect.poll(importDialog).toBeNull();
+        expect(useImportModalStore.getState().isOpen).toBe(false);
+      } finally {
+        await emulateReducedMotion("reduce");
+      }
     });
 
     it("Escape ends the tour and closes the modal", async () => {

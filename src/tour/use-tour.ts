@@ -1,6 +1,7 @@
 import { useModalStackStore } from "@/stores/modal-stack";
 import { keepFieldArrowKeysFromTour } from "@/tour/field-arrow-keys";
 import type { GuideCardState } from "@/tour/guide-card";
+import { leaveImportLyricsDialog } from "@/tour/import-lyrics-steps";
 import { BEST_PRACTICES_STEP_TITLE, type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
 import { type DriveStep, type Driver, type PopoverDOM, driver } from "driver.js";
 import { useReducedMotion } from "motion/react";
@@ -106,6 +107,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
     releaseModalRef.current = null;
     releaseArrowGuardRef.current?.();
     releaseArrowGuardRef.current = null;
+    leaveImportLyricsDialog();
   }, []);
 
   const openBestPractices = useCallback(() => {

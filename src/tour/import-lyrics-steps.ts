@@ -10,6 +10,11 @@ const IMPORT_LYRICS_BUTTON_SELECTOR = '[data-tour="import-lyrics-button"]';
 const IMPORT_LYRICS_MODAL_SELECTOR = '[data-tour="lyrics-import-modal"]';
 const MODAL_RENDER_WAIT_MS = 1500;
 
+// -- State --------------------------------------------------------------------
+
+let stopWatchingModal: (() => void) | null = null;
+let modalOpenedByTour = false;
+
 // -- Helpers ------------------------------------------------------------------
 
 function showEditTab() {
@@ -19,8 +24,24 @@ function showEditTab() {
 // driver.js resolves a step's element before any hook runs, so the dialog is opened here and waitForElement covers the render.
 function revealImportLyricsDialog(): Element {
   const dialog = document.querySelector(IMPORT_LYRICS_MODAL_SELECTOR)?.closest("dialog") ?? null;
-  if (!dialog && !useImportModalStore.getState().isOpen) useImportModalStore.getState().open();
+  if (!dialog && !useImportModalStore.getState().isOpen) {
+    modalOpenedByTour = true;
+    useImportModalStore.getState().open();
+  }
   return dialog as Element;
+}
+
+function stopWatching() {
+  stopWatchingModal?.();
+  stopWatchingModal = null;
+}
+
+// driver.js skips onDeselected when the tour closes mid transition, so the tour also calls this on every teardown.
+function leaveImportLyricsDialog() {
+  stopWatching();
+  if (!modalOpenedByTour) return;
+  modalOpenedByTour = false;
+  useImportModalStore.getState().close();
 }
 
 // -- Steps --------------------------------------------------------------------
@@ -40,8 +61,6 @@ function importLyricsButtonStep(): DriveStep {
 }
 
 function importLyricsDialogStep(): DriveStep {
-  let stopWatching: (() => void) | null = null;
-
   return {
     element: revealImportLyricsDialog,
     waitForElement: MODAL_RENDER_WAIT_MS,
@@ -53,14 +72,14 @@ function importLyricsDialogStep(): DriveStep {
     },
     onHighlightStarted: (_element, _step, { driver }) => {
       showEditTab();
-      stopWatching?.();
-      stopWatching = useImportModalStore.subscribe((state, previous) => {
+      stopWatching();
+      stopWatchingModal = useImportModalStore.subscribe((state, previous) => {
         if (previous.isOpen && !state.isOpen) driver.moveNext();
       });
     },
     onDeselected: () => {
-      stopWatching?.();
-      stopWatching = null;
+      stopWatching();
+      modalOpenedByTour = false;
       useImportModalStore.getState().close();
     },
   };
@@ -68,4 +87,4 @@ function importLyricsDialogStep(): DriveStep {
 
 // -- Exports ------------------------------------------------------------------
 
-export { importLyricsButtonStep, importLyricsDialogStep };
+export { importLyricsButtonStep, importLyricsDialogStep, leaveImportLyricsDialog };

@@ -1,6 +1,6 @@
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
-import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";
+import { importLyricsButtonStep, importLyricsDialogStep, leaveImportLyricsDialog } from "@/tour/import-lyrics-steps";
 import { type DriveStep, driver } from "driver.js";
 import { describe, expect, it } from "vitest";
 
@@ -90,6 +90,30 @@ describe("importLyricsDialogStep", () => {
     step.onDeselected?.(undefined, step, options);
     expect(useImportModalStore.getState().isOpen).toBe(false);
     expect(moves).toBe(0);
+  });
+
+  describe("regressions", () => {
+    it("regression: leaving the tour before the step settles closes the modal it opened and stops watching", () => {
+      const step = importLyricsDialogStep();
+      let moves = 0;
+      resolveElement(step);
+      step.onHighlightStarted?.(
+        undefined,
+        step,
+        hookOptions(step, () => moves++),
+      );
+      leaveImportLyricsDialog();
+      expect(useImportModalStore.getState().isOpen).toBe(false);
+      useImportModalStore.getState().open();
+      useImportModalStore.getState().close();
+      expect(moves).toBe(0);
+    });
+
+    it("regression: leaving the tour never closes a modal the user opened", () => {
+      useImportModalStore.getState().open({ section: "upload" });
+      leaveImportLyricsDialog();
+      expect(useImportModalStore.getState().isOpen).toBe(true);
+    });
   });
 
   describe("edge cases", () => {
