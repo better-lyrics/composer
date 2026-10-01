@@ -5,6 +5,7 @@ import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { applyResolvedTheme } from "@/utils/theme/apply";
+import { highlightInto } from "@braccato/highlight";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -112,6 +113,27 @@ describe("LyricsCode", () => {
       expect(detected.querySelectorAll("span")).toHaveLength(0);
       const pinned = preIn((await render(<LyricsCode code={TTML_FRAGMENT} format="ttml" />)).container);
       expect(tokenTexts(pinned, "timestamp")).toEqual(["00:00:12.000", "00:00:15.200"]);
+    });
+  });
+
+  describe("invariants", () => {
+    it.each([
+      ["TTML", TTML],
+      ["LRC", LRC],
+      ["SRT", SRT],
+      ["QRC", QRC],
+      ["plain", "Just words"],
+    ])("renders the same markup as the package renderer for %s", async (_name, source) => {
+      const pre = preIn((await render(<LyricsCode code={source} />)).container);
+      const reference = document.createElement("pre");
+      highlightInto(reference, source);
+      expect(pre.innerHTML).toBe(reference.innerHTML);
+    });
+
+    it("merges adjacent tokens of the same type into one span", async () => {
+      const pre = preIn((await render(<LyricsCode code={"[00:01.00][00:02.00]Twice"} />)).container);
+      const classes = [...pre.children].map((span) => span.className);
+      expect(classes.filter((name, index) => name === classes[index - 1])).toEqual([]);
     });
   });
 
