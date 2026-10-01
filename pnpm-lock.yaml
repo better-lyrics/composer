@@ -12,8 +12,8 @@ importers:
         specifier: ^1.16.3
         version: 1.16.3
       '@braccato/highlight':
-        specifier: ^0.1.1
-        version: 0.1.1
+        specifier: ^0.1.2
+        version: 0.1.2
       '@braccato/parsers':
         specifier: ^0.3.2
         version: 0.3.2
@@ -368,8 +368,8 @@ packages:
   '@braccato/core@1.16.3':
     resolution: {integrity: sha512-BkbhGDev6+k2Neya2cWiBNw0ngkKsTpalhfHcFW1mHiKAXJXlchO4e4GA7rtPsjWE27gBuLdSKO9lR62krCsOg==}
 
-  '@braccato/highlight@0.1.1':
-    resolution: {integrity: sha512-MceZk7tMLhqy9NFmYRNzQM4R50hjiio6XnHAOsCA3FbSPdpSzo4OJ1Lbu8WfRUUvnmVmgg5Awymx9bikAavFNg==}
+  '@braccato/highlight@0.1.2':
+    resolution: {integrity: sha512-3i0xy4Mv1zCH3JlXnHBWBKLDOBF3U9i2ZlRWztBrTlyewoZZ7TPo2GlzPtwGc4xBj+bNWhO2as5uufWx/WM7Pw==}
 
   '@braccato/parsers@0.3.2':
     resolution: {integrity: sha512-Ppsq3f8s8MW+EXsGJES7FCqrihec2ReUnRfUM3fasQIMNaZkmh/KqenzMtJ6TTCat119raZVOljb2vUFPVePGQ==}
@@ -3019,7 +3019,7 @@ snapshots:
     dependencies:
       '@braccato/types': 1.0.0
 
-  '@braccato/highlight@0.1.1':
+  '@braccato/highlight@0.1.2':
     dependencies:
       '@braccato/parsers': 0.3.2
 
