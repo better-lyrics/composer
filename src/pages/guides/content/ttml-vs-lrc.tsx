@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const TtmlVsLrcContent: React.FC = () => (
   <>
     <p>
@@ -58,29 +60,28 @@ const TtmlVsLrcContent: React.FC = () => (
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What LRC looks like</h2>
     <p>LRC puts a timestamp in square brackets at the start of each line. That is almost all there is to it.</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`[ti:Song title]
+    <GuideCode
+      code={`[ti:Song title]
 [ar:Artist]
 [00:12.34]First lyric line
 [00:15.67]Second lyric line`}
-    </pre>
+    />
     <p>
       Enhanced LRC (eLRC) adds inline per-word timestamps in angle brackets. The line-level timestamp stays, and each
       word gets a start time:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {"[00:12.34]<00:12.34>First <00:12.80>lyric <00:13.20>line<00:13.80>"}
-    </pre>
+    <GuideCode code={"[00:12.34]<00:12.34>First <00:12.80>lyric <00:13.20>line<00:13.80>"} />
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">What TTML looks like</h2>
     <p>TTML is XML. The same two lines above become:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.340" end="00:00:15.670">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.340" end="00:00:15.670">
   <span begin="00:00:12.340" end="00:00:12.800">First</span>
   <span begin="00:00:12.800" end="00:00:13.200">lyric</span>
   <span begin="00:00:13.200" end="00:00:13.800">line</span>
 </p>`}
-    </pre>
+    />
     <p>
       The structure is richer. TTML wraps each line in a{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> element that can carry an agent, nest
