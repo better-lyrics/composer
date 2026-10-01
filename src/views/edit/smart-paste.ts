@@ -17,7 +17,6 @@ type PastedText =
 const TYPED_TEXT: PastedText = { kind: "typed-text" };
 const LEADING_BOM_AND_BLANK_LINES = /^\uFEFF?(?:[ \t]*\r?\n)*/;
 const TTML_DOCUMENT_START = /^\s*(?:<\?xml[^>]*\?>\s*)?(?:<!--[\s\S]*?-->\s*)*<tt[\s>]/;
-const RTF_DOCUMENT_START = /^\{\\rtf/;
 const QRC_LINE_AT_LINE_START = new RegExp(`^\\s*${QRC_LINE_HEADER_REGEX.source}`, "m");
 
 // -- Helpers ------------------------------------------------------------------
@@ -37,7 +36,6 @@ function classifyPastedText(text: string, fallbackDuration?: number): PastedText
   const contents = readProjectFileText(text);
   if (contents) return { kind: "project-file", contents };
   const body = text.replace(LEADING_BOM_AND_BLANK_LINES, "");
-  if (RTF_DOCUMENT_START.test(body)) return TYPED_TEXT;
   const fileType = detectFileType("", body);
   if (fileType === "txt" || fileType === "unknown" || !readsAsWholeDocument(fileType, body)) return TYPED_TEXT;
   const parsed = PARSERS[fileType](body, fallbackDuration);

@@ -48,6 +48,9 @@ The second verse drags a little.
 Try the bridge at a faster tempo.
 Ask about the backing vocals.`;
 
+const RTF_SAVED_LRC =
+  "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n}";
+
 const LRCLIB_STYLE_PASTE = `
 
   [ar: Queen]
@@ -225,6 +228,17 @@ describe("detectFileType", () => {
 
     it("keeps an empty paste as plain text", () => {
       expect(detectFileType("pasted text", "\n  \n")).toBe("txt");
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: reads an LRC saved as rich text as plain text, never as LRC", () => {
+      expect(detectFileType("pasted text", RTF_SAVED_LRC)).toBe("txt");
+      expect(detectFileType("pasted text", `\uFEFF\n\n${RTF_SAVED_LRC}`)).toBe("txt");
+    });
+
+    it("regression: reads a rich text file named .lrc as plain text", () => {
+      expect(detectFileType("song.lrc", RTF_SAVED_LRC)).toBe("txt");
     });
   });
 });

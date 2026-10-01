@@ -9,6 +9,7 @@ type LyricsFileType = "txt" | "lrc" | "srt" | "ttml" | "qrc" | "unknown";
 
 const LRC_TIMESTAMP_LINE = /^\[\d{1,2}:\d{2}/;
 const MIN_TIMED_LINES_AFTER_PREAMBLE = 3;
+const RTF_DOCUMENT_START = /^\uFEFF?\s*\{\\rtf/;
 
 // A title or exported header may come before the timestamps, as long as at least half of what follows is timed.
 function readsAsLrc(content: string): boolean {
@@ -27,6 +28,7 @@ function readsAsLrc(content: string): boolean {
 // -- Detection ----------------------------------------------------------------
 
 function detectFileType(filename: string, content: string): LyricsFileType {
+  if (RTF_DOCUMENT_START.test(content)) return "txt";
   const ext = filename.toLowerCase().split(".").pop();
   if (ext === "txt") return "txt";
   if (ext === "lrc") return "lrc";
