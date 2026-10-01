@@ -53,4 +53,4 @@ function backupFileNamed(name: string, titles: readonly string[]): File {
 
 // -- Exports ------------------------------------------------------------------
 
-export { PROJECT_FILE_NAME, backupFileNamed, backupText, lustForLifeProject, projectFileNamed, projectFileText };
+export { PROJECT_FILE_NAME, backupFileNamed, backupText, projectFileNamed, projectFileText };

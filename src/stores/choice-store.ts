@@ -62,4 +62,4 @@ function askChoice<T extends string>(request: ChoiceRequest<T>): Promise<ChoiceA
 // -- Exports ------------------------------------------------------------------
 
 export { askChoice, useChoiceStore };
-export type { ChoiceOption, ChoiceRequest, ChoiceVariant };
+export type { ChoiceRequest };

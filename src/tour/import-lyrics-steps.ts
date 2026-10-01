@@ -68,4 +68,4 @@ function importLyricsDialogStep(): DriveStep {
 
 // -- Exports ------------------------------------------------------------------
 
-export { IMPORT_LYRICS_BUTTON_SELECTOR, importLyricsButtonStep, importLyricsDialogStep };
+export { importLyricsButtonStep, importLyricsDialogStep };

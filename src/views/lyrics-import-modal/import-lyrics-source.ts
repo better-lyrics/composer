@@ -116,11 +116,4 @@ async function importLyricsText(text: string, ctx: ImportContext): Promise<boole
 
 // -- Exports ------------------------------------------------------------------
 
-export {
-  OPEN_PROJECT_LABEL,
-  USE_PROJECT_LYRICS_LABEL,
-  importLyricsFile,
-  importLyricsText,
-  importProjectFileForLyrics,
-  readProjectFileText,
-};
+export { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL, importLyricsFile, importLyricsText, readProjectFileText };
