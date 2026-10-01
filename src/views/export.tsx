@@ -92,6 +92,7 @@ const ExportPanel: React.FC = () => {
     content: exportContent,
     duration,
     editedContent,
+    editBlocksLineTiming,
     exportTiming,
     generatedContent: generatedTtml,
     hasConflict,
@@ -216,7 +217,7 @@ const ExportPanel: React.FC = () => {
           <SegmentedControl
             aria-label="Export timing"
             value={exportTiming}
-            options={exportTimingOptions(isEditing || editedContent !== null)}
+            options={exportTimingOptions(isEditing || editBlocksLineTiming)}
             onChange={setExportTiming}
           />
           {editedContent !== null && (

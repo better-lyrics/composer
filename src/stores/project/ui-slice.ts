@@ -1,3 +1,4 @@
+import { DEFAULT_EXPORT_TIMING } from "@/domain/project/export-timing";
 import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { useAudioStore } from "@/stores/audio";
 import type { ProjectStore, UiActions, UiState } from "@/stores/project/types";
@@ -9,7 +10,7 @@ import type { StateCreator } from "zustand";
 function createUiInitialState(): UiState {
   return {
     granularity: useSettingsStore.getState().defaultGranularity,
-    exportTiming: "word",
+    exportTiming: DEFAULT_EXPORT_TIMING,
     editorMode: "simple",
     activeTab: "import",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
