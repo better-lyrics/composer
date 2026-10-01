@@ -213,7 +213,7 @@ const AudioEngine: React.FC = () => {
   }, [currentStem, stemUrls, audioElement, setIsPlaying]);
 
   useEffect(() => {
-    scrubStemRouter.selectStem(currentStem, () => stemUrls[currentStem]);
+    scrubStemRouter.selectStem(currentStem, (stem) => stemUrls[stem]);
   }, [currentStem, stemUrls]);
 
   return null;

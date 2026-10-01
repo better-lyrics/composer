@@ -62,7 +62,14 @@ function setOriginalSource(source: Blob | null): void {
   }
 }
 
-function selectStem(stem: Stem, getUrl: () => string | undefined): void {
+function dropStaleStems(getUrl: (stem: Stem) => string | undefined): void {
+  for (const [stem, cached] of cache) {
+    if (stem !== "original" && stem !== activeStem && cached.url !== getUrl(stem)) cache.delete(stem);
+  }
+}
+
+function selectStem(stem: Stem, getUrl: (stem: Stem) => string | undefined): void {
+  dropStaleStems(getUrl);
   if (stem === "original") {
     const original = cache.get("original");
     if (!original) {
@@ -73,7 +80,7 @@ function selectStem(stem: Stem, getUrl: () => string | undefined): void {
     return;
   }
 
-  const url = getUrl();
+  const url = getUrl(stem);
   const cached = cache.get(stem);
   if (cached && cached.url === url) {
     if (activeStem !== stem) activate(stem, cached.audio);
@@ -95,10 +102,14 @@ function clearCache(): void {
   scrubPreview.useBuffer(null);
 }
 
+function getCachedStems(): Stem[] {
+  return [...cache.keys()];
+}
+
 function getActiveStem(): Stem | null {
   return activeStem;
 }
 
-const scrubStemRouter = { setOriginalSource, selectStem, clearCache, getActiveStem };
+const scrubStemRouter = { setOriginalSource, selectStem, clearCache, getActiveStem, getCachedStems };
 
 export { scrubStemRouter };

@@ -1,5 +1,6 @@
 import { scrubPreview } from "@/audio/scrub-preview";
 import { scrubStemRouter } from "@/audio/scrub-stem-router";
+import type { Stem } from "@/audio/separation/types";
 import { bufferToBlobUrl, encodeWav, makeSineBuffer } from "@/test/audio-fixtures";
 import { allowConsole } from "@/test/console-guard";
 import { afterEach, describe, expect, test } from "vitest";
@@ -267,6 +268,43 @@ describe("scrub-stem-router", () => {
 
       expect((await scrubAt(0.4))?.time).toBe(0.4);
       URL.revokeObjectURL(freshUrl);
+    });
+  });
+
+  describe("re-separation", () => {
+    test("drops an inactive stem's audio once its URL is gone", async () => {
+      const oldVocals = bufferToBlobUrl(makeSineBuffer(1));
+      const oldInstrumental = bufferToBlobUrl(makeSineBuffer(1));
+      const before: Partial<Record<Stem, string>> = { vocals: oldVocals, instrumental: oldInstrumental };
+      scrubStemRouter.selectStem("vocals", (stem) => before[stem]);
+      await scrubAt(0.1);
+      scrubStemRouter.selectStem("instrumental", (stem) => before[stem]);
+      expect(scrubStemRouter.getCachedStems().toSorted()).toEqual(["instrumental", "vocals"]);
+
+      const newInstrumental = bufferToBlobUrl(makeSineBuffer(1));
+      const after: Partial<Record<Stem, string>> = {
+        vocals: bufferToBlobUrl(makeSineBuffer(1)),
+        instrumental: newInstrumental,
+      };
+      scrubStemRouter.selectStem("instrumental", (stem) => after[stem]);
+
+      expect(scrubStemRouter.getCachedStems()).toEqual(["instrumental"]);
+      expect((await scrubAt(0.2))?.time).toBe(0.2);
+      for (const url of [oldVocals, oldInstrumental, ...Object.values(after)]) if (url) URL.revokeObjectURL(url);
+    });
+
+    test("keeps the original and stems whose URL is unchanged", () => {
+      const urls: Partial<Record<Stem, string>> = {
+        vocals: bufferToBlobUrl(makeSineBuffer(1)),
+        instrumental: bufferToBlobUrl(makeSineBuffer(1)),
+      };
+      scrubStemRouter.setOriginalSource(sineWav(1));
+      scrubStemRouter.selectStem("vocals", (stem) => urls[stem]);
+      scrubStemRouter.selectStem("instrumental", (stem) => urls[stem]);
+      scrubStemRouter.selectStem("original", (stem) => urls[stem]);
+
+      expect(scrubStemRouter.getCachedStems().toSorted()).toEqual(["instrumental", "original", "vocals"]);
+      for (const url of Object.values(urls)) if (url) URL.revokeObjectURL(url);
     });
   });
 
