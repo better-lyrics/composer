@@ -1,22 +1,25 @@
+import { getModelDescriptor } from "@/audio/separation/model-registry";
+import type { Stem } from "@/audio/separation/types";
+import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { getModelDescriptor } from "@/audio/separation/model-registry";
-import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { ProgressBar } from "@/ui/progress-bar";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { cn } from "@/utils/cn";
 import { formatMegabytes } from "@/utils/format-file-size";
-import { IconCheck, type IconProps, IconLoader2, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconCheck, IconLoader2, IconMicrophone, IconMusic, type IconProps, IconWaveSine } from "@tabler/icons-react";
 import { type ComponentType, useEffect } from "react";
-import type { Stem } from "@/audio/separation/types";
 
 const STEM_LABELS: Record<Stem, string> = {
   original: "Original",
   vocals: "Vocals",
   instrumental: "Instrumental",
 };
+
+const DETECTING_ONSETS_LABEL = "Detecting vocal onsets";
 
 const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
   original: IconWaveSine,
@@ -34,6 +37,7 @@ const VocalSeparationDropdown: React.FC = () => {
   const modelCached = useSeparationStore((s) => s.modelCached);
   const hostingConfigured = useSeparationStore((s) => s.hostingConfigured);
   const refreshModelCacheStatus = useSeparationStore((s) => s.refreshModelCacheStatus);
+  const detectingOnsets = useTimelineStore((s) => s.vocalOnsetDetectionStatus === "processing");
 
   const variant = useSettingsStore((s) => s.vocalModelVariant);
   const descriptor = getModelDescriptor(variant);
@@ -53,91 +57,105 @@ const VocalSeparationDropdown: React.FC = () => {
   if (!source) return null;
 
   const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
-  const triggerLabel = status === "downloading" || status === "processing" ? `${pct}%` : STEM_LABELS[currentStem];
+  const separating = status === "downloading" || status === "processing";
+  const showDetecting = detectingOnsets && !separating;
+  const triggerLabel = separating ? `${pct}%` : showDetecting ? DETECTING_ONSETS_LABEL : STEM_LABELS[currentStem];
   const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
-    status === "downloading" || status === "processing" ? (
+    separating || showDetecting ? (
       <IconLoader2 className={`${triggerIconClass} animate-spin`} />
     ) : (
       <IconMicrophone className={triggerIconClass} />
     );
 
   return (
-    <Popover
-      placement="top-end"
-      trigger={
-        <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label="Vocal separation">
-          {triggerIcon}
-          <span>{triggerLabel}</span>
-        </Button>
-      }
-    >
-      {(close) => {
-        const selectAndClose = (stem: Stem) => {
-          selectStem(stem);
-          close();
-        };
-        return (
-          <div className="p-3 w-max max-w-80">
-            {status === "error" && error && (
-              <ErrorState
-                message={error.message}
-                onRetry={retry}
-                onDismiss={() => useSeparationStore.getState().reset()}
-              />
-            )}
+    <>
+      <span role="status" aria-atomic="true" className="sr-only">
+        {showDetecting ? DETECTING_ONSETS_LABEL : ""}
+      </span>
+      <Popover
+        placement="top-end"
+        trigger={
+          <Button
+            variant="ghost"
+            hasIcon
+            className="group font-mono tabular-nums min-w-20"
+            aria-label={
+              showDetecting ? `Vocal separation, ${DETECTING_ONSETS_LABEL.toLowerCase()}` : "Vocal separation"
+            }
+          >
+            {triggerIcon}
+            <span>{triggerLabel}</span>
+          </Button>
+        }
+      >
+        {(close) => {
+          const selectAndClose = (stem: Stem) => {
+            selectStem(stem);
+            close();
+          };
+          return (
+            <div className="p-3 w-max max-w-80">
+              {status === "error" && error && (
+                <ErrorState
+                  message={error.message}
+                  onRetry={retry}
+                  onDismiss={() => useSeparationStore.getState().reset()}
+                />
+              )}
 
-            {status === "downloading" && (
-              <ProgressState
-                title="Downloading model…"
-                detail={`${formatMegabytes(progress.loaded)} / ${formatMegabytes(progress.total || (descriptor?.approxBytes ?? 0))}`}
-                pct={pct}
-                onCancel={cancel}
-              />
-            )}
+              {status === "downloading" && (
+                <ProgressState
+                  title="Downloading model…"
+                  detail={`${formatMegabytes(progress.loaded)} / ${formatMegabytes(progress.total || (descriptor?.approxBytes ?? 0))}`}
+                  pct={pct}
+                  onCancel={cancel}
+                />
+              )}
 
-            {status === "processing" && (
-              <ProgressState
-                title="Separating vocals…"
-                detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
-                pct={pct}
-                onCancel={cancel}
-              />
-            )}
+              {status === "processing" && (
+                <ProgressState
+                  title="Separating vocals…"
+                  detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
+                  pct={pct}
+                  onCancel={cancel}
+                />
+              )}
 
-            {status === "idle" && !modelCached && (
-              <IdleNoModelState
-                approxMb={descriptor?.approxMb ?? 85}
-                onDownload={downloadModel}
-                onSeparate={separate}
-              />
-            )}
+              {status === "idle" && !modelCached && (
+                <IdleNoModelState
+                  approxMb={descriptor?.approxMb ?? 85}
+                  onDownload={downloadModel}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "idle" && modelCached && (
-              <IdleReadyState
-                availableStems={availableStems}
-                currentStem={currentStem}
-                onSelect={selectAndClose}
-                onSeparate={separate}
-              />
-            )}
+              {status === "idle" && modelCached && (
+                <IdleReadyState
+                  availableStems={availableStems}
+                  currentStem={currentStem}
+                  onSelect={selectAndClose}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "ready" && (
-              <IdleReadyState
-                availableStems={availableStems}
-                currentStem={currentStem}
-                onSelect={selectAndClose}
-                onSeparate={separate}
-              />
-            )}
+              {status === "ready" && (
+                <IdleReadyState
+                  availableStems={availableStems}
+                  currentStem={currentStem}
+                  onSelect={selectAndClose}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "cancelled" && (
-              <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
-            )}
-          </div>
-        );
-      }}
-    </Popover>
+              {status === "cancelled" && (
+                <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
+              )}
+            </div>
+          );
+        }}
+      </Popover>
+    </>
   );
 };
 

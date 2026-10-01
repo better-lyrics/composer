@@ -1,9 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { VocalSeparationDropdown } from "@/ui/vocal-separation-dropdown";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // -- Vocal Separation Dropdown ------------------------------------------------
 
@@ -55,5 +56,58 @@ describe("VocalSeparationDropdown", () => {
     await expect.element(screen.getByText("1.0 MB / 4.0 MB")).toBeInTheDocument();
     const bar = screen.getByRole("progressbar", { name: "Downloading model…" });
     await expect.element(bar).toHaveAttribute("aria-valuenow", "25");
+  });
+
+  describe("vocal onset detection", () => {
+    it("shows a spinner and the detection label on the trigger while onsets are detected", async () => {
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+      const screen = await render(<VocalSeparationDropdown />);
+
+      const trigger = screen.getByRole("button", { name: "Vocal separation, detecting vocal onsets" });
+      await expect.element(trigger).toHaveTextContent("Detecting vocal onsets");
+      expect(trigger.element().querySelector(".animate-spin")).not.toBeNull();
+    });
+
+    it("announces detection through a status region", async () => {
+      const screen = await render(<VocalSeparationDropdown />);
+      const status = screen.getByRole("status");
+      await expect.element(status).toHaveTextContent("");
+
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+      await expect.element(status).toHaveTextContent("Detecting vocal onsets");
+
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("idle");
+      await expect.element(status).toHaveTextContent("");
+    });
+
+    it("returns to the stem label once detection finishes", async () => {
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+      const screen = await render(<VocalSeparationDropdown />);
+      await expect.element(screen.getByRole("button", { name: /detecting vocal onsets/ })).toBeInTheDocument();
+
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("idle");
+
+      const trigger = screen.getByRole("button", { name: "Vocal separation" });
+      await expect.element(trigger).toHaveTextContent("Vocals");
+      expect(trigger.element().querySelector(".animate-spin")).toBeNull();
+    });
+
+    describe("edge cases", () => {
+      it("keeps the separation percentage when separation and detection overlap", async () => {
+        useSeparationStore.setState({ status: "processing", progress: { loaded: 1, total: 4 } });
+        useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+        const screen = await render(<VocalSeparationDropdown />);
+
+        await expect.element(screen.getByRole("button", { name: "Vocal separation" })).toHaveTextContent("25%");
+      });
+
+      it("does not show detection after a detection error", async () => {
+        useTimelineStore.getState().setVocalOnsetDetectionStatus("error", "bad stem");
+        const screen = await render(<VocalSeparationDropdown />);
+
+        await expect.element(screen.getByRole("button", { name: "Vocal separation" })).toHaveTextContent("Vocals");
+        await expect.element(screen.getByRole("status")).toHaveTextContent("");
+      });
+    });
   });
 });
