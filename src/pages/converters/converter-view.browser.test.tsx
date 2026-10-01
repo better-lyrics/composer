@@ -1,6 +1,11 @@
 import { convertViaParser } from "@/pages/converters/convert-via-parser";
 import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
-import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
+import {
+  HIT_TESTING_UTILITIES_CSS,
+  LYRICS_CODE_CSS,
+  installStyleSheet,
+  installUtilitiesUsedIn,
+} from "@/test/browser-css";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -278,5 +283,22 @@ describe("converter highlighting", () => {
     await screen.getByRole("button", { name: "Load sample" }).click();
     await expect.poll(() => outputPane(screen.container)?.textContent).toBe("Could not parse line 3");
     expect(outputPane(screen.container)?.classList.contains("bh")).toBe(false);
+  });
+});
+
+describe("converter input resize", () => {
+  it("regression: dragging the input's resize grip changes its height", async () => {
+    const screen = await renderLrcConverter();
+    const sheets = [installStyleSheet(LYRICS_CODE_CSS), await installUtilitiesUsedIn(screen.container)];
+    try {
+      const frame = screen.container.querySelector<HTMLElement>(".lyrics-code-frame");
+      if (!frame) throw new Error("input frame not rendered");
+      expect(getComputedStyle(frame).resize).toBe("vertical");
+      const before = frame.getBoundingClientRect().height;
+      frame.style.height = `${before + 200}px`;
+      expect(frame.getBoundingClientRect().height).toBeCloseTo(before + 200, 0);
+    } finally {
+      for (const sheet of sheets) sheet.remove();
+    }
   });
 });

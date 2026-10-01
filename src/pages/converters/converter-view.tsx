@@ -102,7 +102,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
             spellCheck={false}
-            frameClassName="flex-1 min-h-[280px] md:min-h-[420px] rounded-lg bg-composer-bg-dark resize-y overflow-hidden"
+            frameClassName="flex-auto min-h-[280px] md:min-h-[420px] rounded-lg bg-composer-bg-dark resize-y overflow-hidden"
             className="font-mono text-sm border border-composer-border rounded-lg p-3 focus:outline-none focus:border-composer-accent cursor-text select-text"
           />
           <div className="mt-3 flex items-center gap-2">
