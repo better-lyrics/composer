@@ -14,9 +14,7 @@ import { userEvent } from "vitest/browser";
 
 const LRC = "[00:01.00]<00:01.00>Hello <00:01.50>world";
 const TTML = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hi</p></div></body></tt>`;
-// Tailwind preflight makes every box border-box in the app.
 const MONO_STYLE: React.CSSProperties = {
-  boxSizing: "border-box",
   fontFamily: "monospace",
   fontSize: 13,
   lineHeight: "20px",
@@ -145,6 +143,7 @@ describe("LyricsCodeEditor", () => {
     const screen = await render(<Harness initial={TTML} />);
     const textareaStyle = getComputedStyle(textareaIn(screen.container));
     const layerStyle = getComputedStyle(layerIn(screen.container));
+    expect(textareaStyle.boxSizing).toBe("border-box");
     for (const property of SYNCED_BOX_PROPERTIES) {
       expect(layerStyle.getPropertyValue(property), property).toBe(textareaStyle.getPropertyValue(property));
     }
