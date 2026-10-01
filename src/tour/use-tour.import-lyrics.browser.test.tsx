@@ -125,6 +125,27 @@ describe("tour Import Lyrics steps", () => {
     await expect.element(track).toHaveValue("Midnight City");
   });
 
+  it("regression: arrow keys inside a modal field move the caret and leave the tour where it is", async () => {
+    const screen = await resumeAt("edit-import-modal");
+    await expect.poll(() => importDialog()?.classList.contains("driver-active-element")).toBe(true);
+    const track = screen.getByLabelText("Track");
+    await track.click();
+    await userEvent.keyboard("Midnight City{ArrowLeft}{ArrowLeft}{ArrowRight}");
+    await stepFrames(2);
+    expect(driverTitle()).toBe("Search, paste, or upload");
+    expect(importDialog()).not.toBeNull();
+    await expect.element(track).toHaveValue("Midnight City");
+  });
+
+  it("keeps arrow keys stepping the tour when no field has focus", async () => {
+    await resumeAt("edit-import");
+    await expect.poll(driverTitle).toBe("Import lyrics you already have");
+    await stepFrames(2);
+    (document.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect.poll(driverTitle).toBe("Search, paste, or upload");
+  });
+
   it("moves on when the modal is closed from its own Cancel button", async () => {
     const screen = await resumeAt("edit-import-modal");
     await expect.poll(() => importDialog()?.classList.contains("driver-active-element")).toBe(true);

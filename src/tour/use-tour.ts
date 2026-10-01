@@ -1,9 +1,10 @@
-import { BEST_PRACTICES_STEP_TITLE, type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
-import type { GuideCardState } from "@/tour/guide-card";
-import { driver, type Driver, type DriveStep, type PopoverDOM } from "driver.js";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useReducedMotion } from "motion/react";
 import { useModalStackStore } from "@/stores/modal-stack";
+import { keepFieldArrowKeysFromTour } from "@/tour/field-arrow-keys";
+import type { GuideCardState } from "@/tour/guide-card";
+import { BEST_PRACTICES_STEP_TITLE, type GatedStep, TOUR_GATED_STEPS, createTourSteps } from "@/tour/tour-steps";
+import { type DriveStep, type Driver, type PopoverDOM, driver } from "driver.js";
+import { useReducedMotion } from "motion/react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -74,6 +75,7 @@ interface UseTourOptions {
 function useTour({ onOpenBestPractices }: UseTourOptions) {
   const driverRef = useRef<Driver | null>(null);
   const releaseModalRef = useRef<(() => void) | null>(null);
+  const releaseArrowGuardRef = useRef<(() => void) | null>(null);
   const gateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const gateSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [guideCard, setGuideCard] = useState<GuideCardState | null>(null);
@@ -102,6 +104,8 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
     tourDriver?.destroy();
     releaseModalRef.current?.();
     releaseModalRef.current = null;
+    releaseArrowGuardRef.current?.();
+    releaseArrowGuardRef.current = null;
   }, []);
 
   const openBestPractices = useCallback(() => {
@@ -145,6 +149,7 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
       const { push, pop } = useModalStackStore.getState();
       push();
       releaseModalRef.current = pop;
+      releaseArrowGuardRef.current = keepFieldArrowKeysFromTour();
       driverRef.current = tourDriver;
       tourDriver.drive(startIndex);
     },
