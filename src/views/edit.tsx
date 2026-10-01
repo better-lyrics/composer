@@ -27,6 +27,7 @@ import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
 import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
+import { useSmartPaste } from "@/views/edit/use-smart-paste";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
 import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
@@ -39,7 +40,7 @@ const RUN_DEBOUNCE_MS = 500;
 
 const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time...
 
-Or drag and drop a lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE}`;
+Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE} to import it`;
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
@@ -581,6 +582,7 @@ const EditPanel: React.FC = () => {
     [confirm, defaultAgentId, groups, lines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
+  const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
 
   const importTriggers = useDualClickImport(openImportModal);
 
@@ -653,9 +655,7 @@ const EditPanel: React.FC = () => {
             onBlur={handleTextareaBlur}
             onCompositionStart={textareaChange.onCompositionStart}
             onCompositionEnd={textareaChange.onCompositionEnd}
-            onPaste={() => {
-              pastedRef.current = true;
-            }}
+            onPaste={handlePaste}
             placeholder={LYRICS_TEXTAREA_PLACEHOLDER}
             className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
             spellCheck={false}
