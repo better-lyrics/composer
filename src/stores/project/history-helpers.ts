@@ -79,16 +79,19 @@ function changedLineIds(before: readonly RawLine[], after: readonly RawLine[]): 
   return after.filter((line) => beforeById.get(line.id) !== line).map((line) => line.id);
 }
 
+// `finish` runs on the lines after the copy and can refuse the whole write by returning null.
 function commitSharedTimingHistory(
   state: ProjectState,
   lines: RawLine[],
   changedIds: readonly string[] = changedLineIds(state.lines, lines),
-  options: { deriveText?: boolean } = {},
+  options: { deriveText?: boolean; finish?: (copied: RawLine[]) => RawLine[] | null } = {},
 ) {
   const shared = sharedTimingFanOut(state.lines, lines, state.groups, changedIds);
   if (shared.rejected) return state;
+  const finished = options.finish ? options.finish(shared.lines) : shared.lines;
+  if (!finished) return state;
   if (shared.touchedGroupIds.length) notifySharedTimingCopied(shared.touchedGroupIds);
-  return commitHistory(state, { lines: shared.lines }, options);
+  return commitHistory(state, { lines: finished }, { deriveText: options.deriveText });
 }
 
 function commitPendingEdit(state: ProjectState, baseline: LyricLine[], baselineWasDirty = false) {

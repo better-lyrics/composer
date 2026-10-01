@@ -4,6 +4,7 @@
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
+import { subscribeSharedTimingCopied } from "@/lib/shared-timing-signals";
 import { useSettingsStore } from "@/stores/settings";
 import { createGroup, createLine } from "@/test/factories";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -209,6 +210,29 @@ describe("placeInstance", () => {
     it("places without an end limit while the song length is unknown", () => {
       seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1)]);
       expect(store().placeInstance("g1", 1, 500, 0)).toBe(true);
+    });
+
+    it("pings the groups a preceding edit reached only when the placement lands", () => {
+      const lastWordLonger = {
+        id: "c0",
+        updates: {
+          words: [
+            { text: "I ", begin: 10, end: 10.4 },
+            { text: "want", begin: 10.5, end: 12 },
+          ],
+        },
+      };
+      const pings: (readonly string[])[] = [];
+      const unsubscribe = subscribeSharedTimingCopied((groupIds) => pings.push(groupIds));
+      try {
+        seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1), chorus(2, 60)]);
+        expect(store().placeInstance("g1", 1, 99.5, 100, [lastWordLonger])).toBe(false);
+        expect(pings).toEqual([]);
+        expect(store().placeInstance("g1", 1, 40, SONG_LENGTH, [lastWordLonger])).toBe(true);
+        expect(pings).toEqual([["g1"]]);
+      } finally {
+        unsubscribe();
+      }
     });
 
     it("writes nothing and reports false when there is no timed reference", () => {

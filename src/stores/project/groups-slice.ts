@@ -2,15 +2,14 @@ import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
-import { instanceStart, sharedTimingFanOut, wholeSongRange } from "@/domain/group/shared-timing";
+import { instanceStart, wholeSongRange } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { type LyricLine, reconcileLine } from "@/domain/line/model";
 import { clampShiftDelta, shiftLineTiming } from "@/domain/line/shift";
-import { notifySharedTimingCopied } from "@/lib/shared-timing-signals";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitHistory, commitSharedTimingHistory } from "@/stores/project/history-helpers";
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
@@ -224,18 +223,21 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
 
   placeInstance: (groupId, instanceIdx, start, duration, precedingUpdates = []) => {
     const state = get();
-    const preceded = sharedTimingFanOut(
-      state.lines,
-      applyLineUpdates(state.lines, precedingUpdates),
-      state.groups,
-      precedingUpdates.map((update) => update.id),
-    );
-    if (preceded.rejected) return false;
     const songEnd = songEndOrUnbounded(duration);
-    const placed = placeSharedInstance(preceded.lines, state.groups, groupId, instanceIdx, start, songEnd);
-    if (placed.length === 0) return false;
-    if (preceded.touchedGroupIds.length) notifySharedTimingCopied(preceded.touchedGroupIds);
-    set(commitHistory(state, { lines: applyLineUpdates(preceded.lines, placed) }, { deriveText: false }));
+    const next = commitSharedTimingHistory(
+      state,
+      applyLineUpdates(state.lines, precedingUpdates),
+      precedingUpdates.map((update) => update.id),
+      {
+        deriveText: false,
+        finish: (copied) => {
+          const placed = placeSharedInstance(copied, state.groups, groupId, instanceIdx, start, songEnd);
+          return placed.length ? applyLineUpdates(copied, placed) : null;
+        },
+      },
+    );
+    if (next === state) return false;
+    set(next);
     return true;
   },
 });
