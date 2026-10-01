@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { installStyleSheet } from "@/test/browser-css";
+import { stepFrames } from "@/test/frame-steps";
 import { Scroll } from "@/ui/scroll";
 import { render } from "@/test/render";
-import { useRef } from "react";
+import { Activity, useRef } from "react";
 
 function ViewportRefHarness({ onMount }: { onMount: (el: HTMLDivElement | null) => void }) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -114,5 +115,45 @@ describe("Scroll initialScrollTop", () => {
       );
       expect(activeScroller(screen.getByText("short content").element())?.scrollTop).toBe(100);
     });
+  });
+});
+
+describe("Scroll inside a hidden Activity", () => {
+  beforeEach(() => {
+    installStyleSheet(".activity-scroll-host{height:200px;overflow:auto}");
+  });
+
+  function TabHarness({ mode, viewports }: { mode: "visible" | "hidden"; viewports: HTMLDivElement[] }) {
+    return (
+      <Activity mode={mode}>
+        <Scroll className="activity-scroll-host" onInitialized={(viewport) => viewports.push(viewport)}>
+          <div style={{ height: 1000 }}>tab content</div>
+        </Scroll>
+      </Activity>
+    );
+  }
+
+  async function hideAndShow(scrollTop?: number) {
+    const viewports: HTMLDivElement[] = [];
+    const screen = await render(<TabHarness mode="visible" viewports={viewports} />);
+    await expect.poll(() => viewports.length).toBe(1);
+    if (scrollTop !== undefined) {
+      viewports[0].scrollTop = scrollTop;
+      await stepFrames(2);
+    }
+    await screen.rerender(<TabHarness mode="hidden" viewports={viewports} />);
+    await screen.rerender(<TabHarness mode="visible" viewports={viewports} />);
+    await expect.poll(() => viewports.length).toBe(2);
+    return viewports[1];
+  }
+
+  it("regression: keeps the scroll position when the Activity is hidden and shown again", async () => {
+    const viewport = await hideAndShow(420);
+    await expect.poll(() => viewport.scrollTop).toBe(420);
+  });
+
+  it("starts at the top when the Activity is shown without ever being scrolled", async () => {
+    const viewport = await hideAndShow();
+    expect(viewport.scrollTop).toBe(0);
   });
 });

@@ -6,6 +6,8 @@ import { LanguagesPanel } from "@/views/languages";
 import { Activity } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@/test/render";
+import { installStyleSheet } from "@/test/browser-css";
+import { stepFrames } from "@/test/frame-steps";
 
 const source = "こんにちは";
 
@@ -263,5 +265,30 @@ describe("language generation lifecycle", () => {
     await expect
       .element(screen.getByRole("textbox", { name: "English", exact: true }))
       .toHaveValue("Edited after re-entry");
+  });
+
+  it("regression: keeps the scroll position when leaving the tab and coming back", async () => {
+    installStyleSheet(
+      ".scroll-frame{display:flex;flex-direction:column;height:300px}.flex{display:flex}.flex-col{flex-direction:column}.flex-1{flex:1 1 0%;min-height:0}.overflow-hidden{overflow:hidden}.overflow-auto{overflow:auto}",
+    );
+    useProjectStore
+      .getState()
+      .setLines(Array.from({ length: 40 }, (_, index) => ({ id: `line-${index}`, text: source, agentId: "v1" })));
+    const screen = await render(
+      <div className="scroll-frame">
+        <ActivityPanel />
+      </div>,
+    );
+    const viewport = () => screen.container.querySelector<HTMLElement>("[data-overlayscrollbars-viewport]");
+    await expect.poll(() => (viewport()?.scrollHeight ?? 0) - (viewport()?.clientHeight ?? 0)).toBeGreaterThan(600);
+    const scroller = viewport();
+    if (scroller) scroller.scrollTop = 600;
+    await stepFrames(2);
+
+    useProjectStore.getState().setActiveTab("edit");
+    await expect.element(screen.getByRole("textbox", { name: "English", exact: true }).first()).not.toBeInTheDocument();
+    useProjectStore.getState().setActiveTab("languages");
+
+    await expect.poll(() => viewport()?.scrollTop).toBe(600);
   });
 });

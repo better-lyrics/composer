@@ -29,12 +29,13 @@ const Scroll: React.FC<ScrollProps> = ({
   onInitialized,
 }) => {
   const componentRef = useRef<OverlayScrollbarsComponentRef>(null);
-  const initialScrollTopRef = useRef(initialScrollTop);
+  const scrollTopRef = useRef(initialScrollTop);
 
   // OverlayScrollbars is deferred, so the host paints first; scrolling it now avoids a jump from the top.
+  // A hidden Activity destroys the instance, so this also restores the position when the panel shows again.
   useLayoutEffect(() => {
     const host = componentRef.current?.getElement();
-    if (host && initialScrollTopRef.current !== undefined) host.scrollTop = initialScrollTopRef.current;
+    if (host && scrollTopRef.current !== undefined) host.scrollTop = scrollTopRef.current;
   }, []);
 
   return (
@@ -50,6 +51,9 @@ const Scroll: React.FC<ScrollProps> = ({
           const viewport = instance.elements().viewport as HTMLDivElement;
           if (viewportRef) viewportRef.current = viewport;
           onInitialized?.(viewport);
+        },
+        scroll: (instance) => {
+          scrollTopRef.current = instance.elements().viewport.scrollTop;
         },
         destroyed: () => {
           if (viewportRef) viewportRef.current = null;
