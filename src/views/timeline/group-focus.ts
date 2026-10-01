@@ -50,8 +50,12 @@ function adjacentHeardInstance(
   return heard[(here + direction + heard.length) % heard.length];
 }
 
+function instanceSpan(lines: readonly LyricLine[], groupId: string, instanceIdx: number): Bounds | null {
+  return instanceBounds(linesOfInstance(lines, groupId, instanceIdx));
+}
+
 function focusBounds(lines: readonly LyricLine[], focus: GroupFocus): Bounds | null {
-  return instanceBounds(linesOfInstance(lines, focus.groupId, focus.hearInstanceIdx));
+  return instanceSpan(lines, focus.groupId, focus.hearInstanceIdx);
 }
 
 function focusScrollRange(span: Bounds, zoom: number, visibleTrackWidth: number): ScrollRange {
@@ -73,6 +77,7 @@ function clampScrollLeft(scrollLeft: number, range: ScrollRange): number {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  instanceSpan,
   FOCUS_SCROLL_MARGIN_PX,
   adjacentHeardInstance,
   canHearInstance,

@@ -55,6 +55,26 @@ describe("SeekBarFocusBand", () => {
     expect(band()?.style.width).toBe("10%");
   });
 
+  it("regression: spans a detached line of the open instance, like the waveform shade", async () => {
+    const detached = {
+      ...createLine({
+        id: "d1",
+        text: "hey",
+        groupId: "g1",
+        instanceIdx: 1,
+        templateLineIdx: 1,
+        words: [createWord({ text: "hey", begin: 60, end: 70 })],
+      }),
+      detached: true,
+    };
+    useProjectStore.setState({ lines: [chorus(0, 10, 20), chorus(1, 50, 60), detached] });
+    useTimelineStore.getState().openGroup("g1", 1);
+    await render(<SeekBarFocusBand duration={100} />);
+
+    await expect.poll(() => band()?.style.left).toBe("50%");
+    expect(band()?.style.width).toBe("20%");
+  });
+
   it("marks the other instances of the open group with a fainter band", async () => {
     useTimelineStore.getState().openGroup("g1", 1);
     await render(<SeekBarFocusBand duration={100} />);
