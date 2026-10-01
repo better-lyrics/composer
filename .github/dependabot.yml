@@ -12,6 +12,9 @@ updates:
       braccato:
         patterns: ["@braccato/*"]
         update-types: [minor, patch]
+      # vitest and its browser packages must move in lockstep, majors included.
+      vitest:
+        patterns: ["vitest", "@vitest/*", "vitest-browser-react"]
       # Everything else non-breaking in one PR. Majors still come in
       # individually so they can be reviewed on their own.
       minor-and-patch:
