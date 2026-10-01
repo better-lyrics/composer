@@ -267,4 +267,4 @@ export {
   getActiveCobaltInstance,
   isUsingDefaultCobaltInstance,
 };
-export type { SettingsState, CobaltInstanceStatus, LinkedDivergenceAction, VocalModelVariant };
+export type { SettingsState, CobaltInstanceStatus, VocalModelVariant };

@@ -96,4 +96,4 @@ function askChoiceWithCheckbox<T extends string>(request: CheckboxChoiceRequest<
 // -- Exports ------------------------------------------------------------------
 
 export { askChoice, askChoiceWithCheckbox, useChoiceStore };
-export type { CheckboxChoiceRequest, ChoiceRequest };
+export type { ChoiceRequest };
