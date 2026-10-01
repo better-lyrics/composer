@@ -150,6 +150,8 @@ describe("PasteImportModal", () => {
       .element(screen.getByRole("alert"))
       .toHaveTextContent("You pasted 2 lines for 3 lyric lines. Fix the matches below before importing.");
     await expect.element(screen.getByRole("button", { name: "Import 2 lines" })).toBeInTheDocument();
+    // The modal's initial focus lands a frame late; typing before it would send keys to the textarea.
+    await expect.element(screen.getByRole("textbox", { name: "Pasted text" })).toHaveFocus();
 
     await screen.getByRole("textbox", { name: "Imported line 3" }).fill("C");
     await screen.getByRole("button", { name: "Import 3 lines" }).click();
