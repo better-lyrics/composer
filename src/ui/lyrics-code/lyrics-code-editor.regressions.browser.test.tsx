@@ -4,6 +4,7 @@ import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import type { LyricFormat } from "@braccato/highlight";
 import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -63,5 +64,15 @@ describe("LyricsCodeEditor regressions", () => {
     expect(textarea.classList.contains("long")).toBe(true);
     expect(textarea.classList.contains("bh-input")).toBe(true);
     expect(getComputedStyle(textarea).color).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  it("regression: the layer follows the textarea when the parent rejects a keystroke", async () => {
+    const screen = await render(<Harness initial="[00:01.00]Hi" accept={(next) => !next.includes("!")} />);
+    const textarea = textareaIn(screen.container);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await userEvent.keyboard("!");
+    expect(textarea.value).toBe("[00:01.00]Hi");
+    await expect.poll(() => layerIn(screen.container).textContent).toBe("[00:01.00]Hi");
   });
 });

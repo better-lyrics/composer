@@ -20,6 +20,10 @@ function keepingFocus<T>(textarea: HTMLTextAreaElement, move: () => T): T {
   return result;
 }
 
+function refreshIfStale(editor: EditorHandle, value: string): void {
+  if (editor.layer.textContent !== layerText(value)) editor.refresh();
+}
+
 // -- Components ---------------------------------------------------------------
 
 // The frame only ever holds the textarea, so attachEditor can move it into its wrapper without React noticing.
@@ -38,7 +42,14 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
       if (!textarea) return;
       const editor = keepingFocus(textarea, () => attachEditor(textarea, { format }));
       editorRef.current = editor;
+      // React restores a rejected controlled value in its root listener without a commit, so check once input has bubbled past it.
+      const resyncAfterInput = (event: Event) => {
+        if (event.target === textarea) refreshIfStale(editor, textarea.value);
+      };
+      const ownerDocument = textarea.ownerDocument;
+      ownerDocument.addEventListener("input", resyncAfterInput);
       return () => {
+        ownerDocument.removeEventListener("input", resyncAfterInput);
         keepingFocus(textarea, editor.destroy);
         editorRef.current = null;
       };
@@ -47,8 +58,7 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
   );
 
   useLayoutEffect(() => {
-    const editor = editorRef.current;
-    if (editor && editor.layer.textContent !== layerText(value)) editor.refresh();
+    if (editorRef.current) refreshIfStale(editorRef.current, value);
   }, [value]);
 
   return (
