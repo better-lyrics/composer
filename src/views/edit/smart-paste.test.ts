@@ -88,6 +88,35 @@ describe("classifyPastedText", () => {
     });
   });
 
+  describe("real LRC files with a preamble", () => {
+    it("reads an LRC with a bare title line as a lyrics file", () => {
+      const result = classifyPastedText(
+        "JHENRY\n\n[00:09.49]Say, John Henry what ya doing it for?\n[00:13.04]Showed you progress and you're calling it war\n[00:16.29]My, my",
+      );
+      expect(result.kind).toBe("lyrics-file");
+      if (result.kind === "lyrics-file") expect(result.parsed.lines).toHaveLength(3);
+    });
+
+    it("reads an exported LRC with a header and a plain lyrics block, keeping only the synced lines", () => {
+      const result = classifyPastedText(
+        "Track Name: ZHIEND - Scar on Face (English)\nArtist Name: MarcusTheRocker\n\nPlain Lyrics:\n劣性\n前髪が\n\nSynced Lyrics:\n[00:32.50] 劣性\n[00:35.86] 前髪が\n[00:39.69] 劣性",
+      );
+      expect(result.kind).toBe("lyrics-file");
+    });
+
+    it("keeps an LRC saved as rich text as text, since its lines carry RTF control words", () => {
+      const rtf =
+        "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n[00:27.98]Nine pound hammer\\\n}";
+      expect(classifyPastedText(rtf).kind).toBe("typed-text");
+    });
+
+    it("keeps prose with one stray timestamp as text", () => {
+      expect(
+        classifyPastedText("We met at eight.\n[00:12.34] is where the chorus kicks in.\nThe crowd was great.").kind,
+      ).toBe("typed-text");
+    });
+  });
+
   describe("ambiguous input stays text", () => {
     it("keeps lyrics that only mention a <tt tag as text", () => {
       expect(classifyPastedText("Type <tt> for teletype\nSecond line").kind).toBe("typed-text");
