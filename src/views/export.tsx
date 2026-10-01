@@ -4,13 +4,12 @@ import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { useProjectStore } from "@/stores/project";
-import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { Scroll } from "@/ui/scroll";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
-import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
@@ -26,7 +25,6 @@ import {
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
-import { Highlight } from "prism-react-renderer";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -81,7 +79,6 @@ function applyEditsToProject(content: string, duration: number): void {
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
-  const scheme = useThemeStore((s) => s.getThemeById(s.activeThemeId)?.scheme ?? "dark");
   const {
     content: exportContent,
     duration,
@@ -255,21 +252,11 @@ const ExportPanel: React.FC = () => {
         <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
-          <Highlight theme={codeHighlightThemeFor(scheme)} code={exportContent} language="xml">
-            {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text" style={style}>
-                {tokens.map((line, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
-                  <div key={i} {...getLineProps({ line })}>
-                    {line.map((token, j) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
-                      <span key={j} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                ))}
-              </pre>
-            )}
-          </Highlight>
+          <LyricsCode
+            code={exportContent}
+            format="ttml"
+            className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text bg-composer-bg-elevated"
+          />
         </Scroll>
       )}
     </div>

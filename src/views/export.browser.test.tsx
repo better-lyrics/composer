@@ -3,12 +3,13 @@ import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -29,47 +30,47 @@ function dispatchFileChange(input: HTMLInputElement, file: File): void {
 }
 
 describe("ExportPanel preview highlight", () => {
-  it("keeps the night owl colours on the elevated background in a dark theme", async () => {
-    const root = document.documentElement;
-    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
-    try {
-      useThemeStore.setState({ activeThemeId: "default" });
-      useProjectStore.setState({
-        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
-      });
-      const screen = await render(<ExportPanel />);
-      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
-      const pre = screen.container.querySelector("pre");
-      if (!pre) throw new Error("highlighted preview not rendered");
-      expect(getComputedStyle(pre).color).toBe("rgb(214, 222, 235)");
-      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
-    } finally {
-      root.style.removeProperty("--color-composer-bg-elevated");
-    }
+  let sheet: HTMLStyleElement;
+
+  beforeEach(() => {
+    sheet = installStyleSheet(LYRICS_CODE_CSS);
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+    });
   });
 
-  it("resolves token colours through the composer theme variables in a light theme", async () => {
-    useThemeStore.setState({ activeThemeId: "light" });
-    const root = document.documentElement;
-    root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
-    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
-    try {
-      useProjectStore.setState({
-        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
-      });
-      const screen = await render(<ExportPanel />);
-      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
-      const pre = screen.container.querySelector("pre");
-      const tag = screen.container.querySelector("pre .token.tag:not(.punctuation)");
-      if (!pre || !tag) throw new Error("highlighted preview not rendered");
-      expect(getComputedStyle(tag).color).toBe("rgb(1, 2, 3)");
-      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
-    } finally {
-      root.style.removeProperty("--color-composer-accent-text");
-      root.style.removeProperty("--color-composer-bg-elevated");
-      useThemeStore.setState({ activeThemeId: "default" });
-    }
+  afterEach(() => {
+    sheet.remove();
+    document.documentElement.style.removeProperty("--color-composer-text");
+    document.documentElement.style.removeProperty("--color-composer-accent-text");
   });
+
+  it("highlights the TTML on the elevated surface", async () => {
+    const screen = await render(<ExportPanel />);
+    await expect.poll(() => screen.container.querySelector("pre.bh .bh-tag")).not.toBe(null);
+    const pre = screen.container.querySelector("pre.bh");
+    if (!pre) throw new Error("highlighted preview not rendered");
+    expect(pre.classList.contains("bg-composer-bg-elevated")).toBe(true);
+    expect(pre.classList.contains("select-text")).toBe(true);
+    expect([...pre.querySelectorAll(".bh-tag")].map((tag) => tag.textContent)).toContain("tt");
+  });
+
+  it.each(["default", "light"])(
+    "resolves token colours through the composer theme variables in the %s theme",
+    async (themeId) => {
+      useThemeStore.setState({ activeThemeId: themeId });
+      const root = document.documentElement;
+      root.style.setProperty("--color-composer-text", "rgb(7, 8, 9)");
+      root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
+      const screen = await render(<ExportPanel />);
+      await expect.poll(() => screen.container.querySelector("pre.bh .bh-timestamp")).not.toBe(null);
+      const pre = screen.container.querySelector("pre.bh");
+      const timestamp = screen.container.querySelector("pre.bh .bh-timestamp");
+      if (!pre || !timestamp) throw new Error("highlighted preview not rendered");
+      expect(getComputedStyle(pre).color).toBe("rgb(7, 8, 9)");
+      expect(getComputedStyle(timestamp).color).toBe("rgb(1, 2, 3)");
+    },
+  );
 });
 
 describe("ExportPanel", () => {
