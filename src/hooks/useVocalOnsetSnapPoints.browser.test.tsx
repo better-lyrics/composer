@@ -4,9 +4,15 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { resetAllStores } from "@/test/stores";
-import { bufferToBlobUrl, createAudioFile, encodeWav, makeSineBuffer, makeVocalBurstBuffer } from "@/test/audio-fixtures";
+import {
+  bufferToBlobUrl,
+  createAudioFile,
+  encodeWav,
+  makeSineBuffer,
+  makeVocalBurstBuffer,
+} from "@/test/audio-fixtures";
 import { render } from "@/test/render";
+import { resetAllStores } from "@/test/stores";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 

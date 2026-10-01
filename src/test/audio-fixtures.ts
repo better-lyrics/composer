@@ -76,7 +76,11 @@ function makeVocalBurstBuffer(durationS: number, sampleRate = 44100): AudioBuffe
   const data = audioBuffer.getChannelData(0);
   data.fill(0);
   const burstLength = Math.round(sampleRate * 0.1);
-  for (let start = Math.round(sampleRate * 0.25); start + burstLength < data.length; start += Math.round(sampleRate * 0.4)) {
+  for (
+    let start = Math.round(sampleRate * 0.25);
+    start + burstLength < data.length;
+    start += Math.round(sampleRate * 0.4)
+  ) {
     for (let i = 0; i < burstLength; i++) {
       data[start + i] = 0.3 * Math.min(1, i / 64) * Math.sin((2 * Math.PI * 1200 * i) / sampleRate);
     }
