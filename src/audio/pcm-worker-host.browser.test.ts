@@ -1,5 +1,7 @@
 import { detectVocalOnsets, mixToMono } from "@/audio/onset-detection";
-import { detectOnsetsOffThread } from "@/audio/pcm-worker-host";
+import { detectOnsetsOffThread, encodeWavOffThread } from "@/audio/pcm-worker-host";
+import { hashFile } from "@/audio/separation/audio-codec";
+import { GOLDEN_STEREO_WAV_SHA256, goldenStereoInput } from "@/test/wav-golden";
 import { describe, expect, it } from "vitest";
 
 const SAMPLE_RATE = 44_100;
@@ -53,6 +55,28 @@ describe("detectOnsetsOffThread", () => {
         name: "AbortError",
       });
       expect(channel.byteLength).toBeGreaterThan(0);
+    });
+  });
+});
+
+describe("encodeWavOffThread", () => {
+  it("returns a wav blob with the same bytes as before the worker move", async () => {
+    const { channels, sampleRate } = goldenStereoInput();
+    const wav = await encodeWavOffThread(channels, sampleRate);
+    expect(wav.type).toBe("audio/wav");
+    expect(await hashFile(wav)).toBe(GOLDEN_STEREO_WAV_SHA256);
+  });
+
+  it("transfers the channel buffers to the worker instead of copying them", async () => {
+    const { channels, sampleRate } = goldenStereoInput();
+    const pending = encodeWavOffThread(channels, sampleRate);
+    expect(channels.map((channel) => channel.byteLength)).toEqual([0, 0]);
+    await pending;
+  });
+
+  describe("edge cases", () => {
+    it("encodes empty audio as a header-only wav", async () => {
+      expect((await encodeWavOffThread([new Float32Array(0)], 44_100)).size).toBe(44);
     });
   });
 });

@@ -1,4 +1,5 @@
 import { parseLamePriming, stripLeading } from "@/audio/lame-priming";
+import { encodeWav } from "@/audio/wav-encode";
 
 const TARGET_SAMPLE_RATE = 44_100;
 const TARGET_CHANNELS = 2;
@@ -66,52 +67,7 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
 }
 
 function floatChannelsToWavBlob(channels: Float32Array[], sampleRate: number): Blob {
-  const numChannels = channels.length;
-  const numFrames = channels[0]?.length ?? 0;
-  const bytesPerSample = 2;
-  const blockAlign = numChannels * bytesPerSample;
-  const byteRate = sampleRate * blockAlign;
-  const dataSize = numFrames * blockAlign;
-  const buffer = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(buffer);
-
-  let offset = 0;
-  function writeString(s: string) {
-    for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
-    offset += s.length;
-  }
-  function writeUint32(v: number) {
-    view.setUint32(offset, v, true);
-    offset += 4;
-  }
-  function writeUint16(v: number) {
-    view.setUint16(offset, v, true);
-    offset += 2;
-  }
-
-  writeString("RIFF");
-  writeUint32(36 + dataSize);
-  writeString("WAVE");
-  writeString("fmt ");
-  writeUint32(16);
-  writeUint16(1);
-  writeUint16(numChannels);
-  writeUint32(sampleRate);
-  writeUint32(byteRate);
-  writeUint16(blockAlign);
-  writeUint16(16);
-  writeString("data");
-  writeUint32(dataSize);
-
-  for (let frame = 0; frame < numFrames; frame++) {
-    for (let c = 0; c < numChannels; c++) {
-      const sample = Math.max(-1, Math.min(1, channels[c][frame]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-      offset += 2;
-    }
-  }
-
-  return new Blob([buffer], { type: "audio/wav" });
+  return new Blob([encodeWav(channels, sampleRate)], { type: "audio/wav" });
 }
 
 async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
