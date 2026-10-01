@@ -114,9 +114,10 @@ const ImportSection: React.FC = () => (
         dropping a file onto the editor. Plain lines still paste as typed text.
       </p>
       <p className={`${PROSE} mt-3`}>
-        A project file can come in through any of these. Composer asks what to do with it: {USE_PROJECT_LYRICS_LABEL}{" "}
-        takes its lyrics, singers and song details into the open project as one undoable step, and {OPEN_PROJECT_LABEL}{" "}
-        adds it to your library and switches to it. A backup of many projects only offers to restore it.
+        A project file can come in through any of these. Composer asks what to do with it:{" "}
+        <strong>{USE_PROJECT_LYRICS_LABEL}</strong> takes its lyrics, singers and song details into the open project as
+        one undoable step, and <strong>{OPEN_PROJECT_LABEL}</strong> adds it to your library and switches to it. A
+        backup of many projects only offers to restore it.
       </p>
       <p className={`${PROSE} mt-3`}>
         Supported formats: {LYRICS_FORMATS_DESCRIBED}. Imported timing is preserved; plain .txt files get none and you

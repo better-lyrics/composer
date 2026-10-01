@@ -71,6 +71,13 @@ describe("ImportSection", () => {
     expect(screen.container.textContent).toContain("A backup of many projects only offers to restore it.");
   });
 
+  it("sets the project file choice labels apart from the sentence around them", async () => {
+    const screen = await render(<ImportSection />);
+    const strong = [...screen.container.querySelectorAll("strong")].map((node) => node.textContent);
+    expect(strong).toContain("Use its lyrics here");
+    expect(strong).toContain("Open as its own project");
+  });
+
   it("links to the composer-bridge repo", async () => {
     const screen = await render(<ImportSection />);
     const link = screen.container.querySelector('a[href="https://github.com/better-lyrics/composer-bridge"]');
