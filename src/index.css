@@ -491,16 +491,40 @@ input[type="range"].settings-slider::-moz-range-progress {
 .bh,
 .bh-edit {
   --bh-text: var(--color-composer-text);
-  --bh-bgText: color-mix(in srgb, var(--color-composer-text) 75%, var(--color-composer-bg));
-  --bh-timestamp: color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text));
-  --bh-wordTime: color-mix(in srgb, var(--color-composer-accent-text) 70%, var(--color-composer-text-tertiary));
-  --bh-agent: color-mix(in srgb, var(--color-composer-warning) 80%, var(--color-composer-text));
-  --bh-value: color-mix(in srgb, var(--color-composer-positive) 80%, var(--color-composer-text));
-  --bh-meta: var(--color-composer-text-tertiary);
-  --bh-tag: color-mix(in srgb, var(--color-composer-text-tertiary) 80%, var(--color-composer-text-faint));
-  --bh-attr: color-mix(in srgb, var(--color-composer-text-tertiary) 55%, var(--color-composer-text-faint));
-  --bh-punct: var(--color-composer-text-faint);
-  --bh-comment: var(--color-composer-text-faint);
+  --bh-bgText: color-mix(in srgb, var(--color-composer-text) 80%, var(--color-composer-bg));
+  --bh-timestamp: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-wordTime: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 70%, var(--color-composer-text-tertiary)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-agent: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-warning) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-value: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-positive) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-meta: color-mix(in srgb, var(--color-composer-text-tertiary) 70%, var(--color-composer-bg));
+  --bh-tag: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 80%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-attr: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 55%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-punct: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
+  --bh-comment: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
   --bh-caret: var(--color-composer-text);
   --bh-selection: color-mix(in srgb, var(--color-composer-accent) 30%, transparent);
   --bh-placeholder: var(--color-composer-text-muted);

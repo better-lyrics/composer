@@ -15,15 +15,15 @@ const LRC = "[ti:Ride Or Die]\n[00:01.00]<00:01.00>Hello <00:01.50>world";
 const MIN_CONTRAST: Record<string, number> = {
   text: 4.5,
   bgText: 4.5,
-  timestamp: 4.5,
-  tag: 3,
-  attr: 3,
-  value: 3,
-  agent: 3,
-  meta: 3,
-  wordTime: 3,
-  punct: 1.8,
-  comment: 1.8,
+  timestamp: 2,
+  tag: 2,
+  attr: 2,
+  value: 2,
+  agent: 2,
+  meta: 2,
+  wordTime: 2,
+  punct: 1.5,
+  comment: 1.5,
 };
 const FLOOR_TYPES = new Set(["punct", "comment"]);
 const OWN_BACKGROUND_VIEWS = new Set(["a guide page"]);

@@ -172,7 +172,9 @@ describe("LyricsCode", () => {
       if (!timestamp || !value) throw new Error("expected timestamp and value tokens");
       expect(getComputedStyle(pre).color).toBe(resolvedColor(tokens.text));
       expect(getComputedStyle(timestamp).color).toBe(
-        resolvedColor(`color-mix(in srgb, ${tokens["accent-text"]} 80%, ${tokens.text})`),
+        resolvedColor(
+          `color-mix(in srgb, color-mix(in srgb, ${tokens["accent-text"]} 80%, ${tokens.text}) 70%, ${tokens.bg})`,
+        ),
       );
       expect(getComputedStyle(value).color).not.toBe(getComputedStyle(pre).color);
     });

@@ -70,7 +70,9 @@ describe("ExportPanel preview highlight", () => {
       if (!pre || !timestamp) throw new Error("highlighted preview not rendered");
       expect(getComputedStyle(pre).color).toBe("rgb(7, 8, 9)");
       expect(getComputedStyle(timestamp).color).toBe(
-        resolvedColor("color-mix(in srgb, rgb(1, 2, 3) 80%, rgb(7, 8, 9))"),
+        resolvedColor(
+          "color-mix(in srgb, color-mix(in srgb, rgb(1, 2, 3) 80%, rgb(7, 8, 9)) 70%, var(--color-composer-bg))",
+        ),
       );
     },
   );
