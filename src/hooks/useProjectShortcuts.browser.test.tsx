@@ -48,7 +48,7 @@ describe("useProjectShortcuts", () => {
 
   describe("edge cases", () => {
     it("does nothing while a modal is open", async () => {
-      useModalStackStore.setState({ count: 1 });
+      useModalStackStore.setState({ stack: Array.from({ length: 1 }, () => Symbol("modal")) });
       await renderHook(() => useProjectShortcuts());
       const event = pressWithMod("o", "KeyO");
       expect(useUIStore.getState().projectSwitcherOpen).toBe(false);

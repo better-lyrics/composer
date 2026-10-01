@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { Tooltip } from "@/ui/tooltip";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { render } from "@/test/render";
 import { Modal } from "@/ui/modal";
+import { Tooltip } from "@/ui/tooltip";
+import { describe, expect, it } from "vitest";
 
 describe("Tooltip", () => {
   it("renders the trigger element", async () => {
@@ -68,7 +68,7 @@ describe("Tooltip surface inside modals", () => {
         </Tooltip>
       </Modal>,
     );
-    await expect.poll(() => useModalStackStore.getState().count).toBe(1);
+    await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(1);
     await screen.getByRole("button", { name: "Inside" }).hover();
     const tooltip = screen.getByRole("tooltip");
     await expect.element(tooltip).toHaveClass("bg-composer-bg-elevated");

@@ -149,8 +149,8 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
       });
 
       const { push, pop } = useModalStackStore.getState();
-      push();
-      releaseModalRef.current = pop;
+      const modalToken = push();
+      releaseModalRef.current = () => pop(modalToken);
       releaseArrowGuardRef.current = keepFieldArrowKeysFromTour();
       driverRef.current = tourDriver;
       tourDriver.drive(startIndex);

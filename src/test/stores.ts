@@ -43,7 +43,7 @@ async function resetAllStores(): Promise<void> {
   useChoiceStore.setState({ request: null, resolveIndex: null });
   useDivergenceStore.setState({ isOpen: false, options: null, resolve: null });
   useImportModalStore.setState({ ...IMPORT_MODAL_INITIAL_STATE });
-  useModalStackStore.setState({ count: 0 });
+  useModalStackStore.setState({ stack: [] });
   useUIStore.setState({ ...UI_INITIAL_STATE });
 
   const settings = useSettingsStore.getState();

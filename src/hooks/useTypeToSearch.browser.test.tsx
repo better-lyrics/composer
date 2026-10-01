@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { render } from "@/test/render";
+import { useRef, useState } from "react";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Harness -------------------------------------------------------------------
 
@@ -86,7 +86,7 @@ describe("useTypeToSearch", () => {
     });
 
     it("does not steal keys while a nested modal is open", async () => {
-      useModalStackStore.setState({ count: 2 });
+      useModalStackStore.setState({ stack: Array.from({ length: 2 }, () => Symbol("modal")) });
       const screen = await render(<Harness />);
       focusElsewhere(screen);
       await userEvent.keyboard("a");

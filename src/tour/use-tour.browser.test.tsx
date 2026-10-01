@@ -1,7 +1,7 @@
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
 import { appQueryClient } from "@/lib/app-query-client";
 import { useAudioStore } from "@/stores/audio";
-import { isAnyModalOpen, useModalStackStore } from "@/stores/modal-stack";
+import { isAnyModalOpen, openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
@@ -423,11 +423,11 @@ describe("useTour lifecycle", () => {
       .element()
       .dispatchEvent(new MouseEvent("click", { bubbles: true }));
     await expect.poll(driverTitle).toBe("Welcome to Composer");
-    expect(useModalStackStore.getState().count).toBe(1);
+    expect(openModalCount(useModalStackStore.getState())).toBe(1);
 
     driverCloseBtn()?.click();
     await expect.poll(() => document.querySelector(".driver-popover")).toBe(null);
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
   });
 
   it("releases the modal entry when a gate hands over to the guide card", async () => {
@@ -436,7 +436,7 @@ describe("useTour lifecycle", () => {
     await clickNext();
     await clickNext();
     await expect.poll(() => screen.container.textContent).toContain("Step 3 / 15");
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
   });
 
   it("releases the modal entry when the host unmounts mid tour", async () => {
@@ -444,7 +444,7 @@ describe("useTour lifecycle", () => {
     await screen.getByTestId("start").click();
     await expect.poll(driverTitle).toBe("Welcome to Composer");
     await screen.unmount();
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
   });
 
   it("does not reopen the tour when the host unmounts while a passed gate is flashing Done", async () => {
@@ -458,7 +458,7 @@ describe("useTour lifecycle", () => {
     await screen.unmount();
 
     await new Promise((resolve) => setTimeout(resolve, 1200));
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
     expect(document.querySelector(".driver-popover")).toBe(null);
   });
 });

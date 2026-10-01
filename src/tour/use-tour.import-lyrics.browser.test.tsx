@@ -1,6 +1,6 @@
 import { appQueryClient } from "@/lib/app-query-client";
 import { useImportModalStore } from "@/stores/import-modal-store";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { stepFrames } from "@/test/frame-steps";
@@ -146,9 +146,11 @@ describe("tour Import Lyrics steps", () => {
     await track.click();
     const fieldKeys: string[] = [];
     const documentKeys: string[] = [];
-    const onField = (event: KeyboardEvent) => fieldKeys.push(event.key);
+    const onField = (event: Event) => {
+      if (event instanceof KeyboardEvent) fieldKeys.push(event.key);
+    };
     const onDocument = (event: KeyboardEvent) => documentKeys.push(event.key);
-    track.element().addEventListener("keyup", onField as EventListener);
+    track.element().addEventListener("keyup", onField);
     document.addEventListener("keyup", onDocument);
     try {
       await userEvent.keyboard("{ArrowLeft}");
@@ -156,7 +158,7 @@ describe("tour Import Lyrics steps", () => {
       expect(documentKeys).toContain("ArrowLeft");
       expect(driverTitle()).toBe("Search, paste, or upload");
     } finally {
-      track.element().removeEventListener("keyup", onField as EventListener);
+      track.element().removeEventListener("keyup", onField);
       document.removeEventListener("keyup", onDocument);
     }
   });
@@ -195,7 +197,7 @@ describe("tour Import Lyrics steps", () => {
       await clickDriver(".driver-popover-close-btn");
       await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
       await expect.poll(importDialog).toBeNull();
-      await expect.poll(() => useModalStackStore.getState().count).toBe(0);
+      await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(0);
     });
 
     it("regression: closing the tour while it is still moving onto the modal step closes the modal", async () => {
@@ -222,7 +224,7 @@ describe("tour Import Lyrics steps", () => {
       await userEvent.keyboard("{Escape}");
       await expect.poll(importDialog).toBeNull();
       await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
-      await expect.poll(() => useModalStackStore.getState().count).toBe(0);
+      await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(0);
     });
   });
 });

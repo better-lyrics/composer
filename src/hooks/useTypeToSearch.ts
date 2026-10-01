@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { type RefObject, useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
@@ -23,7 +23,7 @@ function useTypeToSearch(
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
-      if (useModalStackStore.getState().count > 1) return;
+      if (openModalCount(useModalStackStore.getState()) > 1) return;
       if (event.key === "Escape") {
         if (query === "") return;
         event.preventDefault();

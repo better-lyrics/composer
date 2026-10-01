@@ -1,23 +1,23 @@
-import { useAudioStore } from "@/stores/audio";
-import { bgTrackHeight } from "@/views/timeline/row-geometry";
-import { useConfirm } from "@/stores/confirm-store";
-import { useModalStackStore } from "@/stores/modal-stack";
-import { useProjectStore } from "@/stores/project";
 import type { LineTemplate } from "@/domain/group/template";
+import { instanceCount } from "@/domain/instance/enumerate";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
 import type { LyricLine } from "@/domain/line/model";
-import { instanceCount } from "@/domain/instance/enumerate";
 import { boundsOverlap } from "@/domain/word/overlap";
+import { useAudioStore } from "@/stores/audio";
+import { useConfirm } from "@/stores/confirm-store";
+import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
+import { pluralize } from "@/utils/pluralize";
 import { applyPasteToLines, pasteOverlaps } from "@/views/timeline/apply-paste-to-lines";
 import { decidePasteInstanceAction } from "@/views/timeline/decide-paste-instance-action";
 import { GROUP_HEADER_HEIGHT } from "@/views/timeline/group-header-row";
 import { instanceToTemplate } from "@/views/timeline/group-ops";
+import { bgTrackHeight } from "@/views/timeline/row-geometry";
 import type { ClipboardData } from "@/views/timeline/selection-types";
 import { findMatchingTemplate } from "@/views/timeline/structural-match";
-import { GUTTER_WIDTH, useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-store";
-import { computeRowLayout, getLineIndexAtY, type RowLayout } from "@/views/timeline/utils";
-import { pluralize } from "@/utils/pluralize";
+import { GUTTER_WIDTH, WAVEFORM_HEIGHT, useTimelineStore } from "@/views/timeline/timeline-store";
+import { type RowLayout, computeRowLayout, getLineIndexAtY } from "@/views/timeline/utils";
 import { type RefObject, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -178,7 +178,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
     [clipboard, scrollContainerRef, confirm],
   );
 
-  const modalCount = useModalStackStore((s) => s.count);
+  const modalCount = useModalStackStore(openModalCount);
 
   // Reactive subscriptions BEFORE the early returns so the layout memo can run
   // every render. Mousemove updates mousePos but does not invalidate the layout

@@ -1,19 +1,32 @@
 import { create } from "zustand";
 
 interface ModalStackState {
-  count: number;
-  push: () => void;
-  pop: () => void;
+  stack: readonly symbol[];
+  push: () => symbol;
+  pop: (token: symbol) => void;
 }
 
 const useModalStackStore = create<ModalStackState>((set) => ({
-  count: 0,
-  push: () => set((s) => ({ count: s.count + 1 })),
-  pop: () => set((s) => ({ count: Math.max(0, s.count - 1) })),
+  stack: [],
+  push: () => {
+    const token = Symbol("modal");
+    set((s) => ({ stack: [...s.stack, token] }));
+    return token;
+  },
+  pop: (token) => set((s) => ({ stack: s.stack.filter((open) => open !== token) })),
 }));
 
-function isAnyModalOpen(): boolean {
-  return useModalStackStore.getState().count > 0;
+function openModalCount(state: ModalStackState): number {
+  return state.stack.length;
 }
 
-export { useModalStackStore, isAnyModalOpen };
+function isAnyModalOpen(): boolean {
+  return openModalCount(useModalStackStore.getState()) > 0;
+}
+
+function isTopModal(token: symbol): boolean {
+  const { stack } = useModalStackStore.getState();
+  return stack[stack.length - 1] === token;
+}
+
+export { useModalStackStore, isAnyModalOpen, isTopModal, openModalCount };

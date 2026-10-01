@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { render } from "@/test/render";
 import { Modal } from "@/ui/modal";
 import { describe, expect, it } from "vitest";
@@ -89,6 +89,22 @@ describe("Modal", () => {
     expect(closed).toEqual(["second", "first"]);
   });
 
+  it("regression: Escape leaves a modal alone while another layer on the shared stack is on top", async () => {
+    let closeCalls = 0;
+    await render(
+      <Modal isOpen onClose={() => closeCalls++}>
+        <div>Body</div>
+      </Modal>,
+    );
+    const { push, pop } = useModalStackStore.getState();
+    const tourToken = push();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closeCalls).toBe(0);
+    pop(tourToken);
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    expect(closeCalls).toBe(1);
+  });
+
   it("closes when the overlay backdrop is clicked", async () => {
     let closeCalls = 0;
     await render(
@@ -116,15 +132,15 @@ describe("Modal", () => {
   // -- Modal stack ------------------------------------------------------------
 
   it("pushes onto the modal stack while open", async () => {
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
     const { unmount } = await render(
       <Modal isOpen onClose={() => {}}>
         <div />
       </Modal>,
     );
-    expect(useModalStackStore.getState().count).toBe(1);
+    expect(openModalCount(useModalStackStore.getState())).toBe(1);
     await unmount();
-    expect(useModalStackStore.getState().count).toBe(0);
+    expect(openModalCount(useModalStackStore.getState())).toBe(0);
   });
 
   it("locks document.body overflow while open and restores it on close", async () => {

@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { isTopModal, useModalStackStore } from "@/stores/modal-stack";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
@@ -18,14 +18,6 @@ interface ModalProps {
   initialFocusRef?: React.RefObject<HTMLElement | null>;
   role?: "dialog" | "alertdialog";
   describedById?: string;
-}
-
-// -- Escape order -------------------------------------------------------------
-
-const escapeOrder: symbol[] = [];
-
-function isTopModal(token: symbol): boolean {
-  return escapeOrder[escapeOrder.length - 1] === token;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -58,20 +50,17 @@ const Modal: React.FC<ModalProps> = ({
 
   useEffect(() => {
     if (!isOpen) return;
-    const token = Symbol("modal");
-    escapeOrder.push(token);
+    const { push, pop } = useModalStackStore.getState();
+    const token = push();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isTopModal(token)) onCloseRef.current();
     };
     document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
-    const { push, pop } = useModalStackStore.getState();
-    push();
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
-      escapeOrder.splice(escapeOrder.indexOf(token), 1);
       document.body.style.overflow = "";
-      pop();
+      pop(token);
     };
   }, [isOpen]);
 

@@ -246,7 +246,7 @@ describe("SettingsModal search", () => {
   describe("edge cases", () => {
     it("does not steal keys while a nested modal is open", async () => {
       await openModal();
-      useModalStackStore.setState({ count: 2 });
+      useModalStackStore.setState({ stack: Array.from({ length: 2 }, () => Symbol("modal")) });
       (document.querySelector("dialog") as HTMLElement).focus();
       await userEvent.keyboard("a");
       expect(useUIStore.getState().settingsQuery).toBe("");

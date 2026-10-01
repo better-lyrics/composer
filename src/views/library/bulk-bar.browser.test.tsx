@@ -57,7 +57,7 @@ describe("BulkBar", () => {
     });
 
     it("does not render while a modal is open", async () => {
-      useModalStackStore.setState({ count: 1 });
+      useModalStackStore.setState({ stack: Array.from({ length: 1 }, () => Symbol("modal")) });
       const screen = await renderBar(3);
       await expect.element(screen.getByRole("toolbar", { name: "Selected projects" })).not.toBeInTheDocument();
     });
