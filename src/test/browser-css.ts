@@ -78,6 +78,8 @@ const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WA
 
 const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 
+const CODE_SURFACE_TINT = "color-mix(in srgb, var(--color-composer-bg-dark) 60%, transparent)";
+
 const LYRICS_CODE_CSS = [
   highlightCss,
   `.bh,.bh-edit {${extractCssBlock(/\.bh,\s*\.bh-edit\s*\{/)}}`,
@@ -88,6 +90,7 @@ const LYRICS_CODE_CSS = [
 // -- Exports -------------------------------------------------------------------
 
 export {
+  CODE_SURFACE_TINT,
   FLOATING_LAYER_CSS,
   HELP_CONTENT_SCROLLER_CSS,
   HIT_TESTING_UTILITIES_CSS,

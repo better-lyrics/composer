@@ -512,6 +512,7 @@ input[type="range"].settings-slider::-moz-range-progress {
   border-style: solid;
   border-color: var(--color-composer-border);
   border-radius: var(--radius-lg);
+  background-color: color-mix(in srgb, var(--color-composer-bg-dark) 60%, transparent);
 }
 
 @utility lyrics-code-frame {

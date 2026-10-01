@@ -1,7 +1,7 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import { TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
-import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
+import { CODE_SURFACE_TINT, LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
@@ -107,14 +107,14 @@ describe("LyricsCodeEditor", () => {
     expect(layer.querySelectorAll(".bh-wordTime")).toHaveLength(2);
   });
 
-  it("frames the editor in a transparent pane whose border takes the accent while focused", async () => {
+  it("frames the editor in a recessed pane whose border takes the accent while focused", async () => {
     const preset = PRESET_BY_ID.get("default");
     if (!preset) throw new Error("no default preset");
     applyResolvedTheme(deriveTheme(preset), preset.scheme);
     const screen = await render(<Harness initial={LRC} />);
     const frame = screen.container.querySelector<HTMLElement>(".test-frame");
     if (!frame) throw new Error("frame not rendered");
-    expect(getComputedStyle(frame).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(frame).backgroundColor).toBe(resolvedColor(CODE_SURFACE_TINT));
     expect(getComputedStyle(frame).borderTopWidth).toBe("1px");
     expect(getComputedStyle(frame).borderTopColor).toBe(resolvedColor("var(--color-composer-border)"));
     expect(getComputedStyle(frame).borderTopColor).not.toBe(resolvedColor("var(--color-composer-accent)"));

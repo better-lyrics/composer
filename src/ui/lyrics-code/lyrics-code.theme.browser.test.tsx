@@ -25,6 +25,7 @@ const MIN_CONTRAST: Record<string, number> = {
   comment: 1.8,
 };
 const FLOOR_TYPES = new Set(["punct", "comment"]);
+const OWN_BACKGROUND_VIEWS = new Set(["a guide page"]);
 const SURFACE_LAYERS_BY_VIEW: Record<string, string[]> = {
   "the export page": ["bg"],
   "a guide page": ["bg-dark"],
@@ -75,6 +76,11 @@ function surfaceColor(layers: string[]): Rgba {
   return layers.map(tokenColor).reduce((below, above) => composite(above, below));
 }
 
+function codeSurface(pre: HTMLElement, view: string, layers: string[]): Rgba {
+  const page = surfaceColor(layers);
+  return OWN_BACKGROUND_VIEWS.has(view) ? page : composite(parseColor(getComputedStyle(pre).backgroundColor), page);
+}
+
 function contrastByType(pre: HTMLElement, surface: Rgba): Record<string, number> {
   const contrasts: Record<string, number> = { text: contrastOn(parseColor(getComputedStyle(pre).color), surface) };
   for (const type of Object.keys(MIN_CONTRAST)) {
@@ -117,24 +123,25 @@ describe("LyricsCode theme ratios", () => {
       return [...screen.container.querySelectorAll("pre")];
     }
 
-    it.each(Object.entries(SURFACE_LAYERS_BY_VIEW))("meets each token's minimum contrast on %s", async (_, layers) => {
-      const background = surfaceColor(layers);
-      const measured = new Set<string>();
-      for (const pre of await renderSamples()) {
-        for (const [type, contrast] of Object.entries(contrastByType(pre, background))) {
-          measured.add(type);
-          expect(contrast, type).toBeGreaterThanOrEqual(MIN_CONTRAST[type]);
+    it.each(Object.entries(SURFACE_LAYERS_BY_VIEW))(
+      "meets each token's minimum contrast on %s",
+      async (view, layers) => {
+        const measured = new Set<string>();
+        for (const pre of await renderSamples()) {
+          for (const [type, contrast] of Object.entries(contrastByType(pre, codeSurface(pre, view, layers)))) {
+            measured.add(type);
+            expect(contrast, type).toBeGreaterThanOrEqual(MIN_CONTRAST[type]);
+          }
         }
-      }
-      expect([...measured].toSorted()).toEqual(Object.keys(MIN_CONTRAST).toSorted());
-    });
+        expect([...measured].toSorted()).toEqual(Object.keys(MIN_CONTRAST).toSorted());
+      },
+    );
 
     it.each(Object.entries(SURFACE_LAYERS_BY_VIEW))(
       "keeps sung words the brightest and punctuation and comments the faintest on %s",
-      async (_, layers) => {
-        const background = surfaceColor(layers);
+      async (view, layers) => {
         for (const pre of await renderSamples()) {
-          const contrasts = contrastByType(pre, background);
+          const contrasts = contrastByType(pre, codeSurface(pre, view, layers));
           const floor = Math.max(...[...FLOOR_TYPES].flatMap((type) => contrasts[type] ?? []));
           for (const [type, contrast] of Object.entries(contrasts)) {
             if (type !== "text") expect(contrast, `${type} vs text`).toBeLessThan(contrasts.text);

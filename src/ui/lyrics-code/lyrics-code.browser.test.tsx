@@ -1,7 +1,7 @@
 import { deriveTheme } from "@/domain/theme/derive";
 import { type Scheme, TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
-import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
+import { CODE_SURFACE_TINT, LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
@@ -65,10 +65,10 @@ describe("LyricsCode", () => {
     expect(pre.classList.contains("select-text")).toBe(true);
   });
 
-  it("sits on a transparent pane with a 1px theme border", async () => {
+  it("sits on a recessed pane with a 1px theme border", async () => {
     applyPreset("default");
     const style = getComputedStyle(preIn((await render(<LyricsCode code={LRC} />)).container));
-    expect(style.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(style.backgroundColor).toBe(resolvedColor(CODE_SURFACE_TINT));
     expect(style.borderTopWidth).toBe("1px");
     expect(style.borderTopStyle).toBe("solid");
     expect(style.borderTopColor).toBe(resolvedColor("var(--color-composer-border)"));
