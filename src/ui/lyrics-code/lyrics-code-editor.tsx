@@ -23,7 +23,13 @@ function keepingFocus<T>(textarea: HTMLTextAreaElement, move: () => T): T {
 // -- Components ---------------------------------------------------------------
 
 // The frame only ever holds the textarea, so attachEditor can move it into its wrapper without React noticing.
-const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({ value, format, frameClassName, ...textareaProps }) => {
+const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
+  value,
+  format,
+  frameClassName,
+  className,
+  ...textareaProps
+}) => {
   const editorRef = useRef<EditorHandle | null>(null);
 
   const attachToFrame = useCallback(
@@ -47,7 +53,7 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({ value, format, fram
 
   return (
     <div ref={attachToFrame} className={cn("lyrics-code-frame", frameClassName)}>
-      <textarea value={value} {...textareaProps} />
+      <textarea value={value} className={cn(className, "bh-input")} {...textareaProps} />
     </div>
   );
 };
