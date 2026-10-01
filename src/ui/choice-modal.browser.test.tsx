@@ -1,4 +1,4 @@
-import { askChoice, useChoiceStore } from "@/stores/choice-store";
+import { askChoice, askChoiceWithCheckbox, useChoiceStore } from "@/stores/choice-store";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
@@ -9,16 +9,18 @@ import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
+const USE_OR_OPEN = {
+  title: "Song.ttml-project.json is a project file",
+  body: "Use its lyrics in this project, or open it as its own project.",
+  busyMessage: "Finish the current import first",
+  options: [
+    { value: "open", label: "Open as its own project", variant: "secondary" },
+    { value: "use", label: "Use its lyrics here", variant: "primary" },
+  ],
+} as const;
+
 function askUseOrOpen() {
-  return askChoice({
-    title: "Song.ttml-project.json is a project file",
-    body: "Use its lyrics in this project, or open it as its own project.",
-    busyMessage: "Finish the current import first",
-    options: [
-      { value: "open", label: "Open as its own project", variant: "secondary" },
-      { value: "use", label: "Use its lyrics here", variant: "primary" },
-    ],
-  });
+  return askChoice(USE_OR_OPEN);
 }
 
 function askKeepOrReplace() {
@@ -30,6 +32,13 @@ function askKeepOrReplace() {
       { value: "keep-both", label: "Keep both", variant: "secondary" },
       { value: "replace", label: "Replace project", variant: "destructive" },
     ],
+  });
+}
+
+function askWithRemember() {
+  return askChoiceWithCheckbox({
+    ...USE_OR_OPEN,
+    checkbox: { label: "Remember my choice" },
   });
 }
 
@@ -110,6 +119,80 @@ describe("ChoiceModalHost", () => {
       expect(screen.getByRole("alertdialog").element().contains(document.activeElement)).toBe(true);
       useChoiceStore.getState().answer("cancel");
       await pending;
+    });
+  });
+
+  describe("checkbox", () => {
+    it("returns the checked state with the clicked option", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+      await expect(pending).resolves.toEqual({ answer: "use", checked: true });
+    });
+
+    it("starts unchecked", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await expect.element(screen.getByLabelText("Remember my choice")).not.toBeChecked();
+      await screen.getByRole("button", { name: "Open as its own project" }).click();
+      await expect(pending).resolves.toEqual({ answer: "open", checked: false });
+    });
+
+    it("returns the checked state with every option", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      for (const option of USE_OR_OPEN.options) {
+        const pending = askWithRemember();
+        await screen.getByLabelText("Remember my choice").click();
+        await screen.getByRole("button", { name: option.label }).click();
+        await expect(pending).resolves.toEqual({ answer: option.value, checked: true });
+      }
+    });
+
+    it("returns the checked state with Cancel", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Cancel" }).click();
+      await expect(pending).resolves.toEqual({ answer: "cancel", checked: true });
+    });
+
+    it("returns the checked state when Escape cancels", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await userEvent.keyboard("{Escape}");
+      await expect(pending).resolves.toEqual({ answer: "cancel", checked: true });
+    });
+
+    it("starts the next prompt unchecked after a checked answer", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const first = askWithRemember();
+      await screen.getByLabelText("Remember my choice").click();
+      await screen.getByRole("button", { name: "Use its lyrics here" }).click();
+      await first;
+      const second = askWithRemember();
+      await expect.element(screen.getByLabelText("Remember my choice")).not.toBeChecked();
+      useChoiceStore.getState().answer("cancel");
+      await expect(second).resolves.toEqual({ answer: "cancel", checked: false });
+    });
+
+    it("shows no checkbox on a plain choice", async () => {
+      const screen = await render(<ChoiceModalHost />);
+      const pending = askUseOrOpen();
+      await expect.element(screen.getByRole("alertdialog")).toBeInTheDocument();
+      expect(screen.getByRole("alertdialog").element().querySelector('input[type="checkbox"]')).toBeNull();
+      useChoiceStore.getState().answer("cancel");
+      await pending;
+    });
+
+    it("cancels a second checkbox prompt unchecked while one is open", async () => {
+      allowConsole(/a choice prompt is already open/);
+      await render(<ChoiceModalHost />);
+      const first = askUseOrOpen();
+      await expect(askWithRemember()).resolves.toEqual({ answer: "cancel", checked: false });
+      useChoiceStore.getState().answer("cancel");
+      await first;
     });
   });
 

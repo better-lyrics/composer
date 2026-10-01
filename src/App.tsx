@@ -25,7 +25,6 @@ import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
 import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
-import { DivergenceModalHost } from "@/ui/divergence-modal";
 import { HelpModal } from "@/ui/help-modal";
 import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
 import { SettingsModal } from "@/ui/settings-modal";
@@ -179,7 +178,6 @@ const App: React.FC = () => {
         <SettingLinkContext value={APP_SETTING_LINK_HOST}>
           <AppShell />
           <ConfirmModalHost />
-          <DivergenceModalHost />
           <LyricsImportModalHost />
           <ChoiceModalHost />
           <Toaster

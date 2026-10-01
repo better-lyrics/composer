@@ -3,7 +3,6 @@ import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
-import { useDivergenceStore } from "@/stores/divergence-store";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -83,7 +82,6 @@ function wireFrameLoop(): () => void {
     useAudioStore.subscribe(syncAudio),
     useAuthStore.subscribe(wakeFromThisWiring),
     useConfirmStore.subscribe(wakeFromThisWiring),
-    useDivergenceStore.subscribe(wakeFromThisWiring),
     useImportModalStore.subscribe(wakeFromThisWiring),
     useChoiceStore.subscribe(wakeFromThisWiring),
     useEscapeLayerStackStore.subscribe(wakeFromThisWiring),

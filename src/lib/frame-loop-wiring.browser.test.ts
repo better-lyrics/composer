@@ -3,7 +3,6 @@ import { AUDIO_WAKE_EVENTS, wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
 import { useConfirmStore } from "@/stores/confirm-store";
-import { useDivergenceStore } from "@/stores/divergence-store";
 import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
@@ -26,7 +25,6 @@ const WIRED_STORE_WRITES: Array<[string, () => void]> = [
   ["audio", () => useAudioStore.getState().setCurrentTime(1)],
   ["auth", () => useAuthStore.getState().setJwt("frame-loop", Date.now() + 60_000)],
   ["confirm", () => useConfirmStore.setState({ isOpen: true })],
-  ["divergence", () => useDivergenceStore.setState({ isOpen: true })],
   ["import modal", () => useImportModalStore.getState().open()],
   ["escape layer stack", () => useEscapeLayerStackStore.getState().push("modal")],
   ["project", () => useProjectStore.setState({ activeTab: "edit" })],

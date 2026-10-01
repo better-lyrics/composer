@@ -19,11 +19,26 @@ interface ChoiceRequest<T extends string> {
   options: readonly ChoiceOption<T>[];
 }
 
+interface ChoiceCheckbox {
+  label: string;
+}
+
+interface CheckboxChoiceRequest<T extends string> extends ChoiceRequest<T> {
+  checkbox: ChoiceCheckbox;
+}
+
 type ChoiceAnswer<T extends string> = T | "cancel";
 
+interface CheckedChoice<T extends string> {
+  answer: ChoiceAnswer<T>;
+  checked: boolean;
+}
+
 interface ChoiceState {
-  request: ChoiceRequest<string> | null;
-  resolveIndex: ((index: number) => void) | null;
+  request: (ChoiceRequest<string> & { checkbox?: ChoiceCheckbox }) | null;
+  checked: boolean;
+  resolveIndex: ((index: number, checked: boolean) => void) | null;
+  setChecked: (checked: boolean) => void;
   answer: (value: string) => void;
 }
 
@@ -36,31 +51,49 @@ const CANCELLED = -1;
 
 const useChoiceStore = create<ChoiceState>((set, get) => ({
   request: null,
+  checked: false,
   resolveIndex: null,
 
+  setChecked: (checked) => set({ checked }),
+
   answer: (value) => {
-    const { request, resolveIndex } = get();
+    const { request, checked, resolveIndex } = get();
     if (!request || !resolveIndex) return;
-    set({ request: null, resolveIndex: null });
-    resolveIndex(request.options.findIndex((option) => option.value === value));
+    set({ request: null, checked: false, resolveIndex: null });
+    resolveIndex(
+      request.options.findIndex((option) => option.value === value),
+      checked,
+    );
   },
 }));
 
-function askChoice<T extends string>(request: ChoiceRequest<T>): Promise<ChoiceAnswer<T>> {
+function openChoice<T extends string>(
+  request: ChoiceRequest<T> & { checkbox?: ChoiceCheckbox },
+): Promise<CheckedChoice<T>> {
   if (useChoiceStore.getState().request) {
     console.warn(LOG_PREFIX, "a choice prompt is already open; cancelling the second one");
     toast.warning(request.busyMessage);
-    return Promise.resolve("cancel");
+    return Promise.resolve({ answer: "cancel", checked: false });
   }
-  return new Promise<ChoiceAnswer<T>>((resolve) => {
+  return new Promise<CheckedChoice<T>>((resolve) => {
     useChoiceStore.setState({
       request,
-      resolveIndex: (index) => resolve(index === CANCELLED ? "cancel" : request.options[index].value),
+      checked: false,
+      resolveIndex: (index, checked) =>
+        resolve({ answer: index === CANCELLED ? "cancel" : request.options[index].value, checked }),
     });
   });
 }
 
+async function askChoice<T extends string>(request: ChoiceRequest<T>): Promise<ChoiceAnswer<T>> {
+  return (await openChoice(request)).answer;
+}
+
+function askChoiceWithCheckbox<T extends string>(request: CheckboxChoiceRequest<T>): Promise<CheckedChoice<T>> {
+  return openChoice(request);
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { askChoice, useChoiceStore };
-export type { ChoiceRequest };
+export { askChoice, askChoiceWithCheckbox, useChoiceStore };
+export type { CheckboxChoiceRequest, ChoiceRequest };
