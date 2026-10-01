@@ -1,4 +1,4 @@
-import { isTopModal, useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayer } from "@/hooks/useEscapeLayer";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
@@ -45,22 +45,13 @@ const Modal: React.FC<ModalProps> = ({
     [onClose],
   );
 
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEscapeLayer(isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
-    const { push, pop } = useModalStackStore.getState();
-    const token = push();
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isTopModal(token)) onCloseRef.current();
-    };
-    document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
-      pop(token);
     };
   }, [isOpen]);
 

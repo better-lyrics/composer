@@ -1,16 +1,17 @@
-import { Activity, useEffect, useState } from "react";
 import { contrastRatio } from "@/domain/theme/color";
 import { deriveTheme } from "@/domain/theme/derive";
 import type { Scheme, Theme, TokenKey } from "@/domain/theme/model";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
+import { useEscapeLayer } from "@/hooks/useEscapeLayer";
 import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { ThemeEditorAdvanced } from "@/ui/settings/theme/theme-editor-advanced";
 import { ThemeEditorQuick } from "@/ui/settings/theme/theme-editor-quick";
 import { ThemeShareBox } from "@/ui/settings/theme/theme-share-box";
-import { applyResolvedTheme } from "@/utils/theme/apply";
 import { cn } from "@/utils/cn";
+import { applyResolvedTheme } from "@/utils/theme/apply";
 import { IconAlertTriangle } from "@tabler/icons-react";
+import { Activity, useEffect, useState } from "react";
 
 // -- Interfaces ----------------------------------------------------------------
 
@@ -77,6 +78,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
   const [draft, setDraft] = useState<Theme>(() => initialDraft(target));
   const [tab, setTab] = useState<EditorTab>("quick");
   const isEdit = target.mode === "edit";
+  useEscapeLayer(true, onClose);
 
   useEffect(() => {
     applyResolvedTheme(deriveTheme(draft), draft.scheme);
