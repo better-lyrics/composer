@@ -1,6 +1,6 @@
 import { sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { offerToShareTiming, showGroupActionToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 
 // -- Functions ----------------------------------------------------------------
@@ -10,6 +10,10 @@ function shareGroupTimingWithUndo(groupId: string): void {
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;
+  if (group.ownTimingInstances?.length) {
+    offerToShareTiming([group]);
+    return;
+  }
   const count = sharedInstancesInLineOrder(lines, group).length;
   showGroupActionToast(`${group.label} shares timing in ${pluralize(count, "instance")}`);
 }
