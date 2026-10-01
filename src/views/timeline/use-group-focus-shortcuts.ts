@@ -1,5 +1,5 @@
 import { isTypingTarget } from "@/hooks/useKeyboardShortcuts";
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
