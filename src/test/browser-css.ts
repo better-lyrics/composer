@@ -78,7 +78,15 @@ const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WA
 
 const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 
-const CODE_SURFACE_TINT = "color-mix(in srgb, var(--color-composer-bg-dark) 60%, transparent)";
+function utilityDeclaration(name: string, property: string): string {
+  const value = new RegExp(`${property}:\\s*([^;]+);`).exec(
+    extractCssBlock(new RegExp(`@utility\\s+${name}\\s*\\{`)),
+  )?.[1];
+  if (!value) throw new Error(`@utility ${name} has no ${property}`);
+  return value;
+}
+
+const CODE_SURFACE_TINT = utilityDeclaration("lyrics-code-surface", "background-color");
 
 const LYRICS_CODE_CSS = [
   highlightCss,

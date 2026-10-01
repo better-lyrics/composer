@@ -99,6 +99,6 @@ describe("LyricsCodeEditor regressions", () => {
     textarea.focus();
     textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     await userEvent.keyboard(" ");
-    expect(layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
   });
 });

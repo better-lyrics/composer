@@ -3,6 +3,7 @@ import { TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
 import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
+import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { applyResolvedTheme } from "@/utils/theme/apply";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -64,12 +65,7 @@ function composite(foreground: Rgba, background: Rgba): Rgba {
 }
 
 function tokenColor(token: string): Rgba {
-  const probe = document.createElement("div");
-  probe.style.backgroundColor = `var(--color-composer-${token})`;
-  document.body.append(probe);
-  const color = parseColor(getComputedStyle(probe).backgroundColor);
-  probe.remove();
-  return color;
+  return parseColor(resolvedColor(`var(--color-composer-${token})`));
 }
 
 function surfaceColor(layers: string[]): Rgba {
