@@ -13,6 +13,15 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
+function resolvedColor(cssColor: string): string {
+  const probe = document.createElement("span");
+  probe.style.color = cssColor;
+  document.body.append(probe);
+  const color = getComputedStyle(probe).color;
+  probe.remove();
+  return color;
+}
+
 function getProjectImportInput(): HTMLInputElement {
   const input = document.querySelector(
     "input[type='file'][aria-label='Import project file']",
@@ -68,7 +77,9 @@ describe("ExportPanel preview highlight", () => {
       const timestamp = screen.container.querySelector("pre.bh .bh-timestamp");
       if (!pre || !timestamp) throw new Error("highlighted preview not rendered");
       expect(getComputedStyle(pre).color).toBe("rgb(7, 8, 9)");
-      expect(getComputedStyle(timestamp).color).toBe("rgb(1, 2, 3)");
+      expect(getComputedStyle(timestamp).color).toBe(
+        resolvedColor("color-mix(in srgb, rgb(1, 2, 3) 70%, transparent)"),
+      );
     },
   );
 });

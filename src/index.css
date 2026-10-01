@@ -486,14 +486,14 @@ input[type="range"].settings-slider::-moz-range-progress {
 .bh-edit {
   --bh-text: var(--color-composer-text);
   --bh-bgText: var(--color-composer-text-secondary);
-  --bh-timestamp: var(--color-composer-accent-text);
-  --bh-wordTime: color-mix(in srgb, var(--color-composer-accent-text) 70%, transparent);
-  --bh-agent: var(--color-composer-warning);
-  --bh-meta: var(--color-composer-accent-warm);
+  --bh-timestamp: color-mix(in srgb, var(--color-composer-accent-text) 70%, transparent);
+  --bh-wordTime: color-mix(in srgb, var(--color-composer-accent-text) 50%, transparent);
+  --bh-agent: color-mix(in srgb, var(--color-composer-warning) 60%, transparent);
+  --bh-meta: var(--color-composer-text-tertiary);
   --bh-tag: var(--color-composer-text-muted);
   --bh-attr: var(--color-composer-text-faint);
-  --bh-value: var(--color-composer-positive);
-  --bh-punct: var(--color-composer-text-disabled);
+  --bh-value: color-mix(in srgb, var(--color-composer-positive) 55%, transparent);
+  --bh-punct: color-mix(in srgb, var(--color-composer-text) 16%, transparent);
   --bh-comment: var(--color-composer-text-faint);
   --bh-caret: var(--color-composer-text);
   --bh-selection: color-mix(in srgb, var(--color-composer-accent) 30%, transparent);

@@ -147,7 +147,9 @@ describe("LyricsCode", () => {
       const value = pre.querySelector(".bh-value");
       if (!timestamp || !value) throw new Error("expected timestamp and value tokens");
       expect(getComputedStyle(pre).color).toBe(resolvedColor(tokens.text));
-      expect(getComputedStyle(timestamp).color).toBe(resolvedColor(tokens["accent-text"]));
+      expect(getComputedStyle(timestamp).color).toBe(
+        resolvedColor(`color-mix(in srgb, ${tokens["accent-text"]} 70%, transparent)`),
+      );
       expect(getComputedStyle(value).color).not.toBe(getComputedStyle(pre).color);
     });
 
