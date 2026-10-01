@@ -209,6 +209,25 @@ describe("LyricsCodeEditor", () => {
     expect(getComputedStyle(layerIn(screen.container)).color).toBe(expectedCaret);
   });
 
+  describe("regressions", () => {
+    const focusOnMount = (el: HTMLTextAreaElement | null) => el?.focus();
+
+    it("regression: keeps focus on a textarea focused as it mounts", async () => {
+      const screen = await render(<Harness initial={LRC} textareaRef={focusOnMount} />);
+      expect(document.activeElement).toBe(textareaIn(screen.container));
+    });
+
+    it("regression: keeps focus and the caret when the pinned format changes", async () => {
+      const screen = await render(<Harness initial={LRC} />);
+      const textarea = textareaIn(screen.container);
+      textarea.focus();
+      textarea.setSelectionRange(3, 5);
+      await screen.rerender(<Harness initial={LRC} format="lrc" />);
+      expect(document.activeElement).toBe(textarea);
+      expect([textarea.selectionStart, textarea.selectionEnd]).toEqual([3, 5]);
+    });
+  });
+
   describe("lifecycle", () => {
     it("removes the overlay on unmount", async () => {
       const screen = await render(<Harness initial={LRC} />);

@@ -10,6 +10,16 @@ interface LyricsCodeEditorProps extends Omit<React.ComponentProps<"textarea">, "
   frameClassName?: string;
 }
 
+// -- Helpers ------------------------------------------------------------------
+
+// Attaching and destroying move the textarea in the DOM, which drops focus.
+function keepingFocus<T>(textarea: HTMLTextAreaElement, move: () => T): T {
+  const hadFocus = textarea.ownerDocument.activeElement === textarea;
+  const result = move();
+  if (hadFocus) textarea.focus({ preventScroll: true });
+  return result;
+}
+
 // -- Components ---------------------------------------------------------------
 
 // The frame only ever holds the textarea, so attachEditor can move it into its wrapper without React noticing.
@@ -20,10 +30,10 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({ value, format, fram
     (frame: HTMLDivElement) => {
       const textarea = frame.querySelector("textarea");
       if (!textarea) return;
-      const editor = attachEditor(textarea, { format });
+      const editor = keepingFocus(textarea, () => attachEditor(textarea, { format }));
       editorRef.current = editor;
       return () => {
-        editor.destroy();
+        keepingFocus(textarea, editor.destroy);
         editorRef.current = null;
       };
     },
