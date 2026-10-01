@@ -15,6 +15,13 @@ interface MetadataAfterImport {
 
 // -- Constants ----------------------------------------------------------------
 
+// These describe the loaded audio, so lyrics or song details from another source never carry them in.
+const AUDIO_BOUND_METADATA_KEYS: ReadonlySet<MetadataKey> = new Set([
+  "duration",
+  "thumbnailDataUrl",
+  "thumbnailForVideoId",
+]);
+
 const EXPORTED_AS_META_PAIRS: ReadonlySet<MetadataKey> = new Set(["artists", "songwriters", "extra"]);
 
 // -- Helpers ------------------------------------------------------------------
@@ -58,8 +65,14 @@ function metadataAfterImport(
   incoming: Partial<ProjectMetadata>,
 ): MetadataAfterImport {
   const defaults = normalizeLoadedMetadata(null);
-  const released = previousImportKeys.reduce((metadata, key) => withValue(metadata, key, defaults[key]), current);
-  const filled = filledMetadata(incoming);
+  const released = previousImportKeys
+    .filter((key) => !AUDIO_BOUND_METADATA_KEYS.has(key))
+    .reduce((metadata, key) => withValue(metadata, key, defaults[key]), current);
+  const filled = Object.fromEntries(
+    Object.entries(filledMetadata(incoming)).filter(
+      ([key]) => isMetadataKey(key) && !AUDIO_BOUND_METADATA_KEYS.has(key),
+    ),
+  );
   return { metadata: { ...released, ...filled }, importedKeys: Object.keys(filled).filter(isMetadataKey) };
 }
 
@@ -78,5 +91,12 @@ function changedMetadata(current: ProjectMetadata, incoming: Partial<ProjectMeta
 
 // -- Exports ------------------------------------------------------------------
 
-export { changedMetadata, filledMetadata, importedKeysAfterWrite, isMetadataKey, metadataAfterImport };
+export {
+  AUDIO_BOUND_METADATA_KEYS,
+  changedMetadata,
+  filledMetadata,
+  importedKeysAfterWrite,
+  isMetadataKey,
+  metadataAfterImport,
+};
 export type { MetadataKey };

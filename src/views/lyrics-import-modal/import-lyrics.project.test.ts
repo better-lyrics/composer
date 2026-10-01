@@ -112,6 +112,39 @@ describe("importProjectLyrics", () => {
       expect(useAudioStore.getState().source).toEqual({ type: "file", file: audio });
     });
 
+    it("keeps this song's artwork, video id and duration, since they belong to the loaded audio", () => {
+      useProjectStore.setState({
+        metadata: {
+          title: "Mine",
+          artists: [],
+          album: "",
+          duration: 200,
+          thumbnailDataUrl: "data:mine",
+          thumbnailForVideoId: "MINE",
+        },
+      });
+      const { ctx } = recordingContext();
+      const file = projectFile({
+        metadata: {
+          title: "Lust for Life",
+          artists: ["Lana Del Rey"],
+          album: "",
+          duration: 99,
+          thumbnailDataUrl: "data:other",
+          thumbnailForVideoId: "OTHER",
+        },
+      });
+      importProjectLyrics(file, "lust.json", ctx);
+      const { metadata, importedMetadataKeys } = useProjectStore.getState();
+      expect([metadata.thumbnailDataUrl, metadata.thumbnailForVideoId, metadata.duration]).toEqual([
+        "data:mine",
+        "MINE",
+        200,
+      ]);
+      expect(importedMetadataKeys).not.toContain("thumbnailDataUrl");
+      expect(importedMetadataKeys).not.toContain("duration");
+    });
+
     it("keeps the file's timing and text exactly, with no background extraction or timing spread", () => {
       const { ctx } = recordingContext();
       const file = projectFile({ lines: [createLine({ id: "p", text: "Hello (ooh)" })] });
