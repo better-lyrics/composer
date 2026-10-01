@@ -1,9 +1,10 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
 
 // -- Getting Started ----------------------------------------------------------
 
@@ -54,7 +55,7 @@ const GettingStartedSection: React.FC = () => (
       <HelpTopic title="2. Add your lyrics">
         <p className={PROSE}>
           Go to the Edit tab and type or paste your lyrics, one line per row. If you have a lyrics file (
-          {LYRICS_FORMATS_PROSE}), drop it there instead. You can also use{" "}
+          {LYRICS_FORMATS_PROSE}) or {PROJECT_FILE_PROSE}, drop or paste it there instead. You can also use{" "}
           <InlineKeyBadge keys={getEffectiveKeysArray("timeline.importLyrics")} /> in Timeline to import lyrics without
           leaving that view.
         </p>

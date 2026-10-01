@@ -18,6 +18,8 @@ type ProjectFileUse = "use-lyrics" | "open-project" | "restore-backup";
 
 const PASTED_TEXT_NAME = "pasted text";
 const PASTED_PROJECT_NAME = "the pasted project";
+const USE_PROJECT_LYRICS_LABEL = "Use its lyrics here";
+const OPEN_PROJECT_LABEL = "Open as its own project";
 
 // -- Reading ------------------------------------------------------------------
 
@@ -49,7 +51,7 @@ function projectFileChoice(contents: ProjectFileContents, fileName: string | nul
     return {
       title,
       body: "It has no lyrics yet, so it can only open as its own project.",
-      options: [{ value: "open-project", label: "Open as its own project", variant: "primary" }],
+      options: [{ value: "open-project", label: OPEN_PROJECT_LABEL, variant: "primary" }],
     };
   }
   const existing = useProjectStore.getState().lines.length;
@@ -59,8 +61,8 @@ function projectFileChoice(contents: ProjectFileContents, fileName: string | nul
     title,
     body: `Use its lyrics, singers and song details in this project, or open it as its own project.${replaceNote}`,
     options: [
-      { value: "open-project", label: "Open as its own project", variant: "secondary" },
-      { value: "use-lyrics", label: "Use its lyrics here", variant: existing > 0 ? "destructive" : "primary" },
+      { value: "open-project", label: OPEN_PROJECT_LABEL, variant: "secondary" },
+      { value: "use-lyrics", label: USE_PROJECT_LYRICS_LABEL, variant: existing > 0 ? "destructive" : "primary" },
     ],
   };
 }
@@ -114,4 +116,11 @@ async function importLyricsText(text: string, ctx: ImportContext): Promise<boole
 
 // -- Exports ------------------------------------------------------------------
 
-export { importLyricsFile, importLyricsText, importProjectFileForLyrics, readProjectFileText };
+export {
+  OPEN_PROJECT_LABEL,
+  USE_PROJECT_LYRICS_LABEL,
+  importLyricsFile,
+  importLyricsText,
+  importProjectFileForLyrics,
+  readProjectFileText,
+};

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { render } from "@/test/render";
 import { GettingStartedSection } from "@/ui/help-sections/getting-started";
+import { describe, expect, it } from "vitest";
 
 describe("GettingStartedSection", () => {
   it("renders the section content", async () => {
@@ -16,6 +16,7 @@ describe("GettingStartedSection", () => {
   it("names every supported lyrics format in the drop-a-file step", async () => {
     const screen = await render(<GettingStartedSection />);
     expect(screen.container.textContent).toContain("lyrics file (.txt, .lrc, .srt, .ttml, .qrc)");
+    expect(screen.container.textContent).toContain("or a project file (.json), drop or paste it there instead");
   });
 
   it("sandboxes the embedded tutorial iframe", async () => {
