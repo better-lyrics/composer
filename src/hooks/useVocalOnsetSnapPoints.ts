@@ -4,6 +4,7 @@ import type { AudioSource } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
+import { isAbortError } from "@/utils/abort-error";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -19,10 +20,6 @@ function audioSourceKey(source: AudioSource): string | null {
     return `youtube:${source.videoId}${filePart}`;
   }
   return null;
-}
-
-function isAbort(error: unknown): boolean {
-  return error instanceof DOMException && error.name === "AbortError";
 }
 
 function useVocalOnsetSnapPoints(): void {
@@ -57,7 +54,7 @@ function useVocalOnsetSnapPoints(): void {
           timeline.setVocalOnsetDetectionStatus("idle");
         },
         (error: unknown) => {
-          if (!isCurrent() || isAbort(error)) return;
+          if (!isCurrent() || isAbortError(error)) return;
           running = null;
           appliedVocalsUrl = null;
           useTimelineStore
