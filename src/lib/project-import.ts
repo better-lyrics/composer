@@ -15,8 +15,8 @@ import {
 } from "@/lib/project-repository";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { reportStorageWriteError } from "@/lib/storage-signals";
-import { useImportConflictStore } from "@/stores/import-conflict-store";
 import { useProjectStore } from "@/stores/project";
+import { askImportConflict } from "@/ui/projects/import-conflict-choice";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { formatProjectCount } from "@/utils/project-count";
@@ -229,7 +229,7 @@ async function importProjectFile(file: File): Promise<string | null> {
   const projectFile = contents.project;
   try {
     const conflict = findImportConflict(projectFile, await liveEntries());
-    const choice = conflict ? await useImportConflictStore.getState().ask(conflict) : "keep-both";
+    const choice = conflict ? await askImportConflict(conflict, projectFileSummary(conflict.file)) : "keep-both";
     if (choice === "cancel") return null;
     let id: string;
     if (choice === "replace" && conflict) {
@@ -272,4 +272,4 @@ export {
   importProjectFile,
   importProjectFromInput,
 };
-export type { ImportConflict, BundleRestore };
+export type { ImportConflict, BundleRestore, ProjectFileSummary };

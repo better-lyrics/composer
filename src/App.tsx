@@ -23,10 +23,10 @@ import { GuideCard } from "@/tour/guide-card";
 import { useTour } from "@/tour/use-tour";
 import "@/tour/tour-theme.css";
 import { AppHeader } from "@/ui/app-header";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
 import { HelpModal } from "@/ui/help-modal";
-import { ImportConflictModalHost } from "@/ui/projects/import-conflict-modal";
 import { APP_SETTING_LINK_HOST, SettingLinkContext } from "@/ui/setting-link-context";
 import { SettingsModal } from "@/ui/settings-modal";
 import { EDITOR_PATH, screenForPath } from "@/utils/app-routes";
@@ -181,7 +181,7 @@ const App: React.FC = () => {
           <ConfirmModalHost />
           <DivergenceModalHost />
           <LyricsImportModalHost />
-          <ImportConflictModalHost />
+          <ChoiceModalHost />
           <Toaster
             theme="dark"
             position="bottom-center"

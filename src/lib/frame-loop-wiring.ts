@@ -1,9 +1,9 @@
 import { holdFrames, wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
+import { useChoiceStore } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useDivergenceStore } from "@/stores/divergence-store";
-import { useImportConflictStore } from "@/stores/import-conflict-store";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
@@ -85,7 +85,7 @@ function wireFrameLoop(): () => void {
     useConfirmStore.subscribe(wakeFromThisWiring),
     useDivergenceStore.subscribe(wakeFromThisWiring),
     useImportModalStore.subscribe(wakeFromThisWiring),
-    useImportConflictStore.subscribe(wakeFromThisWiring),
+    useChoiceStore.subscribe(wakeFromThisWiring),
     useModalStackStore.subscribe(wakeFromThisWiring),
     useProjectStore.subscribe(wakeFromThisWiring),
     useSeparationStore.subscribe(wakeFromThisWiring),

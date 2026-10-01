@@ -1,15 +1,15 @@
 import { restoreOpenProject } from "@/lib/open-project";
+import { loadProjectAudio } from "@/lib/project-audio";
 import { projectFileFrom } from "@/lib/project-file";
 import { importProjectFile } from "@/lib/project-import";
-import { loadProjectAudio } from "@/lib/project-audio";
 import { listProjectIndex } from "@/lib/project-repository";
 import { loadProjectRecord } from "@/lib/project-storage";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine } from "@/test/factories";
-import { render } from "@/test/render";
 import { seedStoredProject, songTitled, storedProject } from "@/test/projects";
-import { ImportConflictModalHost } from "@/ui/projects/import-conflict-modal";
+import { render } from "@/test/render";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
@@ -41,7 +41,7 @@ async function seedAlpha(open = false): Promise<void> {
 describe("import conflict dialog", () => {
   it("compares the file with the library copy", async () => {
     await seedAlpha();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await expect.element(screen.getByRole("heading", { name: "Project already in your library" })).toBeInTheDocument();
     await expect.element(screen.getByText("In the file")).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe("import conflict dialog", () => {
 
   it("Keep both imports a copy and leaves the library project alone", async () => {
     await seedAlpha();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Keep both" }).click();
     const id = await pending;
@@ -64,7 +64,7 @@ describe("import conflict dialog", () => {
 
   it("Replace takes the file's lyrics and keeps this device's audio", async () => {
     await seedAlpha();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Replace project" }).click();
     await expect(pending).resolves.toBe("a");
@@ -77,7 +77,7 @@ describe("import conflict dialog", () => {
   it("Replace on the open project updates the editor at once", async () => {
     await seedAlpha(true);
     await restoreOpenProject();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await screen.getByRole("button", { name: "Replace project" }).click();
     await pending;
@@ -88,7 +88,7 @@ describe("import conflict dialog", () => {
     await seedStoredProject("v", {
       project: { ...songTitled("Video"), audioSource: { kind: "youtube", videoId: "dX3k_QDnzHE" } },
     });
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const project = storedProject({ ...songTitled("Video"), audioSource: { kind: "youtube", videoId: "dX3k_QDnzHE" } });
     const pending = importProjectFile(new File([JSON.stringify(projectFileFrom("other", project))], "v.json"));
     await expect.element(screen.getByRole("heading", { name: "Project already in your library" })).toBeInTheDocument();
@@ -99,7 +99,7 @@ describe("import conflict dialog", () => {
 
   it("shows the alertdialog role wired to the summary text, focused on Cancel", async () => {
     await seedAlpha();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     const dialog = screen.getByRole("alertdialog", { name: "Project already in your library" });
     await expect.element(dialog).toBeInTheDocument();
@@ -113,7 +113,7 @@ describe("import conflict dialog", () => {
 
   it("Escape cancels from the keyboard", async () => {
     await seedAlpha();
-    const screen = await render(<ImportConflictModalHost />);
+    const screen = await render(<ChoiceModalHost />);
     const pending = importProjectFile(fileFrom("a", "Alpha", "File line"));
     await expect.element(screen.getByRole("button", { name: "Keep both" })).toBeInTheDocument();
     await userEvent.keyboard("{Escape}");

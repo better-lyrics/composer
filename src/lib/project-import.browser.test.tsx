@@ -10,14 +10,14 @@ import { loadProjectRecord } from "@/lib/project-storage";
 import { ProjectDeletedError } from "@/lib/project-tombstones";
 import { getSaveStatus } from "@/lib/save-status";
 import { SAVED_PROJECT_VERSION } from "@/lib/saved-project";
-import { useImportConflictStore } from "@/stores/import-conflict-store";
+import { useChoiceStore } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { allowConsole } from "@/test/console-guard";
 import { createLine } from "@/test/factories";
 import { saveInputTitled, seedStoredProject, songTitled, storedProject } from "@/test/projects";
 import { render } from "@/test/render";
-import { ImportConflictModalHost } from "@/ui/projects/import-conflict-modal";
+import { ChoiceModalHost } from "@/ui/choice-modal";
 import { Toaster } from "sonner";
 import { describe, expect, it, vi } from "vitest";
 
@@ -106,9 +106,9 @@ describe("importProjectFile", () => {
       allowConsole(/no longer exists/);
       await seedStoredProject("a", { project: songTitled("Alpha") });
       const pending = importProjectFile(fileFor("a", "Alpha"));
-      await expect.poll(() => useImportConflictStore.getState().conflict).not.toBeNull();
+      await expect.poll(() => useChoiceStore.getState().request).not.toBeNull();
       await removeProjectData("a");
-      useImportConflictStore.getState().answer("replace");
+      useChoiceStore.getState().answer("replace");
       const id = await pending;
       expect(id).not.toBeNull();
       expect(id).not.toBe("a");
@@ -117,15 +117,15 @@ describe("importProjectFile", () => {
     });
 
     it("regression: a second import while a conflict prompt is open shows a toast and does not proceed", async () => {
-      allowConsole(/a conflict prompt is already open/);
+      allowConsole(/a choice prompt is already open/);
       await seedStoredProject("a", { project: songTitled("Alpha") });
       const screen = await render(<Toaster />);
       const first = importProjectFile(fileFor("a", "Alpha"));
-      await expect.poll(() => useImportConflictStore.getState().conflict).not.toBeNull();
+      await expect.poll(() => useChoiceStore.getState().request).not.toBeNull();
       const second = importProjectFile(fileFor("a", "Alpha"));
       expect(await second).toBeNull();
       await expect.element(screen.getByText("Finish the current import first")).toBeInTheDocument();
-      useImportConflictStore.getState().answer("cancel");
+      useChoiceStore.getState().answer("cancel");
       await first;
     });
   });
@@ -184,7 +184,7 @@ describe("importProjectFile", () => {
 
   describe("invariants", () => {
     it("renders no conflict dialog when nothing matches", async () => {
-      await render(<ImportConflictModalHost />);
+      await render(<ChoiceModalHost />);
       await importProjectFile(fileFor(undefined, "Solo"));
       expect(document.querySelector("dialog")).toBeNull();
     });
