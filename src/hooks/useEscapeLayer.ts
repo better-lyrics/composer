@@ -7,6 +7,7 @@ import { useEffect, useEffectEvent } from "react";
 function useEscapeLayer(active: boolean, onEscape: () => void): void {
   const handleEscape = useEffectEvent(onEscape);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
     if (!active) return;
     const { push, pop } = useModalStackStore.getState();
