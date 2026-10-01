@@ -1,5 +1,6 @@
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { Button } from "@/ui/button";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
 import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
@@ -54,7 +55,7 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
           Upload file instead
         </button>
       </div>
-      <textarea
+      <LyricsCodeEditor
         ref={focusOnMount}
         aria-label="Lyrics text"
         value={value}
@@ -62,10 +63,9 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         onKeyDown={(e) => e.stopPropagation()}
         placeholder={PASTE_PLACEHOLDER}
         spellCheck={false}
+        frameClassName="h-32 rounded-lg bg-composer-overlay"
         className={cn(
-          "h-32 p-3 text-sm rounded-lg resize-none",
-          "bg-composer-overlay border border-composer-border",
-          "text-composer-text placeholder:text-composer-text-muted",
+          "p-3 font-mono text-sm rounded-lg border border-composer-border",
           "focus:outline-none focus:border-composer-accent",
         )}
       />

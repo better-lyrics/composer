@@ -41,7 +41,9 @@ describe("PasteSection", () => {
   it("says a whole lyrics or project file can be pasted, naming every supported format", async () => {
     const screen = await render(<Controlled />);
     const placeholder = (screen.getByLabelText("Lyrics text").element() as HTMLTextAreaElement).placeholder;
-    expect(placeholder).toContain("A whole .txt, .lrc, .srt, .ttml, .qrc file works too, and so does a project file (.json).");
+    expect(placeholder).toContain(
+      "A whole .txt, .lrc, .srt, .ttml, .qrc file works too, and so does a project file (.json).",
+    );
   });
 
   it("autofocuses the textarea on mount", async () => {
@@ -153,5 +155,46 @@ describe("PasteSection", () => {
   it("exposes the textarea via an accessible name", async () => {
     const screen = await render(<Controlled />);
     await expect.element(screen.getByRole("textbox", { name: "Lyrics text" })).toBeInTheDocument();
+  });
+});
+
+describe("PasteSection · highlighting", () => {
+  function layer(): HTMLElement | null {
+    return document.querySelector<HTMLElement>(".bh-edit > .bh-layer");
+  }
+
+  it("highlights a pasted LRC file", async () => {
+    await render(<Controlled />);
+    const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
+    textarea.focus();
+    await userEvent.fill(textarea, "[00:01.00]First\n[00:02.50]Second");
+    expect([...(layer()?.querySelectorAll(".bh-timestamp") ?? [])].map((stamp) => stamp.textContent)).toEqual([
+      "00:01.00",
+      "00:02.50",
+    ]);
+  });
+
+  it("highlights a prefilled TTML file", async () => {
+    const ttml = `<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:01.000" end="00:02.000">Hi</p></div></body></tt>`;
+    await render(<Controlled initial={ttml} />);
+    expect(layer()?.textContent).toBe(ttml);
+    expect(layer()?.querySelector(".bh-tag")?.textContent).toBe("tt");
+  });
+
+  it("shows plain lyrics with split characters as plain text", async () => {
+    await render(<Controlled initial={"beau|ti|ful day\nsecond line"} />);
+    expect(layer()?.textContent).toBe("beau|ti|ful day\nsecond line");
+    expect(layer()?.querySelectorAll("span")).toHaveLength(0);
+  });
+
+  it("uses a monospace font so the highlight stays under the caret", async () => {
+    await render(<Controlled />);
+    expect(document.querySelector("textarea")?.classList.contains("font-mono")).toBe(true);
+  });
+
+  it("keeps the placeholder and an empty layer when empty", async () => {
+    await render(<Controlled />);
+    expect((document.querySelector("textarea") as HTMLTextAreaElement).placeholder).toMatch(/Paste lyrics here/);
+    expect(layer()?.textContent).toBe("");
   });
 });
