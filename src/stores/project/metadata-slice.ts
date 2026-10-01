@@ -74,8 +74,8 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   replaceLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
     set((state) => {
-      const importsSongDetails = Object.keys(metadata).length > 0 || (agents?.length ?? 0) > 0;
       const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
+      const importsSongDetails = next.importedKeys.length > 0 || (agents?.length ?? 0) > 0;
       const assignment = agentsAfterImport(state.agents, agents, lines);
       return {
         ...commitHistory(state, { lines: assignment.lines, groups, agents: assignment.agents }),

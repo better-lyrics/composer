@@ -1,4 +1,4 @@
-import { AUDIO_BOUND_METADATA_KEYS, metadataAfterImport } from "@/domain/project/imported-metadata";
+import { AUDIO_BOUND_METADATA_KEYS, importableMetadata, metadataAfterImport } from "@/domain/project/imported-metadata";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { describe, expect, it } from "vitest";
@@ -40,6 +40,13 @@ describe("audio-bound metadata on a lyrics import", () => {
 
   it("never marks an audio-bound key as imported", () => {
     expect(metadataAfterImport(thisSong(), [], OTHER_SONG).importedKeys).toEqual(["title"]);
+  });
+
+  it("keeps only the details an import may apply", () => {
+    expect(importableMetadata({ ...OTHER_SONG, album: "", artists: ["Someone"] })).toEqual({
+      title: "Other",
+      artists: ["Someone"],
+    });
   });
 
   describe("regressions", () => {

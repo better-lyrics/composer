@@ -59,6 +59,14 @@ function filledMetadata(patch: Partial<ProjectMetadata>): Partial<ProjectMetadat
   );
 }
 
+function importableMetadata(incoming: Partial<ProjectMetadata>): Partial<ProjectMetadata> {
+  return Object.fromEntries(
+    Object.entries(filledMetadata(incoming)).filter(
+      ([key]) => isMetadataKey(key) && !AUDIO_BOUND_METADATA_KEYS.has(key),
+    ),
+  );
+}
+
 function metadataAfterImport(
   current: ProjectMetadata,
   previousImportKeys: readonly MetadataKey[],
@@ -68,11 +76,7 @@ function metadataAfterImport(
   const released = previousImportKeys
     .filter((key) => !AUDIO_BOUND_METADATA_KEYS.has(key))
     .reduce((metadata, key) => withValue(metadata, key, defaults[key]), current);
-  const filled = Object.fromEntries(
-    Object.entries(filledMetadata(incoming)).filter(
-      ([key]) => isMetadataKey(key) && !AUDIO_BOUND_METADATA_KEYS.has(key),
-    ),
-  );
+  const filled = importableMetadata(incoming);
   return { metadata: { ...released, ...filled }, importedKeys: Object.keys(filled).filter(isMetadataKey) };
 }
 
@@ -95,6 +99,7 @@ export {
   AUDIO_BOUND_METADATA_KEYS,
   changedMetadata,
   filledMetadata,
+  importableMetadata,
   importedKeysAfterWrite,
   isMetadataKey,
   metadataAfterImport,

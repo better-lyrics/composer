@@ -163,6 +163,31 @@ describe("importProjectLyrics", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: reports only the song details it applied, not the audio-bound ones", () => {
+      const { ctx, results } = recordingContext();
+      importProjectLyrics(
+        projectFile({ metadata: { ...projectFile().metadata, thumbnailDataUrl: "data:other" } }),
+        "lust.ttml-project.json",
+        ctx,
+      );
+      expect(results[0].parsed.metadata).not.toHaveProperty("duration");
+      expect(results[0].parsed.metadata).not.toHaveProperty("thumbnailDataUrl");
+      expect(results[0].parsed.metadata.title).toBe("Lust for Life");
+    });
+
+    it("regression: audio-bound details alone are not an unexported import", () => {
+      const { ctx } = recordingContext();
+      useProjectStore.setState({ hasUnexportedImport: false });
+      importProjectLyrics(
+        projectFile({ metadata: { title: "", artists: [], album: "", duration: 264 }, agents: [] }),
+        "lust.ttml-project.json",
+        ctx,
+      );
+      expect(useProjectStore.getState().hasUnexportedImport).toBe(false);
+    });
+  });
+
   describe("edge cases", () => {
     it("refuses a project file with no lyric lines and leaves the project untouched", () => {
       const { ctx, results } = recordingContext();

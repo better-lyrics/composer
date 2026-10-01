@@ -1,6 +1,6 @@
 import { hasAnyTiming } from "@/domain/line/predicates";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { filledMetadata } from "@/domain/project/imported-metadata";
+import { filledMetadata, importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { ProjectFile } from "@/lib/project-file";
@@ -147,7 +147,7 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
     return false;
   }
   const groups = project.groups ?? [];
-  const metadata = filledMetadata(project.metadata);
+  const metadata = importableMetadata(project.metadata);
   useProjectStore
     .getState()
     .replaceLyricsWithHistory({ lines: project.lines, groups, agents: project.agents, metadata });
