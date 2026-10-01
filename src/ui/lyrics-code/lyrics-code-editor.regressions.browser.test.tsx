@@ -8,6 +8,8 @@ import { userEvent } from "vitest/browser";
 
 // -- Fixtures -----------------------------------------------------------------
 
+const TTML_FRAGMENT = `<p begin="00:00:12.000" end="00:00:15.200">Line</p>`;
+
 // -- Helpers ------------------------------------------------------------------
 
 interface HarnessProps {
@@ -74,5 +76,29 @@ describe("LyricsCodeEditor regressions", () => {
     await userEvent.keyboard("!");
     expect(textarea.value).toBe("[00:01.00]Hi");
     await expect.poll(() => layerIn(screen.container).textContent).toBe("[00:01.00]Hi");
+  });
+
+  it("regression: a pinned format change re-highlights without wiping native undo", async () => {
+    const screen = await render(<Harness initial={TTML_FRAGMENT} />);
+    const textarea = textareaIn(screen.container);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    document.execCommand("insertText", false, "x");
+    await expect.poll(() => textarea.value).toBe(`${TTML_FRAGMENT}x`);
+    await screen.rerender(<Harness initial={TTML_FRAGMENT} format="ttml" />);
+    expect(layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    expect(textarea.parentElement?.classList.contains("bh-edit")).toBe(true);
+    expect(document.execCommand("undo")).toBe(true);
+    await expect.poll(() => textarea.value).toBe(TTML_FRAGMENT);
+  });
+
+  it("regression: keystrokes after a format change keep the new format", async () => {
+    const screen = await render(<Harness initial={TTML_FRAGMENT} />);
+    await screen.rerender(<Harness initial={TTML_FRAGMENT} format="ttml" />);
+    const textarea = textareaIn(screen.container);
+    textarea.focus();
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    await userEvent.keyboard(" ");
+    expect(layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
   });
 });

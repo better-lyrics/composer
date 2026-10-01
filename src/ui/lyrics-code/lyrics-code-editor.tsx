@@ -1,5 +1,5 @@
 import { cn } from "@/utils/cn";
-import { type EditorHandle, type LyricFormat, attachEditor, layerText } from "@braccato/highlight";
+import { type EditorHandle, type EditorOptions, type LyricFormat, attachEditor, layerText } from "@braccato/highlight";
 import { useCallback, useLayoutEffect, useRef } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -35,27 +35,32 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
   ...textareaProps
 }) => {
   const editorRef = useRef<EditorHandle | null>(null);
+  // attachEditor reads format from this object on every render, so a new format applies without moving the textarea.
+  const editorOptions = useRef<EditorOptions>({ format });
 
-  const attachToFrame = useCallback(
-    (frame: HTMLDivElement) => {
-      const textarea = frame.querySelector("textarea");
-      if (!textarea) return;
-      const editor = keepingFocus(textarea, () => attachEditor(textarea, { format }));
-      editorRef.current = editor;
-      // React restores a rejected controlled value in its root listener without a commit, so check once input has bubbled past it.
-      const resyncAfterInput = (event: Event) => {
-        if (event.target === textarea) refreshIfStale(editor, textarea.value);
-      };
-      const ownerDocument = textarea.ownerDocument;
-      ownerDocument.addEventListener("input", resyncAfterInput);
-      return () => {
-        ownerDocument.removeEventListener("input", resyncAfterInput);
-        keepingFocus(textarea, editor.destroy);
-        editorRef.current = null;
-      };
-    },
-    [format],
-  );
+  const attachToFrame = useCallback((frame: HTMLDivElement) => {
+    const textarea = frame.querySelector("textarea");
+    if (!textarea) return;
+    const editor = keepingFocus(textarea, () => attachEditor(textarea, editorOptions.current));
+    editorRef.current = editor;
+    // React restores a rejected controlled value in its root listener without a commit, so check once input has bubbled past it.
+    const resyncAfterInput = (event: Event) => {
+      if (event.target === textarea) refreshIfStale(editor, textarea.value);
+    };
+    const ownerDocument = textarea.ownerDocument;
+    ownerDocument.addEventListener("input", resyncAfterInput);
+    return () => {
+      ownerDocument.removeEventListener("input", resyncAfterInput);
+      keepingFocus(textarea, editor.destroy);
+      editorRef.current = null;
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (editorOptions.current.format === format) return;
+    editorOptions.current.format = format;
+    editorRef.current?.refresh();
+  }, [format]);
 
   useLayoutEffect(() => {
     if (editorRef.current) refreshIfStale(editorRef.current, value);
