@@ -16,7 +16,7 @@ const LyricsCode: React.FC<LyricsCodeProps> = ({ code, format, className }) => {
   const tokens = useMemo(() => tokenize(code, format), [code, format]);
 
   return (
-    <pre className={cn("bh", className)}>
+    <pre className={cn("bh lyrics-code-surface", className)}>
       {tokens.map((token, index) =>
         token.type === "text" ? (
           token.text

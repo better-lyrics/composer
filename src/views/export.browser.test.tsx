@@ -7,20 +7,12 @@ import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
+import { resolvedColor } from "@/test/resolved-color";
 import { ExportPanel } from "@/views/export";
 import { Toaster } from "sonner";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
-
-function resolvedColor(cssColor: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = cssColor;
-  document.body.append(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
-}
 
 function getProjectImportInput(): HTMLInputElement {
   const input = document.querySelector(
@@ -54,12 +46,12 @@ describe("ExportPanel preview highlight", () => {
     document.documentElement.style.removeProperty("--color-composer-accent-text");
   });
 
-  it("highlights the TTML on the elevated surface", async () => {
+  it("highlights the TTML on a transparent bordered pane", async () => {
     const screen = await render(<ExportPanel />);
     await expect.poll(() => screen.container.querySelector("pre.bh .bh-tag")).not.toBe(null);
     const pre = screen.container.querySelector("pre.bh");
     if (!pre) throw new Error("highlighted preview not rendered");
-    expect(pre.classList.contains("bg-composer-bg-elevated")).toBe(true);
+    expect(pre.classList.contains("lyrics-code-surface")).toBe(true);
     expect(pre.classList.contains("select-text")).toBe(true);
     expect([...pre.querySelectorAll(".bh-tag")].map((tag) => tag.textContent)).toContain("tt");
   });
@@ -78,7 +70,7 @@ describe("ExportPanel preview highlight", () => {
       if (!pre || !timestamp) throw new Error("highlighted preview not rendered");
       expect(getComputedStyle(pre).color).toBe("rgb(7, 8, 9)");
       expect(getComputedStyle(timestamp).color).toBe(
-        resolvedColor("color-mix(in srgb, rgb(1, 2, 3) 70%, transparent)"),
+        resolvedColor("color-mix(in srgb, rgb(1, 2, 3) 80%, rgb(7, 8, 9))"),
       );
     },
   );

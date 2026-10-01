@@ -31,7 +31,7 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange 
         </div>
       )}
       {viewingDiff ? (
-        <Scroll className="flex-1 rounded-lg bg-composer-bg-elevated p-2">
+        <Scroll className="flex-1 lyrics-code-surface p-2">
           <TtmlDiffViewer oldTtml={generatedTtml} newTtml={value} />
         </Scroll>
       ) : (
@@ -40,8 +40,8 @@ const TtmlEditor: React.FC<TtmlEditorProps> = ({ value, generatedTtml, onChange 
           format="ttml"
           aria-label="Edit TTML content"
           onChange={(event) => onChange(event.target.value)}
-          frameClassName="flex-1 min-h-0 rounded-lg bg-composer-bg-elevated"
-          className="p-4 rounded-lg font-mono text-xs focus:outline-none focus:ring-1 focus:ring-composer-accent"
+          frameClassName="flex-1 min-h-0"
+          className="p-4 font-mono text-xs focus:outline-none"
           spellCheck={false}
         />
       )}

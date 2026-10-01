@@ -13,6 +13,13 @@ describe("GuideCode", () => {
     expect(pre?.querySelector(".bh-timestamp")?.textContent).toBe("00:12.34");
   });
 
+  it("keeps its deep background inside the shared bordered frame", async () => {
+    const screen = await render(<GuideCode code={"[00:12.34]First line"} />);
+    const pre = screen.container.querySelector("pre");
+    expect(pre?.classList.contains("lyrics-code-surface")).toBe(true);
+    expect(pre?.classList.contains("bg-composer-bg-dark")).toBe(true);
+  });
+
   it("highlights a TTML fragment when told it is TTML", async () => {
     const fragment = `<span ttm:role="x-bg">\n  <span begin="00:00:13.000" end="00:00:14.500">background phrase</span>\n</span>`;
     const screen = await render(<GuideCode code={fragment} format="ttml" />);

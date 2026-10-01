@@ -491,23 +491,35 @@ input[type="range"].settings-slider::-moz-range-progress {
 .bh,
 .bh-edit {
   --bh-text: var(--color-composer-text);
-  --bh-bgText: var(--color-composer-text-secondary);
-  --bh-timestamp: color-mix(in srgb, var(--color-composer-accent-text) 70%, transparent);
-  --bh-wordTime: color-mix(in srgb, var(--color-composer-accent-text) 50%, transparent);
-  --bh-agent: color-mix(in srgb, var(--color-composer-warning) 60%, transparent);
+  --bh-bgText: color-mix(in srgb, var(--color-composer-text) 75%, var(--color-composer-bg));
+  --bh-timestamp: color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text));
+  --bh-wordTime: color-mix(in srgb, var(--color-composer-accent-text) 70%, var(--color-composer-text-tertiary));
+  --bh-agent: color-mix(in srgb, var(--color-composer-warning) 80%, var(--color-composer-text));
+  --bh-value: color-mix(in srgb, var(--color-composer-positive) 80%, var(--color-composer-text));
   --bh-meta: var(--color-composer-text-tertiary);
-  --bh-tag: var(--color-composer-text-muted);
-  --bh-attr: var(--color-composer-text-faint);
-  --bh-value: color-mix(in srgb, var(--color-composer-positive) 55%, transparent);
-  --bh-punct: color-mix(in srgb, var(--color-composer-text) 16%, transparent);
+  --bh-tag: color-mix(in srgb, var(--color-composer-text-tertiary) 80%, var(--color-composer-text-faint));
+  --bh-attr: color-mix(in srgb, var(--color-composer-text-tertiary) 55%, var(--color-composer-text-faint));
+  --bh-punct: var(--color-composer-text-faint);
   --bh-comment: var(--color-composer-text-faint);
   --bh-caret: var(--color-composer-text);
   --bh-selection: color-mix(in srgb, var(--color-composer-accent) 30%, transparent);
   --bh-placeholder: var(--color-composer-text-muted);
 }
 
+@utility lyrics-code-surface {
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-composer-border);
+  border-radius: var(--radius-lg);
+}
+
 @utility lyrics-code-frame {
   display: grid;
+
+  &:focus-within {
+    border-color: var(--color-composer-accent);
+  }
 
   & > .bh-edit {
     display: grid;

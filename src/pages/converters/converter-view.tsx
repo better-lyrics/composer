@@ -28,8 +28,7 @@ interface ConverterViewProps {
 }
 
 const TTML_EXTENSION = /\.ttml$/i;
-const OUTPUT_PANE_CLASS =
-  "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border select-text";
+const OUTPUT_PANE_CLASS = "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs p-3 select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -102,8 +101,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
             spellCheck={false}
-            frameClassName="flex-auto min-h-[280px] md:min-h-[420px] rounded-lg bg-composer-bg-dark resize-y overflow-hidden"
-            className="font-mono text-sm border border-composer-border rounded-lg p-3 focus:outline-none focus:border-composer-accent cursor-text select-text"
+            frameClassName="flex-auto min-h-[280px] md:min-h-[420px] resize-y overflow-hidden"
+            className="font-mono text-sm p-3 focus:outline-none cursor-text select-text"
           />
           <div className="mt-3 flex items-center gap-2">
             <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
@@ -134,18 +133,14 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             </div>
           </div>
           {ttml ? (
-            <LyricsCode
-              code={ttml}
-              format="ttml"
-              className={cn(OUTPUT_PANE_CLASS, "bg-composer-bg-dark border-composer-border")}
-            />
+            <LyricsCode code={ttml} format="ttml" className={OUTPUT_PANE_CLASS} />
           ) : (
             <pre
               className={cn(
                 OUTPUT_PANE_CLASS,
                 error
-                  ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text whitespace-pre-wrap break-words"
-                  : "bg-composer-bg-dark border-composer-border text-composer-text",
+                  ? "rounded-lg border bg-composer-error/10 border-composer-error/40 text-composer-error-text whitespace-pre-wrap break-words"
+                  : "lyrics-code-surface text-composer-text",
               )}
             >
               {error || "Paste input to see TTML output"}

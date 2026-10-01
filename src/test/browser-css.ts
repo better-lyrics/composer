@@ -81,6 +81,7 @@ const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 const LYRICS_CODE_CSS = [
   highlightCss,
   `.bh,.bh-edit {${extractCssBlock(/\.bh,\s*\.bh-edit\s*\{/)}}`,
+  utilityRule("lyrics-code-surface"),
   utilityRule("lyrics-code-frame"),
 ].join("\n");
 

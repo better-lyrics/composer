@@ -63,11 +63,8 @@ const PasteSection: React.FC<PasteSectionProps> = ({ value, onChange, onSwitchTo
         onKeyDown={(e) => e.stopPropagation()}
         placeholder={PASTE_PLACEHOLDER}
         spellCheck={false}
-        frameClassName="h-32 rounded-lg bg-composer-overlay"
-        className={cn(
-          "p-3 font-mono text-sm rounded-lg border border-composer-border",
-          "focus:outline-none focus:border-composer-accent",
-        )}
+        frameClassName="h-32"
+        className={cn("p-3 font-mono text-sm focus:outline-none")}
       />
       <div className="flex items-center justify-between">
         <span className="text-[11px] text-composer-text-muted">

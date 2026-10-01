@@ -255,7 +255,7 @@ const ExportPanel: React.FC = () => {
           <LyricsCode
             code={exportContent}
             format="ttml"
-            className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text bg-composer-bg-elevated"
+            className="p-4 font-mono text-xs whitespace-pre-wrap break-all select-text"
           />
         </Scroll>
       )}

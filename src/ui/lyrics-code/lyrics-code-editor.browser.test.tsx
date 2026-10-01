@@ -3,6 +3,7 @@ import { TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
 import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
+import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { applyResolvedTheme } from "@/utils/theme/apply";
 import { SYNCED_BOX_PROPERTIES } from "@braccato/highlight";
@@ -106,6 +107,21 @@ describe("LyricsCodeEditor", () => {
     expect(layer.querySelectorAll(".bh-wordTime")).toHaveLength(2);
   });
 
+  it("frames the editor in a transparent pane whose border takes the accent while focused", async () => {
+    const preset = PRESET_BY_ID.get("default");
+    if (!preset) throw new Error("no default preset");
+    applyResolvedTheme(deriveTheme(preset), preset.scheme);
+    const screen = await render(<Harness initial={LRC} />);
+    const frame = screen.container.querySelector<HTMLElement>(".test-frame");
+    if (!frame) throw new Error("frame not rendered");
+    expect(getComputedStyle(frame).backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(getComputedStyle(frame).borderTopWidth).toBe("1px");
+    expect(getComputedStyle(frame).borderTopColor).toBe(resolvedColor("var(--color-composer-border)"));
+    expect(getComputedStyle(frame).borderTopColor).not.toBe(resolvedColor("var(--color-composer-accent)"));
+    textareaIn(screen.container).focus();
+    expect(getComputedStyle(frame).borderTopColor).toBe(resolvedColor("var(--color-composer-accent)"));
+  });
+
   it("keeps the textarea accessible and its value controlled", async () => {
     const screen = await render(<Harness initial={LRC} />);
     const textarea = screen.getByRole("textbox", { name: "Lyrics source" });
@@ -158,7 +174,7 @@ describe("LyricsCodeEditor", () => {
     const frame = screen.container.querySelector<HTMLElement>(".test-frame");
     if (!frame) throw new Error("frame not rendered");
     frame.style.height = "240px";
-    await expect.poll(() => textareaIn(screen.container).getBoundingClientRect().height).toBe(240);
+    await expect.poll(() => textareaIn(screen.container).getBoundingClientRect().height).toBe(frame.clientHeight);
   });
 
   it("follows the textarea's scroll position", async () => {
@@ -199,11 +215,7 @@ describe("LyricsCodeEditor", () => {
     const tokens = deriveTheme(preset);
     applyResolvedTheme(tokens, preset.scheme);
     const screen = await render(<Harness initial={LRC} />);
-    const probe = document.createElement("span");
-    probe.style.color = tokens.text;
-    document.body.append(probe);
-    const expectedCaret = getComputedStyle(probe).color;
-    probe.remove();
+    const expectedCaret = resolvedColor(tokens.text);
     expect(getComputedStyle(textareaIn(screen.container)).caretColor).toBe(expectedCaret);
     expect(getComputedStyle(layerIn(screen.container)).color).toBe(expectedCaret);
   });

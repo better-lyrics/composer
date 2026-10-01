@@ -3,6 +3,7 @@ import { type Scheme, TOKENS } from "@/domain/theme/model";
 import { PRESET_BY_ID } from "@/domain/theme/presets";
 import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
+import { resolvedColor } from "@/test/resolved-color";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { applyResolvedTheme } from "@/utils/theme/apply";
 import { highlightInto } from "@braccato/highlight";
@@ -36,15 +37,6 @@ function applyPreset(id: string): { scheme: Scheme; tokens: Record<string, strin
   return { scheme: preset.scheme, tokens: resolved };
 }
 
-function resolvedColor(cssColor: string): string {
-  const probe = document.createElement("span");
-  probe.style.color = cssColor;
-  document.body.append(probe);
-  const color = getComputedStyle(probe).color;
-  probe.remove();
-  return color;
-}
-
 // -- Tests --------------------------------------------------------------------
 
 describe("LyricsCode", () => {
@@ -71,6 +63,16 @@ describe("LyricsCode", () => {
     const pre = preIn(screen.container);
     expect(pre.classList.contains("bh")).toBe(true);
     expect(pre.classList.contains("select-text")).toBe(true);
+  });
+
+  it("sits on a transparent pane with a 1px theme border", async () => {
+    applyPreset("default");
+    const style = getComputedStyle(preIn((await render(<LyricsCode code={LRC} />)).container));
+    expect(style.backgroundColor).toBe("rgba(0, 0, 0, 0)");
+    expect(style.borderTopWidth).toBe("1px");
+    expect(style.borderTopStyle).toBe("solid");
+    expect(style.borderTopColor).toBe(resolvedColor("var(--color-composer-border)"));
+    expect(style.borderTopColor).not.toBe(style.color);
   });
 
   describe("formats", () => {
@@ -170,7 +172,7 @@ describe("LyricsCode", () => {
       if (!timestamp || !value) throw new Error("expected timestamp and value tokens");
       expect(getComputedStyle(pre).color).toBe(resolvedColor(tokens.text));
       expect(getComputedStyle(timestamp).color).toBe(
-        resolvedColor(`color-mix(in srgb, ${tokens["accent-text"]} 70%, transparent)`),
+        resolvedColor(`color-mix(in srgb, ${tokens["accent-text"]} 80%, ${tokens.text})`),
       );
       expect(getComputedStyle(value).color).not.toBe(getComputedStyle(pre).color);
     });

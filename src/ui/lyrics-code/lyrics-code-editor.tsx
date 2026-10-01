@@ -66,7 +66,7 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
   }, [value]);
 
   return (
-    <div ref={attachToFrame} className={cn("lyrics-code-frame", frameClassName)}>
+    <div ref={attachToFrame} className={cn("lyrics-code-frame lyrics-code-surface", frameClassName)}>
       <textarea value={value} className={cn(className, "bh-input")} {...textareaProps} />
     </div>
   );
