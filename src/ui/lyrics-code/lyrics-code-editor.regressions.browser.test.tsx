@@ -86,7 +86,7 @@ describe("LyricsCodeEditor regressions", () => {
     document.execCommand("insertText", false, "x");
     await expect.poll(() => textarea.value).toBe(`${TTML_FRAGMENT}x`);
     await screen.rerender(<Harness initial={TTML_FRAGMENT} format="ttml" />);
-    expect(layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
     expect(textarea.parentElement?.classList.contains("bh-edit")).toBe(true);
     expect(document.execCommand("undo")).toBe(true);
     await expect.poll(() => textarea.value).toBe(TTML_FRAGMENT);

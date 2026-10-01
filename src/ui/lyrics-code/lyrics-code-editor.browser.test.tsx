@@ -136,7 +136,7 @@ describe("LyricsCodeEditor", () => {
     const screen = await render(<Harness initial={fragment} />);
     expect(layerIn(screen.container).querySelector(".bh-timestamp")).toBeNull();
     await screen.rerender(<Harness initial={fragment} format="ttml" />);
-    expect(layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
+    await expect.poll(() => layerIn(screen.container).querySelectorAll(".bh-timestamp")).toHaveLength(2);
   });
 
   it("shares the textarea's box with the layer so the colours sit under the caret", async () => {
