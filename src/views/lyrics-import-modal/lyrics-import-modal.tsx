@@ -201,6 +201,7 @@ const LyricsImportModalShell: React.FC = () => {
   return (
     <Modal isOpen onClose={close} title="Import Lyrics" className="max-w-lg">
       <div
+        data-tour="lyrics-import-modal"
         className="relative flex flex-col gap-4"
         onDragEnter={handleModalDragEnter}
         onDragOver={handleModalDragOver}

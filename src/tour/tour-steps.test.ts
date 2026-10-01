@@ -78,8 +78,8 @@ describe("createTourSteps", () => {
     expect(step?.popover?.popoverClass).toContain("composer-tour-modal");
   });
 
-  it("leaves the gated step indices untouched", () => {
-    expect(TOUR_GATED_STEPS.map((s) => s.stepIndex)).toEqual([2, 4, 7]);
+  it("places the gates after the audio, lyrics and sync steps", () => {
+    expect(TOUR_GATED_STEPS.map((s) => s.stepIndex)).toEqual([2, 6, 9]);
   });
 
   it("keeps every gated index pointing at the step it was written to gate", () => {
@@ -95,10 +95,31 @@ describe("createTourSteps", () => {
     for (const gate of TOUR_GATED_STEPS) expect(gate.stepIndex).toBeLessThan(bestPracticesIndex);
   });
 
-  it("gives each of its thirteen steps a popover with a title", () => {
+  it("gives each of its fifteen steps a popover with a title", () => {
     const steps = createTourSteps(() => {});
-    expect(steps).toHaveLength(13);
+    expect(steps).toHaveLength(15);
     for (const step of steps) expect(step.popover?.title?.trim().length ?? 0).toBeGreaterThan(0);
+  });
+});
+
+describe("Import Lyrics steps", () => {
+  it("show the Import Lyrics button and then its modal, between typing lyrics and the lyrics gate", () => {
+    const titles = createTourSteps(() => {}).map((step) => step.popover?.title);
+    const editIndex = titles.indexOf("Type or paste lyrics");
+    expect(titles.slice(editIndex, editIndex + 4)).toEqual([
+      "Type or paste lyrics",
+      "Import lyrics you already have",
+      "Search, paste, or upload",
+      "Add your lyrics",
+    ]);
+  });
+
+  it("tell the user that pasting a whole file into the text area imports it", () => {
+    const step = findByTitle(
+      createTourSteps(() => {}),
+      "Type or paste lyrics",
+    );
+    expect(step?.popover?.description).toContain("Paste a whole lyrics or project file to import it");
   });
 });
 

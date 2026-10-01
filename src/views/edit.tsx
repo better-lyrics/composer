@@ -617,6 +617,7 @@ const EditPanel: React.FC = () => {
           </Button>
           <Button
             hasIcon
+            data-tour="import-lyrics-button"
             onClick={importTriggers.onClick}
             onDoubleClick={importTriggers.onDoubleClick}
             title="Click to search, paste, or upload. Double-click to upload a file directly."
