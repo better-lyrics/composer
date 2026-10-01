@@ -1,6 +1,6 @@
 import { AudioEngine } from "@/audio/audio-engine";
 import { useAudioStore } from "@/stores/audio";
-import { createSilentAudioFile } from "@/test/audio-fixtures";
+import { createAudioFile } from "@/test/audio-fixtures";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 
@@ -8,7 +8,7 @@ import { describe, expect, it } from "vitest";
 
 async function playableAudio(): Promise<HTMLAudioElement> {
   await render(<AudioEngine />);
-  useAudioStore.setState({ source: { type: "file", file: createSilentAudioFile(30) } });
+  useAudioStore.setState({ source: { type: "file", file: createAudioFile("silence.wav", 30) } });
   await expect.poll(() => useAudioStore.getState().audioElement).not.toBeNull();
   const audio = useAudioStore.getState().audioElement as HTMLAudioElement;
   await expect.poll(() => audio.readyState).toBeGreaterThanOrEqual(HTMLMediaElement.HAVE_FUTURE_DATA);
@@ -47,6 +47,18 @@ describe("AudioEngine play state", () => {
     await expect.poll(() => useAudioStore.getState().isPlaying).toBe(false);
   });
 
+  it("does not write the play state again for a play event it already shows", async () => {
+    const audio = await playableAudio();
+    useAudioStore.getState().setIsPlaying(true);
+    await expect.poll(() => audio.paused).toBe(false);
+    await settle(200);
+    const writes = countPlayStateWrites();
+    audio.dispatchEvent(new Event("play"));
+    audio.dispatchEvent(new Event("play"));
+    writes.stop();
+    expect(writes.count()).toBe(0);
+  });
+
   describe("regressions", () => {
     it("regression: play then an immediate pause does not flip between playing and paused forever", async () => {
       const audio = await playableAudio();
@@ -59,7 +71,8 @@ describe("AudioEngine play state", () => {
       await settle(600);
       writes.stop();
       expect(writes.count()).toBe(afterSettle);
-      expect(useAudioStore.getState().isPlaying).toBe(audio.paused === false);
+      expect(useAudioStore.getState().isPlaying).toBe(false);
+      expect(audio.paused).toBe(true);
     });
 
     it("regression: pause then an immediate play does not flip between playing and paused forever", async () => {
@@ -76,7 +89,8 @@ describe("AudioEngine play state", () => {
       await settle(600);
       writes.stop();
       expect(writes.count()).toBe(afterSettle);
-      expect(useAudioStore.getState().isPlaying).toBe(audio.paused === false);
+      expect(useAudioStore.getState().isPlaying).toBe(true);
+      expect(audio.paused).toBe(false);
     });
   });
 });

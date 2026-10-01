@@ -23,21 +23,6 @@ describe("bindAudioStateEvents", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
-  it("does not re-write isPlaying when 'play' fires while store is already true", () => {
-    useAudioStore.setState({ isPlaying: true });
-    const audio = new Audio();
-    let writes = 0;
-    const setIsPlaying = (value: boolean) => {
-      writes++;
-      useAudioStore.getState().setIsPlaying(value);
-    };
-    bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, setIsPlaying);
-    audio.dispatchEvent(new Event("play"));
-    audio.dispatchEvent(new Event("play"));
-    audio.dispatchEvent(new Event("play"));
-    expect(writes).toBe(0);
-  });
-
   it("does not re-write isPlaying when 'pause' fires while store is already false", () => {
     const audio = new Audio();
     let writes = 0;

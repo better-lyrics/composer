@@ -33,12 +33,9 @@ function buildSilentWav(seconds: number): Uint8Array {
 
 const SILENT_WAV_BYTES = buildSilentWav(DURATION_SECONDS);
 
-function createAudioFile(name = "silence.wav"): File {
-  return new File([SILENT_WAV_BYTES], name, { type: "audio/wav" });
-}
-
-function createSilentAudioFile(seconds: number, name = "silence.wav"): File {
-  return new File([buildSilentWav(seconds)], name, { type: "audio/wav" });
+function createAudioFile(name = "silence.wav", seconds = DURATION_SECONDS): File {
+  const bytes = seconds === DURATION_SECONDS ? SILENT_WAV_BYTES : buildSilentWav(seconds);
+  return new File([bytes], name, { type: "audio/wav" });
 }
 
 function createUnplayableAudioFile(name = "unplayable.mp3"): File {
@@ -115,12 +112,4 @@ function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
   return URL.createObjectURL(blob);
 }
 
-export {
-  bufferToBlobUrl,
-  createAudioFile,
-  createMp3File,
-  createSilentAudioFile,
-  createUnplayableAudioFile,
-  encodeWav,
-  makeSineBuffer,
-};
+export { bufferToBlobUrl, createAudioFile, createMp3File, createUnplayableAudioFile, encodeWav, makeSineBuffer };
