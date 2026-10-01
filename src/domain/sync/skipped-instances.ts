@@ -1,6 +1,6 @@
 import { instanceStart, sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { belongsToInstance } from "@/domain/instance/predicates";
+import { isAttachedToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
@@ -20,7 +20,7 @@ interface SkippedInstance {
 
 function attachedLineIndices(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number[] {
   return lines.flatMap((line, index) =>
-    belongsToInstance(line, groupId, instanceIdx) && !line.detached ? [index] : [],
+    isAttachedToInstance(line, groupId, instanceIdx) ? [index] : [],
   );
 }
 

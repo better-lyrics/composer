@@ -1,3 +1,4 @@
+import { isLinked } from "@/domain/instance/predicates";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";
@@ -28,8 +29,9 @@ function sharedSyncTags(
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   for (let i = 0; i < Math.min(cursor.lineIndex, lines.length); i++) {
     const line = lines[i];
-    const group = line.groupId ? groupsById.get(line.groupId) : undefined;
-    if (!group || line.instanceIdx === undefined || !skippedLineIds.has(line.id)) continue;
+    if (!isLinked(line) || !skippedLineIds.has(line.id)) continue;
+    const group = groupsById.get(line.groupId);
+    if (!group) continue;
     const label = `${instanceName(lines, group, line.instanceIdx)} · shared`;
     tags.set(line.id, { label, color: group.color, placement: "below" });
   }

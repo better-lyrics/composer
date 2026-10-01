@@ -1,8 +1,7 @@
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
-import { linesOfInstance } from "@/domain/instance/enumerate";
-import { type LinkedLine, isLinked } from "@/domain/instance/predicates";
+import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
@@ -54,7 +53,7 @@ function sharedInstancesInLineOrder(lines: readonly LyricLine[], group: LinkGrou
 }
 
 function attachedLinesOfInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): LyricLine[] {
-  return linesOfInstance(lines, groupId, instanceIdx).filter((line) => !line.detached);
+  return lines.filter((line) => isAttachedToInstance(line, groupId, instanceIdx));
 }
 
 function instanceStart(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number | null {

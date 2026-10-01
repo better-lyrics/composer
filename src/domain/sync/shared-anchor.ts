@@ -5,7 +5,7 @@ import {
   sharedInstancesInLineOrder,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
-import { belongsToInstance, isLinked } from "@/domain/instance/predicates";
+import { isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import type { SyncCursor } from "@/domain/sync/cursor";
@@ -20,17 +20,13 @@ interface SharedAnchor {
 
 // -- Functions ----------------------------------------------------------------
 
-function isAttachedMember(line: LyricLine, groupId: string, instanceIdx: number): boolean {
-  return belongsToInstance(line, groupId, instanceIdx) && !line.detached;
-}
-
 function firstSyncableLineIndexOf(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number {
-  return lines.findIndex((line) => isAttachedMember(line, groupId, instanceIdx) && isSyncableLine(line));
+  return lines.findIndex((line) => isAttachedToInstance(line, groupId, instanceIdx) && isSyncableLine(line));
 }
 
 function resumeLineIndexAfter(lines: readonly LyricLine[], anchorIndex: number, groupId: string, instanceIdx: number) {
   for (let i = anchorIndex + 1; i < lines.length; i++) {
-    if (isSyncableLine(lines[i]) && !isAttachedMember(lines[i], groupId, instanceIdx)) return i;
+    if (isSyncableLine(lines[i]) && !isAttachedToInstance(lines[i], groupId, instanceIdx)) return i;
   }
   return lines.length;
 }

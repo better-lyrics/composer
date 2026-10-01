@@ -1,5 +1,5 @@
 import { withOwnTiming } from "@/domain/group/own-timing";
-import { belongsToInstance } from "@/domain/instance/predicates";
+import { isAttachedToInstance } from "@/domain/instance/predicates";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
@@ -60,7 +60,7 @@ function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
   const start = anchorUpdate ? mainBounds(applyLineUpdates([anchorLine], [anchorUpdate])[0])?.begin : undefined;
   if (!commit || start === undefined) return null;
   const instanceIds = new Set(
-    lines.filter((line) => belongsToInstance(line, groupId, instanceIdx) && !line.detached).map((line) => line.id),
+    lines.filter((line) => isAttachedToInstance(line, groupId, instanceIdx)).map((line) => line.id),
   );
   return {
     groupId,
