@@ -4,10 +4,9 @@
 
 const SAMPLE_RATE = 8000;
 const DURATION_SECONDS = 0.1;
-const SAMPLE_COUNT = Math.round(SAMPLE_RATE * DURATION_SECONDS);
 
-function buildSilentWav(): Uint8Array {
-  const dataLength = SAMPLE_COUNT * 2;
+function buildSilentWav(seconds: number): Uint8Array {
+  const dataLength = Math.round(SAMPLE_RATE * seconds) * 2;
   const buffer = new ArrayBuffer(44 + dataLength);
   const view = new DataView(buffer);
 
@@ -32,10 +31,14 @@ function buildSilentWav(): Uint8Array {
   return new Uint8Array(buffer);
 }
 
-const SILENT_WAV_BYTES = buildSilentWav();
+const SILENT_WAV_BYTES = buildSilentWav(DURATION_SECONDS);
 
 function createAudioFile(name = "silence.wav"): File {
   return new File([SILENT_WAV_BYTES], name, { type: "audio/wav" });
+}
+
+function createSilentAudioFile(seconds: number, name = "silence.wav"): File {
+  return new File([buildSilentWav(seconds)], name, { type: "audio/wav" });
 }
 
 function createUnplayableAudioFile(name = "unplayable.mp3"): File {
@@ -112,4 +115,12 @@ function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
   return URL.createObjectURL(blob);
 }
 
-export { bufferToBlobUrl, createAudioFile, createMp3File, createUnplayableAudioFile, encodeWav, makeSineBuffer };
+export {
+  bufferToBlobUrl,
+  createAudioFile,
+  createMp3File,
+  createSilentAudioFile,
+  createUnplayableAudioFile,
+  encodeWav,
+  makeSineBuffer,
+};

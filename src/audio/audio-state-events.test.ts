@@ -1,5 +1,5 @@
-import { useAudioStore } from "@/stores/audio";
 import { bindAudioStateEvents } from "@/audio/audio-state-events";
+import { useAudioStore } from "@/stores/audio";
 import { beforeEach, describe, expect, it } from "vitest";
 
 beforeEach(() => useAudioStore.getState().reset());
@@ -8,12 +8,11 @@ const bind = (audio: HTMLAudioElement) =>
   bindAudioStateEvents(audio, () => useAudioStore.getState().isPlaying, useAudioStore.getState().setIsPlaying);
 
 describe("bindAudioStateEvents", () => {
-  it("flips store isPlaying to true when audio fires 'play'", () => {
+  it("ignores a stale 'play' event from an element that is paused again", () => {
     const audio = new Audio();
     bind(audio);
-    expect(useAudioStore.getState().isPlaying).toBe(false);
     audio.dispatchEvent(new Event("play"));
-    expect(useAudioStore.getState().isPlaying).toBe(true);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
   it("flips store isPlaying to false when audio fires 'pause'", () => {
