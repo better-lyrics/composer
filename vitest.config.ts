@@ -67,7 +67,7 @@ export default defineConfig({
             enabled: true,
             provider: playwright({
               launchOptions: {
-                args: ["--autoplay-policy=no-user-gesture-required"],
+                args: ["--autoplay-policy=no-user-gesture-required", "--js-flags=--expose-gc"],
               },
             }),
             headless: true,
