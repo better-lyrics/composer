@@ -7,10 +7,46 @@ import {
   putStem,
   stemJobKey,
 } from "@/audio/separation/stem-store";
+import { SeparationWorker } from "@/audio/separation/worker-host";
 import { useAudioStore } from "@/stores/audio";
 import { isStemJobInUse, useSeparationStore } from "@/stores/separation";
 import { createAudioFile } from "@/test/audio-fixtures";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+// -- Helpers ------------------------------------------------------------------
+
+type ProcessResult = Awaited<ReturnType<SeparationWorker["process"]>>;
+
+const ENCODE_SECONDS = 60;
+
+// The vocal model needs an 85 MB download, so these tests stand in for it at the worker boundary only.
+function stubVocalModel(): { finishNextRun: (vocals?: Float32Array[]) => void } {
+  const pending: Array<(result: ProcessResult) => void> = [];
+  vi.spyOn(SeparationWorker.prototype, "init").mockResolvedValue(undefined);
+  vi.spyOn(SeparationWorker.prototype, "process").mockImplementation(
+    () => new Promise<ProcessResult>((resolve) => pending.push(resolve)),
+  );
+  return {
+    finishNextRun: (vocals) => {
+      const frames = ENCODE_SECONDS * 44_100;
+      const channels = vocals ?? [new Float32Array(frames), new Float32Array(frames)];
+      pending.shift()?.({ vocals: channels, numChannels: channels.length, totalFrames: frames });
+    },
+  };
+}
+
+async function startSeparation(): Promise<{ run: Promise<void>; model: ReturnType<typeof stubVocalModel> }> {
+  const model = stubVocalModel();
+  useSeparationStore.setState({ hostingConfigured: true });
+  useAudioStore.getState().setSource({ type: "file", file: createAudioFile("separate-me.wav") });
+  const run = useSeparationStore.getState().separate();
+  await expect.poll(() => useSeparationStore.getState().jobKey).not.toBeNull();
+  return { run, model };
+}
+
+function settle(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 // -- Tests --------------------------------------------------------------------
 
@@ -67,6 +103,37 @@ describe("isStemJobInUse", () => {
       expect(isStemJobInUse("other|fp32|v2")).toBe(false);
       useSeparationStore.setState({ jobKey: "open|fp32|v2" });
       expect(isStemJobInUse("other|fp32|v2")).toBe(false);
+    });
+  });
+});
+
+describe("separate", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("stores both stems and becomes ready", async () => {
+    const { run, model } = await startSeparation();
+    model.finishNextRun();
+    await run;
+
+    const state = useSeparationStore.getState();
+    expect(state.status).toBe("ready");
+    expect(Object.keys(state.stemUrls).toSorted()).toEqual(["instrumental", "vocals"]);
+  });
+
+  describe("error paths", () => {
+    it("reports an unknown error when the stems cannot be encoded", async () => {
+      const { run, model } = await startSeparation();
+      const detached = new Float32Array(4);
+      structuredClone(detached.buffer, { transfer: [detached.buffer] });
+      model.finishNextRun([detached, new Float32Array(0)]);
+      await run;
+
+      const state = useSeparationStore.getState();
+      expect(state.status).toBe("error");
+      expect(state.error?.code).toBe("unknown");
+      expect(state.stemUrls).toEqual({});
     });
   });
 });
