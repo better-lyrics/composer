@@ -35,7 +35,8 @@ afterEach(() => {
 
 // -- Queries ------------------------------------------------------------------
 
-const band = () => document.querySelector<HTMLElement>("[data-seek-bar-focus-band]");
+const band = () => document.querySelector<HTMLElement>('[data-seek-bar-focus-band="heard"]');
+const otherBands = () => [...document.querySelectorAll<HTMLElement>('[data-seek-bar-focus-band="other"]')];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -52,6 +53,28 @@ describe("SeekBarFocusBand", () => {
 
     await expect.poll(() => band()?.style.left).toBe("50%");
     expect(band()?.style.width).toBe("10%");
+  });
+
+  it("marks the other instances of the open group with a fainter band", async () => {
+    useTimelineStore.getState().openGroup("g1", 1);
+    await render(<SeekBarFocusBand duration={100} />);
+
+    await expect.poll(() => otherBands().map((other) => other.style.left)).toEqual(["10%"]);
+    expect(otherBands()[0].style.width).toBe("10%");
+  });
+
+  it("edge case: skips an instance with no timing yet", async () => {
+    useProjectStore.setState({
+      lines: [
+        chorus(0, 10, 20),
+        chorus(1, 50, 60),
+        createLine({ id: "c2", text: "go", groupId: "g1", instanceIdx: 2, templateLineIdx: 0 }),
+      ],
+    });
+    useTimelineStore.getState().openGroup("g1", 0);
+    await render(<SeekBarFocusBand duration={100} />);
+
+    await expect.poll(() => otherBands().map((other) => other.style.left)).toEqual(["50%"]);
   });
 
   it("follows the heard instance", async () => {
