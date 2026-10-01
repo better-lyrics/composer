@@ -4,12 +4,13 @@ import type { Stem } from "@/audio/separation/types";
 
 // -- Types ---------------------------------------------------------------------
 type LazyAudio = () => Promise<AudioBuffer>;
+type CachedStem = { url: string | null; audio: LazyAudio };
 
 // -- Constants -----------------------------------------------------------------
 const LOG_PREFIX = "[ScrubStemRouter]";
 
 // -- State ---------------------------------------------------------------------
-const cache: Map<Stem, LazyAudio> = new Map();
+const cache: Map<Stem, CachedStem> = new Map();
 let activeStem: Stem | null = null;
 
 // -- Helpers -------------------------------------------------------------------
@@ -49,7 +50,7 @@ function deactivate(): void {
 function setOriginalSource(source: Blob | null): void {
   if (source) {
     const audio = lazyAudio(async () => source);
-    cache.set("original", audio);
+    cache.set("original", { url: null, audio });
     if (activeStem === "original" || activeStem === null) {
       activate("original", audio);
     }
@@ -62,25 +63,29 @@ function setOriginalSource(source: Blob | null): void {
 }
 
 function selectStem(stem: Stem, getUrl: () => string | undefined): void {
-  if (stem === activeStem && cache.has(stem)) return;
-  const cached = cache.get(stem);
-  if (cached) {
-    activate(stem, cached);
-    return;
-  }
   if (stem === "original") {
-    if (activeStem !== null) deactivate();
+    const original = cache.get("original");
+    if (!original) {
+      if (activeStem !== null) deactivate();
+      return;
+    }
+    if (activeStem !== "original") activate("original", original.audio);
     return;
   }
 
   const url = getUrl();
+  const cached = cache.get(stem);
+  if (cached && cached.url === url) {
+    if (activeStem !== stem) activate(stem, cached.audio);
+    return;
+  }
   if (!url) {
     console.warn(LOG_PREFIX, `no URL provided for stem "${stem}"; staying on previous stem`);
     return;
   }
 
   const audio = lazyAudio(() => fetchStem(url));
-  cache.set(stem, audio);
+  cache.set(stem, { url, audio });
   activate(stem, audio);
 }
 

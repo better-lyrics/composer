@@ -155,28 +155,20 @@ describe("scrub-stem-router", () => {
   });
 
   describe("cache hit", () => {
-    test("re-selecting a stem uses the cached audio (no second URL call)", async () => {
+    test("re-selecting a stem with the same URL reuses its decoded audio", async () => {
       scrubStemRouter.setOriginalSource(sineWav(1));
       const vocalsUrl = bufferToBlobUrl(makeSineBuffer(1));
 
-      let urlCalls = 0;
-      const getVocalsUrl = () => {
-        urlCalls += 1;
-        return vocalsUrl;
-      };
-
-      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
       await scrubAt(0.1);
-      expect(urlCalls).toBe(1);
+      URL.revokeObjectURL(vocalsUrl);
 
       scrubStemRouter.selectStem("original", () => undefined);
       expect(scrubStemRouter.getActiveStem()).toBe("original");
 
-      scrubStemRouter.selectStem("vocals", getVocalsUrl);
+      scrubStemRouter.selectStem("vocals", () => vocalsUrl);
       expect(scrubStemRouter.getActiveStem()).toBe("vocals");
-      expect(urlCalls).toBe(1);
-
-      URL.revokeObjectURL(vocalsUrl);
+      expect((await scrubAt(0.3))?.time).toBe(0.3);
     });
 
     test("re-selecting the currently-active stem is a no-op (does not stop mid-scrub)", async () => {
@@ -261,6 +253,20 @@ describe("scrub-stem-router", () => {
 
       URL.revokeObjectURL(vocalsUrl);
       URL.revokeObjectURL(instrumentalUrl);
+    });
+  });
+
+  describe("regressions", () => {
+    test("regression: re-selecting the active stem with a new URL reads the new URL", async () => {
+      const revokedUrl = bufferToBlobUrl(makeSineBuffer(1));
+      scrubStemRouter.selectStem("vocals", () => revokedUrl);
+      URL.revokeObjectURL(revokedUrl);
+
+      const freshUrl = bufferToBlobUrl(makeSineBuffer(1));
+      scrubStemRouter.selectStem("vocals", () => freshUrl);
+
+      expect((await scrubAt(0.4))?.time).toBe(0.4);
+      URL.revokeObjectURL(freshUrl);
     });
   });
 
