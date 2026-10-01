@@ -7,6 +7,7 @@ import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { ProgressBar } from "@/ui/progress-bar";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
+import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
 import { cn } from "@/utils/cn";
 import { formatMegabytes } from "@/utils/format-file-size";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -18,8 +19,6 @@ const STEM_LABELS: Record<Stem, string> = {
   vocals: "Vocals",
   instrumental: "Instrumental",
 };
-
-const DETECTING_ONSETS_LABEL = "Detecting vocal onsets";
 
 const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
   original: IconWaveSine,
@@ -59,7 +58,7 @@ const VocalSeparationDropdown: React.FC = () => {
   const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
   const separating = status === "downloading" || status === "processing";
   const showDetecting = detectingOnsets && !separating;
-  const triggerLabel = separating ? `${pct}%` : showDetecting ? DETECTING_ONSETS_LABEL : STEM_LABELS[currentStem];
+  const triggerLabel = separating ? `${pct}%` : STEM_LABELS[currentStem];
   const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
     separating || showDetecting ? (
@@ -71,7 +70,7 @@ const VocalSeparationDropdown: React.FC = () => {
   return (
     <>
       <span role="status" aria-atomic="true" className="sr-only">
-        {showDetecting ? DETECTING_ONSETS_LABEL : ""}
+        {showDetecting ? DETECTING_VOCAL_ONSETS : ""}
       </span>
       <Popover
         placement="top-end"
@@ -81,7 +80,7 @@ const VocalSeparationDropdown: React.FC = () => {
             hasIcon
             className="group font-mono tabular-nums min-w-20"
             aria-label={
-              showDetecting ? `Vocal separation, ${DETECTING_ONSETS_LABEL.toLowerCase()}` : "Vocal separation"
+              showDetecting ? `Vocal separation, ${DETECTING_VOCAL_ONSETS.toLowerCase()}` : "Vocal separation"
             }
           >
             {triggerIcon}

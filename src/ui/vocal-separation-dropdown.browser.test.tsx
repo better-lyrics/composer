@@ -59,13 +59,27 @@ describe("VocalSeparationDropdown", () => {
   });
 
   describe("vocal onset detection", () => {
-    it("shows a spinner and the detection label on the trigger while onsets are detected", async () => {
+    it("shows a spinner beside the stem label and names the detection on the trigger", async () => {
       useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
       const screen = await render(<VocalSeparationDropdown />);
 
       const trigger = screen.getByRole("button", { name: "Vocal separation, detecting vocal onsets" });
-      await expect.element(trigger).toHaveTextContent("Detecting vocal onsets");
+      await expect.element(trigger).toHaveTextContent("Vocals");
+      expect(trigger.element().textContent).not.toContain("Detecting");
       expect(trigger.element().querySelector(".animate-spin")).not.toBeNull();
+    });
+
+    it("keeps the trigger width while onsets are detected", async () => {
+      const screen = await render(<VocalSeparationDropdown />);
+      const idle = screen.getByRole("button", { name: "Vocal separation" });
+      await expect.element(idle).toBeInTheDocument();
+      const idleWidth = idle.element().getBoundingClientRect().width;
+
+      useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+
+      const detecting = screen.getByRole("button", { name: "Vocal separation, detecting vocal onsets" });
+      await expect.element(detecting).toBeInTheDocument();
+      expect(detecting.element().getBoundingClientRect().width).toBe(idleWidth);
     });
 
     it("announces detection through a status region", async () => {
