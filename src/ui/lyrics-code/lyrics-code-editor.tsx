@@ -48,6 +48,7 @@ const LyricsCodeEditor: React.FC<LyricsCodeEditorProps> = ({
       if (event.target === textarea) refreshIfStale(editor, textarea.value);
     };
     const ownerDocument = textarea.ownerDocument;
+    // react-doctor-disable-next-line react-doctor/effect-needs-cleanup -- removed in this ref callback's cleanup
     ownerDocument.addEventListener("input", resyncAfterInput);
     return () => {
       ownerDocument.removeEventListener("input", resyncAfterInput);
