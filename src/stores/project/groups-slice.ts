@@ -2,7 +2,7 @@ import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
-import { instanceStart, sharedTimingFanOut } from "@/domain/group/shared-timing";
+import { instanceStart, sharedTimingFanOut, wholeSongRange } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance } from "@/domain/instance/predicates";
@@ -170,7 +170,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
   shiftInstance: (groupId, instanceIdx, deltaSeconds, duration) =>
     set((state) => {
       const isMember = (line: LyricLine) => belongsToInstance(line, groupId, instanceIdx) && !line.detached;
-      const songRange = { min: 0, max: songEndOrUnbounded(duration) };
+      const songRange = wholeSongRange(duration);
       const delta = clampShiftDelta(state.lines.filter(isMember), deltaSeconds, songRange);
       if (Math.abs(delta) < MIN_SHIFT_SECONDS) return state;
       return commitHistory(state, {

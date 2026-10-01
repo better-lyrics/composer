@@ -1,5 +1,5 @@
 import { withNewInstance } from "@/domain/group/own-timing";
-import { timeRangeResolver } from "@/domain/group/shared-timing";
+import { timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import { pickedTemplateSource } from "@/domain/group/template-source";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { instanceCount, linesOfInstance } from "@/domain/instance/enumerate";
@@ -640,7 +640,7 @@ function useTimelineKeyboard(
           const rangeOf = timeRangeResolver(rawLines, groups, duration);
           const result = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, rangeOf);
           if (Math.abs(result.appliedDelta) < Math.abs(requestedDelta)) {
-            const wholeSong = timeRangeResolver(rawLines, [], duration);
+            const wholeSong = () => wholeSongRange(duration);
             const unshared = shiftSelectionsTogether(rawLines, partitioned, requestedDelta, wholeSong);
             if (Math.abs(unshared.appliedDelta) > Math.abs(result.appliedDelta)) showSharedSongEdgeToast();
           }

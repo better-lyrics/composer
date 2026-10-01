@@ -2,7 +2,6 @@ import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { shiftLineTiming } from "@/domain/line/shift";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 type UpdateLineWithHistory = (
   id: string,
@@ -21,7 +20,7 @@ function nudgeLineBegin(
   const line = lines[lineIdx];
   if (line?.begin === undefined) return;
 
-  const range = timeRangeResolver(lines, groups, songEndOrUnbounded(duration))(line);
+  const range = timeRangeResolver(lines, groups, duration)(line);
   updateLineWithHistory(line.id, shiftLineTiming(line, delta, range), { propagateToSiblings: false });
 }
 

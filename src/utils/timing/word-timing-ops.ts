@@ -5,7 +5,6 @@ import type { LyricLine } from "@/domain/line/model";
 import { type BoundaryEdge, clampBoundaryTime, shouldRollNeighbour } from "@/domain/word/boundary";
 import { getSyllablePositions } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types --------------------------------------------------------------------
 
@@ -67,7 +66,7 @@ function createWordTimingOps(config: WordFieldConfig) {
 
     const updatedWords = [...words];
     const word = updatedWords[wordIdx];
-    const range = timeRangeResolver(lines, groups, songEndOrUnbounded(duration))(line);
+    const range = timeRangeResolver(lines, groups, duration)(line);
     updatedWords[wordIdx] = mutator({
       word,
       prevWord: updatedWords[wordIdx - 1],

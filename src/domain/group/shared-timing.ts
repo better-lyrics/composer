@@ -1,3 +1,4 @@
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
@@ -215,6 +216,10 @@ function sharedTimeRange(
   return range;
 }
 
+function wholeSongRange(duration: number): TimeRange {
+  return { min: 0, max: songEndOrUnbounded(duration) };
+}
+
 function timeRangeResolver(
   lines: readonly LyricLine[],
   groups: readonly LinkGroup[],
@@ -222,14 +227,14 @@ function timeRangeResolver(
 ): (line: LyricLine) => TimeRange {
   const groupsById = new Map(groups.map((group) => [group.id, group]));
   const rangeByInstance = new Map<string, TimeRange>();
-  const wholeSong: TimeRange = { min: 0, max: duration };
+  const wholeSong = wholeSongRange(duration);
   return (line) => {
     if (!isLinked(line) || !isSharedLine(line, groupsById)) return wholeSong;
     const key = `${line.groupId}:${line.instanceIdx}`;
     let range = rangeByInstance.get(key);
     const group = groupsById.get(line.groupId);
     if (!range && group) {
-      range = sharedTimeRange(lines, group, line.instanceIdx, duration);
+      range = sharedTimeRange(lines, group, line.instanceIdx, wholeSong.max);
       rangeByInstance.set(key, range);
     }
     return range ?? wholeSong;
@@ -252,5 +257,6 @@ export {
   sharesTiming,
   timeRangeResolver,
   UNBOUNDED_TIME_RANGE,
+  wholeSongRange,
 };
 export type { TimeRange };

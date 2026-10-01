@@ -17,7 +17,6 @@ import { showPlacementBlockedToast } from "@/utils/group-toast";
 import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
 import { useCallback, useMemo, useRef } from "react";
 import { toast } from "sonner";
@@ -344,11 +343,7 @@ function useSyncHandlers({
         return;
       }
       const line = lines[slot.lineIndex];
-      const range = timeRangeResolver(
-        lines,
-        useProjectStore.getState().groups,
-        songEndOrUnbounded(useAudioStore.getState().duration),
-      )(line);
+      const range = timeRangeResolver(lines, useProjectStore.getState().groups, useAudioStore.getState().duration)(line);
       updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
         deriveText: false,
         propagateToSiblings: false,

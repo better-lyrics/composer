@@ -4,6 +4,7 @@ import {
   sharedTimingFanOut,
   sharesTiming,
   timeRangeResolver,
+  wholeSongRange,
 } from "@/domain/group/shared-timing";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
@@ -377,6 +378,15 @@ describe("timeRangeResolver", () => {
       expect(timeRangeResolver(lines, sharing, 60)(lines[0])).toEqual({ min: 0, max: 60 });
     });
 
+    it("regression: treats an unknown duration as no song end, for shared and other lines", () => {
+      const lines = [chorus(0, 0, 10), chorus(1, 0, 40)];
+      for (const duration of [0, Number.NaN]) {
+        const range = timeRangeResolver(lines, sharing, duration)(lines[0]);
+        expect(range).toEqual({ min: 0, max: Number.POSITIVE_INFINITY });
+        expect(range.max).toBeGreaterThanOrEqual(range.min);
+      }
+    });
+
     it("gives an old group the whole song", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0, 59)];
       expect(timeRangeResolver(lines, [createGroup({ id: "g1" })], 60)(lines[0])).toEqual({ min: 0, max: 60 });
@@ -391,6 +401,19 @@ describe("timeRangeResolver", () => {
         expect(range.min + offset).toBeGreaterThanOrEqual(-1e-9);
         expect(range.max + offset).toBeLessThanOrEqual(60 + 1e-9);
       }
+    });
+  });
+});
+
+describe("wholeSongRange", () => {
+  it("spans the song", () => {
+    expect(wholeSongRange(60)).toEqual({ min: 0, max: 60 });
+  });
+
+  describe("edge cases", () => {
+    it("has no end for an unknown duration", () => {
+      expect(wholeSongRange(0)).toEqual({ min: 0, max: Number.POSITIVE_INFINITY });
+      expect(wholeSongRange(Number.NaN)).toEqual({ min: 0, max: Number.POSITIVE_INFINITY });
     });
   });
 });

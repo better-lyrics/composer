@@ -1,5 +1,5 @@
 import { withNewInstance } from "@/domain/group/own-timing";
-import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import { type TimeRange, timeRangeResolver, wholeSongRange } from "@/domain/group/shared-timing";
 import type { LineTemplate } from "@/domain/group/template";
 import { pickedTemplateSource, templateSourceInstance } from "@/domain/group/template-source";
 import { instanceCount } from "@/domain/instance/enumerate";
@@ -311,7 +311,7 @@ function computeGhosts(
     const pasted = pastedWordBounds(
       entry.word,
       timeDelta,
-      targetLine ? rangeOf(targetLine) : { min: 0, max: duration },
+      targetLine ? rangeOf(targetLine) : wholeSongRange(duration),
     );
 
     const left = GUTTER_WIDTH + pasted.begin * zoom;
