@@ -58,12 +58,32 @@ describe("VocalSeparationDropdown", () => {
     await expect.element(bar).toHaveAttribute("aria-valuenow", "25");
   });
 
+  describe("accessible name", () => {
+    it("includes the visible stem label", async () => {
+      const screen = await render(<VocalSeparationDropdown />);
+      await expect
+        .element(screen.getByRole("button", { name: "Vocal separation, Vocals", exact: true }))
+        .toHaveTextContent("Vocals");
+    });
+
+    it("includes the visible percentage while separating", async () => {
+      useSeparationStore.setState({ status: "processing", progress: { loaded: 1, total: 4 } });
+      const screen = await render(<VocalSeparationDropdown />);
+      await expect
+        .element(screen.getByRole("button", { name: "Vocal separation, 25%", exact: true }))
+        .toHaveTextContent("25%");
+    });
+  });
+
   describe("vocal onset detection", () => {
     it("shows a spinner beside the stem label and names the detection on the trigger", async () => {
       useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
       const screen = await render(<VocalSeparationDropdown />);
 
-      const trigger = screen.getByRole("button", { name: "Vocal separation, detecting vocal onsets" });
+      const trigger = screen.getByRole("button", {
+        name: "Vocal separation, Vocals, detecting vocal onsets",
+        exact: true,
+      });
       await expect.element(trigger).toHaveTextContent("Vocals");
       expect(trigger.element().textContent).not.toContain("Detecting");
       expect(trigger.element().querySelector(".animate-spin")).not.toBeNull();
@@ -77,7 +97,10 @@ describe("VocalSeparationDropdown", () => {
 
       useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
 
-      const detecting = screen.getByRole("button", { name: "Vocal separation, detecting vocal onsets" });
+      const detecting = screen.getByRole("button", {
+        name: "Vocal separation, Vocals, detecting vocal onsets",
+        exact: true,
+      });
       await expect.element(detecting).toBeInTheDocument();
       expect(detecting.element().getBoundingClientRect().width).toBe(idleWidth);
     });

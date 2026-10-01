@@ -59,6 +59,9 @@ const VocalSeparationDropdown: React.FC = () => {
   const separating = status === "downloading" || status === "processing";
   const showDetecting = detectingOnsets && !separating;
   const triggerLabel = separating ? `${pct}%` : STEM_LABELS[currentStem];
+  const triggerName = showDetecting
+    ? `Vocal separation, ${triggerLabel}, ${DETECTING_VOCAL_ONSETS.toLowerCase()}`
+    : `Vocal separation, ${triggerLabel}`;
   const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
     separating || showDetecting ? (
@@ -75,14 +78,7 @@ const VocalSeparationDropdown: React.FC = () => {
       <Popover
         placement="top-end"
         trigger={
-          <Button
-            variant="ghost"
-            hasIcon
-            className="group font-mono tabular-nums min-w-20"
-            aria-label={
-              showDetecting ? `Vocal separation, ${DETECTING_VOCAL_ONSETS.toLowerCase()}` : "Vocal separation"
-            }
-          >
+          <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label={triggerName}>
             {triggerIcon}
             <span>{triggerLabel}</span>
           </Button>
