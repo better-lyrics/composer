@@ -1,5 +1,5 @@
 import { askChoice, useChoiceStore } from "@/stores/choice-store";
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";

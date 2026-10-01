@@ -1,6 +1,6 @@
 import { appQueryClient } from "@/lib/app-query-client";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useImportModalStore } from "@/stores/import-modal-store";
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { stepFrames } from "@/test/frame-steps";
@@ -197,7 +197,7 @@ describe("tour Import Lyrics steps", () => {
       await clickDriver(".driver-popover-close-btn");
       await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
       await expect.poll(importDialog).toBeNull();
-      await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(0);
+      await expect.poll(() => openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
     });
 
     it("regression: closing the tour while it is still moving onto the modal step closes the modal", async () => {
@@ -224,7 +224,7 @@ describe("tour Import Lyrics steps", () => {
       await userEvent.keyboard("{Escape}");
       await expect.poll(importDialog).toBeNull();
       await expect.poll(() => document.querySelector(".driver-popover")).toBeNull();
-      await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(0);
+      await expect.poll(() => openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
     });
   });
 });

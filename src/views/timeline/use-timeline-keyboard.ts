@@ -10,11 +10,12 @@ import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import type { WordSelection } from "@/domain/selection/model";
 import { normalizeTimes, snapPointTimes } from "@/domain/snap-point/model";
 import { useAudioStore } from "@/stores/audio";
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { MOD_KEY } from "@/utils/platform";
+import { pluralize } from "@/utils/pluralize";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
@@ -39,7 +40,6 @@ import {
   shiftSelectionsTogether,
 } from "@/views/timeline/utils";
 import { findBoundaryTarget, findWordsAtTime, pickNextWordAtPlayhead } from "@/views/timeline/word-at-playhead";
-import { pluralize } from "@/utils/pluralize";
 import { type RefObject, useCallback, useEffect } from "react";
 import { toast } from "sonner";
 

@@ -1,4 +1,4 @@
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { render } from "@/test/render";
 import { Modal } from "@/ui/modal";
 import { describe, expect, it } from "vitest";
@@ -96,8 +96,8 @@ describe("Modal", () => {
         <div>Body</div>
       </Modal>,
     );
-    const { push, pop } = useModalStackStore.getState();
-    const tourToken = push();
+    const { push, pop } = useEscapeLayerStackStore.getState();
+    const tourToken = push("modal");
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(closeCalls).toBe(0);
     pop(tourToken);
@@ -132,15 +132,15 @@ describe("Modal", () => {
   // -- Modal stack ------------------------------------------------------------
 
   it("pushes onto the modal stack while open", async () => {
-    expect(openModalCount(useModalStackStore.getState())).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
     const { unmount } = await render(
       <Modal isOpen onClose={() => {}}>
         <div />
       </Modal>,
     );
-    expect(openModalCount(useModalStackStore.getState())).toBe(1);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(1);
     await unmount();
-    expect(openModalCount(useModalStackStore.getState())).toBe(0);
+    expect(openModalCount(useEscapeLayerStackStore.getState())).toBe(0);
   });
 
   it("locks document.body overflow while open and restores it on close", async () => {

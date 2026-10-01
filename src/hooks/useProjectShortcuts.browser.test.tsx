@@ -1,7 +1,7 @@
 import { useProjectShortcuts } from "@/hooks/useProjectShortcuts";
 import { restoreOpenProject } from "@/lib/open-project";
 import { openProjectIdSnapshot } from "@/lib/open-project-session";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { assignBinding } from "@/stores/shortcut-bindings";
 import { useUIStore } from "@/stores/ui";
@@ -48,7 +48,7 @@ describe("useProjectShortcuts", () => {
 
   describe("edge cases", () => {
     it("does nothing while a modal is open", async () => {
-      useModalStackStore.setState({ stack: Array.from({ length: 1 }, () => Symbol("modal")) });
+      useEscapeLayerStackStore.getState().push("modal");
       await renderHook(() => useProjectShortcuts());
       const event = pressWithMod("o", "KeyO");
       expect(useUIStore.getState().projectSwitcherOpen).toBe(false);

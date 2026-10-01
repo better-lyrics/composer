@@ -1,4 +1,4 @@
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { useEffect, useRef } from "react";
 

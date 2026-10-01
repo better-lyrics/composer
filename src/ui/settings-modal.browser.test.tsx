@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useSettingsStore } from "@/stores/settings";
 import { useUIStore } from "@/stores/ui";
 import { installStyleSheet } from "@/test/browser-css";
@@ -243,10 +243,38 @@ describe("SettingsModal search", () => {
     expect(closes).toBe(1);
   });
 
+  describe("regressions", () => {
+    const openThemeEditor = async (screen: Awaited<ReturnType<typeof openModal>>) => {
+      await screen.getByRole("button", { name: /Theme/i }).click();
+      await screen.getByRole("button", { name: "Customize current" }).click();
+      await expect.element(screen.getByLabelText("Theme name")).toBeInTheDocument();
+    };
+
+    it("regression: typing starts a search while the theme editor is open", async () => {
+      const screen = await openModal();
+      await openThemeEditor(screen);
+      (document.querySelector("dialog") as HTMLElement).focus();
+      await userEvent.keyboard("snap");
+      await expect.element(searchBox(screen)).toHaveValue("snap");
+    });
+
+    it("regression: Escape closes the theme editor before Settings", async () => {
+      let closes = 0;
+      const screen = await render(<SettingsModal isOpen onClose={() => closes++} />);
+      await openThemeEditor(screen);
+      await userEvent.keyboard("{Escape}");
+      await expect.element(screen.getByLabelText("Theme name")).not.toBeInTheDocument();
+      expect(closes).toBe(0);
+      await userEvent.keyboard("{Escape}");
+      expect(closes).toBe(1);
+    });
+  });
+
   describe("edge cases", () => {
     it("does not steal keys while a nested modal is open", async () => {
       await openModal();
-      useModalStackStore.setState({ stack: Array.from({ length: 2 }, () => Symbol("modal")) });
+      useEscapeLayerStackStore.getState().push("modal");
+      useEscapeLayerStackStore.getState().push("modal");
       (document.querySelector("dialog") as HTMLElement).focus();
       await userEvent.keyboard("a");
       expect(useUIStore.getState().settingsQuery).toBe("");

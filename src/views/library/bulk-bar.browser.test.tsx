@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { render } from "@/test/render";
 import { BulkBar } from "@/views/library/bulk-bar";
 import { describe, expect, it } from "vitest";
@@ -57,7 +57,7 @@ describe("BulkBar", () => {
     });
 
     it("does not render while a modal is open", async () => {
-      useModalStackStore.setState({ stack: Array.from({ length: 1 }, () => Symbol("modal")) });
+      useEscapeLayerStackStore.getState().push("modal");
       const screen = await renderBar(3);
       await expect.element(screen.getByRole("toolbar", { name: "Selected projects" })).not.toBeInTheDocument();
     });

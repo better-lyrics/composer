@@ -1,5 +1,5 @@
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { render } from "@/test/render";
 import { useRef, useState } from "react";
 import { describe, expect, it } from "vitest";
@@ -70,6 +70,31 @@ describe("useTypeToSearch", () => {
       expect(bubbledEscapes).toBe(1);
     });
 
+    it("lets Escape through to a panel on top while keeping the query", async () => {
+      useEscapeLayerStackStore.getState().push("modal");
+      useEscapeLayerStackStore.getState().push("panel");
+      const screen = await render(<Harness initial="snap" />);
+      let bubbledEscapes = 0;
+      const countEscape = (event: KeyboardEvent) => {
+        if (event.key === "Escape") bubbledEscapes++;
+      };
+      document.addEventListener("keydown", countEscape);
+      focusElsewhere(screen);
+      await userEvent.keyboard("{Escape}");
+      document.removeEventListener("keydown", countEscape);
+      expect(bubbledEscapes).toBe(1);
+      await expect.element(screen.getByRole("textbox", { name: "Search" })).toHaveValue("snap");
+    });
+
+    it("keeps routing letters while a panel sits above the modal", async () => {
+      useEscapeLayerStackStore.getState().push("modal");
+      useEscapeLayerStackStore.getState().push("panel");
+      const screen = await render(<Harness />);
+      focusElsewhere(screen);
+      await userEvent.keyboard("a");
+      await expect.element(screen.getByRole("textbox", { name: "Search" })).toHaveValue("a");
+    });
+
     it("leaves other text fields alone", async () => {
       const screen = await render(<Harness />);
       (screen.getByRole("textbox", { name: "Notes" }).element() as HTMLElement).focus();
@@ -86,7 +111,8 @@ describe("useTypeToSearch", () => {
     });
 
     it("does not steal keys while a nested modal is open", async () => {
-      useModalStackStore.setState({ stack: Array.from({ length: 2 }, () => Symbol("modal")) });
+      useEscapeLayerStackStore.getState().push("modal");
+      useEscapeLayerStackStore.getState().push("modal");
       const screen = await render(<Harness />);
       focusElsewhere(screen);
       await userEvent.keyboard("a");

@@ -45,7 +45,7 @@ const Modal: React.FC<ModalProps> = ({
     [onClose],
   );
 
-  useEscapeLayer(isOpen, onClose);
+  useEscapeLayer("modal", isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;

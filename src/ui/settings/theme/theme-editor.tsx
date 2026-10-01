@@ -78,7 +78,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ target, onClose }) => {
   const [draft, setDraft] = useState<Theme>(() => initialDraft(target));
   const [tab, setTab] = useState<EditorTab>("quick");
   const isEdit = target.mode === "edit";
-  useEscapeLayer(true, onClose);
+  useEscapeLayer("panel", true, onClose);
 
   useEffect(() => {
     applyResolvedTheme(deriveTheme(draft), draft.scheme);

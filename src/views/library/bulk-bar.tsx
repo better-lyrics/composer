@@ -1,4 +1,4 @@
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { IconDownload, IconTrash, IconX } from "@tabler/icons-react";
@@ -26,7 +26,7 @@ const Divider: React.FC = () => <span aria-hidden="true" className="w-px h-5 mx-
 // -- Component ----------------------------------------------------------------
 
 const BulkBar: React.FC<BulkBarProps> = ({ selectedCount, visibleCount, onSelectAll, onExport, onDelete, onClear }) => {
-  const modalOpen = useModalStackStore((s) => openModalCount(s) > 0);
+  const modalOpen = useEscapeLayerStackStore((s) => openModalCount(s) > 0);
   if (selectedCount === 0 || modalOpen) return null;
 
   return (

@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { keepFieldArrowKeysFromTour } from "@/tour/field-arrow-keys";
 import type { GuideCardState } from "@/tour/guide-card";
 import { leaveImportLyricsDialog } from "@/tour/import-lyrics-steps";
@@ -148,8 +148,8 @@ function useTour({ onOpenBestPractices }: UseTourOptions) {
         },
       });
 
-      const { push, pop } = useModalStackStore.getState();
-      const modalToken = push();
+      const { push, pop } = useEscapeLayerStackStore.getState();
+      const modalToken = push("modal");
       releaseModalRef.current = () => pop(modalToken);
       releaseArrowGuardRef.current = keepFieldArrowKeysFromTour();
       driverRef.current = tourDriver;

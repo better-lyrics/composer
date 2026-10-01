@@ -1,8 +1,8 @@
-import { useEffect } from "react";
 import { createProject } from "@/lib/open-project";
-import { isAnyModalOpen } from "@/stores/modal-stack";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useUIStore } from "@/stores/ui";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { useEffect } from "react";
 
 // -- Constants ----------------------------------------------------------------
 

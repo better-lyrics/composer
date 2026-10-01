@@ -1,4 +1,4 @@
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { isPanelOnTop, openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { type RefObject, useEffect } from "react";
 
 // -- Helpers -------------------------------------------------------------------
@@ -23,9 +23,9 @@ function useTypeToSearch(
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
-      if (openModalCount(useModalStackStore.getState()) > 1) return;
+      if (openModalCount(useEscapeLayerStackStore.getState()) > 1) return;
       if (event.key === "Escape") {
-        if (query === "") return;
+        if (query === "" || isPanelOnTop()) return;
         event.preventDefault();
         event.stopPropagation();
         setQuery("");

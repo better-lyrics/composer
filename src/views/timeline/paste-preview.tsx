@@ -5,7 +5,7 @@ import type { LyricLine } from "@/domain/line/model";
 import { boundsOverlap } from "@/domain/word/overlap";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { cn } from "@/utils/cn";
 import { pluralize } from "@/utils/pluralize";
@@ -178,7 +178,7 @@ const PastePreview: React.FC<PastePreviewProps> = ({ clipboard, scrollContainerR
     [clipboard, scrollContainerRef, confirm],
   );
 
-  const modalCount = useModalStackStore(openModalCount);
+  const modalCount = useEscapeLayerStackStore(openModalCount);
 
   // Reactive subscriptions BEFORE the early returns so the layout memo can run
   // every render. Mousemove updates mousePos but does not invalidate the layout

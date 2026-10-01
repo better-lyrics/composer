@@ -3,8 +3,8 @@ import { useAuthStore } from "@/stores/auth";
 import { useChoiceStore } from "@/stores/choice-store";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useDivergenceStore } from "@/stores/divergence-store";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { INITIAL_STATE as IMPORT_MODAL_INITIAL_STATE, useImportModalStore } from "@/stores/import-modal-store";
-import { useModalStackStore } from "@/stores/modal-stack";
 import { INITIAL_STATE as PROJECT_INITIAL_STATE, useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { DEFAULTS as SETTINGS_DEFAULTS, useSettingsStore } from "@/stores/settings";
@@ -43,7 +43,7 @@ async function resetAllStores(): Promise<void> {
   useChoiceStore.setState({ request: null, resolveIndex: null });
   useDivergenceStore.setState({ isOpen: false, options: null, resolve: null });
   useImportModalStore.setState({ ...IMPORT_MODAL_INITIAL_STATE });
-  useModalStackStore.setState({ stack: [] });
+  useEscapeLayerStackStore.setState({ layers: [] });
   useUIStore.setState({ ...UI_INITIAL_STATE });
 
   const settings = useSettingsStore.getState();

@@ -1,4 +1,4 @@
-import { openModalCount, useModalStackStore } from "@/stores/modal-stack";
+import { openModalCount, useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { render } from "@/test/render";
 import { Modal } from "@/ui/modal";
 import { Tooltip } from "@/ui/tooltip";
@@ -68,7 +68,7 @@ describe("Tooltip surface inside modals", () => {
         </Tooltip>
       </Modal>,
     );
-    await expect.poll(() => openModalCount(useModalStackStore.getState())).toBe(1);
+    await expect.poll(() => openModalCount(useEscapeLayerStackStore.getState())).toBe(1);
     await screen.getByRole("button", { name: "Inside" }).hover();
     const tooltip = screen.getByRole("tooltip");
     await expect.element(tooltip).toHaveClass("bg-composer-bg-elevated");
