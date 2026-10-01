@@ -21,8 +21,8 @@
     "doctor": "npx --yes react-doctor@latest ."
   },
   "dependencies": {
-    "@braccato/core": "^1.12.6",
-    "@braccato/parsers": "^0.3.1",
+    "@braccato/core": "^1.16.3",
+    "@braccato/parsers": "^0.3.2",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
