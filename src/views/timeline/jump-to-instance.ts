@@ -1,7 +1,7 @@
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { useProjectStore } from "@/stores/project";
 import { currentEffectiveFocus } from "@/views/timeline/effective-focus";
-import { type GroupFocus, adjacentHeardInstance } from "@/views/timeline/group-focus";
+import { type GroupFocus, adjacentHeardInstance, adjacentInstance } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -26,9 +26,8 @@ function jumpToAdjacentInstance(groupId: string, instanceIdx: number, direction:
     return;
   }
   const lines = useProjectStore.getState().lines;
-  const all = instanceIndicesOf(lines, groupId);
-  if (all.length < 2) return;
-  const next = all[(all.indexOf(instanceIdx) + direction + all.length) % all.length];
+  const next = adjacentInstance(instanceIndicesOf(lines, groupId), instanceIdx, direction);
+  if (next === null) return;
   useTimelineStore.getState().setSelectedWords(getWordsInInstance(lines, groupId, next));
   scrollToInstanceHeader(groupId, next);
 }

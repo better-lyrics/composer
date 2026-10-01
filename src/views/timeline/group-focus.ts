@@ -37,6 +37,15 @@ function canHearInstance(lines: readonly LyricLine[], group: LinkGroup, instance
   return sharesTiming(group, instanceIdx) && instanceStart(lines, group.id, instanceIdx) !== null;
 }
 
+function heardInstances(lines: readonly LyricLine[], group: LinkGroup): number[] {
+  return instanceIndicesOf(lines, group.id).filter((instanceIdx) => canHearInstance(lines, group, instanceIdx));
+}
+
+function adjacentInstance(instances: readonly number[], current: number, direction: 1 | -1): number | null {
+  if (instances.length < 2) return null;
+  return instances[(instances.indexOf(current) + direction + instances.length) % instances.length];
+}
+
 function adjacentHeardInstance(
   lines: readonly LyricLine[],
   group: LinkGroup,
@@ -44,10 +53,7 @@ function adjacentHeardInstance(
   direction: 1 | -1,
 ): number | null {
   if (!canHearInstance(lines, group, heardInstanceIdx)) return null;
-  const heard = instanceIndicesOf(lines, group.id).filter((instanceIdx) => canHearInstance(lines, group, instanceIdx));
-  if (heard.length < 2) return null;
-  const here = heard.indexOf(heardInstanceIdx);
-  return heard[(here + direction + heard.length) % heard.length];
+  return adjacentInstance(heardInstances(lines, group), heardInstanceIdx, direction);
 }
 
 function instanceSpan(lines: readonly LyricLine[], groupId: string, instanceIdx: number): Bounds | null {
@@ -77,6 +83,8 @@ function clampScrollLeft(scrollLeft: number, range: ScrollRange): number {
 // -- Exports ------------------------------------------------------------------
 
 export {
+  adjacentInstance,
+  heardInstances,
   instanceSpan,
   FOCUS_SCROLL_MARGIN_PX,
   adjacentHeardInstance,

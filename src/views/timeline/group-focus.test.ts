@@ -2,6 +2,8 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import {
   FOCUS_SCROLL_MARGIN_PX,
   adjacentHeardInstance,
+  adjacentInstance,
+  heardInstances,
   canHearInstance,
   clampScrollLeft,
   effectiveFocus,
@@ -172,6 +174,16 @@ describe("heard instances", () => {
     });
   });
 
+  describe("heardInstances", () => {
+    it("lists the placed shared instances in instance order", () => {
+      expect(heardInstances(song, group)).toEqual([0, 1, 4]);
+    });
+
+    it("is empty for a group that does not share timing", () => {
+      expect(heardInstances(song, createGroup({ id: "g1" }))).toEqual([]);
+    });
+  });
+
   describe("adjacentHeardInstance", () => {
     it("steps to the next heard instance, past the ones that cannot be heard", () => {
       expect(adjacentHeardInstance(song, group, 1, 1)).toBe(4);
@@ -222,6 +234,25 @@ describe("fittedFocusZoom", () => {
 
     it("returns null when the track has no room past its margins", () => {
       expect(fittedFocusZoom({ begin: 40, end: 50 }, 2 * FOCUS_SCROLL_MARGIN_PX)).toBeNull();
+    });
+  });
+});
+
+describe("adjacentInstance", () => {
+  it("steps forward and back, wrapping at both ends", () => {
+    expect(adjacentInstance([0, 2, 5], 2, 1)).toBe(5);
+    expect(adjacentInstance([0, 2, 5], 5, 1)).toBe(0);
+    expect(adjacentInstance([0, 2, 5], 0, -1)).toBe(5);
+  });
+
+  describe("edge cases", () => {
+    it("has no neighbor with fewer than two instances", () => {
+      expect(adjacentInstance([], 0, 1)).toBeNull();
+      expect(adjacentInstance([3], 3, 1)).toBeNull();
+    });
+
+    it("starts from the first instance when the current one is not in the list", () => {
+      expect(adjacentInstance([0, 2, 5], 9, 1)).toBe(0);
     });
   });
 });

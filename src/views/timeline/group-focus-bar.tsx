@@ -13,7 +13,7 @@ import { ToggleButton } from "@/ui/toggle-button";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
-import { adjacentHeardInstance, canHearInstance, focusBounds } from "@/views/timeline/group-focus";
+import { adjacentHeardInstance, focusBounds, heardInstances } from "@/views/timeline/group-focus";
 import { hearInstance } from "@/views/timeline/hear-instance";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { toggleGroupLoop } from "@/views/timeline/toggle-group-loop";
@@ -53,7 +53,7 @@ function otherInstanceNotes(lines: LyricLine[], group: LinkGroup, hearInstanceId
 
 const InstanceStepper: React.FC<OpenInstanceProps> = ({ group, lines, hearInstanceIdx }) => {
   const all = instanceIndicesOf(lines, group.id);
-  const hearable = all.filter((instanceIdx) => canHearInstance(lines, group, instanceIdx));
+  const hearable = heardInstances(lines, group);
   const counted = hearable.includes(hearInstanceIdx) ? hearable : all;
   const previous = adjacentHeardInstance(lines, group, hearInstanceIdx, -1);
   const next = adjacentHeardInstance(lines, group, hearInstanceIdx, 1);
