@@ -10,7 +10,6 @@ import { Button } from "@/ui/button";
 import { IconButton } from "@/ui/icon-button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { ToggleButton } from "@/ui/toggle-button";
-import { Tooltip } from "@/ui/tooltip";
 import { cn } from "@/utils/cn";
 import { formatTime } from "@/utils/format-time";
 import { useEffectiveFocus, useEffectiveFocusGroup } from "@/views/timeline/effective-focus";
@@ -128,19 +127,17 @@ const InstanceStatus: React.FC<OpenInstanceProps> = (props) => (
 const LoopToggle: React.FC = () => {
   const loop = useSettingsStore((s) => s.loopOpenGroup);
   return (
-    <Tooltip
-      content={
-        <>
-          Loop the open group
-          <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />
-        </>
-      }
+    <ToggleButton
+      pressed={loop}
+      size="sm"
+      hasIcon
+      className={cn(STRIP_CONTROL, "pr-1.5")}
+      onClick={toggleGroupLoop}
     >
-      <ToggleButton pressed={loop} size="sm" hasIcon className={STRIP_CONTROL} onClick={toggleGroupLoop}>
-        <IconRepeat aria-hidden="true" className="size-3.5" />
-        Loop
-      </ToggleButton>
-    </Tooltip>
+      <IconRepeat aria-hidden="true" className="size-3.5" />
+      Loop
+      <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />
+    </ToggleButton>
   );
 };
 

@@ -2,6 +2,8 @@ import type { LinkGroup } from "@/domain/group/template";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
+import { formatKey } from "@/utils/format-key";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { GroupFocusBar } from "@/views/timeline/group-focus-bar";
@@ -124,13 +126,23 @@ describe("GroupFocusBar", () => {
   it("toggles Loop and shows it pressed", async () => {
     seed(sharingGroup, 0);
     const screen = await render(<GroupFocusBar />);
-    const loop = screen.getByRole("button", { name: "Loop" });
+    const loop = screen.getByRole("button", { name: /^Loop/ });
 
     await expect.element(loop).toHaveAttribute("aria-pressed", "false");
     await loop.click();
 
     expect(useSettingsStore.getState().loopOpenGroup).toBe(true);
     await expect.element(loop).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("shows the loop shortcut inside the Loop button", async () => {
+    seed(sharingGroup, 0);
+    const screen = await render(<GroupFocusBar />);
+
+    const loop = screen.getByRole("button", { name: /^Loop/ });
+    for (const key of getEffectiveKeysArray("timeline.toggleGroupLoop")) {
+      await expect.element(loop).toHaveTextContent(formatKey(key));
+    }
   });
 
   it("closes the group with Done and shows the close shortcut", async () => {
@@ -225,7 +237,7 @@ describe("GroupFocusBar", () => {
       const screen = await render(<GroupFocusBar />);
 
       await screen.getByRole("button", { name: "Next instance" }).click();
-      await screen.getByRole("button", { name: "Loop" }).click();
+      await screen.getByRole("button", { name: /^Loop/ }).click();
 
       expect(store().lines).toBe(before);
     });
