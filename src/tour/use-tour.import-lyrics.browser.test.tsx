@@ -139,6 +139,28 @@ describe("tour Import Lyrics steps", () => {
     await expect.element(track).toHaveValue("Midnight City");
   });
 
+  it("regression: arrow keyups in a field still reach the field and document listeners", async () => {
+    const screen = await resumeAt("edit-import-modal");
+    await expect.poll(() => importDialog()?.classList.contains("driver-active-element")).toBe(true);
+    const track = screen.getByLabelText("Track");
+    await track.click();
+    const fieldKeys: string[] = [];
+    const documentKeys: string[] = [];
+    const onField = (event: KeyboardEvent) => fieldKeys.push(event.key);
+    const onDocument = (event: KeyboardEvent) => documentKeys.push(event.key);
+    track.element().addEventListener("keyup", onField as EventListener);
+    document.addEventListener("keyup", onDocument);
+    try {
+      await userEvent.keyboard("{ArrowLeft}");
+      expect(fieldKeys).toContain("ArrowLeft");
+      expect(documentKeys).toContain("ArrowLeft");
+      expect(driverTitle()).toBe("Search, paste, or upload");
+    } finally {
+      track.element().removeEventListener("keyup", onField as EventListener);
+      document.removeEventListener("keyup", onDocument);
+    }
+  });
+
   it("keeps arrow keys stepping the tour when no field has focus", async () => {
     await resumeAt("edit-import");
     await expect.poll(driverTitle).toBe("Import lyrics you already have");

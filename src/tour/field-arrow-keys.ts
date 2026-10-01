@@ -13,13 +13,13 @@ function isTextField(target: EventTarget | null): boolean {
 
 // -- Guard --------------------------------------------------------------------
 
-// driver.js steps the tour on any ArrowLeft or ArrowRight keyup, so arrows typed in a field must never reach it.
+// driver.js steps the tour on any ArrowLeft or ArrowRight keyup on window, so arrows typed in a field stop at document.
 function keepFieldArrowKeysFromTour(): () => void {
   const stopArrowInField = (event: KeyboardEvent) => {
     if (TOUR_ARROW_KEYS.has(event.key) && isTextField(event.target)) event.stopPropagation();
   };
-  window.addEventListener("keyup", stopArrowInField, true);
-  return () => window.removeEventListener("keyup", stopArrowInField, true);
+  document.addEventListener("keyup", stopArrowInField);
+  return () => document.removeEventListener("keyup", stopArrowInField);
 }
 
 // -- Exports ------------------------------------------------------------------
