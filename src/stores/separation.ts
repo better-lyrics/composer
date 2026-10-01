@@ -1,12 +1,7 @@
-import {
-  TARGET_SAMPLE_RATE,
-  decodeFileToFloat32,
-  floatChannelsToWavBlob,
-  hashFile,
-} from "@/audio/separation/audio-codec";
-import { computeInstrumental } from "@/audio/separation/derived-stems";
+import { TARGET_SAMPLE_RATE, decodeFileToFloat32, hashFile } from "@/audio/separation/audio-codec";
 import { hasCachedModel } from "@/audio/separation/model-cache";
 import { getModelDescriptor, isModelHostingConfigured } from "@/audio/separation/model-registry";
+import { encodeSeparatedStems } from "@/audio/separation/separated-stems";
 import {
   beginLoadingStemJob,
   endLoadingStemJob,
@@ -224,9 +219,14 @@ const useSeparationStore = create<SeparationState & SeparationActions>((set, get
       return;
     }
 
-    const instrumental = computeInstrumental(decoded.channels, result.vocals);
-    const vocalsBlob = floatChannelsToWavBlob(result.vocals, TARGET_SAMPLE_RATE);
-    const instrumentalBlob = floatChannelsToWavBlob(instrumental, TARGET_SAMPLE_RATE);
+    let stemFiles: Awaited<ReturnType<typeof encodeSeparatedStems>>;
+    try {
+      stemFiles = await encodeSeparatedStems(decoded.channels, result.vocals, TARGET_SAMPLE_RATE);
+    } catch (err) {
+      set({ status: "error", error: { code: "unknown", message: (err as Error).message } });
+      return;
+    }
+    const { vocals: vocalsBlob, instrumental: instrumentalBlob } = stemFiles;
     await putStem(audioHash, "vocals", variant, vocalsBlob);
     await putStem(audioHash, "instrumental", variant, instrumentalBlob);
 

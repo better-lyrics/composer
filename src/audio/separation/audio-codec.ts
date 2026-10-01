@@ -1,5 +1,4 @@
 import { parseLamePriming, stripLeading } from "@/audio/lame-priming";
-import { encodeWav } from "@/audio/wav-encode";
 
 const TARGET_SAMPLE_RATE = 44_100;
 const TARGET_CHANNELS = 2;
@@ -66,10 +65,6 @@ async function decodeFileToFloat32(file: File | Blob, opts: DecodeOptions = {}):
   return { channels: stripped, sampleRate: TARGET_SAMPLE_RATE, numFrames: stripped[0]?.length ?? 0 };
 }
 
-function floatChannelsToWavBlob(channels: Float32Array[], sampleRate: number): Blob {
-  return new Blob([encodeWav(channels, sampleRate)], { type: "audio/wav" });
-}
-
 async function sha256Hex(bytes: ArrayBuffer | Uint8Array): Promise<string> {
   const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -83,4 +78,4 @@ async function hashFile(file: File | Blob): Promise<string> {
   return sha256Hex(buf);
 }
 
-export { TARGET_SAMPLE_RATE, decodeFileToFloat32, floatChannelsToWavBlob, hashFile };
+export { TARGET_SAMPLE_RATE, decodeFileToFloat32, hashFile };
