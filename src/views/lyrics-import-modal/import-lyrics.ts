@@ -1,6 +1,7 @@
+import type { RawLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import type { LyricsSearchResult } from "@/domain/lyrics-search/result";
-import { filledMetadata, importableMetadata } from "@/domain/project/imported-metadata";
+import { importableMetadata } from "@/domain/project/imported-metadata";
 import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import type { ProjectFile } from "@/lib/project-file";
@@ -87,6 +88,21 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
   };
 }
 
+function replaceLyrics(
+  parsed: ParseResult,
+  lines: RawLine[] = parsed.lines,
+  fallbackMetadata: Partial<ProjectMetadata> = {},
+): ParseResult {
+  const metadata = importableMetadata(parsed.metadata);
+  useProjectStore.getState().replaceLyricsWithHistory({
+    lines,
+    groups: parsed.groups ?? [],
+    agents: parsed.agents,
+    metadata: { ...fallbackMetadata, ...metadata },
+  });
+  return { ...parsed, metadata };
+}
+
 // -- Action -------------------------------------------------------------------
 
 async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promise<boolean> {
@@ -111,17 +127,12 @@ async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promi
     workingLines = distributeLinesTiming(workingLines, ctx.audioDuration);
   }
 
-  useProjectStore.getState().replaceLyricsWithHistory({
-    lines: workingLines,
-    groups: parsed.groups ?? [],
-    agents: parsed.agents,
-    metadata: { ...searchResultMetadata(input.searchResult), ...filledMetadata(parsed.metadata) },
-  });
+  const reported = replaceLyrics(parsed, workingLines, searchResultMetadata(input.searchResult));
 
   const skipped = skippedLineCount(parsed.issues);
   if (skipped > 0) toast.warning(partialImportMessage(workingLines.length, skipped));
 
-  ctx.onResult?.(parsed, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
+  ctx.onResult?.(reported, { label: input.searchResult?.sourceLabel ?? ctx.sourceLabel, filename: input.filename });
   return true;
 }
 
@@ -132,12 +143,7 @@ function readTtmlLyrics(content: string, sourceName: string, audioDuration: numb
 }
 
 function replaceWithTtmlLyrics(parsed: ParseResult): number {
-  useProjectStore.getState().replaceLyricsWithHistory({
-    lines: parsed.lines,
-    groups: parsed.groups ?? [],
-    agents: parsed.agents,
-    metadata: filledMetadata(parsed.metadata),
-  });
+  replaceLyrics(parsed);
   return skippedLineCount(parsed.issues);
 }
 
@@ -146,20 +152,15 @@ function importProjectLyrics(project: ProjectFile, filename: string, ctx: Import
     toast.error(noLyricsMessage(filename, []));
     return false;
   }
-  const groups = project.groups ?? [];
-  const metadata = importableMetadata(project.metadata);
-  useProjectStore
-    .getState()
-    .replaceLyricsWithHistory({ lines: project.lines, groups, agents: project.agents, metadata });
-  const parsed: ParseResult = {
+  const reported = replaceLyrics({
     lines: project.lines,
-    metadata,
+    metadata: project.metadata,
     hasTimingData: project.lines.some(hasAnyTiming),
     issues: [],
     agents: project.agents,
-    groups,
-  };
-  ctx.onResult?.(parsed, { label: ctx.sourceLabel, filename });
+    groups: project.groups ?? [],
+  });
+  ctx.onResult?.(reported, { label: ctx.sourceLabel, filename });
   return true;
 }
 
