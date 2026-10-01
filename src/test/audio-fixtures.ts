@@ -71,6 +71,19 @@ function makeSineBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
   return audioBuffer;
 }
 
+function makeVocalBurstBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
+  const audioBuffer = makeSineBuffer(durationS, sampleRate);
+  const data = audioBuffer.getChannelData(0);
+  data.fill(0);
+  const burstLength = Math.round(sampleRate * 0.1);
+  for (let start = Math.round(sampleRate * 0.25); start + burstLength < data.length; start += Math.round(sampleRate * 0.4)) {
+    for (let i = 0; i < burstLength; i++) {
+      data[start + i] = 0.3 * Math.min(1, i / 64) * Math.sin((2 * Math.PI * 1200 * i) / sampleRate);
+    }
+  }
+  return audioBuffer;
+}
+
 function encodeWav(audioBuffer: AudioBuffer): ArrayBuffer {
   const channelCount = audioBuffer.numberOfChannels;
   const sampleRate = audioBuffer.sampleRate;
@@ -112,4 +125,12 @@ function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
   return URL.createObjectURL(blob);
 }
 
-export { bufferToBlobUrl, createAudioFile, createMp3File, createUnplayableAudioFile, encodeWav, makeSineBuffer };
+export {
+  bufferToBlobUrl,
+  createAudioFile,
+  createMp3File,
+  createUnplayableAudioFile,
+  encodeWav,
+  makeSineBuffer,
+  makeVocalBurstBuffer,
+};

@@ -1,8 +1,9 @@
-import { detectVocalOnsetsFromUrl } from "@/audio/vocal-onset-snap-points";
+import { loadVocalOnsets } from "@/audio/vocal-onset-snap-points";
 import { useAudioStore } from "@/stores/audio";
 import type { AudioSource } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
+import { useSettingsStore } from "@/stores/settings";
 import { fileIdentityKey } from "@/utils/file-identity";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useEffect } from "react";
@@ -20,50 +21,85 @@ function audioSourceKey(source: AudioSource): string | null {
   return null;
 }
 
+function isAbort(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 function useVocalOnsetSnapPoints(): void {
   useEffect(() => {
-    let lastVocalsUrl: string | null = null;
-    let generationId = 0;
+    let running: AbortController | null = null;
+    let appliedVocalsUrl: string | null = null;
 
-    const generate = async (vocalsUrl: string | null) => {
+    const cancelRunning = () => {
+      running?.abort();
+      running = null;
+    };
+
+    const load = (vocalsUrl: string, jobKey: string | null) => {
+      cancelRunning();
+      const request = new AbortController();
+      running = request;
+      appliedVocalsUrl = vocalsUrl;
+      const isCurrent = () => running === request && !request.signal.aborted;
+      loadVocalOnsets({
+        jobKey,
+        vocalsUrl,
+        signal: request.signal,
+        onDetectionStart: () => {
+          if (isCurrent()) useTimelineStore.getState().setVocalOnsetDetectionStatus("processing");
+        },
+      }).then(
+        (points) => {
+          if (!isCurrent()) return;
+          running = null;
+          const timeline = useTimelineStore.getState();
+          timeline.setVocalOnsetSnapPoints(points);
+          timeline.setVocalOnsetDetectionStatus("idle");
+        },
+        (error: unknown) => {
+          if (!isCurrent() || isAbort(error)) return;
+          running = null;
+          useTimelineStore
+            .getState()
+            .setVocalOnsetDetectionStatus("error", error instanceof Error ? error.message : String(error));
+        },
+      );
+    };
+
+    const sync = () => {
+      const vocalsUrl = useSeparationStore.getState().stemUrls.vocals ?? null;
+      const timeline = useTimelineStore.getState();
       if (!vocalsUrl) {
-        lastVocalsUrl = null;
-        const timeline = useTimelineStore.getState();
+        cancelRunning();
+        appliedVocalsUrl = null;
         timeline.setVocalOnsetSnapPoints([]);
         timeline.setVocalOnsetDetectionStatus("idle");
         return;
       }
-      if (vocalsUrl === lastVocalsUrl) return;
-      lastVocalsUrl = vocalsUrl;
-
-      const id = ++generationId;
-      const timeline = useTimelineStore.getState();
-      timeline.setVocalOnsetDetectionStatus("processing");
-      try {
-        const points = await detectVocalOnsetsFromUrl(vocalsUrl);
-        if (id !== generationId) return;
-        const nextTimeline = useTimelineStore.getState();
-        nextTimeline.setVocalOnsetSnapPoints(points);
-        nextTimeline.setVocalOnsetDetectionStatus("idle");
-      } catch (err) {
-        if (id !== generationId) return;
-        useTimelineStore
-          .getState()
-          .setVocalOnsetDetectionStatus("error", err instanceof Error ? err.message : String(err));
+      if (!useSettingsStore.getState().vocalOnsetSnap) {
+        if (!running) return;
+        cancelRunning();
+        appliedVocalsUrl = null;
+        timeline.setVocalOnsetDetectionStatus("idle");
+        return;
       }
+      if (vocalsUrl === appliedVocalsUrl) return;
+      load(vocalsUrl, useSeparationStore.getState().jobKey);
     };
 
-    generate(useSeparationStore.getState().stemUrls.vocals ?? null);
+    sync();
     const unsubscribeSeparation = useSeparationStore.subscribe((state, prev) => {
-      const vocalsUrl = state.stemUrls.vocals ?? null;
-      const previousVocalsUrl = prev.stemUrls.vocals ?? null;
-      if (vocalsUrl === previousVocalsUrl) return;
-      generate(vocalsUrl);
+      if (state.stemUrls.vocals === prev.stemUrls.vocals) return;
+      sync();
+    });
+    const unsubscribeSettings = useSettingsStore.subscribe((state, prev) => {
+      if (state.vocalOnsetSnap === prev.vocalOnsetSnap) return;
+      sync();
     });
     const unsubscribeAudio = useAudioStore.subscribe((state, prev) => {
       if (audioSourceKey(state.source) === audioSourceKey(prev.source)) return;
-      generationId++;
-      lastVocalsUrl = null;
+      cancelRunning();
+      appliedVocalsUrl = null;
       const timeline = useTimelineStore.getState();
       timeline.setVocalOnsetSnapPoints([]);
       useProjectStore.getState().clearCustomSnapPoints();
@@ -71,8 +107,9 @@ function useVocalOnsetSnapPoints(): void {
     });
 
     return () => {
-      generationId++;
+      cancelRunning();
       unsubscribeSeparation();
+      unsubscribeSettings();
       unsubscribeAudio();
     };
   }, []);
