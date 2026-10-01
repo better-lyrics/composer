@@ -32,7 +32,7 @@ describe("TimelineContextMenu · group lines", () => {
   it("says that the new group shares its timing", async () => {
     const screen = await groupTwoLines();
 
-    await expect.element(screen.getByText("Instances of this group share their timing")).toBeVisible();
+    await expect.element(screen.getByText("Sync one instance and the others follow")).toBeVisible();
   });
 
   describe("edge cases", () => {

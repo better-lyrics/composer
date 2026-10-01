@@ -97,7 +97,7 @@ describe("TimelinePanel · group focus", () => {
 
     press("ArrowRight");
 
-    await expect.element(screen.getByText("Stopped where a shared instance reaches the song edge")).toBeVisible();
+    await expect.element(screen.getByText("Stopped at the song edge: a shared instance would go past it")).toBeVisible();
   });
 
   it("edge case: stays quiet when the song end itself stops a nudge", async () => {

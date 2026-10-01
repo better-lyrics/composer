@@ -100,7 +100,7 @@ const SETTINGS_CATALOG = {
   shareTimingInNewGroups: {
     section: "timeline",
     label: "Share timing in new groups",
-    description: "New groups keep the same timing in every instance, anchored at each instance's start.",
+    description: "Sync one instance of a new group and the others follow, each from its own start.",
     keywords: ["group", "instance", "chorus", "linked", "repeat"],
     settingKey: "shareTimingInNewGroups",
   },

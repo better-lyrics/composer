@@ -162,7 +162,7 @@ const GroupsSection: React.FC = () => (
     <HelpTopic title="Suggestions banner">
       <p className={PROSE}>
         When Composer detects two or more contiguous runs of identical lines that aren't grouped yet, a small bulb
-        banner appears below the Edit lyrics (hidden while you type) and under the Timeline toolbar. With{" "}
+        banner appears below the lyrics in Edit (hidden while you type) and under the Timeline toolbar. With{" "}
         <SettingLink setting="shareTimingInNewGroups" /> on, group them in Edit before you sync, so each chorus shares
         its timing from the first tap. One suggestion shows inline with a Group them button. Multiple suggestions
         collapse into a Review N button that opens a modal with each block previewed and a per-row Group / dismiss
