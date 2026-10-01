@@ -1,5 +1,4 @@
-import { instancesInLineOrder } from "@/domain/group/initial-sharing";
-import { instanceStart, isInstanceFullyTimed } from "@/domain/group/shared-timing";
+import { instanceStart, instancesInLineOrder, isInstanceFullyTimed } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import type { LyricLine } from "@/domain/line/model";

@@ -2,6 +2,7 @@ import {
   attachedLinesOfInstance,
   instanceOffset,
   instanceStart,
+  instancesInLineOrder,
   isInstanceFullyTimed,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
@@ -51,15 +52,6 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
 
 // -- Sharing ------------------------------------------------------------------
 
-function instancesInLineOrder(lines: readonly LyricLine[], groupId: string): number[] {
-  const order = new Set<number>();
-  for (const line of lines) {
-    if (line.groupId !== groupId || line.detached || line.instanceIdx === undefined) continue;
-    order.add(line.instanceIdx);
-  }
-  return [...order];
-}
-
 function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn: boolean): InitialSharing {
   if (!settingOn) return {};
   const order = instancesInLineOrder(lines, groupId);
@@ -77,5 +69,5 @@ function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn:
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialSharing, instancesInLineOrder };
+export { initialSharing };
 export type { InitialSharing };

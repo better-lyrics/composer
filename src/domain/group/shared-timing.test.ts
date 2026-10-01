@@ -1,4 +1,5 @@
 import {
+  instancesInLineOrder,
   isSharedLine,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
@@ -69,6 +70,34 @@ describe("isSharedLine", () => {
 
     it("is false for a line whose group is missing", () => {
       expect(isSharedLine({ ...chorus(0, 0, 1), groupId: "gone" }, groups)).toBe(false);
+    });
+  });
+});
+
+describe("instancesInLineOrder", () => {
+  it("orders every attached instance by its first line, whether or not it shares timing", () => {
+    const lines = [chorus(2, 0, 1), chorus(0, 0, 10), chorus(1, 0, 20)];
+    expect(instancesInLineOrder(lines, "g1")).toEqual([2, 0, 1]);
+  });
+
+  describe("edge cases", () => {
+    it("leaves out an instance whose lines are all detached", () => {
+      const lines = [chorus(0, 0, 1), { ...chorus(1, 0, 10), detached: true }];
+      expect(instancesInLineOrder(lines, "g1")).toEqual([0]);
+    });
+
+    it("is empty for a group with no lines", () => {
+      expect(instancesInLineOrder([chorus(0, 0, 1)], "other")).toEqual([]);
+    });
+  });
+
+  describe("invariants", () => {
+    it("lists the shared instances in the same order", () => {
+      const lines = [chorus(2, 0, 1), chorus(0, 0, 10), chorus(1, 0, 20)];
+      const group = createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [0] });
+      expect(sharedInstancesInLineOrder(lines, group)).toEqual(
+        instancesInLineOrder(lines, "g1").filter((instanceIdx) => sharesTiming(group, instanceIdx)),
+      );
     });
   });
 });

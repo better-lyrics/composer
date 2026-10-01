@@ -43,13 +43,16 @@ function isSharedLine(line: LyricLine, groupsById: ReadonlyMap<string, LinkGroup
 
 // -- Instances ----------------------------------------------------------------
 
-function sharedInstancesInLineOrder(lines: readonly LyricLine[], group: LinkGroup): number[] {
+function instancesInLineOrder(lines: readonly LyricLine[], groupId: string): number[] {
   const order = new Set<number>();
   for (const line of lines) {
-    if (line.groupId !== group.id || line.detached || line.instanceIdx === undefined) continue;
-    if (sharesTiming(group, line.instanceIdx)) order.add(line.instanceIdx);
+    if (isLinked(line) && line.groupId === groupId && !line.detached) order.add(line.instanceIdx);
   }
   return [...order];
+}
+
+function sharedInstancesInLineOrder(lines: readonly LyricLine[], group: LinkGroup): number[] {
+  return instancesInLineOrder(lines, group.id).filter((instanceIdx) => sharesTiming(group, instanceIdx));
 }
 
 function attachedLinesOfInstance(lines: readonly LyricLine[], groupId: string, instanceIdx: number): LyricLine[] {
@@ -248,6 +251,7 @@ export {
   hasNegativeTime,
   instanceOffset,
   instanceStart,
+  instancesInLineOrder,
   isInstanceFullyTimed,
   isSharedLine,
   offsetTimingFields,
