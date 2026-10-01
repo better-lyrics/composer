@@ -184,7 +184,7 @@ describe("PasteSection · highlighting", () => {
   it("shows plain lyrics with split characters as plain text", async () => {
     await render(<Controlled initial={"beau|ti|ful day\nsecond line"} />);
     expect(layer()?.textContent).toBe("beau|ti|ful day\nsecond line");
-    expect(layer()?.querySelectorAll("span")).toHaveLength(0);
+    expect(layer()?.querySelectorAll("span:not(.bh-line)")).toHaveLength(0);
   });
 
   it("uses a monospace font so the highlight stays under the caret", async () => {
