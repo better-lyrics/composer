@@ -1,4 +1,4 @@
-import { sharesTiming } from "@/domain/group/shared-timing";
+import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
@@ -154,7 +154,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   );
 
   const isShared = sharesTiming(group, instanceIdx);
-  const hasOwnTiming = group.sharesTiming === true && !isShared;
+  const hasOwnTiming = keepsOwnTiming(group, instanceIdx);
   const left = instanceStart * zoom;
   const width = Math.max(BANNER_MIN_WIDTH, (instanceEnd - instanceStart) * zoom);
   const deltaSecondsLive = dragOffsetPx / Math.max(zoom, 1);

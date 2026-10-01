@@ -222,7 +222,7 @@ describe("realignSharedInstance", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
     });
-    const words = realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1)[0]?.updates.words;
+    const words = realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1)?.[0]?.updates.words;
     expect(words?.map((word) => word.begin)).toEqual([40, 40.5]);
   });
 
@@ -231,9 +231,18 @@ describe("realignSharedInstance", () => {
       expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1)).toEqual([]);
     });
 
+    it("refuses a timed instance when no other instance is fully timed", () => {
+      expect(realignSharedInstance([chorus(0, 0), chorus(1, 0, 40)], sharing, "g1", 1)).toBeNull();
+    });
+
+    it("refuses a timed instance whose shared copy would start before zero", () => {
+      const lines = [chorus(0, 0, 30), chorus(0, 1, 10), chorus(1, 0, 5), chorus(1, 1)];
+      expect(realignSharedInstance(lines, sharing, "g1", 1)).toBeNull();
+    });
+
     it("anchors on lines both instances have", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
-      const words = realignSharedInstance(lines, sharing, "g1", 1)[0]?.updates.words;
+      const words = realignSharedInstance(lines, sharing, "g1", 1)?.[0]?.updates.words;
       expect(words?.[0]?.begin).toBeCloseTo(54, 6);
     });
   });

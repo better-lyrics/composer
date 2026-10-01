@@ -3,6 +3,7 @@ import {
   endsAfter,
   hasNegativeTime,
   instanceOffset,
+  instanceStart,
   firstFullyTimedInstance,
   offsetTimingFields,
   sharedInstancesInLineOrder,
@@ -66,17 +67,20 @@ function placeSharedInstance(
   return updates.some((update) => endsAfter(update.updates, songEnd)) ? [] : updates;
 }
 
+// An instance with no timing has nothing to realign ([]); a timed one that cannot take the shared timing is refused (null).
 function realignSharedInstance(
   lines: readonly LyricLine[],
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdx: number,
-): LineUpdate[] {
+): LineUpdate[] | null {
+  if (instanceStart(lines, groupId, instanceIdx) === null) return [];
   const group = sharedGroup(groups, groupId, instanceIdx);
   const reference = group ? referenceInstance(lines, group, instanceIdx) : null;
   const offset = reference === null ? null : instanceOffset(lines, groupId, reference, instanceIdx);
-  if (reference === null || offset === null) return [];
-  return copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
+  if (reference === null || offset === null) return null;
+  const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
+  return updates.length ? updates : null;
 }
 
 // -- Exports ------------------------------------------------------------------

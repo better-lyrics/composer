@@ -1,4 +1,4 @@
-import { instanceStart, sharesTiming } from "@/domain/group/shared-timing";
+import { instanceStart, keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
 import { instanceName } from "@/domain/instance/name";
@@ -42,7 +42,7 @@ const STEP_BUTTON = "size-6 rounded-md";
 function otherInstanceNotes(lines: LyricLine[], group: LinkGroup, hearInstanceIdx: number): string[] {
   if (!group.sharesTiming) return [];
   const others = instanceIndicesOf(lines, group.id).filter((instanceIdx) => instanceIdx !== hearInstanceIdx);
-  const ownTiming = others.filter((instanceIdx) => !sharesTiming(group, instanceIdx)).length;
+  const ownTiming = others.filter((instanceIdx) => keepsOwnTiming(group, instanceIdx)).length;
   const notPlaced = others.filter(
     (instanceIdx) => sharesTiming(group, instanceIdx) && instanceStart(lines, group.id, instanceIdx) === null,
   ).length;

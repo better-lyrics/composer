@@ -37,6 +37,10 @@ function sharesTiming(group: LinkGroup | undefined, instanceIdx: number | undefi
   return !group.ownTimingInstances?.includes(instanceIdx);
 }
 
+function keepsOwnTiming(group: LinkGroup, instanceIdx: number): boolean {
+  return group.sharesTiming === true && !sharesTiming(group, instanceIdx);
+}
+
 function isSharedLine(line: LyricLine, groupsById: ReadonlyMap<string, LinkGroup>): boolean {
   return isLinked(line) && !line.detached && sharesTiming(groupsById.get(line.groupId), line.instanceIdx);
 }
@@ -264,6 +268,7 @@ export {
   instancesInLineOrder,
   isInstanceFullyTimed,
   isSharedLine,
+  keepsOwnTiming,
   offsetTimingFields,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,

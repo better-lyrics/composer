@@ -2,6 +2,7 @@ import {
   firstFullyTimedInstance,
   instancesInLineOrder,
   isSharedLine,
+  keepsOwnTiming,
   sharedInstancesInLineOrder,
   sharedTimingFanOut,
   sharesTiming,
@@ -29,6 +30,20 @@ const chorus = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
           ],
         }),
   });
+
+describe("keepsOwnTiming", () => {
+  it("is true only for an own-timing instance of a sharing group", () => {
+    const group = createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] });
+    expect(keepsOwnTiming(group, 1)).toBe(true);
+    expect(keepsOwnTiming(group, 0)).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("is false for every instance of an old group", () => {
+      expect(keepsOwnTiming(createGroup({ id: "g1", ownTimingInstances: [1] }), 1)).toBe(false);
+    });
+  });
+});
 
 describe("sharesTiming", () => {
   it("is false for an old group", () => {

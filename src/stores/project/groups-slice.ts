@@ -2,7 +2,7 @@ import { initialSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming, withSharing } from "@/domain/group/own-timing";
 import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
-import { instanceStart, wholeSongRange } from "@/domain/group/shared-timing";
+import { wholeSongRange } from "@/domain/group/shared-timing";
 import { type LinkGroup, offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
 import { belongsToInstance, isAttachedToInstance } from "@/domain/instance/predicates";
@@ -183,7 +183,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     const state = get();
     const groups = state.groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group));
     const placed = own ? [] : realignSharedInstance(state.lines, groups, groupId, instanceIdx);
-    if (!own && placed.length === 0 && instanceStart(state.lines, groupId, instanceIdx) !== null) return false;
+    if (placed === null) return false;
     set(commitHistory(state, { groups, lines: applyLineUpdates(state.lines, placed) }, { deriveText: false }));
     return true;
   },
@@ -208,8 +208,8 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       const keptOwn: number[] = [];
       for (const instanceIdx of group.ownTimingInstances ?? []) {
         const placed = realignSharedInstance(lines, shared, groupId, instanceIdx);
-        if (placed.length === 0 && instanceStart(lines, groupId, instanceIdx) !== null) keptOwn.push(instanceIdx);
-        lines = applyLineUpdates(lines, placed);
+        if (placed === null) keptOwn.push(instanceIdx);
+        else lines = applyLineUpdates(lines, placed);
       }
       const groups = keptOwn.length
         ? state.groups.map((candidate) =>
