@@ -136,4 +136,51 @@ describe("separate", () => {
       expect(state.stemUrls).toEqual({});
     });
   });
+
+  describe("regressions", () => {
+    it("regression: a cancel while the stems encode ends idle and discards the result", async () => {
+      const { run, model } = await startSeparation();
+      model.finishNextRun();
+      await settle(0);
+      useSeparationStore.getState().cancel();
+      await run;
+      await settle(100);
+
+      const state = useSeparationStore.getState();
+      expect(state.status).toBe("idle");
+      expect(state.stemUrls).toEqual({});
+      expect(state.availableStems).toEqual(["original"]);
+    });
+
+    it("regression: a project switch while the stems encode never offers the old song's stems", async () => {
+      const { run, model } = await startSeparation();
+      model.finishNextRun();
+      await settle(0);
+      useSeparationStore.getState().reset();
+      useAudioStore.getState().setSource({ type: "file", file: createAudioFile("next-project.wav") });
+      await run;
+      await settle(100);
+
+      const state = useSeparationStore.getState();
+      expect(state.status).toBe("idle");
+      expect(state.stemUrls).toEqual({});
+      expect(state.jobKey).toBeNull();
+    });
+
+    it("regression: a cancelled run never overwrites a newer separation", async () => {
+      const { run: first, model } = await startSeparation();
+      model.finishNextRun();
+      await settle(0);
+      useSeparationStore.getState().cancel();
+      const second = useSeparationStore.getState().separate();
+      await expect.poll(() => useSeparationStore.getState().status).toBe("processing");
+      await first;
+      await settle(100);
+      expect(useSeparationStore.getState().status).toBe("processing");
+
+      model.finishNextRun();
+      await second;
+      expect(useSeparationStore.getState().status).toBe("ready");
+    });
+  });
 });
