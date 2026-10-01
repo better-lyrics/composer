@@ -4,6 +4,7 @@ import { importProjectContents, reportUnreadableProjectFile } from "@/lib/projec
 import { type ChoiceRequest, askChoice } from "@/stores/choice-store";
 import { useProjectStore } from "@/stores/project";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
+import type { ParseResult } from "@/utils/lyrics-parsers/shared";
 import { pluralize } from "@/utils/pluralize";
 import { formatProjectCount } from "@/utils/project-count";
 import { UNSUPPORTED_LYRICS_IMPORT_MESSAGE, isLyricsImportFileName } from "@/views/lyrics-import-modal/accepted-files";
@@ -17,6 +18,7 @@ type ProjectFileUse = "use-lyrics" | "open-project" | "restore-backup";
 // -- Constants ----------------------------------------------------------------
 
 const PASTED_TEXT_NAME = "pasted text";
+const LEADING_BOM = /^\uFEFF/;
 const PASTED_PROJECT_NAME = "the pasted project";
 const USE_PROJECT_LYRICS_LABEL = "Use its lyrics here";
 const OPEN_PROJECT_LABEL = "Open as its own project";
@@ -24,9 +26,10 @@ const OPEN_PROJECT_LABEL = "Open as its own project";
 // -- Reading ------------------------------------------------------------------
 
 function readProjectFileText(text: string): ProjectFileContents | null {
-  if (!text.trimStart().startsWith("{")) return null;
+  const body = text.replace(LEADING_BOM, "");
+  if (!body.trimStart().startsWith("{")) return null;
   try {
-    return parseProjectFileContents(text);
+    return parseProjectFileContents(body);
   } catch {
     return null;
   }
@@ -108,6 +111,10 @@ async function importLyricsFile(file: File, ctx: ImportContext): Promise<boolean
   return importLyrics({ filename: file.name, content: text }, ctx);
 }
 
+function importPastedLyrics(content: string, parsed: ParseResult, ctx: ImportContext): Promise<boolean> {
+  return importLyrics({ filename: PASTED_TEXT_NAME, content, parsed }, ctx);
+}
+
 async function importLyricsText(text: string, ctx: ImportContext): Promise<boolean> {
   const contents = readProjectFileText(text);
   if (contents) return importProjectFileForLyrics(contents, null, ctx);
@@ -116,4 +123,12 @@ async function importLyricsText(text: string, ctx: ImportContext): Promise<boole
 
 // -- Exports ------------------------------------------------------------------
 
-export { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL, importLyricsFile, importLyricsText, readProjectFileText };
+export {
+  OPEN_PROJECT_LABEL,
+  USE_PROJECT_LYRICS_LABEL,
+  importLyricsFile,
+  importLyricsText,
+  importPastedLyrics,
+  importProjectFileForLyrics,
+  readProjectFileText,
+};

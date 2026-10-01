@@ -47,6 +47,7 @@ interface ImportLyricsInput {
   filename: string;
   content: string;
   searchResult?: LyricsSearchResult;
+  parsed?: ParseResult;
 }
 
 // -- Copy ---------------------------------------------------------------------
@@ -89,7 +90,9 @@ function searchResultMetadata(result: LyricsSearchResult | undefined): Partial<P
 // -- Action -------------------------------------------------------------------
 
 async function importLyrics(input: ImportLyricsInput, ctx: ImportContext): Promise<boolean> {
-  const parsed = parseLyricsFile(input.filename, input.content, ctx.audioDuration > 0 ? ctx.audioDuration : undefined);
+  const parsed =
+    input.parsed ??
+    parseLyricsFile(input.filename, input.content, ctx.audioDuration > 0 ? ctx.audioDuration : undefined);
   if (parsed.lines.length === 0) {
     toast.error(noLyricsMessage(input.filename, parsed.issues));
     return false;

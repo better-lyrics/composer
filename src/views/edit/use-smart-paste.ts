@@ -1,6 +1,6 @@
 import { classifyPastedText } from "@/views/edit/smart-paste";
 import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
-import { importLyricsText } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { importPastedLyrics, importProjectFileForLyrics } from "@/views/lyrics-import-modal/import-lyrics-source";
 import { useCallback } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -18,13 +18,16 @@ function useSmartPaste({ typedPasteRef, onBeforeImport }: SmartPasteOptions) {
   return useCallback(
     (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
       const text = event.clipboardData?.getData("text/plain") ?? "";
-      if (classifyPastedText(text) === "typed-text") {
+      const duration = pasteContext.audioDuration > 0 ? pasteContext.audioDuration : undefined;
+      const pasted = classifyPastedText(text, duration);
+      if (pasted.kind === "typed-text") {
         typedPasteRef.current = true;
         return;
       }
       event.preventDefault();
       onBeforeImport();
-      void importLyricsText(text, pasteContext);
+      if (pasted.kind === "project-file") void importProjectFileForLyrics(pasted.contents, null, pasteContext);
+      else void importPastedLyrics(text, pasted.parsed, pasteContext);
     },
     [onBeforeImport, typedPasteRef, pasteContext],
   );

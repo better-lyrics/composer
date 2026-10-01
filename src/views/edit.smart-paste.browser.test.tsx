@@ -151,6 +151,14 @@ describe("EditPanel smart paste", () => {
       expect(pasteText(textarea, '{"note": "not a project"}').defaultPrevented).toBe(false);
       expect(pasteText(textarea, "[Chorus]").defaultPrevented).toBe(false);
     });
+
+    it("regression: pastes lyrics with a bracketed number pair as typed text, never as QRC", async () => {
+      useProjectStore.setState({ lines: [createLine({ text: "Keep me" })] });
+      const { screen, textarea } = await renderEdit();
+      expect(pasteText(textarea, "Verse [1,2] repeated twice\nAnd again").defaultPrevented).toBe(false);
+      expect(lineTexts()).toEqual(["Keep me"]);
+      expect(screen.getByRole("button", { name: "Replace" }).query()).toBeNull();
+    });
   });
 
   describe("regressions", () => {
