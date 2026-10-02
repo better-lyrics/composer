@@ -63,7 +63,11 @@ function showPlacementBlockedToast(): void {
 }
 
 function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
-  toast.error(`${name} keeps its own timing${KEPT_OWN_TIMING_REASONS[refusal](1)}`);
+  const reason =
+    refusal === "no-fully-synced-instance"
+      ? ". Sync one instance fully, then choose Share timing again."
+      : KEPT_OWN_TIMING_REASONS[refusal](1);
+  toast.error(`${name} keeps its own timing${reason}`);
 }
 
 function showSharedSongEdgeToast(): void {

@@ -88,7 +88,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect
       .element(
         screen.getByText(
-          "Chorus 2 keeps its own timing. Sync one instance fully, then share it from its banner menu in the Timeline.",
+          "Chorus 2 keeps its own timing. Sync one instance fully, then choose Share timing again.",
         ),
       )
       .toBeVisible();
