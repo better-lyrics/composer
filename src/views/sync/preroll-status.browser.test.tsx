@@ -31,4 +31,15 @@ describe("PrerollStatus", () => {
       await expect.element(screen.getByText("0.0", { exact: true })).toBeInTheDocument();
     });
   });
+
+  describe("invariants", () => {
+    it("keeps one decimal at every step so the digits never shift", async () => {
+      useAudioStore.setState({ currentTime: 40.5 });
+      const screen = await render(<PrerollStatus end={42} seconds={1.5} lineNumber={6} />);
+      for (const time of [40.55, 41, 41.45, 41.95]) {
+        useAudioStore.setState({ currentTime: time });
+        await expect.poll(() => screen.container.querySelector('[aria-hidden="true"].font-mono')?.textContent).toMatch(/^\d\.\d$/);
+      }
+    });
+  });
 });

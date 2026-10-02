@@ -574,7 +574,10 @@ const SyncPanel: React.FC = () => {
         editMode={editMode}
         isPlaying={isPlaying}
         isActive={syncState.isActive}
-        status={countIn.status ?? placementPreroll.statusFor(isPlaying, lineIndex + 1)}
+        status={
+          countIn.status ??
+          placementPreroll.statusFor({ isPlaying, isComplete, cursorLineIndex: lineIndex, playbackTime: currentTime })
+        }
         gestureControls={
           showGestureCircles && (
             <SyncGestureControls

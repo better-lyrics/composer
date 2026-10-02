@@ -1,4 +1,4 @@
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime } from "@/stores/audio";
 import { CountdownRing } from "@/ui/countdown-ring";
 import { pluralize } from "@/utils/pluralize";
 
@@ -10,13 +10,6 @@ interface PrerollStatusProps {
   lineNumber: number;
 }
 
-// -- Helpers ------------------------------------------------------------------
-
-function playbackTime(): number {
-  const { audioElement, currentTime } = useAudioStore.getState();
-  return audioElement?.currentTime ?? currentTime;
-}
-
 // -- Components ---------------------------------------------------------------
 
 const PrerollStatus: React.FC<PrerollStatusProps> = ({ end, seconds, lineNumber }) => {
@@ -25,7 +18,7 @@ const PrerollStatus: React.FC<PrerollStatusProps> = ({ end, seconds, lineNumber 
     <div className="flex items-center gap-2.5 text-sm text-composer-text-muted">
       <span aria-hidden="true">{label}</span>
       <CountdownRing
-        remainingSeconds={() => end - playbackTime()}
+        remainingSeconds={() => end - livePlaybackTime()}
         totalSeconds={seconds}
         precision={1}
         announce={(left) => `${label} ${pluralize(left, "second")}`}

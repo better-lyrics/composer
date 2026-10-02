@@ -6,7 +6,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
-import { type PlacementPreroll, placementSkipTarget } from "@/domain/sync/placement-skip";
+import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
@@ -34,7 +34,7 @@ interface UseSyncHandlersProps {
   granularity: "line" | "word";
   setShowPulse: (show: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
-  onPlacementSkip?: (preroll: PlacementPreroll) => void;
+  onPlacementSkip?: (skip: PlacementSkip, lineIndex: number) => void;
 }
 
 // -- Constants ------------------------------------------------------------------
@@ -111,10 +111,10 @@ function useSyncHandlers({
       if (anchor) {
         const placed = useProjectStore.getState();
         const { redoPreroll } = useSettingsStore.getState();
-        const skipTo = placementSkipTarget(placed.lines, anchor.groupId, anchor.instanceIdx, ctx.time, redoPreroll);
-        if (skipTo !== null) {
-          seekTo(skipTo);
-          onPlacementSkip?.({ end: skipTo + redoPreroll, seconds: redoPreroll });
+        const skip = placementSkipTarget(placed.lines, anchor.groupId, anchor.instanceIdx, ctx.time, redoPreroll);
+        if (skip) {
+          seekTo(skip.seekTo);
+          onPlacementSkip?.(skip, anchor.resumeCursor.lineIndex);
         }
         const anchorUndo = {
           resume: anchor.resumeCursor,

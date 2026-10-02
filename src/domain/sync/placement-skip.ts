@@ -4,9 +4,9 @@ import type { LyricLine } from "@/domain/line/model";
 
 // -- Interfaces ---------------------------------------------------------------
 
-interface PlacementPreroll {
+interface PlacementSkip {
+  seekTo: number;
   end: number;
-  seconds: number;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -17,14 +17,14 @@ function placementSkipTarget(
   instanceIdx: number,
   tapTime: number,
   preroll: number,
-): number | null {
+): PlacementSkip | null {
   const bounds = instanceBounds(linesOfInstance(lines, groupId, instanceIdx));
   if (!bounds) return null;
-  const target = bounds.end - preroll;
-  return target > tapTime ? target : null;
+  const seekTo = bounds.end - preroll;
+  return seekTo > tapTime ? { seekTo, end: bounds.end } : null;
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export { placementSkipTarget };
-export type { PlacementPreroll };
+export type { PlacementSkip };

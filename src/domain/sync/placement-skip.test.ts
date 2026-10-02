@@ -19,14 +19,14 @@ const lines = [...chorus1, ...chorus2, createLine({ id: "bridge", text: "Bridge"
 
 describe("placementSkipTarget", () => {
   it("lands the pre-roll before the placed instance ends", () => {
-    expect(placementSkipTarget(lines, "g", 1, 94, 1.5)).toBe(112.5);
+    expect(placementSkipTarget(lines, "g", 1, 94, 1.5)).toEqual({ seekTo: 112.5, end: 114 });
   });
 
   it("measures the end across main and background vocals", () => {
     const bgLast = lines.map((line) =>
       line.id === "c2b" ? { ...line, backgroundWords: [{ text: "ooh", begin: 110, end: 116 }] } : line,
     );
-    expect(placementSkipTarget(bgLast, "g", 1, 94, 1.5)).toBe(114.5);
+    expect(placementSkipTarget(bgLast, "g", 1, 94, 1.5)).toEqual({ seekTo: 114.5, end: 116 });
   });
 
   describe("edge cases", () => {
@@ -36,7 +36,7 @@ describe("placementSkipTarget", () => {
     });
 
     it("skips to the very end with no pre-roll", () => {
-      expect(placementSkipTarget(lines, "g", 1, 94, 0)).toBe(114);
+      expect(placementSkipTarget(lines, "g", 1, 94, 0)).toEqual({ seekTo: 114, end: 114 });
     });
 
     it("does not skip for an unknown instance", () => {
@@ -51,10 +51,15 @@ describe("placementSkipTarget", () => {
   });
 
   describe("invariants", () => {
+    it("always lands the pre-roll before the end it reports", () => {
+      const skip = placementSkipTarget(lines, "g", 1, 94, 1.5);
+      expect(skip && skip.end - skip.seekTo).toBe(1.5);
+    });
+
     it("never seeks backwards", () => {
       for (const tapTime of [0, 50, 94, 100, 112, 112.4, 112.5, 120]) {
-        const target = placementSkipTarget(lines, "g", 1, tapTime, 1.5);
-        if (target !== null) expect(target).toBeGreaterThan(tapTime);
+        const skip = placementSkipTarget(lines, "g", 1, tapTime, 1.5);
+        if (skip !== null) expect(skip.seekTo).toBeGreaterThan(tapTime);
       }
     });
   });

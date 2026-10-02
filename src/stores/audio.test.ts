@@ -1,4 +1,4 @@
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -284,5 +284,18 @@ describe("useAudioStore - expected audio", () => {
       useAudioStore.getState().setYouTubeFile(new File([new Uint8Array([1])], "song.opus"));
       expect(useAudioStore.getState().expectedAudio).toBeNull();
     });
+  });
+});
+
+describe("livePlaybackTime", () => {
+  it("reads the store time while no audio element is registered", () => {
+    useAudioStore.setState({ currentTime: 12.5 });
+    expect(livePlaybackTime()).toBe(12.5);
+  });
+
+  it("prefers the element clock, which moves between the 4 Hz store updates", () => {
+    const element = document.createElement("audio");
+    useAudioStore.setState({ audioElement: element, currentTime: 12.5 });
+    expect(livePlaybackTime()).toBe(element.currentTime);
   });
 });
