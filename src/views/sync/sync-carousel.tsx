@@ -173,8 +173,12 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
               style={{ height: LINE_HEIGHT }}
               className="flex flex-col items-center justify-center gap-1 w-full shrink-0"
             >
-              {isCurrent && aboveCurrent}
-              <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              <span className="relative flex justify-center">
+                {isCurrent && aboveCurrent && (
+                  <span className="absolute bottom-full flex justify-center pb-2">{aboveCurrent}</span>
+                )}
+                <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              </span>
               <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
                 {granularity === "line" ? (
                   <m.span

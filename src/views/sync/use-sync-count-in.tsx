@@ -15,12 +15,12 @@ interface SyncCountInView {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useSyncCountIn(): SyncCountInView {
+function useSyncCountIn(atSongStart: boolean): SyncCountInView {
   const countingIn = useSyncCountInStore((s) => s.endsAt !== null);
   useEscapeLayer("panel", countingIn, cancelCountIn);
   useEffect(() => cancelCountIn, []);
   if (!countingIn) return { countingIn, dots: undefined, status: undefined };
-  return { countingIn, dots: <CountInDots />, status: <CountInStatus /> };
+  return { countingIn, dots: atSongStart ? <CountInDots /> : undefined, status: <CountInStatus /> };
 }
 
 // -- Exports ------------------------------------------------------------------

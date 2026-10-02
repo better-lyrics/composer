@@ -3,7 +3,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
-import { previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { nextSyncableLineIndex, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { isCountingIn } from "@/lib/sync-count-in";
@@ -48,7 +48,6 @@ const SyncPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
-  const countIn = useSyncCountIn();
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
@@ -110,6 +109,7 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
+  const countIn = useSyncCountIn(cursor.lineIndex === nextSyncableLineIndex(lines, -1));
 
   const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(lines, groups, cursor);
 
