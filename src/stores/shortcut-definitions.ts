@@ -29,6 +29,12 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "Enter" },
   },
   {
+    id: "global.togglePlaybackSpeed",
+    scope: "global",
+    description: "Switch between 0.75x and normal speed",
+    defaultBinding: { key: "r", shift: true },
+  },
+  {
     id: "global.help",
     scope: "global",
     description: "Show help",
