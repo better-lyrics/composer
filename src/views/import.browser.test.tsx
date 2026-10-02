@@ -92,6 +92,72 @@ describe("ImportPanel: no source", () => {
   });
 });
 
+// -- Whole-screen drop ----------------------------------------------------------
+
+function dragFile(target: Element, type: "dragenter" | "dragover" | "drop", file: File): void {
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }));
+}
+
+function importArea(container: HTMLElement): Element {
+  const area = container.querySelector('[data-tour="import-dropzone"]');
+  if (!area) throw new Error("Import area not rendered");
+  return area;
+}
+
+describe("ImportPanel: drop anywhere", () => {
+  it("loads audio dropped outside the drop box", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "drop", createAudioFile("anywhere.wav"));
+    await expect.poll(() => useAudioStore.getState().source?.type).toBe("file");
+  });
+
+  it("highlights the drop box while a file is dragged over the screen", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "dragenter", createAudioFile("anywhere.wav"));
+    await expect.element(screen.getByLabelText("Upload audio file").element().closest("label") ?? document.body).toHaveClass(
+      "border-composer-accent",
+    );
+  });
+
+  it("replaces loaded audio dropped outside the replace box", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    const second = createAudioFile("second.wav");
+    dragFile(importArea(screen.container), "drop", second);
+    await expect.poll(() => {
+      const source = useAudioStore.getState().source;
+      return source?.type === "file" ? source.file.name : null;
+    }).toBe("second.wav");
+  });
+
+  describe("edge cases", () => {
+    it("rejects an unsupported file dropped outside the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      dragFile(importArea(screen.container), "drop", new File(["x"], "notes.txt", { type: "text/plain" }));
+      expect(useAudioStore.getState().source).toBeNull();
+    });
+
+    it("loads the file once when it lands on the box itself", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const label = screen.getByLabelText("Upload audio file").element().closest("label");
+      if (!label) throw new Error("Drop box not rendered");
+      const loads: string[] = [];
+      const unsubscribe = useAudioStore.subscribe((state, previous) => {
+        if (state.source !== previous.source && state.source?.type === "file") loads.push(state.source.file.name);
+      });
+      dragFile(label, "drop", createAudioFile("box.wav"));
+      await expect.poll(() => loads).toEqual(["box.wav"]);
+      unsubscribe();
+    });
+  });
+});
+
 // -- File source --------------------------------------------------------------
 
 describe("ImportPanel: file source", () => {
