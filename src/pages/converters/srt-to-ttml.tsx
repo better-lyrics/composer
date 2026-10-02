@@ -1,8 +1,9 @@
+import { type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
-import { convertViaParser, type ParserConversion } from "@/pages/converters/convert-via-parser";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
 import { useCallback } from "react";
@@ -62,6 +63,7 @@ const SRT_CONVERSION: ParserConversion = {
   emptyMessage: "No subtitle cues found. Check that your input uses standard SRT formatting.",
   failureMessage: "Could not parse SRT. Check the input format.",
   logLabel: "SRT",
+  output: TTML_OUTPUT,
 };
 
 const SrtToTtmlPage: React.FC = () => {
@@ -89,7 +91,7 @@ const SrtToTtmlPage: React.FC = () => {
         inputPlaceholder="1&#10;00:00:00,500 --> 00:00:03,000&#10;First cue text"
         sampleInput={SAMPLE_SRT}
         convert={convert}
-        downloadFilename="lyrics.ttml"
+        outputFormat={TTML_OUTPUT}
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
         <h2 className="text-2xl font-semibold text-composer-text">About SRT and TTML</h2>

@@ -1,8 +1,9 @@
+import { type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
-import { convertViaParser, type ParserConversion } from "@/pages/converters/convert-via-parser";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
 import { PageHead } from "@/seo/page-head";
 import { breadcrumbListSchema, faqPageSchema, howToSchema, organizationSchema } from "@/seo/schemas";
 import { useCallback } from "react";
@@ -59,6 +60,7 @@ const LRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found. Make sure your LRC contains [mm:ss.xx] timestamps.",
   failureMessage: "Could not parse LRC. Check the input format.",
   logLabel: "LRC",
+  output: TTML_OUTPUT,
 };
 
 const LrcToTtmlPage: React.FC = () => {
@@ -86,7 +88,7 @@ const LrcToTtmlPage: React.FC = () => {
         inputPlaceholder="[ti:Song title]&#10;[00:12.34]Sample lyric line"
         sampleInput={SAMPLE_LRC}
         convert={convert}
-        downloadFilename="lyrics.ttml"
+        outputFormat={TTML_OUTPUT}
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
         <h2 className="text-2xl font-semibold text-composer-text">About LRC and eLRC</h2>

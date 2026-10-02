@@ -2,7 +2,8 @@ import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
-import { convertViaParser, type ConversionResult, type ParserConversion } from "@/pages/converters/convert-via-parser";
+import { type ConversionResult, type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { LRC_OUTPUT, TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { describe, expect, it } from "vitest";
 
@@ -14,6 +15,7 @@ const LRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found.",
   failureMessage: "Could not parse LRC.",
   logLabel: "LRC",
+  output: TTML_OUTPUT,
 };
 
 const QRC_CONVERSION: ParserConversion = {
@@ -22,6 +24,7 @@ const QRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found.",
   failureMessage: "Could not parse QRC.",
   logLabel: "QRC",
+  output: TTML_OUTPUT,
 };
 
 const ELRC_INPUT = "[00:00.50]<00:00.50>Hello <00:01.00>world<00:01.50>";
@@ -33,7 +36,7 @@ interface ConvertedProject {
   granularity: "line" | "word";
 }
 
-function expectConverted(result: ConversionResult): { ttml: string; projectPayload: string } {
+function expectConverted(result: ConversionResult): { output: string; projectPayload: string } {
   if ("error" in result) throw new Error(`expected a successful conversion, got "${result.error}"`);
   return result;
 }
@@ -48,7 +51,7 @@ describe("convertViaParser", () => {
   it("produces TTML and a project payload from valid input", () => {
     const result = convertViaParser(LRC_CONVERSION, { input: ELRC_INPUT, filename: "input.lrc" });
 
-    expect(expectConverted(result).ttml).toContain("<tt");
+    expect(expectConverted(result).output).toContain("<tt");
     expect(projectOf(result).lines).toHaveLength(1);
   });
 
@@ -58,10 +61,19 @@ describe("convertViaParser", () => {
     expect(result).toEqual({ error: "No timed lines found." });
   });
 
-  it("appends the extension when the filename lacks it", () => {
-    const result = convertViaParser(LRC_CONVERSION, { input: "[00:00.50]Hello", filename: "pasted" });
+  it("returns the empty message when the input reads as untimed text", () => {
+    const result = convertViaParser(
+      { ...LRC_CONVERSION, extension: "ttml", output: LRC_OUTPUT },
+      { input: "plain words, no timing", filename: "input.ttml" },
+    );
 
-    expect(expectConverted(result).ttml).toContain("<tt");
+    expect(result).toEqual({ error: "No timed lines found." });
+  });
+
+  it("appends the extension when the filename lacks it", () => {
+    const result = convertViaParser(LRC_CONVERSION, { input: "[00:00.50]Hello\n[00:02.00]", filename: "pasted" });
+
+    expect(expectConverted(result).output).toContain("<tt");
   });
 
   it("forces line granularity when configured to", () => {
@@ -89,7 +101,7 @@ describe("convertViaParser", () => {
     const result = convertViaParser(QRC_CONVERSION, { input: WANDERLUST_QRC, filename: "input.qrc" });
 
     expect(projectOf(result).agents).toHaveLength(2);
-    expect(expectConverted(result).ttml).toContain("Fox the Fox");
+    expect(expectConverted(result).output).toContain("Fox the Fox");
   });
 
   it("falls back to the shared default agent when the parser reports none", () => {
@@ -104,7 +116,7 @@ describe("convertViaParser", () => {
 
     expect(metadata.songwriters?.length).toBeGreaterThan(0);
     expect(metadata.extra?.qrcLyricsBy).toBeTruthy();
-    expect(expectConverted(result).ttml).toContain('key="songwriter"');
+    expect(expectConverted(result).output).toContain('key="songwriter"');
   });
 
   it("lifts title, artists and album out of the parsed metadata", () => {
@@ -158,14 +170,14 @@ describe("convertViaParser", () => {
     it("honours a filename that already carries the extension", () => {
       const result = convertViaParser(LRC_CONVERSION, { input: ELRC_INPUT, filename: "my-song.lrc" });
 
-      expect(expectConverted(result).ttml).toContain("<tt");
+      expect(expectConverted(result).output).toContain("<tt");
     });
   });
 
   describe("invariants", () => {
     it("describes the same lines in the TTML and in the project payload", () => {
       const result = convertViaParser(QRC_CONVERSION, { input: WANDERLUST_QRC, filename: "input.qrc" });
-      const { ttml } = expectConverted(result);
+      const { output: ttml } = expectConverted(result);
       const { lines } = projectOf(result);
 
       expect(ttml.match(/<p /g)).toHaveLength(lines.length);
@@ -173,7 +185,7 @@ describe("convertViaParser", () => {
 
     it("names every agent a line references in the TTML head", () => {
       const result = convertViaParser(QRC_CONVERSION, { input: WANDERLUST_QRC, filename: "input.qrc" });
-      const { ttml } = expectConverted(result);
+      const { output: ttml } = expectConverted(result);
       const { agents, lines } = projectOf(result);
 
       for (const id of new Set(lines.map((line) => line.agentId))) {
@@ -192,7 +204,7 @@ describe("convertViaParser", () => {
     it("names the default agent Lead in the emitted TTML", () => {
       const result = convertViaParser(LRC_CONVERSION, { input: ELRC_INPUT, filename: "input.lrc" });
 
-      expect(expectConverted(result).ttml).toContain("<ttm:name>Lead</ttm:name>");
+      expect(expectConverted(result).output).toContain("<ttm:name>Lead</ttm:name>");
     });
 
     it("leaves the conversion config untouched", () => {
@@ -210,7 +222,7 @@ describe("convertViaParser", () => {
         filename: "input.lrc",
       });
 
-      expect(expectConverted(result).ttml).toContain("Also good");
+      expect(expectConverted(result).output).toContain("Also good");
       expect(result).toMatchObject({ skippedLines: 1 });
     });
 

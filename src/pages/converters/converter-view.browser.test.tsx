@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { convertViaParser } from "@/pages/converters/convert-via-parser";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
 import { render } from "@/test/render";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 const LRC_CONVERSION = {
   extension: "lrc",
@@ -11,6 +12,7 @@ const LRC_CONVERSION = {
   emptyMessage: "No timed lines found.",
   failureMessage: "Could not parse LRC.",
   logLabel: "LRC",
+  output: TTML_OUTPUT,
 };
 const convertLrc = (args: ConvertArgs) => convertViaParser(LRC_CONVERSION, args);
 
@@ -36,7 +38,7 @@ function renderLrcConverter() {
       inputPlaceholder="Paste LRC"
       sampleInput={"[00:01.00]valid\n[00:03.00]second"}
       convert={convertLrc}
-      downloadFilename="lyrics.ttml"
+      outputFormat={TTML_OUTPUT}
     />,
     { withRouter: true },
   );
@@ -68,8 +70,8 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -84,8 +86,8 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -99,8 +101,8 @@ describe("ConverterView", () => {
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -125,7 +127,7 @@ describe("ConverterView", () => {
         inputPlaceholder="Paste LRC"
         sampleInput="[00:01.00] hello"
         convert={() => ({ error: "Could not parse line 3: an unexpectedly long explanation that must wrap" })}
-        downloadFilename="out.ttml"
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );

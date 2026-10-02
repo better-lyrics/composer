@@ -1,5 +1,6 @@
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
+import type { OutputFormat } from "@/pages/converters/output-formats";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
 import { StatusChip } from "@/ui/status-chip";
@@ -20,11 +21,10 @@ interface ConverterViewProps {
   inputPlaceholder: string;
   sampleInput: string;
   convert: (args: ConvertArgs) => ConversionResult;
-  downloadFilename: string;
+  outputFormat: OutputFormat;
 }
 
 const OPEN_IN_COMPOSER_HASH_PREFIX = "#import=";
-const TTML_EXTENSION = /\.ttml$/i;
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -32,36 +32,38 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   inputPlaceholder,
   sampleInput,
   convert,
-  downloadFilename,
+  outputFormat,
 }) => {
+  const downloadFilename = `lyrics.${outputFormat.extension}`;
   const [input, setInput] = useState("");
   const [filename, setFilename] = useState(() => downloadFilename);
 
-  const { ttml, error, projectPayload, skippedLines } = useMemo(() => {
-    if (!input.trim()) return { ttml: "", error: null, projectPayload: "", skippedLines: 0 };
+  const { output, error, projectPayload, skippedLines } = useMemo(() => {
+    if (!input.trim()) return { output: "", error: null, projectPayload: "", skippedLines: 0 };
     const result = convert({ input, filename });
-    if ("error" in result) return { ttml: "", error: result.error, projectPayload: "", skippedLines: 0 };
+    if ("error" in result) return { output: "", error: result.error, projectPayload: "", skippedLines: 0 };
     return {
-      ttml: result.ttml,
+      output: result.output,
       error: null,
       projectPayload: result.projectPayload,
       skippedLines: result.skippedLines,
     };
   }, [input, filename, convert]);
 
-  const downloadTtml = () => {
-    if (!ttml) return;
+  const downloadOutput = () => {
+    if (!output) return;
     const name = sanitizeFileName(filename, downloadFilename);
-    downloadText(ttml, TTML_EXTENSION.test(name) ? name : `${name}.ttml`, "application/ttml+xml");
+    const suffix = `.${outputFormat.extension}`;
+    downloadText(output, name.toLowerCase().endsWith(suffix) ? name : `${name}${suffix}`, outputFormat.mimeType);
   };
 
-  const copyTtml = async () => {
-    if (!ttml) return;
+  const copyOutput = async () => {
+    if (!output) return;
     try {
-      await navigator.clipboard.writeText(ttml);
-      toast.success("Copied TTML to clipboard");
+      await navigator.clipboard.writeText(output);
+      toast.success(`Copied ${outputFormat.label} to clipboard`);
     } catch (clipboardError) {
-      console.error("[Composer] Failed to copy TTML", clipboardError);
+      console.error(`[Composer] Failed to copy ${outputFormat.label}`, clipboardError);
       toast.error("Could not copy to clipboard");
     }
   };
@@ -74,7 +76,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
     <section className="px-6 py-14 max-w-6xl mx-auto">
       <h1 className="text-3xl md:text-5xl font-semibold text-composer-text text-center mb-4">{title}</h1>
       <p className="text-composer-text-secondary text-center max-w-2xl mx-auto mb-10">
-        Paste your input on the left, download a standard TTML file on the right. Everything runs in your browser.
+        Paste your input on the left, download a standard {outputFormat.label} file on the right. Everything runs in
+        your browser.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col">
@@ -115,13 +118,13 @@ const ConverterView: React.FC<ConverterViewProps> = ({
         </div>
         <div className="rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-sm font-medium text-composer-text select-none">TTML output</span>
+            <span className="text-sm font-medium text-composer-text select-none">{outputFormat.label} output</span>
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={copyTtml} disabled={!ttml} hasIcon>
+              <Button variant="ghost" size="sm" onClick={copyOutput} disabled={!output} hasIcon>
                 <IconCopy size={12} />
                 Copy
               </Button>
-              <Button variant="secondary" size="sm" onClick={downloadTtml} disabled={!ttml} hasIcon>
+              <Button variant="secondary" size="sm" onClick={downloadOutput} disabled={!output} hasIcon>
                 <IconDownload size={12} />
                 Download
               </Button>
@@ -135,7 +138,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
                 : "bg-composer-bg-dark border-composer-border text-composer-text select-text",
             )}
           >
-            {error || ttml || "Paste input to see TTML output"}
+            {error || output || `Paste input to see ${outputFormat.label} output`}
           </pre>
           <div role="status">
             {skippedLines > 0 && (
