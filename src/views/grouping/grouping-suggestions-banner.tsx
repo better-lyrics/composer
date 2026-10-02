@@ -1,7 +1,12 @@
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
-import { showKeptOwnTimingToast } from "@/utils/group-toast";
+import {
+  replacedOwnTimingNote,
+  showGroupActionToast,
+  showKeptOwnTimingToast,
+  showReplacedOwnTimingToast,
+} from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
 import { IconBulb, IconLink } from "@tabler/icons-react";
@@ -27,14 +32,17 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
 
   const groupSections = (sections: readonly RepeatingSection[]) => {
     const { duration } = useAudioStore.getState();
-    showKeptOwnTimingToast(
-      sections.flatMap((s) => groupRepeatingSections(s.starts, s.length, { duration }).keptOwnTiming),
-    );
+    const outcomes = sections.map((s) => groupRepeatingSections(s.starts, s.length, { duration }));
+    showKeptOwnTimingToast(outcomes.flatMap((outcome) => outcome.keptOwnTiming));
+    return outcomes.reduce((sum, outcome) => sum + outcome.realigned.length, 0);
   };
 
-  const acceptOne = (s: RepeatingSection) => groupSections([s]);
+  const acceptOne = (s: RepeatingSection) => {
+    const replaced = groupSections([s]);
+    if (replaced > 0) showGroupActionToast(replacedOwnTimingNote(replaced));
+  };
 
-  const acceptAll = (visible: RepeatingSection[]) => groupSections(visible);
+  const acceptAll = (visible: RepeatingSection[]) => showReplacedOwnTimingToast(groupSections(visible));
 
   return (
     // react-doctor-disable-next-line react-doctor/no-render-prop-children

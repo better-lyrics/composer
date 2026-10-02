@@ -79,6 +79,11 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     expect(lineById("two-a")?.words?.[1].begin).toBe(41);
     await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
+    await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
+
+    await screen.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => store().groups).toEqual([]);
+    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
   });
 
   it("regression: shares a partly synced instance mid-sync, so sync skips it", async () => {
@@ -129,6 +134,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
 
     await expect.poll(() => store().groups.map((group) => group.ownTimingInstances)).toEqual([undefined, undefined]);
     expect(lineById("four-a")?.words?.[1].begin).toBe(81);
+    await expect.element(screen.getByText("The own timing of 2 instances was replaced.")).toBeVisible();
   });
 
   describe("edge cases", () => {
