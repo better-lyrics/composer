@@ -39,8 +39,12 @@ interface BackgroundLanguageFieldsProps extends Omit<LanguageLineEditorProps, "i
 
 // -- Components ---------------------------------------------------------------
 
-const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string }> = ({ onClick, ariaLabel }) => (
-  <Button variant="ghost" size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
+const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string; needsReview?: boolean }> = ({
+  onClick,
+  ariaLabel,
+  needsReview,
+}) => (
+  <Button variant={needsReview ? "primary" : "ghost"} size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
     <IconSeparatorVertical className="size-4" />
     Align
   </Button>
@@ -69,7 +73,11 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
       pasteKind="transliteration"
       action={
         line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
-          <AlignButton ariaLabel="Align background timing" onClick={() => onAlign("backgroundWords")} />
+          <AlignButton
+            ariaLabel="Align background timing"
+            needsReview={line.transliteration.backgroundAlignmentStatus === "needs-review"}
+            onClick={() => onAlign("backgroundWords")}
+          />
         ) : null
       }
       onChange={(value) => {
@@ -196,7 +204,14 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           status={transliterationStale ? "review" : undefined}
           error={transliterationError}
           pasteKind="transliteration"
-          action={canAlignMain ? <AlignButton onClick={() => setAlignmentField("words")} /> : null}
+          action={
+            canAlignMain ? (
+              <AlignButton
+                needsReview={line.transliteration?.alignmentStatus === "needs-review"}
+                onClick={() => setAlignmentField("words")}
+              />
+            ) : null
+          }
           onChange={(value) => {
             if (!value && !line.transliteration?.backgroundText) {
               clearTransliteration();
