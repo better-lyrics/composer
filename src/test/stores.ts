@@ -1,3 +1,4 @@
+import { cancelCountIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useAuthStore } from "@/stores/auth";
 import { useChoiceStore } from "@/stores/choice-store";
@@ -24,6 +25,7 @@ function hasLocalStorage(): boolean {
 }
 
 async function resetAllStores(): Promise<void> {
+  cancelCountIn();
   await clearPersistedStorage(useSettingsStore);
   useSettingsStore.setState(SETTINGS_DEFAULTS);
 
