@@ -130,3 +130,67 @@ describe("useGlobalShortcuts · play/pause in Sync", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 });
+
+async function renderEditorShortcuts(): Promise<void> {
+  await renderHook(() => useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }));
+}
+
+function pressSpeedToggle(): void {
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "R", shiftKey: true, bubbles: true }));
+}
+
+describe("useGlobalShortcuts · playback speed toggle", () => {
+  it("drops normal speed to 0.75x on Shift+R", async () => {
+    useAudioStore.setState({ playbackRate: 1 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(0.75);
+  });
+
+  it("returns 0.75x to normal speed on Shift+R", async () => {
+    useAudioStore.setState({ playbackRate: 0.75 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(1);
+  });
+
+  it("toggles back and forth on repeated presses", async () => {
+    useAudioStore.setState({ playbackRate: 1 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    pressSpeedToggle();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(0.75);
+  });
+
+  describe("edge cases", () => {
+    it("returns any other speed to normal speed", async () => {
+      useAudioStore.setState({ playbackRate: 1.5 });
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1);
+    });
+
+    it("does not toggle outside the editor", async () => {
+      useAudioStore.setState({ playbackRate: 1 });
+      await renderHook(() =>
+        useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {}, editorActive: false }),
+      );
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1);
+    });
+
+    it("does not toggle while typing in a field", async () => {
+      useAudioStore.setState({ playbackRate: 1 });
+      await renderEditorShortcuts();
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+      try {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "R", shiftKey: true, bubbles: true }));
+        expect(useAudioStore.getState().playbackRate).toBe(1);
+      } finally {
+        input.remove();
+      }
+    });
+  });
+});
