@@ -163,6 +163,28 @@ describe("SyncCarousel · above current slot", () => {
     await expect.element(screen.getByText("Tap to place", { exact: true })).toBeInTheDocument();
   });
 
+  it("regression: the slot never moves the line, so nothing shifts when it goes away", async () => {
+    const lineTop = (container: HTMLElement) =>
+      [...container.querySelectorAll("span")].find((span) => span.textContent === "Second line")?.getBoundingClientRect().top;
+    const plain = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+    const plainCss = await installUtilitiesUsedIn(plain.container);
+    const withoutSlot = lineTop(plain.container);
+    plainCss.remove();
+    await plain.unmount();
+    const slotted = await render(
+      <SyncCarousel
+        lines={TAGGED_LINES}
+        lineIndex={1}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span style={{ display: "block", height: 40 }}>probe</span>}
+      />,
+    );
+    const slottedCss = await installUtilitiesUsedIn(slotted.container);
+    expect(lineTop(slotted.container)).toBe(withoutSlot);
+    slottedCss.remove();
+  });
+
   it("renders the slot only once, on the current line", async () => {
     const screen = await render(
       <SyncCarousel

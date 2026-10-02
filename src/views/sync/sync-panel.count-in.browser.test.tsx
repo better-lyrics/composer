@@ -117,6 +117,24 @@ describe("Sync count-in", () => {
   });
 
   describe("edge cases", () => {
+    it("shows the footer countdown but no dots when counting in mid-song", async () => {
+      load(
+        [
+          createLine({ id: "l0", text: "First line", words: [{ text: "First line", begin: 1, end: 2 }] }),
+          createLine({ id: "l1", text: "Hold me close" }),
+        ],
+        3,
+      );
+      const screen = await render(<SyncPanel />);
+      const rows = () => screen.container.querySelectorAll<HTMLElement>('[role="button"][tabindex="-1"]');
+      await expect.poll(() => rows().length).toBe(2);
+      rows()[1].click();
+      await expect.poll(() => rows()[1].className).toContain("border-composer-accent");
+      space();
+      await expect.element(screen.getByText("Starting in", { exact: true })).toBeInTheDocument();
+      expect(screen.container.querySelector("[data-count-in-dots]")).toBeNull();
+    });
+
     it("starts playback at once when the count-in is off", async () => {
       load([createLine({ id: "l0", text: "Hold me close" })], 0);
       await render(<SyncPanel />);

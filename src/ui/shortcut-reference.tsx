@@ -24,6 +24,7 @@ const SHORTCUT_SECTIONS: ShortcutSectionProps[] = [
     shortcuts: [
       { keys: ["Shift", "?"], description: "Show keyboard shortcuts", shortcutId: "global.help" },
       { keys: ["Enter"], description: "Play / Pause audio", shortcutId: "global.playPause" },
+      { keys: ["Shift", "R"], description: "Switch between 0.75x and normal speed", shortcutId: "global.togglePlaybackSpeed" },
       { keys: ["Mod", "O"], description: "Switch project", shortcutId: "global.openProjectSwitcher" },
       { keys: ["Mod", "Alt", "N"], description: "New project", shortcutId: "global.newProject" },
       { keys: ["Mod", "S"], description: "Save now", shortcutId: "global.saveNow" },
