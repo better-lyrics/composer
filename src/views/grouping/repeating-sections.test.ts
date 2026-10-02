@@ -1,9 +1,9 @@
 /**
  * @vitest-environment node
  */
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
-import { describe, expect, it } from "vitest";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 import { findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
+import { describe, expect, it } from "vitest";
 
 function line(id: string, text: string, opts: Partial<LooseLine> = {}): LyricLine {
   return reconcileLine({ id, text, agentId: "v1", ...opts });
@@ -55,6 +55,35 @@ describe("findRepeatingStandaloneSections", () => {
     const fpA = findRepeatingStandaloneSections(a)[0].fingerprint;
     const fpB = findRepeatingStandaloneSections(b)[0].fingerprint;
     expect(fpA).not.toBe(fpB);
+  });
+
+  describe("regressions", () => {
+    const words = (text: string, begin: number) =>
+      text.split(" ").map((part, index, parts) => ({
+        text: index < parts.length - 1 ? `${part} ` : part,
+        begin: begin + index,
+        end: begin + index + 0.5,
+      }));
+
+    it("regression: suggests a word-synced run and an untimed run of the same lyrics", () => {
+      const lines = [
+        line("1", "go now", { words: words("go now", 10) }),
+        line("2", "stay here", { words: words("stay here", 12) }),
+        line("3", "go now"),
+        line("4", "stay here"),
+      ];
+      expect(findRepeatingStandaloneSections(lines).map((section) => section.starts)).toEqual([[0, 2]]);
+    });
+
+    it("regression: suggests a word-synced run and a partly word-synced run of the same lyrics", () => {
+      const lines = [
+        line("1", "go now", { words: words("go now", 10) }),
+        line("2", "stay here", { words: words("stay here", 12) }),
+        line("3", "go now", { words: words("go now", 40).slice(0, 1) }),
+        line("4", "stay here"),
+      ];
+      expect(findRepeatingStandaloneSections(lines).map((section) => section.starts)).toEqual([[0, 2]]);
+    });
   });
 
   it("detects 4 contiguous chorus runs of length 4", () => {

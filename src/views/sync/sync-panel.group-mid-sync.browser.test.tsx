@@ -89,4 +89,55 @@ describe("SyncPanel · grouping mid-sync", () => {
     expect(firstBegin("one-b")).toBe(13);
     expect(firstBegin("two-b")).toBe(43);
   });
+
+  describe("word sync", () => {
+    beforeEach(() => load("word"));
+
+    const wordBegins = (id: string) => lineById(id)?.words?.map((word) => word.begin);
+
+    async function renderEditAndSync() {
+      return render(
+        <>
+          <GroupingSuggestionsBanner />
+          <SyncPanel />
+        </>,
+      );
+    }
+
+    async function syncFirstChorus() {
+      await tapAt(10, () => wordBegins("one-a"));
+      await tapAt(10.5, () => wordBegins("one-a"));
+      await tapAt(13, () => wordBegins("one-b"));
+      await tapAt(13.5, () => wordBegins("one-b"));
+    }
+
+    it("regression: groups a partly word-synced chorus from the Edit banner, fills it, and skips it", async () => {
+      const screen = await renderEditAndSync();
+      await syncFirstChorus();
+      await tapAt(40, () => wordBegins("two-a"));
+
+      await screen.getByRole("button", { name: "Group them" }).click();
+      await expect.poll(() => wordBegins("two-b")).toEqual([43, 43.5]);
+      expect(wordBegins("two-a")).toEqual([40, 40.5]);
+
+      await tapAt(45, () => wordBegins("verse"));
+      expect(wordBegins("verse")).toEqual([45]);
+      expect(wordBegins("one-a")).toEqual([10, 10.5]);
+      expect(wordBegins("one-b")).toEqual([13, 13.5]);
+    });
+
+    it("regression: groups an untimed chorus from the Edit banner, and one tap places it", async () => {
+      const screen = await renderEditAndSync();
+      await syncFirstChorus();
+
+      await screen.getByRole("button", { name: "Group them" }).click();
+      await expect.poll(() => useProjectStore.getState().groups.length).toBe(1);
+
+      await tapAt(40, () => wordBegins("two-a"));
+      expect(wordBegins("two-a")).toEqual([40, 40.5]);
+      expect(wordBegins("two-b")).toEqual([43, 43.5]);
+      await tapAt(45, () => wordBegins("verse"));
+      expect(wordBegins("verse")).toEqual([45]);
+    });
+  });
 });
