@@ -1,4 +1,3 @@
-import { holdFrames } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -8,14 +7,9 @@ import { SYNC_COUNT_IN_IDLE, useSyncCountInStore } from "@/stores/sync-count-in"
 
 type PlaybackRequest = "counting" | "playing";
 
-// -- Constants ----------------------------------------------------------------
-
-const COUNT_IN_FRAME_LABEL = "sync count-in";
-
 // -- State --------------------------------------------------------------------
 
 let startTimer: ReturnType<typeof setTimeout> | null = null;
-let releaseFrames: (() => void) | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -26,8 +20,6 @@ function isCountingIn(): boolean {
 function endCount(): void {
   if (startTimer !== null) clearTimeout(startTimer);
   startTimer = null;
-  releaseFrames?.();
-  releaseFrames = null;
   useSyncCountInStore.setState(SYNC_COUNT_IN_IDLE);
 }
 
@@ -49,7 +41,6 @@ function requestPlayback(): PlaybackRequest {
   }
   const seconds = useSettingsStore.getState().syncCountIn;
   const startedAt = performance.now();
-  releaseFrames = holdFrames(COUNT_IN_FRAME_LABEL);
   startTimer = setTimeout(() => {
     endCount();
     useAudioStore.getState().setIsPlaying(true);
