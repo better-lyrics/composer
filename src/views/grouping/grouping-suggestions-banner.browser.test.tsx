@@ -105,6 +105,7 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     const screen = await renderBanner();
     await screen.getByRole("button", { name: "Group them" }).click();
     await expect.poll(() => store().groups.length).toBe(1);
+    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
 
     store().undo();
 
