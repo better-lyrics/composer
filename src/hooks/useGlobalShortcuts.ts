@@ -1,17 +1,12 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useAudioStore } from "@/stores/audio";
+import { togglePlayback } from "@/lib/sync-count-in";
 
 interface GlobalShortcutActions {
   setActiveTab: (tab: ProjectTab) => void;
   setHelpOpen: (open: boolean) => void;
   setSettingsOpen: (open: boolean) => void;
   editorActive?: boolean;
-}
-
-function togglePlayback(): void {
-  const { isPlaying, setIsPlaying } = useAudioStore.getState();
-  setIsPlaying(!isPlaying);
 }
 
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {

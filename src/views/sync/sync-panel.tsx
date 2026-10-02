@@ -1,3 +1,4 @@
+import { isCountingIn } from "@/lib/sync-count-in";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
@@ -259,7 +260,7 @@ const SyncPanel: React.FC = () => {
   }, [lines, cursor, granularity]);
 
   const performTap = useCallback(() => {
-    if (editMode) return;
+    if (editMode || isCountingIn()) return;
     if (isHolding && isPlaying) {
       handleHoldTap();
     } else if (isPlaying) {
@@ -271,9 +272,9 @@ const SyncPanel: React.FC = () => {
   }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleHoldTap, handleTap, handleStartSync]);
 
   const beginHold = useCallback(() => {
-    if (editMode || isHolding) return;
+    if (editMode || isHolding || isCountingIn()) return;
     if (!syncState.isActive && lines.length > 0) {
-      handleStartSync();
+      if (handleStartSync() === "counting") return;
       handleHoldStart();
       setIsHolding(true);
     } else if (isPlaying) {

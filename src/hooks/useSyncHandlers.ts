@@ -1,5 +1,6 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
+import { requestPlayback } from "@/lib/sync-count-in";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
@@ -190,8 +191,8 @@ function useSyncHandlers({
       isActive: true,
       jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
-    setIsPlaying(true);
-  }, [lines, cursor, jumped, setIsPlaying, setSyncState]);
+    return requestPlayback();
+  }, [lines, cursor, jumped, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so
