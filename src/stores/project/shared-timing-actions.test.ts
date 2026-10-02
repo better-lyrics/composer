@@ -257,6 +257,15 @@ describe("shareGroupTiming", () => {
       ]);
     });
 
+    it("writes no history when the group already shares and nothing changes", () => {
+      seed([createGroup({ id: "g1", sharesTiming: true })], [chorus(0, 10), chorus(1, 40)]);
+      store().clearHistory();
+      const before = store();
+      store().shareGroupTiming("g1", SONG_LENGTH);
+      expect(store().groups).toBe(before.groups);
+      expect(store().canUndo()).toBe(false);
+    });
+
     it("changes nothing for an unknown group", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
       const before = store();

@@ -49,7 +49,10 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
     const outcomes = visible.map((suggestion) =>
       useProjectStore.getState().shareGroupTiming(suggestion.groupId, duration),
     );
-    showKeptOwnTimingToast(outcomes.flatMap((outcome) => outcome.keptOwnTiming));
+    showKeptOwnTimingToast(
+      outcomes.flatMap((outcome) => outcome.keptOwnTiming),
+      "timeline",
+    );
     showReplacedOwnTimingToast(outcomes.reduce((sum, outcome) => sum + outcome.replaced.length, 0));
   };
 

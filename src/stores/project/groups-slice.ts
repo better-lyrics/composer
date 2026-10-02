@@ -13,6 +13,7 @@ import { commitHistory, commitSharedTimingHistory } from "@/stores/project/histo
 import type { GroupActions, GroupsState, ProjectStore } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { StateCreator } from "zustand";
 
@@ -202,6 +203,9 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     const group = state.groups.find((candidate) => candidate.id === groupId);
     if (!group) return NOTHING_SHARED;
     const shared = initialGroupSharing(state.lines, group, true, songEndOrUnbounded(duration));
+    if (shared.lines === state.lines && isStructurallyEqual(shared.group, group)) {
+      return { keptOwnTiming: shared.keptOwnTiming, replaced: [] };
+    }
     const groups = state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate));
     set(commitHistory(state, { groups, lines: shared.lines }, { deriveText: false }));
     return { keptOwnTiming: shared.keptOwnTiming, replaced: shared.replaced };

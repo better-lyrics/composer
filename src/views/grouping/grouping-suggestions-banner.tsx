@@ -33,7 +33,10 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
   const groupSections = (sections: readonly RepeatingSection[]) => {
     const { duration } = useAudioStore.getState();
     const outcomes = sections.map((s) => groupRepeatingSections(s.starts, s.length, { duration }));
-    showKeptOwnTimingToast(outcomes.flatMap((outcome) => outcome.keptOwnTiming));
+    showKeptOwnTimingToast(
+      outcomes.flatMap((outcome) => outcome.keptOwnTiming),
+      "edit",
+    );
     return outcomes.reduce((sum, outcome) => sum + outcome.replaced.length, 0);
   };
 

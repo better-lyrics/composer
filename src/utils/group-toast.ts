@@ -18,7 +18,17 @@ const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, (count: number) => string>
   "would-lose-word-timing": (count) =>
     `: the synced instance is missing word timing ${pluralWord(count, "this instance has", "these instances have")}, so sharing would remove it`,
 };
-const MIXED_KEPT_OWN_TIMING_REASON = ". Share them from their banner menus in the Timeline to see why.";
+const KEPT_IN_THE_TIMELINE_REASONS: Partial<Record<RealignRefusal, (count: number) => string>> = {
+  "no-fully-synced-instance": () => ". Sync one instance fully, then choose Share timing across group again.",
+};
+const MIXED_KEPT_OWN_TIMING_REASON: Record<SharingPlace, string> = {
+  edit: ". Share them from their banner menus in the Timeline to see why.",
+  timeline: ". Choose Share timing on each of their banners to see why.",
+};
+
+// -- Types ---------------------------------------------------------------------
+
+type SharingPlace = "edit" | "timeline";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -32,14 +42,21 @@ function showGroupActionToast(message: string, undoFn?: () => void): void {
   });
 }
 
-function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[]): void {
+function keptOwnTimingReason(refusal: RealignRefusal, count: number, place: SharingPlace): string {
+  const timelineReason = place === "timeline" ? KEPT_IN_THE_TIMELINE_REASONS[refusal] : undefined;
+  return (timelineReason ?? KEPT_OWN_TIMING_REASONS[refusal])(count);
+}
+
+// `place` is where the user shared from, so the copy never sends them back to the action they just used.
+function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[], place: SharingPlace, offerUndo = false): void {
   const count = keptOwnTiming.length;
   if (count === 0) return;
   const refusals = new Set(keptOwnTiming.map((kept) => kept.refusal));
   const [refusal] = refusals;
-  const reason = refusals.size === 1 ? KEPT_OWN_TIMING_REASONS[refusal](count) : MIXED_KEPT_OWN_TIMING_REASON;
+  const reason = refusals.size === 1 ? keptOwnTimingReason(refusal, count, place) : MIXED_KEPT_OWN_TIMING_REASON[place];
   toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`, {
     duration: GROUP_TOAST_DURATION_MS,
+    ...(offerUndo ? { action: { label: "Undo", onClick: () => useProjectStore.getState().undo() } } : {}),
   });
 }
 

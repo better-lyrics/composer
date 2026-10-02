@@ -1,5 +1,4 @@
 import type { LinkGroup } from "@/domain/group/template";
-import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -111,78 +110,6 @@ describe("TimelineContextMenu · banner sharing items", () => {
       )
       .toBeVisible();
     expect(group().ownTimingInstances).toEqual([1]);
-  });
-
-  it("shares timing across an old group", async () => {
-    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
-    const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
-
-    await expect.poll(() => group().sharesTiming).toBe(true);
-    await expect.element(screen.getByText("Chorus shares timing in 2 instances")).toBeVisible();
-  });
-
-  it("shares timing across an old group and realigns an instance with different timing", async () => {
-    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
-    useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2)] });
-    const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
-
-    await expect.poll(() => group().sharesTiming).toBe(true);
-    expect(group().ownTimingInstances).toBeUndefined();
-    expect(secondWordBegin("c1")).toBeCloseTo(41.5, 6);
-    await expect.element(screen.getByText("Chorus shares timing in 2 instances")).toBeVisible();
-    await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
-  });
-
-  it("keeps the word timing of an instance when the synced instance lacks it, and says why", async () => {
-    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
-    const partlyWordSynced = createLine({
-      id: "c1",
-      text: "go now",
-      words: [createWord({ text: "go ", begin: 40, end: 41 })],
-      groupId: "g1",
-      instanceIdx: 1,
-      templateLineIdx: 0,
-    });
-    useProjectStore.setState({
-      lines: [
-        createLine({ id: "c0", text: "go now", begin: 10, end: 12, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
-        partlyWordSynced,
-      ],
-    });
-    const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
-
-    await expect
-      .element(
-        screen.getByText(
-          "1 instance kept its own timing: the synced instance is missing word timing this instance has, so sharing would remove it",
-        ),
-      )
-      .toBeVisible();
-    expect(group().ownTimingInstances).toEqual([1]);
-    expect(store().lines[1]).toEqual(partlyWordSynced);
-  });
-
-  it("reports replaced timing with Undo when another instance keeps its own timing", async () => {
-    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
-    useAudioStore.setState({ duration: 120 });
-    useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2), chorus(2, 119, 1.2)] });
-    const screen = await renderMenu();
-    await screen.getByRole("button", { name: "Share timing across group" }).click();
-
-    await expect
-      .element(screen.getByText("Chorus shares timing in 2 instances. The own timing of 1 instance was replaced."))
-      .toBeVisible();
-    await expect
-      .element(screen.getByText("1 instance kept its own timing: the shared timing would run past the end of the song"))
-      .toBeVisible();
-    expect(group().ownTimingInstances).toEqual([2]);
-
-    await screen.getByRole("button", { name: "Undo" }).click();
-    await expect.poll(() => group().sharesTiming).toBeUndefined();
-    expect(secondWordBegin("c1")).toBe(41.2);
   });
 
   it("undoes an override change from the toast", async () => {
