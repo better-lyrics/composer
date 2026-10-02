@@ -1,5 +1,6 @@
-import { convertViaParser, type ParserConversion } from "@/pages/converters/convert-via-parser";
-import { ConverterView, type ConvertArgs } from "@/pages/converters/converter-view";
+import { type ParserConversion, convertViaParser } from "@/pages/converters/convert-via-parser";
+import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import { LandingLayout } from "@/pages/landing/landing-layout";
 import { BetterLyricsPromo } from "@/pages/landing/sections/better-lyrics-promo";
 import { FaqSection } from "@/pages/landing/sections/faq-section";
@@ -76,9 +77,10 @@ const QrcToTtmlContent: React.FC = () => {
         title="QRC to TTML Converter"
         inputLabel="Paste QRC"
         inputPlaceholder="[ti:Song title]&#10;[34059,2299]Is (34059,130)it (34189,120)"
+        inputExtension={QRC_CONVERSION.extension}
         sampleInput={SAMPLE_QRC}
         convert={convert}
-        downloadFilename="lyrics.ttml"
+        outputFormat={TTML_OUTPUT}
       />
       <section className="px-6 py-14 max-w-3xl mx-auto text-composer-text-secondary leading-relaxed space-y-5">
         <h2 className="text-2xl font-semibold text-composer-text">About QRC</h2>
