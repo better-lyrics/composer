@@ -40,55 +40,56 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
   addGroupWithLines: (group, lines) =>
     set((state) => commitHistory(state, { groups: [...state.groups, group], lines })),
 
-  groupRepeatingSections: (starts, length, options = {}) =>
-    set((state) => {
-      if (starts.length < 2 || length < 1) return state;
+  groupRepeatingSections: (starts, length, options = {}) => {
+    const state = get();
+    if (starts.length < 2 || length < 1) return [];
 
-      const covered = new Set<number>();
-      for (const start of starts) {
-        for (let p = start; p < start + length; p++) {
-          if (p < 0 || p >= state.lines.length) return state;
-          if (state.lines[p].groupId !== undefined) return state;
-          if (covered.has(p)) return state;
-          covered.add(p);
+    const covered = new Set<number>();
+    for (const start of starts) {
+      for (let p = start; p < start + length; p++) {
+        if (p < 0 || p >= state.lines.length) return [];
+        if (state.lines[p].groupId !== undefined) return [];
+        if (covered.has(p)) return [];
+        covered.add(p);
+      }
+    }
+
+    const usedGroupIds = new Set(state.groups.map((g) => g.id));
+    let n = 1;
+    while (usedGroupIds.has(`g${n}`)) n++;
+    const groupId = `g${n}`;
+
+    const usedColors = state.groups.map((g) => g.color);
+    const color = options.color ?? pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
+    const label = options.label ?? `Group ${state.groups.length + 1}`;
+
+    const startToInstanceIdx = new Map<number, number>();
+    const sortedStarts = starts.toSorted((a, b) => a - b);
+    sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
+
+    const updatedLines = state.lines.map((line, idx) => {
+      for (const start of sortedStarts) {
+        if (idx >= start && idx < start + length) {
+          return {
+            ...line,
+            groupId,
+            instanceIdx: startToInstanceIdx.get(start) ?? 0,
+            templateLineIdx: idx - start,
+          };
         }
       }
+      return line;
+    });
 
-      const usedGroupIds = new Set(state.groups.map((g) => g.id));
-      let n = 1;
-      while (usedGroupIds.has(`g${n}`)) n++;
-      const groupId = `g${n}`;
+    const { group, lines, keptOwnTiming } = initialGroupSharing(
+      updatedLines,
+      { id: groupId, label, color, templateVersion: 1 },
+      useSettingsStore.getState().shareTimingInNewGroups,
+    );
 
-      const usedColors = state.groups.map((g) => g.color);
-      const color = options.color ?? pickNextGroupColor(usedColors.length > 0 ? usedColors : GROUP_COLORS.slice(0, 0));
-      const label = options.label ?? `Group ${state.groups.length + 1}`;
-
-      const startToInstanceIdx = new Map<number, number>();
-      const sortedStarts = starts.toSorted((a, b) => a - b);
-      sortedStarts.forEach((s, i) => startToInstanceIdx.set(s, i));
-
-      const updatedLines = state.lines.map((line, idx) => {
-        for (const start of sortedStarts) {
-          if (idx >= start && idx < start + length) {
-            return {
-              ...line,
-              groupId,
-              instanceIdx: startToInstanceIdx.get(start) ?? 0,
-              templateLineIdx: idx - start,
-            };
-          }
-        }
-        return line;
-      });
-
-      const { group, lines } = initialGroupSharing(
-        updatedLines,
-        { id: groupId, label, color, templateVersion: 1 },
-        useSettingsStore.getState().shareTimingInNewGroups,
-      );
-
-      return commitHistory(state, { groups: [...state.groups, group], lines }, { deriveText: false });
-    }),
+    set(commitHistory(state, { groups: [...state.groups, group], lines }, { deriveText: false }));
+    return keptOwnTiming;
+  },
 
   updateGroup: (id, updates) =>
     set((state) =>
@@ -180,26 +181,27 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
   setInstanceOwnTiming: (groupId, instanceIdx, own) => {
     const state = get();
     const groups = state.groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group));
-    const placed = own ? [] : realignSharedInstance(state.lines, groups, groupId, instanceIdx);
-    if (placed === null) return false;
-    set(commitHistory(state, { groups, lines: applyLineUpdates(state.lines, placed) }, { deriveText: false }));
-    return true;
+    const realignment = own ? { updates: [] } : realignSharedInstance(state.lines, groups, groupId, instanceIdx);
+    if ("refusal" in realignment) return realignment.refusal;
+    set(
+      commitHistory(
+        state,
+        { groups, lines: applyLineUpdates(state.lines, realignment.updates) },
+        { deriveText: false },
+      ),
+    );
+    return null;
   },
 
-  shareGroupTiming: (groupId) =>
-    set((state) => {
-      const group = state.groups.find((candidate) => candidate.id === groupId);
-      if (!group) return state;
-      const shared = initialGroupSharing(state.lines, group, true);
-      return commitHistory(
-        state,
-        {
-          groups: state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate)),
-          lines: shared.lines,
-        },
-        { deriveText: false },
-      );
-    }),
+  shareGroupTiming: (groupId) => {
+    const state = get();
+    const group = state.groups.find((candidate) => candidate.id === groupId);
+    if (!group) return [];
+    const shared = initialGroupSharing(state.lines, group, true);
+    const groups = state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate));
+    set(commitHistory(state, { groups, lines: shared.lines }, { deriveText: false }));
+    return shared.keptOwnTiming;
+  },
 
   placeInstance: (groupId, instanceIdx, start, duration, precedingUpdates = []) => {
     const state = get();

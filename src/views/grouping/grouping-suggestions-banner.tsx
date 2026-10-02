@@ -25,13 +25,7 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
   };
 
   const groupSections = (sections: readonly RepeatingSection[]) => {
-    const existingIds = new Set(useProjectStore.getState().groups.map((group) => group.id));
-    for (const s of sections) groupRepeatingSections(s.starts, s.length);
-    const { lines: groupedLines, groups } = useProjectStore.getState();
-    showKeptOwnTimingToast(
-      groupedLines,
-      groups.filter((group) => !existingIds.has(group.id)),
-    );
+    showKeptOwnTimingToast(sections.flatMap((s) => groupRepeatingSections(s.starts, s.length)));
   };
 
   const acceptOne = (s: RepeatingSection) => groupSections([s]);

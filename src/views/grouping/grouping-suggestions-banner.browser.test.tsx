@@ -164,10 +164,40 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
       await screen.getByRole("button", { name: "Group them" }).click();
 
       await expect
-        .element(screen.getByText("1 instance kept its own timing. Sync one instance fully first."))
+        .element(
+          screen.getByText(
+            "1 instance kept its own timing. Sync one instance fully, then share it from its banner menu in the Timeline.",
+          ),
+        )
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
       expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    });
+
+    it("says where to look when instances kept their own timing for different reasons", async () => {
+      useProjectStore.setState({
+        lines: [
+          lineSynced("one-a", "go now", 10),
+          lineSynced("one-b", "stay here", 13),
+          lineSynced("two-a", "go now"),
+          lineSynced("two-b", "stay here", 1),
+          twoWordLine("three-a", ["hold ", "on"], 60),
+          createLine({ id: "three-b", text: "let go" }),
+          twoWordLine("four-a", ["hold ", "on"], 80, 0.5),
+          createLine({ id: "four-b", text: "let go" }),
+        ],
+      });
+      const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Review 2" }).click();
+      await screen.getByRole("button", { name: "Group all" }).click();
+
+      await expect
+        .element(
+          screen.getByText(
+            "2 instances kept their own timing. Share them from their banner menus in the Timeline to see why.",
+          ),
+        )
+        .toBeInTheDocument();
     });
 
     it("changes nothing about timing and shows no toast when the setting is off", async () => {

@@ -209,6 +209,8 @@ describe("placeSharedInstance", () => {
 
 describe("realignSharedInstance", () => {
   const sharing = [createGroup({ id: "g1", sharesTiming: true })];
+  const updatesOf = (realignment: ReturnType<typeof realignSharedInstance>) =>
+    "updates" in realignment ? realignment.updates : [];
 
   it("gives an instance the shared timing where it already sits", () => {
     const moved = createLine({
@@ -222,27 +224,41 @@ describe("realignSharedInstance", () => {
       instanceIdx: 1,
       templateLineIdx: 0,
     });
-    const words = realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1)?.[0]?.updates.words;
+    const words = updatesOf(realignSharedInstance([chorus(0, 0, 10), moved], sharing, "g1", 1))[0]?.updates.words;
     expect(words?.map((word) => word.begin)).toEqual([40, 40.5]);
   });
 
   describe("edge cases", () => {
     it("leaves an instance with no timing alone", () => {
-      expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1)).toEqual([]);
+      expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0)], sharing, "g1", 1)).toEqual({ updates: [] });
     });
 
     it("refuses a timed instance when no other instance is fully timed", () => {
-      expect(realignSharedInstance([chorus(0, 0), chorus(1, 0, 40)], sharing, "g1", 1)).toBeNull();
+      expect(realignSharedInstance([chorus(0, 0), chorus(1, 0, 40)], sharing, "g1", 1)).toEqual({
+        refusal: "no-fully-synced-instance",
+      });
     });
 
     it("refuses a timed instance whose shared copy would start before zero", () => {
       const lines = [chorus(0, 0, 30), chorus(0, 1, 10), chorus(1, 0, 5), chorus(1, 1)];
-      expect(realignSharedInstance(lines, sharing, "g1", 1)).toBeNull();
+      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "before-song-start" });
+    });
+
+    it("refuses a timed instance with no synced line in common with the reference", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), { ...chorus(1, 2, 60), text: "" }];
+      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "no-common-timed-line" });
+    });
+
+    it("refuses a timed instance of a group that does not share it", () => {
+      const own = [createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })];
+      expect(realignSharedInstance([chorus(0, 0, 10), chorus(1, 0, 40)], own, "g1", 1)).toEqual({
+        refusal: "no-fully-synced-instance",
+      });
     });
 
     it("anchors on lines both instances have", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
-      const words = realignSharedInstance(lines, sharing, "g1", 1)?.[0]?.updates.words;
+      const words = updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates.words;
       expect(words?.[0]?.begin).toBeCloseTo(54, 6);
     });
   });
@@ -265,7 +281,7 @@ describe("realignSharedInstances", () => {
     it("keeps an instance that cannot be placed and realigns the rest", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
       const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
-      expect(result.keptOwnTiming).toEqual([1]);
+      expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
       expect(result.lines.slice(0, 4)).toEqual(lines.slice(0, 4));
       expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
     });

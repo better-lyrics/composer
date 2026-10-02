@@ -36,8 +36,9 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
     return;
   }
   if (action === "share-timing") {
-    if (!store.setInstanceOwnTiming(group.id, instanceIdx, false)) {
-      showSharingBlockedToast(name);
+    const refusal = store.setInstanceOwnTiming(group.id, instanceIdx, false);
+    if (refusal) {
+      showSharingBlockedToast(name, refusal);
       return;
     }
     const after = useProjectStore.getState().lines;

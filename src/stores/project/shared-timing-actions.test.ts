@@ -67,7 +67,7 @@ describe("groupRepeatingSections", () => {
 
   it("shares an instance with different timing and realigns it from the source", () => {
     seed([], [plain("a", 10), plain("b", 40, 0.3)]);
-    store().groupRepeatingSections([0, 1], 1);
+    expect(store().groupRepeatingSections([0, 1], 1)).toEqual([]);
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
     expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
   });
@@ -90,7 +90,7 @@ describe("groupRepeatingSections", () => {
 
   it("keeps its own timing for an instance the shared timing would put before the song starts", () => {
     seed([], [go("a1", 10), stay("a2", 13), go("b1"), stay("b2", 1)]);
-    store().groupRepeatingSections([0, 2], 2);
+    expect(store().groupRepeatingSections([0, 2], 2)).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
     expect(store().groups[0]).toMatchObject({ sharesTiming: true, ownTimingInstances: [1] });
     expect(lineById("b2")?.words?.[0]?.begin).toBe(1);
     expect(lineById("b1")?.words).toBeUndefined();
@@ -151,15 +151,15 @@ describe("setInstanceOwnTiming", () => {
       expect(lineById("c1")?.words).toBeUndefined();
     });
 
-    it("keeps a timed instance on its own timing and reports false when no instance is fully timed", () => {
+    it("keeps a timed instance on its own timing and reports why when no instance is fully timed", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0), chorus(1, 40)]);
-      expect(store().setInstanceOwnTiming("g1", 1, false)).toBe(false);
+      expect(store().setInstanceOwnTiming("g1", 1, false)).toBe("no-fully-synced-instance");
       expect(groupById("g1")?.ownTimingInstances).toEqual([1]);
     });
 
-    it("reports true when the instance takes the shared timing", () => {
+    it("reports no refusal when the instance takes the shared timing", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
-      expect(store().setInstanceOwnTiming("g1", 1, false)).toBe(true);
+      expect(store().setInstanceOwnTiming("g1", 1, false)).toBeNull();
     });
 
     it("does not list an instance twice", () => {
@@ -219,10 +219,17 @@ describe("shareGroupTiming", () => {
       expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
     });
 
+    it("reports why an instance kept its own timing", () => {
+      const firstWordOnly = (instanceIdx: number, begin: number, end: number) =>
+        createLine({ ...chorus(instanceIdx), words: [{ text: "I ", begin, end }] });
+      seed([createGroup({ id: "g1" })], [chorus(0), firstWordOnly(1, 40, 40.4), firstWordOnly(2, 70, 70.6)]);
+      expect(store().shareGroupTiming("g1")).toEqual([{ instanceIdx: 2, refusal: "no-fully-synced-instance" }]);
+    });
+
     it("changes nothing for an unknown group", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
       const before = store();
-      store().shareGroupTiming("missing");
+      expect(store().shareGroupTiming("missing")).toEqual([]);
       expect(store().lines).toBe(before.lines);
       expect(store().groups).toBe(before.groups);
     });

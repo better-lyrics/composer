@@ -86,7 +86,11 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await screen.getByRole("button", { name: "Share timing" }).click();
 
     await expect
-      .element(screen.getByText("Chorus 2 keeps its own timing. Sync one instance fully first."))
+      .element(
+        screen.getByText(
+          "Chorus 2 keeps its own timing. Sync one instance fully, then share it from its banner menu in the Timeline.",
+        ),
+      )
       .toBeVisible();
     expect(group().ownTimingInstances).toEqual([1]);
   });

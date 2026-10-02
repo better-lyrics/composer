@@ -1,6 +1,5 @@
-import { firstFullyTimedInstance, instancesInLineOrder } from "@/domain/group/shared-timing";
+import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
 import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { toast } from "sonner";
@@ -9,6 +8,12 @@ import { toast } from "sonner";
 
 const GROUP_TOAST_DURATION_MS = 8000;
 const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
+const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, string> = {
+  "before-song-start": ": the shared timing would start before the song",
+  "no-common-timed-line": ": none of its synced lines match a line of the synced instance",
+  "no-fully-synced-instance": ". Sync one instance fully, then share it from its banner menu in the Timeline.",
+};
+const MIXED_KEPT_OWN_TIMING_REASON = ". Share them from their banner menus in the Timeline to see why.";
 
 // -- Functions -----------------------------------------------------------------
 
@@ -22,20 +27,15 @@ function showGroupActionToast(message: string, undoFn?: () => void): void {
   });
 }
 
-function showKeptOwnTimingToast(lines: readonly LyricLine[], groups: readonly LinkGroup[]): void {
-  const keeping = groups.filter((group) => group.ownTimingInstances?.length);
-  const count = keeping.reduce((sum, group) => sum + (group.ownTimingInstances?.length ?? 0), 0);
+function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[]): void {
+  const count = keptOwnTiming.length;
   if (count === 0) return;
-  const hasSource = keeping.every(
-    (group) => firstFullyTimedInstance(lines, group.id, instancesInLineOrder(lines, group.id)) !== undefined,
-  );
-  const kept = `${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing`;
-  toast(
-    hasSource ? `${kept}: the shared timing would start before the song` : `${kept}. Sync one instance fully first.`,
-    {
-      duration: GROUP_TOAST_DURATION_MS,
-    },
-  );
+  const refusals = new Set(keptOwnTiming.map((kept) => kept.refusal));
+  const [refusal] = refusals;
+  const reason = refusals.size === 1 ? KEPT_OWN_TIMING_REASONS[refusal] : MIXED_KEPT_OWN_TIMING_REASON;
+  toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`, {
+    duration: GROUP_TOAST_DURATION_MS,
+  });
 }
 
 function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: number): void {
@@ -49,8 +49,8 @@ function showPlacementBlockedToast(): void {
   toast.error("Not enough room in the song to place this instance here");
 }
 
-function showSharingBlockedToast(name: string): void {
-  toast.error(`${name} keeps its own timing. Sync one instance fully first.`);
+function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
+  toast.error(`${name} keeps its own timing${KEPT_OWN_TIMING_REASONS[refusal]}`);
 }
 
 function showSharedSongEdgeToast(): void {

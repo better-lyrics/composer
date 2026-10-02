@@ -47,6 +47,7 @@ describe("initialGroupSharing", () => {
   it("leaves the group and the lines alone when the setting is off", () => {
     const lines = [shifted(0, 10), shifted(1, 40, 0.2)];
     const result = share(lines, false);
+    expect(result.keptOwnTiming).toEqual([]);
     expect(result.group).toBe(newGroup);
     expect(result.lines).toBe(lines);
   });
@@ -125,6 +126,7 @@ describe("initialGroupSharing", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1)];
       const result = share(lines);
       expect(result.group).toMatchObject({ sharesTiming: true, ownTimingInstances: [1] });
+      expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
       expect(result.lines).toEqual(lines);
     });
 
@@ -162,6 +164,7 @@ describe("initialGroupSharing", () => {
       const lines = [half(0, 10), half(1, 40)];
       const result = share(lines);
       expect(result.group).toMatchObject({ sharesTiming: true, ownTimingInstances: [1] });
+      expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "no-fully-synced-instance" }]);
       expect(result.lines).toEqual(lines);
     });
 

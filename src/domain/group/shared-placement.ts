@@ -17,9 +17,18 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------
 
+type RealignRefusal = "no-fully-synced-instance" | "no-common-timed-line" | "before-song-start";
+
+type Realignment = { updates: LineUpdate[] } | { refusal: RealignRefusal };
+
+interface KeptOwnTiming {
+  instanceIdx: number;
+  refusal: RealignRefusal;
+}
+
 interface RealignedInstances {
   lines: LyricLine[];
-  keptOwnTiming: number[];
+  keptOwnTiming: KeptOwnTiming[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -48,7 +57,11 @@ function copyInstanceTiming(
     const source = sourceByTemplateLine.get(target.templateLineIdx);
     return source ? [{ id: target.id, updates: offsetTimingFields(source, offset) }] : [];
   });
-  return updates.some((update) => hasNegativeTime(update.updates)) ? [] : updates;
+  return updates;
+}
+
+function startsBeforeSong(updates: readonly LineUpdate[]): boolean {
+  return updates.some((update) => hasNegativeTime(update.updates));
 }
 
 // -- Placing ------------------------------------------------------------------
@@ -72,23 +85,26 @@ function placeSharedInstance(
   const referenceTime = referenceLine ? mainBounds(referenceLine)?.begin : undefined;
   if (referenceTime === undefined) return [];
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, anchorTime - referenceTime);
+  if (startsBeforeSong(updates)) return [];
   return updates.some((update) => endsAfter(update.updates, songEnd)) ? [] : updates;
 }
 
-// An instance with no timing has nothing to realign ([]); a timed one that cannot take the shared timing is refused (null).
+// An instance with no timing has nothing to realign (no updates); a timed one that cannot take the shared timing is refused.
 function realignSharedInstance(
   lines: readonly LyricLine[],
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdx: number,
-): LineUpdate[] | null {
-  if (instanceStart(lines, groupId, instanceIdx) === null) return [];
+): Realignment {
+  if (instanceStart(lines, groupId, instanceIdx) === null) return { updates: [] };
   const group = sharedGroup(groups, groupId, instanceIdx);
   const reference = group ? referenceInstance(lines, group, instanceIdx) : null;
-  const offset = reference === null ? null : instanceOffset(lines, groupId, reference, instanceIdx);
-  if (reference === null || offset === null) return null;
+  if (reference === null) return { refusal: "no-fully-synced-instance" };
+  const offset = instanceOffset(lines, groupId, reference, instanceIdx);
+  if (offset === null) return { refusal: "no-common-timed-line" };
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
-  return updates.length ? updates : null;
+  if (startsBeforeSong(updates)) return { refusal: "before-song-start" };
+  return { updates };
 }
 
 function realignSharedInstances(
@@ -98,11 +114,11 @@ function realignSharedInstances(
   instanceIdxs: readonly number[],
 ): RealignedInstances {
   let realigned = lines;
-  const keptOwnTiming: number[] = [];
+  const keptOwnTiming: KeptOwnTiming[] = [];
   for (const instanceIdx of instanceIdxs) {
-    const placed = realignSharedInstance(realigned, groups, groupId, instanceIdx);
-    if (placed === null) keptOwnTiming.push(instanceIdx);
-    else if (placed.length) realigned = applyLineUpdates(realigned, placed);
+    const realignment = realignSharedInstance(realigned, groups, groupId, instanceIdx);
+    if ("refusal" in realignment) keptOwnTiming.push({ instanceIdx, refusal: realignment.refusal });
+    else if (realignment.updates.length) realigned = applyLineUpdates(realigned, realignment.updates);
   }
   return { lines: realigned, keptOwnTiming };
 }
@@ -110,3 +126,4 @@ function realignSharedInstances(
 // -- Exports ------------------------------------------------------------------
 
 export { placeSharedInstance, realignSharedInstance, realignSharedInstances };
+export type { KeptOwnTiming, RealignRefusal };

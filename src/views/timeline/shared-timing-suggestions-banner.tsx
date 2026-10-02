@@ -36,12 +36,8 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const acceptOne = (suggestion: SharedTimingSuggestion) => shareGroupTimingWithUndo(suggestion.groupId);
 
   const acceptAll = (visible: SharedTimingSuggestion[]) => {
-    for (const suggestion of visible) useProjectStore.getState().shareGroupTiming(suggestion.groupId);
-    const sharedIds = new Set(visible.map((suggestion) => suggestion.groupId));
-    const { lines: sharedLines, groups: sharedGroups } = useProjectStore.getState();
     showKeptOwnTimingToast(
-      sharedLines,
-      sharedGroups.filter((group) => sharedIds.has(group.id)),
+      visible.flatMap((suggestion) => useProjectStore.getState().shareGroupTiming(suggestion.groupId)),
     );
   };
 

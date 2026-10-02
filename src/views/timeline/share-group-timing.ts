@@ -6,12 +6,12 @@ import { pluralize } from "@/utils/pluralize";
 // -- Functions ----------------------------------------------------------------
 
 function shareGroupTimingWithUndo(groupId: string): void {
-  useProjectStore.getState().shareGroupTiming(groupId);
+  const keptOwnTiming = useProjectStore.getState().shareGroupTiming(groupId);
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;
-  if (group.ownTimingInstances?.length) {
-    showKeptOwnTimingToast(lines, [group]);
+  if (keptOwnTiming.length) {
+    showKeptOwnTimingToast(keptOwnTiming);
     return;
   }
   const count = sharedInstancesInLineOrder(lines, group).length;

@@ -1,5 +1,5 @@
 import { withSharing } from "@/domain/group/own-timing";
-import { realignSharedInstances } from "@/domain/group/shared-placement";
+import { type KeptOwnTiming, realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
@@ -18,6 +18,7 @@ type InitialSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
 interface InitialGroupSharing {
   group: LinkGroup;
   lines: LyricLine[];
+  keptOwnTiming: KeptOwnTiming[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -73,14 +74,14 @@ function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: stri
 }
 
 function initialGroupSharing(lines: LyricLine[], group: LinkGroup, settingOn: boolean): InitialGroupSharing {
-  if (!settingOn) return { group, lines };
+  if (!settingOn) return { group, lines, keptOwnTiming: [] };
   const shared = withSharing(group, { sharesTiming: true });
   const differing = instancesWithDifferentTiming(lines, group.id);
-  const { lines: realignedLines, keptOwnTiming } = realignSharedInstances(lines, [shared], group.id, differing);
-  if (keptOwnTiming.length === 0) return { group: shared, lines: realignedLines };
+  const realigned = realignSharedInstances(lines, [shared], group.id, differing);
+  const ownTimingInstances = realigned.keptOwnTiming.map((kept) => kept.instanceIdx);
   return {
-    group: withSharing(group, { sharesTiming: true, ownTimingInstances: keptOwnTiming }),
-    lines: realignedLines,
+    ...realigned,
+    group: ownTimingInstances.length ? withSharing(group, { sharesTiming: true, ownTimingInstances }) : shared,
   };
 }
 
