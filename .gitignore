@@ -149,6 +149,9 @@ cspell.json
 playwright-report/
 test-results/
 
+# pnpm lock (project uses pnpm; npm lock is unwanted)
+package-lock.json
+
 # Built HTDemucs ONNX models (large; produced by scripts/build-htdemucs-onnx.sh)
 htdemucs-onnx-out/
 .wrangler

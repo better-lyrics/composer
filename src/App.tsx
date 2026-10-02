@@ -3,6 +3,7 @@ import { AudioPlayer } from "@/audio/audio-player";
 import { useAutoSeparate } from "@/hooks/useAutoSeparate";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { useImportFromAudioUrl } from "@/hooks/useImportFromAudioUrl";
 import { useImportFromHash } from "@/hooks/useImportFromHash";
 import { useImportFromQuery } from "@/hooks/useImportFromQuery";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
@@ -76,6 +77,7 @@ const AppContent: React.FC = () => {
 
   usePersistence();
   useImportFromHash();
+  useImportFromAudioUrl();
   useResolveYouTubeTunnel();
   useImportFromQuery();
   useImportFromYouTube();
