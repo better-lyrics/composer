@@ -15,13 +15,7 @@ interface FileDropZoneProps {
 
 // -- Component ----------------------------------------------------------------
 
-const FileDropZone: React.FC<FileDropZoneProps> = ({
-  accept,
-  onFileDrop,
-  onProjectFileDrop,
-  children,
-  className,
-}) => {
+const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProjectFileDrop, children, className }) => {
   const inputId = useId();
   const { isDragging, handlers, handleFile } = useFileDrop({ onFileDrop, onProjectFileDrop });
 

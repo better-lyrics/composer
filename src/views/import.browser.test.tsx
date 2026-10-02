@@ -124,7 +124,12 @@ function importArea(container: HTMLElement): Element {
 describe("ImportPanel: drop anywhere", () => {
   const overlay = (container: HTMLElement) => container.querySelector("[data-file-drop-overlay]");
 
-  function dragWith(target: Element, type: "dragenter" | "dragleave" | "dragover" | "drop", relatedTarget: Element | null, file = createAudioFile()): void {
+  function dragWith(
+    target: Element,
+    type: "dragenter" | "dragleave" | "dragover" | "drop",
+    relatedTarget: Element | null,
+    file = createAudioFile(),
+  ): void {
     const dataTransfer = new DataTransfer();
     dataTransfer.items.add(file);
     target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer, relatedTarget }));

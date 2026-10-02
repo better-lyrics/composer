@@ -1,6 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
-import { FileDropOverlay } from "@/audio/file-drop-overlay";
-import { useFileDrop } from "@/audio/use-file-drop";
+import { FileDropArea } from "@/audio/file-drop-area";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
@@ -28,6 +27,9 @@ interface WarningSourceRowProps {
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[MissingAudio]";
+const RELINK_DROP_LABEL = "Drop to link the audio again";
+const REPLACE_MISSING_DROP_LABEL = "Drop to use this audio instead";
+
 const RELINK_DROP_STYLES =
   "gap-1.5 p-6 text-center rounded-xl border-2 border-dashed border-composer-warning/40 hover:border-composer-warning/60 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent";
 
@@ -79,10 +81,14 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
   const title = useProjectStore((state) => state.metadata.title);
   const failure = useAudioStore((state) => state.youtubeLoadFailure);
   const bridgeUnreachable = failure === "bridge-unreachable";
-  const screenDrop = useFileDrop({ onFileDrop: relinkFile, capture: true });
 
   return (
-    <div data-tour="import-dropzone" className="relative flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
+    <FileDropArea
+      data-tour="import-dropzone"
+      className="flex flex-col-reverse flex-1 size-full"
+      onFileDrop={relinkFile}
+      dropLabel={expected.kind === "file" ? RELINK_DROP_LABEL : REPLACE_MISSING_DROP_LABEL}
+    >
       {expected.kind === "file" ? (
         <WarningSourceRow name={expected.name} detail="Not on this device. Your lyrics and timings are safe." />
       ) : (
@@ -106,11 +112,7 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
 
       <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
         <div className="w-full max-w-md flex-1 min-h-32 max-h-72">
-          <FileDropZone
-            accept="audio/*"
-            onFileDrop={relinkFile}
-            className={RELINK_DROP_STYLES}
-          >
+          <FileDropZone accept="audio/*" onFileDrop={relinkFile} className={RELINK_DROP_STYLES}>
             <IconFileAlert aria-hidden="true" className="size-7 mb-1.5 text-composer-warning" stroke={1.5} />
             {expected.kind === "file" ? (
               <>
@@ -135,11 +137,7 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
           onLoadVideo={relinkProjectVideo}
         />
       </div>
-      <FileDropOverlay
-        visible={screenDrop.isDragging}
-        label={expected.kind === "file" ? "Drop to link the audio again" : "Drop to use this audio instead"}
-      />
-    </div>
+    </FileDropArea>
   );
 };
 
