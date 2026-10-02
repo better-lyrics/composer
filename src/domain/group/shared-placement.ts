@@ -13,11 +13,17 @@ import type { LinkGroup } from "@/domain/group/template";
 import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
+import { isWordSynced } from "@/domain/line/predicates";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------
 
-type RealignRefusal = "no-fully-synced-instance" | "no-common-timed-line" | "before-song-start" | "past-song-end";
+type RealignRefusal =
+  | "no-fully-synced-instance"
+  | "no-common-timed-line"
+  | "before-song-start"
+  | "past-song-end"
+  | "would-lose-word-timing";
 
 type Realignment = { updates: LineUpdate[] } | { refusal: RealignRefusal };
 
@@ -68,6 +74,11 @@ function startsBeforeSong(updates: readonly LineUpdate[]): boolean {
   return updates.some((update) => hasNegativeTime(update.updates));
 }
 
+function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpdate[]): boolean {
+  const wordSyncedIds = new Set(lines.filter(isWordSynced).map((line) => line.id));
+  return updates.some((update) => wordSyncedIds.has(update.id) && !update.updates.words?.length);
+}
+
 function runsPastSong(updates: readonly LineUpdate[], songEnd: number): boolean {
   return updates.some((update) => endsAfter(update.updates, songEnd));
 }
@@ -111,6 +122,9 @@ function realignSharedInstance(
   const offset = instanceOffset(lines, groupId, reference, instanceIdx);
   if (offset === null) return { refusal: "no-common-timed-line" };
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
+  if (dropsWordTiming(attachedLinesOfInstance(lines, groupId, instanceIdx), updates)) {
+    return { refusal: "would-lose-word-timing" };
+  }
   if (startsBeforeSong(updates)) return { refusal: "before-song-start" };
   if (runsPastSong(updates, songEnd)) return { refusal: "past-song-end" };
   return { updates };

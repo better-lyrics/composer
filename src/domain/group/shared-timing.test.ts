@@ -475,6 +475,34 @@ describe("firstFullyTimedInstance", () => {
       expect(firstFullyTimedInstance(lines, "g1", [0, 1])).toBe(1);
     });
 
+    it("prefers a fully timed instance synced word by word over an earlier line-synced one", () => {
+      const lineSynced = (instanceIdx: number, begin: number) =>
+        createLine({
+          id: `l${instanceIdx}`,
+          text: "I want",
+          begin,
+          end: begin + 1,
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+        });
+      expect(firstFullyTimedInstance([lineSynced(0, 1), chorus(1, 0, 10)], "g1", [0, 1])).toBe(1);
+    });
+
+    it("falls back to the first line-synced instance when none is synced word by word", () => {
+      const lineSynced = (instanceIdx: number, begin: number) =>
+        createLine({
+          id: `l${instanceIdx}`,
+          text: "I want",
+          begin,
+          end: begin + 1,
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx: 0,
+        });
+      expect(firstFullyTimedInstance([lineSynced(0, 1), lineSynced(1, 10)], "g1", [1, 0])).toBe(1);
+    });
+
     it("is undefined when no candidate is fully timed or there are no candidates", () => {
       expect(firstFullyTimedInstance([chorus(0, 0)], "g1", [0])).toBeUndefined();
       expect(firstFullyTimedInstance([chorus(0, 0, 1)], "g1", [])).toBeUndefined();

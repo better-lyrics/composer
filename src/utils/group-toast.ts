@@ -8,11 +8,15 @@ import { toast } from "sonner";
 
 const GROUP_TOAST_DURATION_MS = 8000;
 const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
-const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, string> = {
-  "before-song-start": ": the shared timing would start before the song",
-  "past-song-end": ": the shared timing would run past the end of the song",
-  "no-common-timed-line": ": none of its synced lines match a line of the synced instance",
-  "no-fully-synced-instance": ". Sync one instance fully, then share it from its banner menu in the Timeline.",
+const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, (count: number) => string> = {
+  "before-song-start": () => ": the shared timing would start before the song",
+  "past-song-end": () => ": the shared timing would run past the end of the song",
+  "no-common-timed-line": (count) =>
+    `: none of ${pluralWord(count, "its", "their")} synced lines match a line of the synced instance`,
+  "no-fully-synced-instance": (count) =>
+    `. Sync one instance fully, then share ${pluralWord(count, "it from its banner menu", "them from their banner menus")} in the Timeline.`,
+  "would-lose-word-timing": (count) =>
+    `: the synced instance is line-synced, so sharing would replace ${pluralWord(count, "its", "their")} word timing`,
 };
 const MIXED_KEPT_OWN_TIMING_REASON = ". Share them from their banner menus in the Timeline to see why.";
 
@@ -33,7 +37,7 @@ function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[]): void {
   if (count === 0) return;
   const refusals = new Set(keptOwnTiming.map((kept) => kept.refusal));
   const [refusal] = refusals;
-  const reason = refusals.size === 1 ? KEPT_OWN_TIMING_REASONS[refusal] : MIXED_KEPT_OWN_TIMING_REASON;
+  const reason = refusals.size === 1 ? KEPT_OWN_TIMING_REASONS[refusal](count) : MIXED_KEPT_OWN_TIMING_REASON;
   toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing${reason}`, {
     duration: GROUP_TOAST_DURATION_MS,
   });
@@ -59,7 +63,7 @@ function showPlacementBlockedToast(): void {
 }
 
 function showSharingBlockedToast(name: string, refusal: RealignRefusal): void {
-  toast.error(`${name} keeps its own timing${KEPT_OWN_TIMING_REASONS[refusal]}`);
+  toast.error(`${name} keeps its own timing${KEPT_OWN_TIMING_REASONS[refusal](1)}`);
 }
 
 function showSharedSongEdgeToast(): void {

@@ -190,6 +190,39 @@ describe("initialGroupSharing", () => {
       expect(sharingOf(lines)).toEqual({ sharesTiming: true, ownTimingInstances: undefined });
     });
 
+    it("takes a word-synced instance as the source over an earlier line-synced one", () => {
+      const lineSynced = createLine({
+        id: "c0-0",
+        text: "I want",
+        begin: 5,
+        end: 6,
+        groupId: "g1",
+        instanceIdx: 0,
+        templateLineIdx: 0,
+      });
+      const result = share([lineSynced, shifted(1, 40, 0.2)]);
+      expect(result.group.ownTimingInstances).toBeUndefined();
+      expect(result.lines[0].words?.map((word) => word.begin)).toEqual([5, expect.closeTo(5.7, 6)]);
+      expect(result.lines[1]).toEqual(shifted(1, 40, 0.2));
+    });
+
+    it("keeps the own timing of a partly word-synced instance rather than turn it line-synced", () => {
+      const lineSynced = (instanceIdx: number, templateLineIdx: number, begin: number) =>
+        createLine({
+          id: `l${instanceIdx}-${templateLineIdx}`,
+          text: "I want",
+          begin,
+          end: begin + 1,
+          groupId: "g1",
+          instanceIdx,
+          templateLineIdx,
+        });
+      const lines = [lineSynced(0, 0, 10), lineSynced(0, 1, 13), chorus(1, 0, 40), chorus(1, 1)];
+      const result = share(lines);
+      expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "would-lose-word-timing" }]);
+      expect(result.lines).toEqual(lines);
+    });
+
     it("realigns a line-synced instance to the word timing of the source", () => {
       const lineSynced = createLine({
         id: "c1-0",

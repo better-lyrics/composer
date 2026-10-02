@@ -117,6 +117,36 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
   });
 
+  it("keeps the word timing of an instance when the only synced instance is line-synced, and says why", async () => {
+    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
+    const partlyWordSynced = createLine({
+      id: "c1",
+      text: "go now",
+      words: [createWord({ text: "go ", begin: 40, end: 41 })],
+      groupId: "g1",
+      instanceIdx: 1,
+      templateLineIdx: 0,
+    });
+    useProjectStore.setState({
+      lines: [
+        createLine({ id: "c0", text: "go now", begin: 10, end: 12, groupId: "g1", instanceIdx: 0, templateLineIdx: 0 }),
+        partlyWordSynced,
+      ],
+    });
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: "Share timing across group" }).click();
+
+    await expect
+      .element(
+        screen.getByText(
+          "1 instance kept its own timing: the synced instance is line-synced, so sharing would replace its word timing",
+        ),
+      )
+      .toBeVisible();
+    expect(group().ownTimingInstances).toEqual([1]);
+    expect(store().lines[1]).toEqual(partlyWordSynced);
+  });
+
   it("undoes an override change from the toast", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true }), 1);
     const screen = await renderMenu();
