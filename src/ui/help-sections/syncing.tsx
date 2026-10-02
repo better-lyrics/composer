@@ -1,8 +1,8 @@
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { MOD_KEY } from "@/utils/platform";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { PROSE } from "@/ui/typography";
+import { MOD_KEY } from "@/utils/platform";
 
 // -- Syncing ------------------------------------------------------------------
 
@@ -10,7 +10,7 @@ const SyncSection: React.FC = () => (
   <div className="space-y-5">
     <p className={PROSE}>
       The Sync tab shows your lyrics as a scrolling carousel. One line is active at a time, with each word waiting to be
-      synced. You have two keys available, and you can use them freely in combination.
+      synced. You can combine taps and holds freely while syncing.
     </p>
 
     <HelpTopic title="Tap (Space)">
@@ -69,6 +69,14 @@ const SyncSection: React.FC = () => (
         Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeLeft")} /> to nudge the last synced word 50ms
         earlier. <InlineKeyBadge keys={getEffectiveKeysArray("sync.nudgeRight")} /> nudges it 50ms later. You can also
         press {MOD_KEY} + Z to undo. Each hold produces two undo steps (start and end) so you can step back precisely.
+      </p>
+    </HelpTopic>
+
+    <HelpTopic title="Seeking during sync">
+      <p className={PROSE}>
+        Press <InlineKeyBadge keys={getEffectiveKeysArray("sync.seekBackward")} /> to seek playback back one second, or{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("sync.seekForward")} /> to seek forward one second. Hold either key
+        to keep seeking. These shortcuts work without clicking the audio progress bar and leave lyric timings unchanged.
       </p>
     </HelpTopic>
 
