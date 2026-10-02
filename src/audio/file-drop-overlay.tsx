@@ -15,7 +15,7 @@ const FileDropOverlay: React.FC<FileDropOverlayProps> = ({ visible, label }) => 
     <div
       data-file-drop-overlay=""
       aria-hidden="true"
-      className="pointer-events-none absolute inset-3 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-composer-accent bg-composer-bg/85 select-none"
+      className="pointer-events-none absolute inset-3 flex flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-composer-accent bg-[color-mix(in_srgb,var(--color-composer-accent)_6%,var(--color-composer-bg))] select-none"
     >
       <IconFileUpload className="size-10 text-composer-accent-text" stroke={1.5} />
       <p className="text-base font-medium text-composer-text">{label}</p>
