@@ -1,16 +1,17 @@
-import { describe, expect, it } from "vitest";
 import {
   ALIAS_LYRICS_EXTENSIONS,
-  isSupportedLyricsFile,
   LYRICS_FILE_ACCEPT_ATTRIBUTE,
   LYRICS_FORMATS_COMPACT,
   LYRICS_FORMATS_DESCRIBED,
   LYRICS_FORMATS_PROSE,
   SUPPORTED_LYRICS_FORMATS,
   UNSUPPORTED_LYRICS_FILE_MESSAGE,
+  acceptedExtensionsFor,
+  isSupportedLyricsFile,
 } from "@/domain/lyrics-file/supported-formats";
 import { PARSERS } from "@/utils/lyrics-parsers";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
+import { describe, expect, it } from "vitest";
 
 // -- Declaration ---------------------------------------------------------------
 
@@ -196,5 +197,18 @@ describe("invariants", () => {
       UNSUPPORTED_LYRICS_FILE_MESSAGE,
     ].join(" ");
     expect(copy).not.toMatch(/[–—]/);
+  });
+});
+
+describe("acceptedExtensionsFor", () => {
+  it("accepts the .xml container for the formats that ship in XML", () => {
+    expect(acceptedExtensionsFor("ttml")).toEqual(["ttml", "xml"]);
+    expect(acceptedExtensionsFor("qrc")).toEqual(["qrc", "xml"]);
+  });
+
+  it("accepts only the format's own extension otherwise", () => {
+    expect(acceptedExtensionsFor("lrc")).toEqual(["lrc"]);
+    expect(acceptedExtensionsFor("srt")).toEqual(["srt"]);
+    expect(acceptedExtensionsFor("txt")).toEqual(["txt"]);
   });
 });

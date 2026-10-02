@@ -1,32 +1,33 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { Agent } from "@/domain/agent/model";
+import { hasAnyTiming } from "@/domain/line/predicates";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
-import { generateTTML } from "@/utils/ttml";
 
 // -- Types --------------------------------------------------------------------
 
 interface ParserConversion {
-  extension: string;
+  extension: Exclude<LyricsFileType, "unknown">;
   granularity: "auto" | "line";
   emptyMessage: string;
   failureMessage: string;
   logLabel: string;
 }
 
-type ConversionResult = { ttml: string; projectPayload: string; skippedLines: number } | { error: string };
+type ConversionResult = { output: string; projectPayload: string; skippedLines: number } | { error: string };
 
 // -- Conversion ---------------------------------------------------------------
 
-function convertViaParser(conversion: ParserConversion, { input, filename }: ConvertArgs): ConversionResult {
+function convertViaParser(conversion: ParserConversion, { input, filename, format }: ConvertArgs): ConversionResult {
   try {
     const suffix = `.${conversion.extension}`;
     const result = parseLyricsFile(filename.endsWith(suffix) ? filename : `input${suffix}`, input);
-    if (result.lines.length === 0) return { error: conversion.emptyMessage };
+    if (!result.lines.some(hasAnyTiming)) return { error: conversion.emptyMessage };
 
     // The converter page never reaches the project store, so this is the only
     // place the parsed songwriters, ISRC and extra fields can survive.
@@ -35,7 +36,7 @@ function convertViaParser(conversion: ParserConversion, { input, filename }: Con
     const granularity = conversion.granularity === "line" ? "line" : timingGranularityOf(result.lines);
 
     return {
-      ttml: generateTTML({ metadata, agents, lines: result.lines }),
+      output: format.write({ metadata, agents, lines: result.lines }),
       projectPayload: JSON.stringify({ metadata, agents, lines: result.lines, granularity }),
       skippedLines: skippedLineCount(result.issues),
     };

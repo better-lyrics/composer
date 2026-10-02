@@ -1,5 +1,6 @@
 import { convertViaParser } from "@/pages/converters/convert-via-parser";
 import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
+import { TTML_OUTPUT } from "@/pages/converters/output-formats";
 import {
   HIT_TESTING_UTILITIES_CSS,
   LYRICS_CODE_CSS,
@@ -11,7 +12,7 @@ import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
 
 const LRC_CONVERSION = {
-  extension: "lrc",
+  extension: "lrc" as const,
   granularity: "auto" as const,
   emptyMessage: "No timed lines found.",
   failureMessage: "Could not parse LRC.",
@@ -39,9 +40,10 @@ function renderLrcConverter() {
       title="LRC"
       inputLabel="LRC"
       inputPlaceholder="Paste LRC"
+      inputExtension="lrc"
       sampleInput={"[00:01.00]valid\n[00:03.00]second"}
       convert={convertLrc}
-      downloadFilename="lyrics.ttml"
+      outputFormat={TTML_OUTPUT}
     />,
     { withRouter: true },
   );
@@ -72,9 +74,10 @@ describe("ConverterView", () => {
         title="LRC → TTML"
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -88,9 +91,10 @@ describe("ConverterView", () => {
         title="LRC → TTML"
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -103,9 +107,10 @@ describe("ConverterView", () => {
         title="LRC → TTML"
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
         sampleInput="[00:01.00] hello"
-        convert={() => ({ ttml: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
-        downloadFilename="out.ttml"
+        convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -128,9 +133,10 @@ describe("ConverterView", () => {
         title="LRC"
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
         sampleInput="[00:01.00] hello"
         convert={() => ({ error: "Could not parse line 3: an unexpectedly long explanation that must wrap" })}
-        downloadFilename="out.ttml"
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -272,9 +278,10 @@ describe("converter highlighting", () => {
         title="LRC"
         inputLabel="LRC"
         inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
         sampleInput="[00:01.00] hello"
         convert={() => ({ error: "Could not parse line 3" })}
-        downloadFilename="out.ttml"
+        outputFormat={TTML_OUTPUT}
       />,
       { withRouter: true },
     );
@@ -300,5 +307,139 @@ describe("converter input resize", () => {
     } finally {
       for (const sheet of sheets) sheet.remove();
     }
+  });
+});
+
+describe("loading a file into the converter", () => {
+  function renderFileConverter() {
+    return render(
+      <ConverterView
+        title="LRC"
+        inputLabel="LRC"
+        inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
+        sampleInput="[00:01.00]valid"
+        convert={convertLrc}
+        outputFormat={TTML_OUTPUT}
+      />,
+      { withRouter: true },
+    );
+  }
+
+  function dropFile(target: Element, file: File) {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    target.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }));
+  }
+
+  const LRC_FILE_TEXT = "[00:01.00]Dropped line\n[00:03.00]";
+
+  it("fills the input from a file chosen with Load file", async () => {
+    const screen = await renderFileConverter();
+    const picker = screen.getByLabelText("Choose a .lrc file");
+
+    await picker.upload(new File([LRC_FILE_TEXT], "song.lrc", { type: "text/plain" }));
+
+    await expect.element(screen.getByRole("textbox", { name: "Converter input" })).toHaveValue(LRC_FILE_TEXT);
+    await expect
+      .poll(() => screen.container.querySelector("pre:not([aria-hidden])")?.textContent)
+      .toContain("Dropped line");
+  });
+
+  it("offers the picker from a visible Load file button", async () => {
+    const screen = await renderFileConverter();
+
+    await expect.element(screen.getByRole("button", { name: "Load file" })).toBeInTheDocument();
+    await expect.element(screen.getByLabelText("Choose a .lrc file")).toHaveAttribute("accept", ".lrc");
+  });
+
+  it("fills the input from a file dropped on the input card", async () => {
+    const screen = await renderFileConverter();
+    const textarea = screen.getByRole("textbox", { name: "Converter input" });
+
+    dropFile(textarea.element(), new File([LRC_FILE_TEXT], "song.lrc", { type: "text/plain" }));
+
+    await expect.element(textarea).toHaveValue(LRC_FILE_TEXT);
+  });
+
+  it("names the download after the loaded file with the output extension", async () => {
+    const screen = await renderFileConverter();
+
+    dropFile(
+      screen.getByRole("textbox", { name: "Converter input" }).element(),
+      new File([LRC_FILE_TEXT], "My Song.lrc", { type: "text/plain" }),
+    );
+
+    await expect.element(screen.getByRole("textbox", { name: "Filename" })).toHaveValue("My Song.ttml");
+  });
+
+  describe("error paths", () => {
+    it("rejects a file of another format and keeps the current input", async () => {
+      const screen = await renderFileConverter();
+      const textarea = screen.getByRole("textbox", { name: "Converter input" });
+      await textarea.fill("[00:01.00]typed");
+
+      dropFile(textarea.element(), new File(["1\n00:00:01,000 --> 00:00:02,000\nhi"], "clip.srt"));
+
+      await expect.element(screen.getByRole("alert")).toHaveTextContent("Use a .lrc file");
+      await expect.element(textarea).toHaveValue("[00:01.00]typed");
+      await expect.element(screen.getByRole("textbox", { name: "Filename" })).toHaveValue("lyrics.ttml");
+    });
+
+    it("clears the rejection once a valid file loads", async () => {
+      const screen = await renderFileConverter();
+      const textarea = screen.getByRole("textbox", { name: "Converter input" });
+
+      dropFile(textarea.element(), new File(["x"], "clip.srt"));
+      await expect.element(screen.getByRole("alert")).toBeInTheDocument();
+      dropFile(textarea.element(), new File([LRC_FILE_TEXT], "song.lrc"));
+
+      await expect.element(textarea).toHaveValue(LRC_FILE_TEXT);
+      expect(screen.container.querySelector('[role="alert"]')).toBeNull();
+    });
+
+    it("ignores a drop that carries no file", async () => {
+      const screen = await renderFileConverter();
+      const textarea = screen.getByRole("textbox", { name: "Converter input" });
+      await textarea.fill("[00:01.00]typed");
+
+      textarea
+        .element()
+        .dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer: new DataTransfer() }));
+
+      await expect.element(textarea).toHaveValue("[00:01.00]typed");
+    });
+  });
+
+  describe("edge cases", () => {
+    it("accepts an upper-case extension", async () => {
+      const screen = await renderFileConverter();
+      const textarea = screen.getByRole("textbox", { name: "Converter input" });
+
+      dropFile(textarea.element(), new File([LRC_FILE_TEXT], "SONG.LRC"));
+
+      await expect.element(textarea).toHaveValue(LRC_FILE_TEXT);
+    });
+
+    it("accepts an .xml container on a page whose format QQ and Apple ship in XML", async () => {
+      const screen = await render(
+        <ConverterView
+          title="TTML"
+          inputLabel="TTML"
+          inputPlaceholder="Paste TTML"
+          inputExtension="ttml"
+          sampleInput=""
+          convert={() => ({ output: FAKE_TTML, projectPayload: "{}", skippedLines: 0 })}
+          outputFormat={TTML_OUTPUT}
+        />,
+        { withRouter: true },
+      );
+      const textarea = screen.getByRole("textbox", { name: "Converter input" });
+
+      dropFile(textarea.element(), new File([FAKE_TTML], "lyrics.xml"));
+
+      await expect.element(textarea).toHaveValue(FAKE_TTML);
+      await expect.element(screen.getByLabelText("Choose a .ttml file")).toHaveAttribute("accept", ".ttml,.xml");
+    });
   });
 });
