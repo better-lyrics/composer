@@ -1,4 +1,4 @@
-import { initialSharing } from "@/domain/group/initial-sharing";
+import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { type LineTemplate, type LinkGroup, wordsToTemplate } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
@@ -98,15 +98,12 @@ function createGroupFromSelection(
     return updated;
   });
 
-  const group: LinkGroup = {
-    id: groupId,
-    label,
-    color,
-    templateVersion: 1,
-    ...initialSharing(updatedLines, groupId, shareTimingInNewGroups),
-  };
-
-  return { group, updatedLines };
+  const shared = initialGroupSharing(
+    updatedLines,
+    { id: groupId, label, color, templateVersion: 1 },
+    shareTimingInNewGroups,
+  );
+  return { group: shared.group, updatedLines: shared.lines };
 }
 
 // -- Duplicate as linked -------------------------------------------------------

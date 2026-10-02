@@ -100,17 +100,17 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect.element(screen.getByText("Chorus shares timing in 2 instances")).toBeVisible();
   });
 
-  it("offers Share anyway when an instance keeps its own timing, and shares it in one click", async () => {
+  it("shares timing across an old group and realigns an instance with different timing", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
     useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2)] });
     const screen = await renderMenu();
     await screen.getByRole("button", { name: "Share timing across group" }).click();
-    await expect.poll(() => group().ownTimingInstances).toEqual([1]);
 
-    await screen.getByRole("button", { name: "Share anyway" }).click();
-
-    await expect.poll(() => group().ownTimingInstances).toBeUndefined();
+    await expect.poll(() => group().sharesTiming).toBe(true);
+    expect(group().ownTimingInstances).toBeUndefined();
     expect(secondWordBegin("c1")).toBeCloseTo(41.5, 6);
+    await expect.element(screen.getByText("Chorus shares timing in 2 instances")).toBeVisible();
+    await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
   });
 
   it("undoes an override change from the toast", async () => {

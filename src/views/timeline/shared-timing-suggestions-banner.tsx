@@ -1,9 +1,9 @@
 import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
 import { useProjectStore } from "@/stores/project";
-import { offerToShareTiming } from "@/utils/group-toast";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
+import { showKeptOwnTimingToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
-import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb, IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -38,7 +38,11 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const acceptAll = (visible: SharedTimingSuggestion[]) => {
     for (const suggestion of visible) useProjectStore.getState().shareGroupTiming(suggestion.groupId);
     const sharedIds = new Set(visible.map((suggestion) => suggestion.groupId));
-    offerToShareTiming(useProjectStore.getState().groups.filter((group) => sharedIds.has(group.id)));
+    const { lines: sharedLines, groups: sharedGroups } = useProjectStore.getState();
+    showKeptOwnTimingToast(
+      sharedLines,
+      sharedGroups.filter((group) => sharedIds.has(group.id)),
+    );
   };
 
   return (

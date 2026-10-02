@@ -1,4 +1,4 @@
-import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
+import { placeSharedInstance, realignSharedInstance, realignSharedInstances } from "@/domain/group/shared-placement";
 import type { LyricLine } from "@/domain/line/model";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
@@ -244,6 +244,50 @@ describe("realignSharedInstance", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 1, 54)];
       const words = realignSharedInstance(lines, sharing, "g1", 1)?.[0]?.updates.words;
       expect(words?.[0]?.begin).toBeCloseTo(54, 6);
+    });
+  });
+});
+
+describe("realignSharedInstances", () => {
+  const sharing = [createGroup({ id: "g1", sharesTiming: true })];
+  const firstBegin = (lines: readonly LyricLine[], id: string) =>
+    lines.find((line) => line.id === id)?.words?.[0]?.begin;
+
+  it("realigns every listed instance and keeps none on its own timing", () => {
+    const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1), chorus(2, 0, 70), chorus(2, 1)];
+    const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
+    expect(result.keptOwnTiming).toEqual([]);
+    expect(firstBegin(result.lines, "c1-1")).toBeCloseTo(43, 6);
+    expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
+  });
+
+  describe("edge cases", () => {
+    it("keeps an instance that cannot be placed and realigns the rest", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
+      const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
+      expect(result.keptOwnTiming).toEqual([1]);
+      expect(result.lines.slice(0, 4)).toEqual(lines.slice(0, 4));
+      expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
+    });
+
+    it("returns the same lines when nothing is listed", () => {
+      const lines = [chorus(0, 0, 10), chorus(1, 0, 40)];
+      expect(realignSharedInstances(lines, sharing, "g1", [])).toEqual({ lines, keptOwnTiming: [] });
+    });
+
+    it("leaves an unplaced instance unplaced", () => {
+      const lines = [chorus(0, 0, 10), chorus(1, 0)];
+      const result = realignSharedInstances(lines, sharing, "g1", [1]);
+      expect(result).toEqual({ lines, keptOwnTiming: [] });
+    });
+  });
+
+  describe("invariants", () => {
+    it("never mutates its input", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1)];
+      const snapshot = structuredClone(lines);
+      realignSharedInstances(lines, sharing, "g1", [1]);
+      expect(lines).toEqual(snapshot);
     });
   });
 });

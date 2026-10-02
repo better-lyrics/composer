@@ -1,18 +1,26 @@
 import {
   attachedLinesOfInstance,
   endsAfter,
+  firstFullyTimedInstance,
   hasNegativeTime,
   instanceOffset,
   instanceStart,
-  firstFullyTimedInstance,
   offsetTimingFields,
   sharedInstancesInLineOrder,
   sharesTiming,
 } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+
+// -- Types --------------------------------------------------------------------
+
+interface RealignedInstances {
+  lines: LyricLine[];
+  keptOwnTiming: number[];
+}
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -83,6 +91,22 @@ function realignSharedInstance(
   return updates.length ? updates : null;
 }
 
+function realignSharedInstances(
+  lines: LyricLine[],
+  groups: readonly LinkGroup[],
+  groupId: string,
+  instanceIdxs: readonly number[],
+): RealignedInstances {
+  let realigned = lines;
+  const keptOwnTiming: number[] = [];
+  for (const instanceIdx of instanceIdxs) {
+    const placed = realignSharedInstance(realigned, groups, groupId, instanceIdx);
+    if (placed === null) keptOwnTiming.push(instanceIdx);
+    else if (placed.length) realigned = applyLineUpdates(realigned, placed);
+  }
+  return { lines: realigned, keptOwnTiming };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { placeSharedInstance, realignSharedInstance };
+export { placeSharedInstance, realignSharedInstance, realignSharedInstances };

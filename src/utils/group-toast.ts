@@ -1,4 +1,6 @@
+import { firstFullyTimedInstance, instancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { pluralWord, pluralize } from "@/utils/pluralize";
 import { toast } from "sonner";
@@ -20,19 +22,20 @@ function showGroupActionToast(message: string, undoFn?: () => void): void {
   });
 }
 
-function offerToShareTiming(newGroups: readonly LinkGroup[]): void {
-  const withOwnTiming = newGroups.filter((group) => group.ownTimingInstances?.length);
-  const count = withOwnTiming.reduce((sum, group) => sum + (group.ownTimingInstances?.length ?? 0), 0);
+function showKeptOwnTimingToast(lines: readonly LyricLine[], groups: readonly LinkGroup[]): void {
+  const keeping = groups.filter((group) => group.ownTimingInstances?.length);
+  const count = keeping.reduce((sum, group) => sum + (group.ownTimingInstances?.length ?? 0), 0);
   if (count === 0) return;
-  toast(`${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing`, {
-    duration: GROUP_TOAST_DURATION_MS,
-    action: {
-      label: "Share anyway",
-      onClick: () => {
-        for (const group of withOwnTiming) useProjectStore.getState().shareAllInstances(group.id);
-      },
+  const hasSource = keeping.every(
+    (group) => firstFullyTimedInstance(lines, group.id, instancesInLineOrder(lines, group.id)) !== undefined,
+  );
+  const kept = `${pluralize(count, "instance")} kept ${pluralWord(count, "its", "their")} own timing`;
+  toast(
+    hasSource ? `${kept}: the shared timing would start before the song` : `${kept}. Sync one instance fully first.`,
+    {
+      duration: GROUP_TOAST_DURATION_MS,
     },
-  });
+  );
 }
 
 function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: number): void {
@@ -57,9 +60,9 @@ function showSharedSongEdgeToast(): void {
 // -- Exports -------------------------------------------------------------------
 
 export {
-  offerToShareTiming,
   showGroupActionToast,
   showGroupedToast,
+  showKeptOwnTimingToast,
   showSharedSongEdgeToast,
   showPlacementBlockedToast,
   showSharingBlockedToast,

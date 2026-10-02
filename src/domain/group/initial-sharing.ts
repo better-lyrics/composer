@@ -1,3 +1,5 @@
+import { withSharing } from "@/domain/group/own-timing";
+import { realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
@@ -12,6 +14,11 @@ import type { WordTiming } from "@/domain/word/timing";
 // -- Types --------------------------------------------------------------------
 
 type InitialSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
+
+interface InitialGroupSharing {
+  group: LinkGroup;
+  lines: LyricLine[];
+}
 
 // -- Constants ----------------------------------------------------------------
 
@@ -52,22 +59,32 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
 
 // -- Sharing ------------------------------------------------------------------
 
-function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn: boolean): InitialSharing {
-  if (!settingOn) return {};
+function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: string): number[] {
   const order = instancesInLineOrder(lines, groupId);
   const timed = order.filter((instanceIdx) => instanceStart(lines, groupId, instanceIdx) !== null);
   const source = firstFullyTimedInstance(lines, groupId, timed) ?? timed[0];
-  if (source === undefined) return { sharesTiming: true };
-  const ownTimingInstances = order.filter(
+  if (source === undefined) return [];
+  return order.filter(
     (instanceIdx) =>
       instanceIdx !== source &&
       instanceStart(lines, groupId, instanceIdx) !== null &&
       !sameRelativeTiming(lines, groupId, source, instanceIdx),
   );
-  return ownTimingInstances.length ? { sharesTiming: true, ownTimingInstances } : { sharesTiming: true };
+}
+
+function initialGroupSharing(lines: LyricLine[], group: LinkGroup, settingOn: boolean): InitialGroupSharing {
+  if (!settingOn) return { group, lines };
+  const shared = withSharing(group, { sharesTiming: true });
+  const differing = instancesWithDifferentTiming(lines, group.id);
+  const { lines: realignedLines, keptOwnTiming } = realignSharedInstances(lines, [shared], group.id, differing);
+  if (keptOwnTiming.length === 0) return { group: shared, lines: realignedLines };
+  return {
+    group: withSharing(group, { sharesTiming: true, ownTimingInstances: keptOwnTiming }),
+    lines: realignedLines,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialSharing };
+export { initialGroupSharing };
 export type { InitialSharing };

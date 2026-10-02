@@ -1,8 +1,8 @@
 import { useProjectStore } from "@/stores/project";
-import { offerToShareTiming } from "@/utils/group-toast";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
+import { showKeptOwnTimingToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
-import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -27,7 +27,11 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
   const groupSections = (sections: readonly RepeatingSection[]) => {
     const existingIds = new Set(useProjectStore.getState().groups.map((group) => group.id));
     for (const s of sections) groupRepeatingSections(s.starts, s.length);
-    offerToShareTiming(useProjectStore.getState().groups.filter((group) => !existingIds.has(group.id)));
+    const { lines: groupedLines, groups } = useProjectStore.getState();
+    showKeptOwnTimingToast(
+      groupedLines,
+      groups.filter((group) => !existingIds.has(group.id)),
+    );
   };
 
   const acceptOne = (s: RepeatingSection) => groupSections([s]);
