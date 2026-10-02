@@ -81,6 +81,37 @@ describe("requestPlayback", () => {
   });
 });
 
+describe("regressions", () => {
+  it("regression: plays on without a count when audio is already playing", () => {
+    useAudioStore.setState({ isPlaying: true });
+    expect(requestPlayback()).toBe("playing");
+    expect(isCountingIn()).toBe(false);
+    expect(isPlaying()).toBe(true);
+  });
+
+  it("regression: a song change during the count cancels it so the new song never starts by itself", () => {
+    requestPlayback();
+    loadSong();
+    expect(isCountingIn()).toBe(false);
+    vi.advanceTimersByTime(5000);
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("regression: unloading the song during the count cancels it", () => {
+    requestPlayback();
+    useAudioStore.setState({ source: null });
+    expect(isCountingIn()).toBe(false);
+    vi.advanceTimersByTime(5000);
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("keeps counting through unrelated audio changes", () => {
+    requestPlayback();
+    useAudioStore.setState({ currentTime: 12, volume: 0.5 });
+    expect(isCountingIn()).toBe(true);
+  });
+});
+
 describe("cancelCountIn", () => {
   it("stops a running count so playback never starts", () => {
     requestPlayback();

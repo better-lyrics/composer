@@ -1,6 +1,5 @@
 import { timeRangeResolver } from "@/domain/group/shared-timing";
 import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/reconcile-syllable-split";
-import { requestPlayback } from "@/lib/sync-count-in";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
@@ -10,6 +9,7 @@ import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture"
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
+import { requestPlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";

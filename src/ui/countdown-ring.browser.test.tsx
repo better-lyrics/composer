@@ -56,6 +56,15 @@ describe("CountdownRing", () => {
     });
   });
 
+  describe("regressions", () => {
+    it("regression: mounts the live region empty so the first count is announced", async () => {
+      const screen = await render(<CountdownRing remainingSeconds={() => 3} totalSeconds={3} precision={0} announce={announce} />);
+      const status = screen.container.querySelector('[role="status"]');
+      expect(status?.textContent).toBe("");
+      await expect.element(screen.getByRole("status")).toHaveTextContent("Starting in 3");
+    });
+  });
+
   describe("invariants", () => {
     it("fills the arc as time runs out", async () => {
       const clock = countdown(3);

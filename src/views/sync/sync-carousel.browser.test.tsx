@@ -144,7 +144,7 @@ describe("SyncCarousel · above current slot", () => {
     },
   ];
 
-  it("renders the slot above the current line in place of its tag", async () => {
+  it("renders the slot above the current line and keeps its tag", async () => {
     const screen = await render(
       <SyncCarousel
         lines={TAGGED_LINES}
@@ -155,7 +155,7 @@ describe("SyncCarousel · above current slot", () => {
       />,
     );
     await expect.element(screen.getByText("probe", { exact: true })).toBeInTheDocument();
-    expect(screen.container.textContent).not.toContain("Tap to place");
+    await expect.element(screen.getByText("Tap to place", { exact: true })).toBeInTheDocument();
   });
 
   it("keeps the tag when no slot is given", async () => {

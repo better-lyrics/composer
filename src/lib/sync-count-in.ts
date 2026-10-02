@@ -10,6 +10,7 @@ type PlaybackRequest = "counting" | "playing";
 // -- State --------------------------------------------------------------------
 
 let startTimer: ReturnType<typeof setTimeout> | null = null;
+let stopWatchingSource: (() => void) | null = null;
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -20,6 +21,8 @@ function isCountingIn(): boolean {
 function endCount(): void {
   if (startTimer !== null) clearTimeout(startTimer);
   startTimer = null;
+  stopWatchingSource?.();
+  stopWatchingSource = null;
   useSyncCountInStore.setState(SYNC_COUNT_IN_IDLE);
 }
 
@@ -35,6 +38,7 @@ function countsIn(): boolean {
 
 function requestPlayback(): PlaybackRequest {
   if (isCountingIn()) return "counting";
+  if (useAudioStore.getState().isPlaying) return "playing";
   if (!countsIn()) {
     useAudioStore.getState().setIsPlaying(true);
     return "playing";
@@ -45,6 +49,9 @@ function requestPlayback(): PlaybackRequest {
     endCount();
     useAudioStore.getState().setIsPlaying(true);
   }, seconds * 1000);
+  stopWatchingSource = useAudioStore.subscribe((state, previous) => {
+    if (state.source !== previous.source) cancelCountIn();
+  });
   useSyncCountInStore.setState({ startedAt, endsAt: startedAt + seconds * 1000, seconds });
   return "counting";
 }

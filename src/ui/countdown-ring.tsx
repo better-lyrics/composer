@@ -1,7 +1,7 @@
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { holdFrames } from "@/lib/frame-loop";
 import { formatCountdown } from "@/utils/format-countdown";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // -- Interfaces ---------------------------------------------------------------
 
@@ -36,7 +36,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({ remainingSeconds, totalSe
   const arcRef = useRef<SVGCircleElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
   const statusRef = useRef<HTMLSpanElement>(null);
-  const initial = remainingSeconds();
+  const [initial] = useState(remainingSeconds);
 
   useEffect(() => holdFrames("countdown ring"), []);
 
@@ -83,9 +83,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({ remainingSeconds, totalSe
       >
         {formatCountdown(initial, precision)}
       </span>
-      <span ref={statusRef} role="status" aria-atomic="true" className="sr-only">
-        {announce(wholeSecondsLeft(initial))}
-      </span>
+      <span ref={statusRef} role="status" aria-atomic="true" className="sr-only" />
     </span>
   );
 };

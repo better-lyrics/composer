@@ -1,3 +1,4 @@
+import { Activity } from "react";
 import { describe, expect, it } from "vitest";
 import type { LyricLine } from "@/domain/line/model";
 import { isCountingIn } from "@/lib/sync-count-in";
@@ -76,16 +77,32 @@ describe("Sync count-in", () => {
     await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     expect(isCountingIn()).toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, 1200));
     expect(isPlaying()).toBe(false);
     await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).toBeNull();
   });
 
-  it("cancels when Sync goes away", async () => {
+  it("cancels when the Sync tab is hidden", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    const screen = await render(
+      <Activity mode="visible">
+        <SyncPanel />
+      </Activity>,
+    );
+    space();
+    expect(isCountingIn()).toBe(true);
+    await screen.rerender(
+      <Activity mode="hidden">
+        <SyncPanel />
+      </Activity>,
+    );
+    await expect.poll(isCountingIn).toBe(false);
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("cancels when Sync unmounts", async () => {
     load([createLine({ id: "l0", text: "Hold me close" })], 3);
     const screen = await render(<SyncPanel />);
     space();
-    expect(isCountingIn()).toBe(true);
     await screen.unmount();
     expect(isCountingIn()).toBe(false);
   });
@@ -109,3 +126,29 @@ describe("Sync count-in", () => {
     });
   });
 });
+
+describe("Sync count-in · regressions", () => {
+  it("regression: a hold while audio already plays starts at once instead of counting in", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    useAudioStore.setState({ isPlaying: true, currentTime: 2 });
+    await render(<SyncPanel />);
+    key({ key: "f", code: "KeyF" });
+    expect(isCountingIn()).toBe(false);
+    await expect.poll(() => words().length).toBe(1);
+    key({ key: "f", code: "KeyF" }, "keyup");
+  });
+});
+
+describe("Sync count-in · invariants", () => {
+  it("never writes timing while counting", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    await render(<SyncPanel />);
+    space();
+    space();
+    key({ key: "f", code: "KeyF" });
+    key({ key: "f", code: "KeyF" }, "keyup");
+    expect(useProjectStore.getState().lines[0].words).toBeUndefined();
+    expect(useProjectStore.getState().history.length).toBe(0);
+  });
+});
+
