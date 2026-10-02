@@ -9,7 +9,6 @@ interface FileDropZoneProps {
   accept: string;
   onFileDrop: (file: File) => void;
   onProjectFileDrop?: (file: File) => void;
-  dragActive?: boolean;
   children?: React.ReactNode;
   className?: string;
 }
@@ -20,7 +19,6 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
   accept,
   onFileDrop,
   onProjectFileDrop,
-  dragActive = false,
   children,
   className,
 }) => {
@@ -46,7 +44,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({
         "size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors",
         "border-composer-border hover:border-composer-border-hover",
         className,
-        (isDragging || dragActive) && "border-composer-accent bg-composer-accent/10",
+        isDragging && "border-composer-accent bg-composer-accent/10",
       )}
     >
       <input

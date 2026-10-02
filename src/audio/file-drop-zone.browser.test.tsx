@@ -167,24 +167,6 @@ describe("FileDropZone ids", () => {
     expect(label?.classList.contains("p-8")).toBe(false);
   });
 
-  it("highlights when a surrounding area reports a drag", async () => {
-    const screen = await render(
-      <FileDropZone accept="audio/*" onFileDrop={() => {}} dragActive>
-        drop
-      </FileDropZone>,
-    );
-    expect(screen.container.querySelector("label")?.classList.contains("border-composer-accent")).toBe(true);
-  });
-
-  it("stays plain without a drag", async () => {
-    const screen = await render(
-      <FileDropZone accept="audio/*" onFileDrop={() => {}}>
-        drop
-      </FileDropZone>,
-    );
-    expect(screen.container.querySelector("label")?.classList.contains("border-composer-accent")).toBe(false);
-  });
-
   it("highlights while a file is dragged over it and clears on leave", async () => {
     const screen = await render(
       <FileDropZone accept="audio/*" onFileDrop={() => {}}>

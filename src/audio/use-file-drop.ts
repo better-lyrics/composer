@@ -8,14 +8,20 @@ import { toast } from "sonner";
 interface FileDropOptions {
   onFileDrop: (file: File) => void;
   onProjectFileDrop?: (file: File) => void;
+  capture?: boolean;
 }
 
-interface FileDropHandlers {
-  onDragEnter: React.DragEventHandler;
-  onDragLeave: React.DragEventHandler;
-  onDragOver: React.DragEventHandler;
-  onDrop: React.DragEventHandler;
-}
+type FileDropHandlers = Pick<
+  React.DOMAttributes<HTMLElement>,
+  | "onDragEnter"
+  | "onDragLeave"
+  | "onDragOver"
+  | "onDrop"
+  | "onDragEnterCapture"
+  | "onDragLeaveCapture"
+  | "onDragOverCapture"
+  | "onDropCapture"
+>;
 
 interface FileDrop {
   isDragging: boolean;
@@ -35,7 +41,7 @@ function carriesFiles(e: React.DragEvent): boolean {
 
 // -- Hook ---------------------------------------------------------------------
 
-function useFileDrop({ onFileDrop, onProjectFileDrop }: FileDropOptions): FileDrop {
+function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDropOptions): FileDrop {
   const [isDragging, setIsDragging] = useState(false);
 
   const handleFile = useCallback(
@@ -85,7 +91,15 @@ function useFileDrop({ onFileDrop, onProjectFileDrop }: FileDropOptions): FileDr
     [handleFile],
   );
 
-  return { isDragging, handlers: { onDragEnter, onDragLeave, onDragOver, onDrop }, handleFile };
+  const handlers: FileDropHandlers = capture
+    ? {
+        onDragEnterCapture: onDragEnter,
+        onDragLeaveCapture: onDragLeave,
+        onDragOverCapture: onDragOver,
+        onDropCapture: onDrop,
+      }
+    : { onDragEnter, onDragLeave, onDragOver, onDrop };
+  return { isDragging, handlers, handleFile };
 }
 
 // -- Exports ------------------------------------------------------------------

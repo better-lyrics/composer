@@ -1,4 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { FileDropOverlay } from "@/audio/file-drop-overlay";
 import { useFileDrop } from "@/audio/use-file-drop";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import { AUDIO_FORMATS_PROSE } from "@/domain/audio-file/supported-formats";
@@ -13,6 +14,11 @@ import { formatFileSize } from "@/utils/format-file-size";
 import { OrDivider, SOURCE_GUTTER_WIDTH, SOURCE_ROW_HEIGHT } from "@/views/import/import-layout";
 import { MissingAudioPanel } from "@/views/import/missing-audio-panel";
 import { IconBrandYoutube, IconClock, IconFile, IconLoader2, IconMusic } from "@tabler/icons-react";
+
+// -- Constants ----------------------------------------------------------------
+
+const LOAD_DROP_LABEL = "Drop to load this audio";
+const REPLACE_DROP_LABEL = "Drop to replace the audio";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -43,13 +49,12 @@ const YouTubeSourceThumb: React.FC<{ videoId: string; loading: boolean }> = ({ v
 
 interface ReplaceControlsProps {
   onFileDrop: (file: File) => void;
-  dragActive: boolean;
 }
 
-const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop, dragActive }) => (
+const ReplaceControls: React.FC<ReplaceControlsProps> = ({ onFileDrop }) => (
   <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
     <div className="w-full max-w-md flex-1 min-h-32">
-      <FileDropZone accept="audio/*" onFileDrop={onFileDrop} dragActive={dragActive}>
+      <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
         <p className="text-sm text-composer-text-muted">Drop another file to replace</p>
       </FileDropZone>
     </div>
@@ -94,7 +99,7 @@ const ImportPanel: React.FC = () => {
   const expectedAudio = useAudioStore((s) => s.expectedAudio);
 
   const handleFileDrop = useLoadAudioFile();
-  const screenDrop = useFileDrop({ onFileDrop: handleFileDrop });
+  const screenDrop = useFileDrop({ onFileDrop: handleFileDrop, capture: true });
 
   if (!source && expectedAudio) return <MissingAudioPanel expected={expectedAudio} />;
 
@@ -104,7 +109,7 @@ const ImportPanel: React.FC = () => {
     const fileName = fileNameWithoutExtension(file.name);
 
     return (
-      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
+      <div data-tour="import-dropzone" className="relative flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
         <div className="flex border-t border-composer-border">
           <div
             className="shrink-0 flex items-center justify-center bg-composer-accent/10"
@@ -128,7 +133,8 @@ const ImportPanel: React.FC = () => {
           </div>
         </div>
 
-        <ReplaceControls onFileDrop={handleFileDrop} dragActive={screenDrop.isDragging} />
+        <ReplaceControls onFileDrop={handleFileDrop} />
+        <FileDropOverlay visible={screenDrop.isDragging} label={REPLACE_DROP_LABEL} />
       </div>
     );
   }
@@ -140,7 +146,7 @@ const ImportPanel: React.FC = () => {
     const titleLoading = downloading && sourceTitle === videoId;
 
     return (
-      <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
+      <div data-tour="import-dropzone" className="relative flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
         <div className="flex border-t border-composer-border">
           <div
             className="shrink-0 flex items-center justify-center bg-composer-accent/10 overflow-hidden"
@@ -168,7 +174,8 @@ const ImportPanel: React.FC = () => {
           </div>
         </div>
 
-        <ReplaceControls onFileDrop={handleFileDrop} dragActive={screenDrop.isDragging} />
+        <ReplaceControls onFileDrop={handleFileDrop} />
+        <FileDropOverlay visible={screenDrop.isDragging} label={REPLACE_DROP_LABEL} />
       </div>
     );
   }
@@ -176,11 +183,11 @@ const ImportPanel: React.FC = () => {
   return (
     <div
       data-tour="import-dropzone"
-      className="flex flex-col items-center justify-center gap-6 flex-1 size-full p-6"
+      className="relative flex flex-col items-center justify-center gap-6 flex-1 size-full p-6"
       {...screenDrop.handlers}
     >
       <div className="w-full max-w-md flex-1 max-h-72 min-h-40">
-        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop} dragActive={screenDrop.isDragging}>
+        <FileDropZone accept="audio/*" onFileDrop={handleFileDrop}>
           <IconMusic className="size-12 mb-4 opacity-50 text-composer-text" stroke={1.5} />
           <p className="text-composer-text-secondary">Drop audio file here</p>
           <p className="mt-1 text-sm text-composer-text-muted">or click to browse</p>
@@ -191,6 +198,7 @@ const ImportPanel: React.FC = () => {
       <OrDivider />
 
       <YouTubeUrlInput />
+      <FileDropOverlay visible={screenDrop.isDragging} label={LOAD_DROP_LABEL} />
     </div>
   );
 };
