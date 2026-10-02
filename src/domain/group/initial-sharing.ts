@@ -1,4 +1,5 @@
 import { withSharing } from "@/domain/group/own-timing";
+import { sameTime } from "@/domain/group/same-timing";
 import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,
@@ -18,16 +19,7 @@ interface InitialGroupSharing extends SharingOutcome {
   lines: LyricLine[];
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const SAME_TIMING_TOLERANCE_SECONDS = 0.01;
-
 // -- Comparison ---------------------------------------------------------------
-
-function sameTime(a: number | undefined, b: number | undefined, offset: number): boolean {
-  if (a === undefined || b === undefined) return a === b;
-  return Math.abs(a + offset - b) <= SAME_TIMING_TOLERANCE_SECONDS;
-}
 
 function sameWords(a: readonly WordTiming[] | undefined, b: readonly WordTiming[] | undefined, offset: number) {
   if (!a || !b) return a === b;
@@ -76,7 +68,7 @@ function initialGroupSharing(
   settingOn: boolean,
   songEnd = Number.POSITIVE_INFINITY,
 ): InitialGroupSharing {
-  if (!settingOn) return { group, lines, keptOwnTiming: [], realigned: [] };
+  if (!settingOn) return { group, lines, keptOwnTiming: [], replaced: [] };
   const shared = withSharing(group, { sharesTiming: true });
   const differing = instancesWithDifferentTiming(lines, group.id);
   const realigned = realignSharedInstances(lines, [shared], group.id, differing, songEnd);

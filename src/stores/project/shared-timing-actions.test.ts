@@ -67,7 +67,7 @@ describe("groupRepeatingSections", () => {
 
   it("shares an instance with different timing and realigns it from the source", () => {
     seed([], [plain("a", 10), plain("b", 40, 0.3)]);
-    expect(store().groupRepeatingSections([0, 1], 1)).toEqual({ keptOwnTiming: [], realigned: [1] });
+    expect(store().groupRepeatingSections([0, 1], 1)).toEqual({ keptOwnTiming: [], replaced: [1] });
     expect(store().groups[0].ownTimingInstances).toBeUndefined();
     expect(lineById("b")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
   });
@@ -195,7 +195,7 @@ describe("setInstanceOwnTiming", () => {
 describe("shareGroupTiming", () => {
   it("opts an old group in and realigns an instance with different timing", () => {
     seed([createGroup({ id: "g1" })], [chorus(0, 10), chorus(1, 40, 0.3), chorus(2)]);
-    expect(store().shareGroupTiming("g1", SONG_LENGTH)).toEqual({ keptOwnTiming: [], realigned: [1] });
+    expect(store().shareGroupTiming("g1", SONG_LENGTH)).toEqual({ keptOwnTiming: [], replaced: [1] });
     expect(groupById("g1")).toMatchObject({ sharesTiming: true });
     expect(groupById("g1")?.ownTimingInstances).toBeUndefined();
     expect(lineById("c1")?.words?.[1]?.begin).toBeCloseTo(40.5, 6);
@@ -260,7 +260,7 @@ describe("shareGroupTiming", () => {
     it("changes nothing for an unknown group", () => {
       seed([createGroup({ id: "g1", sharesTiming: true, ownTimingInstances: [1] })], [chorus(0, 10), chorus(1, 40)]);
       const before = store();
-      expect(store().shareGroupTiming("missing", SONG_LENGTH)).toEqual({ keptOwnTiming: [], realigned: [] });
+      expect(store().shareGroupTiming("missing", SONG_LENGTH)).toEqual({ keptOwnTiming: [], replaced: [] });
       expect(store().lines).toBe(before.lines);
       expect(store().groups).toBe(before.groups);
     });

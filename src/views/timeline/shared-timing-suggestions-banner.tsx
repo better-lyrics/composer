@@ -50,7 +50,7 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
       useProjectStore.getState().shareGroupTiming(suggestion.groupId, duration),
     );
     showKeptOwnTimingToast(outcomes.flatMap((outcome) => outcome.keptOwnTiming));
-    showReplacedOwnTimingToast(outcomes.reduce((sum, outcome) => sum + outcome.realigned.length, 0));
+    showReplacedOwnTimingToast(outcomes.reduce((sum, outcome) => sum + outcome.replaced.length, 0));
   };
 
   return (

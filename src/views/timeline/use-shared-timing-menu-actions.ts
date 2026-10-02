@@ -1,10 +1,10 @@
+import { replacedInstances } from "@/domain/group/replaced-instances";
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
-import { isStructurallyEqual } from "@/utils/structural-equal";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { useCallback } from "react";
 
@@ -43,7 +43,7 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
       return;
     }
     const after = useProjectStore.getState().lines;
-    const replaced = after.some((line, index) => !isStructurallyEqual(line, store.lines[index]));
+    const replaced = replacedInstances(store.lines, after).length > 0;
     showGroupActionToast(
       replaced ? `${name} shares timing again. Its own timing was replaced.` : `${name} shares timing again`,
     );

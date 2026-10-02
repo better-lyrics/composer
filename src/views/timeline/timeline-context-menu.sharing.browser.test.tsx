@@ -75,6 +75,25 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
   });
 
+  it("edge case: says nothing was replaced when sharing only fills untimed lines", async () => {
+    seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
+    const line = (instanceIdx: number, templateLineIdx: number, begin?: number) =>
+      createLine({
+        id: `c${instanceIdx}-${templateLineIdx}`,
+        text: templateLineIdx === 0 ? "go now" : "stay here",
+        groupId: "g1",
+        instanceIdx,
+        templateLineIdx,
+        ...(begin === undefined ? {} : { begin, end: begin + 1 }),
+      });
+    useProjectStore.setState({ lines: [line(0, 0, 10), line(0, 1, 13), line(1, 0, 40), line(1, 1)] });
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: "Share timing", exact: true }).click();
+
+    await expect.element(screen.getByText("Chorus 2 shares timing again", { exact: true })).toBeVisible();
+    expect(store().lines[3].begin).toBe(43);
+  });
+
   it("keeps own timing and says why when no instance is fully timed", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus", sharesTiming: true, ownTimingInstances: [1] }), 1);
     useProjectStore.setState({

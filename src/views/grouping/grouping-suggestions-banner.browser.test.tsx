@@ -6,7 +6,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
@@ -104,6 +104,27 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
     expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
       ["two-a", "two-b"],
     ]);
+    toast("Grouping settled");
+    await expect.element(screen.getByText("Grouping settled")).toBeVisible();
+    expect(screen.container.ownerDocument.body.textContent).not.toContain("was replaced");
+  });
+
+  it("reports a partly synced instance whose synced lines move", async () => {
+    useProjectStore.setState({
+      lines: [
+        lineSynced("one-a", "go now", 10),
+        lineSynced("one-b", "stay here", 13),
+        lineSynced("one-c", "hold on", 16),
+        lineSynced("two-a", "go now", 40),
+        lineSynced("two-b", "stay here", 44),
+        lineSynced("two-c", "hold on"),
+      ],
+    });
+    const screen = await renderBanner();
+    await screen.getByRole("button", { name: "Group them" }).click();
+
+    await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
+    expect(lineById("two-b")?.begin).toBe(43);
   });
 
   it("undoes the grouping and the realignment in one step", async () => {

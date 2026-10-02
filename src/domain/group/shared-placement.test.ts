@@ -318,7 +318,7 @@ describe("realignSharedInstances", () => {
     const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0, 40), chorus(1, 1), chorus(2, 0, 70), chorus(2, 1)];
     const result = realignSharedInstances(lines, sharing, "g1", [1, 2]);
     expect(result.keptOwnTiming).toEqual([]);
-    expect(result.realigned).toEqual([1, 2]);
+    expect(result.replaced).toEqual([]);
     expect(firstBegin(result.lines, "c1-1")).toBeCloseTo(43, 6);
     expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
   });
@@ -332,21 +332,33 @@ describe("realignSharedInstances", () => {
       expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
     });
 
+    it("reports as replaced only an instance whose timed lines move", () => {
+      const lines = [
+        chorus(0, 0, 10),
+        chorus(0, 1, 13),
+        chorus(1, 0, 40),
+        chorus(1, 1, 44),
+        chorus(2, 0, 70),
+        chorus(2, 1),
+      ];
+      expect(realignSharedInstances(lines, sharing, "g1", [1, 2]).replaced).toEqual([1]);
+    });
+
     it("keeps an instance that would run past the song end", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
       const result = realignSharedInstances(lines, sharing, "g1", [1], 300);
-      expect(result).toEqual({ lines, keptOwnTiming: [{ instanceIdx: 1, refusal: "past-song-end" }], realigned: [] });
+      expect(result).toEqual({ lines, keptOwnTiming: [{ instanceIdx: 1, refusal: "past-song-end" }], replaced: [] });
     });
 
     it("returns the same lines when nothing is listed", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0, 40)];
-      expect(realignSharedInstances(lines, sharing, "g1", [])).toEqual({ lines, keptOwnTiming: [], realigned: [] });
+      expect(realignSharedInstances(lines, sharing, "g1", [])).toEqual({ lines, keptOwnTiming: [], replaced: [] });
     });
 
     it("leaves an unplaced instance unplaced", () => {
       const lines = [chorus(0, 0, 10), chorus(1, 0)];
       const result = realignSharedInstances(lines, sharing, "g1", [1]);
-      expect(result).toEqual({ lines, keptOwnTiming: [], realigned: [] });
+      expect(result).toEqual({ lines, keptOwnTiming: [], replaced: [] });
     });
   });
 

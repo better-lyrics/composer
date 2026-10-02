@@ -7,17 +7,17 @@ import { pluralize } from "@/utils/pluralize";
 // -- Functions ----------------------------------------------------------------
 
 function shareGroupTimingWithUndo(groupId: string): void {
-  const { keptOwnTiming, realigned } = useProjectStore
+  const { keptOwnTiming, replaced } = useProjectStore
     .getState()
     .shareGroupTiming(groupId, useAudioStore.getState().duration);
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;
   showKeptOwnTimingToast(keptOwnTiming);
-  if (keptOwnTiming.length && realigned.length === 0) return;
+  if (keptOwnTiming.length && replaced.length === 0) return;
   const count = sharedInstancesInLineOrder(lines, group).length;
   const shared = `${group.label} shares timing in ${pluralize(count, "instance")}`;
-  showGroupActionToast(realigned.length ? `${shared}. ${replacedOwnTimingNote(realigned.length)}` : shared);
+  showGroupActionToast(replaced.length ? `${shared}. ${replacedOwnTimingNote(replaced.length)}` : shared);
 }
 
 // -- Exports ------------------------------------------------------------------

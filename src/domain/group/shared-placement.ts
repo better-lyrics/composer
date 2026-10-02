@@ -1,3 +1,4 @@
+import { replacedInstances } from "@/domain/group/replaced-instances";
 import {
   attachedLinesOfInstance,
   endsAfter,
@@ -34,7 +35,7 @@ interface KeptOwnTiming {
 
 interface SharingOutcome {
   keptOwnTiming: KeptOwnTiming[];
-  realigned: number[];
+  replaced: number[];
 }
 
 interface RealignedInstances extends SharingOutcome {
@@ -144,16 +145,15 @@ function realignSharedInstances(
 ): RealignedInstances {
   let nextLines = lines;
   const keptOwnTiming: KeptOwnTiming[] = [];
-  const realigned: number[] = [];
   for (const instanceIdx of instanceIdxs) {
     const realignment = realignSharedInstance(nextLines, groups, groupId, instanceIdx, songEnd);
     if ("refusal" in realignment) keptOwnTiming.push({ instanceIdx, refusal: realignment.refusal });
-    else if (realignment.updates.length) {
-      nextLines = applyLineUpdates(nextLines, realignment.updates);
-      realigned.push(instanceIdx);
-    }
+    else if (realignment.updates.length) nextLines = applyLineUpdates(nextLines, realignment.updates);
   }
-  return { lines: nextLines, keptOwnTiming, realigned };
+  const replaced = replacedInstances(lines, nextLines).flatMap((instance) =>
+    instance.groupId === groupId ? [instance.instanceIdx] : [],
+  );
+  return { lines: nextLines, keptOwnTiming, replaced };
 }
 
 // -- Exports ------------------------------------------------------------------

@@ -19,7 +19,7 @@ import type { StateCreator } from "zustand";
 // -- Constants ----------------------------------------------------------------
 
 const MIN_SHIFT_SECONDS = 0.001;
-const NOTHING_SHARED: SharingOutcome = { keptOwnTiming: [], realigned: [] };
+const NOTHING_SHARED: SharingOutcome = { keptOwnTiming: [], replaced: [] };
 
 // -- Initial State ------------------------------------------------------------
 
@@ -82,7 +82,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       return line;
     });
 
-    const { group, lines, keptOwnTiming, realigned } = initialGroupSharing(
+    const { group, lines, keptOwnTiming, replaced } = initialGroupSharing(
       updatedLines,
       { id: groupId, label, color, templateVersion: 1 },
       useSettingsStore.getState().shareTimingInNewGroups,
@@ -90,7 +90,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     );
 
     set(commitHistory(state, { groups: [...state.groups, group], lines }, { deriveText: false }));
-    return { keptOwnTiming, realigned };
+    return { keptOwnTiming, replaced };
   },
 
   updateGroup: (id, updates) =>
@@ -204,7 +204,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     const shared = initialGroupSharing(state.lines, group, true, songEndOrUnbounded(duration));
     const groups = state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate));
     set(commitHistory(state, { groups, lines: shared.lines }, { deriveText: false }));
-    return { keptOwnTiming: shared.keptOwnTiming, realigned: shared.realigned };
+    return { keptOwnTiming: shared.keptOwnTiming, replaced: shared.replaced };
   },
 
   placeInstance: (groupId, instanceIdx, start, duration, precedingUpdates = []) => {

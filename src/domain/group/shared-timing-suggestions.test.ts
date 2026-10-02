@@ -68,14 +68,34 @@ describe("sharedTimingSuggestions", () => {
       expect(sharedTimingSuggestions(lines, [oldChorus])).toEqual([]);
     });
 
-    it("counts a partly synced instance as one whose own timing is replaced", () => {
+    it("counts a partly synced instance that sharing only fills as changing, not replaced", () => {
       const lines = [member(0, 0, 10), member(0, 1, 12), member(1, 0, 20), member(1, 1), member(2, 0), member(2, 1)];
+
+      expect(sharedTimingSuggestions(lines, [oldChorus])[0]).toMatchObject({ changingCount: 2, replacedCount: 0 });
+    });
+
+    it("counts a partly synced instance whose synced line moves as replaced", () => {
+      const lines = [
+        member(0, 0, 10),
+        member(0, 1, 12),
+        member(1, 0, 20),
+        member(1, 1, 23),
+        member(2, 0),
+        member(2, 1),
+      ];
 
       expect(sharedTimingSuggestions(lines, [oldChorus])[0]).toMatchObject({ changingCount: 2, replacedCount: 1 });
     });
 
     it("does not count an instance that sharing would refuse at the song end", () => {
-      const lines = [member(0, 0, 10), member(0, 1, 12), member(1, 0, 118), member(1, 1), member(2, 0), member(2, 1)];
+      const lines = [
+        member(0, 0, 10),
+        member(0, 1, 12),
+        member(1, 0, 118),
+        member(1, 1, 121),
+        member(2, 0),
+        member(2, 1),
+      ];
 
       expect(sharedTimingSuggestions(lines, [oldChorus], 120)[0]).toMatchObject({ changingCount: 1, replacedCount: 0 });
       expect(sharedTimingSuggestions(lines, [oldChorus])[0]).toMatchObject({ changingCount: 2, replacedCount: 1 });
