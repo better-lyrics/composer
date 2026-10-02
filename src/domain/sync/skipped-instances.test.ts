@@ -1,4 +1,4 @@
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { skippedSharedInstances, syncPositionPastSkipped } from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -86,6 +86,53 @@ describe("skippedSharedInstances", () => {
 
     it("is empty for a song with no lines", () => {
       expect(skippedSharedInstances([], sharing)).toEqual([]);
+    });
+  });
+});
+
+describe("syncPositionPastSkipped", () => {
+  const at = (lineIndex: number, wordIndex = 0) => ({ lineIndex, wordIndex });
+
+  it("moves a cursor inside a skipped instance to the first syncable line after it, as a jump", () => {
+    expect(syncPositionPastSkipped(song(40), sharing, at(4), false)).toEqual({ cursor: at(5), jumped: true });
+  });
+
+  it("moves a cursor in the middle of the first line of a skipped instance", () => {
+    expect(syncPositionPastSkipped(song(40), sharing, at(3, 1), false)).toEqual({ cursor: at(5), jumped: true });
+  });
+
+  describe("edge cases", () => {
+    it("keeps a cursor on the anchor slot, where a tap places the instance", () => {
+      expect(syncPositionPastSkipped(song(40), sharing, at(3), false)).toEqual({ cursor: at(3), jumped: false });
+    });
+
+    it("keeps a cursor the user jumped to", () => {
+      expect(syncPositionPastSkipped(song(40), sharing, at(4), true)).toEqual({ cursor: at(4), jumped: true });
+    });
+
+    it("keeps a cursor outside every skipped instance", () => {
+      expect(syncPositionPastSkipped(song(40), sharing, at(2), false)).toEqual({ cursor: at(2), jumped: false });
+    });
+
+    it("keeps a cursor inside an instance that is not skipped", () => {
+      expect(syncPositionPastSkipped(song(), sharing, at(4), false)).toEqual({ cursor: at(4), jumped: false });
+    });
+
+    it("moves past the end when the skipped instance closes the song", () => {
+      const lines = song(40).slice(0, 5);
+      expect(syncPositionPastSkipped(lines, sharing, at(4), false)).toEqual({ cursor: at(5), jumped: true });
+    });
+
+    it("stops on the anchor slot of a skipped instance that follows", () => {
+      const lines = [...song(40).slice(0, 5), chorus(2, 0, 70), chorus(2, 1, 71), verse("v3")];
+      expect(syncPositionPastSkipped(lines, sharing, at(4), false)).toEqual({ cursor: at(5), jumped: true });
+    });
+  });
+
+  describe("invariants", () => {
+    it("returns the same cursor object when it does not move", () => {
+      const cursor = at(2);
+      expect(syncPositionPastSkipped(song(40), sharing, cursor, false).cursor).toBe(cursor);
     });
   });
 });

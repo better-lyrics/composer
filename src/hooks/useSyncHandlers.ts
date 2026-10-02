@@ -8,6 +8,7 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
+import { syncPositionPastSkipped } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
@@ -69,10 +70,17 @@ function useSyncHandlers({
   const history = useProjectStore((s) => s.history);
   const historyIndex = useProjectStore((s) => s.historyIndex);
   const ignoreNextHoldEndRef = useRef(false);
-  const { position, jumped } = storedSyncPosition(syncState, { history, historyIndex });
-  const cursor = useMemo(
-    () => resolveSyncCursor(lines, position, jumped, granularity),
-    [lines, position, jumped, granularity],
+  const groups = useProjectStore((s) => s.groups);
+  const stored = storedSyncPosition(syncState, { history, historyIndex });
+  const { cursor, jumped } = useMemo(
+    () =>
+      syncPositionPastSkipped(
+        lines,
+        groups,
+        resolveSyncCursor(lines, stored.position, stored.jumped, granularity),
+        stored.jumped,
+      ),
+    [lines, groups, stored.position, stored.jumped, granularity],
   );
   const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
@@ -343,7 +351,11 @@ function useSyncHandlers({
         return;
       }
       const line = lines[slot.lineIndex];
-      const range = timeRangeResolver(lines, useProjectStore.getState().groups, useAudioStore.getState().duration)(line);
+      const range = timeRangeResolver(
+        lines,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      )(line);
       updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
         deriveText: false,
         propagateToSiblings: false,

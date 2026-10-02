@@ -3,6 +3,7 @@ import type { LinkGroup } from "@/domain/group/template";
 import { isAttachedToInstance } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
 import { isSyncableLine } from "@/domain/line/sync-progress";
+import { type SyncCursor, nextSyncableLineIndex } from "@/domain/sync/cursor";
 import { sharedAnchorAt } from "@/domain/sync/shared-anchor";
 
 // -- Types --------------------------------------------------------------------
@@ -16,12 +17,15 @@ interface SkippedInstance {
   lastLineIndex: number;
 }
 
+interface SyncPosition {
+  cursor: SyncCursor;
+  jumped: boolean;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function attachedLineIndices(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number[] {
-  return lines.flatMap((line, index) =>
-    isAttachedToInstance(line, groupId, instanceIdx) ? [index] : [],
-  );
+  return lines.flatMap((line, index) => (isAttachedToInstance(line, groupId, instanceIdx) ? [index] : []));
 }
 
 function skippedInstanceOf(
@@ -57,7 +61,23 @@ function skippedSharedInstances(lines: readonly LyricLine[], groups: readonly Li
     );
 }
 
+// A cursor left inside a skipped instance (for example by grouping mid-sync) resumes after it, so a tap never re-records it.
+function syncPositionPastSkipped(
+  lines: readonly LyricLine[],
+  groups: readonly LinkGroup[],
+  cursor: SyncCursor,
+  jumped: boolean,
+): SyncPosition {
+  const unchanged = { cursor, jumped };
+  const line = lines[cursor.lineIndex];
+  if (jumped || !line || !groups.some((group) => group.sharesTiming)) return unchanged;
+  const skipped = skippedSharedInstances(lines, groups).find((instance) => instance.lineIds.includes(line.id));
+  if (!skipped) return unchanged;
+  if (cursor.lineIndex === skipped.firstLineIndex && cursor.wordIndex === 0) return unchanged;
+  return { cursor: { lineIndex: nextSyncableLineIndex(lines, skipped.lastLineIndex), wordIndex: 0 }, jumped: true };
+}
+
 // -- Exports ------------------------------------------------------------------
 
-export { skippedSharedInstances };
+export { skippedSharedInstances, syncPositionPastSkipped };
 export type { SkippedInstance };
