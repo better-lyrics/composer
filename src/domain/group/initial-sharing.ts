@@ -13,8 +13,6 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-type InitialSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
-
 interface InitialGroupSharing extends SharingOutcome {
   group: LinkGroup;
   lines: LyricLine[];
@@ -92,4 +90,3 @@ function initialGroupSharing(
 // -- Exports ------------------------------------------------------------------
 
 export { initialGroupSharing, instancesWithDifferentTiming };
-export type { InitialSharing };

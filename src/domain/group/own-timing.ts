@@ -1,9 +1,12 @@
-import type { InitialSharing } from "@/domain/group/initial-sharing";
 import type { LinkGroup } from "@/domain/group/template";
+
+// -- Types --------------------------------------------------------------------
+
+type GroupSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
 
 // -- Functions ----------------------------------------------------------------
 
-function withSharing(group: LinkGroup, sharing: InitialSharing): LinkGroup {
+function withSharing(group: LinkGroup, sharing: GroupSharing): LinkGroup {
   const { sharesTiming: _sharesTiming, ownTimingInstances: _ownTimingInstances, ...rest } = group;
   return { ...rest, ...sharing };
 }
