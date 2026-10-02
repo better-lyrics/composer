@@ -148,7 +148,42 @@ describe("SyncPanel · skip past a placed instance", () => {
     expect(useAudioStore.getState().currentTime).toBe(40.5);
   });
 
+  it("shows the pre-roll countdown to the next line in the footer", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("1.5", { exact: true })).toBeInTheDocument();
+  });
+
+  it("clears the pre-roll countdown on the next tap", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).toBeInTheDocument();
+    await tapAt(42.1, () => firstBegin("v2"));
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).not.toBeInTheDocument();
+  });
+
+  it("hides the pre-roll countdown while paused", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    setIsPlaying(false);
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).not.toBeInTheDocument();
+  });
+
   describe("edge cases", () => {
+    it("shows no pre-roll countdown on a normal tap", async () => {
+      load(song());
+      const screen = await render(<SyncPanel />);
+      await tapAt(10, () => lineById("c0-0")?.words?.length);
+      expect(screen.container.textContent).not.toMatch(/Line \d+ in/);
+    });
+
     it("does not seek when the instance ends inside the pre-roll", async () => {
       useSettingsStore.setState({ redoPreroll: 5 });
       load(song({ first: "word", verse: "word" }));

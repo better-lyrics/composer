@@ -2,6 +2,13 @@ import { instanceBounds } from "@/domain/instance/bounds";
 import { linesOfInstance } from "@/domain/instance/enumerate";
 import type { LyricLine } from "@/domain/line/model";
 
+// -- Interfaces ---------------------------------------------------------------
+
+interface PlacementPreroll {
+  end: number;
+  seconds: number;
+}
+
 // -- Functions ----------------------------------------------------------------
 
 function placementSkipTarget(
@@ -20,3 +27,4 @@ function placementSkipTarget(
 // -- Exports ------------------------------------------------------------------
 
 export { placementSkipTarget };
+export type { PlacementPreroll };

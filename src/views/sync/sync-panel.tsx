@@ -28,6 +28,7 @@ import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
+import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
@@ -49,6 +50,8 @@ const SyncPanel: React.FC = () => {
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
   const countIn = useSyncCountIn();
+  const placementPreroll = usePlacementPreroll();
+  const clearPlacementPreroll = placementPreroll.clear;
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
@@ -109,6 +112,7 @@ const SyncPanel: React.FC = () => {
     granularity,
     setShowPulse,
     setIsPlaying,
+    onPlacementSkip: placementPreroll.show,
   });
 
   const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(lines, groups, cursor);
@@ -263,6 +267,7 @@ const SyncPanel: React.FC = () => {
 
   const performTap = useCallback(() => {
     if (editMode || isCountingIn()) return;
+    clearPlacementPreroll();
     if (isHolding && isPlaying) {
       handleHoldTap();
     } else if (isPlaying) {
@@ -271,10 +276,21 @@ const SyncPanel: React.FC = () => {
     } else if (lines.length > 0) {
       handleStartSync();
     }
-  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleHoldTap, handleTap, handleStartSync]);
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleHoldTap,
+    handleTap,
+    handleStartSync,
+    clearPlacementPreroll,
+  ]);
 
   const beginHold = useCallback(() => {
     if (editMode || isHolding || isCountingIn()) return;
+    clearPlacementPreroll();
     if (!syncState.isActive && lines.length > 0) {
       if (handleStartSync() === "counting") return;
       handleHoldStart();
@@ -283,7 +299,7 @@ const SyncPanel: React.FC = () => {
       handleHoldStart();
       setIsHolding(true);
     }
-  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart]);
+  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart, clearPlacementPreroll]);
 
   const endHold = useCallback(() => {
     if (!isHolding) return;
@@ -558,7 +574,7 @@ const SyncPanel: React.FC = () => {
         editMode={editMode}
         isPlaying={isPlaying}
         isActive={syncState.isActive}
-        status={countIn.status}
+        status={countIn.status ?? placementPreroll.statusFor(isPlaying, lineIndex + 1)}
         gestureControls={
           showGestureCircles && (
             <SyncGestureControls
