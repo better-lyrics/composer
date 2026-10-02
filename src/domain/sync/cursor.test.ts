@@ -64,10 +64,16 @@ describe("moveSyncCursor", () => {
     expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 0 }, "line", -1)).toEqual({ lineIndex: 1, wordIndex: 0 });
   });
 
-  it("stays at the first and last lyric slots", () => {
-    expect(moveSyncCursor(lines, { lineIndex: 1, wordIndex: 0 }, "word", -1)).toEqual({ lineIndex: 1, wordIndex: 0 });
-    expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 2 }, "word", 1)).toEqual({ lineIndex: 3, wordIndex: 2 });
-    expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 0 }, "line", 1)).toEqual({ lineIndex: 3, wordIndex: 0 });
+  it("returns the original cursor at the first and last lyric slots", () => {
+    const first = { lineIndex: 1, wordIndex: 0 };
+    const lastWord = { lineIndex: 3, wordIndex: 2 };
+    const lastLine = { lineIndex: 3, wordIndex: 0 };
+    const completed = { lineIndex: lines.length, wordIndex: 0 };
+    expect(moveSyncCursor(lines, first, "word", -1)).toBe(first);
+    expect(moveSyncCursor(lines, first, "line", -1)).toBe(first);
+    expect(moveSyncCursor(lines, lastWord, "word", 1)).toBe(lastWord);
+    expect(moveSyncCursor(lines, lastLine, "line", 1)).toBe(lastLine);
+    expect(moveSyncCursor(lines, completed, "word", 1)).toBe(completed);
   });
 
   it("returns to the last lyric slot after sync completion", () => {
@@ -83,11 +89,11 @@ describe("moveSyncCursor", () => {
 
   it("handles empty and entirely blank lyrics", () => {
     for (const lyrics of [[], [blank()]]) {
-      for (const direction of [-1, 1] as const) {
-        expect(moveSyncCursor(lyrics, { lineIndex: 0, wordIndex: 0 }, "word", direction)).toEqual({
-          lineIndex: 0,
-          wordIndex: 0,
-        });
+      for (const granularity of ["word", "line"] as const) {
+        for (const direction of [-1, 1] as const) {
+          const cursor = { lineIndex: 0, wordIndex: 0 };
+          expect(moveSyncCursor(lyrics, cursor, granularity, direction)).toBe(cursor);
+        }
       }
     }
   });

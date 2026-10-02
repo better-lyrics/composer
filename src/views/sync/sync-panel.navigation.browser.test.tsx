@@ -203,6 +203,89 @@ describe("SyncPanel cursor navigation", () => {
     await expect.poll(() => selectedWord(screen.container)).toBe("two");
   });
 
+  it.each([
+    { key: "ArrowUp", startingWord: "one", selectedIndex: 2, nextWord: "four" },
+    { key: "ArrowDown", startingWord: "four", selectedIndex: 1, nextWord: "three" },
+  ])(
+    "syncs the latest selection when $key and Space arrive together",
+    async ({ key, startingWord, selectedIndex, nextWord }) => {
+      load([
+        createLine({
+          text: "one two three four",
+          words: [
+            { text: "one ", begin: 1, end: 2 },
+            { text: "two ", begin: 2, end: 3 },
+            { text: "three ", begin: 3, end: 4 },
+            { text: "four", begin: 4, end: 5 },
+          ],
+        }),
+      ]);
+      const screen = await render(<SyncPanel />);
+      if (startingWord === "four") {
+        press("ArrowUp");
+        press("ArrowUp");
+        press("ArrowUp");
+      }
+      await expect.poll(() => selectedWord(screen.container)).toBe(startingWord);
+      setCurrentTime(6);
+      const before = useProjectStore.getState();
+      press(key);
+      press(key);
+      expectUnchanged(before, 6);
+      press(" ");
+
+      await expect.poll(() => selectedWord(screen.container)).toBe(nextWord);
+      expect(useProjectStore.getState().lines[0].words?.[selectedIndex].begin).toBe(6);
+      expect(useProjectStore.getState().lines[0].words?.[0].begin).toBe(1);
+      expect(useAudioStore.getState().currentTime).toBe(6);
+      flushSync(() => useProjectStore.getState().undo());
+      expect(useProjectStore.getState().lines).toEqual(before.lines);
+    },
+  );
+
+  it.each(["word", "line"] as const)("syncs a newly selected line immediately in %s mode", async (granularity) => {
+    load(
+      [
+        createLine({ text: "one" }),
+        createLine({ text: "" }),
+        createLine({ text: "two" }),
+        createLine({ text: "three" }),
+        createLine({ text: "four" }),
+      ],
+      granularity,
+    );
+    const screen = await render(<SyncPanel />);
+    setCurrentTime(6);
+    const before = useProjectStore.getState();
+    press("ArrowUp");
+    press("ArrowUp");
+    expectUnchanged(before, 6);
+    press(" ");
+
+    await expect.poll(() => selectedWord(screen.container)).toBe("four");
+    const recordedLine = useProjectStore.getState().lines[3];
+    expect(granularity === "word" ? recordedLine.words?.[0].begin : recordedLine.begin).toBe(6);
+    expect(useProjectStore.getState().lines.slice(0, 3)).toEqual(before.lines.slice(0, 3));
+  });
+
+  it("starts a hold on the newly selected word without waiting for a render", async () => {
+    load([createLine({ text: "one two three" })]);
+    const screen = await render(<SyncPanel />);
+    setCurrentTime(1);
+    press(" ");
+    await expect.poll(() => selectedWord(screen.container)).toBe("two");
+    setCurrentTime(2);
+    press("ArrowDown");
+    press("f", { code: "KeyF" });
+
+    await expect.poll(() => selectedWord(screen.container)).toBe("one");
+    expect(useProjectStore.getState().lines[0].words).toEqual([{ text: "one ", begin: 2, end: 2 }]);
+    setCurrentTime(3);
+    press("f", { code: "KeyF" }, "keyup");
+    await expect.poll(() => selectedWord(screen.container)).toBe("two");
+    expect(useProjectStore.getState().lines[0].words).toEqual([{ text: "one ", begin: 2, end: 3 }]);
+  });
+
   it("keeps the existing protection against creating timing gaps when Space follows an untimed selection", async () => {
     load([createLine({ text: "one two three" })]);
     const screen = await render(<SyncPanel />);

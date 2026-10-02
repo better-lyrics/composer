@@ -181,7 +181,7 @@ function useSyncHandlers({
       setSyncState((prev) => {
         const current = resolveSyncCursor(lines, prev.position, !!prev.jumpedToPosition, granularity);
         const position = moveSyncCursor(lines, current, granularity, direction);
-        if (position.lineIndex === current.lineIndex && position.wordIndex === current.wordIndex) return prev;
+        if (position === current) return prev;
         return { ...prev, position, jumpedToPosition: true, preserveFollowingTimings: granularity === "word" };
       });
     },

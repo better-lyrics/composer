@@ -29,6 +29,7 @@ import { SyncHeader } from "@/views/sync/sync-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 // -- Components ---------------------------------------------------------------
 
@@ -279,6 +280,10 @@ const SyncPanel: React.FC = () => {
   const performKeyboardTap = useEffectEvent(performTap);
   const beginKeyboardHold = useEffectEvent(beginHold);
   const endKeyboardHold = useEffectEvent(endHold);
+  const moveKeyboardCursor = useEffectEvent((direction: -1 | 1) => {
+    // Commit navigation now so a following Space or hold cannot record the old cursor.
+    flushSync(() => handleMoveCursor(direction));
+  });
 
   const handleTapPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -335,7 +340,7 @@ const SyncPanel: React.FC = () => {
 
       e.preventDefault();
       e.stopPropagation();
-      if (!e.repeat && !isHolding) handleMoveCursor(direction);
+      if (!e.repeat && !isHolding) moveKeyboardCursor(direction);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -410,17 +415,7 @@ const SyncPanel: React.FC = () => {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [
-    activeTab,
-    undo,
-    redo,
-    handleNudgeLastSynced,
-    handleMoveCursor,
-    editMode,
-    isHolding,
-    hasTransliteration,
-    toggleTextVariant,
-  ]);
+  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
 
   const showScrollableView = !isPlaying || editMode;
 

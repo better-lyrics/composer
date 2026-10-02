@@ -37,6 +37,7 @@ function advanceCursor(lines: readonly LyricLine[], cursor: SyncCursor, granular
 }
 
 // Manual navigation stays on a lyric slot; only a sync gesture advances past the end.
+// Returns the original cursor when no movement is possible.
 function moveSyncCursor(
   lines: readonly LyricLine[],
   cursor: SyncCursor,
