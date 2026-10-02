@@ -4,6 +4,7 @@ import { useProjectStore } from "@/stores/project";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
 import { pluralWord, pluralize } from "@/utils/pluralize";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconBulb, IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
@@ -29,7 +30,11 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
   const dismissSuggestion = useProjectStore((s) => s.dismissSuggestion);
 
-  const suggestions = useMemo(() => sharedTimingSuggestions(lines, groups), [lines, groups]);
+  const duration = useAudioStore((s) => s.duration);
+  const suggestions = useMemo(
+    () => sharedTimingSuggestions(lines, groups, songEndOrUnbounded(duration)),
+    [lines, groups, duration],
+  );
 
   const dismissOne = (suggestion: SharedTimingSuggestion) => dismissSuggestion(suggestion.fingerprint);
 

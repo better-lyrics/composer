@@ -89,4 +89,4 @@ function initialGroupSharing(
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialGroupSharing, instancesWithDifferentTiming };
+export { initialGroupSharing };

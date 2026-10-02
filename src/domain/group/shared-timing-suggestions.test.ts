@@ -74,6 +74,13 @@ describe("sharedTimingSuggestions", () => {
       expect(sharedTimingSuggestions(lines, [oldChorus])[0]).toMatchObject({ changingCount: 2, replacedCount: 1 });
     });
 
+    it("does not count an instance that sharing would refuse at the song end", () => {
+      const lines = [member(0, 0, 10), member(0, 1, 12), member(1, 0, 118), member(1, 1), member(2, 0), member(2, 1)];
+
+      expect(sharedTimingSuggestions(lines, [oldChorus], 120)[0]).toMatchObject({ changingCount: 1, replacedCount: 0 });
+      expect(sharedTimingSuggestions(lines, [oldChorus])[0]).toMatchObject({ changingCount: 2, replacedCount: 1 });
+    });
+
     it("does not count a timed instance that already has the same relative timing", () => {
       const lines = [
         member(0, 0, 10),
