@@ -1,4 +1,5 @@
 import type { ProjectPart } from "@/domain/project/edited-lyrics";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
@@ -8,6 +9,7 @@ import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { Scroll } from "@/ui/scroll";
+import { SegmentedControl, type SegmentedOption } from "@/ui/segmented-control";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
 import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
@@ -53,6 +55,13 @@ const NOT_SYNCED_MESSAGE =
 
 // -- Helpers ------------------------------------------------------------------
 
+function exportTimingOptions(lineLocked: boolean): SegmentedOption<TimingGranularity>[] {
+  return [
+    { value: "word", label: "Word" },
+    { value: "line", label: "Line", disabled: lineLocked },
+  ];
+}
+
 function applyEditsToProject(content: string, duration: number): void {
   const result = applyEditedTtml(content, duration);
   if (result.status === "export-only") {
@@ -83,10 +92,13 @@ const ExportPanel: React.FC = () => {
     content: exportContent,
     duration,
     editedContent,
+    editBlocksLineTiming,
+    exportTiming,
     generatedContent: generatedTtml,
     hasConflict,
     lineCount,
     setEditState,
+    setExportTiming,
     syncedLineCount,
     title,
   } = useExportTtml();
@@ -202,13 +214,24 @@ const ExportPanel: React.FC = () => {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <SegmentedControl
+            aria-label="Export timing"
+            value={exportTiming}
+            options={exportTimingOptions(isEditing || editBlocksLineTiming)}
+            onChange={setExportTiming}
+          />
           {editedContent !== null && (
             <Button hasIcon onClick={handleRegenerate}>
               <IconRefresh className="size-4" />
               Regenerate
             </Button>
           )}
-          <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
+          <Button
+            hasIcon
+            variant={isEditing ? "primary" : "secondary"}
+            disabled={exportTiming === "line"}
+            onClick={handleEdit}
+          >
             <IconEdit className="size-4" />
             {isEditing ? "Done" : "Edit"}
           </Button>

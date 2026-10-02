@@ -146,3 +146,55 @@ describe("background alternate editing", () => {
     });
   });
 });
+
+function alignableLine(alignmentStatus?: "needs-review", backgroundAlignmentStatus?: "needs-review") {
+  return {
+    id: "row",
+    text: "Hello",
+    agentId: "v1",
+    words: [{ text: "Hello", begin: 1, end: 2 }],
+    backgroundText: "空",
+    backgroundWords: [{ text: "空", begin: 1, end: 2 }],
+    transliteration: {
+      language: "ja-Latn",
+      text: "hello",
+      backgroundText: "sora",
+      segments: [{ original: "Hello", transliteration: "hello" }],
+      backgroundSegments: [{ original: "空", transliteration: "sora" }],
+      origin: "manual" as const,
+      sourceFingerprint: languageSourceFingerprint("Hello", "空"),
+      alignmentStatus,
+      backgroundAlignmentStatus,
+    },
+  };
+}
+
+async function renderAlignable(line: ReturnType<typeof alignableLine>) {
+  useProjectStore.getState().setLines([line]);
+  return render(<LanguageLineEditor line={line} index={0} targets={[]} languageNames={new Map()} />);
+}
+
+describe("align button emphasis", () => {
+  it("highlights Align in the accent color while the transliteration alignment needs review", async () => {
+    const screen = await renderAlignable(alignableLine("needs-review"));
+    await expect.element(screen.getByRole("button", { name: "Align", exact: true })).toHaveClass("bg-composer-accent-dark");
+  });
+
+  it("keeps Align quiet once the transliteration is aligned", async () => {
+    const screen = await renderAlignable(alignableLine());
+    await expect.element(screen.getByRole("button", { name: "Align", exact: true })).toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: "Align", exact: true }))
+      .not.toHaveClass("bg-composer-accent-dark");
+  });
+
+  it("highlights only the background Align when only the background alignment needs review", async () => {
+    const screen = await renderAlignable(alignableLine(undefined, "needs-review"));
+    await expect
+      .element(screen.getByRole("button", { name: "Align background timing", exact: true }))
+      .toHaveClass("bg-composer-accent-dark");
+    await expect
+      .element(screen.getByRole("button", { name: "Align", exact: true }))
+      .not.toHaveClass("bg-composer-accent-dark");
+  });
+});

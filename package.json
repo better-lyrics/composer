@@ -1,7 +1,7 @@
 {
   "name": "composer",
   "private": true,
-  "version": "1.45.0",
+  "version": "1.46.1",
   "type": "module",
   "scripts": {
     "dev": "vite-react-ssg dev",
@@ -32,7 +32,7 @@
     "@lit/react": "^1.0.8",
     "@tabler/icons-react": "^3.48.0",
     "@tanstack/react-query": "^5.102.8",
-    "@uimaxbai/am-lyrics": "^1.7.1",
+    "@uimaxbai/am-lyrics": "^1.7.4",
     "@wavesurfer/react": "^1.0.12",
     "clsx": "^2.1.1",
     "diff": "^9.0.0",
