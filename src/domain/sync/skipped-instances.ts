@@ -17,6 +17,11 @@ interface SkippedInstance {
   lastLineIndex: number;
 }
 
+interface InstanceRef {
+  groupId: string;
+  instanceIdx: number;
+}
+
 interface SyncPosition {
   cursor: SyncCursor;
   jumped: boolean;
@@ -61,23 +66,42 @@ function skippedSharedInstances(lines: readonly LyricLine[], groups: readonly Li
     );
 }
 
-// A cursor left inside a skipped instance (for example by grouping mid-sync) resumes after it, so a tap never re-records it.
+function skippedInstanceOfLine(
+  skippedInstances: readonly SkippedInstance[],
+  line: LyricLine | undefined,
+): SkippedInstance | undefined {
+  return line && skippedInstances.find((instance) => instance.lineIds.includes(line.id));
+}
+
+// The instance a jump lands in, recorded so the cursor may stay inside it to re-record it.
+function skippedInstanceAt(
+  skippedInstances: readonly SkippedInstance[],
+  lines: readonly LyricLine[],
+  lineIndex: number,
+): InstanceRef | undefined {
+  const skipped = skippedInstanceOfLine(skippedInstances, lines[lineIndex]);
+  return skipped && { groupId: skipped.groupId, instanceIdx: skipped.instanceIdx };
+}
+
+// A cursor left inside a skipped instance (for example by grouping mid-sync) resumes after it, so a tap never re-records
+// it, unless the user jumped into that instance to re-record it.
 function syncPositionPastSkipped(
   lines: readonly LyricLine[],
-  groups: readonly LinkGroup[],
+  skippedInstances: readonly SkippedInstance[],
   cursor: SyncCursor,
   jumped: boolean,
+  reRecording?: InstanceRef,
 ): SyncPosition {
   const unchanged = { cursor, jumped };
-  const line = lines[cursor.lineIndex];
-  if (jumped || !line || !groups.some((group) => group.sharesTiming)) return unchanged;
-  const skipped = skippedSharedInstances(lines, groups).find((instance) => instance.lineIds.includes(line.id));
+  if (jumped) return unchanged;
+  const skipped = skippedInstanceOfLine(skippedInstances, lines[cursor.lineIndex]);
   if (!skipped) return unchanged;
+  if (reRecording?.groupId === skipped.groupId && reRecording.instanceIdx === skipped.instanceIdx) return unchanged;
   if (cursor.lineIndex === skipped.firstLineIndex && cursor.wordIndex === 0) return unchanged;
   return { cursor: { lineIndex: nextSyncableLineIndex(lines, skipped.lastLineIndex), wordIndex: 0 }, jumped: true };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { skippedSharedInstances, syncPositionPastSkipped };
-export type { SkippedInstance };
+export { skippedInstanceAt, skippedSharedInstances, syncPositionPastSkipped };
+export type { InstanceRef, SkippedInstance };

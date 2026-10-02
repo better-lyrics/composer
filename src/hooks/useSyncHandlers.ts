@@ -5,11 +5,12 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
+import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
-import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
-import { syncPositionPastSkipped } from "@/domain/sync/skipped-instances";
+import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
+import { skippedInstanceAt } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
+import { useSyncCursor } from "@/hooks/useSyncCursor";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -19,7 +20,7 @@ import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpe
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useRef } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -67,21 +68,8 @@ function useSyncHandlers({
   const updateLinesWithHistory = useProjectStore((s) => s.updateLinesWithHistory);
   const confirm = useConfirm();
 
-  const history = useProjectStore((s) => s.history);
-  const historyIndex = useProjectStore((s) => s.historyIndex);
   const ignoreNextHoldEndRef = useRef(false);
-  const groups = useProjectStore((s) => s.groups);
-  const stored = storedSyncPosition(syncState, { history, historyIndex });
-  const { cursor, jumped } = useMemo(
-    () =>
-      syncPositionPastSkipped(
-        lines,
-        groups,
-        resolveSyncCursor(lines, stored.position, stored.jumped, granularity),
-        stored.jumped,
-      ),
-    [lines, groups, stored.position, stored.jumped, granularity],
-  );
+  const { cursor, jumped, skippedInstances } = useSyncCursor(lines, syncState, granularity);
   const { lineIndex, wordIndex } = cursor;
   const currentLine = lines[lineIndex];
   const isComplete = isCursorPastEnd(lines, cursor);
@@ -101,6 +89,7 @@ function useSyncHandlers({
         time: readTapTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         groups: useProjectStore.getState().groups,
+        skippedInstances,
       };
       const anchor = anchorGesture(lines, gesture, ctx);
       const { placeInstance } = useProjectStore.getState();
@@ -134,7 +123,7 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, readTapTime, updateLinesWithHistory, setSyncState],
+    [lines, cursor, jumped, skippedInstances, readTapTime, updateLinesWithHistory, setSyncState],
   );
 
   const handleTap = useCallback(() => {
@@ -223,12 +212,13 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
         jumpedToPosition: true,
+        reRecording: skippedInstanceAt(skippedInstances, lines, index),
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
       seekForRedo(bounds.begin);
     },
-    [lines, seekForRedo, setSyncState],
+    [lines, skippedInstances, seekForRedo, setSyncState],
   );
 
   // Only a word that already carries timing can be re-recorded: parking the
@@ -242,10 +232,11 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
         jumpedToPosition: true,
+        reRecording: skippedInstanceAt(skippedInstances, lines, lineIdx),
       }));
       seekForRedo(word.begin);
     },
-    [lines, seekForRedo, setSyncState],
+    [lines, skippedInstances, seekForRedo, setSyncState],
   );
 
   // The sync cursor addresses main words only, so a background word can be
@@ -466,6 +457,7 @@ function useSyncHandlers({
     cursor,
     isComplete,
     currentLine,
+    skippedInstances,
     currentWord: currentLine?.text ? splitIntoWords(currentLine.text)[wordIndex] : undefined,
   };
 }

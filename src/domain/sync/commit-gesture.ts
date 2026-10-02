@@ -7,7 +7,7 @@ import { isLineSynced } from "@/domain/line/predicates";
 import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
-import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -22,6 +22,7 @@ interface GestureContext {
   time: number;
   defaultWordDuration: number;
   groups?: readonly LinkGroup[];
+  skippedInstances?: readonly SkippedInstance[];
 }
 
 interface GestureCommit {
@@ -68,7 +69,8 @@ function followsSkippedInstance(
   const previous = previousSlot(lines, ctx.cursor, granularity);
   if (!previous || !ctx.groups?.some((group) => group.sharesTiming)) return false;
   const previousId = lines[previous.lineIndex].id;
-  return skippedSharedInstances(lines, ctx.groups).some((skipped) => skipped.lineIds.includes(previousId));
+  const skippedInstances = ctx.skippedInstances ?? skippedSharedInstances(lines, ctx.groups);
+  return skippedInstances.some((skipped) => skipped.lineIds.includes(previousId));
 }
 
 function withJumpPastSkipped(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word") {

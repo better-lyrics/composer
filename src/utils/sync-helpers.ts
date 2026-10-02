@@ -1,8 +1,9 @@
 import { effectiveBounds } from "@/domain/line/bounds";
-import { isLineSynced } from "@/domain/line/predicates";
 import type { LyricLine } from "@/domain/line/model";
+import { isLineSynced } from "@/domain/line/predicates";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
+import type { InstanceRef } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
@@ -19,6 +20,7 @@ interface SyncState {
   // line when the user jumped back to re-record this one.
   jumpedToPosition?: boolean;
   anchorUndo?: AnchorUndo;
+  reRecording?: InstanceRef;
 }
 
 // -- Constants ----------------------------------------------------------------

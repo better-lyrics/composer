@@ -54,7 +54,7 @@ function anchorGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
   const groups = (ctx.groups ?? []).map((group) =>
     group.id === groupId ? withOwnTiming(group, instanceIdx, true) : group,
   );
-  const commit = commitGesture(lines, gesture, { ...ctx, groups });
+  const commit = commitGesture(lines, gesture, { ...ctx, groups, skippedInstances: undefined });
   const anchorLine = lines[anchorCursor.lineIndex];
   const anchorUpdate = commit?.lineUpdates.find((update) => update.id === anchorLine.id);
   const start = anchorUpdate ? mainBounds(applyLineUpdates([anchorLine], [anchorUpdate])[0])?.begin : undefined;
