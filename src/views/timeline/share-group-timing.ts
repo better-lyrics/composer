@@ -13,10 +13,8 @@ function shareGroupTimingWithUndo(groupId: string): void {
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;
-  if (keptOwnTiming.length) {
-    showKeptOwnTimingToast(keptOwnTiming);
-    return;
-  }
+  showKeptOwnTimingToast(keptOwnTiming);
+  if (keptOwnTiming.length && realigned.length === 0) return;
   const count = sharedInstancesInLineOrder(lines, group).length;
   const shared = `${group.label} shares timing in ${pluralize(count, "instance")}`;
   showGroupActionToast(realigned.length ? `${shared}. ${replacedOwnTimingNote(realigned.length)}` : shared);

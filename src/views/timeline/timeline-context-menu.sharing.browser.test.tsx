@@ -1,4 +1,5 @@
 import type { LinkGroup } from "@/domain/group/template";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
@@ -87,9 +88,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
 
     await expect
       .element(
-        screen.getByText(
-          "Chorus 2 keeps its own timing. Sync one instance fully, then choose Share timing again.",
-        ),
+        screen.getByText("Chorus 2 keeps its own timing. Sync one instance fully, then choose Share timing again."),
       )
       .toBeVisible();
     expect(group().ownTimingInstances).toEqual([1]);
@@ -145,6 +144,26 @@ describe("TimelineContextMenu · banner sharing items", () => {
       .toBeVisible();
     expect(group().ownTimingInstances).toEqual([1]);
     expect(store().lines[1]).toEqual(partlyWordSynced);
+  });
+
+  it("reports replaced timing with Undo when another instance keeps its own timing", async () => {
+    seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
+    useAudioStore.setState({ duration: 120 });
+    useProjectStore.setState({ lines: [chorus(0, 10), chorus(1, 40, 1.2), chorus(2, 119, 1.2)] });
+    const screen = await renderMenu();
+    await screen.getByRole("button", { name: "Share timing across group" }).click();
+
+    await expect
+      .element(screen.getByText("Chorus shares timing in 2 instances. The own timing of 1 instance was replaced."))
+      .toBeVisible();
+    await expect
+      .element(screen.getByText("1 instance kept its own timing: the shared timing would run past the end of the song"))
+      .toBeVisible();
+    expect(group().ownTimingInstances).toEqual([2]);
+
+    await screen.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => group().sharesTiming).toBeUndefined();
+    expect(secondWordBegin("c1")).toBe(41.2);
   });
 
   it("undoes an override change from the toast", async () => {
