@@ -1,3 +1,4 @@
+import { acceptedExtensionsFor } from "@/domain/lyrics-file/supported-formats";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
 import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import type { OutputFormat } from "@/pages/converters/output-formats";
@@ -5,9 +6,11 @@ import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
 import { StatusChip } from "@/ui/status-chip";
 import { cn } from "@/utils/cn";
+import { fileNameWithoutExtension } from "@/utils/file-name";
+import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 interface ConvertArgs {
@@ -20,6 +23,7 @@ interface ConverterViewProps {
   title: string;
   inputLabel: string;
   inputPlaceholder: string;
+  inputExtension: Exclude<LyricsFileType, "unknown">;
   sampleInput: string;
   convert: (args: ConvertArgs) => ConversionResult;
   outputFormat: OutputFormat;
@@ -31,6 +35,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   title,
   inputLabel,
   inputPlaceholder,
+  inputExtension,
   sampleInput,
   convert,
   outputFormat,
@@ -38,6 +43,48 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   const downloadFilename = `lyrics.${outputFormat.extension}`;
   const [input, setInput] = useState("");
   const [filename, setFilename] = useState(() => downloadFilename);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const acceptedExtensions = acceptedExtensionsFor(inputExtension);
+
+  const loadFile = async (file: File) => {
+    const extension = file.name.slice(file.name.lastIndexOf(".") + 1).toLowerCase();
+    if (!file.name.includes(".") || !acceptedExtensions.includes(extension)) {
+      setFileError(`Unsupported file type. Use a .${inputExtension} file.`);
+      return;
+    }
+    setFileError(null);
+    setInput(await file.text());
+    setFilename(`${fileNameWithoutExtension(file.name)}.${outputFormat.extension}`);
+  };
+
+  const carriesFile = (event: React.DragEvent) => event.dataTransfer.types.includes("Files");
+
+  const handleDragOver = (event: React.DragEvent) => {
+    if (!carriesFile(event)) return;
+    event.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (event: React.DragEvent) => {
+    if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    setIsDragOver(false);
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    event.preventDefault();
+    void loadFile(file);
+  };
+
+  const handlePickedFile = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (file) void loadFile(file);
+  };
 
   const { output, error, projectPayload, skippedLines } = useMemo(() => {
     if (!input.trim()) return { output: "", error: null, projectPayload: "", skippedLines: 0 };
@@ -81,18 +128,43 @@ const ConverterView: React.FC<ConverterViewProps> = ({
         your browser.
       </p>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col">
+        <div
+          className={cn(
+            "rounded-xl bg-composer-bg-elevated border border-composer-border p-4 flex flex-col",
+            isDragOver && "border-composer-accent",
+          )}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
           <div className="flex items-center justify-between mb-3">
             <label htmlFor="converter-input" className="text-sm font-medium text-composer-text select-none">
               {inputLabel}
             </label>
-            <button
-              type="button"
-              className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer"
-              onClick={() => setInput(sampleInput)}
-            >
-              Load sample
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                Load file
+              </button>
+              <button
+                type="button"
+                className="text-xs text-composer-accent-text hover:text-composer-accent cursor-pointer"
+                onClick={() => setInput(sampleInput)}
+              >
+                Load sample
+              </button>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              aria-label={`Choose a .${inputExtension} file`}
+              accept={acceptedExtensions.map((extension) => `.${extension}`).join(",")}
+              onChange={handlePickedFile}
+              className="sr-only"
+            />
           </div>
           <textarea
             id="converter-input"
@@ -103,6 +175,11 @@ const ConverterView: React.FC<ConverterViewProps> = ({
             spellCheck={false}
             className="flex-1 min-h-[280px] md:min-h-[420px] font-mono text-sm bg-composer-bg-dark border border-composer-border rounded-lg p-3 text-composer-text placeholder:text-composer-text-muted resize-y focus:outline-none focus:border-composer-accent cursor-text select-text"
           />
+          {fileError && (
+            <p role="alert" className="mt-2 text-xs text-composer-error-text select-text cursor-text">
+              {fileError}
+            </p>
+          )}
           <div className="mt-3 flex items-center gap-2">
             <label htmlFor="converter-filename" className="text-xs text-composer-text-muted select-none">
               Filename

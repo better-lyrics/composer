@@ -69,6 +69,7 @@ const TtmlToQrcContent: React.FC = () => {
         title="TTML to QRC Converter"
         inputLabel="Paste TTML"
         inputPlaceholder='<tt xmlns="http://www.w3.org/ns/ttml">&#10;  <body>&#10;    <div>&#10;      <p begin="00:00.500" end="00:03.000">'
+        inputExtension={TTML_TO_QRC_CONVERSION.extension}
         sampleInput={SAMPLE_TTML}
         convert={convert}
         outputFormat={QRC_OUTPUT}

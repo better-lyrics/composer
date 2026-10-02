@@ -86,6 +86,7 @@ const LrcToTtmlPage: React.FC = () => {
         title="LRC to TTML Converter"
         inputLabel="Paste LRC or eLRC"
         inputPlaceholder="[ti:Song title]&#10;[00:12.34]Sample lyric line"
+        inputExtension={LRC_CONVERSION.extension}
         sampleInput={SAMPLE_LRC}
         convert={convert}
         outputFormat={TTML_OUTPUT}

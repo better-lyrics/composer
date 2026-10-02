@@ -88,6 +88,7 @@ const SrtToTtmlPage: React.FC = () => {
         title="SRT to TTML Converter"
         inputLabel="Paste SRT"
         inputPlaceholder="1&#10;00:00:00,500 --> 00:00:03,000&#10;First cue text"
+        inputExtension={SRT_CONVERSION.extension}
         sampleInput={SAMPLE_SRT}
         convert={convert}
         outputFormat={TTML_OUTPUT}

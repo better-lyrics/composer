@@ -77,6 +77,7 @@ const QrcToTtmlContent: React.FC = () => {
         title="QRC to TTML Converter"
         inputLabel="Paste QRC"
         inputPlaceholder="[ti:Song title]&#10;[34059,2299]Is (34059,130)it (34189,120)"
+        inputExtension={QRC_CONVERSION.extension}
         sampleInput={SAMPLE_QRC}
         convert={convert}
         outputFormat={TTML_OUTPUT}

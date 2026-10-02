@@ -22,6 +22,8 @@ const SUPPORTED_LYRICS_FORMATS: readonly SupportedLyricsFormat[] = [
 // TTML or QRC by sniffing content, so it is accepted but never advertised.
 const ALIAS_LYRICS_EXTENSIONS: readonly string[] = ["xml"];
 
+const XML_CONTAINED_FORMATS: ReadonlySet<SupportedLyricsFormat["extension"]> = new Set(["ttml", "qrc"]);
+
 // -- Derived -------------------------------------------------------------------
 
 const ACCEPTED_LYRICS_EXTENSIONS: ReadonlySet<string> = new Set([
@@ -49,9 +51,14 @@ function isSupportedLyricsFile(filename: string): boolean {
   return ACCEPTED_LYRICS_EXTENSIONS.has(filename.slice(lastDot + 1).toLowerCase());
 }
 
+function acceptedExtensionsFor(extension: SupportedLyricsFormat["extension"]): string[] {
+  return XML_CONTAINED_FORMATS.has(extension) ? [extension, ...ALIAS_LYRICS_EXTENSIONS] : [extension];
+}
+
 // -- Exports -------------------------------------------------------------------
 
 export {
+  acceptedExtensionsFor,
   ALIAS_LYRICS_EXTENSIONS,
   isSupportedLyricsFile,
   LYRICS_FILE_ACCEPT_ATTRIBUTE,

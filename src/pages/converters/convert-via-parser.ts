@@ -6,12 +6,13 @@ import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
+import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
 
 // -- Types --------------------------------------------------------------------
 
 interface ParserConversion {
-  extension: string;
+  extension: Exclude<LyricsFileType, "unknown">;
   granularity: "auto" | "line";
   emptyMessage: string;
   failureMessage: string;
