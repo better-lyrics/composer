@@ -1,6 +1,7 @@
 import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
+import { LazyMotion, domAnimation } from "motion/react";
 import { describe, expect, it } from "vitest";
 
 const LINES = [
@@ -168,8 +169,12 @@ describe("SyncCarousel · above current slot", () => {
       [...container.querySelectorAll("span")].find((span) => span.textContent === "Second line")?.getBoundingClientRect().top;
     const plain = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
     const plainCss = await installUtilitiesUsedIn(plain.container);
-    const withoutSlot = lineTop(plain.container);
-    plainCss.remove();
+    let withoutSlot: number | undefined;
+    try {
+      withoutSlot = lineTop(plain.container);
+    } finally {
+      plainCss.remove();
+    }
     await plain.unmount();
     const slotted = await render(
       <SyncCarousel
@@ -181,8 +186,13 @@ describe("SyncCarousel · above current slot", () => {
       />,
     );
     const slottedCss = await installUtilitiesUsedIn(slotted.container);
-    expect(lineTop(slotted.container)).toBe(withoutSlot);
-    slottedCss.remove();
+    try {
+      expect(lineTop(slotted.container)).toBe(withoutSlot);
+      const probe = slotted.getByText("probe", { exact: true }).element().getBoundingClientRect();
+      expect(probe.bottom).toBeLessThanOrEqual(lineTop(slotted.container) ?? 0);
+    } finally {
+      slottedCss.remove();
+    }
   });
 
   it("renders the slot only once, on the current line", async () => {
@@ -196,6 +206,36 @@ describe("SyncCarousel · above current slot", () => {
       />,
     );
     expect(screen.container.querySelectorAll("[data-slot-probe]")).toHaveLength(1);
+  });
+});
+
+describe("SyncCarousel · mount", () => {
+  function textColorsRightAfterMount(container: HTMLElement): string[] {
+    return [...container.querySelectorAll<HTMLElement>("span.relative.inline-flex, div.text-4xl > span")].map(
+      (span) => span.style.color,
+    );
+  }
+
+  it("regression: line text starts at its color instead of animating into it", async () => {
+    const screen = await render(
+      <LazyMotion features={domAnimation} strict>
+        <SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />
+      </LazyMotion>,
+    );
+    const colors = textColorsRightAfterMount(screen.container);
+    expect(colors.length).toBeGreaterThan(0);
+    for (const color of colors) expect(color).not.toBe("");
+  });
+
+  it("regression: word text starts at its color instead of animating into it", async () => {
+    const screen = await render(
+      <LazyMotion features={domAnimation} strict>
+        <SyncCarousel lines={WORD_LINES} lineIndex={0} wordIndex={1} granularity="word" />
+      </LazyMotion>,
+    );
+    const colors = textColorsRightAfterMount(screen.container);
+    expect(colors.length).toBeGreaterThan(0);
+    for (const color of colors) expect(color).not.toBe("");
   });
 });
 
