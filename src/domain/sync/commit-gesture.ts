@@ -1,9 +1,13 @@
+import { type TimeRange, timeRangeResolver } from "@/domain/group/shared-timing";
+import type { LinkGroup } from "@/domain/group/template";
+import { applyLineUpdates } from "@/domain/line/apply-line-updates";
 import { mainBounds } from "@/domain/line/bounds";
-import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
+import type { LineUpdate, LooseLine, LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { shiftLineTiming, shiftWords } from "@/domain/line/shift";
+import { clampShiftDelta, shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "@/domain/sync/cursor";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { type SkippedInstance, skippedSharedInstances } from "@/domain/sync/skipped-instances";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -17,6 +21,8 @@ interface GestureContext {
   jumped: boolean;
   time: number;
   defaultWordDuration: number;
+  groups?: readonly LinkGroup[];
+  skippedInstances?: readonly SkippedInstance[];
 }
 
 interface GestureCommit {
@@ -52,6 +58,27 @@ function anchorBefore(lines: readonly LyricLine[], ctx: GestureContext, granular
   const bounds = slotBounds(lines, slot);
   if (!bounds) return { slot: null, floor: 0 };
   return { slot, floor: ctx.jumped && ctx.time <= bounds.begin ? bounds.end : bounds.begin };
+}
+
+// A placed shared instance keeps the shared end of its last word, even when an undo lost the jump past it.
+function followsSkippedInstance(
+  lines: readonly LyricLine[],
+  ctx: GestureContext,
+  granularity: "line" | "word",
+): boolean {
+  const previous = previousSlot(lines, ctx.cursor, granularity);
+  if (!previous || !ctx.groups?.some((group) => group.sharesTiming)) return false;
+  const previousId = lines[previous.lineIndex].id;
+  const skippedInstances = ctx.skippedInstances ?? skippedSharedInstances(lines, ctx.groups);
+  return skippedInstances.some((skipped) => skipped.lineIds.includes(previousId));
+}
+
+function withJumpPastSkipped(lines: readonly LyricLine[], ctx: GestureContext, granularity: "line" | "word") {
+  return ctx.jumped || !followsSkippedInstance(lines, ctx, granularity) ? ctx : { ...ctx, jumped: true };
+}
+
+function rangeOfLine(lines: readonly LyricLine[], line: LyricLine, ctx: GestureContext): TimeRange {
+  return timeRangeResolver(lines, ctx.groups ?? [], Number.POSITIVE_INFINITY)(line);
 }
 
 function closeSlotWords(words: readonly WordTiming[], index: number, end: number): WordTiming[] {
@@ -106,7 +133,8 @@ function slotText(line: LyricLine, wordIndex: number): string | null {
   return trailingSpace[wordIndex] ? `${text} ` : text;
 }
 
-function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boolean): SlotWrite | null {
+function writeWord(lines: readonly LyricLine[], gestureCtx: GestureContext, open: boolean): SlotWrite | null {
+  const ctx = withJumpPastSkipped(lines, gestureCtx, "word");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
@@ -114,7 +142,9 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
   const existing = line.words ?? [];
   if (text === null || cursor.wordIndex > existing.length) return null;
 
-  const { slot, floor } = anchorBefore(lines, ctx, "word");
+  const anchor = anchorBefore(lines, ctx, "word");
+  const { slot } = anchor;
+  const floor = Math.max(anchor.floor, rangeOfLine(lines, line, ctx).min);
   const begin = Math.max(ctx.time, floor);
   const nextWord = existing[cursor.wordIndex + 1];
   const provisional = open ? begin : begin + ctx.defaultWordDuration;
@@ -140,16 +170,21 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
 
 // -- Line slot writing ------------------------------------------------------------
 
-function writeLine(lines: readonly LyricLine[], ctx: GestureContext): SlotWrite | null {
+function writeLine(lines: readonly LyricLine[], gestureCtx: GestureContext): SlotWrite | null {
+  const ctx = withJumpPastSkipped(lines, gestureCtx, "line");
   const { cursor } = ctx;
   const line = lines[cursor.lineIndex];
   if (!isSyncableLine(line)) return null;
 
-  const { slot, floor } = anchorBefore(lines, ctx, "line");
-  const begin = Math.max(ctx.time, floor);
+  const anchor = anchorBefore(lines, ctx, "line");
+  const { slot } = anchor;
+  const range = rangeOfLine(lines, line, ctx);
+  const floor = Math.max(anchor.floor, range.min);
   const oldMain = mainBounds(line);
+  const delta = oldMain ? clampShiftDelta([line], Math.max(ctx.time, floor) - oldMain.begin, range) : 0;
+  const begin = oldMain ? oldMain.begin + delta : Math.max(ctx.time, floor);
   const updates: Partial<LyricLine> = oldMain
-    ? shiftLineTiming(line, begin - oldMain.begin)
+    ? shiftLineTiming(line, delta)
     : { begin, end: begin, ...backgroundFor(line, begin) };
 
   return {
@@ -205,14 +240,6 @@ function mergeUpdates(a: readonly LineUpdate[], b: readonly LineUpdate[]): LineU
   return [...merged].map(([id, updates]) => ({ id, updates }));
 }
 
-function applyUpdates(lines: readonly LyricLine[], updates: readonly LineUpdate[]): LyricLine[] {
-  const byId = new Map(updates.map((u) => [u.id, u.updates]));
-  return lines.map((line) => {
-    const update = byId.get(line.id);
-    return update ? reconcileLine({ ...line, ...update }) : line;
-  });
-}
-
 function slotWriteToUpdates(write: SlotWrite): LineUpdate[] {
   return write.closes ? [write.update, write.closes] : [write.update];
 }
@@ -251,7 +278,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     return { lineUpdates: [closed.update], nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
   }
 
-  const linesAfterClose = applyUpdates(lines, [closed.update]);
+  const linesAfterClose = applyLineUpdates(lines, [closed.update]);
   const opened = writeWord(linesAfterClose, { ...ctx, cursor: nextCursor, jumped: true, time: closed.closeEnd }, true);
   const lineUpdates = opened ? mergeUpdates([closed.update], [opened.update]) : [closed.update];
   return { lineUpdates, nextCursor, nextJumped: false, clampedTo: closed.clampedTo };
@@ -260,4 +287,4 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
 // -- Exports ------------------------------------------------------------------
 
 export { commitGesture };
-export type { GestureCommit, SyncGesture };
+export type { GestureCommit, GestureContext, SyncGesture };

@@ -32,8 +32,9 @@ const TimelineRows: React.FC<TimelineRowsProps> = ({ scrollContainerRef }) => {
   const rowHeights = useTimelineStore((s) => s.rowHeights);
   const defaultRowHeight = useTimelineStore((s) => s.defaultRowHeight);
   const collapsedInstances = useTimelineStore((s) => s.collapsedInstances);
+  const focusedGroup = useTimelineStore((s) => s.focusedGroup);
 
-  const allRows = useMemo(() => getEffectiveRows(lines), [lines]);
+  const allRows = useMemo(() => getEffectiveRows(lines, focusedGroup), [lines, focusedGroup]);
 
   const visibleRows = useMemo(() => {
     const out: EffectiveRow[] = [];

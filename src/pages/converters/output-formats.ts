@@ -3,12 +3,13 @@ import { writeQrc } from "@/utils/lyrics-writers/qrc";
 import type { LyricsWriterInput } from "@/utils/lyrics-writers/shared";
 import { writeSrt } from "@/utils/lyrics-writers/srt";
 import { generateTTML } from "@/utils/ttml";
+import type { LyricFormat } from "@braccato/highlight";
 
 // -- Types --------------------------------------------------------------------
 
 interface OutputFormat {
   label: string;
-  extension: string;
+  extension: Exclude<LyricFormat, "plain">;
   mimeType: string;
   write: (document: LyricsWriterInput) => string;
 }

@@ -1,6 +1,7 @@
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { PREVIEW_SIDEBAR_WIDTH } from "@/utils/preview-sidebar-width";
 import { LyricsRenderer } from "@/views/preview/lyrics-renderer";
+import { useFocusRange } from "@/views/timeline/use-focus-range";
 import { usePreviewSidebarResize } from "@/views/timeline/use-preview-sidebar-resize";
 import { useId } from "react";
 
@@ -47,6 +48,7 @@ const PreviewSidebarShell: React.FC<PreviewSidebarShellProps> = ({ children }) =
 
 const TimelinePreviewSidebar: React.FC = () => {
   const { content, duration, syncedLineCount } = useExportTtml();
+  const focusRange = useFocusRange();
 
   return (
     <PreviewSidebarShell>
@@ -55,7 +57,7 @@ const TimelinePreviewSidebar: React.FC = () => {
           <span className="text-sm text-composer-text-muted">No synced content</span>
         </div>
       ) : (
-        <LyricsRenderer ttmlString={content} durationSeconds={duration} layout="sidebar" />
+        <LyricsRenderer ttmlString={content} durationSeconds={duration} layout="sidebar" focusRange={focusRange} />
       )}
     </PreviewSidebarShell>
   );

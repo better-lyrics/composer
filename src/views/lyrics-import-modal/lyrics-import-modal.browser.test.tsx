@@ -1,20 +1,21 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
+import { mainBounds } from "@/domain/line/bounds";
 import type { LyricsSearchResult, ProviderName } from "@/domain/lyrics-search/result";
 import { useAudioStore } from "@/stores/audio";
 import { useImportModalStore } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
+import { ConfirmModalHost } from "@/ui/confirm-modal";
 import {
   registerProviderForTests,
   restoreProvidersForTests,
   snapshotProvidersForTests,
 } from "@/utils/lyrics-search/registry";
 import type { LyricsSearchProvider } from "@/utils/lyrics-search/types";
-import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { LyricsImportModalHost } from "@/views/lyrics-import-modal/lyrics-import-modal-host";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 // -- Fixture provider plumbing ------------------------------------------------
 
@@ -175,6 +176,22 @@ describe("LyricsImportModal paste section commit", () => {
     await screen.getByRole("button", { name: /^Import$/ }).click();
     await expect.poll(() => useProjectStore.getState().lines.length).toBe(2);
     await expect.poll(() => useImportModalStore.getState().isOpen).toBe(false);
+  });
+
+  it("imports a whole pasted TTML document with its timing and word breaks", async () => {
+    const screen = await render(withQueryClient(<LyricsImportModalHost />));
+    openModal({ section: "paste" });
+    const textarea = await waitForTextarea();
+    textarea.focus();
+    await userEvent.fill(
+      textarea,
+      '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:02.000" end="00:03.000"><span begin="00:02.000" end="00:02.500">Hel</span><span begin="00:02.500" end="00:03.000">lo</span></p></div></body></tt>',
+    );
+    await screen.getByRole("button", { name: /^Import$/ }).click();
+    await expect.poll(() => useProjectStore.getState().lines.length).toBe(1);
+    const [line] = useProjectStore.getState().lines;
+    expect(line && mainBounds(line)).toEqual({ begin: 2, end: 3 });
+    expect(line?.words?.map((word) => word.text)).toEqual(["Hel", "lo"]);
   });
 
   it("disables Import when paste is whitespace only", async () => {

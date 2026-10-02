@@ -11,6 +11,8 @@ import { useTimelineStore, WAVEFORM_HEIGHT } from "@/views/timeline/timeline-sto
 import { isLinked } from "@/domain/instance/predicates";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { computeRowLayout } from "@/views/timeline/utils";
+import { currentFocusScrollRange } from "@/views/timeline/effective-focus";
+import { clampScrollLeft } from "@/views/timeline/group-focus";
 import { useEffect, useMemo, useRef } from "react";
 
 // -- Types ---------------------------------------------------------------------
@@ -57,7 +59,8 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
       const viewportWidth = container.clientWidth;
       const centerOffset = viewportWidth / 2 - GUTTER_WIDTH;
       const targetScrollLeft = Math.max(0, currentTime * zoom - centerOffset);
-      container.scrollLeft = targetScrollLeft;
+      const focusRange = currentFocusScrollRange(container);
+      container.scrollLeft = focusRange ? clampScrollLeft(targetScrollLeft, focusRange) : targetScrollLeft;
 
       const lines = useProjectStore.getState().lines;
       let activeLineIndex = -1;
@@ -71,13 +74,14 @@ const TimelinePlayhead: React.FC<TimelinePlayheadProps> = ({ containerHeight, sc
 
       if (activeLineIndex >= 0 && activeLineIndex !== lastFollowedLineRef.current) {
         lastFollowedLineRef.current = activeLineIndex;
-        const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+        const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
 
         const layout = computeRowLayout({
           lines,
           rowHeights,
           defaultRowHeight,
           collapsedInstances,
+          focusedGroup,
           waveformHeight: WAVEFORM_HEIGHT,
           groupHeaderHeight: GROUP_HEADER_HEIGHT,
         });

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { usePersistence } from "@/hooks/usePersistence";
-import { loadCurrentProject } from "@/lib/persistence";
 import { cancelPendingSave } from "@/lib/persistence-debounce";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
@@ -8,6 +7,7 @@ import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { seedProject } from "@/test/idb";
 import { render } from "@/test/render";
+import { loadOpenProjectRecord } from "@/test/projects";
 
 // -- Test infrastructure ------------------------------------------------------
 
@@ -34,7 +34,7 @@ function seedSavedProject(currentStem?: "original" | "vocals" | "instrumental"):
 }
 
 async function pollSavedStem(): Promise<"original" | "vocals" | "instrumental" | undefined> {
-  const saved = await loadCurrentProject();
+  const saved = await loadOpenProjectRecord();
   return saved?.currentStem;
 }
 
@@ -138,7 +138,7 @@ describe("usePersistence:saved project field shape", () => {
 
     useSeparationStore.getState().selectStem("instrumental");
 
-    await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("instrumental");
+    await expect.poll(async () => (await loadOpenProjectRecord())?.currentStem).toBe("instrumental");
   });
 });
 
@@ -159,7 +159,7 @@ describe("usePersistence:stem persists in audio-only sessions", () => {
 
     useSeparationStore.getState().selectStem("vocals");
 
-    await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("vocals");
+    await expect.poll(async () => (await loadOpenProjectRecord())?.currentStem).toBe("vocals");
   });
 
   // This mirrors the real-world flow: default debounce delay (no fastSaves
@@ -178,6 +178,6 @@ describe("usePersistence:stem persists in audio-only sessions", () => {
     // Reload immediately, before the 2-second debounce fires.
     window.dispatchEvent(new Event("beforeunload"));
 
-    await expect.poll(async () => (await loadCurrentProject())?.currentStem).toBe("vocals");
+    await expect.poll(async () => (await loadOpenProjectRecord())?.currentStem).toBe("vocals");
   });
 });

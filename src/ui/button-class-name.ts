@@ -2,7 +2,7 @@ import { cn } from "@/utils/cn";
 
 // -- Types --------------------------------------------------------------------
 
-type ButtonVariant = "primary" | "secondary" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "quiet" | "danger" | "destructive";
 type ButtonSize = "sm" | "md" | "icon";
 
 interface ButtonStyleOptions {
@@ -21,6 +21,10 @@ const VARIANT_STYLES: Record<ButtonVariant, string> = {
   primary: "bg-composer-accent-dark hover:bg-composer-accent text-composer-on-accent",
   secondary: "bg-composer-button hover:bg-composer-button-hover text-composer-text",
   ghost: "text-composer-text-muted hover:text-composer-text hover:bg-composer-button",
+  quiet:
+    "text-composer-text/60 hover:text-composer-text hover:bg-composer-button [&_svg]:text-composer-text [&_svg]:opacity-60 [&_svg]:transition-opacity hover:[&_svg]:opacity-100",
+  danger: "text-composer-negative hover:bg-composer-negative/14",
+  destructive: "bg-composer-error hover:bg-[color-mix(in_srgb,var(--color-composer-error)_85%,white)] text-white",
 };
 
 const SIZE_STYLES: Record<ButtonSize, string> = {
@@ -37,7 +41,7 @@ const SIZE_STYLES_WITH_ICON: Record<ButtonSize, string> = {
 
 // -- Recipe -------------------------------------------------------------------
 
-function buttonClassName({ variant = "secondary", size = "md", hasIcon = false, className }: ButtonStyleOptions) {
+function buttonClassName({ variant = "secondary", size = "md", hasIcon = false, className }: ButtonStyleOptions = {}) {
   const sizeStyles = hasIcon ? SIZE_STYLES_WITH_ICON[size] : SIZE_STYLES[size];
   return cn(BASE_STYLES, VARIANT_STYLES[variant], sizeStyles, className);
 }

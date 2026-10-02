@@ -1,7 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { assignBinding, useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
-import { bindingFromKeyboardEvent, findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { isMac } from "@/utils/platform";
+import {
+  bindingFromKeyboardEvent,
+  findMatchingShortcut,
+  isReservedBrowserShortcut,
+  matchesShortcutBinding,
+} from "@/utils/shortcut-matcher";
+import { describe, expect, it } from "vitest";
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", { bubbles: true, ...init });
@@ -11,6 +17,11 @@ describe("findMatchingShortcut", () => {
   describe("happy paths", () => {
     it("matches a first keydown to its shortcut", () => {
       expect(findMatchingShortcut(keydown({ key: "r" }), "timeline")).toBe("timeline.toggleRollingEdit");
+    });
+
+    it("matches Ctrl+Alt+N to the new project shortcut", () => {
+      const event = keydown({ key: "n", code: "KeyN", ctrlKey: true, altKey: true });
+      expect(findMatchingShortcut(event, "global")).toBe("global.newProject");
     });
 
     it("matches held-key repeats of a repeatable shortcut", () => {
@@ -28,6 +39,17 @@ describe("findMatchingShortcut", () => {
     it("regression: a held insert-line key does not insert a line per auto-repeat", () => {
       expect(findMatchingShortcut(keydown({ key: "n", repeat: true }), "timeline")).toBeNull();
     });
+
+    it("regression: AltGr+N does not trigger new project even though it reports ctrlKey and altKey", () => {
+      const event = keydown({
+        key: "\u0144",
+        code: "KeyN",
+        ctrlKey: true,
+        altKey: true,
+        modifierAltGraph: true,
+      } as KeyboardEventInit);
+      expect(findMatchingShortcut(event, "global")).toBeNull();
+    });
   });
 
   describe("edge cases", () => {
@@ -44,6 +66,33 @@ describe("findMatchingShortcut", () => {
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
+    });
+  });
+});
+
+describe("matchesShortcutBinding", () => {
+  const modS = (init: KeyboardEventInit = {}) =>
+    keydown({ key: "s", code: "KeyS", metaKey: isMac, ctrlKey: !isMac, ...init });
+
+  it("matches the shortcut's binding", () => {
+    expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(true);
+  });
+
+  it("matches held-key repeats that findMatchingShortcut ignores", () => {
+    expect(matchesShortcutBinding(modS({ repeat: true }), "global.saveNow")).toBe(true);
+    expect(findMatchingShortcut(modS({ repeat: true }), "global")).toBeNull();
+  });
+
+  describe("edge cases", () => {
+    it("does not match other keys or a missing modifier", () => {
+      expect(matchesShortcutBinding(keydown({ key: "s", code: "KeyS" }), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "d", code: "KeyD" }), "global.saveNow")).toBe(false);
+    });
+
+    it("follows a remapped binding", () => {
+      assignBinding("global.saveNow", { key: "k", mod: true, shift: true });
+      expect(matchesShortcutBinding(modS(), "global.saveNow")).toBe(false);
+      expect(matchesShortcutBinding(modS({ key: "k", code: "KeyK", shiftKey: true }), "global.saveNow")).toBe(true);
     });
   });
 });
@@ -98,6 +147,18 @@ describe("bindingFromKeyboardEvent", () => {
 
     it.each(["Shift", "Alt", "Control", "Meta", "AltGraph", "CapsLock"])("ignores a bare %s", (key) => {
       expect(bindingFromKeyboardEvent(keydown({ key }))).toBeNull();
+    });
+  });
+});
+
+describe("isReservedBrowserShortcut", () => {
+  it("flags a browser shortcut the app does not own", () => {
+    expect(isReservedBrowserShortcut({ key: "t", mod: true })).toBe(true);
+  });
+
+  describe("regressions", () => {
+    it("regression: never flags Mod+S, which the app owns for saving", () => {
+      expect(isReservedBrowserShortcut({ key: "s", mod: true })).toBe(false);
     });
   });
 });

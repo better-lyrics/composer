@@ -1,15 +1,21 @@
+import type { ProjectPart } from "@/domain/project/edited-lyrics";
+import type { TimingGranularity } from "@/domain/project/timing-granularity";
 import { useExportTtml } from "@/hooks/use-export-ttml";
 import { useProjectFileActions } from "@/hooks/useProjectFileActions";
 import { downloadText, sanitizeFileName } from "@/lib/download-file";
+import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
+import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
 import { Scroll } from "@/ui/scroll";
+import { SegmentedControl, type SegmentedOption } from "@/ui/segmented-control";
+import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { validateTtml } from "@/utils/lyrics-parsers/validate-ttml";
-import { useThemeStore } from "@/stores/theme";
-import { codeHighlightThemeFor } from "@/utils/theme/code-highlight-theme";
+import { applyEditedTtml } from "@/views/export/apply-edited-ttml";
 import { MetadataPanel } from "@/views/export/metadata-panel";
 import { TtmlConflictNotice } from "@/views/export/ttml-conflict-notice";
+import { keptTtmlEdit, typedTtmlEdit } from "@/views/export/ttml-edit-state";
 import { TtmlEditor } from "@/views/export/ttml-editor";
 import {
   IconCheck,
@@ -21,29 +27,89 @@ import {
   IconTrash,
   IconUpload,
 } from "@tabler/icons-react";
-import { Highlight } from "prism-react-renderer";
 import { useCallback, useRef, useState } from "react";
 import { toast } from "sonner";
+
+// -- Types --------------------------------------------------------------------
+
+interface EditingSession {
+  projectSession: number;
+  startContent: string;
+}
+
+// -- Constants ----------------------------------------------------------------
+
+const APPLIED_MESSAGE = "Updated the lyrics from the TTML";
+const KEPT_IN_EXPORT_MESSAGE = "Updated the lyrics from the TTML. Some edits only change the exported file.";
+const EXPORT_ONLY_MESSAGE = "The lyrics stay as they were, so your edits only change the exported file.";
+const NOT_HELD_MESSAGES: Record<ProjectPart, string> = {
+  lines: "Your edits only change the exported file because the TTML cannot hold some line details.",
+  metadata: "Your edits only change the exported file because the TTML cannot hold some song details.",
+  agents: "Your edits only change the exported file because the TTML cannot hold some singer details.",
+  groups: "Your edits only change the exported file because the TTML cannot hold some line group details.",
+};
+const LYRICS_CHANGED_MESSAGE =
+  "The project changed since you started editing, so your edits only change the exported file. Regenerate and edit again to apply them.";
+const NOT_SYNCED_MESSAGE =
+  "Your edits only change the exported file. To apply edits to the lyrics, sync every line, then Regenerate and edit again.";
+
+// -- Helpers ------------------------------------------------------------------
+
+function exportTimingOptions(lineLocked: boolean): SegmentedOption<TimingGranularity>[] {
+  return [
+    { value: "word", label: "Word" },
+    { value: "line", label: "Line", disabled: lineLocked },
+  ];
+}
+
+function applyEditsToProject(content: string, duration: number): void {
+  const result = applyEditedTtml(content, duration);
+  if (result.status === "export-only") {
+    if (result.reason === "not-held") {
+      toast(NOT_HELD_MESSAGES[result.part]);
+      return;
+    }
+    if (result.reason === "lyrics-changed") {
+      toast(LYRICS_CHANGED_MESSAGE);
+      return;
+    }
+    toast(NOT_SYNCED_MESSAGE);
+    if (result.message) toast.error(result.message);
+    return;
+  }
+  if (result.status === "unreadable") {
+    toast.error(`${result.message} ${EXPORT_ONLY_MESSAGE}`);
+    return;
+  }
+  toast(result.keptInExport ? KEPT_IN_EXPORT_MESSAGE : APPLIED_MESSAGE);
+  if (result.skipped > 0) toast.warning(skippedLinesMessage(result.skipped));
+}
 
 // -- Components ---------------------------------------------------------------
 
 const ExportPanel: React.FC = () => {
-  const scheme = useThemeStore((s) => s.getThemeById(s.activeThemeId)?.scheme ?? "dark");
   const {
     content: exportContent,
+    duration,
     editedContent,
+    editBlocksLineTiming,
+    exportTiming,
     generatedContent: generatedTtml,
     hasConflict,
     lineCount,
     setEditState,
+    setExportTiming,
     syncedLineCount,
     title,
   } = useExportTtml();
 
+  const projectSession = useProjectStore((state) => state.projectSession);
   const [copied, setCopied] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingSession, setEditingSession] = useState<EditingSession | null>(null);
+  const session = editingSession?.projectSession === projectSession ? editingSession : null;
+  const isEditing = session !== null;
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions(fileInputRef);
+  const { handleExportProject, handleImportProject, handleClearProject } = useProjectFileActions();
 
   const hasSyncedContent = syncedLineCount > 0;
 
@@ -72,27 +138,30 @@ const ExportPanel: React.FC = () => {
   }, [exportContent, isExportable]);
 
   const handleEdit = useCallback(() => {
-    setIsEditing((prev) => !prev);
-  }, []);
+    if (!session) {
+      setEditingSession({ projectSession, startContent: exportContent });
+      return;
+    }
+    const changedThisSession = editedContent !== null && editedContent !== session.startContent;
+    if (changedThisSession && !hasConflict) applyEditsToProject(editedContent, duration);
+    setEditingSession(null);
+  }, [session, projectSession, exportContent, editedContent, hasConflict, duration]);
 
   const handleRegenerate = useCallback(() => {
     setEditState(null);
-    setIsEditing(false);
+    setEditingSession(null);
   }, [setEditState]);
 
   // Resolving a conflict rebases the edit onto the current output, which is what
   // makes the notice go away. It has to be a deliberate action: letting an
   // incidental keystroke do it would silently drop the regenerated changes.
   const handleKeepEdits = useCallback(() => {
-    setEditState((prev) => (prev === null ? prev : { source: generatedTtml, content: prev.content }));
+    setEditState((prev) => keptTtmlEdit(prev, generatedTtml));
   }, [generatedTtml, setEditState]);
 
   const handleEditContent = useCallback(
     (content: string) => {
-      setEditState((prev) => {
-        if (prev !== null && hasConflict) return { ...prev, content };
-        return { source: generatedTtml, content };
-      });
+      setEditState((prev) => typedTtmlEdit(prev, generatedTtml, content, hasConflict));
     },
     [generatedTtml, hasConflict, setEditState],
   );
@@ -102,7 +171,7 @@ const ExportPanel: React.FC = () => {
       ref={fileInputRef}
       type="file"
       aria-label="Import project file"
-      accept=".json,.ttml-project.json"
+      accept={PROJECT_FILE_ACCEPT}
       onChange={handleImportProject}
       className="hidden"
     />
@@ -145,13 +214,24 @@ const ExportPanel: React.FC = () => {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <SegmentedControl
+            aria-label="Export timing"
+            value={exportTiming}
+            options={exportTimingOptions(isEditing || editBlocksLineTiming)}
+            onChange={setExportTiming}
+          />
           {editedContent !== null && (
             <Button hasIcon onClick={handleRegenerate}>
               <IconRefresh className="size-4" />
               Regenerate
             </Button>
           )}
-          <Button hasIcon variant={isEditing ? "primary" : "secondary"} onClick={handleEdit}>
+          <Button
+            hasIcon
+            variant={isEditing ? "primary" : "secondary"}
+            disabled={exportTiming === "line"}
+            onClick={handleEdit}
+          >
             <IconEdit className="size-4" />
             {isEditing ? "Done" : "Edit"}
           </Button>
@@ -195,21 +275,11 @@ const ExportPanel: React.FC = () => {
         <TtmlEditor value={exportContent} generatedTtml={generatedTtml} onChange={handleEditContent} />
       ) : (
         <Scroll className="flex-1 p-6">
-          <Highlight theme={codeHighlightThemeFor(scheme)} code={exportContent} language="xml">
-            {({ style, tokens, getLineProps, getTokenProps }) => (
-              <pre className="p-4 rounded-lg font-mono text-xs whitespace-pre-wrap break-all select-text" style={style}>
-                {tokens.map((line, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: stable line indices
-                  <div key={i} {...getLineProps({ line })}>
-                    {line.map((token, j) => (
-                      // biome-ignore lint/suspicious/noArrayIndexKey: stable token indices
-                      <span key={j} {...getTokenProps({ token })} />
-                    ))}
-                  </div>
-                ))}
-              </pre>
-            )}
-          </Highlight>
+          <LyricsCode
+            code={exportContent}
+            format="ttml"
+            className="p-4 font-mono text-xs whitespace-pre-wrap break-all select-text"
+          />
         </Scroll>
       )}
     </div>

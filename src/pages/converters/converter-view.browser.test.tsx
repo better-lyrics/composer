@@ -1,7 +1,12 @@
 import { convertViaParser } from "@/pages/converters/convert-via-parser";
 import { type ConvertArgs, ConverterView } from "@/pages/converters/converter-view";
 import { TTML_OUTPUT } from "@/pages/converters/output-formats";
-import { HIT_TESTING_UTILITIES_CSS, installStyleSheet } from "@/test/browser-css";
+import {
+  HIT_TESTING_UTILITIES_CSS,
+  LYRICS_CODE_CSS,
+  installStyleSheet,
+  installUtilitiesUsedIn,
+} from "@/test/browser-css";
 import { render } from "@/test/render";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
@@ -118,7 +123,7 @@ describe("ConverterView", () => {
     const screen = await renderLrcConverter();
     await screen.getByRole("button", { name: "Load sample" }).click();
     const link = screen.getByRole("link", { name: "Open in Composer" });
-    await expect.element(link).toHaveAttribute("href", expect.stringMatching(/^\/#/));
+    await expect.element(link).toHaveAttribute("href", expect.stringMatching(/^\/editor#import=/));
     expect(link.element().querySelector("button")).toBe(null);
   });
 
@@ -174,8 +179,10 @@ describe("converter notice for lines it could not read", () => {
     const screen = await convertLrcInput("[00:01.00]Good\n[00:99.99]Bad\n[00:03.00]Also good\n[00:05.00]");
 
     await expect.element(screen.getByRole("status")).toHaveTextContent("1 line could not be read.");
-    await expect.poll(() => screen.container.querySelector("pre")?.textContent).toContain("Also good</p>");
-    expect(screen.container.querySelector("pre")?.textContent).toContain("<tt");
+    await expect
+      .poll(() => screen.container.querySelector("pre:not([aria-hidden])")?.textContent)
+      .toContain("Also good</p>");
+    expect(screen.container.querySelector("pre:not([aria-hidden])")?.textContent).toContain("<tt");
   });
 
   it("pluralizes the count when several lines could not be read", async () => {
@@ -189,7 +196,9 @@ describe("converter notice for lines it could not read", () => {
   it("shows no notice for valid input", async () => {
     const screen = await convertLrcInput("[00:01.00]Good\n[00:03.00]Also good\n[00:05.00]");
 
-    await expect.poll(() => screen.container.querySelector("pre")?.textContent).toContain("Also good</p>");
+    await expect
+      .poll(() => screen.container.querySelector("pre:not([aria-hidden])")?.textContent)
+      .toContain("Also good</p>");
     await expect.element(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
@@ -235,6 +244,72 @@ describe("I7 converter output after the input is cleared", () => {
   });
 });
 
+describe("converter highlighting", () => {
+  function outputPane(container: HTMLElement): HTMLElement | null {
+    return container.querySelector<HTMLElement>("pre:not([aria-hidden])");
+  }
+
+  it("highlights the input as it is typed", async () => {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("textbox", { name: "Converter input" }).fill("[00:01.00]Hello");
+    const layer = screen.container.querySelector(".bh-edit > .bh-layer");
+    expect(layer?.textContent).toBe("[00:01.00]Hello");
+    expect(layer?.querySelector(".bh-timestamp")?.textContent).toBe("00:01.00");
+  });
+
+  it("highlights the loaded sample in the input", async () => {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    await expect
+      .poll(() => screen.container.querySelector(".bh-edit > .bh-layer")?.textContent)
+      .toBe("[00:01.00]valid\n[00:03.00]second");
+  });
+
+  it("highlights the TTML output", async () => {
+    const screen = await renderLrcConverter();
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    await expect.poll(() => outputPane(screen.container)?.classList.contains("bh")).toBe(true);
+    expect(outputPane(screen.container)?.querySelector(".bh-tag")?.textContent).toBe("tt");
+  });
+
+  it("shows the empty hint and errors as plain text", async () => {
+    const screen = await render(
+      <ConverterView
+        title="LRC"
+        inputLabel="LRC"
+        inputPlaceholder="Paste LRC"
+        inputExtension="lrc"
+        sampleInput="[00:01.00] hello"
+        convert={() => ({ error: "Could not parse line 3" })}
+        outputFormat={TTML_OUTPUT}
+      />,
+      { withRouter: true },
+    );
+    expect(outputPane(screen.container)?.classList.contains("bh")).toBe(false);
+    expect(outputPane(screen.container)?.textContent).toBe("Paste input to see TTML output");
+    await screen.getByRole("button", { name: "Load sample" }).click();
+    await expect.poll(() => outputPane(screen.container)?.textContent).toBe("Could not parse line 3");
+    expect(outputPane(screen.container)?.classList.contains("bh")).toBe(false);
+  });
+});
+
+describe("converter input resize", () => {
+  it("regression: dragging the input's resize grip changes its height", async () => {
+    const screen = await renderLrcConverter();
+    const sheets = [installStyleSheet(LYRICS_CODE_CSS), await installUtilitiesUsedIn(screen.container)];
+    try {
+      const frame = screen.container.querySelector<HTMLElement>(".lyrics-code-frame");
+      if (!frame) throw new Error("input frame not rendered");
+      expect(getComputedStyle(frame).resize).toBe("vertical");
+      const before = frame.getBoundingClientRect().height;
+      frame.style.height = `${before + 200}px`;
+      expect(frame.getBoundingClientRect().height).toBeCloseTo(before + 200, 0);
+    } finally {
+      for (const sheet of sheets) sheet.remove();
+    }
+  });
+});
+
 describe("loading a file into the converter", () => {
   function renderFileConverter() {
     return render(
@@ -266,7 +341,9 @@ describe("loading a file into the converter", () => {
     await picker.upload(new File([LRC_FILE_TEXT], "song.lrc", { type: "text/plain" }));
 
     await expect.element(screen.getByRole("textbox", { name: "Converter input" })).toHaveValue(LRC_FILE_TEXT);
-    await expect.poll(() => screen.container.querySelector("pre")?.textContent).toContain("Dropped line");
+    await expect
+      .poll(() => screen.container.querySelector("pre:not([aria-hidden])")?.textContent)
+      .toContain("Dropped line");
   });
 
   it("offers the picker from a visible Load file button", async () => {

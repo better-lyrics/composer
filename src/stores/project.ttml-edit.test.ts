@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const EDIT = { source: "<tt>generated</tt>", content: "<tt>edited</tt>" };
 

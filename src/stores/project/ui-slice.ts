@@ -1,10 +1,7 @@
+import { DEFAULT_EXPORT_TIMING } from "@/domain/project/export-timing";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
 import { useAudioStore } from "@/stores/audio";
-import {
-  DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
-  type ProjectStore,
-  type UiActions,
-  type UiState,
-} from "@/stores/project/types";
+import type { ProjectStore, UiActions, UiState } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 import type { StateCreator } from "zustand";
 
@@ -13,6 +10,7 @@ import type { StateCreator } from "zustand";
 function createUiInitialState(): UiState {
   return {
     granularity: useSettingsStore.getState().defaultGranularity,
+    exportTiming: DEFAULT_EXPORT_TIMING,
     editorMode: "simple",
     activeTab: "import",
     syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
@@ -27,6 +25,8 @@ const createUiSlice: StateCreator<ProjectStore, [], [], UiState & UiActions> = (
 
   setGranularity: (granularity) => set({ granularity, isDirty: true }),
 
+  setExportTiming: (exportTiming) => set({ exportTiming, isDirty: true }),
+
   setEditorMode: (editorMode) => set({ editorMode }),
 
   setActiveTab: (activeTab) => {
@@ -38,7 +38,8 @@ const createUiSlice: StateCreator<ProjectStore, [], [], UiState & UiActions> = (
 
   setSyllableSplitDefaults: (syllableSplitDefaults) => set({ syllableSplitDefaults, isDirty: true }),
 
-  setPrimingStripped: (primingStripped) => set({ primingStripped, isDirty: true }),
+  setPrimingStripped: (primingStripped) =>
+    set((state) => (state.primingStripped === primingStripped ? state : { primingStripped, isDirty: true })),
 });
 
 // -- Exports ------------------------------------------------------------------

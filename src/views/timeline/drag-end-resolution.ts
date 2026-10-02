@@ -78,12 +78,13 @@ function resolveViaLayoutModel(
   const rect = container.getBoundingClientRect();
   const cursorY = clientY - rect.top + container.scrollTop;
 
-  const { rowHeights, defaultRowHeight, collapsedInstances } = useTimelineStore.getState();
+  const { rowHeights, defaultRowHeight, collapsedInstances, focusedGroup } = useTimelineStore.getState();
   const layout = computeRowLayout({
     lines,
     rowHeights,
     defaultRowHeight,
     collapsedInstances,
+    focusedGroup,
     waveformHeight: ROWS_START_Y,
     groupHeaderHeight: GROUP_HEADER_HEIGHT,
   });

@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { SUPPORTED_LYRICS_FORMATS } from "@/domain/lyrics-file/supported-formats";
 import { render } from "@/test/render";
 import { ImportSection } from "@/ui/help-sections/importing";
 import { getProviders } from "@/utils/lyrics-search/registry";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -52,9 +52,30 @@ describe("ImportSection", () => {
     );
   });
 
-  it("names .qrc among the formats the upload section accepts", async () => {
+  it("names .qrc and project files among the files the upload section accepts", async () => {
     const screen = await render(<ImportSection />);
-    expect(screen.container.textContent).toContain("Accepts .txt, .lrc, .srt, .ttml, .qrc.");
+    expect(screen.container.textContent).toContain("Accepts .txt, .lrc, .srt, .ttml, .qrc, or a project file (.json).");
+  });
+
+  it("explains that pasting a whole file into the Edit text area imports it", async () => {
+    const screen = await render(<ImportSection />);
+    expect(screen.container.textContent).toContain(
+      "Pasting a whole lyrics file into the Edit text area imports it the same way",
+    );
+  });
+
+  it("explains the choice a project file brings and that a backup only restores", async () => {
+    const screen = await render(<ImportSection />);
+    expect(screen.container.textContent).toContain("Use its lyrics here");
+    expect(screen.container.textContent).toContain("Open as its own project");
+    expect(screen.container.textContent).toContain("A backup of many projects only offers to restore it.");
+  });
+
+  it("sets the project file choice labels apart from the sentence around them", async () => {
+    const screen = await render(<ImportSection />);
+    const strong = [...screen.container.querySelectorAll("strong")].map((node) => node.textContent);
+    expect(strong).toContain("Use its lyrics here");
+    expect(strong).toContain("Open as its own project");
   });
 
   it("links to the composer-bridge repo", async () => {

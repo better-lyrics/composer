@@ -1,8 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { downloadBlob, downloadText, localDateStamp, sanitizeFileName } from "@/lib/download-file";
-import { exportProjectToFile } from "@/lib/persistence";
+import { buildSavedProject } from "@/lib/persistence";
+import { downloadProjectFile, projectFileFrom } from "@/lib/project-file";
 import { buildRecoveryResult } from "@/lib/recovery";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
+import { createProjectSaveInput } from "@/test/factories";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const ORIGINAL_TZ = process.env.TZ;
 const FIVE_PAST_MIDNIGHT_IST_SEP_27 = new Date("2026-09-26T18:35:00Z");
@@ -59,22 +60,10 @@ function captureDownloadName(run: () => void): string {
 }
 
 function exportProject(title: string): string {
-  return captureDownloadName(() =>
-    exportProjectToFile({
-      metadata: { title, artists: [], album: "", duration: 0 },
-      agents: [],
-      lines: [],
-      groups: [],
-      granularity: "word",
-      syllableSplitDefaults: DEFAULT_SYLLABLE_SPLIT_DEFAULTS,
-      dismissedSuggestions: [],
-      dismissedExplicitSuggestions: [],
-      customSnapPoints: [],
-      importedMetadataKeys: [],
-      ttmlEditState: null,
-      audioFileName: undefined,
-    }),
+  const project = buildSavedProject(
+    createProjectSaveInput({ metadata: { title, artists: [], album: "", duration: 0 } }),
   );
+  return captureDownloadName(() => downloadProjectFile(projectFileFrom(undefined, project)));
 }
 
 describe("sanitizeFileName", () => {

@@ -4,9 +4,13 @@ import type { ConversionResult } from "@/pages/converters/convert-via-parser";
 import type { OutputFormat } from "@/pages/converters/output-formats";
 import { Button } from "@/ui/button";
 import { LinkButton } from "@/ui/link-button";
+import { LyricsCode } from "@/ui/lyrics-code/lyrics-code";
+import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { StatusChip } from "@/ui/status-chip";
+import { EDITOR_PATH, LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
 import { fileNameWithoutExtension } from "@/utils/file-name";
+import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
 import { skippedLinesMessage } from "@/utils/lyrics-parsers/shared";
 import { IconAlertTriangle, IconCopy, IconDownload, IconExternalLink } from "@tabler/icons-react";
@@ -29,7 +33,7 @@ interface ConverterViewProps {
   outputFormat: OutputFormat;
 }
 
-const OPEN_IN_COMPOSER_HASH_PREFIX = "#import=";
+const OUTPUT_PANE_CLASS = "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs p-3 select-text";
 
 const ConverterView: React.FC<ConverterViewProps> = ({
   title,
@@ -117,8 +121,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
   };
 
   const openInComposerHref = projectPayload
-    ? `/${OPEN_IN_COMPOSER_HASH_PREFIX}${encodeURIComponent(projectPayload)}`
-    : "/";
+    ? `${EDITOR_PATH}${IMPORT_HASH_PREFIX}${encodeURIComponent(projectPayload)}`
+    : LIBRARY_PATH;
 
   return (
     <section className="px-6 py-14 max-w-6xl mx-auto">
@@ -166,14 +170,15 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               className="sr-only"
             />
           </div>
-          <textarea
+          <LyricsCodeEditor
             id="converter-input"
             aria-label="Converter input"
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder={inputPlaceholder}
             spellCheck={false}
-            className="flex-1 min-h-[280px] md:min-h-[420px] font-mono text-sm bg-composer-bg-dark border border-composer-border rounded-lg p-3 text-composer-text placeholder:text-composer-text-muted resize-y focus:outline-none focus:border-composer-accent cursor-text select-text"
+            frameClassName="flex-auto min-h-[280px] md:min-h-[420px] resize-y overflow-hidden"
+            className="font-mono text-sm p-3 focus:outline-none cursor-text select-text"
           />
           {fileError && (
             <p role="alert" className="mt-2 text-xs text-composer-error-text select-text cursor-text">
@@ -208,16 +213,20 @@ const ConverterView: React.FC<ConverterViewProps> = ({
               </Button>
             </div>
           </div>
-          <pre
-            className={cn(
-              "flex-1 min-h-[280px] md:min-h-[420px] overflow-auto font-mono text-xs rounded-lg p-3 border",
-              error
-                ? "bg-composer-error/10 border-composer-error/40 text-composer-error-text select-text whitespace-pre-wrap break-words"
-                : "bg-composer-bg-dark border-composer-border text-composer-text select-text",
-            )}
-          >
-            {error || output || `Paste input to see ${outputFormat.label} output`}
-          </pre>
+          {output ? (
+            <LyricsCode code={output} format={outputFormat.extension} className={OUTPUT_PANE_CLASS} />
+          ) : (
+            <pre
+              className={cn(
+                OUTPUT_PANE_CLASS,
+                error
+                  ? "rounded-lg border bg-composer-error/10 border-composer-error/40 text-composer-error-text whitespace-pre-wrap break-words"
+                  : "lyrics-code-surface text-composer-text",
+              )}
+            >
+              {error || `Paste input to see ${outputFormat.label} output`}
+            </pre>
+          )}
           <div role="status">
             {skippedLines > 0 && (
               <StatusChip tone="warning" icon={IconAlertTriangle} className="mt-3">

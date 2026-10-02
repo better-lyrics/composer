@@ -5,6 +5,7 @@ import {
   isUsingDefaultCobaltInstance,
   useSettingsStore,
 } from "@/stores/settings";
+import { migrateSettings } from "@/stores/settings-migration";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { beforeEach, describe, expect, it } from "vitest";
 
@@ -225,20 +226,17 @@ describe("timeline header toggle defaults", () => {
 
 describe("settings v2 -> v3 migration", () => {
   it("fills missing defaultRollingEdit with false", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultRollingEdit: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 2) as { defaultRollingEdit: boolean };
     expect(migrated.defaultRollingEdit).toBe(false);
   });
 
   it("fills missing defaultPreviewSidebar with false", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 2) as { defaultPreviewSidebar: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 2) as { defaultPreviewSidebar: boolean };
     expect(migrated.defaultPreviewSidebar).toBe(false);
   });
 
   it("preserves user-set values when migrating from v3", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
+    const migrated = migrateSettings({ defaultRollingEdit: true, defaultPreviewSidebar: true }, 3) as {
       defaultRollingEdit: boolean;
       defaultPreviewSidebar: boolean;
     };
@@ -247,36 +245,31 @@ describe("settings v2 -> v3 migration", () => {
   });
 
   it("still applies the vocalModelVariant fp16 -> fp32 rule", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
+    const migrated = migrateSettings({ vocalModelVariant: "fp16" }, 2) as { vocalModelVariant: string };
     expect(migrated.vocalModelVariant).toBe("fp32");
   });
 });
 
 describe("settings v3 -> v4 migration (vocalOnsetSnap)", () => {
   it("fills missing vocalOnsetSnap with true", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 3) as { vocalOnsetSnap: boolean };
     expect(migrated.vocalOnsetSnap).toBe(true);
   });
 
   it("preserves an explicitly disabled vocalOnsetSnap", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
+    const migrated = migrateSettings({ vocalOnsetSnap: false }, 3) as { vocalOnsetSnap: boolean };
     expect(migrated.vocalOnsetSnap).toBe(false);
   });
 });
 
 describe("settings v4 -> v5 migration (snapPlayheadToPoints)", () => {
   it("fills missing snapPlayheadToPoints with true", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 4) as { snapPlayheadToPoints: boolean };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 4) as { snapPlayheadToPoints: boolean };
     expect(migrated.snapPlayheadToPoints).toBe(true);
   });
 
   it("preserves an explicitly disabled snapPlayheadToPoints", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
+    const migrated = migrateSettings({ snapPlayheadToPoints: false }, 4) as { snapPlayheadToPoints: boolean };
     expect(migrated.snapPlayheadToPoints).toBe(false);
   });
 });
@@ -317,14 +310,12 @@ describe("re-record pre-roll setting", () => {
   });
 
   it("migration backfills a missing pre-roll to the default", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ defaultZoom: 200 }, 5) as { redoPreroll: number };
+    const migrated = migrateSettings({ defaultZoom: 200 }, 5) as { redoPreroll: number };
     expect(migrated.redoPreroll).toBe(1.5);
   });
 
   it("migration preserves an explicitly set pre-roll", async () => {
-    const { migrateSettingsForTest } = await import("@/stores/settings");
-    const migrated = migrateSettingsForTest({ redoPreroll: 0.25 }, 5) as { redoPreroll: number };
+    const migrated = migrateSettings({ redoPreroll: 0.25 }, 5) as { redoPreroll: number };
     expect(migrated.redoPreroll).toBe(0.25);
   });
 });

@@ -24,6 +24,7 @@ interface UIState {
   settingsReturnTo: HelpLocation | null;
   helpOpen: boolean;
   helpLocation: HelpLocation;
+  projectSwitcherOpen: boolean;
 }
 
 interface UIActions {
@@ -34,6 +35,7 @@ interface UIActions {
   consumeSettingsTarget: () => void;
   openHelp: (section?: string) => void;
   closeHelp: () => void;
+  setProjectSwitcherOpen: (open: boolean) => void;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -48,6 +50,7 @@ const UI_INITIAL_STATE: UIState = {
   settingsReturnTo: null,
   helpOpen: false,
   helpLocation: { section: DEFAULT_HELP_SECTION, scrollTop: 0 },
+  projectSwitcherOpen: false,
 };
 
 // -- Helpers -------------------------------------------------------------------
@@ -87,6 +90,7 @@ const useUIStore = create<UIState & UIActions>((set) => ({
   consumeSettingsTarget: () => set({ settingsTarget: null }),
   openHelp: (section = DEFAULT_HELP_SECTION) => set({ helpOpen: true, helpLocation: { section, scrollTop: 0 } }),
   closeHelp: () => set({ helpOpen: false }),
+  setProjectSwitcherOpen: (projectSwitcherOpen) => set({ projectSwitcherOpen }),
 }));
 
 // -- Exports -------------------------------------------------------------------

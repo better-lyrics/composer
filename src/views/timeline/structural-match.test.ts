@@ -35,7 +35,18 @@ describe("linesStructurallyEqual", () => {
     expect(linesStructurallyEqual(baseLine, { ...baseLine, agentId: "v2" })).toBe(false);
   });
 
-  it("unequal when word count differs", () => {
+  it("equal when one line is synced word by word and the other is not", () => {
+    const a: LyricLine = {
+      ...baseLine,
+      words: [
+        { text: "I ", begin: 0, end: 1 },
+        { text: "love ", begin: 1, end: 2 },
+      ],
+    };
+    expect(linesStructurallyEqual(a, { ...baseLine, id: "y" })).toBe(true);
+  });
+
+  it("equal when one line is only partly synced word by word", () => {
     const a: LyricLine = {
       ...baseLine,
       words: [
@@ -47,7 +58,11 @@ describe("linesStructurallyEqual", () => {
       ...baseLine,
       words: [{ text: "I ", begin: 0, end: 1 }],
     };
-    expect(linesStructurallyEqual(a, b)).toBe(false);
+    expect(linesStructurallyEqual(a, b)).toBe(true);
+  });
+
+  it("unequal when the syllable split of the text differs", () => {
+    expect(linesStructurallyEqual(baseLine, { ...baseLine, text: "I lo|ve you" })).toBe(false);
   });
 
   it("unequal when background differs", () => {

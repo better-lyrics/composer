@@ -1,14 +1,14 @@
 import { useTypeToSearch } from "@/hooks/useTypeToSearch";
+import { useSettingsStore } from "@/stores/settings";
 import { SETTINGS_SECTIONS, type SettingsSectionId } from "@/stores/settings-catalog";
 import { useUIStore } from "@/stores/ui";
-import { withMatchCounts } from "@/ui/nav-match-counts";
 import { Modal } from "@/ui/modal";
 import { ModalNavLayout, type ModalNavSection } from "@/ui/modal-nav-layout";
+import { withMatchCounts } from "@/ui/nav-match-counts";
 import { revealElement } from "@/ui/reveal-element";
 import { SearchField } from "@/ui/search-field";
-import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 import { BackToHelpChip } from "@/ui/settings/back-to-help-chip";
-import { GeneralSection } from "@/ui/settings/general-section";
+import { ConfirmationsSection } from "@/ui/settings/confirmations-section";
 import { countMatchesBySection, searchSettings } from "@/ui/settings/search-settings";
 import { SettingsSearchQueryContext } from "@/ui/settings/settings-search-query";
 import { SettingsSearchResults } from "@/ui/settings/settings-search-results";
@@ -22,7 +22,6 @@ import { useCallback, useLayoutEffect, useMemo, useRef } from "react";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onResetTour: () => void;
 }
 
 // -- Sections -----------------------------------------------------------------
@@ -33,14 +32,8 @@ const NAV_SECTIONS: readonly ModalNavSection<SettingsSectionId>[] = SETTINGS_SEC
   icon: SETTINGS_SECTION_ICONS[id],
 }));
 
-const SectionContent: React.FC<{ section: SettingsSectionId; onResetTour: () => void; onClose: () => void }> = ({
-  section,
-  onResetTour,
-  onClose,
-}) => {
+const SectionContent: React.FC<{ section: SettingsSectionId }> = ({ section }) => {
   switch (section) {
-    case "general":
-      return <GeneralSection onResetTour={onResetTour} onClose={onClose} />;
     case "shortcuts":
       return <ShortcutsSettingsSection />;
     case "confirmations":
@@ -52,7 +45,7 @@ const SectionContent: React.FC<{ section: SettingsSectionId; onResetTour: () => 
 
 // -- Settings Modal -----------------------------------------------------------
 
-const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void }> = ({ onResetTour, onClose }) => {
+const SettingsModalBody: React.FC = () => {
   const settingsSection = useUIStore((s) => s.settingsSection);
   const settingsTarget = useUIStore((s) => s.settingsTarget);
   const setSettingsSection = useUIStore((s) => s.setSettingsSection);
@@ -60,7 +53,8 @@ const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void
   const settingsQuery = useUIStore((s) => s.settingsQuery);
   const setSettingsQuery = useUIStore((s) => s.setSettingsQuery);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const results = useMemo(() => searchSettings(settingsQuery), [settingsQuery]);
+  const settingsState = useSettingsStore((s) => s);
+  const results = useMemo(() => searchSettings(settingsQuery, settingsState), [settingsQuery, settingsState]);
 
   useTypeToSearch(searchInputRef, settingsQuery, setSettingsQuery);
 
@@ -107,11 +101,7 @@ const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void
       >
         <div data-settings-content>
           <SettingsSearchQueryContext value={settingsQuery}>
-            {results ? (
-              <SettingsSearchResults results={results} />
-            ) : (
-              <SectionContent section={settingsSection} onResetTour={onResetTour} onClose={onClose} />
-            )}
+            {results ? <SettingsSearchResults results={results} /> : <SectionContent section={settingsSection} />}
           </SettingsSearchQueryContext>
         </div>
       </ModalNavLayout>
@@ -123,7 +113,7 @@ const SettingsModalBody: React.FC<{ onResetTour: () => void; onClose: () => void
   );
 };
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetTour }) => (
+const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => (
   <Modal
     isOpen={isOpen}
     onClose={onClose}
@@ -132,7 +122,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, onResetT
     className="max-w-3xl h-[70%] flex flex-col"
     bodyClassName="p-0 flex-1 min-h-0 flex flex-col"
   >
-    <SettingsModalBody onResetTour={onResetTour} onClose={onClose} />
+    <SettingsModalBody />
   </Modal>
 );
 

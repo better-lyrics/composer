@@ -1,10 +1,10 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayerStackStore } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { EditPanel } from "@/views/edit";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -323,11 +323,11 @@ describe("editor window undo handler gating", () => {
     useProjectStore.getState().updateLineWithHistory("l1", { agentId: "v2" });
     await expect.poll(() => useProjectStore.getState().lines[0].agentId).toBe("v2");
 
-    useModalStackStore.getState().push();
+    const modalToken = useEscapeLayerStackStore.getState().push("modal");
     const event = dispatchWindowUndo();
     expect(event.defaultPrevented).toBe(false);
     expect(useProjectStore.getState().lines[0].agentId).toBe("v2");
-    useModalStackStore.getState().pop();
+    useEscapeLayerStackStore.getState().pop(modalToken);
   });
 
   it("prevents the browser native undo on a matched Cmd+Z", async () => {

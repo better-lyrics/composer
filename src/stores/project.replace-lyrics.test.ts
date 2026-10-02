@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine } from "@/test/factories";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import type { ParseResult } from "@/utils/lyrics-parsers/shared";
+import { describe, expect, it } from "vitest";
 
 const SONG_A_TTML = `<tt xmlns="http://www.w3.org/ns/ttml" xmlns:ttm="http://www.w3.org/ns/ttml#metadata"><head><metadata><ttm:title>Song A</ttm:title><ttm:agent type="person" xml:id="v1"><ttm:name type="full">Alice</ttm:name></ttm:agent><ttm:agent type="person" xml:id="v2"><ttm:name type="full">Bob</ttm:name></ttm:agent></metadata></head><body><div><p begin="0.0" end="1.0" ttm:agent="v1">Line one</p><p begin="1.0" end="2.0" ttm:agent="v2">Line two</p></div></body></tt>`;
 

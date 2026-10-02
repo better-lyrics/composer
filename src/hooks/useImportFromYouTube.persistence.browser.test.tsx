@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useImportFromYouTube } from "@/hooks/useImportFromYouTube";
 import { usePersistence } from "@/hooks/usePersistence";
-import { getPersistenceSettled } from "@/lib/persistence-settled";
+import { getLinkProjectSettled, getPersistenceSettled } from "@/lib/persistence-settled";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { seedAudioFile, seedProject } from "@/test/idb";
@@ -42,13 +42,9 @@ function projectTitle(): string {
   return useProjectStore.getState().metadata.title;
 }
 
-// Wait until both persistence AND any URL hook chained off persistenceSettled
-// have run. URL hook's .then was registered on the same promise during mount,
-// so it queues BEFORE this test's await. After persistence marks, microtask
-// drain runs URL hook's handler first; this await resumes second, by which
-// time the store reflects the URL hook's final write.
 async function waitForBootSettled(): Promise<void> {
   await getPersistenceSettled();
+  await getLinkProjectSettled();
 }
 
 function seedSavedYoutubeAudio(videoId: string): Promise<void> {

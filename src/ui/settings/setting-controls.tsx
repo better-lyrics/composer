@@ -1,8 +1,10 @@
 import { useSettingsStore } from "@/stores/settings";
 import { type SettingId, settingEntry, settingKeyOf } from "@/stores/settings-catalog";
 import { Select } from "@/ui/select";
+import { SettingRowLayout } from "@/ui/settings/setting-row-layout";
 import { SettingText } from "@/ui/settings/setting-text";
 import { cn } from "@/utils/cn";
+import { useId } from "react";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -36,7 +38,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
 
   return (
     <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-center justify-between">
+      <SettingRowLayout className="py-0">
         <SettingText id={id} />
         <div className="flex items-center gap-2">
           {action && (
@@ -52,7 +54,7 @@ const SliderSetting: React.FC<SliderSettingProps> = ({ id, min, max, step, forma
             {format ? format(value) : value}
           </span>
         </div>
-      </div>
+      </SettingRowLayout>
       <input
         type="range"
         aria-label={settingEntry(id).label}
@@ -76,7 +78,7 @@ const ToggleSetting: React.FC<{ id: SettingId }> = ({ id }) => {
   const set = useSettingsStore((s) => s.set);
 
   return (
-    <div className="flex items-center justify-between py-3">
+    <SettingRowLayout>
       <SettingText id={id} />
       <button
         type="button"
@@ -96,7 +98,7 @@ const ToggleSetting: React.FC<{ id: SettingId }> = ({ id }) => {
           )}
         />
       </button>
-    </div>
+    </SettingRowLayout>
   );
 };
 
@@ -106,7 +108,7 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
   const set = useSettingsStore((s) => s.set);
 
   return (
-    <div className="flex items-center justify-between py-3">
+    <SettingRowLayout>
       <SettingText id={id} />
       <Select
         aria-label={settingEntry(id).label}
@@ -114,11 +116,26 @@ const SelectSetting: React.FC<{ id: SettingId; options: SelectOption[] }> = ({ i
         onChange={(next) => set(settingKey, next)}
         options={options}
       />
-    </div>
+    </SettingRowLayout>
+  );
+};
+
+const SettingsGroup: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => {
+  const headingId = useId();
+  return (
+    <section aria-labelledby={headingId} className="group/settings">
+      <h3
+        id={headingId}
+        className="mt-5 mb-0.5 text-xs font-medium text-composer-text-secondary select-none group-first/settings:mt-2"
+      >
+        {title}
+      </h3>
+      <div className="divide-y divide-composer-border">{children}</div>
+    </section>
   );
 };
 
 // -- Exports -------------------------------------------------------------------
 
-export { SelectSetting, SliderSetting, ToggleSetting };
+export { SelectSetting, SettingsGroup, SliderSetting, ToggleSetting };
 export type { SelectOption, SliderAction };

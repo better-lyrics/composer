@@ -1,5 +1,6 @@
 import { withDefaultAgentNames } from "@/domain/agent/default-names";
 import { agentsAfterImport } from "@/domain/agent/imported-agents";
+import { changesProject, editedLyricsWrite } from "@/domain/project/edited-lyrics";
 import { importedKeysAfterWrite, metadataAfterImport } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { createAgentsInitialState } from "@/stores/project/agents-slice";
@@ -11,6 +12,7 @@ import { createLinesInitialState } from "@/stores/project/lines-slice";
 import { createSnapPointsInitialState } from "@/stores/project/snap-points-slice";
 import type { MetadataActions, MetadataState, ProjectState, ProjectStore } from "@/stores/project/types";
 import { createUiInitialState } from "@/stores/project/ui-slice";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import type { StateCreator } from "zustand";
 
 // -- Initial State ------------------------------------------------------------
@@ -72,8 +74,8 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
 
   replaceLyricsWithHistory: ({ lines, groups, agents, metadata }) =>
     set((state) => {
-      const importsSongDetails = Object.keys(metadata).length > 0 || (agents?.length ?? 0) > 0;
       const next = metadataAfterImport(state.metadata, state.importedMetadataKeys, metadata);
+      const importsSongDetails = next.importedKeys.length > 0 || (agents?.length ?? 0) > 0;
       const assignment = agentsAfterImport(state.agents, agents, lines);
       return {
         ...commitHistory(state, { lines: assignment.lines, groups, agents: assignment.agents }),
@@ -81,6 +83,17 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
         importedMetadataKeys: next.importedKeys,
         hasUnexportedImport: importsSongDetails || state.hasUnexportedImport,
         ttmlEditState: null,
+      };
+    }),
+
+  applyEditedLyricsWithHistory: (edited) =>
+    set((state) => {
+      const write = editedLyricsWrite(state, edited);
+      if (!changesProject(state, write)) return state;
+      return {
+        ...commitHistory(state, { lines: write.lines, groups: write.groups, agents: write.agents }),
+        metadata: { ...state.metadata, ...write.metadata },
+        importedMetadataKeys: importedKeysAfterWrite(state.importedMetadataKeys, write.metadata),
       };
     }),
 
@@ -94,7 +107,7 @@ const createMetadataSlice: StateCreator<ProjectStore, [], [], MetadataState & Me
   setTtmlEditState: (editState) =>
     set((state) => {
       const next = typeof editState === "function" ? editState(state.ttmlEditState) : editState;
-      return next === state.ttmlEditState ? state : { ttmlEditState: next, isDirty: true };
+      return isStructurallyEqual(next, state.ttmlEditState) ? state : { ttmlEditState: next, isDirty: true };
     }),
 });
 

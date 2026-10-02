@@ -1,9 +1,9 @@
+import type { LinkGroup } from "@/domain/group/template";
+import { type LooseLine, type LyricLine, reconcileLine } from "@/domain/line/model";
 /**
  * @vitest-environment node
  */
 import { useProjectStore } from "@/stores/project";
-import type { LinkGroup } from "@/domain/group/template";
-import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
 import { MAX_HISTORY_SIZE } from "@/stores/project/history-helpers";
 import { beforeEach, describe, expect, it } from "vitest";
 

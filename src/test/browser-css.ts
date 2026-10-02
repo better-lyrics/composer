@@ -1,19 +1,25 @@
 import indexCss from "@/index.css?raw";
+import highlightCss from "@braccato/highlight/highlight.css?raw";
+import { compile } from "tailwindcss";
+import tailwindThemeCss from "tailwindcss/theme.css?raw";
 
-// The browser project has no Tailwind plugin, so a rule a test needs to observe has to be lifted
-// out of the real src/index.css and installed by hand.
+// The browser project has no Tailwind, so a rule a test observes is lifted from src/index.css and installed by hand.
 
 // -- Constants -----------------------------------------------------------------
 
 const WAVEFORM_SWEEP_ANIMATION = "waveform-loading-sweep";
 const WAVEFORM_DOTS_UTILITY = "waveform-loading-dots";
 
-// Without these the timeline's layers all stack in flow, which pushes the rows past
-// react-virtuoso's viewport and leaves it with nothing to render.
+// Without these the timeline layers stack in flow and push the rows past react-virtuoso's viewport.
 const POSITION_UTILITIES_CSS = ".relative{position:relative}.absolute{position:absolute}.sticky{position:sticky;top:0}";
 
-// Overlays only cover their siblings, and so only swallow clicks, once they span their parent.
-const HIT_TESTING_UTILITIES_CSS = ".inset-0{inset:0}.pointer-events-none{pointer-events:none}";
+// Overlays only swallow clicks once they span their parent and their stacking order is real.
+const HIT_TESTING_UTILITIES_CSS =
+  ".inset-0{inset:0}.pointer-events-none{pointer-events:none}.pointer-events-auto{pointer-events:auto}.z-1{z-index:1}.z-2{z-index:2}";
+
+// A capped, truncating label only caps and truncates once these utilities exist.
+const TRUNCATION_UTILITIES_CSS =
+  ".inline-flex{display:inline-flex}.min-w-0{min-width:0}.max-w-\\[380px\\]{max-width:380px}.truncate{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -44,7 +50,21 @@ function installStyleSheet(css: string): HTMLStyleElement {
   return style;
 }
 
+async function installUtilitiesUsedIn(root: Element): Promise<HTMLStyleElement> {
+  const classNames = new Set<string>();
+  for (const element of [root, ...root.querySelectorAll("*")]) {
+    for (const className of element.classList) classNames.add(className);
+  }
+  const compiler = await compile(`${tailwindThemeCss}\n@tailwind utilities;`);
+  return installStyleSheet(compiler.build([...classNames]));
+}
+
 // -- Rules ---------------------------------------------------------------------
+
+const THEME_TOKENS_CSS = `:root {${extractCssBlock(/@theme\s*\{/)}}`;
+
+const TEXT_COLOR_UTILITIES_CSS =
+  ".text-composer-text{color:var(--color-composer-text)}.text-composer-text-muted{color:var(--color-composer-text-muted)}.opacity-50{opacity:.5}";
 
 // Help's content only scrolls once it is height-bound: the deferred host before OverlayScrollbars starts, the viewport after.
 const HELP_CONTENT_SCROLLER_CSS = [
@@ -58,14 +78,37 @@ const WAVEFORM_SWEEP_CSS = [utilityRule(WAVEFORM_DOTS_UTILITY), keyframesRule(WA
 
 const FLOATING_LAYER_CSS = utilityRule("layer-floating");
 
+function utilityDeclaration(name: string, property: string): string {
+  const value = new RegExp(`${property}:\\s*([^;]+);`).exec(
+    extractCssBlock(new RegExp(`@utility\\s+${name}\\s*\\{`)),
+  )?.[1];
+  if (!value) throw new Error(`@utility ${name} has no ${property}`);
+  return value;
+}
+
+const CODE_SURFACE_TINT = utilityDeclaration("lyrics-code-surface", "background-color");
+
+const LYRICS_CODE_CSS = [
+  highlightCss,
+  `.bh,.bh-edit {${extractCssBlock(/\.bh,\s*\.bh-edit\s*\{/)}}`,
+  utilityRule("lyrics-code-surface"),
+  utilityRule("lyrics-code-frame"),
+].join("\n");
+
 // -- Exports -------------------------------------------------------------------
 
 export {
+  CODE_SURFACE_TINT,
   FLOATING_LAYER_CSS,
   HELP_CONTENT_SCROLLER_CSS,
   HIT_TESTING_UTILITIES_CSS,
   installStyleSheet,
+  installUtilitiesUsedIn,
+  LYRICS_CODE_CSS,
   POSITION_UTILITIES_CSS,
+  TEXT_COLOR_UTILITIES_CSS,
+  THEME_TOKENS_CSS,
+  TRUNCATION_UTILITIES_CSS,
   WAVEFORM_SWEEP_ANIMATION,
   WAVEFORM_SWEEP_CSS,
 };

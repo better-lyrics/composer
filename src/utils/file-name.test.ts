@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fileNameWithoutExtension } from "@/utils/file-name";
+import { fileExtensionLabel, fileNameWithoutExtension } from "@/utils/file-name";
 
 describe("fileNameWithoutExtension", () => {
   it("drops the final extension", () => {
@@ -17,6 +17,23 @@ describe("fileNameWithoutExtension", () => {
 
     it("handles unicode names", () => {
       expect(fileNameWithoutExtension("夜に駆ける.m4a")).toBe("夜に駆ける");
+    });
+  });
+});
+
+describe("fileExtensionLabel", () => {
+  it("returns the extension in capitals", () => {
+    expect(fileExtensionLabel("Midnight City.flac", "File")).toBe("FLAC");
+    expect(fileExtensionLabel("a.b.m4a", "File")).toBe("M4A");
+  });
+
+  describe("edge cases", () => {
+    it("falls back when there is no usable extension", () => {
+      expect(fileExtensionLabel(undefined, "File")).toBe("File");
+      expect(fileExtensionLabel("", "File")).toBe("File");
+      expect(fileExtensionLabel("song", "AUDIO")).toBe("AUDIO");
+      expect(fileExtensionLabel(".env", "File")).toBe("File");
+      expect(fileExtensionLabel("trailing.", "File")).toBe("File");
     });
   });
 });

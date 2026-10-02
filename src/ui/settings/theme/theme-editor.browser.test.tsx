@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it } from "vitest";
 import { encodeThemeCode } from "@/domain/theme/code";
 import { DEFAULT_PRESET_ID, PRESET_BY_ID } from "@/domain/theme/presets";
 import { useThemeStore } from "@/stores/theme";
-import { ThemeEditor } from "@/ui/settings/theme/theme-editor";
 import { render } from "@/test/render";
+import { ThemeEditor } from "@/ui/settings/theme/theme-editor";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers -------------------------------------------------------------------
 

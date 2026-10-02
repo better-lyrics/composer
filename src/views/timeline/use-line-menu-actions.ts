@@ -1,16 +1,32 @@
+import { isSharedLine } from "@/domain/group/shared-timing";
+import { instanceName } from "@/domain/instance/name";
+import { isLinked } from "@/domain/instance/predicates";
+import type { LyricLine } from "@/domain/line/model";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
 import { splitIntoWordsWithMeta } from "@/utils/sync-helpers";
+import { insertEmptyLine } from "@/views/timeline/insert-empty-line";
 import { splitLinesIntoWords, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
 
+// -- Functions ----------------------------------------------------------------
+
+function sharedInstanceNameOf(lines: readonly LyricLine[], lineId: string): string | null {
+  const line = lines.find((candidate) => candidate.id === lineId);
+  const groupsById = new Map(useProjectStore.getState().groups.map((group) => [group.id, group]));
+  if (!line || !isLinked(line) || !isSharedLine(line, groupsById)) return null;
+  const group = groupsById.get(line.groupId);
+  return group ? instanceName(lines, group, line.instanceIdx) : null;
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () => void) {
-  const { lines, gutterLineGroupInfo } = targets;
+  const { lines, gutterLineGroupInfo, placeAtPlayheadInfo } = targets;
   const contextMenu = useTimelineStore((s) => s.contextMenu);
   const selectedWords = useTimelineStore((s) => s.selectedWords);
   const rawLines = useProjectStore((s) => s.lines);
@@ -32,10 +48,21 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
     clearContextMenu();
   }, [contextMenu, rawLines, updateLineWithHistory, clearContextMenu]);
 
+  const handlePlaceAtPlayhead = useCallback(() => {
+    if (!placeAtPlayheadInfo) return;
+    const audio = useAudioStore.getState();
+    const playheadTime = audio.audioElement?.currentTime ?? audio.currentTime;
+    const { groupId, instanceIdx } = placeAtPlayheadInfo;
+    if (!useProjectStore.getState().placeInstance(groupId, instanceIdx, playheadTime, audio.duration)) {
+      showPlacementBlockedToast();
+    }
+    clearContextMenu();
+  }, [placeAtPlayheadInfo, clearContextMenu]);
+
   const handleAddLine = useCallback(
     (position: "above" | "below") => {
       if (!contextMenu || contextMenu.target.kind !== "gutter") return;
-      useProjectStore.getState().insertEmptyLineWithHistory(contextMenu.target.lineId, position);
+      insertEmptyLine(contextMenu.target.lineId, position);
       clearContextMenu();
     },
     [contextMenu, clearContextMenu],
@@ -44,8 +71,10 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handleDeleteLine = useCallback(() => {
     if (!contextMenu || contextMenu.target.kind !== "gutter") return;
     const lineId = contextMenu.target.lineId;
+    const sharedName = sharedInstanceNameOf(rawLines, lineId);
     const newLines = rawLines.filter((l) => l.id !== lineId);
     setLinesWithHistory(newLines);
+    if (sharedName) showGroupActionToast(`Line deleted from ${sharedName}. Its timing no longer copies there.`);
     clearContextMenu();
   }, [contextMenu, rawLines, setLinesWithHistory, clearContextMenu]);
 
@@ -74,6 +103,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
   return {
     handlePlaceLineHere,
+    handlePlaceAtPlayhead,
     handleAddLine,
     handleDeleteLine,
     handleDetachLine,

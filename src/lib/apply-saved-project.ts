@@ -1,9 +1,10 @@
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
+import { savedExportTiming } from "@/domain/project/export-timing";
 import { isMetadataKey } from "@/domain/project/imported-metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
-import type { SavedProject } from "@/lib/persistence";
+import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/domain/project/syllable-split-defaults";
+import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
-import { DEFAULT_SYLLABLE_SPLIT_DEFAULTS } from "@/stores/project/types";
 import { useSettingsStore } from "@/stores/settings";
 
 // -- Types --------------------------------------------------------------------
@@ -28,6 +29,7 @@ function applySavedProject(project: SavedProject, origin: SavedProjectOrigin): s
   state.setLines(project.lines ?? []);
   state.setGroups(project.groups ?? []);
   state.setGranularity(project.granularity ?? useSettingsStore.getState().defaultGranularity);
+  state.setExportTiming(savedExportTiming(project.exportTiming));
   state.setSyllableSplitDefaults(project.syllableSplitDefaults ?? DEFAULT_SYLLABLE_SPLIT_DEFAULTS);
   state.setAgents(project.agents && project.agents.length > 0 ? project.agents : DEFAULT_AGENTS);
   state.setDismissedSuggestions(project.dismissedSuggestions ?? []);

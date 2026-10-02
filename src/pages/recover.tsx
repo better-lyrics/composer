@@ -1,27 +1,19 @@
-import { downloadRecoveryFile, readRecoveryMetadata, type RecoveryResult } from "@/lib/recovery";
+import { type RecoveryResult, downloadRecoveryFile, readRecoveryMetadata } from "@/lib/recovery";
+import { RecoverProjectList } from "@/pages/recover-project-list";
 import { PageHead } from "@/seo/page-head";
 import { Button } from "@/ui/button";
 import { ClearRecoveryButton } from "@/ui/clear-recovery-button";
 import { ClientOnly } from "@/ui/client-only";
-import { pluralize } from "@/utils/pluralize";
+import { formatSavedWorkSummary } from "@/utils/format-saved-at";
 import { IconCheck, IconDownload, IconHome2, IconLifebuoy, IconRefresh } from "@tabler/icons-react";
 import { useEffect, useState } from "react";
 
-// -- Constants -----------------------------------------------------------------
+// -- Constants ----------------------------------------------------------------
 
 const TITLE = "Recover Your Work ・ Composer";
 const DESCRIPTION = "Grab the backup Composer saved in this browser and pick up where you left off.";
 
-// -- Helpers -------------------------------------------------------------------
-
-function formatSavedAt(savedAt: number | undefined): string {
-  if (!savedAt) return "unknown";
-  try {
-    return new Date(savedAt).toLocaleString();
-  } catch {
-    return new Date(savedAt).toISOString();
-  }
-}
+// -- Helpers ------------------------------------------------------------------
 
 // Middle-ellipsis truncation so the extension stays visible. End-truncation
 // (CSS text-overflow) would hide ".ttml-project.json" which is the most
@@ -34,7 +26,7 @@ function truncateMiddle(text: string, max: number): string {
   return `${text.slice(0, head)}…${text.slice(text.length - tail)}`;
 }
 
-// -- Component -----------------------------------------------------------------
+// -- Component ----------------------------------------------------------------
 
 type RecoveryState =
   | { phase: "reading" }
@@ -45,7 +37,7 @@ type RecoveryState =
 
 const SavedWorkSummary: React.FC<{ result: RecoveryResult }> = ({ result }) => (
   <p className="text-xs text-composer-text-muted select-text">
-    {pluralize(result.lineCount, "line")}, last edited {formatSavedAt(result.savedAt)}
+    {formatSavedWorkSummary(result.lineCount, result.savedAt)}
   </p>
 );
 
@@ -163,6 +155,8 @@ const RecoverPanel: React.FC = () => {
           )}
         </div>
 
+        <RecoverProjectList />
+
         {state.phase === "downloaded" && (
           <ClearRecoveryButton
             hint="Use this if Composer keeps crashing on the same project. Wipes the autosave so the app opens fresh. Make sure your download succeeded first."
@@ -174,7 +168,7 @@ const RecoverPanel: React.FC = () => {
   );
 };
 
-// -- Page ----------------------------------------------------------------------
+// -- Page ---------------------------------------------------------------------
 
 const RecoverFallback: React.FC = () => (
   <div className="flex items-center justify-center h-screen bg-composer-bg text-composer-text-muted text-sm">

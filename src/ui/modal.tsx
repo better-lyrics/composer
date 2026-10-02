@@ -1,4 +1,4 @@
-import { useModalStackStore } from "@/stores/modal-stack";
+import { useEscapeLayer } from "@/hooks/useEscapeLayer";
 import { IconButton } from "@/ui/icon-button";
 import { cn } from "@/utils/cn";
 import { FloatingFocusManager, FloatingPortal, useFloating } from "@floating-ui/react";
@@ -16,6 +16,8 @@ interface ModalProps {
   className?: string;
   bodyClassName?: string;
   initialFocusRef?: React.RefObject<HTMLElement | null>;
+  role?: "dialog" | "alertdialog";
+  describedById?: string;
 }
 
 // -- Component ----------------------------------------------------------------
@@ -29,6 +31,8 @@ const Modal: React.FC<ModalProps> = ({
   className,
   bodyClassName,
   initialFocusRef,
+  role = "dialog",
+  describedById,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -41,22 +45,13 @@ const Modal: React.FC<ModalProps> = ({
     [onClose],
   );
 
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
+  useEscapeLayer("modal", isOpen, onClose);
 
   useEffect(() => {
     if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCloseRef.current();
-    };
-    document.addEventListener("keydown", handleKeyDown);
     document.body.style.overflow = "hidden";
-    const { push, pop } = useModalStackStore.getState();
-    push();
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = "";
-      pop();
     };
   }, [isOpen]);
 
@@ -74,7 +69,9 @@ const Modal: React.FC<ModalProps> = ({
           <dialog
             ref={refs.setFloating as unknown as React.Ref<HTMLDialogElement>}
             open
+            role={role}
             aria-labelledby={title ? titleId : undefined}
+            aria-describedby={describedById}
             tabIndex={-1}
             className={cn(
               "relative w-full max-w-md mx-4 border shadow-2xl text-composer-text rounded-xl bg-composer-bg-dark border-composer-border focus:outline-none overflow-clip",
@@ -96,7 +93,9 @@ const Modal: React.FC<ModalProps> = ({
                 />
               </div>
             )}
-            <div className={cn(title ? "p-5" : "p-5 pt-4", bodyClassName)}>{children}</div>
+            <div id={describedById} className={cn(title ? "p-5" : "p-5 pt-4", bodyClassName)}>
+              {children}
+            </div>
           </dialog>
         </div>
       </FloatingFocusManager>

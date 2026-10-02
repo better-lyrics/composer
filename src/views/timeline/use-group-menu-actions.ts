@@ -1,14 +1,15 @@
+import { withNewInstance } from "@/domain/group/own-timing";
 import { instanceCount } from "@/domain/instance/enumerate";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
-import { showGroupActionToast } from "@/utils/group-toast";
+import { showGroupActionToast, showGroupedToast } from "@/utils/group-toast";
+import { pluralize } from "@/utils/pluralize";
 import { type ConformFailure, conformLinesToInstance } from "@/views/timeline/conform-lines-to-instance";
 import { deleteGroupWithConfirm } from "@/views/timeline/delete-group-with-confirm";
 import { scrollToInstanceHeader } from "@/views/timeline/scroll-helpers";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
-import { pluralize } from "@/utils/pluralize";
 import { useCallback } from "react";
 import { toast } from "sonner";
 
@@ -43,7 +44,7 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
     if (!groupableSelection) return;
     const projectState = useProjectStore.getState();
     projectState.addGroupWithLines(groupableSelection.result.group, groupableSelection.result.updatedLines);
-    toast.success(`Grouped ${pluralize(groupableSelection.count, "line")}`);
+    showGroupedToast(groupableSelection.result.group, groupableSelection.count, groupableSelection.addedFromGaps);
     clearContextMenu();
   }, [groupableSelection, clearContextMenu]);
 
@@ -79,11 +80,14 @@ function useGroupMenuActions(targets: ContextMenuTargets, clearContextMenu: () =
         selectedLineIds,
         playheadTime,
       });
-      if (!result.ok || !result.updatedLines) {
+      if (!result.ok || !result.updatedLines || result.instanceIdx === undefined) {
         toast.error(result.reason ? CONFORM_FAILURE_MESSAGE[result.reason] : "Could not conform those lines");
         return;
       }
-      useProjectStore.getState().setLinesWithHistory(result.updatedLines);
+      projectState.setLinesWithHistory(
+        result.updatedLines,
+        withNewInstance(projectState.groups, groupId, result.instanceIdx),
+      );
       showGroupActionToast(`Conformed ${pluralize(count, "line")} to "${option.group.label}"`);
     },
     [conformableSelection, confirm, clearContextMenu],

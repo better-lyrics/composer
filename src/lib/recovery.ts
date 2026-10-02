@@ -1,10 +1,11 @@
-// Standalone recovery helper. Reads the autosaved project directly from
-// IndexedDB and triggers a file download, with zero dependencies on any
-// store, hook, or component so it remains usable from error boundaries
-// and `/recover` even when the rest of the app is in a broken state.
-
-import { downloadText, localDateStamp, sanitizeFileName } from "@/lib/download-file";
-import { PROJECT_STORE_NAME, getFromStore, openDB } from "@/lib/persistence-idb";
+import { displayTitle } from "@/domain/project/display-title";
+import type { ProjectIndexEntry } from "@/domain/project/index-entry";
+import { byMostRecentlyEdited } from "@/domain/project/library-order";
+import { PROJECT_INDEX_STORE_NAME, PROJECT_STORE_NAME, getAllFromStore, getFromStore } from "@/lib/persistence-idb";
+import { buildProjectBundle, downloadProjectBundle } from "@/lib/project-bundle";
+import { downloadProjectFile, projectFileFrom, projectFileName } from "@/lib/project-file";
+import { LEGACY_PROJECT_KEY, clearAllProjects, getOpenProjectId, loadProjectRecord } from "@/lib/project-storage";
+import type { SavedProject } from "@/lib/saved-project";
 
 // -- Types --------------------------------------------------------------------
 
@@ -15,6 +16,11 @@ interface RecoveredProject {
   lines?: unknown[];
 }
 
+interface StoredRecovery {
+  projectId: string | undefined;
+  project: SavedProject;
+}
+
 interface RecoveryResult {
   found: boolean;
   filename: string;
@@ -23,9 +29,22 @@ interface RecoveryResult {
   title: string;
 }
 
+interface RecoverableProject {
+  key: string;
+  title: string;
+  lineCount: number;
+  savedAt: number | undefined;
+}
+
+interface RecoverySnapshot {
+  entries: ProjectIndexEntry[];
+  legacyProject: SavedProject | undefined;
+}
+
 // -- Constants ----------------------------------------------------------------
 
-const CURRENT_PROJECT_KEY = "current";
+const LEGACY_RECOVERY_KEY = "legacy";
+
 const NOT_FOUND_RESULT: RecoveryResult = {
   found: false,
   filename: "",
@@ -34,55 +53,127 @@ const NOT_FOUND_RESULT: RecoveryResult = {
   title: "",
 };
 
-// -- Helpers ------------------------------------------------------------------
+// -- Reading ------------------------------------------------------------------
 
-function readProjectFromIDB(): Promise<RecoveredProject | undefined> {
-  return getFromStore<RecoveredProject>(PROJECT_STORE_NAME, CURRENT_PROJECT_KEY);
+function legacyIndexEntry(project: SavedProject): ProjectIndexEntry {
+  return {
+    id: LEGACY_RECOVERY_KEY,
+    title: project.metadata?.title ?? "",
+    artists: project.metadata?.artists ?? [],
+    album: project.metadata?.album ?? "",
+    lineCount: project.lines?.length ?? 0,
+    syncedLineCount: 0,
+    hasWordTiming: false,
+    audioKind: "none",
+    storedAudioBytes: 0,
+    updatedAt: project.savedAt,
+  };
+}
+
+function readLegacyProject(): Promise<SavedProject | undefined> {
+  return getFromStore<SavedProject>(PROJECT_STORE_NAME, LEGACY_PROJECT_KEY);
+}
+
+async function readRecoverySnapshot(): Promise<RecoverySnapshot> {
+  const [realEntries, legacyProject] = await Promise.all([
+    getAllFromStore<ProjectIndexEntry>(PROJECT_INDEX_STORE_NAME),
+    readLegacyProject(),
+  ]);
+  const ordered = realEntries.toSorted(byMostRecentlyEdited);
+  const entries = legacyProject ? [...ordered, legacyIndexEntry(legacyProject)] : ordered;
+  return { entries, legacyProject };
+}
+
+async function loadStoredRecovery(
+  key: string,
+  legacyProject: SavedProject | undefined,
+): Promise<StoredRecovery | undefined> {
+  if (key === LEGACY_RECOVERY_KEY) {
+    return legacyProject ? { projectId: undefined, project: legacyProject } : undefined;
+  }
+  const project = await loadProjectRecord(key);
+  return project ? { projectId: key, project } : undefined;
+}
+
+async function readProjectFromIDB(): Promise<StoredRecovery | undefined> {
+  const openId = await getOpenProjectId();
+  const open = openId ? await loadProjectRecord(openId) : undefined;
+  if (open) return { projectId: openId, project: open };
+  const { entries, legacyProject } = await readRecoverySnapshot();
+  const first = entries[0];
+  return first ? loadStoredRecovery(first.id, legacyProject) : undefined;
 }
 
 function buildRecoveryResult(project: RecoveredProject): RecoveryResult {
-  const title = project.metadata?.title?.trim() || "recovered";
+  const title = displayTitle(project.metadata?.title?.trim() ?? "");
   return {
     found: true,
-    filename: `${sanitizeFileName(title, "recovered")}-${localDateStamp()}.ttml-project.json`,
+    filename: projectFileName(title, new Date()),
     lineCount: project.lines?.length ?? 0,
     savedAt: project.savedAt,
     title,
   };
 }
 
-// -- Public API ---------------------------------------------------------------
-
-async function readRecoveryMetadata(): Promise<RecoveryResult> {
-  const project = await readProjectFromIDB();
-  return project ? buildRecoveryResult(project) : NOT_FOUND_RESULT;
+function toRecoverableProject(entry: ProjectIndexEntry): RecoverableProject {
+  return { key: entry.id, title: displayTitle(entry.title), lineCount: entry.lineCount, savedAt: entry.updatedAt };
 }
 
-async function downloadRecoveryFile(): Promise<RecoveryResult> {
-  const project = await readProjectFromIDB();
-  if (!project) return NOT_FOUND_RESULT;
-  const result = buildRecoveryResult(project);
-  downloadText(JSON.stringify(project, null, 2), result.filename, "application/json");
+function downloadStored(stored: StoredRecovery): RecoveryResult {
+  const result = buildRecoveryResult(stored.project);
+  downloadProjectFile(projectFileFrom(stored.projectId, stored.project), result.filename);
   return result;
 }
 
-async function clearRecoveryStorage(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(PROJECT_STORE_NAME, "readwrite");
-    tx.objectStore(PROJECT_STORE_NAME).clear();
-    tx.oncomplete = () => {
-      db.close();
-      resolve();
-    };
-    tx.onerror = () => {
-      db.close();
-      reject(tx.error ?? new Error("IndexedDB clear failed"));
-    };
-  });
+// -- Public API ---------------------------------------------------------------
+
+async function readRecoveryMetadata(): Promise<RecoveryResult> {
+  const stored = await readProjectFromIDB();
+  return stored ? buildRecoveryResult(stored.project) : NOT_FOUND_RESULT;
+}
+
+async function downloadRecoveryFile(): Promise<RecoveryResult> {
+  const stored = await readProjectFromIDB();
+  return stored ? downloadStored(stored) : NOT_FOUND_RESULT;
+}
+
+async function listRecoverableProjects(): Promise<RecoverableProject[]> {
+  const { entries } = await readRecoverySnapshot();
+  return entries.map(toRecoverableProject);
+}
+
+async function downloadRecoverableProject(key: string): Promise<RecoveryResult> {
+  const legacyProject = key === LEGACY_RECOVERY_KEY ? await readLegacyProject() : undefined;
+  const stored = await loadStoredRecovery(key, legacyProject);
+  return stored ? downloadStored(stored) : NOT_FOUND_RESULT;
+}
+
+async function downloadAllRecoverableProjects(): Promise<number> {
+  const { entries, legacyProject } = await readRecoverySnapshot();
+  if (entries.length === 0) return 0;
+  const stored = (await Promise.all(entries.map((entry) => loadStoredRecovery(entry.id, legacyProject)))).filter(
+    (candidate): candidate is StoredRecovery => candidate !== undefined,
+  );
+  if (stored.length === 0) return 0;
+  const sources = stored.map(({ projectId, project }) => ({ id: projectId, project }));
+  downloadProjectBundle(buildProjectBundle(sources, Date.now()));
+  return stored.length;
+}
+
+function clearRecoveryStorage(): Promise<void> {
+  return clearAllProjects();
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { readRecoveryMetadata, downloadRecoveryFile, clearRecoveryStorage, buildRecoveryResult, NOT_FOUND_RESULT };
-export type { RecoveredProject, RecoveryResult };
+export {
+  readRecoveryMetadata,
+  downloadRecoveryFile,
+  listRecoverableProjects,
+  downloadRecoverableProject,
+  downloadAllRecoverableProjects,
+  clearRecoveryStorage,
+  buildRecoveryResult,
+  NOT_FOUND_RESULT,
+};
+export type { RecoveredProject, RecoveryResult, RecoverableProject };

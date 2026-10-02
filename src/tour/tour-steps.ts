@@ -1,6 +1,8 @@
 import { isLineTimed } from "@/domain/line/sync-progress";
+import type { ProjectTab } from "@/domain/project/tab";
 import { useAudioStore } from "@/stores/audio";
-import { type SimpleTab, useProjectStore } from "@/stores/project";
+import { useProjectStore } from "@/stores/project";
+import { importLyricsButtonStep, importLyricsDialogStep } from "@/tour/import-lyrics-steps";
 import { MOD_KEY } from "@/utils/platform";
 import type { DriveStep } from "driver.js";
 
@@ -23,6 +25,8 @@ const TOUR_STEP_IDS = [
   "import",
   "import-gate",
   "edit",
+  "edit-import",
+  "edit-import-modal",
   "edit-gate",
   "languages",
   "sync",
@@ -36,7 +40,7 @@ const TOUR_STEP_IDS = [
 
 // -- Helpers ------------------------------------------------------------------
 
-function switchTab(tabId: SimpleTab) {
+function switchTab(tabId: ProjectTab) {
   useProjectStore.getState().setActiveTab(tabId);
 }
 
@@ -88,12 +92,15 @@ function createTourSteps(onOpenBestPractices: () => void): DriveStep[] {
       element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
       popover: {
         title: "Type or paste lyrics",
-        description: "Enter your lyrics in the text area on the left. Each line becomes a sync target.",
+        description:
+          "Enter your lyrics in the text area on the left. Each line becomes a sync target. Paste a whole lyrics or project file to import it.",
         side: "right",
         align: "start",
       },
       onHighlightStarted: () => switchTab("edit"),
     },
+    "edit-import": importLyricsButtonStep(),
+    "edit-import-modal": importLyricsDialogStep(),
     "edit-gate": {
       element: () => document.querySelector('[data-tour="edit-panel"]') as Element,
       popover: {

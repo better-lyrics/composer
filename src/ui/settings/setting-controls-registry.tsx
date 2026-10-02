@@ -1,10 +1,18 @@
 import { useSettingsStore } from "@/stores/settings";
 import type { SettingId } from "@/stores/settings-catalog";
+import { LAUNCH_SCREEN_OPTIONS, LIBRARY_SORT_OPTIONS } from "@/ui/projects/library-options";
 import { BridgeSection } from "@/ui/settings/bridge-section";
 import { CobaltInstancesSetting } from "@/ui/settings/cobalt-instances-setting";
 import { DefaultPlaybackRateSetting } from "@/ui/settings/default-playback-rate-setting";
+import { LibraryViewSetting } from "@/ui/settings/library-view-setting";
+import { ResetAllSettingsSetting, ResetTourSetting } from "@/ui/settings/reset-settings";
 import type { SelectOption, SliderAction } from "@/ui/settings/setting-controls";
 import { SplitCharacterSetting } from "@/ui/settings/split-character-setting";
+import { BackUpAllProjectsSetting, DeleteAllProjectsSetting } from "@/ui/settings/storage/backup-settings-setting";
+import { ProjectAudioListSetting } from "@/ui/settings/storage/project-audio-list-setting";
+import { KEEP_YOUTUBE_AUDIO_OPTIONS, STORAGE_LIMIT_OPTIONS } from "@/ui/settings/storage/storage-options";
+import { StorageProtectionSetting } from "@/ui/settings/storage/storage-protection-setting";
+import { StorageUsageSetting } from "@/ui/settings/storage/storage-usage-setting";
 import { ThemeSettings } from "@/ui/settings/theme/theme-settings";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -36,6 +44,11 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   autoExtractBackgroundVocals: TOGGLE,
   mergeStandaloneBackgroundLines: TOGGLE,
   preserveBracketsOnExtraction: TOGGLE,
+  resetTour: { kind: "custom", Component: ResetTourSetting },
+  resetAllSettings: { kind: "custom", Component: ResetAllSettingsSetting },
+  libraryView: { kind: "custom", Component: LibraryViewSetting },
+  librarySort: { kind: "select", options: LIBRARY_SORT_OPTIONS },
+  launchScreen: { kind: "select", options: LAUNCH_SCREEN_OPTIONS },
   theme: { kind: "custom", Component: ThemeSettings },
   defaultPlaybackRate: { kind: "custom", Component: DefaultPlaybackRateSetting },
   preservePitch: TOGGLE,
@@ -73,6 +86,8 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   },
   timelineSnap: TOGGLE,
   vocalOnsetSnap: TOGGLE,
+  shareTimingInNewGroups: TOGGLE,
+  loopOpenGroup: TOGGLE,
   timelineSnapThreshold: { kind: "slider", min: 4, max: 24, step: 1, format: (v) => `${v}px` },
   snapPlayheadToPoints: TOGGLE,
   followPlayhead: TOGGLE,
@@ -92,7 +107,6 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
       { value: "line", label: "Line" },
     ],
   },
-  confirmReplaceProjectFromHash: TOGGLE,
   confirmReplaceLyrics: TOGGLE,
   confirmSyncReset: TOGGLE,
   confirmClearProject: TOGGLE,
@@ -102,7 +116,15 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   confirmConformToGroup: TOGGLE,
   confirmGroupDissolution: TOGGLE,
   confirmClearImportedSongDetails: TOGGLE,
+  storageUsage: { kind: "custom", Component: StorageUsageSetting },
+  storageProtection: { kind: "custom", Component: StorageProtectionSetting },
+  keepYouTubeAudio: { kind: "select", options: KEEP_YOUTUBE_AUDIO_OPTIONS },
+  smartCleanup: TOGGLE,
+  storageLimit: { kind: "select", options: STORAGE_LIMIT_OPTIONS },
+  projectAudioList: { kind: "custom", Component: ProjectAudioListSetting },
   autoSaveDelay: { kind: "slider", min: 500, max: 10000, step: 500, format: (v) => `${(v / 1000).toFixed(1)}s` },
+  backUpAllProjects: { kind: "custom", Component: BackUpAllProjectsSetting },
+  deleteAllProjects: { kind: "custom", Component: DeleteAllProjectsSetting },
   previewRenderer: {
     kind: "select",
     options: [

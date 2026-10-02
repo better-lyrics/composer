@@ -1,15 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
 import { useVocalOnsetSnapPoints } from "@/hooks/useVocalOnsetSnapPoints";
-import { clearCurrentProject, type SavedProject, saveAudioFile, saveCurrentProject } from "@/lib/persistence";
+import { saveAudioFile, saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
+import type { SavedProject } from "@/lib/saved-project";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createMp3File } from "@/test/audio-fixtures";
 import { createProjectSaveInput, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -41,13 +42,11 @@ const LoadHarness: React.FC = () => {
 describe("usePersistence · customSnapPoints hydration", () => {
   const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     useSettingsStore.setState({ autoSaveDelay: 30 });
-    await clearCurrentProject();
   });
-  afterEach(async () => {
+  afterEach(() => {
     useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
-    await clearCurrentProject();
   });
 
   it("regression: usePersistence hydrates saved customSnapPoints into the project store", async () => {

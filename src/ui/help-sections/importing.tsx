@@ -1,10 +1,12 @@
 import { LYRICS_FORMATS_DESCRIBED, LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
 import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
-import { INLINE_CODE, PROSE } from "@/ui/typography";
-import { InlineKeyBadge } from "@/ui/inline-key-badge";
-import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
-import { SettingLink } from "@/ui/setting-link";
 import { HelpTopic } from "@/ui/help-topic";
+import { InlineKeyBadge } from "@/ui/inline-key-badge";
+import { SettingLink } from "@/ui/setting-link";
+import { INLINE_CODE, PROSE } from "@/ui/typography";
+import { providerLabelsProse } from "@/utils/lyrics-search/provider-labels";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { OPEN_PROJECT_LABEL, USE_PROJECT_LYRICS_LABEL } from "@/views/lyrics-import-modal/import-lyrics-source";
 
 // -- Importing ----------------------------------------------------------------
 
@@ -97,16 +99,25 @@ const ImportSection: React.FC = () => (
           unsynced) and how close its duration is to your project's.
         </li>
         <li>
-          <strong>Paste</strong>: drop in raw lyrics. Use <span className={INLINE_CODE}>|</span> to split syllables
-          (e.g. <span className={INLINE_CODE}>beau|ti|ful</span>).
+          <strong>Paste</strong>: drop in raw lyrics, or a whole lyrics or project file. Use{" "}
+          <span className={INLINE_CODE}>|</span> to split syllables (e.g.{" "}
+          <span className={INLINE_CODE}>beau|ti|ful</span>).
         </li>
         <li>
-          <strong>Upload</strong>: drag a file in, or click to browse. Accepts {LYRICS_FORMATS_PROSE}.
+          <strong>Upload</strong>: drag a file in, or click to browse. Accepts {LYRICS_FORMATS_PROSE}, or{" "}
+          {PROJECT_FILE_PROSE}.
         </li>
       </ul>
       <p className={`${PROSE} mt-3`}>
         In Edit, double-clicking the import button skips the modal and opens the file picker directly, like the old
-        flow.
+        flow. Pasting a whole lyrics file into the Edit text area imports it the same way, with its timing, and so does
+        dropping a file onto the editor. Plain lines still paste as typed text.
+      </p>
+      <p className={`${PROSE} mt-3`}>
+        A project file can come in through any of these. Composer asks what to do with it:{" "}
+        <strong>{USE_PROJECT_LYRICS_LABEL}</strong> takes its lyrics, singers and song details into the open project as
+        one undoable step, and <strong>{OPEN_PROJECT_LABEL}</strong> adds it to your library and switches to it. A
+        backup of many projects only offers to restore it.
       </p>
       <p className={`${PROSE} mt-3`}>
         Supported formats: {LYRICS_FORMATS_DESCRIBED}. Imported timing is preserved; plain .txt files get none and you

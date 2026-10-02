@@ -9,6 +9,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { mergeWordText } from "@/utils/word-merge";
 import { createBgWordsFromTextAt } from "@/utils/sync-helpers";
 import { findInsertionSlot } from "@/utils/word-spaces";
+import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import type { ContextMenuTargets } from "@/views/timeline/use-context-menu-targets";
 import { useCallback } from "react";
@@ -86,13 +87,14 @@ function useWordMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
 
     const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
     const existingWords = trackWords(line, type);
-    const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, duration, minWordDuration);
+    const range = storedLineTimeRange(lineId, duration);
+    const slot = findInsertionSlot(existingWords ?? [], time, defaultWordDuration, range, minWordDuration);
     if (!slot) {
       clearContextMenu();
       return;
     }
 
-    const timedText = type === "bg" ? createBgWordsFromTextAt(line, slot.begin, duration) : null;
+    const timedText = type === "bg" ? createBgWordsFromTextAt(line, slot.begin, range.max) : null;
     if (timedText) {
       updateLineWithHistory(lineId, manualBackgroundWordEdit(timedText));
       clearContextMenu();

@@ -1,14 +1,18 @@
+import { getModelDescriptor } from "@/audio/separation/model-registry";
+import type { Stem } from "@/audio/separation/types";
+import { useAudioStore } from "@/stores/audio";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
-import { getModelDescriptor } from "@/audio/separation/model-registry";
-import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
+import { ProgressBar } from "@/ui/progress-bar";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
+import { DETECTING_VOCAL_ONSETS } from "@/ui/vocal-onset-status-copy";
 import { cn } from "@/utils/cn";
-import { IconCheck, type IconProps, IconLoader2, IconMicrophone, IconMusic, IconWaveSine } from "@tabler/icons-react";
+import { formatMegabytes } from "@/utils/format-file-size";
+import { useTimelineStore } from "@/views/timeline/timeline-store";
+import { IconCheck, IconLoader2, IconMicrophone, IconMusic, type IconProps, IconWaveSine } from "@tabler/icons-react";
 import { type ComponentType, useEffect } from "react";
-import type { Stem } from "@/audio/separation/types";
 
 const STEM_LABELS: Record<Stem, string> = {
   original: "Original",
@@ -22,19 +26,6 @@ const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
   instrumental: IconMusic,
 };
 
-function formatMb(bytes: number): string {
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-const ProgressBar: React.FC<{ pct: number }> = ({ pct }) => (
-  <div className="h-1.5 w-full bg-composer-button rounded overflow-hidden">
-    <div
-      className="h-full bg-composer-accent transition-[width] duration-150"
-      style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-    />
-  </div>
-);
-
 const VocalSeparationDropdown: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const status = useSeparationStore((s) => s.status);
@@ -45,6 +36,7 @@ const VocalSeparationDropdown: React.FC = () => {
   const modelCached = useSeparationStore((s) => s.modelCached);
   const hostingConfigured = useSeparationStore((s) => s.hostingConfigured);
   const refreshModelCacheStatus = useSeparationStore((s) => s.refreshModelCacheStatus);
+  const detectingOnsets = useTimelineStore((s) => s.vocalOnsetDetectionStatus === "processing");
 
   const variant = useSettingsStore((s) => s.vocalModelVariant);
   const descriptor = getModelDescriptor(variant);
@@ -64,91 +56,101 @@ const VocalSeparationDropdown: React.FC = () => {
   if (!source) return null;
 
   const pct = progress.total > 0 ? Math.round((progress.loaded / progress.total) * 100) : 0;
-  const triggerLabel = status === "downloading" || status === "processing" ? `${pct}%` : STEM_LABELS[currentStem];
+  const separating = status === "downloading" || status === "processing";
+  const showDetecting = detectingOnsets && !separating;
+  const triggerLabel = separating ? `${pct}%` : STEM_LABELS[currentStem];
+  const triggerName = showDetecting
+    ? `Vocal separation, ${triggerLabel}, ${DETECTING_VOCAL_ONSETS.toLowerCase()}`
+    : `Vocal separation, ${triggerLabel}`;
   const triggerIconClass = "size-4 text-composer-text opacity-50 group-hover:opacity-100 transition-opacity";
   const triggerIcon =
-    status === "downloading" || status === "processing" ? (
+    separating || showDetecting ? (
       <IconLoader2 className={`${triggerIconClass} animate-spin`} />
     ) : (
       <IconMicrophone className={triggerIconClass} />
     );
 
   return (
-    <Popover
-      placement="top-end"
-      trigger={
-        <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label="Vocal separation">
-          {triggerIcon}
-          <span>{triggerLabel}</span>
-        </Button>
-      }
-    >
-      {(close) => {
-        const selectAndClose = (stem: Stem) => {
-          selectStem(stem);
-          close();
-        };
-        return (
-          <div className="p-3 w-max max-w-80">
-            {status === "error" && error && (
-              <ErrorState
-                message={error.message}
-                onRetry={retry}
-                onDismiss={() => useSeparationStore.getState().reset()}
-              />
-            )}
+    <>
+      <span role="status" aria-atomic="true" className="sr-only">
+        {showDetecting ? DETECTING_VOCAL_ONSETS : ""}
+      </span>
+      <Popover
+        placement="top-end"
+        trigger={
+          <Button variant="ghost" hasIcon className="group font-mono tabular-nums min-w-20" aria-label={triggerName}>
+            {triggerIcon}
+            <span>{triggerLabel}</span>
+          </Button>
+        }
+      >
+        {(close) => {
+          const selectAndClose = (stem: Stem) => {
+            selectStem(stem);
+            close();
+          };
+          return (
+            <div className="p-3 w-max max-w-80">
+              {status === "error" && error && (
+                <ErrorState
+                  message={error.message}
+                  onRetry={retry}
+                  onDismiss={() => useSeparationStore.getState().reset()}
+                />
+              )}
 
-            {status === "downloading" && (
-              <ProgressState
-                title="Downloading model…"
-                detail={`${formatMb(progress.loaded)} / ${formatMb(progress.total || (descriptor?.approxBytes ?? 0))}`}
-                pct={pct}
-                onCancel={cancel}
-              />
-            )}
+              {status === "downloading" && (
+                <ProgressState
+                  title="Downloading model…"
+                  detail={`${formatMegabytes(progress.loaded)} / ${formatMegabytes(progress.total || (descriptor?.approxBytes ?? 0))}`}
+                  pct={pct}
+                  onCancel={cancel}
+                />
+              )}
 
-            {status === "processing" && (
-              <ProgressState
-                title="Separating vocals…"
-                detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
-                pct={pct}
-                onCancel={cancel}
-              />
-            )}
+              {status === "processing" && (
+                <ProgressState
+                  title="Separating vocals…"
+                  detail={progress.total > 0 ? `Chunk ${progress.loaded} of ${progress.total}` : "Preparing…"}
+                  pct={pct}
+                  onCancel={cancel}
+                />
+              )}
 
-            {status === "idle" && !modelCached && (
-              <IdleNoModelState
-                approxMb={descriptor?.approxMb ?? 85}
-                onDownload={downloadModel}
-                onSeparate={separate}
-              />
-            )}
+              {status === "idle" && !modelCached && (
+                <IdleNoModelState
+                  approxMb={descriptor?.approxMb ?? 85}
+                  onDownload={downloadModel}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "idle" && modelCached && (
-              <IdleReadyState
-                availableStems={availableStems}
-                currentStem={currentStem}
-                onSelect={selectAndClose}
-                onSeparate={separate}
-              />
-            )}
+              {status === "idle" && modelCached && (
+                <IdleReadyState
+                  availableStems={availableStems}
+                  currentStem={currentStem}
+                  onSelect={selectAndClose}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "ready" && (
-              <IdleReadyState
-                availableStems={availableStems}
-                currentStem={currentStem}
-                onSelect={selectAndClose}
-                onSeparate={separate}
-              />
-            )}
+              {status === "ready" && (
+                <IdleReadyState
+                  availableStems={availableStems}
+                  currentStem={currentStem}
+                  onSelect={selectAndClose}
+                  onSeparate={separate}
+                />
+              )}
 
-            {status === "cancelled" && (
-              <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
-            )}
-          </div>
-        );
-      }}
-    </Popover>
+              {status === "cancelled" && (
+                <p className="text-xs text-composer-text-muted">Cancelled. Open again to retry.</p>
+              )}
+            </div>
+          );
+        }}
+      </Popover>
+    </>
   );
 };
 
@@ -161,7 +163,7 @@ const ProgressState: React.FC<{ title: string; detail: string; pct: number; onCa
   <div className="flex flex-col gap-2 min-w-60">
     <p className="text-sm font-medium text-composer-text">{title}</p>
     <p className="text-xs text-composer-text-muted tabular-nums">{detail}</p>
-    <ProgressBar pct={pct} />
+    <ProgressBar percent={pct} label={title} className="h-1.5 w-full" />
     <div className="flex justify-end pt-1">
       <Button size="sm" variant="ghost" onClick={onCancel}>
         Cancel

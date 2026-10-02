@@ -1,4 +1,5 @@
 import { alternateMatchesMainText } from "@/domain/language/alternate-visibility";
+import type { Bounds } from "@/domain/word/bounds";
 import { useRendererAudioSync } from "@/hooks/use-renderer-audio-sync";
 import { wake } from "@/lib/frame-loop";
 import { useAudioStore } from "@/stores/audio";
@@ -7,6 +8,7 @@ import { IconButton } from "@/ui/icon-button";
 import { centeredFadeVariants, centeredSlideUpVariants, springSnappy } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
 import braccatoTheme from "@/views/preview/braccato-theme.css?raw";
+import { type TimedLineElement, markLinesOutsideFocus, useFocusFade } from "@/views/preview/focus-fade";
 import { LYRICS_ELEMENT_CLASS, type LyricsLayout } from "@/views/preview/lyrics-layout";
 import { type Lyric, injectRomanization, injectTranslation } from "@braccato/core";
 import type { BraccatoLyricsElement, LineClickDetail } from "@braccato/core/element";
@@ -20,6 +22,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 interface BraccatoRendererProps {
   ttmlString: string;
   layout?: LyricsLayout;
+  focusRange?: Bounds | null;
 }
 
 // -- Constants -----------------------------------------------------------------
@@ -67,14 +70,22 @@ function decorateAlternateTracks(el: BraccatoLyricsElement, lyrics: Lyric[]): vo
   if (decorated) renderer.relayout();
 }
 
+function timedLines(el: BraccatoLyricsElement): TimedLineElement[] {
+  return (el.renderer?.lines ?? []).map((line) => ({ element: line.lyricElement, startSeconds: line.time }));
+}
+
 // -- Component ----------------------------------------------------------------
 
-const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout = "page" }) => {
+const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout = "page", focusRange = null }) => {
   const elementRef = useRef<BraccatoLyricsElement>(null);
   const lyrics = useMemo(() => TTMLParser.parse(ttmlString), [ttmlString]);
   const songwriters = useMemo(() => TTMLParser.metadata(ttmlString).songwriters, [ttmlString]);
   const latestLyricsRef = useRef(lyrics);
   const latestSongwritersRef = useRef(songwriters);
+  const latestFocusRangeRef = useRef(focusRange);
+  useFocusFade(focusRange, latestFocusRangeRef, (range) => {
+    if (elementRef.current) markLinesOutsideFocus(timedLines(elementRef.current), range);
+  });
   const initializedElementRef = useRef<BraccatoLyricsElement | null>(null);
   const appliedLyricsRef = useRef<Lyric[] | null>(null);
   const rebuildScrollTopRef = useRef<number | null>(null);
@@ -127,6 +138,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
   const handleLyricsLoaded = useCallback((event: Event) => {
     const el = event.currentTarget as BraccatoLyricsElement;
     decorateAlternateTracks(el, latestLyricsRef.current);
+    markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
   }, []);
 
   const applyLyrics = useCallback((el: BraccatoLyricsElement, next: Lyric[], songwriters: readonly string[]) => {
@@ -144,6 +156,7 @@ const BraccatoRenderer: React.FC<BraccatoRendererProps> = ({ ttmlString, layout 
     // A rebuild that moves the scroll position fires one scroll the reader never made.
     rebuildScrollTopRef.current = el.scrollTop === scrollTopBefore ? null : el.scrollTop;
     decorateAlternateTracks(el, next);
+    markLinesOutsideFocus(timedLines(el), latestFocusRangeRef.current);
   }, []);
 
   // Activity re-attaches this ref on every reveal; re-initializing the same element rebuilds its lines.

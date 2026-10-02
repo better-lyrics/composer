@@ -44,4 +44,10 @@ describe("InlineKeyBadge", () => {
     const screen = await render(<InlineKeyBadge keys={[]} />);
     expect(screen.container.querySelectorAll("span > span").length).toBe(0);
   });
+
+  it("renders a single text pill when given text instead of keys", async () => {
+    const screen = await render(<InlineKeyBadge text="esc" />);
+    await expect.element(screen.getByText("esc")).toBeInTheDocument();
+    expect(screen.container.querySelectorAll("span > span").length).toBe(0);
+  });
 });

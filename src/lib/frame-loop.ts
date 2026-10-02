@@ -22,6 +22,7 @@ const STALE_HOLD_FRAMES = 600;
 
 const subscribers = new Set<FrameSubscriber>();
 const holds = new Map<string, number>();
+const animations = new Map<string, number>();
 let tailFrames = 0;
 let rafId: number | null = null;
 let unheldFrameRun = 0;
@@ -49,6 +50,10 @@ function reportRunawayFrames(rescheduling: boolean): void {
     );
     return;
   }
+  if (animations.size > 0) {
+    unheldFrameRun = 0;
+    return;
+  }
   unheldFrameRun += 1;
   if (unheldFrameRun < RUNAWAY_WAKE_FRAMES || hasReportedRunawayWakes) return;
   hasReportedRunawayWakes = true;
@@ -58,6 +63,10 @@ function reportRunawayFrames(rescheduling: boolean): void {
 }
 
 // -- Scheduler ----------------------------------------------------------------
+
+function isHeldAwake(): boolean {
+  return holds.size > 0 || animations.size > 0;
+}
 
 function schedule(): void {
   if (rafId !== null || subscribers.size === 0) return;
@@ -78,7 +87,7 @@ function runSubscriber(subscriber: FrameSubscriber, now: number): void {
 function pump(now: number): void {
   rafId = null;
   framesSinceWake += 1;
-  if (holds.size > 0) tailFrames = TAIL_FRAMES;
+  if (isHeldAwake()) tailFrames = TAIL_FRAMES;
   else tailFrames -= 1;
   const rescheduling = tailFrames > 0;
   // Queued before any callback runs, so nothing a subscriber does can stop the loop.
@@ -93,18 +102,26 @@ function wake(): void {
   schedule();
 }
 
-function holdFrames(label: string): () => void {
-  holds.set(label, (holds.get(label) ?? 0) + 1);
+function retain(counts: Map<string, number>, label: string): () => void {
+  counts.set(label, (counts.get(label) ?? 0) + 1);
   wake();
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    const remaining = (holds.get(label) ?? 1) - 1;
-    if (remaining > 0) holds.set(label, remaining);
-    else holds.delete(label);
+    const remaining = (counts.get(label) ?? 1) - 1;
+    if (remaining > 0) counts.set(label, remaining);
+    else counts.delete(label);
     wake();
   };
+}
+
+function holdFrames(label: string): () => void {
+  return retain(holds, label);
+}
+
+function animateFrames(label: string): () => void {
+  return retain(animations, label);
 }
 
 function subscribeFrame(callback: FrameCallback, label: string): () => void {
@@ -130,5 +147,5 @@ function cancelNextFrame(handle: number): void {
 
 // -- Exports ------------------------------------------------------------------
 
-export { TAIL_FRAMES, cancelNextFrame, holdFrames, nextFrame, subscribeFrame, wake };
+export { TAIL_FRAMES, animateFrames, cancelNextFrame, holdFrames, nextFrame, subscribeFrame, wake };
 export type { FrameCallback };

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
-import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
 import { render } from "@/test/render";
+import { BridgeUrlField } from "@/ui/settings/bridge-url-field";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 

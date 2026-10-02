@@ -1,7 +1,7 @@
-import { useThemeStore } from "@/stores/theme";
-import { PRESETS } from "@/domain/theme/presets";
 import type { Theme } from "@/domain/theme/model";
+import { PRESETS } from "@/domain/theme/presets";
 import { useConfirm } from "@/stores/confirm-store";
+import { useThemeStore } from "@/stores/theme";
 import { Button } from "@/ui/button";
 import { ThemePresetCard } from "@/ui/settings/theme/theme-preset-card";
 

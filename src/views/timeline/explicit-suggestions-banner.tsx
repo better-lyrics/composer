@@ -1,7 +1,7 @@
 import { useProjectStore } from "@/stores/project";
 import { type ExplicitSuggestion, findExplicitWords } from "@/utils/explicit-detection";
 import { getExplicitSnippet } from "@/utils/explicit-snippet";
-import { SuggestionsBanner } from "@/views/timeline/suggestions-banner";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { pluralize } from "@/utils/pluralize";
 import { IconAlertTriangle, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";

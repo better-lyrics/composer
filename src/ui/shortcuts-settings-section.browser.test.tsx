@@ -1,8 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
-import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
+import { ShortcutsSettingsSection } from "@/ui/shortcuts-settings-section";
+import { describe, expect, it } from "vitest";
 
 describe("ShortcutsSettingsSection", () => {
   it("renders every scope heading from the registry", async () => {
@@ -11,6 +11,14 @@ describe("ShortcutsSettingsSection", () => {
     await expect.element(screen.getByText("Sync Mode")).toBeInTheDocument();
     await expect.element(screen.getByText("Timeline Mode")).toBeInTheDocument();
     expect(screen.container.querySelector("input")).toBeNull();
+  });
+
+  it("lists the save shortcut with its default binding", async () => {
+    const screen = await render(<ShortcutsSettingsSection />);
+    await expect.element(screen.getByText("Save now", { exact: true })).toBeInTheDocument();
+    await expect
+      .element(screen.getByRole("button", { name: /^Change shortcut for Save now, currently/ }))
+      .toBeInTheDocument();
   });
 
   it("disables 'Reset all' when there are no overrides", async () => {

@@ -2,6 +2,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
+import { timeRangeResolver } from "@/domain/group/shared-timing";
 import type { ReadableLine } from "@/domain/line/effective-words";
 import type { WordSelection } from "@/domain/selection/model";
 import type { BoundaryEdge } from "@/domain/word/boundary";
@@ -139,13 +140,13 @@ const TimelineInfoPanel: React.FC = () => {
         edge,
         time: currentTime,
         minDuration: useSettingsStore.getState().minWordDuration,
-        duration,
+        range: timeRangeResolver(rawLines, groups, duration)(lines[selectedWord.lineIndex]),
         rolling: useTimelineStore.getState().rollingEditMode,
         syllablesFollowRolling: useSettingsStore.getState().syllablesFollowRolling,
         updateLineWithHistory,
       });
     },
-    [selectedWord, lines, duration, updateLineWithHistory],
+    [selectedWord, lines, rawLines, groups, duration, updateLineWithHistory],
   );
 
   const handleSetBeginToCursor = useCallback(() => setSelectedWordBoundary("begin"), [setSelectedWordBoundary]);

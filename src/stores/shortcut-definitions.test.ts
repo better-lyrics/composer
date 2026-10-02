@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ const bindingSignature = (binding: ShortcutBinding): string =>
     binding.mod ? "mod" : "",
   ].join("|");
 
-const SCOPES: ShortcutScope[] = ["global", "sync", "timeline"];
+const SCOPES: ShortcutScope[] = ["global", "sync", "timeline", "library"];
 
 // -- Tests --------------------------------------------------------------------
 
@@ -59,6 +59,45 @@ describe("SHORTCUT_DEFINITIONS", () => {
       expect(definition?.scope).toBe("timeline");
       expect(definition?.defaultBinding).toEqual(binding);
     }
+  });
+
+  it("registers the project shortcuts with their exact default bindings in the global scope", () => {
+    const expectedBindings: Record<string, ShortcutBinding> = {
+      "global.openProjectSwitcher": { key: "o", mod: true },
+      "global.newProject": { key: "n", mod: true, alt: true },
+      "global.saveNow": { key: "s", mod: true },
+    };
+    for (const [id, binding] of Object.entries(expectedBindings)) {
+      const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);
+      expect(definition, `missing definition for ${id}`).toBeDefined();
+      expect(definition?.scope).toBe("global");
+      expect(definition?.defaultBinding).toEqual(binding);
+    }
+  });
+
+  it("registers the group focus shortcuts with their exact default bindings in the timeline scope", () => {
+    const expectedBindings: Record<string, ShortcutBinding> = {
+      "timeline.openGroup": { key: "Enter", shift: true },
+      "timeline.closeGroup": { key: "Escape" },
+      "timeline.toggleGroupLoop": { key: "l", shift: true },
+    };
+    for (const [id, binding] of Object.entries(expectedBindings)) {
+      const definition = SHORTCUT_DEFINITIONS.find((d) => d.id === id);
+      expect(definition, `missing definition for ${id}`).toBeDefined();
+      expect(definition?.scope).toBe("timeline");
+      expect(definition?.defaultBinding).toEqual(binding);
+    }
+  });
+
+  it("registers the library shortcuts with their exact default bindings in the library scope", () => {
+    const search = SHORTCUT_DEFINITIONS.find((d) => d.id === "library.focusSearch");
+    const remove = SHORTCUT_DEFINITIONS.find((d) => d.id === "library.deleteSelection");
+    expect(search).toMatchObject({ scope: "library", description: "Search projects", defaultBinding: { key: "/" } });
+    expect(remove).toMatchObject({
+      scope: "library",
+      description: "Delete selected projects",
+      defaultBinding: { key: "Backspace" },
+    });
   });
 
   describe("invariants", () => {

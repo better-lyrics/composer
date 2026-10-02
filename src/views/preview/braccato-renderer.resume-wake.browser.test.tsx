@@ -1,12 +1,12 @@
-import type { BraccatoLyricsElement } from "@braccato/core/element";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { wireFrameLoop } from "@/lib/frame-loop-wiring";
 import { useAudioStore } from "@/stores/audio";
-import { createFrameProbe, type FrameProbe } from "@/test/frame-probe";
+import { type FrameProbe, createFrameProbe } from "@/test/frame-probe";
 import { settleFrames, stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { buildSyncedTtml } from "@/test/ttml-fixtures";
 import { BraccatoRenderer, RESUME_AFFORDANCE_WAKE_MS } from "@/views/preview/braccato-renderer";
+import type { BraccatoLyricsElement } from "@braccato/core/element";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // -- Constants -----------------------------------------------------------------
 

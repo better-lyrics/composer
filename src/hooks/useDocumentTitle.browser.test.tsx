@@ -64,4 +64,10 @@ describe("useDocumentTitle", () => {
     unmount();
     expect(document.title).toBe(DEFAULT_TITLE);
   });
+
+  it("names the Projects home in the library", async () => {
+    useProjectStore.setState((s) => ({ metadata: { ...s.metadata, title: "Imagine" } }));
+    await renderHook(() => useDocumentTitle("library"));
+    expect(document.title).toBe("Composer ・ Projects");
+  });
 });

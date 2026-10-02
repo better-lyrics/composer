@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
-import { userEvent } from "vitest/browser";
 import { render } from "@/test/render";
 import { CobaltDirectoryLink, CobaltInstanceRow } from "@/ui/settings/cobalt-instances";
+import { describe, expect, it } from "vitest";
+import { userEvent } from "vitest/browser";
 
 const instance = { id: "i1", label: "My Instance", url: "https://my.example.com" };
 

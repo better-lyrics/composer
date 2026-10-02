@@ -1,13 +1,16 @@
-import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
-import { ExportPanel } from "@/views/export";
+import { openProjectIdSnapshot } from "@/lib/open-project-session";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { useThemeStore } from "@/stores/theme";
+import { LYRICS_CODE_CSS, installStyleSheet } from "@/test/browser-css";
 import { stubClipboard } from "@/test/clipboard";
 import { createLine, createWord, snapPoints } from "@/test/factories";
 import { render } from "@/test/render";
+import { resolvedColor } from "@/test/resolved-color";
+import { ExportPanel } from "@/views/export";
+import { Toaster } from "sonner";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -28,47 +31,51 @@ function dispatchFileChange(input: HTMLInputElement, file: File): void {
 }
 
 describe("ExportPanel preview highlight", () => {
-  it("keeps the night owl colours on the elevated background in a dark theme", async () => {
-    const root = document.documentElement;
-    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
-    try {
-      useThemeStore.setState({ activeThemeId: "default" });
-      useProjectStore.setState({
-        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
-      });
-      const screen = await render(<ExportPanel />);
-      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
-      const pre = screen.container.querySelector("pre");
-      if (!pre) throw new Error("highlighted preview not rendered");
-      expect(getComputedStyle(pre).color).toBe("rgb(214, 222, 235)");
-      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
-    } finally {
-      root.style.removeProperty("--color-composer-bg-elevated");
-    }
+  let sheet: HTMLStyleElement;
+
+  beforeEach(() => {
+    sheet = installStyleSheet(LYRICS_CODE_CSS);
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
+    });
   });
 
-  it("resolves token colours through the composer theme variables in a light theme", async () => {
-    useThemeStore.setState({ activeThemeId: "light" });
-    const root = document.documentElement;
-    root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
-    root.style.setProperty("--color-composer-bg-elevated", "rgb(4, 5, 6)");
-    try {
-      useProjectStore.setState({
-        lines: [createLine({ text: "Hi", words: [createWord({ text: "Hi", begin: 0, end: 1 })] })],
-      });
-      const screen = await render(<ExportPanel />);
-      await expect.poll(() => screen.container.querySelector("pre .token.tag")).not.toBe(null);
-      const pre = screen.container.querySelector("pre");
-      const tag = screen.container.querySelector("pre .token.tag:not(.punctuation)");
-      if (!pre || !tag) throw new Error("highlighted preview not rendered");
-      expect(getComputedStyle(tag).color).toBe("rgb(1, 2, 3)");
-      expect(getComputedStyle(pre).backgroundColor).toBe("rgb(4, 5, 6)");
-    } finally {
-      root.style.removeProperty("--color-composer-accent-text");
-      root.style.removeProperty("--color-composer-bg-elevated");
-      useThemeStore.setState({ activeThemeId: "default" });
-    }
+  afterEach(() => {
+    sheet.remove();
+    document.documentElement.style.removeProperty("--color-composer-text");
+    document.documentElement.style.removeProperty("--color-composer-accent-text");
   });
+
+  it("highlights the TTML on a transparent bordered pane", async () => {
+    const screen = await render(<ExportPanel />);
+    await expect.poll(() => screen.container.querySelector("pre.bh .bh-tag")).not.toBe(null);
+    const pre = screen.container.querySelector("pre.bh");
+    if (!pre) throw new Error("highlighted preview not rendered");
+    expect(pre.classList.contains("lyrics-code-surface")).toBe(true);
+    expect(pre.classList.contains("select-text")).toBe(true);
+    expect([...pre.querySelectorAll(".bh-tag")].map((tag) => tag.textContent)).toContain("tt");
+  });
+
+  it.each(["default", "light"])(
+    "resolves token colours through the composer theme variables in the %s theme",
+    async (themeId) => {
+      useThemeStore.setState({ activeThemeId: themeId });
+      const root = document.documentElement;
+      root.style.setProperty("--color-composer-text", "rgb(7, 8, 9)");
+      root.style.setProperty("--color-composer-accent-text", "rgb(1, 2, 3)");
+      const screen = await render(<ExportPanel />);
+      await expect.poll(() => screen.container.querySelector("pre.bh .bh-timestamp")).not.toBe(null);
+      const pre = screen.container.querySelector("pre.bh");
+      const timestamp = screen.container.querySelector("pre.bh .bh-timestamp");
+      if (!pre || !timestamp) throw new Error("highlighted preview not rendered");
+      expect(getComputedStyle(pre).color).toBe("rgb(7, 8, 9)");
+      expect(getComputedStyle(timestamp).color).toBe(
+        resolvedColor(
+          "color-mix(in srgb, color-mix(in srgb, rgb(1, 2, 3) 80%, rgb(7, 8, 9)) 70%, var(--color-composer-bg))",
+        ),
+      );
+    },
+  );
 });
 
 describe("ExportPanel", () => {
@@ -119,109 +126,6 @@ describe("ExportPanel", () => {
   });
 });
 
-describe("ExportPanel · edits across regeneration", () => {
-  it("regression: preserves a disjoint edit when the underlying TTML regenerates", async () => {
-    useProjectStore.setState({
-      lines: [
-        createLine({ text: "Hello", begin: 0, end: 1 }),
-        createLine({ text: "World", begin: 1, end: 2 }),
-        createLine({ text: "Third", begin: 2, end: 3 }),
-      ],
-    });
-    const screen = await render(<ExportPanel />);
-    await screen.getByRole("button", { name: /Edit$/ }).click();
-    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
-    const generated = (textarea.element() as HTMLTextAreaElement).value;
-    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
-
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 2 ? { ...line, text: "THIRD CHANGED" } : line)),
-    }));
-
-    await expect.poll(() => (textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
-    expect((textarea.element() as HTMLTextAreaElement).value).toContain("THIRD CHANGED");
-  });
-
-  it("flags a conflict when the edited region itself regenerates, keeping the user's text", async () => {
-    useProjectStore.setState({
-      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
-    });
-    const screen = await render(<ExportPanel />);
-    await screen.getByRole("button", { name: /Edit$/ }).click();
-    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
-    const generated = (textarea.element() as HTMLTextAreaElement).value;
-    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
-
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
-    }));
-
-    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
-    await expect.element(screen.getByText("The lyrics changed", { exact: false })).toBeInTheDocument();
-    expect((textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
-  });
-
-  it("regression: typing in the editor does not silently resolve a conflict", async () => {
-    useProjectStore.setState({
-      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
-    });
-    const screen = await render(<ExportPanel />);
-    await screen.getByRole("button", { name: /Edit$/ }).click();
-    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
-    const generated = (textarea.element() as HTMLTextAreaElement).value;
-    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
-
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
-    }));
-    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
-
-    await textarea.fill(`${(textarea.element() as HTMLTextAreaElement).value} `);
-
-    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
-  });
-
-  it("clears the conflict only when the user keeps their edits explicitly", async () => {
-    useProjectStore.setState({
-      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
-    });
-    const screen = await render(<ExportPanel />);
-    await screen.getByRole("button", { name: /Edit$/ }).click();
-    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
-    const generated = (textarea.element() as HTMLTextAreaElement).value;
-    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
-
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
-    }));
-    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
-
-    await screen.getByRole("button", { name: "Keep my edits" }).click();
-
-    await expect.poll(() => screen.container.querySelector("[role=alert]")).toBeNull();
-    expect((textarea.element() as HTMLTextAreaElement).value).toContain("HELLO EDITED");
-  });
-
-  it("surfaces the conflict notice in preview mode, not only while editing", async () => {
-    useProjectStore.setState({
-      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
-    });
-    const screen = await render(<ExportPanel />);
-    await screen.getByRole("button", { name: /Edit$/ }).click();
-    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
-    const generated = (textarea.element() as HTMLTextAreaElement).value;
-    await textarea.fill(generated.replace("Hello", "HELLO EDITED"));
-    await screen.getByRole("button", { name: "Done" }).click();
-
-    useProjectStore.setState((state) => ({
-      lines: state.lines.map((line, index) => (index === 0 ? { ...line, text: "HELLO REGEN" } : line)),
-    }));
-
-    await expect.element(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.container.querySelector("textarea")).toBeNull();
-  });
-});
-
 describe("ExportPanel · project file customSnapPoints", () => {
   it("writes customSnapPoints into the exported project JSON", async () => {
     useProjectStore.setState({
@@ -249,9 +153,10 @@ describe("ExportPanel · project file customSnapPoints", () => {
     }
   });
 
-  it("applies customSnapPoints from an imported project file to the store", async () => {
+  it("opens an imported project file as its own new project, carrying over its customSnapPoints", async () => {
     useProjectStore.setState({ lines: [], customSnapPoints: snapPoints([1, 2]) });
     await render(<ExportPanel />);
+    const previousId = openProjectIdSnapshot();
 
     const payload = {
       version: 1 as const,
@@ -267,7 +172,9 @@ describe("ExportPanel · project file customSnapPoints", () => {
 
     dispatchFileChange(getProjectImportInput(), file);
 
-    await expect.poll(() => useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([7, 8]);
+    await expect.poll(() => useProjectStore.getState().metadata.title).toBe("Imported");
+    expect(useProjectStore.getState().customSnapPoints.map((p) => p.time)).toEqual([7, 8]);
+    expect(openProjectIdSnapshot()).not.toBe(previousId);
   });
 });
 
@@ -484,6 +391,67 @@ describe("ExportPanel · project file keeps the hand-edited TTML with its projec
       await expect.poll(() => useProjectStore.getState().ttmlEditState).toEqual(SAVED_EDIT);
       expect(useProjectStore.getState().isDirty).toBe(false);
       expect(useProjectStore.getState().hasUnexportedImport).toBe(true);
+    });
+  });
+});
+
+describe("ExportPanel · Done applies TTML edits to the project", () => {
+  async function renderEditing() {
+    useProjectStore.setState({
+      lines: [createLine({ text: "Hello", begin: 0, end: 1 }), createLine({ text: "World", begin: 1, end: 2 })],
+      ttmlEditState: null,
+    });
+    const screen = await render(
+      <>
+        <ExportPanel />
+        <Toaster />
+      </>,
+    );
+    await screen.getByRole("button", { name: /Edit$/ }).click();
+    const textarea = screen.getByRole("textbox", { name: "Edit TTML content" });
+    return { screen, textarea, generated: (textarea.element() as HTMLTextAreaElement).value };
+  }
+
+  it("updates the lyrics every tab reads and drops the export override", async () => {
+    const { screen, textarea, generated } = await renderEditing();
+    await textarea.fill(generated.replace(">Hello<", ">Hello there<"));
+    await screen.getByRole("button", { name: "Done" }).click();
+    await expect
+      .poll(() => useProjectStore.getState().lines.map((line) => line.text))
+      .toEqual(["Hello there", "World"]);
+    expect(useProjectStore.getState().ttmlEditState).toBeNull();
+    await expect.element(screen.getByText("Updated the lyrics from the TTML")).toBeInTheDocument();
+  });
+
+  it("takes a whole pasted TTML document", async () => {
+    const { screen, textarea } = await renderEditing();
+    await textarea.fill(
+      '<tt xmlns="http://www.w3.org/ns/ttml"><body><div><p begin="00:05.000" end="00:06.000">Pasted in</p></div></body></tt>',
+    );
+    await screen.getByRole("button", { name: "Done" }).click();
+    await expect.poll(() => useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Pasted in"]);
+    expect(useProjectStore.getState().lines[0]?.begin).toBe(5);
+  });
+
+  describe("error paths", () => {
+    it("keeps the edit as the export only, and says so, when the TTML has no readable lines", async () => {
+      const { screen, textarea } = await renderEditing();
+      await textarea.fill("CUSTOM EDITED CONTENT");
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByText(/only change the exported file/)).toBeInTheDocument();
+      expect(useProjectStore.getState().lines.map((line) => line.text)).toEqual(["Hello", "World"]);
+      expect(useProjectStore.getState().ttmlEditState?.content).toBe("CUSTOM EDITED CONTENT");
+    });
+  });
+
+  describe("edge cases", () => {
+    it("changes nothing when Done is clicked without an edit", async () => {
+      const { screen } = await renderEditing();
+      const before = useProjectStore.getState().lines;
+      await screen.getByRole("button", { name: "Done" }).click();
+      await expect.element(screen.getByRole("button", { name: /Edit$/ })).toBeInTheDocument();
+      expect(useProjectStore.getState().lines).toBe(before);
+      expect(screen.getByText("Updated the lyrics from the TTML").elements()).toHaveLength(0);
     });
   });
 });

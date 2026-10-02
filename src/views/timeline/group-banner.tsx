@@ -1,5 +1,7 @@
-import { useProjectStore } from "@/stores/project";
+import { keepsOwnTiming, sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
+import { useAudioStore } from "@/stores/audio";
+import { useProjectStore } from "@/stores/project";
 import { IconButton } from "@/ui/icon-button";
 import { buildGroupPingVariants } from "@/utils/animationVariants";
 import { cn } from "@/utils/cn";
@@ -7,7 +9,7 @@ import { registerBanner } from "@/views/timeline/banner-progress-registry";
 import { DRAG_THRESHOLD_PX } from "@/views/timeline/drag-threshold";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { getWordsInInstance } from "@/views/timeline/utils";
-import { IconChevronDown, IconLink } from "@tabler/icons-react";
+import { IconChevronDown, IconClock, IconLink } from "@tabler/icons-react";
 import { m } from "motion/react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
@@ -89,7 +91,9 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         if (wasDrag && useProjectStore.getState().groups.find((g) => g.id === group.id)) {
           const deltaSeconds = dx / zoom;
           if (Math.abs(deltaSeconds) > 0.001) {
-            useProjectStore.getState().shiftInstance(group.id, instanceIdx, deltaSeconds);
+            useProjectStore
+              .getState()
+              .shiftInstance(group.id, instanceIdx, deltaSeconds, useAudioStore.getState().duration);
           }
         } else {
           // treat as click: select all words in this instance (so nudge works on it)
@@ -113,6 +117,15 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
   const setPingingGroupId = useTimelineStore((s) => s.setPingingGroupId);
   const handleBadgeMouseEnter = useCallback(() => setPingingGroupId(group.id), [group.id, setPingingGroupId]);
   const handleBadgeMouseLeave = useCallback(() => setPingingGroupId(null), [setPingingGroupId]);
+
+  const openGroup = useTimelineStore((s) => s.openGroup);
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      openGroup(group.id, instanceIdx);
+    },
+    [group.id, instanceIdx, openGroup],
+  );
 
   const setContextMenu = useTimelineStore((s) => s.setContextMenu);
   const toggleInstanceCollapsed = useTimelineStore((s) => s.toggleInstanceCollapsed);
@@ -140,6 +153,8 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
     [group.id, instanceIdx, setContextMenu],
   );
 
+  const isShared = sharesTiming(group, instanceIdx);
+  const hasOwnTiming = keepsOwnTiming(group, instanceIdx);
   const left = instanceStart * zoom;
   const width = Math.max(BANNER_MIN_WIDTH, (instanceEnd - instanceStart) * zoom);
   const deltaSecondsLive = dragOffsetPx / Math.max(zoom, 1);
@@ -184,6 +199,7 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
       onPointerDown={handlePointerDown}
       onMouseDown={(e) => e.stopPropagation()}
       onContextMenu={handleContextMenu}
+      onDoubleClick={handleDoubleClick}
       style={{
         left,
         width,
@@ -206,12 +222,18 @@ const GroupBannerComponent: React.FC<GroupBannerProps> = ({
         className="shrink-0 w-auto h-auto p-0.5 opacity-70 hover:opacity-100 hover:bg-transparent text-current relative before:content-[''] before:absolute before:-inset-2"
       />
       <span className="font-semibold whitespace-nowrap">{group.label}</span>
+      {hasOwnTiming && (
+        <span className="flex min-w-0 items-center gap-0.5 overflow-hidden rounded-full border border-dashed border-composer-text-faint py-px pl-1 pr-1.5 text-composer-text-tertiary whitespace-nowrap">
+          <IconClock className="size-2.5 shrink-0" />
+          <span className="truncate">Own timing</span>
+        </span>
+      )}
       <span
         className="flex items-center gap-1 text-composer-text-muted tabular-nums whitespace-nowrap ml-auto"
         onMouseEnter={handleBadgeMouseEnter}
         onMouseLeave={handleBadgeMouseLeave}
       >
-        <IconLink className="size-2.5" />
+        <IconLink className="size-2.5" style={isShared ? { color: group.color } : undefined} />
         {ordinal} of {totalInstances}
         {isDragging && (
           <span className="ml-1 text-composer-text">

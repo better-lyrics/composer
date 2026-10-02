@@ -1,9 +1,19 @@
+import {
+  instanceStart,
+  isInstanceFullyTimed,
+  isSharedLine,
+  sharedInstancesInLineOrder,
+} from "@/domain/group/shared-timing";
+import { templateSourceInstance } from "@/domain/group/template-source";
 import { instanceIndicesOf } from "@/domain/instance/enumerate";
+import { isLinked } from "@/domain/instance/predicates";
 import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import {
   createGroupFromSelection,
   fillSelectionGaps,
@@ -11,8 +21,8 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
-import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
+import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
 
@@ -72,7 +82,13 @@ function useContextMenuTargets() {
     if (selectionTouchesAnyGroup(rawLines, selectedLineIds)) return null;
     const filled = fillSelectionGaps(rawLines, selectedLineIds);
     if (!filled) return null;
-    const result = createGroupFromSelection(rawLines, filled.expanded, useProjectStore.getState().groups);
+    const result = createGroupFromSelection(
+      rawLines,
+      filled.expanded,
+      useProjectStore.getState().groups,
+      useSettingsStore.getState().shareTimingInNewGroups,
+      { duration: useAudioStore.getState().duration },
+    );
     if (!result) return null;
     return {
       selectedLineIds: filled.expanded,
@@ -92,7 +108,11 @@ function useContextMenuTargets() {
     const options = useProjectStore.getState().groups.flatMap((group) => {
       const firstInstanceIdx = instanceIndicesOf(rawLines, group.id)[0];
       if (firstInstanceIdx === undefined) return [];
-      const template = instanceToTemplate(rawLines, group.id, firstInstanceIdx);
+      const template = instanceToTemplate(
+        rawLines,
+        group.id,
+        templateSourceInstance(rawLines, group, firstInstanceIdx),
+      );
       return template.length === selectedLineIds.size ? [{ group, template }] : [];
     });
     if (options.length === 0) return null;
@@ -139,6 +159,21 @@ function useContextMenuTargets() {
     return canPlace ? targetLine : null;
   }, [contextMenu, rawLines]);
 
+  const placeAtPlayheadInfo = useMemo(() => {
+    if (!contextMenu || (contextMenu.target.kind !== "gutter" && contextMenu.target.kind !== "track")) return null;
+    const { lineId } = contextMenu.target;
+    const line = rawLines.find((l) => l.id === lineId);
+    const groups = useProjectStore.getState().groups;
+    const group = groups.find((candidate) => candidate.id === line?.groupId);
+    if (!line || !group || !isLinked(line) || !isSharedLine(line, new Map([[group.id, group]]))) return null;
+    const { instanceIdx } = line;
+    if (instanceStart(rawLines, group.id, instanceIdx) !== null) return null;
+    const hasTimedSibling = sharedInstancesInLineOrder(rawLines, group).some(
+      (other) => other !== instanceIdx && isInstanceFullyTimed(rawLines, group.id, other),
+    );
+    return hasTimedSibling ? { groupId: group.id, instanceIdx } : null;
+  }, [contextMenu, rawLines]);
+
   const splitIntoWordsInfo = useMemo(() => {
     if (!contextMenu || contextMenu.target.kind !== "word") return null;
     const updates = computeSplitIntoWordsUpdates(splitTargetsForMenu(contextMenu.target, selectedWords), rawLines);
@@ -156,6 +191,7 @@ function useContextMenuTargets() {
     groupedWordInfo,
     snapNeededInfo,
     placeLineHereInfo,
+    placeAtPlayheadInfo,
     splitIntoWordsInfo,
   };
 }

@@ -4,6 +4,7 @@
 @import "@braccato/core/styles/variables.css" layer(braccato-defaults);
 @import "@braccato/core/styles/lyrics.css";
 @import "@braccato/core/styles/instrumental.css";
+@import "@braccato/highlight/highlight.css";
 
 @theme {
   /* Background Colors */
@@ -57,6 +58,7 @@
 
   /* Animation */
   --transition-timing-scroll: cubic-bezier(0.86, 0, 0.07, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
 }
 
 /* Base styles */
@@ -125,6 +127,12 @@ braccato-lyrics .blyrics-container {
 
 [data-lyrics-layout="sidebar"] .blyrics-container {
   --blyrics-padding: 0.625rem;
+}
+
+/* An open group in the Timeline fades the preview lines outside it. filter composes with the
+   renderer's own opacity instead of overriding it. */
+[data-lyrics-layout] [data-outside-focus] {
+  filter: opacity(0.3);
 }
 
 /* Text selection */
@@ -259,9 +267,27 @@ braccato-lyrics .blyrics-container {
   }
 }
 
+@keyframes library-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+@keyframes library-toast-in {
+  from {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+
 @utility waveform-armed {
   cursor: crosshair;
   box-shadow: inset 0 0 20px -2px color-mix(in srgb, var(--color-composer-warning) 18%, transparent);
+}
+
+@utility shadow-pop {
+  box-shadow: 0 0 0 1px var(--color-composer-border), 0 12px 32px -8px rgb(0 0 0 / 0.5), 0 2px 6px rgb(0 0 0 / 0.25);
 }
 
 /* Timeline panning mode */
@@ -460,6 +486,70 @@ input[type="range"].settings-slider::-moz-range-progress {
 [data-scheme="light"] .is-snapped {
   box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--color-composer-snap) 70%, transparent), 0 0 12px 2px
     color-mix(in srgb, var(--color-composer-snap) 45%, transparent), 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+
+.bh,
+.bh-edit {
+  --bh-text: var(--color-composer-text);
+  --bh-bgText: color-mix(in srgb, var(--color-composer-text) 80%, var(--color-composer-bg));
+  --bh-timestamp: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-wordTime: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-accent-text) 70%, var(--color-composer-text-tertiary)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-agent: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-warning) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-value: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-positive) 80%, var(--color-composer-text)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-meta: color-mix(in srgb, var(--color-composer-text-tertiary) 70%, var(--color-composer-bg));
+  --bh-tag: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 80%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-attr: color-mix(
+    in srgb,
+    color-mix(in srgb, var(--color-composer-text-tertiary) 55%, var(--color-composer-text-faint)) 70%,
+    var(--color-composer-bg)
+  );
+  --bh-punct: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
+  --bh-comment: color-mix(in srgb, var(--color-composer-text-faint) 70%, var(--color-composer-bg));
+  --bh-caret: var(--color-composer-text);
+  --bh-selection: color-mix(in srgb, var(--color-composer-accent) 30%, transparent);
+  --bh-placeholder: var(--color-composer-text-muted);
+}
+
+@utility lyrics-code-surface {
+  box-sizing: border-box;
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--color-composer-border);
+  border-radius: var(--radius-lg);
+  background-color: color-mix(in srgb, var(--color-composer-bg-dark) 60%, transparent);
+}
+
+@utility lyrics-code-frame {
+  display: grid;
+
+  &:focus-within {
+    border-color: var(--color-composer-accent);
+  }
+
+  & > .bh-edit {
+    display: grid;
+    min-height: 0;
+  }
 }
 
 /* Reduced motion */

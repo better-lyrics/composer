@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import { usePersistence } from "@/hooks/usePersistence";
-import { clearCurrentProject, loadCurrentProject } from "@/lib/persistence";
 import { getPersistenceSettled } from "@/lib/persistence-settled";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { seedProject } from "@/test/idb";
+import { loadOpenProjectRecord } from "@/test/projects";
 import { render } from "@/test/render";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 // -- Helpers -------------------------------------------------------------------
 
@@ -32,13 +32,11 @@ function savedProject(extra: Record<string, unknown> = {}) {
 describe("usePersistence · unexported imported song details", () => {
   const initialAutoSaveDelay = useSettingsStore.getState().autoSaveDelay;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     useSettingsStore.setState({ autoSaveDelay: 30 });
-    await clearCurrentProject();
   });
-  afterEach(async () => {
+  afterEach(() => {
     useSettingsStore.setState({ autoSaveDelay: initialAutoSaveDelay });
-    await clearCurrentProject();
   });
 
   it("restores an unexported import across a reload", async () => {
@@ -57,7 +55,7 @@ describe("usePersistence · unexported imported song details", () => {
     useProjectStore.getState().setLines([{ id: "L1", text: "hi", agentId: DEFAULT_AGENTS[0].id }]);
     useProjectStore.getState().markSongDetailsImported();
 
-    await expect.poll(async () => (await loadCurrentProject())?.hasUnexportedImport, { timeout: 2000 }).toBe(true);
+    await expect.poll(async () => (await loadOpenProjectRecord())?.hasUnexportedImport, { timeout: 2000 }).toBe(true);
   });
 
   it("restores which song details the last lyrics import brought", async () => {
@@ -81,7 +79,7 @@ describe("usePersistence · unexported imported song details", () => {
     });
 
     await expect
-      .poll(async () => (await loadCurrentProject())?.importedMetadataKeys, { timeout: 2000 })
+      .poll(async () => (await loadOpenProjectRecord())?.importedMetadataKeys, { timeout: 2000 })
       .toEqual(["title"]);
   });
 

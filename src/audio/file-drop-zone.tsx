@@ -1,3 +1,6 @@
+import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
+import { PROJECT_FILE_ACCEPT, PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
+import { cn } from "@/utils/cn";
 import { useCallback, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -6,46 +9,35 @@ import { toast } from "sonner";
 interface FileDropZoneProps {
   accept: string;
   onFileDrop: (file: File) => void;
+  onProjectFileDrop?: (file: File) => void;
   children?: React.ReactNode;
+  className?: string;
 }
 
 // -- Constants ----------------------------------------------------------------
 
-const ACCEPTED_AUDIO_TYPES = [
-  "audio/mpeg",
-  "audio/mp3",
-  "audio/wav",
-  "audio/wave",
-  "audio/x-wav",
-  "audio/mp4",
-  "audio/m4a",
-  "audio/x-m4a",
-  "audio/ogg",
-  "audio/flac",
-];
-
-const ACCEPTED_AUDIO_EXTENSIONS = ["mp3", "wav", "m4a", "ogg", "flac"];
-
-const ACCEPTED_AUDIO_EXTENSION_REGEX = new RegExp(String.raw`\.(${ACCEPTED_AUDIO_EXTENSIONS.join("|")})$`, "i");
-
-const UNSUPPORTED_AUDIO_FILE_MESSAGE = `Unsupported file type. Use ${ACCEPTED_AUDIO_EXTENSIONS.map((ext) => `.${ext}`).join(" ")}`;
+const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 
 // -- Component ----------------------------------------------------------------
 
-const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, children }) => {
+const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProjectFileDrop, children, className }) => {
   const [isDragging, setIsDragging] = useState(false);
   const inputId = useId();
   const dragCountRef = useRef(0);
 
   const handleFile = useCallback(
     (file: File) => {
-      if (ACCEPTED_AUDIO_TYPES.includes(file.type) || ACCEPTED_AUDIO_EXTENSION_REGEX.test(file.name)) {
+      if (onProjectFileDrop && isProjectFileName(file.name)) {
+        onProjectFileDrop(file);
+        return;
+      }
+      if (isSupportedAudioFile(file)) {
         onFileDrop(file);
         return;
       }
-      toast.error(UNSUPPORTED_AUDIO_FILE_MESSAGE);
+      toast.error(onProjectFileDrop ? UNSUPPORTED_FILE_MESSAGE : UNSUPPORTED_AUDIO_FILE_MESSAGE);
     },
-    [onFileDrop],
+    [onFileDrop, onProjectFileDrop],
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -104,17 +96,18 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, childre
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
-      className={`size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors ${
-        isDragging
-          ? "border-composer-accent bg-composer-accent/10"
-          : "border-composer-border hover:border-composer-border-hover"
-      }`}
+      className={cn(
+        "size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors",
+        "border-composer-border hover:border-composer-border-hover",
+        className,
+        isDragging && "border-composer-accent bg-composer-accent/10",
+      )}
     >
       <input
         id={inputId}
         type="file"
-        aria-label="Upload audio file"
-        accept={accept}
+        aria-label={onProjectFileDrop ? "Upload audio or project file" : "Upload audio file"}
+        accept={onProjectFileDrop ? `${accept},${PROJECT_FILE_ACCEPT}` : accept}
         onChange={handleInputChange}
         className="sr-only"
       />

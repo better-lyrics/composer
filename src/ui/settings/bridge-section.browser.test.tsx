@@ -1,11 +1,11 @@
+import { useSettingsStore } from "@/stores/settings";
+import { render } from "@/test/render";
+import { BridgeSection } from "@/ui/settings/bridge-section";
+import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import { userEvent } from "vitest/browser";
-import { render } from "@/test/render";
-import { useSettingsStore } from "@/stores/settings";
-import { BridgeSection } from "@/ui/settings/bridge-section";
-import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 
 // -- Helpers ------------------------------------------------------------------
 

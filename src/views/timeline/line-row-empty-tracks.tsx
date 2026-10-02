@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { IconPlus } from "@tabler/icons-react";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import { backgroundFields, manualBackgroundWordEdit } from "@/domain/line/background";
 import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
@@ -12,6 +13,7 @@ import { createBgWordsFromTextAt, splitIntoWordsWithMeta } from "@/utils/sync-he
 import { findInsertionSlot } from "@/utils/word-spaces";
 import { elementXToTime } from "@/views/timeline/coords";
 import { BG_DROP_ZONE_HEIGHT } from "@/views/timeline/row-geometry";
+import { storedLineTimeRange } from "@/views/timeline/stored-line-range";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
 // -- Types ---------------------------------------------------------------------
@@ -42,10 +44,13 @@ function pointerTime(e: React.MouseEvent): number {
   return elementXToTime(e.clientX, e.currentTarget, useTimelineStore.getState().zoom);
 }
 
-function insertionSlotAt(time: number) {
-  const audioDuration = useAudioStore.getState().duration;
+function insertionSlotAt(range: TimeRange, time: number) {
   const { defaultWordDuration, minWordDuration } = useSettingsStore.getState();
-  return findInsertionSlot([], time, defaultWordDuration, audioDuration, minWordDuration);
+  return findInsertionSlot([], time, defaultWordDuration, range, minWordDuration);
+}
+
+function lineRangeOf(line: LyricLine): TimeRange {
+  return storedLineTimeRange(line.id, useAudioStore.getState().duration);
 }
 
 function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: number, type: TrackType): void {
@@ -58,7 +63,7 @@ function openTrackContextMenu(e: React.MouseEvent, lineId: string, lineIndex: nu
 }
 
 function addWordAt(line: LyricLine, time: number): void {
-  const slot = insertionSlotAt(time);
+  const slot = insertionSlotAt(lineRangeOf(line), time);
   if (!slot) return;
   const text = stripSplitCharacter(line.text).slice(0, MAIN_LABEL_MAX_CHARS) || "...";
   useProjectStore
@@ -68,10 +73,11 @@ function addWordAt(line: LyricLine, time: number): void {
 }
 
 function addBackgroundWordAt(line: LyricLine, time: number): void {
-  const slot = insertionSlotAt(time);
+  const range = lineRangeOf(line);
+  const slot = insertionSlotAt(range, time);
   if (!slot) return;
   const { updateLineWithHistory } = useProjectStore.getState();
-  const timedText = createBgWordsFromTextAt(line, slot.begin, useAudioStore.getState().duration);
+  const timedText = createBgWordsFromTextAt(line, slot.begin, range.max);
   if (timedText) {
     updateLineWithHistory(line.id, manualBackgroundWordEdit(timedText));
     return;

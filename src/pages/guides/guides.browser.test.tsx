@@ -1,5 +1,3 @@
-import { describe, expect, it } from "vitest";
-import { render } from "@/test/render";
 import { groupAnchorId } from "@/best-practices/anchors";
 import { BEST_PRACTICE_GROUPS } from "@/best-practices/groups";
 import BackgroundVocalsContent from "@/pages/guides/content/background-vocals-in-ttml";
@@ -11,8 +9,10 @@ import MultiAgentContent from "@/pages/guides/content/multi-agent-lyrics-duets";
 import TtmlSpecContent from "@/pages/guides/content/ttml-file-format-spec";
 import TtmlVsLrcContent from "@/pages/guides/content/ttml-vs-lrc";
 import WhatIsTtmlContent from "@/pages/guides/content/what-is-ttml";
-import GuidesIndexPage from "@/pages/guides/guides-index";
 import GuidePage from "@/pages/guides/guide-page";
+import GuidesIndexPage from "@/pages/guides/guides-index";
+import { render } from "@/test/render";
+import { describe, expect, it } from "vitest";
 
 const CONTENT_COMPONENTS = [
   ["BackgroundVocals", BackgroundVocalsContent],
@@ -31,6 +31,18 @@ describe("Guide content components", () => {
     it(`${name} renders prose without crashing`, async () => {
       const screen = await render(<Content />);
       expect(screen.container.textContent ?? "").not.toBe("");
+    });
+  }
+});
+
+describe("Guide code samples", () => {
+  for (const [name, Content] of CONTENT_COMPONENTS) {
+    it(`${name} highlights every lyrics code sample`, async () => {
+      const screen = await render(<Content />);
+      for (const pre of screen.container.querySelectorAll("pre")) {
+        expect(pre.classList.contains("bh"), pre.textContent ?? "").toBe(true);
+        expect(pre.querySelector(".bh-timestamp, .bh-tag"), pre.textContent ?? "").not.toBeNull();
+      }
     });
   }
 });

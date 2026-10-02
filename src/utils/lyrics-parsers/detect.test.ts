@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { WANDERLUST_QRC } from "@/test/qrc-fixtures";
 import { detectFileType } from "@/utils/lyrics-parsers/detect";
+import { describe, expect, it } from "vitest";
 
 // -- Constants ----------------------------------------------------------------
 
@@ -12,6 +12,45 @@ const TTML_BODY_WITH_QRC_BRACKET =
 const QRC_BODY = "[34059,2299]Is (34059,130)it (34189,120)";
 const SRT_BODY_WITH_QRC_BRACKET = "1\n00:00:01,000 --> 00:00:02,000\nMeet me at [1000,500] tonight";
 const PLAIN_BODY = "Is it so hard to say the same thing";
+const TITLED_LRC = `JHENRY
+
+[00:09.49]Say, John Henry what ya doing it for?
+[00:13.04]Showed you progress and you're calling it war
+[00:16.29]My, my
+[00:24.77]Twelve long hours didn't earn you a dime`;
+
+const LRCLIB_EXPORT = `Track Name: ZHIEND - Scar on Face (English)
+Artist Name: MarcusTheRocker
+Album Name:
+Duration (seconds): 361
+
+Plain Lyrics:
+劣性
+前髪が
+劣性
+また伸びた
+
+Synced Lyrics:
+[00:32.50] 劣性
+[00:35.86] 前髪が
+[00:39.69] 劣性
+[00:43.47] また伸びた`;
+
+const PROSE_WITH_STRAY_TIMESTAMP = `We met at the venue around eight.
+The opener ran long, so the band started late.
+[00:12.34] is where the chorus kicks in on the demo.
+Nobody minded, the crowd was great.`;
+
+const MOSTLY_PROSE_AFTER_TIMESTAMPS = `[00:01.00]Intro
+[00:05.00]Verse
+Notes on the take:
+The second verse drags a little.
+Try the bridge at a faster tempo.
+Ask about the backing vocals.`;
+
+const RTF_SAVED_LRC =
+  "{\\rtf1\\ansi\\ansicpg1252\\cocoartf2867\n\\f0\\fs24 \\cf0 [00:09.49]Say, John Henry\\\n[00:13.04]Showed you progress\\\n[00:16.29]My, my\\\n[00:24.77]Twelve long hours\\\n}";
+
 const LRCLIB_STYLE_PASTE = `
 
   [ar: Queen]
@@ -170,8 +209,36 @@ describe("detectFileType", () => {
       expect(detectFileType("pasted text", "[Chorus]\n[00:12.34]Hello world")).toBe("txt");
     });
 
+    it("detects LRC that opens with a bare title line", () => {
+      expect(detectFileType("pasted text", TITLED_LRC)).toBe("lrc");
+    });
+
+    it("detects LRC exported with a header and a plain lyrics block before the synced lines", () => {
+      expect(detectFileType("pasted text", LRCLIB_EXPORT)).toBe("lrc");
+    });
+
+    it("keeps prose with one stray timestamp as plain text", () => {
+      expect(detectFileType("pasted text", PROSE_WITH_STRAY_TIMESTAMP)).toBe("txt");
+      expect(detectFileType("pasted text", `${PROSE_WITH_STRAY_TIMESTAMP}\n[01:02.03]and that was it`)).toBe("txt");
+    });
+
+    it("keeps text where timed lines are a minority after the first timestamp as plain text", () => {
+      expect(detectFileType("pasted text", MOSTLY_PROSE_AFTER_TIMESTAMPS)).toBe("txt");
+    });
+
     it("keeps an empty paste as plain text", () => {
       expect(detectFileType("pasted text", "\n  \n")).toBe("txt");
+    });
+  });
+
+  describe("regressions", () => {
+    it("regression: reads an LRC saved as rich text as plain text, never as LRC", () => {
+      expect(detectFileType("pasted text", RTF_SAVED_LRC)).toBe("txt");
+      expect(detectFileType("pasted text", `\uFEFF\n\n${RTF_SAVED_LRC}`)).toBe("txt");
+    });
+
+    it("regression: reads a rich text file named .lrc as plain text", () => {
+      expect(detectFileType("song.lrc", RTF_SAVED_LRC)).toBe("txt");
     });
   });
 });

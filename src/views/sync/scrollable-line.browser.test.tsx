@@ -60,3 +60,26 @@ describe("ScrollableLine", () => {
     expect(lineClicks).toBe(0);
   });
 });
+
+describe("ScrollableLine link chip", () => {
+  const linkInfo = { color: "#ff0000", label: "Chorus", ordinal: 2, totalInstances: 3 };
+
+  it("shows the instance ordinal", async () => {
+    const screen = await render(<ScrollableLine {...BASE_PROPS} linkInfo={linkInfo} />);
+    await expect.element(screen.getByText("2/3")).toBeInTheDocument();
+  });
+
+  it("shows Shared in place of the ordinal on a skipped line", async () => {
+    const screen = await render(<ScrollableLine {...BASE_PROPS} linkInfo={{ ...linkInfo, shared: true }} />);
+    await expect.element(screen.getByText("Shared")).toBeInTheDocument();
+    expect(screen.container.textContent).not.toContain("2/3");
+  });
+
+  describe("regressions", () => {
+    it("regression: re-renders when only the shared flag changes", async () => {
+      const screen = await render(<ScrollableLine {...BASE_PROPS} linkInfo={linkInfo} />);
+      await screen.rerender(<ScrollableLine {...BASE_PROPS} linkInfo={{ ...linkInfo, shared: true }} />);
+      await expect.element(screen.getByText("Shared")).toBeInTheDocument();
+    });
+  });
+});

@@ -9,6 +9,10 @@ import type { LyricLine } from "@/domain/line/model";
 import type { WordTiming } from "@/domain/word/timing";
 import { emitWordSpan, escapeXml } from "@/utils/ttml-markup";
 
+function hasAlternateText(track: { text: string; backgroundText?: string } | undefined): boolean {
+  return !!track && (!!track.text.trim() || !!track.backgroundText?.trim());
+}
+
 function backgroundInsertionIndex(
   placement: BackgroundPlacement,
   chunkCount: number,
@@ -60,30 +64,30 @@ function emitUntimedTransliteration(text: string): string {
   return normalizeTransliterationForEditing(text);
 }
 
-function transliterationChunks(line: LyricLine, background = false): string[] {
+function transliterationChunks(line: LyricLine, timed: boolean, background = false): string[] {
   const words = background ? line.backgroundWords : line.words;
   const text = background ? line.transliteration?.backgroundText : line.transliteration?.text;
   const alignmentStatus = background
     ? line.transliteration?.backgroundAlignmentStatus
     : line.transliteration?.alignmentStatus;
   if (!text?.trim()) return [];
-  if (alignmentStatus !== "unresolved" && words?.some((word) => word.transliteration)) {
+  if (timed && alignmentStatus !== "unresolved" && words?.some((word) => word.transliteration)) {
     return alignedTransliterationChunks(words);
   }
   return text ? [escapeXml(emitUntimedTransliteration(text))] : [];
 }
 
-function renderTransliterationContent(rawLine: LyricLine): string {
+function renderTransliterationContent(rawLine: LyricLine, timed = true): string {
   const line = rawLine.transliteration
     ? ({ ...rawLine, ...alignTrackToLine(rawLine, rawLine.transliteration) } as LyricLine)
     : rawLine;
-  const mainChunks = transliterationChunks(line);
+  const mainChunks = transliterationChunks(line, timed);
   if (!line.transliteration?.backgroundText?.trim()) return mainChunks.join("");
 
-  const backgroundContent = transliterationChunks(line, true).join("");
+  const backgroundContent = transliterationChunks(line, timed, true).join("");
   const placement = alternateBackgroundPlacement(line);
   const insertionIndex = backgroundInsertionIndex(placement, mainChunks.length);
   return mergeBackgroundMarkup(mainChunks, backgroundContent, insertionIndex);
 }
 
-export { renderTranslationContent, renderTransliterationContent };
+export { hasAlternateText, renderTranslationContent, renderTransliterationContent };

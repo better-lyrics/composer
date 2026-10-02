@@ -4,10 +4,9 @@
 
 const SAMPLE_RATE = 8000;
 const DURATION_SECONDS = 0.1;
-const SAMPLE_COUNT = Math.round(SAMPLE_RATE * DURATION_SECONDS);
 
-function buildSilentWav(): Uint8Array {
-  const dataLength = SAMPLE_COUNT * 2;
+function buildSilentWav(seconds: number): Uint8Array {
+  const dataLength = Math.round(SAMPLE_RATE * seconds) * 2;
   const buffer = new ArrayBuffer(44 + dataLength);
   const view = new DataView(buffer);
 
@@ -32,10 +31,15 @@ function buildSilentWav(): Uint8Array {
   return new Uint8Array(buffer);
 }
 
-const SILENT_WAV_BYTES = buildSilentWav();
+const SILENT_WAV_BYTES = buildSilentWav(DURATION_SECONDS);
 
-function createAudioFile(name = "silence.wav"): File {
-  return new File([SILENT_WAV_BYTES], name, { type: "audio/wav" });
+function createAudioFile(name = "silence.wav", seconds = DURATION_SECONDS): File {
+  const bytes = seconds === DURATION_SECONDS ? SILENT_WAV_BYTES : buildSilentWav(seconds);
+  return new File([bytes], name, { type: "audio/wav" });
+}
+
+function createUnplayableAudioFile(name = "unplayable.mp3"): File {
+  return new File(["not real audio data"], name, { type: "audio/mpeg" });
 }
 
 // A ~0.3-second stereo 44.1 kHz silent mp3, used by tests that need a real
@@ -63,6 +67,23 @@ function makeSineBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
   const data = audioBuffer.getChannelData(0);
   for (let i = 0; i < length; i++) {
     data[i] = Math.sin((2 * Math.PI * 440 * i) / sampleRate) * 0.2;
+  }
+  return audioBuffer;
+}
+
+function makeVocalBurstBuffer(durationS: number, sampleRate = 44100): AudioBuffer {
+  const audioBuffer = makeSineBuffer(durationS, sampleRate);
+  const data = audioBuffer.getChannelData(0);
+  data.fill(0);
+  const burstLength = Math.round(sampleRate * 0.1);
+  for (
+    let start = Math.round(sampleRate * 0.25);
+    start + burstLength < data.length;
+    start += Math.round(sampleRate * 0.4)
+  ) {
+    for (let i = 0; i < burstLength; i++) {
+      data[start + i] = 0.3 * Math.min(1, i / 64) * Math.sin((2 * Math.PI * 1200 * i) / sampleRate);
+    }
   }
   return audioBuffer;
 }
@@ -108,4 +129,12 @@ function bufferToBlobUrl(audioBuffer: AudioBuffer): string {
   return URL.createObjectURL(blob);
 }
 
-export { bufferToBlobUrl, createAudioFile, createMp3File, encodeWav, makeSineBuffer };
+export {
+  bufferToBlobUrl,
+  createAudioFile,
+  createMp3File,
+  createUnplayableAudioFile,
+  encodeWav,
+  makeSineBuffer,
+  makeVocalBurstBuffer,
+};

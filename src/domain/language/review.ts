@@ -1,4 +1,5 @@
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
+import type { TransliterationTrack } from "@/domain/language/model";
 import type { LyricLine } from "@/domain/line/model";
 
 type LanguageReviewTrack = { kind: "transliteration" } | { kind: "translation"; language: string };
@@ -10,6 +11,11 @@ interface LanguageReviewItem {
   tracks: LanguageReviewTrack[];
 }
 
+function alignmentNeedsReview(track: TransliterationTrack | undefined, part: "main" | "background"): boolean {
+  const status = part === "main" ? track?.alignmentStatus : track?.backgroundAlignmentStatus;
+  return status === "needs-review";
+}
+
 function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
   const fingerprint = languageSourceFingerprint(line.text, line.backgroundText);
   const tracks: LanguageReviewTrack[] = [];
@@ -17,8 +23,8 @@ function getLanguageReviewTracks(line: LyricLine): LanguageReviewTrack[] {
   if (
     line.transliteration &&
     (line.transliteration.sourceFingerprint !== fingerprint ||
-      line.transliteration.alignmentStatus === "needs-review" ||
-      line.transliteration.backgroundAlignmentStatus === "needs-review")
+      alignmentNeedsReview(line.transliteration, "main") ||
+      alignmentNeedsReview(line.transliteration, "background"))
   ) {
     tracks.push({ kind: "transliteration" });
   }
@@ -42,5 +48,5 @@ function languageLineAnchorId(lineId: string): string {
   return `language-line-${lineId}`;
 }
 
-export { getLanguageReviewItems, getLanguageReviewTracks, languageLineAnchorId };
+export { alignmentNeedsReview, getLanguageReviewItems, getLanguageReviewTracks, languageLineAnchorId };
 export type { LanguageReviewTrack };

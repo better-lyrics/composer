@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
 import { useSettingsStore } from "@/stores/settings";
 import { render } from "@/test/render";
 import { SettingsSectionRows } from "@/ui/settings/settings-section-rows";
+import { describe, expect, it } from "vitest";
 
 describe("SettingsSectionRows (sync)", () => {
   it("renders the split character control, sliders, and granularity select", async () => {

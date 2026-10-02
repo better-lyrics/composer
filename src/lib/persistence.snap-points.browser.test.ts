@@ -1,13 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_AGENTS } from "@/domain/agent/colors";
 import type { SnapPoint } from "@/domain/snap-point/model";
-import { clearCurrentProject, loadCurrentProject, type SavedProject, saveCurrentProject } from "@/lib/persistence";
+import { saveCurrentProject } from "@/lib/persistence";
 import { PROJECT_STORE_NAME, setInStore } from "@/lib/persistence-idb";
+import type { SavedProject } from "@/lib/saved-project";
 import { createProjectSaveInput, snapPoints } from "@/test/factories";
-
-// The shared browser setup (src/test/setup-browser.ts) deletes the entire
-// `ttml-composer` database before every test. We also clear the current
-// project record explicitly to mirror the existing IDB test style.
+import { loadOpenProjectRecord } from "@/test/projects";
+import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -24,28 +22,21 @@ function saveWithSnapPoints(customSnapPoints: SnapPoint[]): Promise<void> {
 // -- Tests --------------------------------------------------------------------
 
 describe("persistence · customSnapPoints", () => {
-  beforeEach(async () => {
-    await clearCurrentProject();
-  });
-  afterEach(async () => {
-    await clearCurrentProject();
-  });
-
-  it("saveCurrentProject persists customSnapPoints and loadCurrentProject reads them back", async () => {
+  it("saveCurrentProject persists customSnapPoints and the stored record reads them back", async () => {
     await saveWithSnapPoints(snapPoints([5, 12]));
-    const loaded = await loadCurrentProject();
+    const loaded = await loadOpenProjectRecord();
     expect(loaded?.customSnapPoints?.map((p) => (typeof p === "number" ? p : p.time))).toEqual([5, 12]);
   });
 
   it("saveCurrentProject persists an empty customSnapPoints array", async () => {
     await saveWithSnapPoints([]);
-    const loaded = await loadCurrentProject();
+    const loaded = await loadOpenProjectRecord();
     expect(loaded?.customSnapPoints).toEqual([]);
   });
 
   it("round-trips a longer sorted array with numeric fidelity", async () => {
     await saveWithSnapPoints(snapPoints([0, 1.5, 3.25, 99]));
-    const loaded = await loadCurrentProject();
+    const loaded = await loadOpenProjectRecord();
     expect(loaded?.customSnapPoints?.map((p) => (typeof p === "number" ? p : p.time))).toEqual([0, 1.5, 3.25, 99]);
   });
 
@@ -53,7 +44,7 @@ describe("persistence · customSnapPoints", () => {
     it("round-trips snap point ids and times unchanged", async () => {
       const saved = snapPoints([5, 12]);
       await saveWithSnapPoints(saved);
-      const loaded = await loadCurrentProject();
+      const loaded = await loadOpenProjectRecord();
       // Persistence must preserve the stable id, not just the time, so reloaded
       // pins keep their AnimatePresence identity.
       expect(loaded?.customSnapPoints).toEqual(saved);
@@ -79,7 +70,7 @@ describe("persistence · customSnapPoints", () => {
     };
     await setInStore(PROJECT_STORE_NAME, "current", legacyRecord);
 
-    const loaded = await loadCurrentProject();
+    const loaded = await loadOpenProjectRecord();
     expect(loaded?.customSnapPoints).toBeUndefined();
   });
 });

@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import type { ProjectMetadata } from "@/domain/project/metadata";
+import { isStructurallyEqual } from "@/utils/structural-equal";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 
 function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, projectSession: number) {
@@ -15,7 +16,7 @@ function useLanguageTargets(lines: LyricLine[], metadata: ProjectMetadata, proje
     projectSession !== context.session ||
     (context.lineIds.size > 0 ? !lines.some((line) => context.lineIds.has(line.id)) : lines.length > 0);
   let current = context;
-  if (replaced || JSON.stringify(persisted) !== JSON.stringify(context.persisted)) {
+  if (replaced || !isStructurallyEqual(persisted, context.persisted)) {
     current = {
       session: projectSession,
       lineIds: new Set(lines.map((line) => line.id)),

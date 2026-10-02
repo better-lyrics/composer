@@ -29,4 +29,8 @@ function downloadText(text: string, fileName: string, type: string): void {
   downloadBlob(new Blob([text], { type }), fileName);
 }
 
-export { sanitizeFileName, localDateStamp, downloadBlob, downloadText };
+function downloadJson(value: unknown, fileName: string): void {
+  downloadText(JSON.stringify(value, null, 2), fileName, "application/json");
+}
+
+export { sanitizeFileName, localDateStamp, downloadBlob, downloadText, downloadJson };

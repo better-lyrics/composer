@@ -1,9 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { renderHook } from "vitest-browser-react";
 import { useGlobalShortcuts } from "@/hooks/useGlobalShortcuts";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
+import { describe, expect, it } from "vitest";
+import { renderHook } from "vitest-browser-react";
 
 describe("useGlobalShortcuts", () => {
   it("switches to import on Mod+1", async () => {
@@ -32,6 +33,25 @@ describe("useGlobalShortcuts", () => {
       }),
     );
     window.dispatchEvent(new KeyboardEvent("keydown", { key: "?", shiftKey: true, bubbles: true }));
+    expect(helpOpen).toBe(true);
+  });
+
+  it("leaves tab shortcuts alone outside the editor but still opens help", async () => {
+    useProjectStore.setState({ activeTab: "preview" });
+    let helpOpen = false;
+    await renderHook(() =>
+      useGlobalShortcuts({
+        setActiveTab: (tab) => useProjectStore.setState({ activeTab: tab }),
+        setHelpOpen: (open) => {
+          helpOpen = open;
+        },
+        setSettingsOpen: () => {},
+        editorActive: false,
+      }),
+    );
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "1", metaKey: true, ctrlKey: true, bubbles: true }));
+    window.dispatchEvent(new KeyboardEvent("keydown", { key: "?", shiftKey: true, bubbles: true }));
+    expect(useProjectStore.getState().activeTab).toBe("preview");
     expect(helpOpen).toBe(true);
   });
 });
@@ -77,5 +97,69 @@ describe("useGlobalShortcuts · remapped modifiers", () => {
     } finally {
       input.remove();
     }
+  });
+});
+
+async function renderEditorShortcuts(): Promise<void> {
+  await renderHook(() => useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }));
+}
+
+function pressSpeedToggle(): void {
+  window.dispatchEvent(new KeyboardEvent("keydown", { key: "R", shiftKey: true, bubbles: true }));
+}
+
+describe("useGlobalShortcuts · playback speed toggle", () => {
+  it("drops normal speed to 0.75x on Shift+R", async () => {
+    useAudioStore.setState({ playbackRate: 1 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(0.75);
+  });
+
+  it("returns 0.75x to normal speed on Shift+R", async () => {
+    useAudioStore.setState({ playbackRate: 0.75 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(1);
+  });
+
+  it("toggles back and forth on repeated presses", async () => {
+    useAudioStore.setState({ playbackRate: 1 });
+    await renderEditorShortcuts();
+    pressSpeedToggle();
+    pressSpeedToggle();
+    pressSpeedToggle();
+    expect(useAudioStore.getState().playbackRate).toBe(0.75);
+  });
+
+  describe("edge cases", () => {
+    it("returns any other speed to normal speed", async () => {
+      useAudioStore.setState({ playbackRate: 1.5 });
+      await renderEditorShortcuts();
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1);
+    });
+
+    it("does not toggle outside the editor", async () => {
+      useAudioStore.setState({ playbackRate: 1 });
+      await renderHook(() =>
+        useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {}, editorActive: false }),
+      );
+      pressSpeedToggle();
+      expect(useAudioStore.getState().playbackRate).toBe(1);
+    });
+
+    it("does not toggle while typing in a field", async () => {
+      useAudioStore.setState({ playbackRate: 1 });
+      await renderEditorShortcuts();
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+      try {
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "R", shiftKey: true, bubbles: true }));
+        expect(useAudioStore.getState().playbackRate).toBe(1);
+      } finally {
+        input.remove();
+      }
+    });
   });
 });

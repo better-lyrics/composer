@@ -1,3 +1,4 @@
+import { installUtilitiesUsedIn } from "@/test/browser-css";
 import { render } from "@/test/render";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { describe, expect, it } from "vitest";
@@ -82,5 +83,52 @@ describe("SyncCarousel ripple", () => {
     const secondRipple = screen.container.querySelector(RIPPLE_SELECTOR);
     expect(secondRipple).not.toBeNull();
     expect(secondRipple).not.toBe(firstRipple);
+  });
+});
+
+describe("SyncCarousel shared tags", () => {
+  const RED = "rgb(255, 0, 0)";
+  const tag = (label: string, placement: "above" | "below") => ({ label, color: RED, placement });
+
+  it("names the coming instance under the next line", async () => {
+    const lines = [LINES[0], LINES[1], { ...LINES[2], sharedTag: tag("Chorus 2", "below") }];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="line" />);
+    const label = screen.getByText("Chorus 2");
+    await expect.element(label).toBeInTheDocument();
+    const lineText = screen.getByText("Third line");
+    expect(lineText.element().compareDocumentPosition(label.element()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("asks for the placing tap above the current line", async () => {
+    const lines = [LINES[0], { ...LINES[1], sharedTag: tag("Tap to place", "above") }, LINES[2]];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="line" />);
+    const label = screen.getByText("Tap to place");
+    await expect.element(label).toBeInTheDocument();
+    const lineText = screen.getByText("Second line");
+    expect(lineText.element().compareDocumentPosition(label.element()) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+  });
+
+  it("shows a skipped line as shared in the group colour", async () => {
+    const lines = [
+      { ...WORD_LINES[0], sharedTag: tag("Shared", "below") },
+      { id: "l2", text: "next one" },
+    ];
+    const screen = await render(<SyncCarousel lines={lines} lineIndex={1} wordIndex={0} granularity="word" />);
+    await expect.element(screen.getByText("Shared")).toHaveStyle({ color: RED });
+  });
+
+  describe("invariants", () => {
+    it("keeps the line text in place when a tag appears", async () => {
+      const screen = await render(<SyncCarousel lines={LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+      const styles = [await installUtilitiesUsedIn(screen.container)];
+      const top = () => screen.getByText("Second line").element().getBoundingClientRect().top;
+      const before = top();
+      const tagged = [LINES[0], { ...LINES[1], sharedTag: tag("Tap to place", "above") }, LINES[2]];
+      await screen.rerender(<SyncCarousel lines={tagged} lineIndex={1} wordIndex={0} granularity="line" />);
+      await expect.element(screen.getByText("Tap to place")).toBeInTheDocument();
+      styles.push(await installUtilitiesUsedIn(screen.container));
+      expect(top()).toBe(before);
+      for (const style of styles) style.remove();
+    });
   });
 });

@@ -1,33 +1,37 @@
+import { getAgentColor } from "@/domain/agent/colors";
+import type { LinkGroup } from "@/domain/group/template";
 import { instanceCount, instanceOrdinal } from "@/domain/instance/enumerate";
+import { backgroundFields } from "@/domain/line/background";
+import type { LyricLine } from "@/domain/line/model";
 import { LYRICS_FORMATS_PROSE } from "@/domain/lyrics-file/supported-formats";
+import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import type { WordTiming } from "@/domain/word/timing";
 import { useDualClickImport } from "@/hooks/useDualClickImport";
 import { useConfirm } from "@/stores/confirm-store";
+import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
-import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { getAgentColor } from "@/domain/agent/colors";
-import { backgroundFields } from "@/domain/line/background";
-import type { LinkGroup } from "@/domain/group/template";
-import type { LyricLine } from "@/domain/line/model";
-import type { WordTiming } from "@/domain/word/timing";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
 import { Select } from "@/ui/select";
 import { classifyLine, extractBackgroundVocals, extractInlineFromLine } from "@/utils/background-vocal-extraction";
-import { remapWordTextsPreservingTiming } from "@/domain/word/remap-text";
+import { pluralWord, pluralize } from "@/utils/pluralize";
 import { stripSplitCharacter } from "@/utils/split-character";
 import { AgentManager } from "@/views/edit/agent-manager";
-import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { decideEditTextAction } from "@/views/edit/decide-edit-text-action";
 import { detachInstancesFromLines } from "@/views/edit/diff-edit-text";
 import { linesToEditText } from "@/views/edit/edit-text";
+import { ImportSuccessBanner } from "@/views/edit/import-success-banner";
 import { parseLyrics } from "@/views/edit/parse-lyrics";
-import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
 import type { ParsedLine } from "@/views/edit/parse-lyrics";
-import { importLyricsFile, useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
-import { pluralize, pluralWord } from "@/utils/pluralize";
+import { useComposedTextareaChange, useEditTextCaret } from "@/views/edit/use-edit-text-caret";
+import { useSmartPaste } from "@/views/edit/use-smart-paste";
+import { PROJECT_FILE_PROSE } from "@/views/lyrics-import-modal/accepted-files";
+import { useImportContext } from "@/views/lyrics-import-modal/import-lyrics";
+import { importLyricsFile } from "@/views/lyrics-import-modal/import-lyrics-source";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
 import { IconAlertTriangle, IconFileImport, IconMicrophone } from "@tabler/icons-react";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -37,7 +41,7 @@ const RUN_DEBOUNCE_MS = 500;
 
 const LYRICS_TEXTAREA_PLACEHOLDER = `Paste your lyrics here, one line at a time...
 
-Or drag and drop a lyrics file (${LYRICS_FORMATS_PROSE})`;
+Or paste or drop a whole lyrics file (${LYRICS_FORMATS_PROSE}) or ${PROJECT_FILE_PROSE} to import it`;
 
 const preventDefaultDragOver = (e: React.DragEvent) => e.preventDefault();
 
@@ -281,6 +285,7 @@ const EditPanel: React.FC = () => {
   const runBaselineRef = useRef<{ lines: LyricLine[]; wasDirty: boolean } | null>(null);
   const debounceRef = useRef<number | null>(null);
   const [selectedLines, setSelectedLines] = useState<Set<number>>(new Set());
+  const [isTypingLyrics, setIsTypingLyrics] = useState(false);
   const lastSelectedLineRef = useRef<number | null>(null);
   const dragAnchorRef = useRef<number | null>(null);
   const didDragRef = useRef(false);
@@ -452,6 +457,7 @@ const EditPanel: React.FC = () => {
   }, [finalizeRun]);
 
   const handleTextareaBlur = useCallback(() => {
+    setIsTypingLyrics(false);
     finalizeRun();
     if (!useSettingsStore.getState().autoExtractBackgroundVocals) return;
     const current = useProjectStore.getState().lines;
@@ -579,6 +585,7 @@ const EditPanel: React.FC = () => {
     [confirm, defaultAgentId, groups, lines, scheduleRunFinalize, commitLinesWithHistory, finalizeRun, showEditText],
   );
   const textareaChange = useComposedTextareaChange(setRawText, applyTextareaText);
+  const handlePaste = useSmartPaste({ typedPasteRef: pastedRef, onBeforeImport: finalizeRun });
 
   const importTriggers = useDualClickImport(openImportModal);
 
@@ -613,6 +620,7 @@ const EditPanel: React.FC = () => {
           </Button>
           <Button
             hasIcon
+            data-tour="import-lyrics-button"
             onClick={importTriggers.onClick}
             onDoubleClick={importTriggers.onDoubleClick}
             title="Click to search, paste, or upload. Double-click to upload a file directly."
@@ -648,12 +656,11 @@ const EditPanel: React.FC = () => {
             ref={textareaRef}
             value={rawText}
             onChange={textareaChange.onChange}
+            onFocus={() => setIsTypingLyrics(true)}
             onBlur={handleTextareaBlur}
             onCompositionStart={textareaChange.onCompositionStart}
             onCompositionEnd={textareaChange.onCompositionEnd}
-            onPaste={() => {
-              pastedRef.current = true;
-            }}
+            onPaste={handlePaste}
             placeholder={LYRICS_TEXTAREA_PLACEHOLDER}
             className="flex-1 p-3 text-sm border rounded-lg resize-none bg-composer-input border-composer-border focus:outline-none focus:border-composer-accent placeholder:text-composer-text-muted"
             spellCheck={false}
@@ -754,6 +761,8 @@ const EditPanel: React.FC = () => {
           </Scroll>
         </div>
       </div>
+
+      {!isTypingLyrics && <GroupingSuggestionsBanner className="rounded-lg border-b-0 px-3" />}
     </div>
   );
 };

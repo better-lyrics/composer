@@ -5,7 +5,7 @@ import { type LooseLine, reconcileLine } from "@/domain/line/model";
 import { withDerivedText } from "@/domain/line/reconstruct-text";
 import { closeIntraGroupGaps, expandSelectionToGroupmates } from "@/domain/word/syllable-groups";
 import type { WordTiming } from "@/domain/word/timing";
-import { commitHistory } from "@/stores/project/history-helpers";
+import { commitHistory, commitSharedTimingHistory } from "@/stores/project/history-helpers";
 import {
   applyMarkWordsExplicit,
   applyMergeSyllableGroup,
@@ -95,7 +95,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(state, newLines, [id], historyOptions);
     }),
 
   updateLinesWithHistory: (updates, options = {}) =>
@@ -134,7 +134,12 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         }
       }
 
-      return commitHistory(state, { lines: newLines }, historyOptions);
+      return commitSharedTimingHistory(
+        state,
+        newLines,
+        updates.map((update) => update.id),
+        historyOptions,
+      );
     }),
 
   moveWordToBg: (lineId, wordIndices, timeDelta, duration) =>
@@ -157,7 +162,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       });
 
       if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   moveWordFromBg: (lineId, wordIndices, timeDelta, duration) =>
@@ -181,7 +186,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       });
 
       if (!mutated) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   applyWordCountChange: (lineId, newWords, field, resolution, extraUpdates = {}) =>
@@ -197,7 +202,10 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         const edited = state.lines.map((line) =>
           line.id === lineId ? reconcileLine({ ...line, ...extraUpdates, [field]: newWords }) : line,
         );
-        return commitHistory(state, { lines: unlinkLines(edited, (line) => line.id === lineId) });
+        return commitSharedTimingHistory(
+          state,
+          unlinkLines(edited, (line) => line.id === lineId),
+        );
       }
 
       const linkedExtras = linkScope ? extractLinkedFields(extraUpdates) : null;
@@ -215,7 +223,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
         return line;
       });
 
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   toggleWordExplicit: (lineId, field, wordIndices) => {
@@ -249,7 +257,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
     set((state) => {
       const newLines = applyMergeSyllableGroup(state.lines, lineId, field, wordIndices);
       if (!newLines) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   snapSyllablesFlush: (lineId, field) =>
@@ -262,7 +270,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (snapped === lineWords) return state;
       const lineUpdate = field === "backgroundWords" ? manualBackgroundWordEdit(snapped) : { [field]: snapped };
       const newLines = state.lines.map((l) => (l.id === lineId ? reconcileLine({ ...l, ...lineUpdate }) : l));
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 
   markWordsExplicit: (targets, value) =>
@@ -277,7 +285,7 @@ const createLinesSlice: StateCreator<ProjectStore, [], [], LinesState & LineActi
       if (splitPoints.length === 0) return state;
       const newLines = applySyllableSplitToLines(state.lines, source, splitPoints, caseInsensitive);
       if (newLines === state.lines) return state;
-      return commitHistory(state, { lines: newLines });
+      return commitSharedTimingHistory(state, newLines);
     }),
 });
 

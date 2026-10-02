@@ -2,7 +2,7 @@ import { alignTrackToLine } from "@/domain/language/align";
 import { getLanguageAlignmentErrors } from "@/domain/language/alignment-errors";
 import { languageSourceFingerprint } from "@/domain/language/fingerprint";
 import type { TranslationTrack, TransliterationSegment } from "@/domain/language/model";
-import { getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
+import { alignmentNeedsReview, getLanguageReviewTracks, languageLineAnchorId } from "@/domain/language/review";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { Button } from "@/ui/button";
@@ -39,8 +39,12 @@ interface BackgroundLanguageFieldsProps extends Omit<LanguageLineEditorProps, "i
 
 // -- Components ---------------------------------------------------------------
 
-const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string }> = ({ onClick, ariaLabel }) => (
-  <Button variant="ghost" size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
+const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string; needsReview?: boolean }> = ({
+  onClick,
+  ariaLabel,
+  needsReview,
+}) => (
+  <Button variant={needsReview ? "primary" : "ghost"} size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
     <IconSeparatorVertical className="size-4" />
     Align
   </Button>
@@ -64,12 +68,16 @@ const BackgroundLanguageFields: React.FC<BackgroundLanguageFieldsProps> = ({
       ariaLabel="Background transliteration"
       mono
       value={line.transliteration?.backgroundText ?? ""}
-      status={line.transliteration?.backgroundAlignmentStatus === "needs-review" ? "review" : undefined}
+      status={alignmentNeedsReview(line.transliteration, "background") ? "review" : undefined}
       error={error}
       pasteKind="transliteration"
       action={
         line.backgroundWords?.length && line.transliteration?.backgroundText && !error ? (
-          <AlignButton ariaLabel="Align background timing" onClick={() => onAlign("backgroundWords")} />
+          <AlignButton
+            ariaLabel="Align background timing"
+            needsReview={alignmentNeedsReview(line.transliteration, "background")}
+            onClick={() => onAlign("backgroundWords")}
+          />
         ) : null
       }
       onChange={(value) => {
@@ -150,7 +158,7 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
   )?.message;
   const hasAlignmentError = alignmentErrors.length > 0;
   const transliterationStale = line.transliteration
-    ? line.transliteration.sourceFingerprint !== fingerprint || line.transliteration.alignmentStatus === "needs-review"
+    ? line.transliteration.sourceFingerprint !== fingerprint || alignmentNeedsReview(line.transliteration, "main")
     : false;
   const canAlignMain = Boolean(line.words?.length && line.transliteration?.text && !transliterationError);
   const update = (updates: Partial<LyricLine>) => updateLine(line.id, updates, { deriveText: false });
@@ -196,7 +204,14 @@ const LanguageLineEditor: React.FC<LanguageLineEditorProps> = ({
           status={transliterationStale ? "review" : undefined}
           error={transliterationError}
           pasteKind="transliteration"
-          action={canAlignMain ? <AlignButton onClick={() => setAlignmentField("words")} /> : null}
+          action={
+            canAlignMain ? (
+              <AlignButton
+                needsReview={alignmentNeedsReview(line.transliteration, "main")}
+                onClick={() => setAlignmentField("words")}
+              />
+            ) : null
+          }
           onChange={(value) => {
             if (!value && !line.transliteration?.backgroundText) {
               clearTransliteration();

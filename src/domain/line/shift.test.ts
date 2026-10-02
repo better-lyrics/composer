@@ -36,6 +36,23 @@ describe("clampShiftDelta", () => {
     expect(clampShiftDelta([createLine({ text: "a", begin: 5, end: 6 })], 3)).toBe(3);
   });
 
+  describe("regressions", () => {
+    it("regression: never moves a line past the song end backward on a forward nudge", () => {
+      const pastEnd = [createLine({ text: "a", begin: 179, end: 181 })];
+      expect(clampShiftDelta(pastEnd, 0.05, { min: 0, max: 180 })).toBe(0);
+    });
+
+    it("regression: never moves a line before the range start forward on a backward nudge", () => {
+      const beforeStart = [createLine({ text: "a", begin: 4, end: 6 })];
+      expect(clampShiftDelta(beforeStart, -0.05, { min: 5, max: 180 })).toBe(0);
+    });
+
+    it("still lets a line past the song end move back toward it", () => {
+      const pastEnd = [createLine({ text: "a", begin: 179, end: 181 })];
+      expect(clampShiftDelta(pastEnd, -2, { min: 0, max: 180 })).toBe(-2);
+    });
+  });
+
   describe("edge cases", () => {
     it("does not clamp when no line has main timing", () => {
       expect(clampShiftDelta([createLine({ text: "a" })], -4)).toBe(-4);
@@ -83,5 +100,109 @@ describe("shiftLineTiming", () => {
   it("edge: an untimed line with background words shifts only the background", () => {
     const line = createLine({ text: "a", backgroundText: "oh", backgroundWords: [word("oh", 1, 2)] });
     expect(shiftLineTiming(line, 1)).toEqual({ backgroundWords: [word("oh", 2, 3)] });
+  });
+});
+
+describe("time range", () => {
+  it("stops the earliest main begin at the range start", () => {
+    const lines = [createLine({ text: "a", begin: 10, end: 12 })];
+    expect(clampShiftDelta(lines, -5, { min: 7, max: 60 })).toBe(-3);
+  });
+
+  it("stops the latest main end at the range end", () => {
+    const lines = [createLine({ text: "a", begin: 10, end: 12 }), createLine({ text: "b", begin: 13, end: 15 })];
+    expect(clampShiftDelta(lines, 10, { min: 0, max: 20 })).toBe(5);
+  });
+
+  it("moves a shared line only as far as the range allows, keeping its length", () => {
+    const line = createLine({ text: "a b", words: [word("a ", 10, 11), word("b", 11, 12)] });
+    expect(shiftLineTiming(line, -5, { min: 8, max: 60 })).toEqual({ words: [word("a ", 8, 9), word("b", 9, 10)] });
+    expect(shiftLineTiming(line, 50, { min: 0, max: 14 })).toEqual({ words: [word("a ", 12, 13), word("b", 13, 14)] });
+  });
+
+  describe("edge cases", () => {
+    it("keeps a delta that stays inside the range", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 2, { min: 5, max: 20 })).toBe(2);
+    });
+
+    it("stays put when the lines are longer than the range, instead of moving against the request", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], 3, { min: 9, max: 15 })).toBe(0);
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 20 })], -3, { min: 9, max: 15 })).toBe(-1);
+    });
+  });
+
+  describe("background words", () => {
+    const withBackground = (main: { begin: number; end: number }, background: { begin: number; end: number }) =>
+      createLine({
+        text: "a",
+        begin: main.begin,
+        end: main.end,
+        backgroundText: "oh",
+        backgroundWords: [word("oh", background.begin, background.end)],
+      });
+
+    it("stops a background word that starts before the main words at the range start", () => {
+      const line = withBackground({ begin: 10, end: 12 }, { begin: 8, end: 9 });
+      expect(clampShiftDelta([line], -5, { min: 6, max: 60 })).toBe(-2);
+      expect(shiftLineTiming(line, -5, { min: 6, max: 60 })).toEqual({
+        begin: 8,
+        end: 10,
+        backgroundWords: [word("oh", 6, 7)],
+      });
+    });
+
+    it("stops a background word that ends after the main words at the range end", () => {
+      const line = withBackground({ begin: 10, end: 12 }, { begin: 11, end: 14 });
+      expect(clampShiftDelta([line], 10, { min: 0, max: 20 })).toBe(6);
+      expect(shiftLineTiming(line, 10, { min: 0, max: 20 })).toEqual({
+        begin: 16,
+        end: 18,
+        backgroundWords: [word("oh", 17, 20)],
+      });
+    });
+
+    it("measures the whole set of lines, main and background", () => {
+      const lines = [
+        withBackground({ begin: 10, end: 12 }, { begin: 9, end: 10 }),
+        createLine({ text: "b", begin: 13, end: 15 }),
+      ];
+      expect(clampShiftDelta(lines, -20)).toBe(-9);
+    });
+
+    it("stops the background of an untimed line at the range edges", () => {
+      const line = createLine({ text: "a", backgroundText: "oh", backgroundWords: [word("oh", 10, 12)] });
+      expect(clampShiftDelta([line], 20, { min: 0, max: 15 })).toBe(3);
+      expect(shiftLineTiming(line, -20)).toEqual({ backgroundWords: [word("oh", 0, 2)] });
+    });
+
+    describe("invariants", () => {
+      it("keeps the background at the same place relative to the main words", () => {
+        const line = withBackground({ begin: 10, end: 12 }, { begin: 8, end: 13 });
+        const shifted = shiftLineTiming(line, -50, { min: 0, max: 60 });
+        expect(shifted).toEqual({ begin: 2, end: 4, backgroundWords: [word("oh", 0, 5)] });
+      });
+    });
+  });
+
+  describe("regressions", () => {
+    it("measures only the main words for a line whose background stays inside them", () => {
+      const line = createLine({
+        text: "a",
+        begin: 10,
+        end: 12,
+        backgroundText: "oh",
+        backgroundWords: [word("oh", 10.5, 11.5)],
+      });
+      expect(clampShiftDelta([line], -20, { min: 4, max: 60 })).toBe(-6);
+      expect(clampShiftDelta([line], 20, { min: 0, max: 20 })).toBe(8);
+    });
+
+    it("has no end limit by default, so a line outside a group moves as before", () => {
+      expect(clampShiftDelta([createLine({ text: "a", begin: 10, end: 12 })], 1e6)).toBe(1e6);
+      expect(shiftLineTiming(createLine({ text: "a", begin: 10, end: 12 }), 1e6)).toEqual({
+        begin: 1e6 + 10,
+        end: 1e6 + 12,
+      });
+    });
   });
 });

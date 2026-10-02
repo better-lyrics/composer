@@ -1,3 +1,5 @@
+import { GuideCode } from "@/pages/guides/guide-code";
+
 const MultiAgentDuetsContent: React.FC = () => (
   <>
     <p>
@@ -13,14 +15,15 @@ const MultiAgentDuetsContent: React.FC = () => (
       <code className="font-mono text-composer-accent-text">ttm:name</code>. Every lyric line can reference one agent
       using the <code className="font-mono text-composer-accent-text">ttm:agent</code> attribute.
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<ttm:agent xml:id="v1" type="person">
+    <GuideCode
+      format="ttml"
+      code={`<ttm:agent xml:id="v1" type="person">
   <ttm:name>Lead vocalist</ttm:name>
 </ttm:agent>
 <ttm:agent xml:id="v2" type="person">
   <ttm:name>Featured artist</ttm:name>
 </ttm:agent>`}
-    </pre>
+    />
     <p>
       Declare agents in the <code className="font-mono text-composer-accent-text">&lt;metadata&gt;</code> block inside{" "}
       <code className="font-mono text-composer-accent-text">&lt;head&gt;</code>. Reference them from lines in the{" "}
@@ -56,14 +59,15 @@ const MultiAgentDuetsContent: React.FC = () => (
       Each line gets one agent. The attribute lives on the{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> element:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:15.000" ttm:agent="v1">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:15.000" ttm:agent="v1">
   Lead singer takes this line
 </p>
 <p begin="00:00:15.000" end="00:00:18.000" ttm:agent="v2">
   Featured artist responds
 </p>`}
-    </pre>
+    />
     <p>
       You can alternate agents line by line. Apple Music uses the agent to position the line visually, typically with
       different singers' lines rendering on different sides of the screen.
@@ -74,20 +78,22 @@ const MultiAgentDuetsContent: React.FC = () => (
       If two singers sing at the same time on different lines, keep them in separate{" "}
       <code className="font-mono text-composer-accent-text">&lt;p&gt;</code> elements with overlapping timing:
     </p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<p begin="00:00:12.000" end="00:00:15.000" ttm:agent="v1">
+    <GuideCode
+      format="ttml"
+      code={`<p begin="00:00:12.000" end="00:00:15.000" ttm:agent="v1">
   First vocalist's part
 </p>
 <p begin="00:00:12.500" end="00:00:15.200" ttm:agent="v2">
   Second vocalist at the same time
 </p>`}
-    </pre>
+    />
     <p>If they sing the same line together, assign the line to a group agent instead of splitting.</p>
 
     <h2 className="text-2xl font-semibold text-composer-text mt-10 mb-4">Group vocals</h2>
     <p>For choruses where everyone sings together, declare a group agent and use it for the group parts:</p>
-    <pre className="bg-composer-bg-dark border border-composer-border rounded-lg p-4 overflow-x-auto text-xs font-mono text-composer-text">
-      {`<ttm:agent xml:id="v1" type="person">
+    <GuideCode
+      format="ttml"
+      code={`<ttm:agent xml:id="v1" type="person">
   <ttm:name>Lead</ttm:name>
 </ttm:agent>
 <ttm:agent xml:id="v2" type="person">
@@ -96,7 +102,7 @@ const MultiAgentDuetsContent: React.FC = () => (
 <ttm:agent xml:id="group" type="group">
   <ttm:name>Both</ttm:name>
 </ttm:agent>`}
-    </pre>
+    />
     <p>
       Then tag chorus lines with <code className="font-mono text-composer-accent-text">ttm:agent="group"</code>. Verses
       stay tagged with the individual agents.

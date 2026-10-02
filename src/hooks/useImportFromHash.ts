@@ -1,15 +1,17 @@
-import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
-import { isProjectNonEmpty } from "@/lib/project-non-empty";
-import { useConfirm } from "@/stores/confirm-store";
-import { useProjectStore } from "@/stores/project";
 import type { Agent } from "@/domain/agent/model";
 import type { LyricLine } from "@/domain/line/model";
+import { hasLyricLines } from "@/domain/project/lyrics-presence";
 import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
+import { startSongInNewProject } from "@/lib/open-project";
+import { getPersistenceSettled, markHashImportSettled } from "@/lib/persistence-settled";
+import { useProjectStore } from "@/stores/project";
+import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
+import { showNewProjectToast } from "@/utils/project-toast";
 import { useEffect } from "react";
 import { toast } from "sonner";
 
-const IMPORT_HASH_PREFIX = "#import=";
+// -- Types --------------------------------------------------------------------
 
 interface ImportPayload {
   metadata: ProjectMetadata;
@@ -17,6 +19,12 @@ interface ImportPayload {
   lines: LyricLine[];
   granularity: "line" | "word";
 }
+
+// -- Constants ----------------------------------------------------------------
+
+const LOG_PREFIX = "[Composer]";
+
+// -- Helpers ------------------------------------------------------------------
 
 function isValidPayload(value: unknown): value is ImportPayload {
   if (!value || typeof value !== "object") return false;
@@ -30,9 +38,39 @@ function isValidPayload(value: unknown): value is ImportPayload {
   );
 }
 
-function useImportFromHash(): void {
-  const confirm = useConfirm();
+function applyImport(payload: ImportPayload, metadata: ProjectMetadata): void {
+  useProjectStore.getState().reset();
+  const state = useProjectStore.getState();
+  state.setMetadata(metadata);
+  state.setLines(payload.lines);
+  state.setGranularity(payload.granularity);
+  for (const agent of payload.agents) {
+    if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {
+      state.addAgent(agent);
+    } else {
+      state.updateAgent(agent.id, agent);
+    }
+  }
+  state.markSongDetailsImported();
+}
 
+function clearImportHash(): void {
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
+async function importInNewProject(payload: ImportPayload, metadata: ProjectMetadata): Promise<boolean> {
+  const started = await startSongInNewProject(metadata.title, (song) => {
+    applyImport(payload, metadata);
+    return song;
+  });
+  if (!started) return false;
+  showNewProjectToast(metadata.title, started.previousTitle, started.previousId, started.newId);
+  return true;
+}
+
+// -- Hook ---------------------------------------------------------------------
+
+function useImportFromHash(): void {
   useEffect(() => {
     if (typeof window === "undefined") {
       markHashImportSettled();
@@ -50,7 +88,7 @@ function useImportFromHash(): void {
         const decoded = decodeURIComponent(encoded);
         const payload: unknown = JSON.parse(decoded);
         if (!isValidPayload(payload)) {
-          console.error("[Composer] Invalid import payload structure");
+          console.error(LOG_PREFIX, "Invalid import payload structure");
           toast.error("Could not import converter result");
           return;
         }
@@ -59,43 +97,16 @@ function useImportFromHash(): void {
         await getPersistenceSettled();
         if (import.meta.env.DEV) console.log("[Boot] useImportFromHash settled");
 
-        if (await isProjectNonEmpty()) {
-          const ok = await confirm({
-            title: "Replace current project?",
-            description:
-              "This URL contains imported lyrics that will replace your current project. Your existing work will be lost permanently.",
-            confirmLabel: "Replace project",
-            variant: "destructive",
-            settingsKey: "confirmReplaceProjectFromHash",
-          });
-          if (!ok) {
-            window.history.replaceState(null, "", window.location.pathname + window.location.search);
-            return;
-          }
-        }
-
-        // Everything the import needs is built before the project is cleared, so
-        // a malformed payload can never leave the user with an emptied project.
         const metadata = normalizeLoadedMetadata(payload.metadata);
-
-        useProjectStore.getState().reset();
-        const state = useProjectStore.getState();
-        state.setMetadata(metadata);
-        state.setLines(payload.lines);
-        state.setGranularity(payload.granularity);
-        for (const agent of payload.agents) {
-          if (!useProjectStore.getState().agents.some((existing) => existing.id === agent.id)) {
-            state.addAgent(agent);
-          } else {
-            state.updateAgent(agent.id, agent);
-          }
+        const openedNew =
+          hasLyricLines(useProjectStore.getState().lines) && (await importInNewProject(payload, metadata));
+        if (!openedNew) {
+          applyImport(payload, metadata);
+          toast.success("Imported from converter");
         }
-        state.markSongDetailsImported();
-
-        window.history.replaceState(null, "", window.location.pathname + window.location.search);
-        toast.success("Imported from converter");
+        clearImportHash();
       } catch (importError) {
-        console.error("[Composer] Failed to import from hash", importError);
+        console.error(LOG_PREFIX, "Failed to import from hash", importError);
         toast.error("Could not import converter result");
       } finally {
         markHashImportSettled();
@@ -103,7 +114,9 @@ function useImportFromHash(): void {
     };
 
     void runImport();
-  }, [confirm]);
+  }, []);
 }
+
+// -- Exports ------------------------------------------------------------------
 
 export { useImportFromHash };

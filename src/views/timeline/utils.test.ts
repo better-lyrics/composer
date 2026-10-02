@@ -2,6 +2,7 @@
  * @vitest-environment node
  */
 import { reconcileLine, type LooseLine, type LyricLine } from "@/domain/line/model";
+import type { TimeRange } from "@/domain/group/shared-timing";
 import type { WordTiming } from "@/domain/word/timing";
 import { describe, expect, it } from "vitest";
 import { instanceBounds } from "@/domain/instance/bounds";
@@ -18,6 +19,8 @@ import {
   shiftLineSyncedRows,
   shiftSelectionsTogether,
 } from "./utils";
+
+const wholeSong = (duration: number) => (): TimeRange => ({ min: 0, max: duration });
 
 // -- distributeWordsInLine -----------------------------------------------------
 
@@ -544,7 +547,7 @@ describe("nudgeSelectedWords", () => {
         { text: "c", begin: 5, end: 6 },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], 0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.05);
     expect(result.updates).toHaveLength(1);
     const updatedWords = result.updates[0].updates.words!;
@@ -561,7 +564,7 @@ describe("nudgeSelectedWords", () => {
         { text: "b", begin: 3, end: 4 },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.05);
     expect(result.updates[0].updates.words![1].begin).toBeCloseTo(2.95);
     expect(result.updates[0].updates.words![1].end).toBeCloseTo(3.95);
@@ -574,7 +577,7 @@ describe("nudgeSelectedWords", () => {
         { text: "b", begin: 1.02, end: 2 },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.02);
     expect(result.updates[0].updates.words![1].begin).toBeCloseTo(1);
     expect(result.updates[0].updates.words![1].end).toBeCloseTo(1.98);
@@ -587,7 +590,7 @@ describe("nudgeSelectedWords", () => {
         { text: "b", begin: 1, end: 2 },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 1 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -599,14 +602,14 @@ describe("nudgeSelectedWords", () => {
         { text: "b", begin: 1, end: 2 },
       ]),
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("clamps to 0 for the first word", () => {
     const lines = [makeLine("L", [{ text: "a", begin: 0.02, end: 1 }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], -0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], -0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(-0.02);
     expect(result.updates[0].updates.words![0].begin).toBeCloseTo(0);
     expect(result.updates[0].updates.words![0].end).toBeCloseTo(0.98);
@@ -614,7 +617,7 @@ describe("nudgeSelectedWords", () => {
 
   it("clamps to duration for the last word", () => {
     const lines = [makeLine("L", [{ text: "a", begin: 8, end: 9.98 }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.02);
     expect(result.updates[0].updates.words![0].end).toBeCloseTo(10);
   });
@@ -635,7 +638,7 @@ describe("nudgeSelectedWords", () => {
         { lineId: "L", type: "word", wordIndex: 2 },
       ],
       0.05,
-      10,
+      wholeSong(10),
     );
     expect(result.appliedDelta).toBeCloseTo(0.05);
     const updated = result.updates[0].updates.words!;
@@ -663,7 +666,7 @@ describe("nudgeSelectedWords", () => {
         { lineId: "L", type: "word", wordIndex: 2 },
       ],
       0.05,
-      10,
+      wholeSong(10),
     );
     expect(result.appliedDelta).toBeCloseTo(0.02);
     const updated = result.updates[0].updates.words!;
@@ -684,7 +687,7 @@ describe("nudgeSelectedWords", () => {
         ],
       },
     ];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "bg", wordIndex: 0 }], 0.1, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "bg", wordIndex: 0 }], 0.1, wholeSong(10));
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect(result.updates[0].updates.backgroundWords![0].begin).toBeCloseTo(2.1);
     expect(result.updates[0].updates.backgroundWords![0].end).toBeCloseTo(3.1);
@@ -703,7 +706,7 @@ describe("nudgeSelectedWords", () => {
         { lineId: "L2", type: "word", wordIndex: 0 },
       ],
       0.05,
-      5.05,
+      wholeSong(5.05),
     );
     expect(result.appliedDelta).toBeCloseTo(0.01);
     expect(result.updates).toHaveLength(2);
@@ -711,14 +714,14 @@ describe("nudgeSelectedWords", () => {
 
   it("returns no-op for empty selection", () => {
     const lines = [makeLine("L", [{ text: "a", begin: 0, end: 1 }])];
-    const result = nudgeSelectedWords(lines, [], 0.05, 10);
+    const result = nudgeSelectedWords(lines, [], 0.05, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("returns no-op for zero delta", () => {
     const lines = [makeLine("L", [{ text: "a", begin: 0, end: 1 }])];
-    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0, 10);
+    const result = nudgeSelectedWords(lines, [{ lineId: "L", type: "word", wordIndex: 0 }], 0, wholeSong(10));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -762,7 +765,7 @@ describe("nudgeSelectedWords as instance shift", () => {
       { lineId: "B", type: "word" as const, wordIndex: 0 },
       { lineId: "B", type: "word" as const, wordIndex: 1 },
     ];
-    const result = nudgeSelectedWords(lines, allInstanceSelections, 0.5, 60);
+    const result = nudgeSelectedWords(lines, allInstanceSelections, 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0.5);
     const aWords = (result.updates.find((u) => u.id === "A")?.updates.words ?? []) as { begin: number; end: number }[];
     const bWords = (result.updates.find((u) => u.id === "B")?.updates.words ?? []) as { begin: number; end: number }[];
@@ -775,7 +778,7 @@ describe("nudgeSelectedWords as instance shift", () => {
 
   it("clamps shift to song duration when selection touches the end", () => {
     const lines: LyricLine[] = [{ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 59.7, end: 60 }] }];
-    const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, 60);
+    const result = nudgeSelectedWords(lines, [{ lineId: "A", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
   });
 });
@@ -883,7 +886,7 @@ describe("partitionNudgeSelections", () => {
 describe("shiftLineSyncedRows", () => {
   it("shifts begin and end by the requested delta and preserves line-sync (no words written)", () => {
     const lines: LyricLine[] = [{ id: "L1", text: "verse", agentId: "v1", begin: 5, end: 7 }];
-    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, 60);
+    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0.5);
     expect(result.updates).toHaveLength(1);
     expect(result.updates[0].id).toBe("L1");
@@ -905,7 +908,7 @@ describe("shiftLineSyncedRows", () => {
         { lineId: "B", type: "word", wordIndex: 0 },
       ],
       -0.5,
-      60,
+      wholeSong(60),
     );
     expect(result.appliedDelta).toBeCloseTo(-0.1);
     expect((result.updates.find((u) => u.id === "A")?.updates as { begin: number }).begin).toBeCloseTo(0);
@@ -914,29 +917,29 @@ describe("shiftLineSyncedRows", () => {
 
   it("returns no-op when shift would push past 0 or duration", () => {
     const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 0, end: 1 }];
-    const r1 = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], -0.5, 60);
+    const r1 = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], -0.5, wholeSong(60));
     expect(r1.appliedDelta).toBe(0);
     const lines2: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 59, end: 60 }];
-    const r2 = shiftLineSyncedRows(lines2, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, 60);
+    const r2 = shiftLineSyncedRows(lines2, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(r2.appliedDelta).toBe(0);
   });
 
   it("returns no-op for zero delta", () => {
     const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1", begin: 5, end: 6 }];
-    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0, 60);
+    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("returns no-op for empty selection", () => {
-    const result = shiftLineSyncedRows([], [], 0.5, 60);
+    const result = shiftLineSyncedRows([], [], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
 
   it("skips selections where line is missing or has no begin/end", () => {
     const lines: LyricLine[] = [{ id: "L1", text: "x", agentId: "v1" }];
-    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, 60);
+    const result = shiftLineSyncedRows(lines, [{ lineId: "L1", type: "word", wordIndex: 0 }], 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -959,7 +962,7 @@ describe("shiftSelectionsTogether", () => {
       { lineId: "A", type: "word", wordIndex: 0 },
       { lineId: "B", type: "word", wordIndex: 0 },
     ]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
     // Without the unified clamp: A shifts by -0.05, B shifts by -0.5 → asymmetric.
     // With unified clamp: both shift by -0.05.
     expect(result.appliedDelta).toBeCloseTo(-0.05);
@@ -972,7 +975,7 @@ describe("shiftSelectionsTogether", () => {
   it("works when only the line-synced partition has selections", () => {
     const lines: LyricLine[] = [{ id: "A", text: "x", agentId: "v1", begin: 5, end: 6 }];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect((result.updates[0].updates as { begin: number }).begin).toBeCloseTo(5.1);
   });
@@ -980,13 +983,13 @@ describe("shiftSelectionsTogether", () => {
   it("works when only the word-synced partition has selections", () => {
     const lines: LyricLine[] = [{ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 5, end: 6 }] }];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(0.1);
     expect((result.updates[0].updates.words as { begin: number }[])[0].begin).toBeCloseTo(5.1);
   });
 
   it("returns empty when both partitions are empty", () => {
-    const result = shiftSelectionsTogether([], { wordSynced: [], lineSynced: [] }, 0.5, 60);
+    const result = shiftSelectionsTogether([], { wordSynced: [], lineSynced: [] }, 0.5, wholeSong(60));
     expect(result.appliedDelta).toBe(0);
     expect(result.updates).toEqual([]);
   });
@@ -1002,14 +1005,14 @@ describe("shiftSelectionsTogether", () => {
       { lineId: "A", type: "word", wordIndex: 0 },
       { lineId: "B", type: "word", wordIndex: 0 },
     ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.5, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.5, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(0.01);
   });
 
   it("preserves direction when clamping (negative requestedDelta yields negative applied)", () => {
     const lines: LyricLine[] = [{ id: "A", text: "x", agentId: "v1", words: [{ text: "x", begin: 0.05, end: 1 }] }];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
     expect(result.appliedDelta).toBeLessThan(0);
     expect(result.appliedDelta).toBeCloseTo(-0.05);
   });
@@ -1049,7 +1052,7 @@ describe("shiftSelectionsTogether", () => {
       { lineId: "L2", type: "word", wordIndex: 0 },
       { lineId: "L2", type: "word", wordIndex: 1 },
     ]);
-    const result = shiftSelectionsTogether(lines, partitioned, -0.5, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, -0.5, wholeSong(60));
     expect(result.appliedDelta).toBeCloseTo(-0.5);
     const l1Words = (result.updates.find((u) => u.id === "L1")?.updates.words ?? []) as {
       begin: number;
@@ -1082,7 +1085,7 @@ describe("shiftSelectionsTogether · background provenance", () => {
       },
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "bg", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     const update = result.updates.find((u) => u.id === "A");
     expect((update?.updates.backgroundWords as { begin: number }[])?.[0].begin).toBeCloseTo(2.1);
     expect(update?.updates.backgroundTextSource).toBe("manual");
@@ -1107,7 +1110,7 @@ describe("shiftSelectionsTogether · background provenance", () => {
       { lineId: "A", type: "bg", wordIndex: 0 },
       { lineId: "A", type: "bg", wordIndex: 1 },
     ]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     const bg = result.updates.find((u) => u.id === "A")?.updates.backgroundWords as {
       text: string;
       begin: number;
@@ -1130,7 +1133,7 @@ describe("shiftSelectionsTogether · background provenance", () => {
       },
     ];
     const partitioned = partitionNudgeSelections(lines, [{ lineId: "A", type: "word", wordIndex: 0 }]);
-    const result = shiftSelectionsTogether(lines, partitioned, 0.1, 60);
+    const result = shiftSelectionsTogether(lines, partitioned, 0.1, wholeSong(60));
     const update = result.updates.find((u) => u.id === "A");
     expect(update?.updates.backgroundTextSource).toBeUndefined();
     expect(update?.updates.backgroundWords).toBeUndefined();

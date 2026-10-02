@@ -1,6 +1,7 @@
 import type { WordSelection } from "@/domain/selection/model";
 import { toggleWordSelection } from "@/domain/selection/set-ops";
 import { useSettingsStore } from "@/stores/settings";
+import type { GroupFocus } from "@/views/timeline/group-focus";
 import type { ClipboardData, PasteMode } from "@/views/timeline/selection-types";
 import { create } from "zustand";
 
@@ -49,6 +50,7 @@ interface TimelineState {
   markerMode: boolean;
   hoveredSnapPointId: string | null;
   collapsedInstances: Record<string, boolean>;
+  focusedGroup: GroupFocus | null;
   pingingGroupId: string | null;
   renamingGroupId: string | null;
   renamingInstanceIdx: number | null;
@@ -83,11 +85,14 @@ interface TimelineActions {
   clearContextMenu: () => void;
   setEditingWord: (editing: EditingWord | null) => void;
   clearEditingWord: () => void;
+  resetProjectScope: () => void;
   toggleRollingEditMode: () => void;
   toggleMarkerMode: () => void;
   setHoveredSnapPointId: (id: string | null) => void;
   setInstanceCollapsed: (key: string, isCollapsed: boolean) => void;
   toggleInstanceCollapsed: (key: string) => void;
+  openGroup: (groupId: string, instanceIdx: number) => void;
+  closeGroup: () => void;
   setPingingGroupId: (groupId: string | null) => void;
   setRenamingGroupId: (groupId: string | null, instanceIdx?: number | null) => void;
   setDraggedGroupShift: (shift: { groupId: string; instanceIdx: number; offsetPx: number } | null) => void;
@@ -133,6 +138,7 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     markerMode: false,
     hoveredSnapPointId: null,
     collapsedInstances: {},
+    focusedGroup: null,
     pingingGroupId: null,
     renamingGroupId: null,
     renamingInstanceIdx: null,
@@ -172,6 +178,15 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
     clearContextMenu: () => set({ contextMenu: null }),
     setEditingWord: (editingWord) => set({ editingWord }),
     clearEditingWord: () => set({ editingWord: null }),
+    resetProjectScope: () =>
+      set({
+        selectedWords: [],
+        contextMenu: null,
+        editingWord: null,
+        pasteMode: { status: "idle" },
+        scrollLeft: 0,
+        focusedGroup: null,
+      }),
     toggleRollingEditMode: () => set((s) => ({ rollingEditMode: !s.rollingEditMode })),
     toggleMarkerMode: () => set((s) => ({ markerMode: !s.markerMode })),
     setHoveredSnapPointId: (hoveredSnapPointId) => set({ hoveredSnapPointId }),
@@ -179,6 +194,9 @@ const useTimelineStore = create<TimelineState & TimelineActions>((set, get) => {
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: isCollapsed } })),
     toggleInstanceCollapsed: (key) =>
       set((s) => ({ collapsedInstances: { ...s.collapsedInstances, [key]: !s.collapsedInstances[key] } })),
+    openGroup: (groupId, instanceIdx) =>
+      set({ focusedGroup: { groupId, hearInstanceIdx: instanceIdx }, selectedWords: [], contextMenu: null }),
+    closeGroup: () => set({ focusedGroup: null }),
     setPingingGroupId: (pingingGroupId) => set({ pingingGroupId }),
     setRenamingGroupId: (renamingGroupId, renamingInstanceIdx = null) =>
       set({ renamingGroupId, renamingInstanceIdx: renamingGroupId === null ? null : renamingInstanceIdx }),

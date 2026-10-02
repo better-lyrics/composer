@@ -8,8 +8,12 @@ import { userEvent } from "vitest/browser";
 
 // -- Helpers ------------------------------------------------------------------
 
+function outputPane(container: HTMLElement): HTMLElement | null {
+  return container.querySelector<HTMLElement>("pre:not([aria-hidden])");
+}
+
 function outputText(container: HTMLElement): string {
-  return container.querySelector("pre")?.textContent ?? "";
+  return outputPane(container)?.textContent ?? "";
 }
 
 async function renderConverter(Content: React.FC) {
@@ -48,6 +52,15 @@ describe.each(PAGES)("TTML to $label page", ({ label, Page, Content }) => {
     await expect.element(screen.getByLabelText("Filename")).toHaveValue(`lyrics.${label.toLowerCase()}`);
   });
 
+  it(`highlights the output as ${label}`, async () => {
+    const { screen, textarea } = await renderConverter(Content);
+
+    await userEvent.fill(textarea, SAMPLE_TTML);
+
+    expect(outputPane(screen.container)?.classList.contains("bh")).toBe(true);
+    expect(outputPane(screen.container)?.querySelector(".bh-timestamp")).not.toBeNull();
+  });
+
   it("surfaces an error for input that is not TTML", async () => {
     const { screen, textarea } = await renderConverter(Content);
 
@@ -63,7 +76,7 @@ describe.each(PAGES)("TTML to $label page", ({ label, Page, Content }) => {
 
     await expect
       .element(screen.getByRole("link", { name: "Open in Composer" }))
-      .toHaveAttribute("href", expect.stringMatching(/^\/#import=/));
+      .toHaveAttribute("href", expect.stringMatching(/^\/editor#import=/));
   });
 });
 

@@ -4,6 +4,7 @@ const VIDEO_ID_REGEX = /^[a-zA-Z0-9_-]{11}$/;
 const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "music.youtube.com"]);
 const YOUTU_BE_HOST = "youtu.be";
 const PATH_PREFIX_VIDEO_ID: Record<string, true> = { shorts: true, embed: true, live: true, v: true };
+const INVALID_YOUTUBE_LINK_MESSAGE = "That doesn't look like a valid YouTube URL or ID";
 
 // -- Functions ----------------------------------------------------------------
 
@@ -42,4 +43,4 @@ function extractVideoId(input: string): string | null {
 
 // -- Exports ------------------------------------------------------------------
 
-export { extractVideoId };
+export { extractVideoId, INVALID_YOUTUBE_LINK_MESSAGE };
