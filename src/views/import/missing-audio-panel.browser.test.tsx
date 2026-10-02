@@ -96,6 +96,18 @@ describe("MissingAudioPanel · local file", () => {
   });
 });
 
+describe("MissingAudioPanel · drop anywhere", () => {
+  it("links audio dropped outside the drop box", async () => {
+    const screen = await openMissingFile();
+    const area = screen.container.querySelector('[data-tour="import-dropzone"]');
+    if (!area) throw new Error("Panel not rendered");
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(createAudioFile("city.wav"));
+    area.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }));
+    await expect.poll(sourceFileName).toBe("city.wav");
+  });
+});
+
 describe("MissingAudioPanel · YouTube", () => {
   it("asks to start Composer Bridge when it could not be reached", async () => {
     const screen = await openFailedVideo("bridge-unreachable");
