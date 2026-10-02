@@ -85,6 +85,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       updatedLines,
       { id: groupId, label, color, templateVersion: 1 },
       useSettingsStore.getState().shareTimingInNewGroups,
+      songEndOrUnbounded(options.duration ?? 0),
     );
 
     set(commitHistory(state, { groups: [...state.groups, group], lines }, { deriveText: false }));
@@ -178,10 +179,12 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       });
     }),
 
-  setInstanceOwnTiming: (groupId, instanceIdx, own) => {
+  setInstanceOwnTiming: (groupId, instanceIdx, own, duration) => {
     const state = get();
     const groups = state.groups.map((group) => (group.id === groupId ? withOwnTiming(group, instanceIdx, own) : group));
-    const realignment = own ? { updates: [] } : realignSharedInstance(state.lines, groups, groupId, instanceIdx);
+    const realignment = own
+      ? { updates: [] }
+      : realignSharedInstance(state.lines, groups, groupId, instanceIdx, songEndOrUnbounded(duration));
     if ("refusal" in realignment) return realignment.refusal;
     set(
       commitHistory(
@@ -193,11 +196,11 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     return null;
   },
 
-  shareGroupTiming: (groupId) => {
+  shareGroupTiming: (groupId, duration) => {
     const state = get();
     const group = state.groups.find((candidate) => candidate.id === groupId);
     if (!group) return [];
-    const shared = initialGroupSharing(state.lines, group, true);
+    const shared = initialGroupSharing(state.lines, group, true, songEndOrUnbounded(duration));
     const groups = state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate));
     set(commitHistory(state, { groups, lines: shared.lines }, { deriveText: false }));
     return shared.keptOwnTiming;

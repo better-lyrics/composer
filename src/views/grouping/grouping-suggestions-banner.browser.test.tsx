@@ -1,5 +1,6 @@
 import type { LyricLine } from "@/domain/line/model";
 import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
@@ -172,6 +173,28 @@ describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
         .toBeInTheDocument();
       expect(store().groups[0].ownTimingInstances).toEqual([1]);
       expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    });
+
+    it("keeps the own timing of an instance that would run past the end of the song and says why", async () => {
+      useAudioStore.setState({ duration: 300 });
+      useProjectStore.setState({
+        lines: [
+          lineSynced("one-a", "go now", 10),
+          lineSynced("one-b", "stay here", 60),
+          lineSynced("two-a", "go now", 280),
+          lineSynced("two-b", "stay here"),
+        ],
+      });
+      const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Group them" }).click();
+
+      await expect
+        .element(
+          screen.getByText("1 instance kept its own timing: the shared timing would run past the end of the song"),
+        )
+        .toBeInTheDocument();
+      expect(store().groups[0].ownTimingInstances).toEqual([1]);
+      expect(lineById("two-b")?.begin).toBeUndefined();
     });
 
     it("says where to look when instances kept their own timing for different reasons", async () => {

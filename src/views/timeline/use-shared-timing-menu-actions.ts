@@ -1,6 +1,7 @@
 import { sharesTiming } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { showGroupActionToast, showSharingBlockedToast } from "@/utils/group-toast";
 import { isStructurallyEqual } from "@/utils/structural-equal";
@@ -31,12 +32,12 @@ function applySharingMenuAction(action: SharingMenuAction, group: LinkGroup, ins
   const store = useProjectStore.getState();
   const name = instanceName(store.lines, group, instanceIdx);
   if (action === "use-own-timing") {
-    store.setInstanceOwnTiming(group.id, instanceIdx, true);
+    store.setInstanceOwnTiming(group.id, instanceIdx, true, useAudioStore.getState().duration);
     showGroupActionToast(`${name} uses its own timing`);
     return;
   }
   if (action === "share-timing") {
-    const refusal = store.setInstanceOwnTiming(group.id, instanceIdx, false);
+    const refusal = store.setInstanceOwnTiming(group.id, instanceIdx, false, useAudioStore.getState().duration);
     if (refusal) {
       showSharingBlockedToast(name, refusal);
       return;

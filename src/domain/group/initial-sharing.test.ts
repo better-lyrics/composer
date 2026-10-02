@@ -130,6 +130,14 @@ describe("initialGroupSharing", () => {
       expect(result.lines).toEqual(lines);
     });
 
+    it("keeps its own timing for an instance the shared timing would run past the song end", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
+      const result = initialGroupSharing(lines, newGroup, true, 300);
+      expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "past-song-end" }]);
+      expect(result.group.ownTimingInstances).toEqual([1]);
+      expect(result.lines).toEqual(lines);
+    });
+
     it("realigns the instances that fit and keeps only the one that does not", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 13), chorus(1, 0), chorus(1, 1, 1), chorus(2, 0, 70), chorus(2, 1)];
       const result = share(lines);

@@ -193,7 +193,7 @@ interface GroupActions {
   groupRepeatingSections: (
     starts: number[],
     length: number,
-    options?: { label?: string; color?: string },
+    options?: { label?: string; color?: string; duration?: number },
   ) => KeptOwnTiming[];
   updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
   removeGroup: (id: string) => void;
@@ -201,8 +201,8 @@ interface GroupActions {
   removeInstance: (groupId: string, instanceIdx: number) => void;
   detachLine: (lineId: string) => void;
   shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
-  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean) => RealignRefusal | null;
-  shareGroupTiming: (groupId: string) => KeptOwnTiming[];
+  setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean, duration: number) => RealignRefusal | null;
+  shareGroupTiming: (groupId: string, duration: number) => KeptOwnTiming[];
   placeInstance: (
     groupId: string,
     instanceIdx: number,

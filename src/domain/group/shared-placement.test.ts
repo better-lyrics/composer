@@ -244,6 +244,21 @@ describe("realignSharedInstance", () => {
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "before-song-start" });
     });
 
+    it("refuses a timed instance whose shared copy would run past the song end", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
+      expect(realignSharedInstance(lines, sharing, "g1", 1, 300)).toEqual({ refusal: "past-song-end" });
+    });
+
+    it("realigns an instance that ends exactly at the song end", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 249), chorus(1, 1)];
+      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1, 300))).toHaveLength(2);
+    });
+
+    it("realigns without an end limit when no song end is given", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
+      expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))).toHaveLength(2);
+    });
+
     it("refuses a timed instance with no synced line in common with the reference", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), { ...chorus(1, 2, 60), text: "" }];
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "no-common-timed-line" });
@@ -284,6 +299,12 @@ describe("realignSharedInstances", () => {
       expect(result.keptOwnTiming).toEqual([{ instanceIdx: 1, refusal: "before-song-start" }]);
       expect(result.lines.slice(0, 4)).toEqual(lines.slice(0, 4));
       expect(firstBegin(result.lines, "c2-1")).toBeCloseTo(73, 6);
+    });
+
+    it("keeps an instance that would run past the song end", () => {
+      const lines = [chorus(0, 0, 10), chorus(0, 1, 60), chorus(1, 0, 280), chorus(1, 1)];
+      const result = realignSharedInstances(lines, sharing, "g1", [1], 300);
+      expect(result).toEqual({ lines, keptOwnTiming: [{ instanceIdx: 1, refusal: "past-song-end" }] });
     });
 
     it("returns the same lines when nothing is listed", () => {

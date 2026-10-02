@@ -73,11 +73,16 @@ function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: stri
   );
 }
 
-function initialGroupSharing(lines: LyricLine[], group: LinkGroup, settingOn: boolean): InitialGroupSharing {
+function initialGroupSharing(
+  lines: LyricLine[],
+  group: LinkGroup,
+  settingOn: boolean,
+  songEnd = Number.POSITIVE_INFINITY,
+): InitialGroupSharing {
   if (!settingOn) return { group, lines, keptOwnTiming: [] };
   const shared = withSharing(group, { sharesTiming: true });
   const differing = instancesWithDifferentTiming(lines, group.id);
-  const realigned = realignSharedInstances(lines, [shared], group.id, differing);
+  const realigned = realignSharedInstances(lines, [shared], group.id, differing, songEnd);
   const ownTimingInstances = realigned.keptOwnTiming.map((kept) => kept.instanceIdx);
   return {
     ...realigned,

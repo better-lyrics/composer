@@ -5,6 +5,7 @@ import { linesOfInstance } from "@/domain/instance/enumerate";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { GROUP_COLORS, pickNextGroupColor } from "@/utils/group-colors";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types ---------------------------------------------------------------------
 
@@ -75,7 +76,7 @@ function createGroupFromSelection(
   selectedLineIds: ReadonlySet<string>,
   existingGroups: LinkGroup[],
   shareTimingInNewGroups: boolean,
-  options: { label?: string } = {},
+  options: { label?: string; duration?: number } = {},
 ): CreateGroupResult | null {
   if (!lineIdsAreContiguous(lines, selectedLineIds)) return null;
   if (selectionTouchesAnyGroup(lines, selectedLineIds)) return null;
@@ -102,6 +103,7 @@ function createGroupFromSelection(
     updatedLines,
     { id: groupId, label, color, templateVersion: 1 },
     shareTimingInNewGroups,
+    songEndOrUnbounded(options.duration ?? 0),
   );
   return { group: shared.group, updatedLines: shared.lines };
 }

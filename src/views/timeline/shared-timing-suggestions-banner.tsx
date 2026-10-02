@@ -1,4 +1,5 @@
 import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { showKeptOwnTimingToast } from "@/utils/group-toast";
@@ -37,7 +38,9 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
 
   const acceptAll = (visible: SharedTimingSuggestion[]) => {
     showKeptOwnTimingToast(
-      visible.flatMap((suggestion) => useProjectStore.getState().shareGroupTiming(suggestion.groupId)),
+      visible.flatMap((suggestion) =>
+        useProjectStore.getState().shareGroupTiming(suggestion.groupId, useAudioStore.getState().duration),
+      ),
     );
   };
 

@@ -10,6 +10,7 @@ const GROUP_TOAST_DURATION_MS = 8000;
 const SHARED_SONG_EDGE_TOAST_ID = "shared-song-edge";
 const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, string> = {
   "before-song-start": ": the shared timing would start before the song",
+  "past-song-end": ": the shared timing would run past the end of the song",
   "no-common-timed-line": ": none of its synced lines match a line of the synced instance",
   "no-fully-synced-instance": ". Sync one instance fully, then share it from its banner menu in the Timeline.",
 };

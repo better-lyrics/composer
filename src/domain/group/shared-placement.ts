@@ -17,7 +17,7 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 
 // -- Types --------------------------------------------------------------------
 
-type RealignRefusal = "no-fully-synced-instance" | "no-common-timed-line" | "before-song-start";
+type RealignRefusal = "no-fully-synced-instance" | "no-common-timed-line" | "before-song-start" | "past-song-end";
 
 type Realignment = { updates: LineUpdate[] } | { refusal: RealignRefusal };
 
@@ -64,6 +64,10 @@ function startsBeforeSong(updates: readonly LineUpdate[]): boolean {
   return updates.some((update) => hasNegativeTime(update.updates));
 }
 
+function runsPastSong(updates: readonly LineUpdate[], songEnd: number): boolean {
+  return updates.some((update) => endsAfter(update.updates, songEnd));
+}
+
 // -- Placing ------------------------------------------------------------------
 
 // `anchorTime` is where the main vocal of the instance's first syncable line begins, the word a sync tap lands on.
@@ -85,8 +89,7 @@ function placeSharedInstance(
   const referenceTime = referenceLine ? mainBounds(referenceLine)?.begin : undefined;
   if (referenceTime === undefined) return [];
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, anchorTime - referenceTime);
-  if (startsBeforeSong(updates)) return [];
-  return updates.some((update) => endsAfter(update.updates, songEnd)) ? [] : updates;
+  return startsBeforeSong(updates) || runsPastSong(updates, songEnd) ? [] : updates;
 }
 
 // An instance with no timing has nothing to realign (no updates); a timed one that cannot take the shared timing is refused.
@@ -95,6 +98,7 @@ function realignSharedInstance(
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdx: number,
+  songEnd = Number.POSITIVE_INFINITY,
 ): Realignment {
   if (instanceStart(lines, groupId, instanceIdx) === null) return { updates: [] };
   const group = sharedGroup(groups, groupId, instanceIdx);
@@ -104,6 +108,7 @@ function realignSharedInstance(
   if (offset === null) return { refusal: "no-common-timed-line" };
   const updates = copyInstanceTiming(lines, groupId, reference, instanceIdx, offset);
   if (startsBeforeSong(updates)) return { refusal: "before-song-start" };
+  if (runsPastSong(updates, songEnd)) return { refusal: "past-song-end" };
   return { updates };
 }
 
@@ -112,11 +117,12 @@ function realignSharedInstances(
   groups: readonly LinkGroup[],
   groupId: string,
   instanceIdxs: readonly number[],
+  songEnd = Number.POSITIVE_INFINITY,
 ): RealignedInstances {
   let realigned = lines;
   const keptOwnTiming: KeptOwnTiming[] = [];
   for (const instanceIdx of instanceIdxs) {
-    const realignment = realignSharedInstance(realigned, groups, groupId, instanceIdx);
+    const realignment = realignSharedInstance(realigned, groups, groupId, instanceIdx, songEnd);
     if ("refusal" in realignment) keptOwnTiming.push({ instanceIdx, refusal: realignment.refusal });
     else if (realignment.updates.length) realigned = applyLineUpdates(realigned, realignment.updates);
   }

@@ -1,3 +1,4 @@
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { showKeptOwnTimingToast } from "@/utils/group-toast";
@@ -25,7 +26,8 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
   };
 
   const groupSections = (sections: readonly RepeatingSection[]) => {
-    showKeptOwnTimingToast(sections.flatMap((s) => groupRepeatingSections(s.starts, s.length)));
+    const { duration } = useAudioStore.getState();
+    showKeptOwnTimingToast(sections.flatMap((s) => groupRepeatingSections(s.starts, s.length, { duration })));
   };
 
   const acceptOne = (s: RepeatingSection) => groupSections([s]);

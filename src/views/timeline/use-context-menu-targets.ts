@@ -11,6 +11,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import {
@@ -20,8 +21,8 @@ import {
   lineIdsAreContiguous,
   selectionTouchesAnyGroup,
 } from "@/views/timeline/group-ops";
-import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { computeSplitIntoWordsUpdates, splitTargetsForMenu } from "@/views/timeline/split-lines-into-words";
+import type { ContextMenuTarget } from "@/views/timeline/timeline-store";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { useMemo } from "react";
 
@@ -86,6 +87,7 @@ function useContextMenuTargets() {
       filled.expanded,
       useProjectStore.getState().groups,
       useSettingsStore.getState().shareTimingInNewGroups,
+      { duration: useAudioStore.getState().duration },
     );
     if (!result) return null;
     return {
