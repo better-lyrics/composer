@@ -44,4 +44,3 @@ function replacedInstances(before: readonly LyricLine[], after: readonly LyricLi
 // -- Exports ------------------------------------------------------------------
 
 export { replacedInstances };
-export type { ReplacedInstance };
