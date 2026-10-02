@@ -75,8 +75,13 @@ function startsBeforeSong(updates: readonly LineUpdate[]): boolean {
 }
 
 function dropsWordTiming(lines: readonly LyricLine[], updates: readonly LineUpdate[]): boolean {
-  const wordSyncedIds = new Set(lines.filter(isWordSynced).map((line) => line.id));
-  return updates.some((update) => wordSyncedIds.has(update.id) && !update.updates.words?.length);
+  const byId = new Map(lines.map((line) => [line.id, line]));
+  return updates.some(({ id, updates: copied }) => {
+    const target = byId.get(id);
+    if (!target) return false;
+    const dropsMain = isWordSynced(target) && !copied.words?.length;
+    return dropsMain || (!!target.backgroundWords?.length && !copied.backgroundWords?.length);
+  });
 }
 
 function runsPastSong(updates: readonly LineUpdate[], songEnd: number): boolean {

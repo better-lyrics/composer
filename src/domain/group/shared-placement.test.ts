@@ -259,6 +259,33 @@ describe("realignSharedInstance", () => {
       expect(updatesOf(realignSharedInstance(lines, sharing, "g1", 1))).toHaveLength(2);
     });
 
+    it("refuses an instance whose timed background vocals the reference has no timing for", () => {
+      const withBackground = {
+        ...chorus(1, 0, 40),
+        backgroundText: "oh",
+        backgroundWords: [{ text: "oh", begin: 40.2, end: 40.6 }],
+      };
+      const lines = [
+        { ...chorus(0, 0, 10), backgroundText: "oh" },
+        { ...withBackground, words: chorus(1, 0, 41).words },
+      ];
+      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
+    });
+
+    it("realigns background vocals the reference has timing for", () => {
+      const background = (begin: number) => ({
+        backgroundText: "oh",
+        backgroundWords: [{ text: "oh", begin, end: begin + 0.4 }],
+      });
+      const lines = [
+        { ...chorus(0, 0, 10), ...background(10.2) },
+        { ...chorus(1, 0, 40), ...background(40.5) },
+      ];
+      expect(
+        updatesOf(realignSharedInstance(lines, sharing, "g1", 1))[0]?.updates.backgroundWords?.[0]?.begin,
+      ).toBeCloseTo(40.2, 6);
+    });
+
     it("refuses a timed instance with no synced line in common with the reference", () => {
       const lines = [chorus(0, 0, 10), chorus(0, 1, 14), chorus(1, 0), chorus(1, 1), { ...chorus(1, 2, 60), text: "" }];
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "no-common-timed-line" });
