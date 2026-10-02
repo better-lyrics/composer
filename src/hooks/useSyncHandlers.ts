@@ -6,6 +6,7 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture, storedSyncPosition } from "@/domain/sync/anchor-gesture";
+import { placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
@@ -107,6 +108,9 @@ function useSyncHandlers({
       }
       if (anchor) {
         const placed = useProjectStore.getState();
+        const { redoPreroll } = useSettingsStore.getState();
+        const skipTo = placementSkipTarget(placed.lines, anchor.groupId, anchor.instanceIdx, ctx.time, redoPreroll);
+        if (skipTo !== null) seekTo(skipTo);
         const anchorUndo = {
           resume: anchor.resumeCursor,
           anchor: anchor.anchorCursor,
@@ -127,7 +131,7 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, readTapTime, updateLinesWithHistory, setSyncState],
+    [lines, cursor, jumped, readTapTime, updateLinesWithHistory, setSyncState, seekTo],
   );
 
   const handleTap = useCallback(() => {

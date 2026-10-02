@@ -113,6 +113,53 @@ async function jumpToRow(screen: Awaited<ReturnType<typeof render>>, index: numb
 
 // -- Tests --------------------------------------------------------------------
 
+describe("SyncPanel · skip past a placed instance", () => {
+  it("jumps playback to the pre-roll before the placed instance ends", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    expect(useAudioStore.getState().currentTime).toBe(42 - useSettingsStore.getState().redoPreroll);
+  });
+
+  it("follows the re-record pre-roll setting", async () => {
+    useSettingsStore.setState({ redoPreroll: 0.5 });
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    expect(useAudioStore.getState().currentTime).toBe(41.5);
+  });
+
+  it("never seeks on a normal tap", async () => {
+    load(song());
+    await render(<SyncPanel />);
+    await tapAt(10, () => lineById("c0-0")?.words?.length);
+    await tapAt(10.5, () => lineById("c0-0")?.words?.length);
+    expect(useAudioStore.getState().currentTime).toBe(10.5);
+  });
+
+  it("does not seek back on undo", async () => {
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    await undo(() => firstBegin("c1-0"));
+    expect(useAudioStore.getState().currentTime).toBe(40.5);
+  });
+
+  describe("edge cases", () => {
+    it("does not seek when the instance ends inside the pre-roll", async () => {
+      useSettingsStore.setState({ redoPreroll: 5 });
+      load(song({ first: "word", verse: "word" }));
+      const screen = await render(<SyncPanel />);
+      await jumpToRow(screen, 3);
+      await tapAt(40, () => firstBegin("c1-0"));
+      expect(useAudioStore.getState().currentTime).toBe(40);
+    });
+  });
+});
+
 describe("SyncPanel · shared instance anchor", () => {
   it("syncs the first pass over Chorus 1 word by word", async () => {
     load(song());
