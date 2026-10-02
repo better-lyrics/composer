@@ -10,9 +10,10 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { findMatchingShortcut, matchesBinding } from "@/utils/shortcut-matcher";
 import {
   type SyncState,
   convertLineToWord,
@@ -96,6 +97,7 @@ const SyncPanel: React.FC = () => {
     handleHoldTap,
     handleReset,
     handleStartSync,
+    handleMoveCursor,
     handleJumpToLine,
     handleJumpToWord,
     handleJumpToBgWord,
@@ -321,7 +323,23 @@ const SyncPanel: React.FC = () => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
+    // Claim navigation before a focused slider can seek. Consume repeats without moving again.
+    const handleNavigationKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== "sync" || editMode || isAnyModalOpen()) return;
+      const direction = matchesBinding(e, getEffectiveBinding("sync.nextWord"))
+        ? 1
+        : matchesBinding(e, getEffectiveBinding("sync.previousWord"))
+          ? -1
+          : null;
+      if (direction === null) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (!e.repeat && !isHolding) handleMoveCursor(direction);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
@@ -382,15 +400,27 @@ const SyncPanel: React.FC = () => {
       }
     };
 
+    window.addEventListener("keydown", handleNavigationKeyDown, true);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
     return () => {
+      window.removeEventListener("keydown", handleNavigationKeyDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
+  }, [
+    activeTab,
+    undo,
+    redo,
+    handleNudgeLastSynced,
+    handleMoveCursor,
+    editMode,
+    isHolding,
+    hasTransliteration,
+    toggleTextVariant,
+  ]);
 
   const showScrollableView = !isPlaying || editMode;
 

@@ -3,7 +3,7 @@ import { type LineUpdate, type LooseLine, type LyricLine, reconcileLine } from "
 import { isLineSynced } from "@/domain/line/predicates";
 import { shiftLineTiming, shiftWords } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { advanceCursor, previousSlot, type SyncCursor, type SyncSlot, slotBounds } from "@/domain/sync/cursor";
+import { type SyncCursor, type SyncSlot, advanceCursor, previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { enforceOrderAround } from "@/domain/word/order";
 import type { WordTiming } from "@/domain/word/timing";
 import { createInitialBgWords, splitIntoWordsWithMeta } from "@/utils/sync-helpers";
@@ -15,6 +15,8 @@ type SyncGesture = "tap-word" | "tap-line" | "hold-start" | "hold-end" | "hold-t
 interface GestureContext {
   cursor: SyncCursor;
   jumped: boolean;
+  // A keyboard re-sync pass leaves later recordings intact until they are re-tapped.
+  preserveFollowingTimings?: boolean;
   time: number;
   defaultWordDuration: number;
 }
@@ -118,7 +120,10 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
   const begin = Math.max(ctx.time, floor);
   const nextWord = existing[cursor.wordIndex + 1];
   const provisional = open ? begin : begin + ctx.defaultWordDuration;
-  const end = nextWord && nextWord.begin >= begin ? Math.min(provisional, nextWord.begin) : provisional;
+  const end =
+    !ctx.preserveFollowingTimings && nextWord && nextWord.begin >= begin
+      ? Math.min(provisional, nextWord.begin)
+      : provisional;
 
   let words = [...existing];
   words[cursor.wordIndex] = { ...existing[cursor.wordIndex], text, begin, end };
@@ -126,7 +131,9 @@ function writeWord(lines: readonly LyricLine[], ctx: GestureContext, open: boole
   const closeAt = closingTime(lines, slot, begin, { open, jumped: ctx.jumped });
   const sameLine = slot && slot.lineIndex === cursor.lineIndex ? slot : null;
   if (sameLine && sameLine.wordIndex !== null) words = closeSlotWords(words, sameLine.wordIndex, closeAt);
-  words = enforceOrderAround(words, cursor.wordIndex);
+  // Old successor times may be deliberately wrong. Do not squeeze them to the
+  // corrected word's end, or use them to shorten its new provisional duration.
+  if (!ctx.preserveFollowingTimings) words = enforceOrderAround(words, cursor.wordIndex);
 
   const background = cursor.wordIndex === 0 ? backgroundFor(line, begin) : {};
   const crossLine = slot && slot.lineIndex !== cursor.lineIndex ? slot : null;
@@ -167,13 +174,15 @@ interface ClosedHold {
   closeEnd: number;
 }
 
-function closeHeld(lines: readonly LyricLine[], cursor: SyncCursor, time: number): ClosedHold | null {
+function closeHeld(lines: readonly LyricLine[], ctx: GestureContext): ClosedHold | null {
+  const { cursor, time } = ctx;
   const line = lines[cursor.lineIndex];
   if (!line) return null;
   const held = line.words?.[cursor.wordIndex];
   if (!held || held.begin !== held.end) return null;
 
-  const words = enforceOrderAround(closeSlotWords(line.words ?? [], cursor.wordIndex, time), cursor.wordIndex);
+  let words = closeSlotWords(line.words ?? [], cursor.wordIndex, time);
+  if (!ctx.preserveFollowingTimings) words = enforceOrderAround(words, cursor.wordIndex);
   return {
     update: { id: line.id, updates: { words } },
     clampedTo: time < held.begin ? held.begin : null,
@@ -243,7 +252,7 @@ function commitGesture(lines: readonly LyricLine[], gesture: SyncGesture, ctx: G
     };
   }
 
-  const closed = closeHeld(lines, ctx.cursor, ctx.time);
+  const closed = closeHeld(lines, ctx);
   if (!closed) return null;
   const nextCursor = advanceCursor(lines, ctx.cursor, "word");
 
