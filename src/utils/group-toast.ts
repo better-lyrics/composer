@@ -16,7 +16,7 @@ const KEPT_OWN_TIMING_REASONS: Record<RealignRefusal, (count: number) => string>
   "no-fully-synced-instance": (count) =>
     `. Sync one instance fully, then share ${pluralWord(count, "it from its banner menu", "them from their banner menus")} in the Timeline.`,
   "would-lose-word-timing": (count) =>
-    `: the synced instance is line-synced, so sharing would replace ${pluralWord(count, "its", "their")} word timing`,
+    `: the synced instance is missing word timing ${pluralWord(count, "this instance has", "these instances have")}, so sharing would remove it`,
 };
 const MIXED_KEPT_OWN_TIMING_REASON = ". Share them from their banner menus in the Timeline to see why.";
 

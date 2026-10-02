@@ -272,6 +272,12 @@ describe("realignSharedInstance", () => {
       expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
     });
 
+    it("refuses a word-synced instance when the reference mixes word and line timing", () => {
+      const lineSynced = { ...chorus(0, 1), begin: 13, end: 14 };
+      const lines = [chorus(0, 0, 10), lineSynced, chorus(1, 0, 40), chorus(1, 1, 43.2)];
+      expect(realignSharedInstance(lines, sharing, "g1", 1)).toEqual({ refusal: "would-lose-word-timing" });
+    });
+
     it("realigns background vocals the reference has timing for", () => {
       const background = (begin: number) => ({
         backgroundText: "oh",

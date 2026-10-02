@@ -117,7 +117,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
   });
 
-  it("keeps the word timing of an instance when the only synced instance is line-synced, and says why", async () => {
+  it("keeps the word timing of an instance when the synced instance lacks it, and says why", async () => {
     seedBannerMenu(createGroup({ id: "g1", label: "Chorus" }), 0);
     const partlyWordSynced = createLine({
       id: "c1",
@@ -139,7 +139,7 @@ describe("TimelineContextMenu · banner sharing items", () => {
     await expect
       .element(
         screen.getByText(
-          "1 instance kept its own timing: the synced instance is line-synced, so sharing would replace its word timing",
+          "1 instance kept its own timing: the synced instance is missing word timing this instance has, so sharing would remove it",
         ),
       )
       .toBeVisible();
