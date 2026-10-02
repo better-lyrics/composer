@@ -117,6 +117,29 @@ describe("Sync count-in", () => {
   });
 
   describe("edge cases", () => {
+    it("shows the dots on the first syncable line when the song opens with an empty line", async () => {
+      load([createLine({ id: "gap", text: "" }), createLine({ id: "l1", text: "Hold me close" })], 3);
+      const screen = await render(<SyncPanel />);
+      space();
+      await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
+    });
+
+    it("shows no dots when resuming partway through the first line", async () => {
+      load([createLine({ id: "l0", text: "Hold me close" })], 0);
+      const screen = await render(<SyncPanel />);
+      space();
+      await expect.element(screen.getByRole("button", { name: /tap/i })).toBeInTheDocument();
+      useAudioStore.setState({ currentTime: 1 });
+      space();
+      await expect.poll(() => words().length).toBe(1);
+      useAudioStore.setState({ isPlaying: false });
+      useSettingsStore.setState({ syncCountIn: 3 });
+      await expect.element(screen.getByText(/Paused/)).toBeInTheDocument();
+      space();
+      expect(isCountingIn()).toBe(true);
+      expect(document.querySelector("[data-count-in-dots]")).toBeNull();
+    });
+
     it("shows the footer countdown but no dots when counting in mid-song", async () => {
       load(
         [

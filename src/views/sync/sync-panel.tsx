@@ -109,7 +109,7 @@ const SyncPanel: React.FC = () => {
     setShowPulse,
     setIsPlaying,
   });
-  const countIn = useSyncCountIn(cursor.lineIndex === nextSyncableLineIndex(lines, -1));
+  const countIn = useSyncCountIn(cursor.lineIndex === nextSyncableLineIndex(lines, -1) && cursor.wordIndex === 0);
 
   const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(lines, groups, cursor);
 
