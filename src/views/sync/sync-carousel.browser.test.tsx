@@ -132,3 +132,48 @@ describe("SyncCarousel shared tags", () => {
     });
   });
 });
+
+describe("SyncCarousel · above current slot", () => {
+  const TAGGED_LINES = [
+    { id: "l1", text: "First line", begin: 0 },
+    {
+      id: "l2",
+      text: "Second line",
+      begin: 1,
+      sharedTag: { label: "Tap to place", color: "rgb(244, 114, 182)", placement: "above" as const },
+    },
+  ];
+
+  it("renders the slot above the current line in place of its tag", async () => {
+    const screen = await render(
+      <SyncCarousel
+        lines={TAGGED_LINES}
+        lineIndex={1}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span data-slot-probe="">probe</span>}
+      />,
+    );
+    await expect.element(screen.getByText("probe", { exact: true })).toBeInTheDocument();
+    expect(screen.container.textContent).not.toContain("Tap to place");
+  });
+
+  it("keeps the tag when no slot is given", async () => {
+    const screen = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
+    await expect.element(screen.getByText("Tap to place", { exact: true })).toBeInTheDocument();
+  });
+
+  it("renders the slot only once, on the current line", async () => {
+    const screen = await render(
+      <SyncCarousel
+        lines={LINES}
+        lineIndex={0}
+        wordIndex={0}
+        granularity="line"
+        aboveCurrent={<span data-slot-probe="">probe</span>}
+      />,
+    );
+    expect(screen.container.querySelectorAll("[data-slot-probe]")).toHaveLength(1);
+  });
+});
+

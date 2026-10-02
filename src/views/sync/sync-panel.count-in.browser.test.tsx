@@ -59,6 +59,46 @@ describe("Sync count-in", () => {
     expect(isCountingIn()).toBe(true);
   });
 
+  it("shows the intro dots in the carousel and the countdown in the footer", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    const screen = await render(<SyncPanel />);
+    space();
+    await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
+    await expect.poll(() => screen.container.textContent).toContain("close");
+    await expect.element(screen.getByText("Starting in", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByRole("status").filter({ hasText: "Starting in" })).toHaveTextContent("Starting in 3");
+  });
+
+  it("cancels on Escape and stays paused", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 1);
+    const screen = await render(<SyncPanel />);
+    space();
+    await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    expect(isCountingIn()).toBe(false);
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(isPlaying()).toBe(false);
+    await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).toBeNull();
+  });
+
+  it("cancels when Sync goes away", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 3);
+    const screen = await render(<SyncPanel />);
+    space();
+    expect(isCountingIn()).toBe(true);
+    await screen.unmount();
+    expect(isCountingIn()).toBe(false);
+  });
+
+  it("clears the dots once playback starts", async () => {
+    load([createLine({ id: "l0", text: "Hold me close" })], 1);
+    const screen = await render(<SyncPanel />);
+    space();
+    await expect.poll(isPlaying, { timeout: 2500 }).toBe(true);
+    await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).toBeNull();
+    await expect.element(screen.getByText("Starting in", { exact: true })).not.toBeInTheDocument();
+  });
+
   describe("edge cases", () => {
     it("starts playback at once when the count-in is off", async () => {
       load([createLine({ id: "l0", text: "Hold me close" })], 0);

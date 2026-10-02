@@ -53,6 +53,7 @@ interface SyncCarouselProps {
   isHolding?: boolean;
   rippleTarget?: RippleTarget | null;
   onRippleComplete?: () => void;
+  aboveCurrent?: React.ReactNode;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -140,6 +141,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   isHolding = false,
   rippleTarget = null,
   onRippleComplete,
+  aboveCurrent,
 }) => {
   const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
 
@@ -171,7 +173,11 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
               style={{ height: LINE_HEIGHT }}
               className="flex flex-col items-center justify-center gap-1 w-full shrink-0"
             >
-              <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              {isCurrent && aboveCurrent ? (
+                aboveCurrent
+              ) : (
+                <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              )}
               <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
                 {granularity === "line" ? (
                   <m.span

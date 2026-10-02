@@ -78,6 +78,7 @@ interface SyncFooterProps {
   isPlaying: boolean;
   isActive: boolean;
   gestureControls: React.ReactNode;
+  status?: React.ReactNode;
 }
 
 const SyncFooter: React.FC<SyncFooterProps> = ({
@@ -87,6 +88,7 @@ const SyncFooter: React.FC<SyncFooterProps> = ({
   isPlaying,
   isActive,
   gestureControls,
+  status,
 }) => (
   <div className="px-6 py-4 border-t border-composer-border bg-composer-bg-dark">
     <div className="flex items-center justify-between h-14">
@@ -100,7 +102,9 @@ const SyncFooter: React.FC<SyncFooterProps> = ({
 
       {gestureControls}
 
-      {!isComplete && !editMode && !isPlaying && isActive && (
+      {status}
+
+      {!status && !isComplete && !editMode && !isPlaying && isActive && (
         <div className="text-sm text-composer-text-muted">Paused ・ Click a line to jump, or play to continue</div>
       )}
     </div>
