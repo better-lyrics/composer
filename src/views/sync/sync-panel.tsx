@@ -1,6 +1,4 @@
 import { isCountingIn } from "@/lib/sync-count-in";
-import { CountInDots } from "@/views/sync/count-in-dots";
-import { CountInStatus } from "@/views/sync/count-in-status";
 import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { instancePositionsByLineId } from "@/domain/instance/enumerate";
 import { isLinked } from "@/domain/instance/predicates";
@@ -50,7 +48,7 @@ const SyncPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
-  const countingIn = useSyncCountIn();
+  const countIn = useSyncCountIn();
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
@@ -411,7 +409,7 @@ const SyncPanel: React.FC = () => {
     };
   }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
 
-  const showScrollableView = (!isPlaying && !countingIn) || editMode;
+  const showScrollableView = (!isPlaying && !countIn.countingIn) || editMode;
 
   if (!source) {
     return (
@@ -548,7 +546,7 @@ const SyncPanel: React.FC = () => {
               isHolding={isHolding}
               rippleTarget={rippleTarget}
               onRippleComplete={clearRippleTarget}
-              aboveCurrent={countingIn ? <CountInDots /> : undefined}
+              aboveCurrent={countIn.dots}
             />
           )}
         </div>
@@ -560,7 +558,7 @@ const SyncPanel: React.FC = () => {
         editMode={editMode}
         isPlaying={isPlaying}
         isActive={syncState.isActive}
-        status={countingIn ? <CountInStatus /> : undefined}
+        status={countIn.status}
         gestureControls={
           showGestureCircles && (
             <SyncGestureControls
