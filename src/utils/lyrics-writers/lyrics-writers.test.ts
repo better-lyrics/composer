@@ -114,6 +114,38 @@ describe("writeLrc", () => {
       expect(writeLrc(doc([line]))).toContain("[00:01.00]<00:01.00>Main <00:02.00>(oh <00:02.50>yeah)<00:03.00>");
     });
 
+    it("regression: never writes a word tag earlier than the one before it when background overlaps", () => {
+      const line = createLine({
+        text: "I'm here",
+        words: [
+          { text: "I'm ", begin: 3, end: 3.5 },
+          { text: "here", begin: 3.5, end: 4 },
+        ],
+        backgroundText: "oh",
+        backgroundWords: [{ text: "oh", begin: 3.2, end: 3.8 }],
+      });
+
+      const parsed = parseLrc(writeLrc(doc([line])));
+
+      const words = parsed.lines[0].words ?? [];
+      expect(words.map((word) => word.text).join("")).toBe("I'm here (oh)");
+      for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
+    });
+
+    it("regression: untimed background text on a word-synced line does not jump back to the line start", () => {
+      const line = createLine({
+        text: "Main words",
+        words: [
+          { text: "Main ", begin: 1, end: 2 },
+          { text: "words", begin: 2, end: 3 },
+        ],
+        backgroundText: "oh",
+      });
+
+      const words = parseLrc(writeLrc(doc([line]))).lines[0].words ?? [];
+      for (const word of words) expect(word.end).toBeGreaterThanOrEqual(word.begin);
+    });
+
     it("keeps parentheses the background text already carries", () => {
       const line = createLine({ text: "Main", begin: 1, end: 2, backgroundText: "(oh)" });
 

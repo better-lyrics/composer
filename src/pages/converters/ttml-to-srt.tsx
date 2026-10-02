@@ -54,7 +54,6 @@ const TTML_TO_SRT_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found. Make sure your TTML contains <p> elements with begin and end times.",
   failureMessage: "Could not parse TTML. Check that the input is a complete TTML document.",
   logLabel: "TTML to SRT",
-  output: SRT_OUTPUT,
 };
 
 // -- Components ---------------------------------------------------------------

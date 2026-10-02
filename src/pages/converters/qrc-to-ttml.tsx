@@ -62,7 +62,6 @@ const QRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found. Make sure your QRC contains [beginMs,durationMs] line headers.",
   failureMessage: "Could not parse QRC. Check the input format.",
   logLabel: "QRC",
-  output: TTML_OUTPUT,
 };
 
 // -- Components ---------------------------------------------------------------

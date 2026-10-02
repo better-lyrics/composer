@@ -57,10 +57,10 @@ const HOW_TO_STEPS = [
 const LRC_CONVERSION: ParserConversion = {
   extension: "lrc",
   granularity: "auto",
-  emptyMessage: "No timed lines found. Make sure your LRC contains [mm:ss.xx] timestamps.",
+  emptyMessage:
+    "No timed lines found. Make sure your LRC contains [mm:ss.xx] timestamps and the last line is followed by one more timestamp to end it.",
   failureMessage: "Could not parse LRC. Check the input format.",
   logLabel: "LRC",
-  output: TTML_OUTPUT,
 };
 
 const LrcToTtmlPage: React.FC = () => {

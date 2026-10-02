@@ -13,6 +13,7 @@ import { toast } from "sonner";
 interface ConvertArgs {
   input: string;
   filename: string;
+  format: OutputFormat;
 }
 
 interface ConverterViewProps {
@@ -40,7 +41,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
 
   const { output, error, projectPayload, skippedLines } = useMemo(() => {
     if (!input.trim()) return { output: "", error: null, projectPayload: "", skippedLines: 0 };
-    const result = convert({ input, filename });
+    const result = convert({ input, filename, format: outputFormat });
     if ("error" in result) return { output: "", error: result.error, projectPayload: "", skippedLines: 0 };
     return {
       output: result.output,
@@ -48,7 +49,7 @@ const ConverterView: React.FC<ConverterViewProps> = ({
       projectPayload: result.projectPayload,
       skippedLines: result.skippedLines,
     };
-  }, [input, filename, convert]);
+  }, [input, filename, convert, outputFormat]);
 
   const downloadOutput = () => {
     if (!output) return;

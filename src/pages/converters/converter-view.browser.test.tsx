@@ -12,7 +12,6 @@ const LRC_CONVERSION = {
   emptyMessage: "No timed lines found.",
   failureMessage: "Could not parse LRC.",
   logLabel: "LRC",
-  output: TTML_OUTPUT,
 };
 const convertLrc = (args: ConvertArgs) => convertViaParser(LRC_CONVERSION, args);
 

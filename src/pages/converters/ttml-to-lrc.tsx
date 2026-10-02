@@ -15,7 +15,7 @@ const FAQS = [
   {
     question: "Why convert TTML to LRC?",
     answer:
-      "LRC is the lyric format most music players, car stereos and karaoke apps read. TTML is what Apple Music and Spotify use, but many local players only understand LRC. Converting gives you a file that works almost everywhere.",
+      "LRC is the lyric format most music players, car stereos and karaoke apps read. TTML is what Apple Music uses, but many local players only understand LRC. Converting gives you a file that works almost everywhere.",
   },
   {
     question: "Is word timing kept in the LRC output?",
@@ -41,7 +41,7 @@ const FAQS = [
 const PATH = "/ttml-to-lrc";
 const TITLE = "TTML to LRC Converter ・ Apple Music TTML to Enhanced LRC";
 const DESCRIPTION =
-  "Convert TTML lyrics to LRC in your browser. Word timing becomes Enhanced LRC, background vocals and song details are kept. Free, no signup, no upload.";
+  "Convert TTML lyrics to LRC in your browser. Word timing becomes Enhanced LRC, background vocals, title, artist and album are kept. Free, no signup, no upload.";
 
 const HOW_TO_STEPS = [
   { name: "Paste your TTML", text: "Paste your TTML file content into the input box." },
@@ -55,7 +55,6 @@ const TTML_TO_LRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found. Make sure your TTML contains <p> elements with begin and end times.",
   failureMessage: "Could not parse TTML. Check that the input is a complete TTML document.",
   logLabel: "TTML to LRC",
-  output: LRC_OUTPUT,
 };
 
 // -- Components ---------------------------------------------------------------

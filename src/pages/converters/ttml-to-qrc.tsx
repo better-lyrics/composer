@@ -54,7 +54,6 @@ const TTML_TO_QRC_CONVERSION: ParserConversion = {
   emptyMessage: "No timed lines found. Make sure your TTML contains <p> elements with begin and end times.",
   failureMessage: "Could not parse TTML. Check that the input is a complete TTML document.",
   logLabel: "TTML to QRC",
-  output: QRC_OUTPUT,
 };
 
 // -- Components ---------------------------------------------------------------
@@ -84,9 +83,10 @@ const TtmlToQrcContent: React.FC = () => {
           before each tag.
         </p>
         <p>
-          TTML stores a begin and an end where QRC stores a begin and a duration, so the conversion is exact. Each TTML
-          agent becomes a singer marker, a line with the singer name and a colon, written wherever the voice changes.
-          The output is a bare QRC body with<code className="font-mono text-composer-accent-text"> [ti:]</code>,
+          TTML stores a begin and an end where QRC stores a begin and a duration, so timed words convert to the
+          millisecond. Each TTML agent becomes a singer marker, a line with the singer name and a colon, written
+          wherever the voice changes. The output is a bare QRC body with
+          <code className="font-mono text-composer-accent-text"> [ti:]</code>,
           <code className="font-mono text-composer-accent-text"> [ar:]</code> and
           <code className="font-mono text-composer-accent-text"> [al:]</code> header tags, not the encrypted file QQ
           Music downloads.

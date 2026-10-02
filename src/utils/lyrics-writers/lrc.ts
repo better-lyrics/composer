@@ -18,10 +18,21 @@ function lrcClock(seconds: number): string {
   return `${String(minutes).padStart(2, "0")}:${String(wholeSeconds).padStart(2, "0")}.${String(fraction).padStart(2, "0")}`;
 }
 
+// A reader ends each word at the next tag, so a word starting before the
+// previous tag (overlapping background vocals) joins that word untagged.
 function lineBody(line: WritableLine): string {
   if (!line.hasWordTiming) return line.text;
-  const tagged = line.words.map((word) => `<${lrcClock(word.begin)}>${word.text}`).join("");
-  return `${tagged}<${lrcClock(line.words.at(-1)?.end ?? line.bounds.end)}>`;
+  let lastTag = Number.NEGATIVE_INFINITY;
+  let latestEnd = line.bounds.begin;
+  const tagged = line.words
+    .map((word) => {
+      latestEnd = Math.max(latestEnd, word.end);
+      if (word.begin < lastTag) return word.text;
+      lastTag = word.begin;
+      return `<${lrcClock(word.begin)}>${word.text}`;
+    })
+    .join("");
+  return `${tagged}<${lrcClock(latestEnd)}>`;
 }
 
 // -- Writer -------------------------------------------------------------------

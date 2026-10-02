@@ -63,7 +63,6 @@ const SRT_CONVERSION: ParserConversion = {
   emptyMessage: "No subtitle cues found. Check that your input uses standard SRT formatting.",
   failureMessage: "Could not parse SRT. Check the input format.",
   logLabel: "SRT",
-  output: TTML_OUTPUT,
 };
 
 const SrtToTtmlPage: React.FC = () => {

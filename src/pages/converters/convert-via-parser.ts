@@ -5,7 +5,6 @@ import type { ProjectMetadata } from "@/domain/project/metadata";
 import { normalizeLoadedMetadata } from "@/domain/project/normalize-metadata";
 import { timingGranularityOf } from "@/domain/project/timing-granularity";
 import type { ConvertArgs } from "@/pages/converters/converter-view";
-import type { OutputFormat } from "@/pages/converters/output-formats";
 import { parseLyricsFile } from "@/utils/lyrics-parsers";
 import { skippedLineCount } from "@/utils/lyrics-parsers/shared";
 
@@ -17,14 +16,13 @@ interface ParserConversion {
   emptyMessage: string;
   failureMessage: string;
   logLabel: string;
-  output: OutputFormat;
 }
 
 type ConversionResult = { output: string; projectPayload: string; skippedLines: number } | { error: string };
 
 // -- Conversion ---------------------------------------------------------------
 
-function convertViaParser(conversion: ParserConversion, { input, filename }: ConvertArgs): ConversionResult {
+function convertViaParser(conversion: ParserConversion, { input, filename, format }: ConvertArgs): ConversionResult {
   try {
     const suffix = `.${conversion.extension}`;
     const result = parseLyricsFile(filename.endsWith(suffix) ? filename : `input${suffix}`, input);
@@ -37,7 +35,7 @@ function convertViaParser(conversion: ParserConversion, { input, filename }: Con
     const granularity = conversion.granularity === "line" ? "line" : timingGranularityOf(result.lines);
 
     return {
-      output: conversion.output.write({ metadata, agents, lines: result.lines }),
+      output: format.write({ metadata, agents, lines: result.lines }),
       projectPayload: JSON.stringify({ metadata, agents, lines: result.lines, granularity }),
       skippedLines: skippedLineCount(result.issues),
     };
