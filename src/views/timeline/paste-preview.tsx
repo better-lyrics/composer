@@ -308,11 +308,7 @@ function computeGhosts(
     const outOfBounds = !targetLine || !targetPos;
     const isBg = entry.trackType === "bg";
 
-    const pasted = pastedWordBounds(
-      entry.word,
-      timeDelta,
-      targetLine ? rangeOf(targetLine) : wholeSongRange(duration),
-    );
+    const pasted = pastedWordBounds(entry.word, timeDelta, targetLine ? rangeOf(targetLine) : wholeSongRange(duration));
 
     const left = GUTTER_WIDTH + pasted.begin * zoom;
     const width = Math.max((pasted.end - pasted.begin) * zoom, 4);

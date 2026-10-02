@@ -156,4 +156,3 @@ describe("SyncPanel · skip past a placed instance · invariants", () => {
     await expect.element(screen.getByText("1.5", { exact: true })).toBeInTheDocument();
   });
 });
-

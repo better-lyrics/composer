@@ -112,7 +112,9 @@ describe("useGlobalShortcuts · play/pause in Sync", () => {
     useAudioStore.setState({ source: { type: "file", file: createAudioFile() }, isPlaying: false });
     useProjectStore.setState({ activeTab: "sync" });
     useSettingsStore.setState({ syncCountIn: 3 });
-    await renderHook(() => useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }));
+    await renderHook(() =>
+      useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }),
+    );
   }
 
   it("counts in on Enter", async () => {
@@ -132,7 +134,9 @@ describe("useGlobalShortcuts · play/pause in Sync", () => {
 });
 
 async function renderEditorShortcuts(): Promise<void> {
-  await renderHook(() => useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }));
+  await renderHook(() =>
+    useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {} }),
+  );
 }
 
 function pressSpeedToggle(): void {
@@ -174,7 +178,12 @@ describe("useGlobalShortcuts · playback speed toggle", () => {
     it("does not toggle outside the editor", async () => {
       useAudioStore.setState({ playbackRate: 1 });
       await renderHook(() =>
-        useGlobalShortcuts({ setActiveTab: () => {}, setHelpOpen: () => {}, setSettingsOpen: () => {}, editorActive: false }),
+        useGlobalShortcuts({
+          setActiveTab: () => {},
+          setHelpOpen: () => {},
+          setSettingsOpen: () => {},
+          editorActive: false,
+        }),
       );
       pressSpeedToggle();
       expect(useAudioStore.getState().playbackRate).toBe(1);

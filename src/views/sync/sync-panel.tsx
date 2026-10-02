@@ -299,7 +299,16 @@ const SyncPanel: React.FC = () => {
       handleHoldStart();
       setIsHolding(true);
     }
-  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart, clearPlacementPreroll]);
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleStartSync,
+    handleHoldStart,
+    clearPlacementPreroll,
+  ]);
 
   const endHold = useCallback(() => {
     if (!isHolding) return;

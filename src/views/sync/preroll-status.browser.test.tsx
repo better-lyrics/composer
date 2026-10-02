@@ -38,7 +38,9 @@ describe("PrerollStatus", () => {
       const screen = await render(<PrerollStatus end={42} seconds={1.5} lineNumber={6} />);
       for (const time of [40.55, 41, 41.45, 41.95]) {
         useAudioStore.setState({ currentTime: time });
-        await expect.poll(() => screen.container.querySelector('[aria-hidden="true"].font-mono')?.textContent).toMatch(/^\d\.\d$/);
+        await expect
+          .poll(() => screen.container.querySelector('[aria-hidden="true"].font-mono')?.textContent)
+          .toMatch(/^\d\.\d$/);
       }
     });
   });

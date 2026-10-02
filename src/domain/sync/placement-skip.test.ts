@@ -3,7 +3,13 @@ import { createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
 const chorus2 = [
-  createLine({ id: "c2a", text: "Hold me", groupId: "g", instanceIdx: 1, words: [{ text: "Hold me", begin: 94, end: 100 }] }),
+  createLine({
+    id: "c2a",
+    text: "Hold me",
+    groupId: "g",
+    instanceIdx: 1,
+    words: [{ text: "Hold me", begin: 94, end: 100 }],
+  }),
   createLine({
     id: "c2b",
     text: "close",
@@ -14,7 +20,15 @@ const chorus2 = [
     backgroundWords: [{ text: "ooh", begin: 110, end: 113 }],
   }),
 ];
-const chorus1 = [createLine({ id: "c1", text: "Hold me", groupId: "g", instanceIdx: 0, words: [{ text: "Hold me", begin: 30, end: 50 }] })];
+const chorus1 = [
+  createLine({
+    id: "c1",
+    text: "Hold me",
+    groupId: "g",
+    instanceIdx: 0,
+    words: [{ text: "Hold me", begin: 30, end: 50 }],
+  }),
+];
 const lines = [...chorus1, ...chorus2, createLine({ id: "bridge", text: "Bridge" })];
 
 describe("placementSkipTarget", () => {

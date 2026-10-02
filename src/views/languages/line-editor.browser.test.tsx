@@ -177,7 +177,9 @@ async function renderAlignable(line: ReturnType<typeof alignableLine>) {
 describe("align button emphasis", () => {
   it("highlights Align in the accent color while the transliteration alignment needs review", async () => {
     const screen = await renderAlignable(alignableLine("needs-review"));
-    await expect.element(screen.getByRole("button", { name: "Align", exact: true })).toHaveClass("text-composer-accent-text");
+    await expect
+      .element(screen.getByRole("button", { name: "Align", exact: true }))
+      .toHaveClass("text-composer-accent-text");
   });
 
   it("keeps Align quiet once the transliteration is aligned", async () => {

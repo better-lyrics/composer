@@ -19,9 +19,7 @@ interface SkippedInstance {
 // -- Functions ----------------------------------------------------------------
 
 function attachedLineIndices(lines: readonly LyricLine[], groupId: string, instanceIdx: number): number[] {
-  return lines.flatMap((line, index) =>
-    isAttachedToInstance(line, groupId, instanceIdx) ? [index] : [],
-  );
+  return lines.flatMap((line, index) => (isAttachedToInstance(line, groupId, instanceIdx) ? [index] : []));
 }
 
 function skippedInstanceOf(

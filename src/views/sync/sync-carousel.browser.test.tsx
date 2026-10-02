@@ -166,7 +166,9 @@ describe("SyncCarousel · above current slot", () => {
 
   it("regression: the slot never moves the line, so nothing shifts when it goes away", async () => {
     const lineTop = (container: HTMLElement) =>
-      [...container.querySelectorAll("span")].find((span) => span.textContent === "Second line")?.getBoundingClientRect().top;
+      [...container.querySelectorAll("span")]
+        .find((span) => span.textContent === "Second line")
+        ?.getBoundingClientRect().top;
     const plain = await render(<SyncCarousel lines={TAGGED_LINES} lineIndex={1} wordIndex={0} granularity="line" />);
     const plainCss = await installUtilitiesUsedIn(plain.container);
     let withoutSlot: number | undefined;
@@ -238,4 +240,3 @@ describe("SyncCarousel · mount", () => {
     for (const color of colors) expect(color).not.toBe("");
   });
 });
-

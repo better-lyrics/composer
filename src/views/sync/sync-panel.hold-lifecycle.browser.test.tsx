@@ -208,10 +208,20 @@ describe("SyncPanel · keyboard hold release", () => {
     await expect.poll(() => wordTimings()).toEqual([[5, 5]]);
     setCurrentTime(6);
     pressTapKey();
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 6]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 6],
+      ]);
     setCurrentTime(7);
     pressHoldKey("keyup");
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 7],
+      ]);
 
     setCurrentTime(8);
     pressHoldKey("keydown");
@@ -219,6 +229,12 @@ describe("SyncPanel · keyboard hold release", () => {
     setCurrentTime(9);
     pressHoldKey("keyup");
 
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7], [8, 9]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 7],
+        [8, 9],
+      ]);
   });
 });

@@ -16,9 +16,12 @@ describe("savedExportTiming", () => {
   });
 
   describe("error paths", () => {
-    it.each(["Line", "", "syllable", 1, null, {}])("falls back to the default for %j from a hand-edited file", (value) => {
-      expect(savedExportTiming(value)).toBe(DEFAULT_EXPORT_TIMING);
-    });
+    it.each(["Line", "", "syllable", 1, null, {}])(
+      "falls back to the default for %j from a hand-edited file",
+      (value) => {
+        expect(savedExportTiming(value)).toBe(DEFAULT_EXPORT_TIMING);
+      },
+    );
   });
 
   describe("invariants", () => {

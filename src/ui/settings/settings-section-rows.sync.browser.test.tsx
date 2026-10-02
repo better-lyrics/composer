@@ -18,7 +18,9 @@ describe("SettingsSectionRows (sync)", () => {
     await expect.element(screen.getByText("Count-in", { exact: true })).toBeInTheDocument();
     await expect
       .element(
-        screen.getByText("Count down for 3 seconds before playback starts in Sync, so you are ready for the first word."),
+        screen.getByText(
+          "Count down for 3 seconds before playback starts in Sync, so you are ready for the first word.",
+        ),
       )
       .toBeInTheDocument();
     await expect.element(screen.getByText("3s", { exact: true })).toBeInTheDocument();
@@ -32,7 +34,9 @@ describe("SettingsSectionRows (sync)", () => {
     const screen = await render(<SettingsSectionRows section="sync" />);
     await expect
       .element(
-        screen.getByText("Count down for 1 second before playback starts in Sync, so you are ready for the first word."),
+        screen.getByText(
+          "Count down for 1 second before playback starts in Sync, so you are ready for the first word.",
+        ),
       )
       .toBeInTheDocument();
   });

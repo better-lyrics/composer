@@ -67,7 +67,9 @@ describe("Sync count-in", () => {
     await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
     await expect.poll(() => screen.container.textContent).toContain("close");
     await expect.element(screen.getByText("Starting in", { exact: true })).toBeInTheDocument();
-    await expect.element(screen.getByRole("status").filter({ hasText: "Starting in" })).toHaveTextContent("Starting in 3");
+    await expect
+      .element(screen.getByRole("status").filter({ hasText: "Starting in" }))
+      .toHaveTextContent("Starting in 3");
   });
 
   it("cancels on Escape and stays paused", async () => {
@@ -192,4 +194,3 @@ describe("Sync count-in · invariants", () => {
     expect(useProjectStore.getState().history.length).toBe(0);
   });
 });
-

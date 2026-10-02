@@ -353,7 +353,11 @@ function useSyncHandlers({
         return;
       }
       const line = lines[slot.lineIndex];
-      const range = timeRangeResolver(lines, useProjectStore.getState().groups, useAudioStore.getState().duration)(line);
+      const range = timeRangeResolver(
+        lines,
+        useProjectStore.getState().groups,
+        useAudioStore.getState().duration,
+      )(line);
       updateLinesWithHistory([{ id: line.id, updates: shiftLineTiming(line, delta, range) }], {
         deriveText: false,
         propagateToSiblings: false,
