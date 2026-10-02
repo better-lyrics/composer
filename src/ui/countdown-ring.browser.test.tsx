@@ -4,7 +4,12 @@ import { describe, expect, it } from "vitest";
 
 function countdown(start: number) {
   let remaining = start;
-  return { read: () => remaining, set: (next: number) => (remaining = next) };
+  return {
+    read: () => remaining,
+    set: (next: number) => {
+      remaining = next;
+    },
+  };
 }
 
 const announce = (seconds: number) => `Starting in ${seconds}`;
