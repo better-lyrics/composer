@@ -195,7 +195,7 @@ describe("FileDropZone ids", () => {
     if (!label) throw new Error("Drop zone not rendered");
     dispatchDragEvent(label, "dragenter", [createAudioFile()]);
     await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(true);
-    dispatchDragEvent(label, "dragleave");
+    dispatchDragEvent(label, "dragleave", [createAudioFile()]);
     await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(false);
   });
 

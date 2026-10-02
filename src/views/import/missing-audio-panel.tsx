@@ -1,4 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { useFileDrop } from "@/audio/use-file-drop";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
@@ -77,9 +78,10 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
   const title = useProjectStore((state) => state.metadata.title);
   const failure = useAudioStore((state) => state.youtubeLoadFailure);
   const bridgeUnreachable = failure === "bridge-unreachable";
+  const screenDrop = useFileDrop({ onFileDrop: relinkFile });
 
   return (
-    <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
+    <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full" {...screenDrop.handlers}>
       {expected.kind === "file" ? (
         <WarningSourceRow name={expected.name} detail="Not on this device. Your lyrics and timings are safe." />
       ) : (
@@ -103,7 +105,12 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
 
       <div className="flex flex-col items-center gap-4 flex-1 p-6 w-full">
         <div className="w-full max-w-md flex-1 min-h-32 max-h-72">
-          <FileDropZone accept="audio/*" onFileDrop={relinkFile} className={RELINK_DROP_STYLES}>
+          <FileDropZone
+            accept="audio/*"
+            onFileDrop={relinkFile}
+            className={RELINK_DROP_STYLES}
+            dragActive={screenDrop.isDragging}
+          >
             <IconFileAlert aria-hidden="true" className="size-7 mb-1.5 text-composer-warning" stroke={1.5} />
             {expected.kind === "file" ? (
               <>

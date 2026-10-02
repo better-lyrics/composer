@@ -1,6 +1,6 @@
 import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
 import { PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -27,11 +27,16 @@ interface FileDrop {
 
 const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
 
+// -- Helpers ------------------------------------------------------------------
+
+function carriesFiles(e: React.DragEvent): boolean {
+  return e.dataTransfer.types.includes("Files");
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useFileDrop({ onFileDrop, onProjectFileDrop }: FileDropOptions): FileDrop {
   const [isDragging, setIsDragging] = useState(false);
-  const dragCountRef = useRef(0);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -49,29 +54,30 @@ function useFileDrop({ onFileDrop, onProjectFileDrop }: FileDropOptions): FileDr
   );
 
   const onDragEnter = useCallback((e: React.DragEvent) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    dragCountRef.current++;
-    if (dragCountRef.current === 1) setIsDragging(true);
+    setIsDragging(true);
   }, []);
 
   const onDragLeave = useCallback((e: React.DragEvent) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    dragCountRef.current = Math.max(0, dragCountRef.current - 1);
-    if (dragCountRef.current === 0) setIsDragging(false);
+    if (!(e.relatedTarget instanceof Node && e.currentTarget.contains(e.relatedTarget))) setIsDragging(false);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
+    if (!carriesFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
   }, []);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
+      if (!carriesFiles(e)) return;
       e.preventDefault();
       e.stopPropagation();
-      dragCountRef.current = 0;
       setIsDragging(false);
       const file = e.dataTransfer.files[0];
       if (file) handleFile(file);
@@ -85,4 +91,3 @@ function useFileDrop({ onFileDrop, onProjectFileDrop }: FileDropOptions): FileDr
 // -- Exports ------------------------------------------------------------------
 
 export { useFileDrop };
-export type { FileDrop, FileDropHandlers };
