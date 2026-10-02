@@ -3,13 +3,17 @@ import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import type { AnchorUndo } from "@/domain/sync/anchor-gesture";
 import type { SyncCursor } from "@/domain/sync/cursor";
-import type { InstanceRef } from "@/domain/sync/skipped-instances";
+import type { ReRecording } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
 import { useSettingsStore } from "@/stores/settings";
 import { formatTime } from "@/utils/format-time";
 import { getSplitCharacter } from "@/utils/split-character";
 
 // -- Types --------------------------------------------------------------------
+
+interface SyncReRecording extends ReRecording {
+  projectId: string | undefined;
+}
 
 interface SyncState {
   position: SyncCursor;
@@ -20,7 +24,7 @@ interface SyncState {
   // line when the user jumped back to re-record this one.
   jumpedToPosition?: boolean;
   anchorUndo?: AnchorUndo;
-  reRecording?: InstanceRef;
+  reRecording?: SyncReRecording;
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -171,4 +175,4 @@ export {
   splitIntoWordsWithMeta,
   withSeededBackgroundWords,
 };
-export type { SyncState };
+export type { SyncReRecording, SyncState };

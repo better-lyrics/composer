@@ -8,9 +8,8 @@ import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
-import { skippedInstanceAt } from "@/domain/sync/skipped-instances";
 import type { WordTiming } from "@/domain/word/timing";
-import { useSyncCursor } from "@/hooks/useSyncCursor";
+import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -111,7 +110,13 @@ function useSyncHandlers({
           previousEntry: placed.history[placed.historyIndex - 1],
         };
         // Jumped, so the next tap trims an overlap with the placed instance instead of stretching its shared last word.
-        setSyncState((prev) => ({ ...prev, position: anchor.resumeCursor, jumpedToPosition: true, anchorUndo }));
+        setSyncState((prev) => ({
+          ...prev,
+          position: anchor.resumeCursor,
+          jumpedToPosition: true,
+          anchorUndo,
+          reRecording: keptSyncReRecording(prev.reRecording, lines, anchor.resumeCursor),
+        }));
         ignoreNextHoldEndRef.current = gesture === "hold-start";
         toastEarlyTap(anchor.clampedTo);
         return true;
@@ -119,7 +124,12 @@ function useSyncHandlers({
       const commit = commitGesture(lines, gesture, ctx);
       if (!commit) return false;
       updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
-      setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
+      setSyncState((prev) => ({
+        ...prev,
+        position: commit.nextCursor,
+        jumpedToPosition: commit.nextJumped,
+        reRecording: keptSyncReRecording(prev.reRecording, lines, commit.nextCursor),
+      }));
       toastEarlyTap(commit.clampedTo);
       return true;
     },
@@ -212,7 +222,7 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
         jumpedToPosition: true,
-        reRecording: skippedInstanceAt(skippedInstances, lines, index),
+        reRecording: syncReRecordingAt(skippedInstances, lines, index),
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
@@ -232,7 +242,7 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
         jumpedToPosition: true,
-        reRecording: skippedInstanceAt(skippedInstances, lines, lineIdx),
+        reRecording: syncReRecordingAt(skippedInstances, lines, lineIdx),
       }));
       seekForRedo(word.begin);
     },

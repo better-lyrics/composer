@@ -1,4 +1,9 @@
-import { skippedInstanceAt, skippedSharedInstances, syncPositionPastSkipped } from "@/domain/sync/skipped-instances";
+import {
+  keptReRecording,
+  reRecordingAt,
+  skippedSharedInstances,
+  syncPositionPastSkipped,
+} from "@/domain/sync/skipped-instances";
 import { createGroup, createLine } from "@/test/factories";
 import { describe, expect, it } from "vitest";
 
@@ -96,7 +101,7 @@ describe("syncPositionPastSkipped", () => {
     lines: ReturnType<typeof song>,
     cursor: ReturnType<typeof at>,
     jumped: boolean,
-    reRecording?: { groupId: string; instanceIdx: number },
+    reRecording?: { lineIds: readonly string[] },
   ) => syncPositionPastSkipped(lines, skippedSharedInstances(lines, sharing), cursor, jumped, reRecording);
 
   it("moves a cursor inside a skipped instance to the first syncable line after it, as a jump", () => {
@@ -113,12 +118,17 @@ describe("syncPositionPastSkipped", () => {
     });
 
     it("keeps a cursor inside the instance the user is re-recording", () => {
-      expect(past(song(40), at(4), false, { groupId: "g1", instanceIdx: 1 })).toEqual({ cursor: at(4), jumped: false });
+      expect(past(song(40), at(4), false, { lineIds: ["c1-0", "c1-1"] })).toEqual({ cursor: at(4), jumped: false });
+    });
+
+    it("regression: skips a new instance that reuses the group id and index of the one re-recorded", () => {
+      const regrouped = song(40).map((line) => (line.id.startsWith("c1") ? { ...line, id: `new-${line.id}` } : line));
+      expect(past(regrouped, at(4), false, { lineIds: ["c1-0", "c1-1"] })).toEqual({ cursor: at(5), jumped: true });
     });
 
     it("still skips an instance other than the one being re-recorded", () => {
       const lines = [...song(40).slice(0, 5), chorus(2, 0, 70), chorus(2, 1, 71), verse("v3")];
-      expect(past(lines, at(6), false, { groupId: "g1", instanceIdx: 1 })).toEqual({ cursor: at(7), jumped: true });
+      expect(past(lines, at(6), false, { lineIds: ["c1-0", "c1-1"] })).toEqual({ cursor: at(7), jumped: true });
     });
 
     it("keeps a cursor the user jumped to", () => {
@@ -152,29 +162,48 @@ describe("syncPositionPastSkipped", () => {
   });
 });
 
-describe("skippedInstanceAt", () => {
+describe("reRecordingAt", () => {
   it("names the skipped instance a line belongs to", () => {
     const lines = song(40);
-    expect(skippedInstanceAt(skippedSharedInstances(lines, sharing), lines, 4)).toEqual({
-      groupId: "g1",
-      instanceIdx: 1,
-    });
+    expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 4)).toEqual({ lineIds: ["c1-0", "c1-1"] });
   });
 
   describe("edge cases", () => {
     it("is undefined for a line outside every skipped instance", () => {
       const lines = song(40);
-      expect(skippedInstanceAt(skippedSharedInstances(lines, sharing), lines, 2)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 2)).toBeUndefined();
     });
 
     it("is undefined for an instance that is not skipped yet", () => {
       const lines = song();
-      expect(skippedInstanceAt(skippedSharedInstances(lines, sharing), lines, 4)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 4)).toBeUndefined();
     });
 
     it("is undefined past the last line", () => {
       const lines = song(40);
-      expect(skippedInstanceAt(skippedSharedInstances(lines, sharing), lines, 99)).toBeUndefined();
+      expect(reRecordingAt(skippedSharedInstances(lines, sharing), lines, 99)).toBeUndefined();
+    });
+  });
+});
+
+describe("keptReRecording", () => {
+  const marker = { lineIds: ["c1-0", "c1-1"] };
+
+  it("keeps the marker while the cursor is on a line of the instance", () => {
+    expect(keptReRecording(marker, song(40), { lineIndex: 4, wordIndex: 0 })).toBe(marker);
+  });
+
+  it("drops the marker once the cursor leaves the instance", () => {
+    expect(keptReRecording(marker, song(40), { lineIndex: 5, wordIndex: 0 })).toBeUndefined();
+  });
+
+  describe("edge cases", () => {
+    it("drops the marker when the cursor is past the last line", () => {
+      expect(keptReRecording(marker, song(40), { lineIndex: 99, wordIndex: 0 })).toBeUndefined();
+    });
+
+    it("stays empty without a marker", () => {
+      expect(keptReRecording(undefined, song(40), { lineIndex: 4, wordIndex: 0 })).toBeUndefined();
     });
   });
 });

@@ -1,4 +1,5 @@
 import type { LyricLine } from "@/domain/line/model";
+import { adoptOpenProjectId } from "@/lib/open-project-session";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -138,5 +139,81 @@ describe("SyncPanel · re-recording a placed shared instance", () => {
     await tapAt(44.5, () => firstBegin("verse"));
     expect(firstBegin("verse")).toBe(44.5);
     expect(firstBegin("one-b")).toBe(13);
+  });
+
+  describe("regressions", () => {
+    const plain = (id: string, text: string, begin?: number) =>
+      createLine({ id, text, ...(begin === undefined ? {} : { begin, end: begin + 1 }) });
+    const otherSong = () => [
+      plain("one-a", "go now", 10),
+      plain("one-b", "stay here", 13),
+      plain("two-a", "go now"),
+      plain("two-b", "stay here"),
+      plain("verse", "walking home"),
+    ];
+
+    async function reRecordChorusTwoToItsEnd(screen: Awaited<ReturnType<typeof render>>) {
+      await jumpToRow(screen, 5);
+      await tapAt(42.5, () => firstBegin("c1-1"));
+      await tapAt(44.5, () => firstBegin("c1-2"));
+    }
+
+    it("regression: a finished re-record never lets a new group with the same id be re-recorded after a project switch", async () => {
+      adoptOpenProjectId("project-a");
+      load(placedSong("line"), "line");
+      const screen = await render(<SyncPanel />);
+      await reRecordChorusTwoToItsEnd(screen);
+
+      adoptOpenProjectId("project-b");
+      load(otherSong(), "line", []);
+      await tapAt(40, () => firstBegin("two-a"));
+      useProjectStore.getState().groupRepeatingSections([0, 2], 2);
+      expect(useProjectStore.getState().groups[0].id).toBe("g1");
+
+      await tapAt(44.5, () => firstBegin("verse"));
+      expect(firstBegin("verse")).toBe(44.5);
+      expect(firstBegin("one-b")).toBe(13);
+    });
+
+    it("regression: a re-record never carries over to another group made with the same id after ungrouping", async () => {
+      load(
+        [
+          ...placedSong("line"),
+          plain("p-a", "hold me"),
+          plain("p-b", "so close"),
+          plain("q-a", "hold me"),
+          plain("q-b", "so close"),
+          plain("end", "the end"),
+        ],
+        "line",
+      );
+      const screen = await render(<SyncPanel />);
+      await reRecordChorusTwoToItsEnd(screen);
+      useProjectStore.getState().removeGroup("g1");
+
+      await tapAt(50, () => firstBegin("v2"));
+      await tapAt(60, () => firstBegin("p-a"));
+      await tapAt(63, () => firstBegin("p-b"));
+      await tapAt(90, () => firstBegin("q-a"));
+      useProjectStore.getState().groupRepeatingSections([8, 10], 2);
+      expect(useProjectStore.getState().groups[0].id).toBe("g1");
+
+      await tapAt(94.5, () => firstBegin("end"));
+      expect(firstBegin("end")).toBe(94.5);
+      expect(firstBegin("p-b")).toBe(63);
+    });
+
+    it("regression: a re-record left unfinished does not carry over into a duplicate of the project", async () => {
+      adoptOpenProjectId("project-a");
+      load(placedSong("line"), "line");
+      const screen = await render(<SyncPanel />);
+      await jumpToRow(screen, 5);
+      await tapAt(42.5, () => firstBegin("c1-1"));
+
+      adoptOpenProjectId("project-b");
+      await tapAt(70, () => firstBegin("v2"));
+      expect(firstBegin("v2")).toBe(70);
+      expect(firstBegin("c1-2")).toBe(44);
+    });
   });
 });
