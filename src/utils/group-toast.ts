@@ -39,6 +39,14 @@ function showKeptOwnTimingToast(keptOwnTiming: readonly KeptOwnTiming[]): void {
   });
 }
 
+function replacedOwnTimingNote(count: number): string {
+  return `The own timing of ${pluralize(count, "instance")} was replaced.`;
+}
+
+function showReplacedOwnTimingToast(count: number): void {
+  if (count > 0) toast(replacedOwnTimingNote(count), { duration: GROUP_TOAST_DURATION_MS });
+}
+
 function showGroupedToast(group: LinkGroup, lineCount: number, filledGaps: number): void {
   const grouped = `Grouped ${pluralize(lineCount, "line")}`;
   toast.success(filledGaps > 0 ? `${grouped} (filled ${pluralize(filledGaps, "gap")})` : grouped, {
@@ -61,10 +69,12 @@ function showSharedSongEdgeToast(): void {
 // -- Exports -------------------------------------------------------------------
 
 export {
+  replacedOwnTimingNote,
   showGroupActionToast,
   showGroupedToast,
   showKeptOwnTimingToast,
   showSharedSongEdgeToast,
   showPlacementBlockedToast,
+  showReplacedOwnTimingToast,
   showSharingBlockedToast,
 };

@@ -1,11 +1,11 @@
-import { describe, expect, it } from "vitest";
-import { Toaster } from "sonner";
 import type { LinkGroup } from "@/domain/group/template";
 import type { LyricLine } from "@/domain/line/model";
 import { useProjectStore } from "@/stores/project";
 import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { SharedTimingSuggestionsBanner } from "@/views/timeline/shared-timing-suggestions-banner";
+import { Toaster } from "sonner";
+import { describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -104,6 +104,30 @@ describe("SharedTimingSuggestionsBanner", () => {
       const screen = await renderBanner();
 
       expect(screen.container.textContent).toBe("");
+    });
+
+    it("says when sharing replaces the own timing of a timed instance", async () => {
+      seed(
+        [OLD_CHORUS],
+        [
+          member(0, 10),
+          createLine({ ...member(1, 30), words: [createWord({ text: "go ", begin: 30, end: 31.5 })] }),
+          member(2),
+        ],
+      );
+      const screen = await renderBanner();
+
+      await expect
+        .element(
+          screen.getByText("Chorus 1 is synced. Share its timing with 2 instances? 1 of them loses its own timing."),
+        )
+        .toBeVisible();
+      await screen.getByRole("button", { name: "Share timing" }).click();
+
+      await expect
+        .element(screen.getByText("Chorus shares timing in 3 instances. The own timing of 1 instance was replaced."))
+        .toBeVisible();
+      await expect.element(screen.getByRole("button", { name: "Undo" })).toBeVisible();
     });
 
     it("uses the singular for one instance with no timing", async () => {

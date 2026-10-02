@@ -26,9 +26,13 @@ interface KeptOwnTiming {
   refusal: RealignRefusal;
 }
 
-interface RealignedInstances {
-  lines: LyricLine[];
+interface SharingOutcome {
   keptOwnTiming: KeptOwnTiming[];
+  realigned: number[];
+}
+
+interface RealignedInstances extends SharingOutcome {
+  lines: LyricLine[];
 }
 
 // -- Helpers ------------------------------------------------------------------
@@ -119,17 +123,21 @@ function realignSharedInstances(
   instanceIdxs: readonly number[],
   songEnd = Number.POSITIVE_INFINITY,
 ): RealignedInstances {
-  let realigned = lines;
+  let nextLines = lines;
   const keptOwnTiming: KeptOwnTiming[] = [];
+  const realigned: number[] = [];
   for (const instanceIdx of instanceIdxs) {
-    const realignment = realignSharedInstance(realigned, groups, groupId, instanceIdx, songEnd);
+    const realignment = realignSharedInstance(nextLines, groups, groupId, instanceIdx, songEnd);
     if ("refusal" in realignment) keptOwnTiming.push({ instanceIdx, refusal: realignment.refusal });
-    else if (realignment.updates.length) realigned = applyLineUpdates(realigned, realignment.updates);
+    else if (realignment.updates.length) {
+      nextLines = applyLineUpdates(nextLines, realignment.updates);
+      realigned.push(instanceIdx);
+    }
   }
-  return { lines: realigned, keptOwnTiming };
+  return { lines: nextLines, keptOwnTiming, realigned };
 }
 
 // -- Exports ------------------------------------------------------------------
 
 export { placeSharedInstance, realignSharedInstance, realignSharedInstances };
-export type { KeptOwnTiming, RealignRefusal };
+export type { KeptOwnTiming, RealignRefusal, SharingOutcome };

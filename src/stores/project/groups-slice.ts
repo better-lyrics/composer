@@ -1,7 +1,7 @@
 import { initialGroupSharing } from "@/domain/group/initial-sharing";
 import { unlinkLines } from "@/domain/group/linking";
 import { withNewInstance, withOwnTiming } from "@/domain/group/own-timing";
-import { placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
+import { type SharingOutcome, placeSharedInstance, realignSharedInstance } from "@/domain/group/shared-placement";
 import { wholeSongRange } from "@/domain/group/shared-timing";
 import { offsetTemplateWords } from "@/domain/group/template";
 import { nextInstanceIdx } from "@/domain/instance/enumerate";
@@ -19,6 +19,7 @@ import type { StateCreator } from "zustand";
 // -- Constants ----------------------------------------------------------------
 
 const MIN_SHIFT_SECONDS = 0.001;
+const NOTHING_SHARED: SharingOutcome = { keptOwnTiming: [], realigned: [] };
 
 // -- Initial State ------------------------------------------------------------
 
@@ -42,14 +43,14 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
 
   groupRepeatingSections: (starts, length, options = {}) => {
     const state = get();
-    if (starts.length < 2 || length < 1) return [];
+    if (starts.length < 2 || length < 1) return NOTHING_SHARED;
 
     const covered = new Set<number>();
     for (const start of starts) {
       for (let p = start; p < start + length; p++) {
-        if (p < 0 || p >= state.lines.length) return [];
-        if (state.lines[p].groupId !== undefined) return [];
-        if (covered.has(p)) return [];
+        if (p < 0 || p >= state.lines.length) return NOTHING_SHARED;
+        if (state.lines[p].groupId !== undefined) return NOTHING_SHARED;
+        if (covered.has(p)) return NOTHING_SHARED;
         covered.add(p);
       }
     }
@@ -81,7 +82,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
       return line;
     });
 
-    const { group, lines, keptOwnTiming } = initialGroupSharing(
+    const { group, lines, keptOwnTiming, realigned } = initialGroupSharing(
       updatedLines,
       { id: groupId, label, color, templateVersion: 1 },
       useSettingsStore.getState().shareTimingInNewGroups,
@@ -89,7 +90,7 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
     );
 
     set(commitHistory(state, { groups: [...state.groups, group], lines }, { deriveText: false }));
-    return keptOwnTiming;
+    return { keptOwnTiming, realigned };
   },
 
   updateGroup: (id, updates) =>
@@ -199,11 +200,11 @@ const createGroupsSlice: StateCreator<ProjectStore, [], [], GroupsState & GroupA
   shareGroupTiming: (groupId, duration) => {
     const state = get();
     const group = state.groups.find((candidate) => candidate.id === groupId);
-    if (!group) return [];
+    if (!group) return NOTHING_SHARED;
     const shared = initialGroupSharing(state.lines, group, true, songEndOrUnbounded(duration));
     const groups = state.groups.map((candidate) => (candidate.id === groupId ? shared.group : candidate));
     set(commitHistory(state, { groups, lines: shared.lines }, { deriveText: false }));
-    return shared.keptOwnTiming;
+    return { keptOwnTiming: shared.keptOwnTiming, realigned: shared.realigned };
   },
 
   placeInstance: (groupId, instanceIdx, start, duration, precedingUpdates = []) => {

@@ -1,5 +1,5 @@
 import type { Agent } from "@/domain/agent/model";
-import type { KeptOwnTiming, RealignRefusal } from "@/domain/group/shared-placement";
+import type { RealignRefusal, SharingOutcome } from "@/domain/group/shared-placement";
 import type { LineTemplate, LinkGroup } from "@/domain/group/template";
 import type { LineUpdate, LyricLine, RawLine } from "@/domain/line/model";
 import type { EditedLyrics } from "@/domain/project/edited-lyrics";
@@ -194,7 +194,7 @@ interface GroupActions {
     starts: number[],
     length: number,
     options?: { label?: string; color?: string; duration?: number },
-  ) => KeptOwnTiming[];
+  ) => SharingOutcome;
   updateGroup: (id: string, updates: Partial<LinkGroup>) => void;
   removeGroup: (id: string) => void;
   addInstance: (groupId: string, structure: LineTemplate[], instanceStart: number, insertAtIndex?: number) => void;
@@ -202,7 +202,7 @@ interface GroupActions {
   detachLine: (lineId: string) => void;
   shiftInstance: (groupId: string, instanceIdx: number, deltaSeconds: number, duration: number) => void;
   setInstanceOwnTiming: (groupId: string, instanceIdx: number, own: boolean, duration: number) => RealignRefusal | null;
-  shareGroupTiming: (groupId: string, duration: number) => KeptOwnTiming[];
+  shareGroupTiming: (groupId: string, duration: number) => SharingOutcome;
   placeInstance: (
     groupId: string,
     instanceIdx: number,

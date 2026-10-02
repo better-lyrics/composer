@@ -1,5 +1,5 @@
 import { withSharing } from "@/domain/group/own-timing";
-import { type KeptOwnTiming, realignSharedInstances } from "@/domain/group/shared-placement";
+import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
@@ -15,10 +15,9 @@ import type { WordTiming } from "@/domain/word/timing";
 
 type InitialSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
 
-interface InitialGroupSharing {
+interface InitialGroupSharing extends SharingOutcome {
   group: LinkGroup;
   lines: LyricLine[];
-  keptOwnTiming: KeptOwnTiming[];
 }
 
 // -- Constants ----------------------------------------------------------------
@@ -79,7 +78,7 @@ function initialGroupSharing(
   settingOn: boolean,
   songEnd = Number.POSITIVE_INFINITY,
 ): InitialGroupSharing {
-  if (!settingOn) return { group, lines, keptOwnTiming: [] };
+  if (!settingOn) return { group, lines, keptOwnTiming: [], realigned: [] };
   const shared = withSharing(group, { sharesTiming: true });
   const differing = instancesWithDifferentTiming(lines, group.id);
   const realigned = realignSharedInstances(lines, [shared], group.id, differing, songEnd);
@@ -92,5 +91,5 @@ function initialGroupSharing(
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialGroupSharing };
+export { initialGroupSharing, instancesWithDifferentTiming };
 export type { InitialSharing };

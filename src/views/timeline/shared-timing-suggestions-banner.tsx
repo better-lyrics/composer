@@ -2,8 +2,8 @@ import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/g
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
-import { showKeptOwnTimingToast } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
+import { showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
+import { pluralWord, pluralize } from "@/utils/pluralize";
 import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconBulb, IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
@@ -15,7 +15,10 @@ function suggestionKey(suggestion: SharedTimingSuggestion): string {
 }
 
 function inlineText(suggestion: SharedTimingSuggestion): string {
-  return `${suggestion.sourceName} is synced. Share its timing with ${pluralize(suggestion.untimedCount, "instance")}?`;
+  const { sourceName, changingCount, replacedCount } = suggestion;
+  const ask = `${sourceName} is synced. Share its timing with ${pluralize(changingCount, "instance")}?`;
+  if (replacedCount === 0) return ask;
+  return `${ask} ${replacedCount} of them ${pluralWord(replacedCount, "loses its", "lose their")} own timing.`;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -37,11 +40,12 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const acceptOne = (suggestion: SharedTimingSuggestion) => shareGroupTimingWithUndo(suggestion.groupId);
 
   const acceptAll = (visible: SharedTimingSuggestion[]) => {
-    showKeptOwnTimingToast(
-      visible.flatMap((suggestion) =>
-        useProjectStore.getState().shareGroupTiming(suggestion.groupId, useAudioStore.getState().duration),
-      ),
+    const { duration } = useAudioStore.getState();
+    const outcomes = visible.map((suggestion) =>
+      useProjectStore.getState().shareGroupTiming(suggestion.groupId, duration),
     );
+    showKeptOwnTimingToast(outcomes.flatMap((outcome) => outcome.keptOwnTiming));
+    showReplacedOwnTimingToast(outcomes.reduce((sum, outcome) => sum + outcome.realigned.length, 0));
   };
 
   return (

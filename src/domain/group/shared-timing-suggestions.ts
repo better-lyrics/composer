@@ -1,3 +1,4 @@
+import { instancesWithDifferentTiming } from "@/domain/group/initial-sharing";
 import { firstFullyTimedInstance, instanceStart, instancesInLineOrder } from "@/domain/group/shared-timing";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceName } from "@/domain/instance/name";
@@ -10,7 +11,8 @@ interface SharedTimingSuggestion {
   groupId: string;
   label: string;
   sourceName: string;
-  untimedCount: number;
+  changingCount: number;
+  replacedCount: number;
 }
 
 // -- Functions ----------------------------------------------------------------
@@ -22,12 +24,14 @@ function sharedTimingSuggestion(lines: readonly LyricLine[], group: LinkGroup): 
   if (source === undefined) return null;
   const untimedCount = order.filter((instanceIdx) => instanceStart(lines, group.id, instanceIdx) === null).length;
   if (untimedCount === 0) return null;
+  const replacedCount = instancesWithDifferentTiming(lines, group.id).length;
   return {
     fingerprint: `shared-timing:${group.id}`,
     groupId: group.id,
     label: group.label,
     sourceName: instanceName(lines, group, source),
-    untimedCount,
+    changingCount: untimedCount + replacedCount,
+    replacedCount,
   };
 }
 
