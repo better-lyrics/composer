@@ -6,6 +6,7 @@ minimumReleaseAgeExclude:
   - "@braccato/highlight"
   - "@braccato/parsers"
   - "@braccato/types"
+  - "@uimaxbai/am-lyrics"
 trustPolicy: no-downgrade
 trustPolicyExclude:
   - "semver@6.3.1"
