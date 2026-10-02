@@ -167,6 +167,16 @@ describe("SyncPanel · skip past a placed instance", () => {
     await expect.element(screen.getByText("Line 6 in", { exact: true })).not.toBeInTheDocument();
   });
 
+  it("hides the pre-roll countdown once the pre-roll has played", async () => {
+    useSettingsStore.setState({ redoPreroll: 0.3 });
+    load(song({ first: "word", verse: "word" }));
+    const screen = await render(<SyncPanel />);
+    await jumpToRow(screen, 3);
+    await tapAt(40, () => firstBegin("c1-0"));
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).toBeInTheDocument();
+    await expect.element(screen.getByText("Line 6 in", { exact: true })).not.toBeInTheDocument();
+  });
+
   it("hides the pre-roll countdown while paused", async () => {
     load(song({ first: "word", verse: "word" }));
     const screen = await render(<SyncPanel />);
