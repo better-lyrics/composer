@@ -1,4 +1,5 @@
 import { AudioPlayer } from "@/audio/audio-player";
+import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -43,6 +44,27 @@ describe("AudioPlayer", () => {
     await screen.getByRole("button", { name: "Play" }).click();
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await screen.getByRole("button", { name: "Pause" }).click();
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
+
+  it("counts in before playing in Sync", async () => {
+    setupAudioSource();
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    expect(isCountingIn()).toBe(true);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
+
+  it("cancels a running count-in when clicked again", async () => {
+    setupAudioSource();
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    await screen.getByRole("button", { name: "Play" }).click();
+    expect(isCountingIn()).toBe(false);
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 

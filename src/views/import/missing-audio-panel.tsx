@@ -1,4 +1,5 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { FileDropArea } from "@/audio/file-drop-area";
 import { YouTubeUrlInput } from "@/audio/youtube-url-input";
 import type { SavedAudioSource } from "@/domain/project/audio-source";
 import { youtubeSourceTitle } from "@/domain/project/display-title";
@@ -26,6 +27,9 @@ interface WarningSourceRowProps {
 // -- Constants ----------------------------------------------------------------
 
 const LOG_PREFIX = "[MissingAudio]";
+const RELINK_DROP_LABEL = "Drop to link the audio again";
+const REPLACE_MISSING_DROP_LABEL = "Drop to use this audio instead";
+
 const RELINK_DROP_STYLES =
   "gap-1.5 p-6 text-center rounded-xl border-2 border-dashed border-composer-warning/40 hover:border-composer-warning/60 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-composer-accent";
 
@@ -79,7 +83,12 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
   const bridgeUnreachable = failure === "bridge-unreachable";
 
   return (
-    <div data-tour="import-dropzone" className="flex flex-col-reverse flex-1 size-full">
+    <FileDropArea
+      data-tour="import-dropzone"
+      className="flex flex-col-reverse flex-1 size-full"
+      onFileDrop={relinkFile}
+      dropLabel={expected.kind === "file" ? RELINK_DROP_LABEL : REPLACE_MISSING_DROP_LABEL}
+    >
       {expected.kind === "file" ? (
         <WarningSourceRow name={expected.name} detail="Not on this device. Your lyrics and timings are safe." />
       ) : (
@@ -128,7 +137,7 @@ const MissingAudioPanel: React.FC<MissingAudioPanelProps> = ({ expected }) => {
           onLoadVideo={relinkProjectVideo}
         />
       </div>
-    </div>
+    </FileDropArea>
   );
 };
 

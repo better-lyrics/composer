@@ -1,9 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useProjectStore } from "@/stores/project";
+import { useSettingsStore } from "@/stores/settings";
 import { createLine } from "@/test/factories";
 import { render } from "@/test/render";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+
+// These tests cover gestures and holds after playback starts, not the count-in before it.
+beforeEach(() => {
+  useSettingsStore.setState({ syncCountIn: 0 });
+});
 
 describe("SyncPanel · hold drained when the circles unmount", () => {
   it("closes the held word when the song ends mid-hold", async () => {
@@ -202,10 +208,20 @@ describe("SyncPanel · keyboard hold release", () => {
     await expect.poll(() => wordTimings()).toEqual([[5, 5]]);
     setCurrentTime(6);
     pressTapKey();
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 6]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 6],
+      ]);
     setCurrentTime(7);
     pressHoldKey("keyup");
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 7],
+      ]);
 
     setCurrentTime(8);
     pressHoldKey("keydown");
@@ -213,6 +229,12 @@ describe("SyncPanel · keyboard hold release", () => {
     setCurrentTime(9);
     pressHoldKey("keyup");
 
-    await expect.poll(() => wordTimings()).toEqual([[5, 6], [6, 7], [8, 9]]);
+    await expect
+      .poll(() => wordTimings())
+      .toEqual([
+        [5, 6],
+        [6, 7],
+        [8, 9],
+      ]);
   });
 });

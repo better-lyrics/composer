@@ -1,4 +1,5 @@
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { useProjectStore } from "@/stores/project";
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { createAudioFile } from "@/test/audio-fixtures";
@@ -7,7 +8,12 @@ import { render } from "@/test/render";
 import { firePointer, loadPlayingProject, setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+
+// These tests cover gestures and holds after playback starts, not the count-in before it.
+beforeEach(() => {
+  useSettingsStore.setState({ syncCountIn: 0 });
+});
 
 // -- Helpers ------------------------------------------------------------------
 

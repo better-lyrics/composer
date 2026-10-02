@@ -319,3 +319,23 @@ describe("re-record pre-roll setting", () => {
     expect(migrated.redoPreroll).toBe(0.25);
   });
 });
+
+describe("count-in setting", () => {
+  beforeEach(() => {
+    useSettingsStore.setState({ ...DEFAULTS });
+  });
+
+  it("defaults to 3 seconds", () => {
+    expect(useSettingsStore.getState().syncCountIn).toBe(3);
+  });
+
+  it("migrates a blob from before the setting existed to 3 seconds", () => {
+    const migrated = migrateSettings({ redoPreroll: 1.5 }, 8) as { syncCountIn: number };
+    expect(migrated.syncCountIn).toBe(3);
+  });
+
+  it("keeps an explicit 0 (off) through migration", () => {
+    const migrated = migrateSettings({ syncCountIn: 0 }, 8) as { syncCountIn: number };
+    expect(migrated.syncCountIn).toBe(0);
+  });
+});
