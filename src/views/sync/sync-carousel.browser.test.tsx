@@ -3,12 +3,12 @@ import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { describe, expect, it } from "vitest";
 
 const LINES = [
-  { id: "l1", text: "First line", begin: 0 },
-  { id: "l2", text: "Second line", begin: 1 },
-  { id: "l3", text: "Third line", begin: 2 },
+  { id: "l1", text: "First line", isTimed: true },
+  { id: "l2", text: "Second line", isTimed: true },
+  { id: "l3", text: "Third line", isTimed: true },
 ];
 
-const WORD_LINES = [{ id: "line-1", text: "alpha beta gamma", begin: 0, words: [] }];
+const WORD_LINES = [{ id: "line-1", text: "alpha beta gamma", isTimed: false, words: [] }];
 
 const RIPPLE_SELECTOR = ".bg-composer-accent\\/20";
 
