@@ -1,7 +1,7 @@
 import { mainBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
-import { isSyncableLine, type SyncGranularity } from "@/domain/line/sync-progress";
+import { type SyncGranularity, isSyncableLine } from "@/domain/line/sync-progress";
 import { splitIntoWords } from "@/utils/sync-helpers";
 
 // -- Types --------------------------------------------------------------------
@@ -36,6 +36,29 @@ function advanceCursor(lines: readonly LyricLine[], cursor: SyncCursor, granular
   return { lineIndex: nextSyncableLineIndex(lines, cursor.lineIndex), wordIndex: 0 };
 }
 
+// Manual navigation stays on a lyric slot; only a sync gesture advances past the end.
+// Returns the original cursor when no movement is possible.
+function moveSyncCursor(
+  lines: readonly LyricLine[],
+  cursor: SyncCursor,
+  granularity: SyncGranularity,
+  direction: -1 | 1,
+): SyncCursor {
+  if (direction === 1) {
+    const next = advanceCursor(lines, cursor, granularity);
+    return next.lineIndex < lines.length ? next : cursor;
+  }
+  if (granularity === "word" && lines[cursor.lineIndex] && cursor.wordIndex > 0) {
+    return { lineIndex: cursor.lineIndex, wordIndex: cursor.wordIndex - 1 };
+  }
+  const prev = prevSyncableLineIndex(lines, cursor.lineIndex);
+  if (prev < 0) return cursor;
+  return {
+    lineIndex: prev,
+    wordIndex: granularity === "word" ? Math.max(0, splitIntoWords(lines[prev].text).length - 1) : 0,
+  };
+}
+
 function isCursorPastEnd(lines: readonly LyricLine[], cursor: SyncCursor): boolean {
   return lines.length > 0 && cursor.lineIndex >= lines.length;
 }
@@ -49,14 +72,21 @@ function firstUntimedSlot(line: LyricLine, granularity: SyncGranularity): number
   return timed < splitIntoWords(line.text).length ? timed : null;
 }
 
-function clampCursor(lines: readonly LyricLine[], stored: SyncCursor, granularity: SyncGranularity): SyncCursor {
+function clampCursor(
+  lines: readonly LyricLine[],
+  stored: SyncCursor,
+  granularity: SyncGranularity,
+  jumped: boolean,
+): SyncCursor {
   const lineIndex = Math.max(0, Math.min(stored.lineIndex, lines.length));
   if (lineIndex < lines.length && !isSyncableLine(lines[lineIndex])) {
     return { lineIndex: nextSyncableLineIndex(lines, lineIndex), wordIndex: 0 };
   }
   const line = lines[lineIndex];
   if (!line || granularity === "line") return { lineIndex, wordIndex: 0 };
-  return { lineIndex, wordIndex: Math.max(0, Math.min(stored.wordIndex, line.words?.length ?? 0)) };
+  // Explicit selections follow the text, while forward syncing follows timing progress for undo recovery.
+  const lastWord = jumped ? Math.max(0, splitIntoWords(line.text).length - 1) : (line.words?.length ?? 0);
+  return { lineIndex, wordIndex: Math.max(0, Math.min(stored.wordIndex, lastWord)) };
 }
 
 // Undo can remove timing behind the stored cursor; pull it back so the next tap fills the hole.
@@ -66,7 +96,7 @@ function resolveSyncCursor(
   jumped: boolean,
   granularity: SyncGranularity,
 ): SyncCursor {
-  let cursor = clampCursor(lines, stored, granularity);
+  let cursor = clampCursor(lines, stored, granularity, jumped);
   if (jumped) return cursor;
   while (cursor.wordIndex === 0) {
     const prev = prevSyncableLineIndex(lines, cursor.lineIndex);
@@ -111,6 +141,7 @@ function slotBounds(lines: readonly LyricLine[], slot: SyncSlot): { begin: numbe
 export {
   advanceCursor,
   isCursorPastEnd,
+  moveSyncCursor,
   nextSyncableLineIndex,
   previousSlot,
   prevSyncableLineIndex,
