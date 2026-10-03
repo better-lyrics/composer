@@ -88,11 +88,18 @@ function matchesBinding(event: KeyboardEvent, binding: ShortcutBinding): boolean
   return true;
 }
 
-function findMatchingShortcut(event: KeyboardEvent, scope: ShortcutScope): string | null {
+function findMatchingShortcut(
+  event: KeyboardEvent,
+  scope: ShortcutScope,
+  options?: { includeRepeats?: boolean },
+): string | null {
   const shortcuts = getShortcutsByScope(scope);
   for (const shortcut of shortcuts) {
     const binding = getEffectiveBinding(shortcut.id);
-    if (matchesBinding(event, binding)) return event.repeat && !shortcut.repeatable ? null : shortcut.id;
+    if (matchesBinding(event, binding)) {
+      // Capture handlers may need to consume a repeat without performing its action.
+      return event.repeat && !shortcut.repeatable && !options?.includeRepeats ? null : shortcut.id;
+    }
   }
   return null;
 }
