@@ -114,38 +114,46 @@ async function runChunkPipeline(opts: PipelineOptions): Promise<PipelineResult> 
     : null;
 
   let chunkIndex = 0;
-  while (inFlight) {
-    if (opts.isCancelled()) return { status: "cancelled" };
+  try {
+    while (inFlight) {
+      if (opts.isCancelled()) return { status: "cancelled" };
 
-    const next = prepareTimed();
-    const waitStart = performance.now();
-    const result = await inFlight.run;
-    const chunkWaitMs = performance.now() - waitStart;
-    waitMs += chunkWaitMs;
-    if (chunkIndex === profileChunk) stopKernelProfile(runtime.env);
-    const finished = inFlight.prepared.chunk;
-    inFlight = next ? { prepared: next, run: startRun(next) } : null;
+      const next = prepareTimed();
+      const waitStart = performance.now();
+      const result = await inFlight.run;
+      const chunkWaitMs = performance.now() - waitStart;
+      waitMs += chunkWaitMs;
+      if (chunkIndex === profileChunk) stopKernelProfile(runtime.env);
+      const finished = inFlight.prepared.chunk;
+      inFlight = next ? { prepared: next, run: startRun(next) } : null;
 
-    const timeTensor = result[TIME_OUTPUT_NAME];
-    const freqTensor = result[FREQ_OUTPUT_NAME];
-    if (!timeTensor || !freqTensor) {
-      throw new Error(
-        `Missing output tensor ${!timeTensor ? TIME_OUTPUT_NAME : FREQ_OUTPUT_NAME}. Available: ${Object.keys(result).join(", ")}`,
+      const timeTensor = result[TIME_OUTPUT_NAME];
+      const freqTensor = result[FREQ_OUTPUT_NAME];
+      if (!timeTensor || !freqTensor) {
+        throw new Error(
+          `Missing output tensor ${!timeTensor ? TIME_OUTPUT_NAME : FREQ_OUTPUT_NAME}. Available: ${Object.keys(result).join(", ")}`,
+        );
+      }
+      const vocals = timed(
+        () => extractVocalsStem(timeTensor, freqTensor),
+        (ms) => {
+          extractMs += ms;
+        },
       );
-    }
-    const vocals = timed(
-      () => extractVocalsStem(timeTensor, freqTensor),
-      (ms) => {
-        extractMs += ms;
-      },
-    );
-    vocalChunks.push({ start: finished.start, end: finished.end, data: vocals });
-    if (chunkIndex === profileChunk) {
-      await reportKernelProfile(chunkIndex + 1, chunkWaitMs, opts.adapterHasTimestampQuery);
-    }
+      vocalChunks.push({ start: finished.start, end: finished.end, data: vocals });
+      if (chunkIndex === profileChunk) {
+        await reportKernelProfile(chunkIndex + 1, chunkWaitMs, opts.adapterHasTimestampQuery);
+      }
 
-    chunkIndex++;
-    opts.onProgress(chunkIndex, opts.totalChunks);
+      chunkIndex++;
+      opts.onProgress(chunkIndex, opts.totalChunks);
+    }
+  } finally {
+    // ORT sessions don't allow concurrent runs, and run(i+1) is started before
+    // chunk i is extracted. On cancel or error, let any run still in flight
+    // settle before returning or throwing so the session is idle afterwards.
+    if (profileChunk >= 0) stopKernelProfile(runtime.env);
+    if (inFlight) await inFlight.run.catch(() => {});
   }
 
   const sec = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
