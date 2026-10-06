@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
 import pkg from "./package.json";
+import { readOrtVersion } from "./scripts/ort-version";
 
 // Node 17+ returns `localhost` as ::1 (IPv6) first. When the browser server and
 // the headless-chrome tab land on mismatched loopback stacks the session never
@@ -15,6 +16,7 @@ export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    "import.meta.env.VITE_ORT_VERSION": JSON.stringify(readOrtVersion(__dirname)),
   },
   resolve: {
     alias: {
