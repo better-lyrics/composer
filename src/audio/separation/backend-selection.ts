@@ -1,8 +1,9 @@
 import { type Backend, WEBGPU_POWER_PREFERENCE } from "@/audio/separation/ort-runtime";
 import { describeError } from "@/audio/separation/worker-log";
+import type { VocalModelVariant } from "@/stores/settings";
 
 type BackendChoice =
-  | { backend: "webgpu"; adapterLabel: string; hasTimestampQuery: boolean | null }
+  | { backend: "webgpu"; adapterLabel: string; hasTimestampQuery: boolean | null; hasShaderF16: boolean }
   | { backend: Extract<Backend, "wasm">; reason: string };
 
 interface GpuAdapterInfoLike {
@@ -53,7 +54,19 @@ async function chooseBackend(forceWasm: boolean | undefined): Promise<BackendCho
     backend: "webgpu",
     adapterLabel,
     hasTimestampQuery: adapter.features?.has("timestamp-query") ?? null,
+    hasShaderF16: adapter.features?.has("shader-f16") ?? false,
   };
 }
 
-export { chooseBackend };
+// The fp16 model's WebGPU kernels need the `shader-f16` device feature. Without
+// it session creation fails, and the WASM fallback runs fp16 about 4x slower
+// than fp32 (and ~60x slower than WebGPU), so refuse up front, before the
+// download, with a message the user can act on.
+function describeUnsupportedVariant(variant: VocalModelVariant, choice: BackendChoice): string | null {
+  if (variant === "fp16" && choice.backend === "webgpu" && !choice.hasShaderF16) {
+    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) does not provide. Switch "Vocal model precision" to fp32 in Settings.`;
+  }
+  return null;
+}
+
+export { chooseBackend, describeUnsupportedVariant };

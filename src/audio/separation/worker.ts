@@ -1,6 +1,6 @@
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
-import { chooseBackend } from "@/audio/separation/backend-selection";
+import { chooseBackend, describeUnsupportedVariant } from "@/audio/separation/backend-selection";
 import { runChunkPipeline } from "@/audio/separation/chunk-pipeline";
 import { type Chunk, chunkCount, stitchChunks } from "@/audio/separation/chunker";
 import { denormalizeDemucsOutput, normalizeForDemucs } from "@/audio/separation/demucs-postprocess";
@@ -45,6 +45,24 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
     return;
   }
 
+  // Pick the backend first: it is cheap, and it lets us refuse a variant the
+  // device cannot run before spending a download on it.
+  const choice = await chooseBackend(forceWasm);
+  if (choice.backend === "webgpu") {
+    log(`using WebGPU (${choice.adapterLabel})`);
+  } else {
+    log(`using WASM (CPU): ${choice.reason}`);
+  }
+  const unsupported = describeUnsupportedVariant(variant, choice);
+  if (unsupported) {
+    log(unsupported);
+    post({ type: "error", code: "ort-failed", message: unsupported });
+    return;
+  }
+  if (variant === "fp16" && choice.backend === "wasm") {
+    log("fp16 on the WASM (CPU) path is about 4x slower than fp32; consider fp32 in Settings");
+  }
+
   let modelBytes: ArrayBuffer;
   if (await hasCachedModel(descriptor)) {
     const cached = await readCachedModel(descriptor);
@@ -75,12 +93,6 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
   }
 
   try {
-    const choice = await chooseBackend(forceWasm);
-    if (choice.backend === "webgpu") {
-      log(`using WebGPU (${choice.adapterLabel})`);
-    } else {
-      log(`using WASM (CPU): ${choice.reason}`);
-    }
     activeBackend = choice.backend;
     adapterHasTimestampQuery = choice.backend === "webgpu" ? choice.hasTimestampQuery : null;
     let runtime: Ort;
