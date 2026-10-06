@@ -60,7 +60,7 @@ async function handleInit(variant: VocalModelVariant, forceWasm?: boolean, profi
     return;
   }
   if (variant === "fp16" && choice.backend === "wasm") {
-    log("fp16 on the WASM (CPU) path is about 4x slower than fp32; consider fp32 in Settings");
+    log("fp16 on the WASM (CPU) path is about 4x slower than fp32; consider the fp32 vocal model");
   }
 
   let modelBytes: ArrayBuffer;

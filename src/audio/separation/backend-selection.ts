@@ -64,7 +64,7 @@ async function chooseBackend(forceWasm: boolean | undefined): Promise<BackendCho
 // download, with a message the user can act on.
 function describeUnsupportedVariant(variant: VocalModelVariant, choice: BackendChoice): string | null {
   if (variant === "fp16" && choice.backend === "webgpu" && !choice.hasShaderF16) {
-    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) does not provide. Switch "Vocal model precision" to fp32 in Settings.`;
+    return `The fp16 model needs WebGPU shader-f16 support, which this browser/GPU (${choice.adapterLabel}) does not provide. Set the "Vocal model precision" setting to fp32.`;
   }
   return null;
 }
