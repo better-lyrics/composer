@@ -3,6 +3,8 @@ import type { ModelDescriptor } from "@/audio/separation/model-registry";
 const CACHE_NAME = "composer-vocal-model-v1";
 
 type DownloadProgress = (loaded: number, total: number) => void;
+// Any large file fetched once and kept: the vocal model, the alignment model
+// and its dictionary all share this cache.
 type CachedModel = Pick<ModelDescriptor, "url" | "approxBytes">;
 
 async function hasCachedModel(model: CachedModel): Promise<boolean> {
@@ -76,3 +78,4 @@ async function fetchAndCacheModel(
 }
 
 export { hasCachedModel, readCachedModel, fetchAndCacheModel };
+export type { CachedModel };
