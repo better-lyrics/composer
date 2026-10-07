@@ -3,7 +3,7 @@ import {
   groupTimedWords,
   retimeWords,
   sanitizeIntervals,
-  wordTimingsFromAlignment,
+  timingsFromParts,
 } from "@/domain/alignment/words";
 import { describe, expect, it } from "vitest";
 
@@ -66,36 +66,43 @@ describe("sanitizeIntervals", () => {
   });
 });
 
-// -- wordTimingsFromAlignment -------------------------------------------------
+// -- timingsFromParts / retimeWords --------------------------------------------
 
-describe("wordTimingsFromAlignment", () => {
-  it("splits each word's interval across its syllables by character count", () => {
+describe("timingsFromParts", () => {
+  it("gives each part its own interval and keeps the space after each word", () => {
     const words = groupAlignmentWords(["hel", "lo", "you"], [false, true, false]);
-    const timings = wordTimingsFromAlignment(words, [
-      { begin: 1, end: 1.5 },
+    const timings = timingsFromParts(words, [
+      { begin: 1, end: 1.3 },
+      { begin: 1.3, end: 1.5 },
       { begin: 2, end: 2.4 },
     ]);
-    expect(timings.map((t) => t.text)).toEqual(["hel", "lo ", "you"]);
-    expect(timings[0]).toMatchObject({ begin: 1, end: 1.3 });
-    expect(timings[1]).toMatchObject({ begin: 1.3, end: 1.5 });
-    expect(timings[2]).toMatchObject({ begin: 2, end: 2.4 });
+    expect(timings).toEqual([
+      { text: "hel", begin: 1, end: 1.3 },
+      { text: "lo ", begin: 1.3, end: 1.5 },
+      { text: "you", begin: 2, end: 2.4 },
+    ]);
+  });
+
+  it("splits unspaced Chinese and Japanese into one part per character", () => {
+    const words = groupAlignmentWords(["我爱你", "君と"], [true, false]);
+    expect(words.map((w) => w.parts)).toEqual([
+      ["我", "爱", "你"],
+      ["君", "と"],
+    ]);
   });
 });
 
-// -- groupTimedWords / retimeWords --------------------------------------------
-
 describe("retimeWords", () => {
-  it("groups syllables by trailing space and keeps every part's metadata", () => {
+  it("keeps every part's metadata and only changes its times", () => {
     const existing = [
       { text: "hel", begin: 0, end: 1, transliteration: "x" },
       { text: "lo ", begin: 1, end: 2 },
       { text: "you", begin: 2, end: 3 },
     ];
-    const words = groupTimedWords(existing);
-    expect(words.map((w) => w.text)).toEqual(["hello", "you"]);
-
-    const retimed = retimeWords(existing, words, [
-      { begin: 5, end: 5.5 },
+    expect(groupTimedWords(existing).map((w) => w.text)).toEqual(["hello", "you"]);
+    const retimed = retimeWords(existing, [
+      { begin: 5, end: 5.3 },
+      { begin: 5.3, end: 5.5 },
       { begin: 6, end: 6.3 },
     ]);
     expect(retimed.map((w) => [w.text, w.begin, w.end])).toEqual([

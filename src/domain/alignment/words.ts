@@ -1,8 +1,9 @@
+import { splitCjkPart } from "@/domain/alignment/cjk";
 import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-/** One spoken word: the syllable parts the editor shows, joined for the aligner. */
+/** One spoken word and the parts it's timed in: syllables, or single Chinese/Japanese characters. */
 interface AlignmentWord {
   text: string;
   parts: string[];
@@ -22,12 +23,13 @@ const MIN_PART_DURATION = 0.01;
 
 // Regroups the editor's split output (syllable parts with a trailing-space flag
 // on each word's last part) into whole words, which is what the aligner's
-// pronunciation lookup needs.
+// pronunciation lookup needs. Unspaced Chinese and Japanese is split into one
+// part per character so each gets its own timing.
 function groupAlignmentWords(parts: string[], trailingSpace: boolean[]): AlignmentWord[] {
   const words: AlignmentWord[] = [];
   let current: string[] = [];
   for (let i = 0; i < parts.length; i++) {
-    current.push(parts[i]);
+    current.push(...splitCjkPart(parts[i]));
     const isLast = i === parts.length - 1;
     if (trailingSpace[i] || isLast) {
       words.push({ text: current.join(""), parts: current, trailingSpace: trailingSpace[i] ?? false });
@@ -71,33 +73,26 @@ function sanitizeIntervals(intervals: WordInterval[], bounds: WordInterval): Wor
   return out;
 }
 
-// Splits each aligned word across its syllable parts by character count, the
-// same rule the editor uses when a word is split by hand.
-function wordTimingsFromAlignment(words: AlignmentWord[], intervals: WordInterval[]): WordTiming[] {
+// Word timings for a line-timed line, one per part, with the space after each
+// word kept on its last part.
+function timingsFromParts(words: AlignmentWord[], partIntervals: WordInterval[]): WordTiming[] {
   const timings: WordTiming[] = [];
-  for (let w = 0; w < words.length; w++) {
-    const { parts, trailingSpace } = words[w];
-    const { begin, end } = intervals[w];
-    const totalChars = parts.reduce((sum, part) => sum + part.length, 0) || 1;
-    let at = begin;
-    for (let p = 0; p < parts.length; p++) {
-      const isLastPart = p === parts.length - 1;
-      const partEnd = isLastPart ? end : at + ((end - begin) * parts[p].length) / totalChars;
-      timings.push({ text: isLastPart && trailingSpace ? `${parts[p]} ` : parts[p], begin: at, end: partEnd });
-      at = partEnd;
-    }
+  for (const { parts, trailingSpace } of words) {
+    parts.forEach((part, p) => {
+      const { begin, end } = partIntervals[timings.length];
+      timings.push({ text: p === parts.length - 1 && trailingSpace ? `${part} ` : part, begin, end });
+    });
   }
   return timings;
 }
 
 // New times for a line that already has word timing. Everything else about each
 // part (text, explicit flag, syllable group, transliteration) is kept.
-function retimeWords(existing: readonly WordTiming[], words: AlignmentWord[], intervals: WordInterval[]): WordTiming[] {
-  const fresh = wordTimingsFromAlignment(words, intervals);
-  return existing.map((word, i) => ({ ...word, begin: fresh[i].begin, end: fresh[i].end }));
+function retimeWords(existing: readonly WordTiming[], partIntervals: WordInterval[]): WordTiming[] {
+  return existing.map((word, i) => ({ ...word, begin: partIntervals[i].begin, end: partIntervals[i].end }));
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, wordTimingsFromAlignment };
+export { groupAlignmentWords, groupTimedWords, retimeWords, sanitizeIntervals, timingsFromParts };
 export type { AlignmentWord, WordInterval };

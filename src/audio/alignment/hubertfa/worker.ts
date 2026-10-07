@@ -1,13 +1,22 @@
 /// <reference lib="webworker" />
 // biome-ignore organizeImports: the webworker triple-slash reference must stay before imports.
 import { decodeAlignment } from "@/audio/alignment/hubertfa/decoder";
+import japaneseDictionaryText from "@/audio/alignment/hubertfa/dictionary-ja.txt?raw";
+import mandarinDictionaryText from "@/audio/alignment/hubertfa/dictionary-zh.txt?raw";
+import { type G2pContext, type HanReading, lineToPhoneUnits } from "@/audio/alignment/hubertfa/g2p";
+import { createJapaneseReader } from "@/audio/alignment/hubertfa/japanese-tokenizer";
 import { type Pronunciations, parseDictionary } from "@/audio/alignment/hubertfa/lexicon";
 import { getAlignmentAssets } from "@/audio/alignment/hubertfa/model-registry";
-import { buildPhoneSequence, wordIntervalsFromPhones } from "@/audio/alignment/hubertfa/sequence";
+import {
+  buildPhoneSequence,
+  partIntervalsFromUnits,
+  unitIntervalsFromPhones,
+} from "@/audio/alignment/hubertfa/sequence";
 import { chooseBackend } from "@/audio/separation/backend-selection";
 import { type CachedAsset, fetchAndCacheModel, readCachedModel } from "@/audio/separation/model-cache";
 import { type Backend, type Ort, type OrtSession, createSession, loadOrt } from "@/audio/separation/ort-runtime";
 import { describeError, log } from "@/audio/separation/worker-log";
+import { hasHan } from "@/domain/alignment/cjk";
 import type { WordInterval } from "@/domain/alignment/words";
 
 declare const self: DedicatedWorkerGlobalScope;
@@ -20,8 +29,8 @@ type AlignOutcome =
   | { kind: "no-path" };
 
 type InboundMessage =
-  | { type: "init"; forceWasm?: boolean }
-  | { type: "align"; samples: Float32Array; sampleRate: number; words: string[] }
+  | { type: "init"; forceWasm?: boolean; japanese?: boolean }
+  | { type: "align"; samples: Float32Array; sampleRate: number; words: string[][]; hanReading: HanReading }
   | { type: "cancel" };
 
 type OutboundMessage =
@@ -42,6 +51,10 @@ let ort: Ort | null = null;
 let session: OrtSession | null = null;
 let activeBackend: Backend = "wasm";
 let dictionary: Pronunciations | null = null;
+let readJapanese: G2pContext["readJapanese"] = null;
+let pinyinOf: G2pContext["pinyinOf"] = null;
+const mandarinDictionary = parseDictionary(mandarinDictionaryText);
+const japaneseDictionary = parseDictionary(japaneseDictionaryText);
 let downloadAbort: AbortController | null = null;
 
 // -- Functions ----------------------------------------------------------------
@@ -63,7 +76,19 @@ async function loadAsset(
   return fetchAndCacheModel(asset, signal, onProgress);
 }
 
-async function handleInit(forceWasm?: boolean) {
+// Mandarin readings load on the first line with Han characters read as Chinese.
+async function loadPinyin(): Promise<NonNullable<G2pContext["pinyinOf"]>> {
+  if (!pinyinOf) {
+    const { pinyin } = await import("pinyin-pro");
+    pinyinOf = (text) => {
+      const syllables = pinyin(text, { toneType: "none", type: "all", v: true });
+      return syllables.map((s) => (s.isZh ? s.pinyin : null));
+    };
+  }
+  return pinyinOf;
+}
+
+async function handleInit(forceWasm?: boolean, japanese?: boolean) {
   const assets = getAlignmentAssets();
   if (!assets) {
     post({ type: "error", code: "no-base-url", message: "VITE_VOCAL_MODEL_BASE_URL is not configured." });
@@ -71,25 +96,36 @@ async function handleInit(forceWasm?: boolean) {
   }
 
   downloadAbort = new AbortController();
-  const progress = { dictionary: [0, assets.dictionary.approxBytes], model: [0, assets.model.approxBytes] };
-  const report = () =>
-    post({
-      type: "init-progress",
-      loaded: progress.dictionary[0] + progress.model[0],
-      total: progress.dictionary[1] + progress.model[1],
+  const { signal } = downloadAbort;
+  const japaneseFiles = japanese && !readJapanese ? assets.japaneseDictionary : {};
+  const files = [assets.dictionary, assets.model, ...Object.values(japaneseFiles)];
+  const progress = new Map(files.map((file) => [file.url, [0, file.approxBytes]]));
+  const report = () => {
+    let loaded = 0;
+    let total = 0;
+    for (const [l, t] of progress.values()) {
+      loaded += l;
+      total += t;
+    }
+    post({ type: "init-progress", loaded, total });
+  };
+  const load = (file: CachedAsset) =>
+    loadAsset(file, signal, (loaded, total) => {
+      progress.set(file.url, [loaded, total]);
+      report();
     });
 
   let modelBytes: ArrayBuffer;
   try {
-    const dictionaryBytes = await loadAsset(assets.dictionary, downloadAbort.signal, (loaded, total) => {
-      progress.dictionary = [loaded, total];
-      report();
-    });
-    dictionary = parseDictionary(new TextDecoder().decode(dictionaryBytes));
-    modelBytes = await loadAsset(assets.model, downloadAbort.signal, (loaded, total) => {
-      progress.model = [loaded, total];
-      report();
-    });
+    dictionary = parseDictionary(new TextDecoder().decode(await load(assets.dictionary)));
+    if (Object.keys(japaneseFiles).length > 0) {
+      readJapanese = await createJapaneseReader((name) => {
+        const file = japaneseFiles[name];
+        if (!file) throw new Error(`Unknown Japanese dictionary file ${name}`);
+        return load(file);
+      });
+    }
+    modelBytes = await load(assets.model);
   } catch (err) {
     if ((err as Error)?.name === "AbortError") {
       post({ type: "cancelled" });
@@ -156,7 +192,7 @@ async function runModel(samples: Float32Array) {
   }
 }
 
-async function handleAlign(samples: Float32Array, sampleRate: number, words: string[]) {
+async function handleAlign(samples: Float32Array, sampleRate: number, words: string[][], hanReading: HanReading) {
   if (!session || !ort || !dictionary) {
     post({ type: "error", code: "ort-failed", message: "Alignment model is not loaded." });
     return;
@@ -169,7 +205,18 @@ async function handleAlign(samples: Float32Array, sampleRate: number, words: str
     });
     return;
   }
-  const built = buildPhoneSequence(words, dictionary);
+  const lineText = words.flat().join("");
+  const g2p = lineToPhoneUnits(words, {
+    dictionaries: { en: dictionary, zh: mandarinDictionary, ja: japaneseDictionary },
+    hanReading,
+    pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
+    readJapanese,
+  });
+  if (g2p.kind === "unknown") {
+    post({ type: "align-done", outcome: { kind: "unknown", words: g2p.words } });
+    return;
+  }
+  const built = buildPhoneSequence(g2p.units);
   if (built.kind === "unknown") {
     post({ type: "align-done", outcome: { kind: "unknown", words: built.words } });
     return;
@@ -191,10 +238,13 @@ async function handleAlign(samples: Float32Array, sampleRate: number, words: str
       hopSize: HOP_SIZE,
       phoneIds: built.sequence.phoneIds,
     });
-    const outcome: AlignOutcome = phones
-      ? { kind: "aligned", intervals: wordIntervalsFromPhones(phones, built.sequence, words.length) }
-      : { kind: "no-path" };
-    post({ type: "align-done", outcome });
+    if (!phones) {
+      post({ type: "align-done", outcome: { kind: "no-path" } });
+      return;
+    }
+    const unitIntervals = unitIntervalsFromPhones(phones, built.sequence, g2p.units.length);
+    const intervals = partIntervalsFromUnits(g2p.units, unitIntervals, words.flat());
+    post({ type: "align-done", outcome: { kind: "aligned", intervals } });
   } catch (err) {
     post({ type: "error", code: "ort-failed", message: describeError(err) });
   }
@@ -204,8 +254,8 @@ async function handleAlign(samples: Float32Array, sampleRate: number, words: str
 
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
-  if (msg.type === "init") void handleInit(msg.forceWasm);
-  else if (msg.type === "align") void handleAlign(msg.samples, msg.sampleRate, msg.words);
+  if (msg.type === "init") void handleInit(msg.forceWasm, msg.japanese);
+  else if (msg.type === "align") void handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading);
   else if (msg.type === "cancel") downloadAbort?.abort();
 });
 

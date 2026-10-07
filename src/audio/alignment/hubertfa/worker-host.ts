@@ -1,3 +1,4 @@
+import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
 import type { AlignOutcome, InboundMessage, OutboundMessage } from "@/audio/alignment/hubertfa/worker";
 import type { Backend } from "@/audio/separation/ort-runtime";
 
@@ -86,18 +87,23 @@ class AlignmentWorker {
     });
   }
 
-  async init(onProgress?: (loaded: number, total: number) => void): Promise<Backend> {
-    const promise = this.request({ type: "init" }, [], onProgress);
+  async init(onProgress?: (loaded: number, total: number) => void, japanese = false): Promise<Backend> {
+    const promise = this.request({ type: "init", japanese }, [], onProgress);
     this.armInitTimeout();
     const msg = await promise;
     if (msg.type !== "init-done") throw workerError("Unexpected reply to init.", "protocol");
     return msg.backend;
   }
 
-  async align(samples: Float32Array, sampleRate: number, words: string[]): Promise<AlignOutcome> {
+  async align(
+    samples: Float32Array,
+    sampleRate: number,
+    words: string[][],
+    hanReading: HanReading,
+  ): Promise<AlignOutcome> {
     // Copy so the transfer doesn't detach the caller's view of the song.
     const copy = new Float32Array(samples);
-    const msg = await this.request({ type: "align", samples: copy, sampleRate, words }, [copy.buffer]);
+    const msg = await this.request({ type: "align", samples: copy, sampleRate, words, hanReading }, [copy.buffer]);
     if (msg.type !== "align-done") throw workerError("Unexpected reply to align.", "protocol");
     return msg.outcome;
   }

@@ -143,8 +143,8 @@ const AutoAlignDropdown: React.FC = () => {
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-medium text-composer-text">Auto-align words</p>
                 <p className="text-xs text-composer-text-muted">
-                  Times each word from the separated vocals, using your line timing as a guide. English lyrics only for
-                  now.
+                  Times each word from the separated vocals, using your line timing as a guide. Works for English,
+                  Mandarin and Japanese lyrics.
                 </p>
               </div>
 
