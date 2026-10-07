@@ -72,6 +72,7 @@ describe("requestPlayback", () => {
     it("plays at once just past the song start", () => {
       useAudioStore.setState({ currentTime: 0.01 });
       expect(requestPlayback()).toBe("playing");
+      expect(isCountingIn()).toBe(false);
     });
 
     it("plays at once outside Sync", () => {
