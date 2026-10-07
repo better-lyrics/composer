@@ -35,7 +35,13 @@ const hubertfaAligner: Aligner = {
     signal.throwIfAborted();
     if (!worker) throw new Error("Alignment model is not loaded.");
     const parts = segment.words.map((word) => word.parts);
-    const outcome = await worker.align(segment.samples, segment.sampleRate, parts, segment.hanReading);
+    const outcome = await worker.align(
+      segment.samples,
+      segment.sampleRate,
+      parts,
+      segment.hanReading,
+      segment.transliteration,
+    );
     if (outcome.kind === "aligned") {
       const intervals = outcome.intervals.map((iv) => ({
         begin: segment.windowBegin + iv.begin,

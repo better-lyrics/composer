@@ -100,10 +100,13 @@ class AlignmentWorker {
     sampleRate: number,
     words: string[][],
     hanReading: HanReading,
+    transliteration: string | null,
   ): Promise<AlignOutcome> {
     // Copy so the transfer doesn't detach the caller's view of the song.
     const copy = new Float32Array(samples);
-    const msg = await this.request({ type: "align", samples: copy, sampleRate, words, hanReading }, [copy.buffer]);
+    const msg = await this.request({ type: "align", samples: copy, sampleRate, words, hanReading, transliteration }, [
+      copy.buffer,
+    ]);
     if (msg.type !== "align-done") throw workerError("Unexpected reply to align.", "protocol");
     return msg.outcome;
   }

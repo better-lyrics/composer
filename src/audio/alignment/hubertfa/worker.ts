@@ -30,7 +30,14 @@ type AlignOutcome =
 
 type InboundMessage =
   | { type: "init"; forceWasm?: boolean; japanese?: boolean }
-  | { type: "align"; samples: Float32Array; sampleRate: number; words: string[][]; hanReading: HanReading }
+  | {
+      type: "align";
+      samples: Float32Array;
+      sampleRate: number;
+      words: string[][];
+      hanReading: HanReading;
+      transliteration: string | null;
+    }
   | { type: "cancel" };
 
 type OutboundMessage =
@@ -192,7 +199,13 @@ async function runModel(samples: Float32Array) {
   }
 }
 
-async function handleAlign(samples: Float32Array, sampleRate: number, words: string[][], hanReading: HanReading) {
+async function handleAlign(
+  samples: Float32Array,
+  sampleRate: number,
+  words: string[][],
+  hanReading: HanReading,
+  transliteration: string | null,
+) {
   if (!session || !ort || !dictionary) {
     post({ type: "error", code: "ort-failed", message: "Alignment model is not loaded." });
     return;
@@ -211,6 +224,7 @@ async function handleAlign(samples: Float32Array, sampleRate: number, words: str
     hanReading,
     pinyinOf: hanReading === "zh" && hasHan(lineText) ? await loadPinyin() : null,
     readJapanese,
+    transliteration,
   });
   if (g2p.kind === "unknown") {
     post({ type: "align-done", outcome: { kind: "unknown", words: g2p.words } });
@@ -255,8 +269,9 @@ async function handleAlign(samples: Float32Array, sampleRate: number, words: str
 self.addEventListener("message", (ev: MessageEvent<InboundMessage>) => {
   const msg = ev.data;
   if (msg.type === "init") void handleInit(msg.forceWasm, msg.japanese);
-  else if (msg.type === "align") void handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading);
-  else if (msg.type === "cancel") downloadAbort?.abort();
+  else if (msg.type === "align") {
+    void handleAlign(msg.samples, msg.sampleRate, msg.words, msg.hanReading, msg.transliteration);
+  } else if (msg.type === "cancel") downloadAbort?.abort();
 });
 
 // -- Exports ------------------------------------------------------------------

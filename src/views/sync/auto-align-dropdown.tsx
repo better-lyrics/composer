@@ -153,7 +153,8 @@ const AutoAlignDropdown: React.FC = () => {
               <PopTitle>Auto-align words</PopTitle>
               <PopText>
                 Times each word from the separated vocals, using your line timing as a guide. Works for English,
-                Mandarin and Japanese lyrics.
+                Mandarin and Japanese lyrics, and follows your transliterations for how Chinese and Japanese lines are
+                sung.
               </PopText>
 
               <div className="grid gap-1 mt-3">

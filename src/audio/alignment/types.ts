@@ -9,6 +9,8 @@ interface AlignmentSegment {
   words: AlignmentWord[];
   /** Whether Han characters are read as Mandarin or as Japanese kanji. */
   hanReading: HanReading;
+  /** The line's romanization when it differs from the line; its syllables are what's sung. */
+  transliteration: string | null;
   /** The user's tapped line timing, in song seconds. */
   taps: WordInterval;
   /** Song time of `samples[0]`. */

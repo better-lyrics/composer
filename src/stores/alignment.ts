@@ -6,6 +6,7 @@ import { hasCachedModel } from "@/audio/separation/model-cache";
 import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
 import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
 import { hasCjk, hasKana } from "@/domain/alignment/cjk";
+import { sungTransliteration } from "@/domain/alignment/transliteration";
 import {
   type AlignmentWord,
   type WordInterval,
@@ -240,6 +241,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
           {
             words,
             hanReading,
+            transliteration: sungTransliteration(line),
             taps,
             windowBegin: window.begin,
             samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
