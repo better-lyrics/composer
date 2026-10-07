@@ -126,7 +126,7 @@ describe("Sync count-in", () => {
       await expect.poll(() => screen.container.querySelector("[data-count-in-dots]")).not.toBeNull();
     });
 
-    it("shows no dots when resuming partway through the first line", async () => {
+    it("regression: resuming partway through the first line plays at once without a count", async () => {
       load([createLine({ id: "l0", text: "Hold me close" })], 0);
       const screen = await render(<SyncPanel />);
       space();
@@ -138,11 +138,11 @@ describe("Sync count-in", () => {
       useSettingsStore.setState({ syncCountIn: 3 });
       await expect.element(screen.getByText(/Paused/)).toBeInTheDocument();
       space();
-      expect(isCountingIn()).toBe(true);
-      expect(document.querySelector("[data-count-in-dots]")).toBeNull();
+      expect(isCountingIn()).toBe(false);
+      expect(isPlaying()).toBe(true);
     });
 
-    it("shows the footer countdown but no dots when counting in mid-song", async () => {
+    it("regression: starting from a later line mid-song plays at once without a count", async () => {
       load(
         [
           createLine({ id: "l0", text: "First line", words: [{ text: "First line", begin: 1, end: 2 }] }),
@@ -155,9 +155,11 @@ describe("Sync count-in", () => {
       await expect.poll(() => rows().length).toBe(2);
       rows()[1].click();
       await expect.poll(() => rows()[1].className).toContain("border-composer-accent");
+      useAudioStore.setState({ currentTime: 20 });
       space();
-      await expect.element(screen.getByText("Starting in", { exact: true })).toBeInTheDocument();
-      expect(screen.container.querySelector("[data-count-in-dots]")).toBeNull();
+      expect(isCountingIn()).toBe(false);
+      expect(isPlaying()).toBe(true);
+      await expect.element(screen.getByText("Starting in", { exact: true })).not.toBeInTheDocument();
     });
 
     it("starts playback at once when the count-in is off", async () => {

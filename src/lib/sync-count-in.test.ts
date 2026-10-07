@@ -6,7 +6,10 @@ import { useSyncCountInStore } from "@/stores/sync-count-in";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 function loadSong(): void {
-  useAudioStore.setState({ source: { type: "file", file: new File(["x"], "song.mp3", { type: "audio/mpeg" }) } });
+  useAudioStore.setState({
+    source: { type: "file", file: new File(["x"], "song.mp3", { type: "audio/mpeg" }) },
+    currentTime: 0,
+  });
 }
 
 const isPlaying = () => useAudioStore.getState().isPlaying;
@@ -57,6 +60,18 @@ describe("requestPlayback", () => {
       expect(requestPlayback()).toBe("playing");
       expect(isPlaying()).toBe(true);
       expect(isCountingIn()).toBe(false);
+    });
+
+    it("plays at once when playback resumes past the song start", () => {
+      useAudioStore.setState({ currentTime: 12.5 });
+      expect(requestPlayback()).toBe("playing");
+      expect(isPlaying()).toBe(true);
+      expect(isCountingIn()).toBe(false);
+    });
+
+    it("plays at once just past the song start", () => {
+      useAudioStore.setState({ currentTime: 0.01 });
+      expect(requestPlayback()).toBe("playing");
     });
 
     it("plays at once outside Sync", () => {

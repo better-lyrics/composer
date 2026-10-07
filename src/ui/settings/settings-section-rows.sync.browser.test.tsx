@@ -19,7 +19,7 @@ describe("SettingsSectionRows (sync)", () => {
     await expect
       .element(
         screen.getByText(
-          "Count down for 3 seconds before playback starts in Sync, so you are ready for the first word.",
+          "Count down for 3 seconds before Sync plays from the start of the song, so you are ready for the first word.",
         ),
       )
       .toBeInTheDocument();
@@ -35,7 +35,7 @@ describe("SettingsSectionRows (sync)", () => {
     await expect
       .element(
         screen.getByText(
-          "Count down for 1 second before playback starts in Sync, so you are ready for the first word.",
+          "Count down for 1 second before Sync plays from the start of the song, so you are ready for the first word.",
         ),
       )
       .toBeInTheDocument();

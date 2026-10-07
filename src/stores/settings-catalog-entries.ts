@@ -9,7 +9,7 @@ import { pluralize } from "@/utils/pluralize";
 
 function syncCountInDescription(seconds: number): string {
   if (seconds === 0) return "Playback starts right away in Sync.";
-  return `Count down for ${pluralize(seconds, "second")} before playback starts in Sync, so you are ready for the first word.`;
+  return `Count down for ${pluralize(seconds, "second")} before Sync plays from the start of the song, so you are ready for the first word.`;
 }
 
 // -- Catalog ------------------------------------------------------------------

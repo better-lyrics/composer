@@ -3,7 +3,7 @@ import { isLinked } from "@/domain/instance/predicates";
 import { getLanguageDisplayLine } from "@/domain/language/display";
 import { effectiveBounds } from "@/domain/line/bounds";
 import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
-import { nextSyncableLineIndex, previousSlot, slotBounds } from "@/domain/sync/cursor";
+import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
 import { isCountingIn } from "@/lib/sync-count-in";
@@ -114,7 +114,7 @@ const SyncPanel: React.FC = () => {
     setIsPlaying,
     onPlacementSkip: placementPreroll.show,
   });
-  const countIn = useSyncCountIn(cursor.lineIndex === nextSyncableLineIndex(lines, -1) && cursor.wordIndex === 0);
+  const countIn = useSyncCountIn();
 
   const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(
     lines,

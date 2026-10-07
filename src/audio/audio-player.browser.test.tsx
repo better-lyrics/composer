@@ -47,8 +47,9 @@ describe("AudioPlayer", () => {
     expect(useAudioStore.getState().isPlaying).toBe(false);
   });
 
-  it("counts in before playing in Sync", async () => {
+  it("counts in before playing in Sync from the song start", async () => {
     setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
     useProjectStore.setState({ activeTab: "sync" });
     useSettingsStore.setState({ syncCountIn: 3 });
     const screen = await render(<AudioPlayer />);
@@ -59,6 +60,7 @@ describe("AudioPlayer", () => {
 
   it("cancels a running count-in when clicked again", async () => {
     setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
     useProjectStore.setState({ activeTab: "sync" });
     useSettingsStore.setState({ syncCountIn: 3 });
     const screen = await render(<AudioPlayer />);

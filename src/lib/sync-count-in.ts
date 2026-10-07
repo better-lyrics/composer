@@ -1,4 +1,4 @@
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { SYNC_COUNT_IN_IDLE, useSyncCountInStore } from "@/stores/sync-count-in";
@@ -30,6 +30,7 @@ function countsIn(): boolean {
   return (
     useProjectStore.getState().activeTab === "sync" &&
     useAudioStore.getState().source !== null &&
+    livePlaybackTime() === 0 &&
     useSettingsStore.getState().syncCountIn > 0
   );
 }
