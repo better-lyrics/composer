@@ -22,6 +22,18 @@ async function readCachedModel(model: CachedModel): Promise<ArrayBuffer | null> 
   return hit.arrayBuffer();
 }
 
+// Caching is best effort: with little free storage the write fails, and the
+// model should still load for this session rather than fail outright.
+async function storeInCache(model: CachedModel, bytes: ArrayBuffer | Uint8Array): Promise<void> {
+  if (typeof caches === "undefined") return;
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(model.url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } }));
+  } catch (err) {
+    console.warn(`[model-cache] could not cache ${model.url}; it will download again next time`, err);
+  }
+}
+
 async function fetchAndCacheModel(
   model: CachedModel,
   signal: AbortSignal,
@@ -39,10 +51,7 @@ async function fetchAndCacheModel(
   if (!reader) {
     const buf = await response.arrayBuffer();
     onProgress(buf.byteLength, buf.byteLength);
-    if (typeof caches !== "undefined") {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.put(model.url, new Response(buf, { headers: { "content-type": "application/octet-stream" } }));
-    }
+    await storeInCache(model, buf);
     return buf;
   }
 
@@ -69,11 +78,7 @@ async function fetchAndCacheModel(
     offset += chunk.byteLength;
   }
 
-  if (typeof caches !== "undefined") {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(model.url, new Response(merged, { headers: { "content-type": "application/octet-stream" } }));
-  }
-
+  await storeInCache(model, merged);
   return merged.buffer;
 }
 

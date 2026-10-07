@@ -4,6 +4,8 @@ import type { Aligner } from "@/audio/alignment/types";
 import { loadVocalsPcm } from "@/audio/alignment/vocals-pcm";
 import { hasCachedModel } from "@/audio/separation/model-cache";
 import { DEFAULT_WINDOW_OPTIONS, alignmentWindow, sliceWindow } from "@/domain/alignment/window";
+import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
+import { hasCjk, hasKana } from "@/domain/alignment/cjk";
 import {
   type AlignmentWord,
   type WordInterval,
@@ -11,9 +13,8 @@ import {
   groupTimedWords,
   retimeWords,
   sanitizeIntervals,
-  wordTimingsFromAlignment,
+  timingsFromParts,
 } from "@/domain/alignment/words";
-import { detectNonLatinLanguage } from "@/domain/language/script-detection";
 import { mainBounds } from "@/domain/line/bounds";
 import type { LineUpdate, LyricLine } from "@/domain/line/model";
 import { isLineSynced, isWordSynced } from "@/domain/line/predicates";
@@ -88,11 +89,22 @@ let controller: AbortController | null = null;
 
 // -- Functions ----------------------------------------------------------------
 
-// The model is English-only for now. Most projects leave the language unset,
-// so then the lyrics' script decides: anything non-Latin is refused.
-function isSupportedLanguage(language: string | undefined, lines: readonly PlannedLine[]): boolean {
-  if (language) return language.toLowerCase().split("-")[0] === "en";
-  return !lines.some((p) => detectNonLatinLanguage(p.line.text) !== null);
+// The model covers English, Mandarin and Japanese, mixed freely within a line.
+// With no project language set, each line is tried; lines in other scripts
+// fall back to the character split.
+const SUPPORTED_LANGUAGES = new Set(["en", "zh", "cmn", "ja"]);
+
+function isSupportedLanguage(language: string | undefined): boolean {
+  return !language || SUPPORTED_LANGUAGES.has(language.toLowerCase().split("-")[0]);
+}
+
+// Han characters are kanji in a Japanese project, or when any line has kana
+// (an all-kanji line in a Japanese song would otherwise read as Mandarin).
+function hanReadingFor(language: string | undefined, lines: readonly LyricLine[]): HanReading {
+  const base = language?.toLowerCase().split("-")[0];
+  if (base === "ja") return "ja";
+  if (base === "zh" || base === "cmn") return "zh";
+  return lines.some((line) => hasKana(line.text)) ? "ja" : "zh";
 }
 
 async function isModelCached(): Promise<boolean> {
@@ -189,9 +201,11 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     if (planned.length === 0) return { aligned: 0, skipped: 0, fellBack: 0, unknownWords: [] };
 
     if (!getAlignmentAssets()) return fail(set, "unavailable", "Auto-align isn't available on this deployment.");
-    if (!isSupportedLanguage(project.metadata.language, planned)) {
-      return fail(set, "unsupported-language", "Auto-align only supports English lyrics for now.");
+    if (!isSupportedLanguage(project.metadata.language)) {
+      return fail(set, "unsupported-language", "Auto-align supports English, Mandarin and Japanese lyrics.");
     }
+    const hanReading = hanReadingFor(project.metadata.language, project.lines);
+    const japanese = hanReading === "ja" && planned.some((p) => hasCjk(p.line.text));
     const vocalsUrl = useSeparationStore.getState().stemUrls.vocals;
     if (!vocalsUrl) {
       return fail(
@@ -209,7 +223,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
     set({ status: "downloading", error: null, progress: { done: 0, total: 0 } });
 
     try {
-      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal);
+      await aligner.prepare((loaded, total) => set({ progress: { done: loaded, total } }), signal, { japanese });
       set({ status: "running", modelCached: true, progress: { done: 0, total: planned.length } });
       const pcm = await loadVocalsPcm(vocalsUrl);
       const duration = pcm.samples.length / pcm.sampleRate;
@@ -224,7 +238,8 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         const window = alignmentWindow(taps, { ...DEFAULT_WINDOW_OPTIONS, duration, previous });
         const result = await aligner.align(
           {
-            words: words.map((w) => w.text),
+            words,
+            hanReading,
             taps,
             windowBegin: window.begin,
             samples: sliceWindow(pcm.samples, pcm.sampleRate, window),
@@ -235,7 +250,7 @@ const useAlignmentStore = create<AlignmentState & AlignmentActions>((set, get) =
         if (result.fellBack) fellBack++;
         for (const word of result.unknownWords) unknownWords.add(word);
         const safe = sanitizeIntervals(result.intervals, window);
-        const timings = existing ? retimeWords(existing, words, safe) : wordTimingsFromAlignment(words, safe);
+        const timings = existing ? retimeWords(existing, safe) : timingsFromParts(words, safe);
         updates.push({ id: line.id, updates: { words: timings } });
         plannedById.set(line.id, plan);
         set({ progress: { done: updates.length, total: planned.length } });

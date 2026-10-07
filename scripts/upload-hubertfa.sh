@@ -5,7 +5,8 @@
 # by ./scripts/upload-htdemucs.sh and cover these files too.
 #
 # The model is 396 MiB, over wrangler's 300 MiB upload limit, so this uses R2's
-# S3-compatible API, where the AWS CLI uploads large files in parts.
+# S3-compatible API, where the AWS CLI uploads large files in parts. Run
+# `pnpm install` first: the Japanese dictionary comes from node_modules.
 #
 # Usage:
 #   ./scripts/upload-hubertfa.sh <bucket-name> [assets_dir]
@@ -53,6 +54,19 @@ upload hubertfa_v007_fp32_webgpu.onnx application/octet-stream
 upload hubertfa_v007_cmudict.txt 'text/plain; charset=utf-8'
 upload HUBERTFA_LICENSE.txt 'text/plain; charset=utf-8'
 upload HUBERTFA_NOTICE.txt 'text/plain; charset=utf-8'
+
+# kuromoji's IPADIC dictionary, loaded only to read kanji in Japanese lyrics.
+# Uploaded gzipped as-is (no Content-Encoding): the app decompresses it itself.
+KUROMOJI_DIR="$(dirname "$0")/../node_modules/@sglkc/kuromoji"
+for file in "${KUROMOJI_DIR}"/dict/*.dat.gz "${KUROMOJI_DIR}/NOTICE.md"; do
+  name="kuromoji-ipadic/$(basename "${file}")"
+  echo "==> uploading ${name}"
+  aws s3 cp "${file}" "s3://${BUCKET}/${name}" \
+    --endpoint-url "${ENDPOINT}" \
+    --content-type application/octet-stream \
+    --cache-control 'public, max-age=31536000, immutable' \
+    --no-progress
+done
 
 echo ""
 echo "Done. Verify, e.g.:"

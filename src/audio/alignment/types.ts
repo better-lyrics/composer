@@ -1,11 +1,14 @@
-import type { WordInterval } from "@/domain/alignment/words";
+import type { HanReading } from "@/audio/alignment/hubertfa/g2p";
+import type { AlignmentWord, WordInterval } from "@/domain/alignment/words";
 
 // -- Types --------------------------------------------------------------------
 
 /** One line's worth of audio and text, cut around the user's rough line taps. */
 interface AlignmentSegment {
-  /** Whole words in sung order, as written in the lyrics. */
-  words: string[];
+  /** Words in sung order, each with the parts it's timed in. */
+  words: AlignmentWord[];
+  /** Whether Han characters are read as Mandarin or as Japanese kanji. */
+  hanReading: HanReading;
   /** The user's tapped line timing, in song seconds. */
   taps: WordInterval;
   /** Song time of `samples[0]`. */
@@ -16,7 +19,7 @@ interface AlignmentSegment {
 }
 
 interface SegmentAlignment {
-  /** Song-time intervals, one per input word, in order. */
+  /** Song-time intervals, one per part across all words, in order. */
   intervals: WordInterval[];
   /** True when the model couldn't place this line and it was split evenly instead. */
   fellBack: boolean;
@@ -32,8 +35,12 @@ interface Aligner {
   readonly id: string;
   /** False when the aligner ignores the audio. */
   readonly listensToAudio: boolean;
-  /** Downloads and loads whatever the aligner needs. Resolves immediately when there is nothing to load. */
-  prepare: (onProgress: (loaded: number, total: number) => void, signal: AbortSignal) => Promise<void>;
+  /** Downloads and loads whatever the aligner needs, including the kanji dictionary when `japanese`. */
+  prepare: (
+    onProgress: (loaded: number, total: number) => void,
+    signal: AbortSignal,
+    options: { japanese: boolean },
+  ) => Promise<void>;
   align: (segment: AlignmentSegment, signal: AbortSignal) => Promise<SegmentAlignment>;
   /** Frees the model. The next run prepares again from the download cache. */
   release: () => void;

@@ -1,3 +1,5 @@
+import { hasLetterOrDigit } from "@/domain/alignment/cjk";
+
 // Word → phone lookup against HubertFA's English dictionary (ds_cmudict-07b).
 // Mirrors the benchmark's normalisation so lyric spellings like "Don’t,",
 // "lovin'" and "oh-oh" find an entry. Words with no entry are reported rather
@@ -91,7 +93,7 @@ function lookupNormalized(word: string, dictionary: Pronunciations): string[] | 
 // dictionary doesn't cover is unknown, not silent, so its line falls back
 // instead of being aligned as if it had no lyrics.
 function lookupWord(word: string, dictionary: Pronunciations): Lookup {
-  if (!/[\p{L}\p{N}]/u.test(word)) return { kind: "silent" };
+  if (!hasLetterOrDigit(word)) return { kind: "silent" };
   const key = normalizeWord(word);
   if (!/[a-z0-9]/.test(key)) return { kind: "unknown", key: word.trim() };
   const phones = lookupNormalized(key, dictionary);

@@ -7,6 +7,10 @@ import { useSeparationStore } from "@/stores/separation";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const cached = vi.hoisted(() => ({ value: true }));
+const seen = vi.hoisted(() => ({
+  segments: [] as { hanReading: string; parts: string[][] }[],
+  japanese: [] as boolean[],
+}));
 
 vi.mock("@/audio/alignment/hubertfa/model-registry", () => ({
   getAlignmentAssets: () => ({
@@ -25,14 +29,18 @@ vi.mock("@/audio/alignment/vocals-pcm", () => ({
 // Stands in for the model: splits by characters, and can't pronounce "zzz".
 vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
   const { splitByCharacters } = await import("@/audio/alignment/split-by-characters");
+  type Segment = Parameters<typeof splitByCharacters>[0] & { hanReading: string };
   return {
     hubertfaAligner: {
       id: "fake",
       listensToAudio: true,
-      prepare: async () => {},
+      prepare: async (_progress: unknown, _signal: unknown, options: { japanese: boolean }) => {
+        seen.japanese.push(options.japanese);
+      },
       release: () => {},
-      align: async (segment: { words: string[]; taps: { begin: number; end: number } }) => {
-        const unknown = segment.words.includes("zzz");
+      align: async (segment: Segment) => {
+        seen.segments.push({ hanReading: segment.hanReading, parts: segment.words.map((w) => w.parts) });
+        const unknown = segment.words.some((w) => w.text === "zzz");
         return { intervals: splitByCharacters(segment), fellBack: unknown, unknownWords: unknown ? ["zzz"] : [] };
       },
     },
@@ -42,6 +50,8 @@ vi.mock("@/audio/alignment/hubertfa/hubertfa-aligner", async () => {
 describe("alignment store", () => {
   beforeEach(() => {
     cached.value = true;
+    seen.segments = [];
+    seen.japanese = [];
     useProjectStore.setState(INITIAL_STATE);
     useAlignmentStore.setState({ status: "idle", progress: { done: 0, total: 0 }, error: null });
     useSeparationStore.setState({ stemUrls: { vocals: "blob:vocals" } });
@@ -160,15 +170,31 @@ describe("alignment store", () => {
     expect(useAlignmentStore.getState().error?.code).toBe("needs-vocals");
   });
 
-  it("refuses non-Latin lyrics when the project language is unset", async () => {
-    useProjectStore.getState().setLines([{ id: "L1", text: "君の名は", agentId: "v1", begin: 1, end: 2 }]);
+  it("times unspaced Chinese one character at a time, read as Mandarin", async () => {
+    useProjectStore.getState().setLines([{ id: "L1", text: "我爱你", agentId: "v1", begin: 1, end: 2 }]);
 
-    expect(await useAlignmentStore.getState().alignLines()).toBeNull();
-    expect(useAlignmentStore.getState().error?.code).toBe("unsupported-language");
+    await useAlignmentStore.getState().alignLines();
+
+    expect(seen.segments[0]).toEqual({ hanReading: "zh", parts: [["我", "爱", "你"]] });
+    expect(seen.japanese).toEqual([false]);
+    expect(useProjectStore.getState().lines[0].words?.map((w) => w.text)).toEqual(["我", "爱", "你"]);
+  });
+
+  it("reads kanji as Japanese when any line has kana, and loads the kanji dictionary", async () => {
+    useProjectStore.getState().setLines([
+      { id: "L1", text: "夜空", agentId: "v1", begin: 1, end: 2 },
+      { id: "L2", text: "きみと dance", agentId: "v1", begin: 3, end: 4 },
+    ]);
+
+    await useAlignmentStore.getState().alignLines();
+
+    expect(seen.japanese).toEqual([true]);
+    expect(seen.segments.map((s) => s.hanReading)).toEqual(["ja", "ja"]);
+    expect(seen.segments[1].parts).toEqual([["き", "み", "と"], ["dance"]]);
   });
 
   it("refuses lyrics in other languages", async () => {
-    useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "ja" } });
+    useProjectStore.setState({ metadata: { ...INITIAL_STATE.metadata, language: "ko" } });
     useProjectStore.getState().setLines([{ id: "L1", text: "one", agentId: "v1", begin: 1, end: 2 }]);
 
     expect(await useAlignmentStore.getState().alignLines()).toBeNull();
