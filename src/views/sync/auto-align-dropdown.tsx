@@ -144,7 +144,8 @@ const AutoAlignDropdown: React.FC = () => {
                 <p className="text-sm font-medium text-composer-text">Auto-align words</p>
                 <p className="text-xs text-composer-text-muted">
                   Times each word from the separated vocals, using your line timing as a guide. Works for English,
-                  Mandarin and Japanese lyrics.
+                  Mandarin and Japanese lyrics, and follows your transliterations for how Chinese and Japanese lines are
+                  sung.
                 </p>
               </div>
 

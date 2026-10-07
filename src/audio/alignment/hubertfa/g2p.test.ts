@@ -9,7 +9,9 @@ import { readFile } from "node:fs/promises";
 import { pinyin } from "pinyin-pro";
 import { beforeAll, describe, expect, it } from "vitest";
 
-const english = parseDictionary(["i\tay", "love\tl ah v", "you\ty uw", "dance\td ae n s"].join("\n"));
+const english = parseDictionary(
+  ["i\tay", "love\tl ah v", "you\ty uw", "dance\td ae n s", "ay\tay", "yeah\ty ae"].join("\n"),
+);
 const mandarin = parseDictionary(mandarinText);
 const japanese = parseDictionary(japaneseText);
 const pinyinOf = (text: string) => pinyin(text, { toneType: "none", type: "array", v: true });
@@ -81,6 +83,30 @@ describe("lineToPhoneUnits", () => {
       "1:t o",
       "2:d ae n s",
     ]);
+  });
+
+  it("sings a kanji word's transliterated reading instead of the dictionary's", () => {
+    const result = phones(
+      lineToPhoneUnits([["運", "命", "の", "人"]], { ...context("ja"), transliteration: "sadame no hito" }),
+    );
+    expect(result).toEqual(["0,1:s a d a m e", "2:n o", "3:h i t o"]);
+  });
+
+  it("uses a whole-line romanization even when its per-part pairing was off", () => {
+    // ENEMY (TWICE): the imported slots pair 完 with "ka" and 璧 with "n", but the line reads "kanpeki ja nakya".
+    const result = phones(
+      lineToPhoneUnits([["完", "璧", "じゃ", "な", "きゃ"], ["Ay-yeah"]], {
+        ...context("ja"),
+        transliteration: "ka n pe ki  ja  na kya  Ay-yeah",
+      }),
+    );
+    expect(result[0]).toBe("0,1:k a N p e k i");
+    expect(result.slice(1, 4)).toEqual(["2:j a", "3:n a", "4:ky a"]);
+  });
+
+  it("follows the transliteration where the dictionary can't read a character", () => {
+    const result = phones(lineToPhoneUnits([["我", "去"]], { ...context("zh"), transliteration: "wǒ qù" }));
+    expect(result).toEqual(["0:w uo", "1:q v"]);
   });
 
   it("reports words in scripts the model doesn't cover", () => {

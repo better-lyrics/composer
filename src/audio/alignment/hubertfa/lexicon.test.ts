@@ -40,6 +40,11 @@ describe("lookupWord", () => {
     expect(phones("oh-oh")).toBe("ow ow");
   });
 
+  it("knows common lyric spellings the dictionary lacks", () => {
+    expect(phones("Woah")).toBe("w ow");
+    expect(phones("tryna")).toBe("t r ay n ax");
+  });
+
   it("treats punctuation-only tokens as silent", () => {
     expect(phones("—")).toBe("silent");
     expect(phones("...")).toBe("silent");

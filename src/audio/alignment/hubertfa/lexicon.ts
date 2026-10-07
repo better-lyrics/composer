@@ -1,3 +1,4 @@
+import { stripMarks } from "@/audio/alignment/hubertfa/romanization";
 import { hasLetterOrDigit } from "@/domain/alignment/cjk";
 
 // Word → phone lookup against HubertFA's English dictionary (ds_cmudict-07b).
@@ -14,6 +15,15 @@ type Lookup = { kind: "phones"; phones: string[] } | { kind: "silent" } | { kind
 // -- Constants ----------------------------------------------------------------
 
 const CONTRACTION_SUFFIXES = ["n't", "'re", "'ll", "'ve", "'s", "'d", "'m"];
+// Lyric spellings the dictionary doesn't have, as phones (ARPAbet, schwa as ax).
+const LYRIC_SPELLINGS: Record<string, string[]> = {
+  woah: ["w", "ow"],
+  tryna: ["t", "r", "ay", "n", "ax"],
+  imma: ["ay", "m", "ax"],
+  finna: ["f", "ih", "n", "ax"],
+  cuz: ["k", "ax", "z"],
+  coz: ["k", "ax", "z"],
+};
 
 // -- Functions ----------------------------------------------------------------
 
@@ -34,9 +44,7 @@ function parseDictionary(text: string): Pronunciations {
 }
 
 function normalizeWord(word: string): string {
-  return word
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
+  return stripMarks(word.normalize("NFKC"))
     .toLowerCase()
     .replace(/[‘’ʼ`´]/g, "'")
     .replace(/[^a-z0-9'\- ]/g, "")
@@ -63,7 +71,7 @@ function spellingVariants(word: string): string[] {
 }
 
 function lookupNormalized(word: string, dictionary: Pronunciations): string[] | null {
-  const exact = dictionary.get(word);
+  const exact = dictionary.get(word) ?? LYRIC_SPELLINGS[word];
   if (exact) return [...exact];
   // "lovin'" / "lovin" sound like "loving" with the final ng sung as n.
   const stem = word.replace(/'+$/, "");
