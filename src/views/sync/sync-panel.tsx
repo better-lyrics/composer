@@ -102,6 +102,7 @@ const SyncPanel: React.FC = () => {
     cursor,
     isComplete,
     currentWord,
+    skippedInstances,
   } = useSyncHandlers({
     lines,
     syncState,
@@ -115,7 +116,12 @@ const SyncPanel: React.FC = () => {
   });
   const countIn = useSyncCountIn(cursor.lineIndex === nextSyncableLineIndex(lines, -1) && cursor.wordIndex === 0);
 
-  const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(lines, groups, cursor);
+  const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(
+    lines,
+    groups,
+    cursor,
+    skippedInstances,
+  );
 
   const linkInfoByLineId = useMemo(() => {
     const groupsById = new Map(groups.map((g) => [g.id, g]));

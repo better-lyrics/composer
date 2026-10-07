@@ -1,9 +1,11 @@
 import { type SharedTimingSuggestion, sharedTimingSuggestions } from "@/domain/group/shared-timing-suggestions";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { offerToShareTiming } from "@/utils/group-toast";
-import { pluralize } from "@/utils/pluralize";
-import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { SuggestionsBanner } from "@/ui/suggestions-banner";
+import { showKeptOwnTimingToast, showReplacedOwnTimingToast } from "@/utils/group-toast";
+import { pluralWord, pluralize } from "@/utils/pluralize";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
+import { shareGroupTimingWithUndo } from "@/views/timeline/share-group-timing";
 import { IconBulb, IconClock } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -14,7 +16,10 @@ function suggestionKey(suggestion: SharedTimingSuggestion): string {
 }
 
 function inlineText(suggestion: SharedTimingSuggestion): string {
-  return `${suggestion.sourceName} is synced. Share its timing with ${pluralize(suggestion.untimedCount, "instance")}?`;
+  const { sourceName, changingCount, replacedCount } = suggestion;
+  const ask = `${sourceName} is synced. Share its timing with ${pluralize(changingCount, "instance")}?`;
+  if (replacedCount === 0) return ask;
+  return `${ask} ${replacedCount} of them ${pluralWord(replacedCount, "loses its", "lose their")} own timing.`;
 }
 
 // -- Components ----------------------------------------------------------------
@@ -25,7 +30,11 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const dismissed = useProjectStore((s) => s.dismissedSuggestions);
   const dismissSuggestion = useProjectStore((s) => s.dismissSuggestion);
 
-  const suggestions = useMemo(() => sharedTimingSuggestions(lines, groups), [lines, groups]);
+  const duration = useAudioStore((s) => s.duration);
+  const suggestions = useMemo(
+    () => sharedTimingSuggestions(lines, groups, songEndOrUnbounded(duration)),
+    [lines, groups, duration],
+  );
 
   const dismissOne = (suggestion: SharedTimingSuggestion) => dismissSuggestion(suggestion.fingerprint);
 
@@ -36,9 +45,15 @@ const SharedTimingSuggestionsBanner: React.FC = () => {
   const acceptOne = (suggestion: SharedTimingSuggestion) => shareGroupTimingWithUndo(suggestion.groupId);
 
   const acceptAll = (visible: SharedTimingSuggestion[]) => {
-    for (const suggestion of visible) useProjectStore.getState().shareGroupTiming(suggestion.groupId);
-    const sharedIds = new Set(visible.map((suggestion) => suggestion.groupId));
-    offerToShareTiming(useProjectStore.getState().groups.filter((group) => sharedIds.has(group.id)));
+    const { duration } = useAudioStore.getState();
+    const outcomes = visible.map((suggestion) =>
+      useProjectStore.getState().shareGroupTiming(suggestion.groupId, duration),
+    );
+    showKeptOwnTimingToast(
+      outcomes.flatMap((outcome) => outcome.keptOwnTiming),
+      "timeline",
+    );
+    showReplacedOwnTimingToast(outcomes.reduce((sum, outcome) => sum + outcome.replaced.length, 0));
   };
 
   return (

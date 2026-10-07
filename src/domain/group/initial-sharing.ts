@@ -1,3 +1,6 @@
+import { withSharing } from "@/domain/group/own-timing";
+import { sameTime } from "@/domain/group/same-timing";
+import { type SharingOutcome, realignSharedInstances } from "@/domain/group/shared-placement";
 import {
   attachedLinesOfInstance,
   firstFullyTimedInstance,
@@ -11,18 +14,12 @@ import type { WordTiming } from "@/domain/word/timing";
 
 // -- Types --------------------------------------------------------------------
 
-type InitialSharing = Pick<LinkGroup, "sharesTiming" | "ownTimingInstances">;
-
-// -- Constants ----------------------------------------------------------------
-
-const SAME_TIMING_TOLERANCE_SECONDS = 0.01;
+interface InitialGroupSharing extends SharingOutcome {
+  group: LinkGroup;
+  lines: LyricLine[];
+}
 
 // -- Comparison ---------------------------------------------------------------
-
-function sameTime(a: number | undefined, b: number | undefined, offset: number): boolean {
-  if (a === undefined || b === undefined) return a === b;
-  return Math.abs(a + offset - b) <= SAME_TIMING_TOLERANCE_SECONDS;
-}
 
 function sameWords(a: readonly WordTiming[] | undefined, b: readonly WordTiming[] | undefined, offset: number) {
   if (!a || !b) return a === b;
@@ -52,22 +49,36 @@ function sameRelativeTiming(lines: readonly LyricLine[], groupId: string, source
 
 // -- Sharing ------------------------------------------------------------------
 
-function initialSharing(lines: readonly LyricLine[], groupId: string, settingOn: boolean): InitialSharing {
-  if (!settingOn) return {};
+function instancesWithDifferentTiming(lines: readonly LyricLine[], groupId: string): number[] {
   const order = instancesInLineOrder(lines, groupId);
   const timed = order.filter((instanceIdx) => instanceStart(lines, groupId, instanceIdx) !== null);
   const source = firstFullyTimedInstance(lines, groupId, timed) ?? timed[0];
-  if (source === undefined) return { sharesTiming: true };
-  const ownTimingInstances = order.filter(
+  if (source === undefined) return [];
+  return order.filter(
     (instanceIdx) =>
       instanceIdx !== source &&
       instanceStart(lines, groupId, instanceIdx) !== null &&
       !sameRelativeTiming(lines, groupId, source, instanceIdx),
   );
-  return ownTimingInstances.length ? { sharesTiming: true, ownTimingInstances } : { sharesTiming: true };
+}
+
+function initialGroupSharing(
+  lines: LyricLine[],
+  group: LinkGroup,
+  settingOn: boolean,
+  songEnd = Number.POSITIVE_INFINITY,
+): InitialGroupSharing {
+  if (!settingOn) return { group, lines, keptOwnTiming: [], replaced: [] };
+  const shared = withSharing(group, { sharesTiming: true });
+  const differing = instancesWithDifferentTiming(lines, group.id);
+  const realigned = realignSharedInstances(lines, [shared], group.id, differing, songEnd);
+  const ownTimingInstances = realigned.keptOwnTiming.map((kept) => kept.instanceIdx);
+  return {
+    ...realigned,
+    group: ownTimingInstances.length ? withSharing(group, { sharesTiming: true, ownTimingInstances }) : shared,
+  };
 }
 
 // -- Exports ------------------------------------------------------------------
 
-export { initialSharing };
-export type { InitialSharing };
+export { initialGroupSharing };

@@ -1,21 +1,26 @@
 import { sharedInstancesInLineOrder } from "@/domain/group/shared-timing";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { offerToShareTiming, showGroupActionToast } from "@/utils/group-toast";
+import { replacedOwnTimingNote, showGroupActionToast, showKeptOwnTimingToast } from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 
 // -- Functions ----------------------------------------------------------------
 
 function shareGroupTimingWithUndo(groupId: string): void {
-  useProjectStore.getState().shareGroupTiming(groupId);
+  const before = useProjectStore.getState();
+  const { keptOwnTiming, replaced } = before.shareGroupTiming(groupId, useAudioStore.getState().duration);
   const { lines, groups } = useProjectStore.getState();
   const group = groups.find((candidate) => candidate.id === groupId);
   if (!group) return;
-  if (group.ownTimingInstances?.length) {
-    offerToShareTiming([group]);
+  const committed = lines !== before.lines || groups !== before.groups;
+  if (!committed || (keptOwnTiming.length && replaced.length === 0)) {
+    showKeptOwnTimingToast(keptOwnTiming, "timeline", committed);
     return;
   }
+  showKeptOwnTimingToast(keptOwnTiming, "timeline");
   const count = sharedInstancesInLineOrder(lines, group).length;
-  showGroupActionToast(`${group.label} shares timing in ${pluralize(count, "instance")}`);
+  const shared = `${group.label} shares timing in ${pluralize(count, "instance")}`;
+  showGroupActionToast(replaced.length ? `${shared}. ${replacedOwnTimingNote(replaced.length)}` : shared);
 }
 
 // -- Exports ------------------------------------------------------------------

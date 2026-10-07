@@ -11,8 +11,8 @@ interface PrimitiveRule {
   offendingExamples: string[];
 }
 
-// The sync header text toggle has no inactive dimming, and adding it would change how it looks.
-const TOGGLE_RECIPE_EXCEPTIONS = new Set(["views/sync/sync-header.tsx"]);
+// Not toggles: the sync header text toggle has no inactive dimming, and Align only stresses a line that needs review.
+const TOGGLE_RECIPE_EXCEPTIONS = new Set(["views/sync/sync-header.tsx", "views/languages/line-editor.tsx"]);
 
 const RULES: PrimitiveRule[] = [
   {

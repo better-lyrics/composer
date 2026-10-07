@@ -473,6 +473,7 @@ function useTimelineKeyboard(
             filled.expanded,
             projectState.groups,
             useSettingsStore.getState().shareTimingInNewGroups,
+            { duration: useAudioStore.getState().duration },
           );
           if (!result) {
             toast.error("Could not create group from this selection");

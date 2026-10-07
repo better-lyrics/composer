@@ -1,8 +1,14 @@
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
-import { offerToShareTiming } from "@/utils/group-toast";
+import { SuggestionsBanner } from "@/ui/suggestions-banner";
+import {
+  replacedOwnTimingNote,
+  showGroupActionToast,
+  showKeptOwnTimingToast,
+  showReplacedOwnTimingToast,
+} from "@/utils/group-toast";
 import { pluralize } from "@/utils/pluralize";
 import { type RepeatingSection, findRepeatingStandaloneSections } from "@/views/grouping/repeating-sections";
-import { SuggestionsBanner } from "@/ui/suggestions-banner";
 import { IconBulb, IconLink } from "@tabler/icons-react";
 import { useMemo } from "react";
 
@@ -25,14 +31,21 @@ const GroupingSuggestionsBanner: React.FC<{ className?: string }> = ({ className
   };
 
   const groupSections = (sections: readonly RepeatingSection[]) => {
-    const existingIds = new Set(useProjectStore.getState().groups.map((group) => group.id));
-    for (const s of sections) groupRepeatingSections(s.starts, s.length);
-    offerToShareTiming(useProjectStore.getState().groups.filter((group) => !existingIds.has(group.id)));
+    const { duration } = useAudioStore.getState();
+    const outcomes = sections.map((s) => groupRepeatingSections(s.starts, s.length, { duration }));
+    showKeptOwnTimingToast(
+      outcomes.flatMap((outcome) => outcome.keptOwnTiming),
+      "edit",
+    );
+    return outcomes.reduce((sum, outcome) => sum + outcome.replaced.length, 0);
   };
 
-  const acceptOne = (s: RepeatingSection) => groupSections([s]);
+  const acceptOne = (s: RepeatingSection) => {
+    const replaced = groupSections([s]);
+    if (replaced > 0) showGroupActionToast(replacedOwnTimingNote(replaced));
+  };
 
-  const acceptAll = (visible: RepeatingSection[]) => groupSections(visible);
+  const acceptAll = (visible: RepeatingSection[]) => showReplacedOwnTimingToast(groupSections(visible));
 
   return (
     // react-doctor-disable-next-line react-doctor/no-render-prop-children

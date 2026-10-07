@@ -69,6 +69,24 @@ const routes: RouteRecord[] = [
     errorElement,
   },
   {
+    path: "/ttml-to-lrc",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-lrc")).default }),
+    entry: "src/pages/converters/ttml-to-lrc.tsx",
+    errorElement,
+  },
+  {
+    path: "/ttml-to-srt",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-srt")).default }),
+    entry: "src/pages/converters/ttml-to-srt.tsx",
+    errorElement,
+  },
+  {
+    path: "/ttml-to-qrc",
+    lazy: async () => ({ Component: (await import("@/pages/converters/ttml-to-qrc")).default }),
+    entry: "src/pages/converters/ttml-to-qrc.tsx",
+    errorElement,
+  },
+  {
     path: "/guides",
     lazy: async () => ({ Component: (await import("@/pages/guides/guides-index")).default }),
     entry: "src/pages/guides/guides-index.tsx",

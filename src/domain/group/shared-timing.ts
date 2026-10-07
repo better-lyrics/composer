@@ -1,11 +1,12 @@
-import { songEndOrUnbounded } from "@/utils/timing/song-end";
 import type { LinkGroup } from "@/domain/group/template";
 import { instanceBounds } from "@/domain/instance/bounds";
 import { type LinkedLine, isAttachedToInstance, isLinked } from "@/domain/instance/predicates";
 import { type LineUpdate, type LyricLine, reconcileLine } from "@/domain/line/model";
+import { isWordSynced } from "@/domain/line/predicates";
 import { isLineFullyTimed, isSyncableLine } from "@/domain/line/sync-progress";
 import type { WordTiming } from "@/domain/word/timing";
 import { isStructurallyEqual } from "@/utils/structural-equal";
+import { songEndOrUnbounded } from "@/utils/timing/song-end";
 
 // -- Types --------------------------------------------------------------------
 
@@ -72,13 +73,19 @@ function isInstanceFullyTimed(lines: readonly LyricLine[], groupId: string, inst
   return syncable.length > 0 && syncable.every(isLineFullyTimed);
 }
 
-// The instance that holds the timing to copy from: the first fully timed one among the candidates.
+function isInstanceWordSynced(lines: readonly LyricLine[], groupId: string, instanceIdx: number): boolean {
+  return attachedLinesOfInstance(lines, groupId, instanceIdx).filter(isSyncableLine).every(isWordSynced);
+}
+
+// The instance that holds the timing to copy from: the first fully timed one among the candidates, preferring one synced
+// word by word so copying never drops word timing.
 function firstFullyTimedInstance(
   lines: readonly LyricLine[],
   groupId: string,
   candidates: readonly number[],
 ): number | undefined {
-  return candidates.find((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx));
+  const fullyTimed = candidates.filter((instanceIdx) => isInstanceFullyTimed(lines, groupId, instanceIdx));
+  return fullyTimed.find((instanceIdx) => isInstanceWordSynced(lines, groupId, instanceIdx)) ?? fullyTimed[0];
 }
 
 // Offset between two instances, measured only over template lines timed in both, so a line missing from one

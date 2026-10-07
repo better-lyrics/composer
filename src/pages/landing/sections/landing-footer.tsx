@@ -47,6 +47,21 @@ const LandingFooter: React.FC = () => {
                 QRC to TTML
               </Link>
             </li>
+            <li>
+              <Link to="/ttml-to-lrc" className="hover:text-composer-text">
+                TTML to LRC
+              </Link>
+            </li>
+            <li>
+              <Link to="/ttml-to-srt" className="hover:text-composer-text">
+                TTML to SRT
+              </Link>
+            </li>
+            <li>
+              <Link to="/ttml-to-qrc" className="hover:text-composer-text">
+                TTML to QRC
+              </Link>
+            </li>
           </ul>
         </div>
         <div>

@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { Toaster } from "sonner";
 import type { LyricLine } from "@/domain/line/model";
-import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
+import { skippedSharedInstances } from "@/domain/sync/skipped-instances";
+import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
+import { GroupingSuggestionsBanner } from "@/views/grouping/grouping-suggestions-banner";
+import { Toaster, toast } from "sonner";
+import { beforeEach, describe, expect, it } from "vitest";
 
 // -- Fixtures -----------------------------------------------------------------
 
@@ -18,6 +20,10 @@ function twoWordLine(id: string, [first, second]: [string, string], begin: numbe
       createWord({ text: second, begin: begin + 1 + secondWordShift, end: begin + 2 + secondWordShift }),
     ],
   });
+}
+
+function lineSynced(id: string, text: string, begin?: number) {
+  return createLine({ id, text, ...(begin === undefined ? {} : { begin, end: begin + 2 }) });
 }
 
 function chorusLines(prefix: string, begin: number, secondWordShift = 0): LyricLine[] {
@@ -56,43 +62,85 @@ describe("GroupingSuggestionsBanner", () => {
   });
 });
 
-describe("GroupingSuggestionsBanner · instances that kept their own timing", () => {
+describe("GroupingSuggestionsBanner · shared timing in new groups", () => {
   beforeEach(() => {
     useSettingsStore.setState({ shareTimingInNewGroups: true });
     useProjectStore.setState({ lines: [...chorusLines("one", 10), ...chorusLines("two", 40, 0.5)] });
+    store().clearHistory();
   });
 
-  it("offers to share timing when an instance kept its own timing", async () => {
+  it("shares every instance and realigns one with different timing without asking", async () => {
     const screen = await renderBanner();
     await screen.getByRole("button", { name: "Group them" }).click();
 
-    await expect.element(screen.getByText("1 instance kept its own timing")).toBeInTheDocument();
-    expect(store().groups[0].ownTimingInstances).toEqual([1]);
-  });
-
-  it("shares every instance when Share anyway is clicked", async () => {
-    const screen = await renderBanner();
-    await screen.getByRole("button", { name: "Group them" }).click();
-    await screen.getByRole("button", { name: "Share anyway" }).click();
-
-    await expect.poll(() => store().groups[0].ownTimingInstances).toBeUndefined();
+    await expect.poll(() => store().groups.length).toBe(1);
     expect(store().groups[0].sharesTiming).toBe(true);
+    expect(store().groups[0].ownTimingInstances).toBeUndefined();
     expect(lineById("two-a")?.words?.[1].begin).toBe(41);
-  });
+    await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
+    await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
+    await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
 
-  it("undoes Share anyway in one step", async () => {
-    const screen = await renderBanner();
-    await screen.getByRole("button", { name: "Group them" }).click();
-    await screen.getByRole("button", { name: "Share anyway" }).click();
-    await expect.poll(() => store().groups[0].ownTimingInstances).toBeUndefined();
-
-    store().undo();
-
-    expect(store().groups[0].ownTimingInstances).toEqual([1]);
+    await screen.getByRole("button", { name: "Undo" }).click();
+    await expect.poll(() => store().groups).toEqual([]);
     expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
   });
 
-  it("offers one toast for every group made by Group all", async () => {
+  it("regression: shares a partly synced instance mid-sync, so sync skips it", async () => {
+    useProjectStore.setState({
+      lines: [
+        lineSynced("one-a", "go now", 10),
+        lineSynced("one-b", "stay here", 13),
+        lineSynced("two-a", "go now", 40),
+        lineSynced("two-b", "stay here"),
+      ],
+    });
+    const screen = await renderBanner();
+    await screen.getByRole("button", { name: "Group them" }).click();
+
+    await expect.poll(() => store().groups.length).toBe(1);
+    expect(store().groups[0].ownTimingInstances).toBeUndefined();
+    expect(lineById("two-b")?.begin).toBe(43);
+    expect(skippedSharedInstances(store().lines, store().groups).map((skipped) => skipped.lineIds)).toEqual([
+      ["two-a", "two-b"],
+    ]);
+    toast("Grouping settled");
+    await expect.element(screen.getByText("Grouping settled")).toBeVisible();
+    expect(screen.container.ownerDocument.body.textContent).not.toContain("was replaced");
+  });
+
+  it("reports a partly synced instance whose synced lines move", async () => {
+    useProjectStore.setState({
+      lines: [
+        lineSynced("one-a", "go now", 10),
+        lineSynced("one-b", "stay here", 13),
+        lineSynced("one-c", "hold on", 16),
+        lineSynced("two-a", "go now", 40),
+        lineSynced("two-b", "stay here", 44),
+        lineSynced("two-c", "hold on"),
+      ],
+    });
+    const screen = await renderBanner();
+    await screen.getByRole("button", { name: "Group them" }).click();
+
+    await expect.element(screen.getByText("The own timing of 1 instance was replaced.")).toBeVisible();
+    expect(lineById("two-b")?.begin).toBe(43);
+  });
+
+  it("undoes the grouping and the realignment in one step", async () => {
+    const screen = await renderBanner();
+    await screen.getByRole("button", { name: "Group them" }).click();
+    await expect.poll(() => store().groups.length).toBe(1);
+    expect(lineById("two-a")?.words?.[1].begin).toBe(41);
+
+    store().undo();
+
+    expect(store().groups).toEqual([]);
+    expect(lineById("two-a")?.groupId).toBeUndefined();
+    expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+  });
+
+  it("shares every group made by Group all", async () => {
     useProjectStore.setState({
       lines: [
         ...chorusLines("one", 10),
@@ -105,29 +153,113 @@ describe("GroupingSuggestionsBanner · instances that kept their own timing", ()
     await screen.getByRole("button", { name: "Review 2" }).click();
     await screen.getByRole("button", { name: "Group all" }).click();
 
-    await expect.element(screen.getByText("2 instances kept their own timing")).toBeInTheDocument();
-    await screen.getByRole("button", { name: "Share anyway" }).click();
     await expect.poll(() => store().groups.map((group) => group.ownTimingInstances)).toEqual([undefined, undefined]);
+    expect(lineById("four-a")?.words?.[1].begin).toBe(81);
+    await expect.element(screen.getByText("The own timing of 2 instances was replaced.")).toBeVisible();
   });
 
   describe("edge cases", () => {
-    it("shows no toast when every instance matches", async () => {
-      useProjectStore.setState({ lines: [...chorusLines("one", 10), ...chorusLines("two", 40)] });
+    it("keeps the own timing of an instance that would start before the song and says why", async () => {
+      useProjectStore.setState({
+        lines: [
+          lineSynced("one-a", "go now", 10),
+          lineSynced("one-b", "stay here", 13),
+          lineSynced("two-a", "go now"),
+          lineSynced("two-b", "stay here", 1),
+        ],
+      });
       const screen = await renderBanner();
       await screen.getByRole("button", { name: "Group them" }).click();
 
-      await expect.poll(() => store().groups.length).toBe(1);
-      expect(store().groups[0].sharesTiming).toBe(true);
+      await expect
+        .element(screen.getByText("1 instance kept its own timing: the shared timing would start before the song"))
+        .toBeInTheDocument();
+      expect(store().groups[0].ownTimingInstances).toEqual([1]);
+      expect(lineById("two-b")?.begin).toBe(1);
+      expect(lineById("two-a")?.begin).toBeUndefined();
       await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
     });
 
-    it("shows no toast when the setting is off", async () => {
+    it("keeps the own timing of an instance that differs when no instance is fully synced and says why", async () => {
+      useProjectStore.setState({
+        lines: [
+          twoWordLine("one-a", ["go ", "now"], 10),
+          createLine({ id: "one-b", text: "stay here" }),
+          twoWordLine("two-a", ["go ", "now"], 40, 0.5),
+          createLine({ id: "two-b", text: "stay here" }),
+        ],
+      });
+      const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Group them" }).click();
+
+      await expect
+        .element(
+          screen.getByText(
+            "1 instance kept its own timing. Sync one instance fully, then share it from its banner menu in the Timeline.",
+          ),
+        )
+        .toBeInTheDocument();
+      expect(store().groups[0].ownTimingInstances).toEqual([1]);
+      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+    });
+
+    it("keeps the own timing of an instance that would run past the end of the song and says why", async () => {
+      useAudioStore.setState({ duration: 300 });
+      useProjectStore.setState({
+        lines: [
+          lineSynced("one-a", "go now", 10),
+          lineSynced("one-b", "stay here", 60),
+          lineSynced("two-a", "go now", 280),
+          lineSynced("two-b", "stay here"),
+        ],
+      });
+      const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Group them" }).click();
+
+      await expect
+        .element(
+          screen.getByText("1 instance kept its own timing: the shared timing would run past the end of the song"),
+        )
+        .toBeInTheDocument();
+      expect(store().groups[0].ownTimingInstances).toEqual([1]);
+      expect(lineById("two-b")?.begin).toBeUndefined();
+    });
+
+    it("says where to look when instances kept their own timing for different reasons", async () => {
+      useProjectStore.setState({
+        lines: [
+          lineSynced("one-a", "go now", 10),
+          lineSynced("one-b", "stay here", 13),
+          lineSynced("two-a", "go now"),
+          lineSynced("two-b", "stay here", 1),
+          twoWordLine("three-a", ["hold ", "on"], 60),
+          createLine({ id: "three-b", text: "let go" }),
+          twoWordLine("four-a", ["hold ", "on"], 80, 0.5),
+          createLine({ id: "four-b", text: "let go" }),
+        ],
+      });
+      const screen = await renderBanner();
+      await screen.getByRole("button", { name: "Review 2" }).click();
+      await screen.getByRole("button", { name: "Group all" }).click();
+
+      await expect
+        .element(
+          screen.getByText(
+            "2 instances kept their own timing. Share them from their banner menus in the Timeline to see why.",
+          ),
+        )
+        .toBeInTheDocument();
+    });
+
+    it("changes nothing about timing and shows no toast when the setting is off", async () => {
       useSettingsStore.setState({ shareTimingInNewGroups: false });
       const screen = await renderBanner();
       await screen.getByRole("button", { name: "Group them" }).click();
 
       await expect.poll(() => store().groups.length).toBe(1);
-      await expect.element(screen.getByRole("button", { name: "Share anyway" })).not.toBeInTheDocument();
+      expect(store().groups[0].sharesTiming).toBeUndefined();
+      expect(lineById("two-a")?.words?.[1].begin).toBe(41.5);
+      await expect.element(screen.getByText(/kept (its|their) own timing/)).not.toBeInTheDocument();
     });
   });
 });
