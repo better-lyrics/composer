@@ -9,6 +9,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSeparationStore } from "@/stores/separation";
 import { useSettingsStore } from "@/stores/settings";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
+import { useSyncCountInStore } from "@/stores/sync-count-in";
 import { useThemeStore } from "@/stores/theme";
 import { useUIStore } from "@/stores/ui";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
@@ -89,6 +90,7 @@ function wireFrameLoop(): () => void {
     useSeparationStore.subscribe(wakeFromThisWiring),
     useSettingsStore.subscribe(wakeFromThisWiring),
     useShortcutBindingsStore.subscribe(wakeFromThisWiring),
+    useSyncCountInStore.subscribe(wakeFromThisWiring),
     useThemeStore.subscribe(wakeFromThisWiring),
     useUIStore.subscribe(wakeFromThisWiring),
     useTimelineStore.subscribe(wakeFromThisWiring),

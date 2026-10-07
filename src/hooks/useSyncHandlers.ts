@@ -6,10 +6,12 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
+import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
+import { requestPlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
@@ -33,6 +35,7 @@ interface UseSyncHandlersProps {
   granularity: "line" | "word";
   setShowPulse: (show: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
+  onPlacementSkip?: (skip: PlacementSkip, lineIndex: number) => void;
 }
 
 // -- Constants ------------------------------------------------------------------
@@ -61,6 +64,7 @@ function useSyncHandlers({
   granularity,
   setShowPulse,
   setIsPlaying,
+  onPlacementSkip,
 }: UseSyncHandlersProps) {
   const seekTo = useAudioStore((s) => s.seekTo);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
@@ -102,6 +106,12 @@ function useSyncHandlers({
       }
       if (anchor) {
         const placed = useProjectStore.getState();
+        const { redoPreroll } = useSettingsStore.getState();
+        const skip = placementSkipTarget(placed.lines, anchor.groupId, anchor.instanceIdx, ctx.time, redoPreroll);
+        if (skip) {
+          seekTo(skip.seekTo);
+          onPlacementSkip?.(skip, anchor.resumeCursor.lineIndex);
+        }
         const anchorUndo = {
           resume: anchor.resumeCursor,
           anchor: anchor.anchorCursor,
@@ -133,7 +143,17 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, skippedInstances, readTapTime, updateLinesWithHistory, setSyncState],
+    [
+      lines,
+      cursor,
+      jumped,
+      skippedInstances,
+      readTapTime,
+      updateLinesWithHistory,
+      setSyncState,
+      seekTo,
+      onPlacementSkip,
+    ],
   );
 
   const handleTap = useCallback(() => {
@@ -197,8 +217,8 @@ function useSyncHandlers({
       isActive: true,
       jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
-    setIsPlaying(true);
-  }, [lines, cursor, jumped, setIsPlaying, setSyncState]);
+    return requestPlayback();
+  }, [lines, cursor, jumped, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so

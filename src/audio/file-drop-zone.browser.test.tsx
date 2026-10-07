@@ -167,6 +167,20 @@ describe("FileDropZone ids", () => {
     expect(label?.classList.contains("p-8")).toBe(false);
   });
 
+  it("highlights while a file is dragged over it and clears on leave", async () => {
+    const screen = await render(
+      <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+        drop
+      </FileDropZone>,
+    );
+    const label = screen.container.querySelector("label");
+    if (!label) throw new Error("Drop zone not rendered");
+    dispatchDragEvent(label, "dragenter", [createAudioFile()]);
+    await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(true);
+    dispatchDragEvent(label, "dragleave", [createAudioFile()]);
+    await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(false);
+  });
+
   describe("project files", () => {
     function projectFile(name = "song.ttml-project.json") {
       return new File(["{}"], name, { type: "application/json" });

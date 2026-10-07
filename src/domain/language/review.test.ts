@@ -90,10 +90,12 @@ describe("alignmentNeedsReview", () => {
 
     it("is false for every settled status", () => {
       for (const status of ["confirmed", "inferred", "unresolved", undefined] as const) {
-        expect(alignmentNeedsReview(track({ alignmentStatus: status, backgroundAlignmentStatus: status }), "main")).toBe(false);
-        expect(alignmentNeedsReview(track({ alignmentStatus: status, backgroundAlignmentStatus: status }), "background")).toBe(
-          false,
-        );
+        expect(
+          alignmentNeedsReview(track({ alignmentStatus: status, backgroundAlignmentStatus: status }), "main"),
+        ).toBe(false);
+        expect(
+          alignmentNeedsReview(track({ alignmentStatus: status, backgroundAlignmentStatus: status }), "background"),
+        ).toBe(false);
       }
     });
   });

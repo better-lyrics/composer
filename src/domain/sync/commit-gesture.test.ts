@@ -501,7 +501,9 @@ describe("hold gestures · regressions", () => {
 
 describe("re-record after a jump · regressions", () => {
   it("regression: moves a late tapped word earlier and trims the word before it", () => {
-    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3), word("c", 3, 3.3)] })];
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3), word("c", 3, 3.3)] }),
+    ];
     const commit = run(lines, "tap-word", [0, 1], 1.6, true);
     expect(commit?.clampedTo).toBeNull();
     expect(apply(lines, commit)[0].words).toEqual([word("a ", 1, 1.6), word("b ", 1.6, 1.6 + DUR), word("c", 3, 3.3)]);
@@ -540,7 +542,9 @@ describe("re-record after a jump · regressions", () => {
   });
 
   it("regression: leaves a zero-length word in the same line alone after a jump", () => {
-    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 1), word("b ", 1, 2), word("c", 2, 3)] })];
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 1), word("b ", 1, 2), word("c", 2, 3)] }),
+    ];
     const after = apply(lines, run(lines, "tap-word", [0, 1], 1.5, true));
     expect(after[0].words?.[0]).toEqual(word("a ", 1, 1));
   });

@@ -5,6 +5,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
 import { ImportPanel } from "@/views/import";
@@ -89,6 +90,160 @@ describe("ImportPanel: no source", () => {
     const screen = await render(withQueryClient(<ImportPanel />));
     await expect.element(screen.getByText("Drop audio file here")).toBeInTheDocument();
     await expect.element(screen.getByText(/Supports MP3, WAV, M4A/)).toBeInTheDocument();
+  });
+});
+
+// -- Whole-screen drop ----------------------------------------------------------
+
+function dragFile(target: Element, type: "dragenter" | "dragover" | "drop", file: File): void {
+  const dataTransfer = new DataTransfer();
+  dataTransfer.items.add(file);
+  target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }));
+}
+
+function dropBox(container: HTMLElement): HTMLLabelElement {
+  const label = container.querySelector<HTMLLabelElement>("label");
+  if (!label) throw new Error("Drop box not rendered");
+  return label;
+}
+
+function dragText(target: Element, type: "dragenter" | "dragover" | "drop"): DragEvent {
+  const dataTransfer = new DataTransfer();
+  dataTransfer.setData("text/plain", "https://youtu.be/dQw4w9WgXcQ");
+  const event = new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer });
+  target.dispatchEvent(event);
+  return event;
+}
+
+function importArea(container: HTMLElement): Element {
+  const area = container.querySelector('[data-tour="import-dropzone"]');
+  if (!area) throw new Error("Import area not rendered");
+  return area;
+}
+
+describe("ImportPanel: drop anywhere", () => {
+  const overlay = (container: HTMLElement) => container.querySelector("[data-file-drop-overlay]");
+
+  function dragWith(
+    target: Element,
+    type: "dragenter" | "dragleave" | "dragover" | "drop",
+    relatedTarget: Element | null,
+    file = createAudioFile(),
+  ): void {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer, relatedTarget }));
+  }
+
+  it("loads audio dropped outside the drop box", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "drop", createAudioFile("anywhere.wav"));
+    await expect.poll(() => useAudioStore.getState().source?.type).toBe("file");
+  });
+
+  it("covers the whole tab with a drop overlay while a file is over it", async () => {
+    useAudioStore.setState({ source: null });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "dragenter", createAudioFile("anywhere.wav"));
+    await expect.element(screen.getByText("Drop to load this audio", { exact: true })).toBeInTheDocument();
+    expect(overlay(screen.container)?.parentElement).toBe(importArea(screen.container));
+  });
+
+  it("names the replace action while audio is loaded", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "dragenter", createAudioFile("second.wav"));
+    await expect.element(screen.getByText("Drop to replace the audio", { exact: true })).toBeInTheDocument();
+  });
+
+  it("replaces loaded audio dropped outside the replace box", async () => {
+    useAudioStore.setState({ source: { type: "file", file: createAudioFile("first.wav") } });
+    const screen = await render(withQueryClient(<ImportPanel />));
+    dragFile(importArea(screen.container), "drop", createAudioFile("second.wav"));
+    await expect
+      .poll(() => {
+        const source = useAudioStore.getState().source;
+        return source?.type === "file" ? source.file.name : null;
+      })
+      .toBe("second.wav");
+  });
+
+  describe("regressions", () => {
+    it("regression: lets a dragged link drop into the YouTube field", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const field = screen.getByPlaceholder(/YouTube/).element();
+      expect(dragText(field, "dragover").defaultPrevented).toBe(false);
+      expect(dragText(field, "drop").defaultPrevented).toBe(false);
+    });
+
+    it("regression: a text drag shows no overlay", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      dragText(importArea(screen.container), "dragenter");
+      await stepFrames(2);
+      expect(overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: the overlay goes away after a drop on the box itself", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const box = dropBox(screen.container);
+      dragWith(box, "dragenter", null);
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragWith(box, "drop", null);
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+      await expect.poll(() => useAudioStore.getState().source?.type).toBe("file");
+    });
+
+    it("regression: the overlay goes away when the drag leaves the window over the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const box = dropBox(screen.container);
+      dragWith(box, "dragenter", null);
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragWith(box, "dragleave", null);
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: keeps the overlay while the drag moves between the tab and the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const area = importArea(screen.container);
+      const box = dropBox(screen.container);
+      dragWith(area, "dragenter", null);
+      dragWith(box, "dragenter", area);
+      dragWith(area, "dragleave", box);
+      dragWith(box, "dragleave", area);
+      dragWith(area, "dragenter", box);
+      await stepFrames(2);
+      expect(overlay(screen.container)).not.toBeNull();
+    });
+  });
+
+  describe("edge cases", () => {
+    it("rejects an unsupported file dropped outside the box", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      dragFile(importArea(screen.container), "drop", new File(["x"], "notes.txt", { type: "text/plain" }));
+      expect(useAudioStore.getState().source).toBeNull();
+    });
+
+    it("loads the file once when it lands on the box itself", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const loads: string[] = [];
+      const unsubscribe = useAudioStore.subscribe((state, previous) => {
+        if (state.source !== previous.source && state.source?.type === "file") loads.push(state.source.file.name);
+      });
+      try {
+        dragFile(dropBox(screen.container), "drop", createAudioFile("box.wav"));
+        await expect.poll(() => loads).toEqual(["box.wav"]);
+      } finally {
+        unsubscribe();
+      }
+    });
   });
 });
 

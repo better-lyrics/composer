@@ -1,3 +1,4 @@
+import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useSettingsStore } from "@/stores/settings";
 import { Button } from "@/ui/button";
@@ -167,7 +168,6 @@ const AudioPlayer: React.FC = () => {
   const preservePitch = useSettingsStore((s) => s.preservePitch);
   const volume = useAudioStore((s) => s.volume);
   const isMuted = useAudioStore((s) => s.isMuted);
-  const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const setPlaybackRate = useAudioStore((s) => s.setPlaybackRate);
   const setVolume = useAudioStore((s) => s.setVolume);
   const toggleMute = useAudioStore((s) => s.toggleMute);
@@ -177,7 +177,7 @@ const AudioPlayer: React.FC = () => {
 
   return (
     <div className="flex items-center gap-4 p-4 border-t select-none border-composer-border bg-composer-bg-dark">
-      <PlayButton isPlaying={isPlaying} onClick={() => setIsPlaying(!isPlaying)} />
+      <PlayButton isPlaying={isPlaying} onClick={togglePlayback} />
       <Slider
         value={currentTime}
         min={0}

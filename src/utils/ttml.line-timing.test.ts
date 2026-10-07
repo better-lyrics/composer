@@ -147,9 +147,7 @@ describe("generateTTML line timing", () => {
   describe("project export", () => {
     it("follows the requested timing", () => {
       const project = { metadata, agents, lines: [wordSynced], groups: [] };
-      expect(generateProjectTtml(project, 0, "line")).toBe(
-        generateTTML({ ...project, timing: "line" }),
-      );
+      expect(generateProjectTtml(project, 0, "line")).toBe(generateTTML({ ...project, timing: "line" }));
       expect(generateProjectTtml(project, 0)).toContain("<span begin=");
     });
   });

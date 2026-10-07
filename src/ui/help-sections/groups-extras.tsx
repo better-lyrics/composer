@@ -33,21 +33,22 @@ const GroupsExtras: React.FC = () => (
     <HelpTopic title="Shared timing">
       <p className={PROSE}>
         New groups share their timing. Sync one chorus and the others follow, each from its own start. Change the timing
-        of one and the others change too, and their banners pulse to show it. Turn this off for new
-        groups in <SettingLink setting="shareTimingInNewGroups" />.
+        of one and the others change too, and their banners pulse to show it. Turn this off for new groups in{" "}
+        <SettingLink setting="shareTimingInNewGroups" />.
       </p>
       <ul className={`${PROSE} list-disc pl-4 space-y-1 mt-2`}>
         <li>
-          <strong>Placing an instance</strong>: an instance with no timing yet needs a start. In Sync, one tap on
-          its first word places the whole instance and skips ahead. In the Timeline, right-click one of its lines and
-          pick <strong>Place at playhead</strong>.
+          <strong>Placing an instance</strong>: an instance with no timing yet needs a start. In Sync, one tap on its
+          first word places the whole instance and skips ahead. In the Timeline, right-click one of its lines and pick{" "}
+          <strong>Place at playhead</strong>.
         </li>
         <li>
           <strong>One instance differs</strong>: right-click its banner and pick <strong>Use own timing</strong>. Its
           banner shows an Own timing chip, and <strong>Share timing</strong> brings it back.
         </li>
         <li>
-          <strong>Song edges</strong>: a shared edit stops if it would push an instance past the start or end of the song.
+          <strong>Song edges</strong>: a shared edit stops if it would push an instance past the start or end of the
+          song.
         </li>
         <li>
           <strong>Older groups</strong> keep their own timing. Right-click a banner and pick{" "}
@@ -62,14 +63,14 @@ const GroupsExtras: React.FC = () => (
         <InlineKeyBadge keys={getEffectiveKeysArray("timeline.openGroup")} />, to see one instance on its own, zoomed to
         fit. Close it and your zoom comes back. The strip at the top names the instance. Step to the other shared
         instances with its arrows, or with <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpPrevInstance")} />{" "}
-        and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextInstance")} />. The playhead keeps its spot
-        in the instance. Edits still reach every shared instance.
+        and <InlineKeyBadge keys={getEffectiveKeysArray("timeline.jumpNextInstance")} />. The playhead keeps its spot in
+        the instance. Edits still reach every shared instance.
       </p>
       <p className={`${PROSE} mt-2`}>
         Playback stays inside the instance. Play starts at its first word, and at its end playback stops and goes back
         to the start. Turn on <strong>Loop</strong> (
-        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />) to keep it repeating. The
-        waveform and the seek bar shade everything outside the instance, and Preview fades the other lines.
+        <InlineKeyBadge keys={getEffectiveKeysArray("timeline.toggleGroupLoop")} />) to keep it repeating. The waveform
+        and the seek bar shade everything outside the instance, and Preview fades the other lines.
       </p>
       <p className={`${PROSE} mt-2`}>
         Press <InlineKeyBadge keys={getEffectiveKeysArray("timeline.closeGroup")} /> or click <strong>Done</strong> to
