@@ -3,6 +3,7 @@ import { useSettingsStore } from "@/stores/settings";
 import { getModelDescriptor } from "@/audio/separation/model-registry";
 import { useAudioStore } from "@/stores/audio";
 import { Button } from "@/ui/button";
+import { ErrorState, ProgressState } from "@/ui/model-task-states";
 import { Popover } from "@/ui/popover";
 import { VocalOnsetSnapToggle } from "@/ui/vocal-onset-snap-toggle";
 import { cn } from "@/utils/cn";
@@ -25,15 +26,6 @@ const STEM_ICONS: Record<Stem, ComponentType<IconProps>> = {
 function formatMb(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
-
-const ProgressBar: React.FC<{ pct: number }> = ({ pct }) => (
-  <div className="h-1.5 w-full bg-composer-button rounded overflow-hidden">
-    <div
-      className="h-full bg-composer-accent transition-[width] duration-150"
-      style={{ width: `${Math.max(0, Math.min(100, pct))}%` }}
-    />
-  </div>
-);
 
 const VocalSeparationDropdown: React.FC = () => {
   const source = useAudioStore((s) => s.source);
@@ -92,6 +84,7 @@ const VocalSeparationDropdown: React.FC = () => {
           <div className="p-3 w-max max-w-80">
             {status === "error" && error && (
               <ErrorState
+                title="Vocal separation failed"
                 message={error.message}
                 onRetry={retry}
                 onDismiss={() => useSeparationStore.getState().reset()}
@@ -151,24 +144,6 @@ const VocalSeparationDropdown: React.FC = () => {
     </Popover>
   );
 };
-
-const ProgressState: React.FC<{ title: string; detail: string; pct: number; onCancel: () => void }> = ({
-  title,
-  detail,
-  pct,
-  onCancel,
-}) => (
-  <div className="flex flex-col gap-2 min-w-60">
-    <p className="text-sm font-medium text-composer-text">{title}</p>
-    <p className="text-xs text-composer-text-muted tabular-nums">{detail}</p>
-    <ProgressBar pct={pct} />
-    <div className="flex justify-end pt-1">
-      <Button size="sm" variant="ghost" onClick={onCancel}>
-        Cancel
-      </Button>
-    </div>
-  </div>
-);
 
 const IdleNoModelState: React.FC<{
   approxMb: number;
@@ -246,24 +221,5 @@ const IdleReadyState: React.FC<{
     </div>
   );
 };
-
-const ErrorState: React.FC<{ message: string; onRetry: () => void; onDismiss: () => void }> = ({
-  message,
-  onRetry,
-  onDismiss,
-}) => (
-  <div className="flex flex-col gap-2">
-    <p className="text-sm font-medium text-composer-text">Vocal separation failed</p>
-    <p className="text-xs text-composer-text-muted break-words">{message}</p>
-    <div className="flex gap-2 pt-1 justify-end">
-      <Button size="sm" variant="ghost" onClick={onDismiss}>
-        Dismiss
-      </Button>
-      <Button size="sm" variant="primary" onClick={onRetry}>
-        Retry
-      </Button>
-    </div>
-  </div>
-);
 
 export { VocalSeparationDropdown };

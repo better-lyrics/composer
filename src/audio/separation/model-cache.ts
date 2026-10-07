@@ -1,17 +1,21 @@
 import type { ModelDescriptor } from "@/audio/separation/model-registry";
 
+// Any large file fetched once and kept: the vocal model, the alignment model
+// and its dictionary all share this cache.
+type CachedAsset = Pick<ModelDescriptor, "url" | "approxBytes">;
+
 const CACHE_NAME = "composer-vocal-model-v1";
 
 type DownloadProgress = (loaded: number, total: number) => void;
 
-async function hasCachedModel(model: ModelDescriptor): Promise<boolean> {
+async function hasCachedModel(model: CachedAsset): Promise<boolean> {
   if (typeof caches === "undefined") return false;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
   return hit !== undefined;
 }
 
-async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | null> {
+async function readCachedModel(model: CachedAsset): Promise<ArrayBuffer | null> {
   if (typeof caches === "undefined") return null;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
@@ -20,7 +24,7 @@ async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | nu
 }
 
 async function fetchAndCacheModel(
-  model: ModelDescriptor,
+  model: CachedAsset,
   signal: AbortSignal,
   onProgress: DownloadProgress,
 ): Promise<ArrayBuffer> {
@@ -75,3 +79,4 @@ async function fetchAndCacheModel(
 }
 
 export { hasCachedModel, readCachedModel, fetchAndCacheModel };
+export type { CachedAsset };

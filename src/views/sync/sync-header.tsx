@@ -3,6 +3,7 @@ import { getEffectiveKeysArray } from "@/stores/shortcut-bindings";
 import { Button } from "@/ui/button";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SegmentedControl } from "@/ui/segmented-control";
+import { AutoAlignDropdown } from "@/views/sync/auto-align-dropdown";
 import { IconLanguage, IconLock, IconLockOpen, IconPlayerPlayFilled, IconRefresh } from "@tabler/icons-react";
 
 // -- Interfaces ---------------------------------------------------------------
@@ -51,6 +52,7 @@ const SyncHeader: React.FC<SyncHeaderProps> = ({
         <span className="font-mono text-sm text-composer-text-muted tabular-nums">{progressText}</span>
       </div>
       <div className="flex items-center gap-2">
+        {!editMode && <AutoAlignDropdown />}
         <Button
           hasIcon
           size="sm"
