@@ -84,7 +84,8 @@ const SETTINGS_CATALOG = {
   vocalModelVariant: {
     section: "playback",
     label: "Vocal model precision",
-    description: "fp32 is the stable default. fp16 is smaller but may produce invalid output in some browsers.",
+    description:
+      "fp32 is the stable default. fp16 is smaller but needs WebGPU shader-f16 support, which not every browser or GPU provides.",
     keywords: ["fp16", "fp32", "stems", "separation"],
     settingKey: "vocalModelVariant",
   },
