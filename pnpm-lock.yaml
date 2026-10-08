@@ -36,8 +36,8 @@ importers:
         specifier: ^5.102.8
         version: 5.102.8(react@19.3.0)
       '@uimaxbai/am-lyrics':
-        specifier: ^1.7.1
-        version: 1.7.1(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.0)
+        specifier: ^1.7.4
+        version: 1.7.4(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.0)
       '@wavesurfer/react':
         specifier: ^1.0.12
         version: 1.0.12(react@19.3.0)(wavesurfer.js@7.12.11)
@@ -48,8 +48,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.0
       driver.js:
-        specifier: ^1.8.0
-        version: 1.8.0
+        specifier: ^1.9.0
+        version: 1.9.0
       lit:
         specifier: ^3.3.3
         version: 3.3.3
@@ -1437,8 +1437,8 @@ packages:
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
 
-  '@uimaxbai/am-lyrics@1.7.1':
-    resolution: {integrity: sha512-TL6t4AWPWoRZfu2V415KYG0iobL/TIdqdlZ7+7Oqgr7giQtnJvqWWUuH6MWhDjKMe5cTcFre1/LsrwST5i/BRw==}
+  '@uimaxbai/am-lyrics@1.7.4':
+    resolution: {integrity: sha512-wL0XjmrzL5z8C4UxGznkxaGTGWFoGzd12yaMLIyNwBK7++UJrzwtepncqIur8fD80YOJMkopukgzKWY2mQsruw==}
     peerDependencies:
       '@lit/react': ^1.0.0
       react: '>=17.0.0'
@@ -1654,8 +1654,8 @@ packages:
     resolution: {integrity: sha512-svtcdpS8CgJyqAjEQIXdb3OjhFVVYjzGAPO8WGCmRbrml64SPw/jJD4GoE98aR7r25A0XcgrK3F02yw9R/vhQw==}
     engines: {node: '>=0.3.1'}
 
-  driver.js@1.8.0:
-    resolution: {integrity: sha512-+8/IO7h1v14IzWh2GP60N7T3PFZweXwdn5e5POuxRSBoCYUojsBxzqawPeXh3YZIibRy7EehYNEyxe7slwwtdg==}
+  driver.js@1.9.0:
+    resolution: {integrity: sha512-+YWVdNVUrY1/2spszQshohWYY4soIjNBnMFS6lfmousT8igos2lmswhlqyuuNMhr+qbV0EjJ+L6i2FECPr6Ygg==}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -3758,7 +3758,7 @@ snapshots:
 
   '@types/trusted-types@2.0.7': {}
 
-  '@uimaxbai/am-lyrics@1.7.1(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.0)':
+  '@uimaxbai/am-lyrics@1.7.4(@lit/react@1.0.8(@types/react@19.3.0))(react@19.3.0)':
     dependencies:
       '@babel/runtime': 7.29.7
       lit: 3.3.3
@@ -4000,7 +4000,7 @@ snapshots:
 
   diff@9.0.0: {}
 
-  driver.js@1.8.0: {}
+  driver.js@1.9.0: {}
 
   dunder-proto@1.0.1:
     dependencies:
