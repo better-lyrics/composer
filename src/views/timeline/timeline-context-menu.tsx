@@ -118,6 +118,11 @@ function splitIntoWordsLabel(count: number): string {
   return count > 1 ? `Split ${count} lines into words` : "Split into words";
 }
 
+function autoAlignLabel({ count, realign }: { count: number; realign: boolean }): string {
+  const verb = realign ? "Re-align" : "Auto-align";
+  return count > 1 ? `${verb} ${count} lines` : `${verb} words`;
+}
+
 // -- Positioning --------------------------------------------------------------
 
 function useContextMenuFloating(contextMenu: ContextMenuState | null, clearContextMenu: () => void) {
@@ -194,7 +199,8 @@ function SelectionGrouping({ targets, clearContextMenu }: SectionProps) {
 }
 
 function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
-  const { mergeInfo, groupedWordInfo, snapNeededInfo, splitIntoWordsInfo, explicitToggleContext } = targets;
+  const { mergeInfo, groupedWordInfo, snapNeededInfo, splitIntoWordsInfo, autoAlignInfo, explicitToggleContext } =
+    targets;
   const {
     handleEditWord,
     handleSplitSyllables,
@@ -205,7 +211,7 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
     handleSnapSyllables,
     handleMergeWords,
   } = useWordMenuActions(targets, clearContextMenu);
-  const { handleSplitIntoWords } = useLineMenuActions(targets, clearContextMenu);
+  const { handleSplitIntoWords, handleAutoAlign } = useLineMenuActions(targets, clearContextMenu);
 
   return (
     <>
@@ -239,6 +245,12 @@ function WordMenuSection({ targets, clearContextMenu }: SectionProps) {
             shortcut={getEffectiveKeysArray("timeline.splitIntoWords")}
             onClick={handleSplitIntoWords}
           />
+        </>
+      )}
+      {autoAlignInfo && (
+        <>
+          {!splitIntoWordsInfo && <MenuDivider />}
+          <MenuItem label={autoAlignLabel(autoAlignInfo)} onClick={handleAutoAlign} />
         </>
       )}
       <SelectionGrouping targets={targets} clearContextMenu={clearContextMenu} />

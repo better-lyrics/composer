@@ -1,17 +1,21 @@
 import type { ModelDescriptor } from "@/audio/separation/model-registry";
 
+// Any large file fetched once and kept: the vocal model, the alignment model
+// and its dictionary all share this cache.
+type CachedAsset = Pick<ModelDescriptor, "url" | "approxBytes">;
+
 const CACHE_NAME = "composer-vocal-model-v1";
 
 type DownloadProgress = (loaded: number, total: number) => void;
 
-async function hasCachedModel(model: ModelDescriptor): Promise<boolean> {
+async function hasCachedModel(model: CachedAsset): Promise<boolean> {
   if (typeof caches === "undefined") return false;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
   return hit !== undefined;
 }
 
-async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | null> {
+async function readCachedModel(model: CachedAsset): Promise<ArrayBuffer | null> {
   if (typeof caches === "undefined") return null;
   const cache = await caches.open(CACHE_NAME);
   const hit = await cache.match(model.url);
@@ -19,8 +23,20 @@ async function readCachedModel(model: ModelDescriptor): Promise<ArrayBuffer | nu
   return hit.arrayBuffer();
 }
 
+// Caching is best effort: with little free storage the write fails, and the
+// model should still load for this session rather than fail outright.
+async function storeInCache(model: CachedAsset, bytes: ArrayBuffer | Uint8Array): Promise<void> {
+  if (typeof caches === "undefined") return;
+  try {
+    const cache = await caches.open(CACHE_NAME);
+    await cache.put(model.url, new Response(bytes, { headers: { "content-type": "application/octet-stream" } }));
+  } catch (err) {
+    console.warn(`[model-cache] could not cache ${model.url}; it will download again next time`, err);
+  }
+}
+
 async function fetchAndCacheModel(
-  model: ModelDescriptor,
+  model: CachedAsset,
   signal: AbortSignal,
   onProgress: DownloadProgress,
 ): Promise<ArrayBuffer> {
@@ -36,10 +52,7 @@ async function fetchAndCacheModel(
   if (!reader) {
     const buf = await response.arrayBuffer();
     onProgress(buf.byteLength, buf.byteLength);
-    if (typeof caches !== "undefined") {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.put(model.url, new Response(buf, { headers: { "content-type": "application/octet-stream" } }));
-    }
+    await storeInCache(model, buf);
     return buf;
   }
 
@@ -66,12 +79,9 @@ async function fetchAndCacheModel(
     offset += chunk.byteLength;
   }
 
-  if (typeof caches !== "undefined") {
-    const cache = await caches.open(CACHE_NAME);
-    await cache.put(model.url, new Response(merged, { headers: { "content-type": "application/octet-stream" } }));
-  }
-
+  await storeInCache(model, merged);
   return merged.buffer;
 }
 
 export { hasCachedModel, readCachedModel, fetchAndCacheModel };
+export type { CachedAsset };

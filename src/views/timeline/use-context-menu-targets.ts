@@ -3,6 +3,7 @@ import { getEffectiveLines } from "@/domain/line/effective-words";
 import { trackField, trackWords } from "@/domain/line/tracks";
 import { contiguousSelectionRun } from "@/domain/selection/contiguous";
 import { hasIntraGroupGap } from "@/domain/word/syllable-groups";
+import { countAlignableLines, isAutoAlignAvailable } from "@/stores/alignment";
 import { useProjectStore } from "@/stores/project";
 import {
   createGroupFromSelection,
@@ -146,8 +147,18 @@ function useContextMenuTargets() {
     return { count: updates.length };
   }, [contextMenu, selectedWords, rawLines]);
 
+  const autoAlignInfo = useMemo(() => {
+    if (!contextMenu || contextMenu.target.kind !== "word" || !isAutoAlignAvailable()) return null;
+    const targets = splitTargetsForMenu(contextMenu.target, selectedWords).filter((t) => t.type === "word");
+    const lineIds = [...new Set(targets.map((t) => t.lineId))];
+    const { lineTimed, wordTimed } = countAlignableLines(rawLines, lineIds);
+    const count = lineTimed + wordTimed;
+    return count > 0 ? { count, lineIds, realign: wordTimed > 0 } : null;
+  }, [contextMenu, selectedWords, rawLines]);
+
   return {
     lines,
+    autoAlignInfo,
     explicitToggleContext,
     gutterLineGroupInfo,
     groupableSelection,
