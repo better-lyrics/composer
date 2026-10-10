@@ -14,8 +14,10 @@ import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { MOD_KEY } from "@/utils/platform";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { isTypingTarget } from "@/utils/typing-target";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
@@ -169,16 +171,12 @@ function useTimelineKeyboard(
     const handleKeyDown = (e: KeyboardEvent) => {
       if (useProjectStore.getState().activeTab !== "timeline") return;
       if (isAnyModalOpen()) return;
-      const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+      if (isTypingTarget(e.target)) return;
 
-      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+      const historyAction = historyShortcutAction(e, { scope: "timeline" });
+      if (historyAction) {
         e.preventDefault();
-        if (e.shiftKey) {
-          useProjectStore.getState().redo();
-        } else {
-          useProjectStore.getState().undo();
-        }
+        if (!e.repeat) useProjectStore.getState()[historyAction]();
         return;
       }
 

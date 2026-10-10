@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
 import { GroupsSection } from "@/ui/help-sections/groups";
 
@@ -19,5 +20,14 @@ describe("GroupsSection", () => {
     expect(screen.container.textContent).toContain("Conform");
     expect(screen.container.textContent).toContain("exactly as long as the group");
     expect(screen.container.textContent).toContain("at the playhead when those lines had no timing yet");
+  });
+
+  it("names the user's undo binding", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<GroupsSection />);
+
+    await expect
+      .poll(() => [...screen.container.querySelectorAll("[data-inline-key-badge]")].map((badge) => badge.textContent))
+      .toContainEqual(expect.stringMatching(/B$/));
   });
 });

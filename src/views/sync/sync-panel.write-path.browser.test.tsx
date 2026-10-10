@@ -9,6 +9,7 @@ import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
+import { isMac } from "@/utils/platform";
 import { SyncPanel } from "@/views/sync/sync-panel";
 
 function settle(): Promise<void> {
@@ -37,7 +38,7 @@ async function tapAt(time: number): Promise<void> {
 }
 
 async function undo(): Promise<void> {
-  key({ key: "z", code: "KeyZ", metaKey: true });
+  key({ key: "z", code: "KeyZ", metaKey: isMac, ctrlKey: !isMac });
   await settle();
 }
 

@@ -1,6 +1,7 @@
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { getEffectiveBinding } from "@/stores/shortcut-bindings";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { findMatchingShortcut, isCommandBinding } from "@/utils/shortcut-matcher";
+import { isTypingTarget } from "@/utils/typing-target";
 import { useEffect, useEffectEvent } from "react";
 
 // -- Types --------------------------------------------------------------------
@@ -9,13 +10,6 @@ type ShortcutActions = Partial<Record<string, () => void>>;
 
 interface ShortcutOptions {
   enabled?: boolean;
-}
-
-// -- Helpers ------------------------------------------------------------------
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable;
 }
 
 // -- Hook ---------------------------------------------------------------------
@@ -33,7 +27,7 @@ function useKeyboardShortcuts(actions: ShortcutActions, options: ShortcutOptions
     if (!id || !action) return;
 
     const binding = getEffectiveBinding(id);
-    if (isTypingTarget(event.target) && !binding.ctrl && !binding.meta && !binding.mod) return;
+    if (isTypingTarget(event.target) && !isCommandBinding(binding)) return;
 
     event.preventDefault();
     action();

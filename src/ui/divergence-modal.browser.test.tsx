@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DivergenceModalHost } from "@/ui/divergence-modal";
 import { useDivergenceStore } from "@/stores/divergence-store";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
 
 describe("DivergenceModalHost", () => {
@@ -70,5 +71,14 @@ describe("DivergenceModalHost", () => {
     await screen.getByRole("button", { name: "Cancel" }).click();
     expect(await result).toBe("cancel");
     expect(useSettingsStore.getState().linkedDivergenceAction).toBe("ask");
+  });
+
+  it("names the user's undo binding", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<DivergenceModalHost />);
+    useDivergenceStore.getState().open({ affectedSiblingCount: 2 });
+
+    await expect.element(screen.getByText(/This can be undone with/)).toBeInTheDocument();
+    expect(document.querySelector("[data-inline-key-badge]")?.textContent).toMatch(/B$/);
   });
 });
