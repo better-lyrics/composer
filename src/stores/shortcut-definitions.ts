@@ -43,28 +43,6 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "," },
   },
   {
-    id: "global.undo",
-    scope: "global",
-    description: "Undo",
-    defaultBinding: { key: "z", mod: true },
-  },
-  {
-    id: "global.redo",
-    scope: "global",
-    description: "Redo",
-    defaultBinding: { key: "z", mod: true, shift: true },
-  },
-  ...(isMac
-    ? []
-    : [
-        {
-          id: "global.redoAlternate",
-          scope: "global" as const,
-          description: "Redo (alternate)",
-          defaultBinding: { key: "y", mod: true },
-        },
-      ]),
-  {
     id: "global.panicRecovery",
     scope: "global",
     description: "Download saved work (panic shortcut)",
@@ -112,6 +90,28 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     description: "Go to Export",
     defaultBinding: { key: "7", mod: true },
   },
+  {
+    id: "global.undo",
+    scope: "global",
+    description: "Undo",
+    defaultBinding: { key: "z", mod: true },
+  },
+  {
+    id: "global.redo",
+    scope: "global",
+    description: "Redo",
+    defaultBinding: { key: "z", mod: true, shift: true },
+  },
+  ...(isMac
+    ? []
+    : [
+        {
+          id: "global.redoAlternate",
+          scope: "global" as const,
+          description: "Redo (alternate)",
+          defaultBinding: { key: "y", mod: true },
+        },
+      ]),
   {
     id: "sync.tap",
     scope: "sync",

@@ -24,6 +24,12 @@ describe("findMatchingShortcut", () => {
   });
 
   describe("regressions", () => {
+    it("regression: a global shortcut saved on Mod+Z still wins over the default undo", () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.goToEdit": { key: "z", mod: true } } });
+
+      expect(findMatchingShortcut(keydown({ key: "z", ...MOD }), "global")).toBe("global.goToEdit");
+    });
+
     it("regression: a held toggle key does not re-fire the toggle on every auto-repeat", () => {
       expect(findMatchingShortcut(keydown({ key: "r", repeat: true }), "timeline")).toBeNull();
     });
@@ -64,9 +70,9 @@ describe("matchesShortcutBinding", () => {
   });
 
   it("follows a remapped binding instead of the default", () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
 
-    expect(matchesShortcutBinding(keydown({ key: "u", ...MOD }), "global.undo")).toBe(true);
+    expect(matchesShortcutBinding(keydown({ key: "b", ...MOD }), "global.undo")).toBe(true);
     expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
   });
 

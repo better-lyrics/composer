@@ -9,6 +9,7 @@ import { EditPanel } from "@/views/edit";
 // -- Constants ----------------------------------------------------------------
 
 const MOD = { metaKey: isMac, ctrlKey: !isMac };
+const OTHER_COMMAND_KEY = { metaKey: !isMac, ctrlKey: isMac };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -40,19 +41,21 @@ beforeEach(() => {
 describe("Edit undo and redo shortcuts", () => {
   it("undoes and redoes on remapped bindings", async () => {
     useShortcutBindingsStore.setState({
-      overrides: { "global.undo": { key: "u", mod: true }, "global.redo": { key: "r", mod: true, alt: true } },
+      overrides: { "global.undo": { key: "b", mod: true }, "global.redo": { key: "r", mod: true, alt: true } },
     });
     await renderWithTwoAgentChanges();
 
-    press(window, { key: "u", code: "KeyU", ...MOD });
+    press(window, { key: "b", code: "KeyB", ...MOD });
     await expect.poll(agentId).toBe("v2");
 
     press(window, { key: "r", code: "KeyR", ...MOD, altKey: true });
     await expect.poll(agentId).toBe("v3");
   });
 
-  it("leaves the old Mod+Z to the browser once undo is remapped", async () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+  it("yields Mod+Z to a shortcut the user bound to it", async () => {
+    useShortcutBindingsStore.setState({
+      overrides: { "global.undo": { key: "" }, "global.goToSync": { key: "z", mod: true } },
+    });
     await renderWithTwoAgentChanges();
 
     const event = press(window, { key: "z", code: "KeyZ", ...MOD });
@@ -61,19 +64,48 @@ describe("Edit undo and redo shortcuts", () => {
     expect(agentId()).toBe("v3");
   });
 
-  it.runIf(isMac)("does not redo on Cmd+Y on macOS", async () => {
-    await renderWithTwoAgentChanges();
-    press(window, { key: "z", code: "KeyZ", ...MOD });
-    await expect.poll(agentId).toBe("v2");
+  describe("keys that worked before undo and redo were remappable", () => {
+    it("keeps Mod+Z undoing after undo is remapped", async () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+      await renderWithTwoAgentChanges();
 
-    const event = press(window, { key: "y", code: "KeyY", ...MOD });
+      press(window, { key: "z", code: "KeyZ", ...MOD });
 
-    expect(event.defaultPrevented).toBe(false);
-    expect(agentId()).toBe("v2");
-  });
+      await expect.poll(agentId).toBe("v2");
+    });
 
-  describe("regressions", () => {
-    it("regression: a held undo key undoes once and still blocks the native textarea undo", async () => {
+    it("undoes and redoes with the other command key held", async () => {
+      await renderWithTwoAgentChanges();
+
+      press(window, { key: "z", code: "KeyZ", ...OTHER_COMMAND_KEY });
+      await expect.poll(agentId).toBe("v2");
+
+      press(window, { key: "Z", code: "KeyZ", ...OTHER_COMMAND_KEY, shiftKey: true });
+      await expect.poll(agentId).toBe("v3");
+    });
+
+    it("redoes on Y with either command key", async () => {
+      await renderWithTwoAgentChanges();
+      press(window, { key: "z", code: "KeyZ", ...MOD });
+      press(window, { key: "z", code: "KeyZ", ...MOD });
+      await expect.poll(agentId).toBe("v1");
+
+      press(window, { key: "y", code: "KeyY", ...MOD });
+      await expect.poll(agentId).toBe("v2");
+
+      press(window, { key: "y", code: "KeyY", ...OTHER_COMMAND_KEY });
+      await expect.poll(agentId).toBe("v3");
+    });
+
+    it("undoes on the physical Z key under a non-Latin layout", async () => {
+      await renderWithTwoAgentChanges();
+
+      press(window, { key: "я", code: "KeyZ", ...MOD });
+
+      await expect.poll(agentId).toBe("v2");
+    });
+
+    it("keeps undoing while the undo key is held", async () => {
       const textarea = await renderWithTwoAgentChanges();
       textarea.focus();
 
@@ -82,40 +114,30 @@ describe("Edit undo and redo shortcuts", () => {
       const held = press(textarea, { key: "z", code: "KeyZ", ...MOD, repeat: true });
 
       expect(held.defaultPrevented).toBe(true);
-      expect(agentId()).toBe("v2");
+      await expect.poll(agentId).toBe("v1");
     });
   });
 
   describe("edge cases", () => {
     it("types a plain-key undo binding into the lyrics textarea instead of undoing", async () => {
-      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u" } } });
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b" } } });
       const textarea = await renderWithTwoAgentChanges();
       textarea.focus();
 
-      const event = press(textarea, { key: "u", code: "KeyU" });
+      const event = press(textarea, { key: "b", code: "KeyB" });
 
       expect(event.defaultPrevented).toBe(false);
       expect(agentId()).toBe("v3");
     });
 
     it("undoes on a plain-key binding when focus is outside the textarea", async () => {
-      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u" } } });
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b" } } });
       await renderWithTwoAgentChanges();
       document.body.focus();
 
-      press(window, { key: "u", code: "KeyU" });
+      press(window, { key: "b", code: "KeyB" });
 
       await expect.poll(agentId).toBe("v2");
-    });
-
-    it("does nothing on Mod+Z while undo is unbound", async () => {
-      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "" } } });
-      await renderWithTwoAgentChanges();
-
-      const event = press(window, { key: "z", code: "KeyZ", ...MOD });
-
-      expect(event.defaultPrevented).toBe(false);
-      expect(agentId()).toBe("v3");
     });
   });
 });

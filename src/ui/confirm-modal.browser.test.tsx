@@ -3,6 +3,7 @@ import { userEvent } from "vitest/browser";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
 import { useConfirmStore } from "@/stores/confirm-store";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
 
 describe("ConfirmModalHost", () => {
@@ -107,5 +108,14 @@ describe("ConfirmModalHost", () => {
     useConfirmStore.getState().open({ title: "Delete?", confirmLabel: "Yes, delete", cancelLabel: "Keep it" });
     await expect.element(screen.getByRole("button", { name: "Yes, delete" })).toBeInTheDocument();
     await expect.element(screen.getByRole("button", { name: "Keep it" })).toBeInTheDocument();
+  });
+
+  it("names the user's undo binding on a recoverable confirm", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<ConfirmModalHost />);
+    useConfirmStore.getState().open({ title: "Delete line?", recoverable: true });
+
+    await expect.element(screen.getByText(/This can be undone with/)).toBeInTheDocument();
+    expect(document.querySelector("[data-inline-key-badge]")?.textContent).toMatch(/B$/);
   });
 });

@@ -14,7 +14,7 @@ const MOD = { metaKey: isMac, ctrlKey: !isMac };
 const UNDO: KeyboardEventInit = { key: "z", code: "KeyZ", ...MOD };
 const REDO: KeyboardEventInit = { key: "z", code: "KeyZ", ...MOD, shiftKey: true };
 const ALTERNATE_REDO: KeyboardEventInit = { key: "y", code: "KeyY", ...MOD };
-const REMAPPED_UNDO: KeyboardEventInit = { key: "u", code: "KeyU", ...MOD };
+const REMAPPED_UNDO: KeyboardEventInit = { key: "b", code: "KeyB", ...MOD };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -107,7 +107,7 @@ describe("editor undo and redo", () => {
   });
 
   it("reverts a typing run on a remapped undo binding", async () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;
@@ -231,7 +231,7 @@ describe("editor undo and redo without textarea focus", () => {
   });
 
   it("undoes via a remapped binding on window when focus is outside the textarea", async () => {
-    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
     useProjectStore.setState({ lines: [createLine({ id: "l1", text: "Hello" })] });
     const screen = await render(<EditPanel />);
     const textarea = screen.container.querySelector("textarea") as HTMLTextAreaElement;

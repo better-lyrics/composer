@@ -4,8 +4,10 @@ import {
   bindingToKeys,
   detectConflicts,
   getEffectiveBinding,
+  migrateShortcutBindings,
   useShortcutBindingsStore,
 } from "@/stores/shortcut-bindings";
+import { isMac } from "@/utils/platform";
 
 describe("assignBinding", () => {
   it("sets the binding", () => {
@@ -45,6 +47,46 @@ describe("assignBinding", () => {
       assignBinding("timeline.toggleFollow", { key: "p" });
       unsubscribe();
       expect(updates).toBe(1);
+    });
+  });
+});
+
+describe("migrateShortcutBindings", () => {
+  const CTRL_Y = { key: "y", mod: true };
+
+  it.skipIf(isMac)("unbinds the Ctrl+Y alternate redo when a saved binding already uses Ctrl+Y", () => {
+    const migrated = migrateShortcutBindings({ overrides: { "timeline.toggleFollow": CTRL_Y } }, 0);
+
+    expect(migrated).toEqual({ overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "" } } });
+  });
+
+  it("keeps undo and redo bound when a saved binding uses their keys, because both fired before", () => {
+    const saved = { overrides: { "global.goToSync": { key: "z", mod: true }, "sync.tap": { key: "z", mod: true, shift: true } } };
+
+    expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+  });
+
+  describe("edge cases", () => {
+    it("leaves saved bindings without a collision untouched", () => {
+      const saved = { overrides: { "timeline.toggleFollow": { key: "q" } } };
+
+      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+    });
+
+    it.skipIf(isMac)("keeps a saved choice for the alternate redo itself", () => {
+      const saved = { overrides: { "timeline.toggleFollow": CTRL_Y, "global.redoAlternate": { key: "y", mod: true, shift: true } } };
+
+      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
+    });
+
+    it("runs only for state saved before the alternate redo existed", () => {
+      const saved = { overrides: { "timeline.toggleFollow": CTRL_Y } };
+
+      expect(migrateShortcutBindings(saved, 1)).toEqual(saved);
+    });
+
+    it.each([null, undefined, "garbage", {}])("passes malformed saved state %s through", (saved) => {
+      expect(migrateShortcutBindings(saved, 0)).toEqual(saved);
     });
   });
 });

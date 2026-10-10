@@ -326,7 +326,7 @@ const SyncPanel: React.FC = () => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      const historyAction = historyShortcutAction(e);
+      const historyAction = historyShortcutAction(e, { scope: "sync" });
       if (historyAction) {
         e.preventDefault();
         if (e.repeat) return;

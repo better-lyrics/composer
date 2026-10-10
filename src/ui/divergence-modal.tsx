@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useDivergenceStore } from "@/stores/divergence-store";
 import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
-import { MOD_KEY } from "@/utils/platform";
+import { UndoHint } from "@/ui/undo-hint";
 import { pluralWord } from "@/utils/pluralize";
 
 // -- Component ----------------------------------------------------------------
@@ -44,7 +44,7 @@ const DivergenceModalHost: React.FC = () => {
           <br />
           Keeps the change on this line only and unlinks it from the group. Other instances stay exactly as they were.
         </div>
-        <div className="text-xs text-composer-text-muted">This can be undone with {MOD_KEY}+Z.</div>
+        <UndoHint />
 
         <div className="flex items-center justify-between pt-2">
           <label className="flex items-center gap-2 text-xs text-composer-text-muted cursor-pointer select-none">

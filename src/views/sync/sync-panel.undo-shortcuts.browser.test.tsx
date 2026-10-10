@@ -11,6 +11,7 @@ import { SyncPanel } from "@/views/sync/sync-panel";
 // -- Constants ----------------------------------------------------------------
 
 const MOD = { metaKey: isMac, ctrlKey: !isMac };
+const OTHER_COMMAND_KEY = { metaKey: !isMac, ctrlKey: isMac };
 
 // -- Helpers ------------------------------------------------------------------
 
@@ -48,11 +49,11 @@ describe("SyncPanel undo and redo shortcuts", () => {
 
   it("undoes and redoes on remapped bindings", async () => {
     useShortcutBindingsStore.setState({
-      overrides: { "global.undo": { key: "u", mod: true }, "global.redo": { key: "r", mod: true, alt: true } },
+      overrides: { "global.undo": { key: "b", mod: true }, "global.redo": { key: "r", mod: true, alt: true } },
     });
     await renderWithTwoAgentChanges();
 
-    press({ key: "u", code: "KeyU", ...MOD });
+    press({ key: "b", code: "KeyB", ...MOD });
     await expect.poll(agentId).toBe("v2");
 
     press({ key: "r", code: "KeyR", ...MOD, altKey: true });
@@ -69,6 +70,35 @@ describe("SyncPanel undo and redo shortcuts", () => {
     await expect.poll(agentId).toBe("v3");
   });
 
+  describe("keys that worked before undo and redo were remappable", () => {
+    it("keeps Mod+Z undoing after undo is remapped", async () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+      await renderWithTwoAgentChanges();
+
+      press({ key: "z", code: "KeyZ", ...MOD });
+
+      await expect.poll(agentId).toBe("v2");
+    });
+
+    it("undoes and redoes with the other command key held", async () => {
+      await renderWithTwoAgentChanges();
+
+      press({ key: "z", code: "KeyZ", ...OTHER_COMMAND_KEY });
+      await expect.poll(agentId).toBe("v2");
+
+      press({ key: "Z", code: "KeyZ", ...OTHER_COMMAND_KEY, shiftKey: true });
+      await expect.poll(agentId).toBe("v3");
+    });
+
+    it("undoes on the physical Z key under a non-Latin layout", async () => {
+      await renderWithTwoAgentChanges();
+
+      press({ key: "я", code: "KeyZ", ...MOD });
+
+      await expect.poll(agentId).toBe("v2");
+    });
+  });
+
   describe("regressions", () => {
     it("regression: a held undo key undoes once and consumes the repeats", async () => {
       await renderWithTwoAgentChanges();
@@ -83,14 +113,26 @@ describe("SyncPanel undo and redo shortcuts", () => {
   });
 
   describe("edge cases", () => {
-    it("leaves the old Mod+Z to the browser once undo is remapped", async () => {
-      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+    it("yields Mod+Z to a shortcut the user bound to it in this scope", async () => {
+      useShortcutBindingsStore.setState({
+        overrides: { "global.undo": { key: "" }, "sync.nudgeLeft": { key: "z", mod: true } },
+      });
       await renderWithTwoAgentChanges();
 
-      const event = press({ key: "z", code: "KeyZ", ...MOD });
+      press({ key: "z", code: "KeyZ", ...MOD });
+
+      expect(agentId()).toBe("v3");
+    });
+
+    it.runIf(isMac)("leaves Cmd+Y alone on macOS, as before", async () => {
+      await renderWithTwoAgentChanges();
+      press({ key: "z", code: "KeyZ", ...MOD });
+      await expect.poll(agentId).toBe("v2");
+
+      const event = press({ key: "y", code: "KeyY", ...MOD });
 
       expect(event.defaultPrevented).toBe(false);
-      expect(agentId()).toBe("v3");
+      expect(agentId()).toBe("v2");
     });
   });
 });

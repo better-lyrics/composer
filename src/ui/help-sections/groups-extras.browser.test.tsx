@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { render } from "@/test/render";
 import { GroupsExtras } from "@/ui/help-sections/groups-extras";
 
@@ -38,5 +39,14 @@ describe("GroupsExtras", () => {
   it("documents the group registry attribute used on export", async () => {
     const screen = await render(<GroupsExtras />);
     await expect.element(screen.getByText(/composer:groups/)).toBeInTheDocument();
+  });
+
+  it("names the user's undo binding", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<GroupsExtras />);
+
+    await expect
+      .poll(() => [...screen.container.querySelectorAll("[data-inline-key-badge]")].map((badge) => badge.textContent))
+      .toContainEqual(expect.stringMatching(/B$/));
   });
 });
