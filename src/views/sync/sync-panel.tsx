@@ -12,6 +12,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import {
   type SyncState,
@@ -325,13 +326,12 @@ const SyncPanel: React.FC = () => {
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
-      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+      const historyAction = historyShortcutAction(e);
+      if (historyAction) {
         e.preventDefault();
-        if (e.shiftKey) {
-          redo();
-        } else {
-          undo();
-        }
+        if (e.repeat) return;
+        if (historyAction === "undo") undo();
+        else redo();
         return;
       }
 

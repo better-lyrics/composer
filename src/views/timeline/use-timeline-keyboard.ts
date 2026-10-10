@@ -15,6 +15,7 @@ import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast } from "@/utils/group-toast";
 import { MOD_KEY } from "@/utils/platform";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
 import { setBgWordBoundary } from "@/utils/timing/bg-word-timing";
 import { setWordBoundary } from "@/utils/timing/word-timing";
@@ -172,13 +173,10 @@ function useTimelineKeyboard(
       const target = e.target as HTMLElement;
       if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
 
-      if (e.code === "KeyZ" && (e.metaKey || e.ctrlKey) && !e.repeat) {
+      const historyAction = historyShortcutAction(e);
+      if (historyAction) {
         e.preventDefault();
-        if (e.shiftKey) {
-          useProjectStore.getState().redo();
-        } else {
-          useProjectStore.getState().undo();
-        }
+        if (!e.repeat) useProjectStore.getState()[historyAction]();
         return;
       }
 

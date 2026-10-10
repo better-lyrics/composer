@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS } from "@/stores/shortcut-definitions";
-import { bindingFromKeyboardEvent, findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { isMac } from "@/utils/platform";
+import { bindingFromKeyboardEvent, findMatchingShortcut, matchesShortcutBinding } from "@/utils/shortcut-matcher";
+
+const MOD = { metaKey: isMac, ctrlKey: !isMac };
 
 function keydown(init: KeyboardEventInit): KeyboardEvent {
   return new KeyboardEvent("keydown", { bubbles: true, ...init });
@@ -44,6 +47,41 @@ describe("findMatchingShortcut", () => {
       }
       expect(repeatable).toContain("timeline.nudgeLeft");
       expect(repeatable).toContain("timeline.nudgeRight");
+    });
+  });
+});
+
+describe("matchesShortcutBinding", () => {
+  it("matches a key press to the shortcut's effective binding", () => {
+    expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(true);
+  });
+
+  it("matches a held repeat that findMatchingShortcut ignores, so handlers can consume it", () => {
+    const held = keydown({ key: "z", ...MOD, repeat: true });
+
+    expect(matchesShortcutBinding(held, "global.undo")).toBe(true);
+    expect(findMatchingShortcut(held, "global")).toBeNull();
+  });
+
+  it("follows a remapped binding instead of the default", () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "u", mod: true } } });
+
+    expect(matchesShortcutBinding(keydown({ key: "u", ...MOD }), "global.undo")).toBe(true);
+    expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
+  });
+
+  describe("edge cases", () => {
+    it("never matches an unbound shortcut", () => {
+      useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "" } } });
+
+      expect(matchesShortcutBinding(keydown({ key: "z", ...MOD }), "global.undo")).toBe(false);
+    });
+
+    it("tells undo from redo by Shift", () => {
+      const redo = keydown({ key: "Z", ...MOD, shiftKey: true });
+
+      expect(matchesShortcutBinding(redo, "global.undo")).toBe(false);
+      expect(matchesShortcutBinding(redo, "global.redo")).toBe(true);
     });
   });
 });

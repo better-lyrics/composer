@@ -5,6 +5,7 @@ import { useConfirm } from "@/stores/confirm-store";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { useSettingsStore } from "@/stores/settings";
 import { getAgentColor } from "@/domain/agent/colors";
 import { backgroundFields } from "@/domain/line/background";
@@ -467,17 +468,14 @@ const EditPanel: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
       if (isAnyModalOpen()) return;
-      if (!(e.metaKey || e.ctrlKey)) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
-      const key = e.key.toLowerCase();
-      const isUndo = key === "z" && !e.shiftKey;
-      const isRedo = (key === "z" && e.shiftKey) || key === "y";
-      if (!isUndo && !isRedo) return;
+      const historyAction = historyShortcutAction(e);
+      if (!historyAction) return;
       e.preventDefault();
+      if (e.repeat) return;
       finalizeRun();
-      if (isUndo) useProjectStore.getState().undo();
-      else useProjectStore.getState().redo();
+      useProjectStore.getState()[historyAction]();
     };
 
     window.addEventListener("keydown", handleKeyDown);

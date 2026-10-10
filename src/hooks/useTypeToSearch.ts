@@ -1,17 +1,6 @@
 import { useModalStackStore } from "@/stores/modal-stack";
+import { isTypingTarget } from "@/utils/typing-target";
 import { type RefObject, useEffect } from "react";
-
-// -- Helpers -------------------------------------------------------------------
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT" ||
-    target.isContentEditable
-  );
-}
 
 // -- Hook ----------------------------------------------------------------------
 
