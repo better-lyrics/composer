@@ -36,10 +36,12 @@ const ONE_SONG_AT_A_TIME_MESSAGE = "Only one song loads at a time";
 
 // -- Helpers ------------------------------------------------------------------
 
-// Chrome adds Files when a linked image (a YouTube thumbnail) is dragged, so a link wins.
+// Chrome adds the image file when a linked thumbnail is dragged, so a link that carries only images is a link drag.
 function carriesFiles(e: React.DragEvent): boolean {
-  const { types } = e.dataTransfer;
-  return types.includes("Files") && !types.includes("text/uri-list");
+  const { types, items } = e.dataTransfer;
+  if (!types.includes("Files")) return false;
+  if (!types.includes("text/uri-list")) return true;
+  return Array.from(items).some((item) => item.kind === "file" && !item.type.startsWith("image/"));
 }
 
 function isUsableFile(file: File, takesProjectFiles: boolean): boolean {
@@ -119,10 +121,11 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
       e.stopPropagation();
       endDrag();
       const files = Array.from(e.dataTransfer.files);
-      const file = files.find((candidate) => isUsableFile(candidate, onProjectFileDrop !== undefined)) ?? files[0];
+      const usable = files.find((candidate) => isUsableFile(candidate, onProjectFileDrop !== undefined));
+      const file = usable ?? files[0];
       if (!file) return;
       handleFile(file);
-      if (files.length > 1) toast(ONE_SONG_AT_A_TIME_MESSAGE);
+      if (usable && files.length > 1) toast(ONE_SONG_AT_A_TIME_MESSAGE);
     },
     [handleFile, endDrag, onProjectFileDrop],
   );

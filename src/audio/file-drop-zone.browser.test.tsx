@@ -219,6 +219,27 @@ describe("FileDropZone ids", () => {
       dispatchDrag(label, "drop", { files });
       expect(dropped).toEqual([]);
       await expect.element(screen.getByText(UNSUPPORTED_AUDIO_FILE_MESSAGE)).toBeInTheDocument();
+      expect(screen.container.ownerDocument.body.textContent).not.toContain("Only one song loads at a time");
+    });
+  });
+
+  describe("links", () => {
+    it("takes a song file dragged with a file link as a file drop", async () => {
+      const dropped: string[] = [];
+      const screen = await render(
+        <FileDropZone accept="audio/*" onFileDrop={(file) => dropped.push(file.name)}>
+          <span>Drop</span>
+        </FileDropZone>,
+      );
+      const label = screen.container.querySelector("label");
+      if (!label) throw new Error("Drop zone not rendered");
+      const fileManagerDrag = {
+        files: [createAudioFile("song.wav")],
+        data: { "text/uri-list": "file:///home/me/song.wav" },
+      };
+      expect(dispatchDrag(label, "dragover", fileManagerDrag).defaultPrevented).toBe(true);
+      expect(dispatchDrag(label, "drop", fileManagerDrag).defaultPrevented).toBe(true);
+      expect(dropped).toEqual(["song.wav"]);
     });
   });
 
