@@ -31,11 +31,15 @@ function endCount(): void {
   useSyncCountInStore.setState(SYNC_COUNT_IN_IDLE);
 }
 
+function isAtSongStart(): boolean {
+  return livePlaybackTime() < SONG_START_WINDOW_SECONDS;
+}
+
 function countsIn(): boolean {
   return (
     useProjectStore.getState().activeTab === "sync" &&
     useAudioStore.getState().source !== null &&
-    livePlaybackTime() < SONG_START_WINDOW_SECONDS &&
+    isAtSongStart() &&
     useSettingsStore.getState().syncCountIn > 0
   );
 }
@@ -56,7 +60,8 @@ function requestPlayback(): PlaybackRequest {
     useAudioStore.getState().setIsPlaying(true);
   }, seconds * 1000);
   stopWatchingPlayback = useAudioStore.subscribe((state, previous) => {
-    if (state.source !== previous.source || state.isPlaying !== previous.isPlaying) cancelCountIn();
+    const seekedAway = state.currentTime !== previous.currentTime && !isAtSongStart();
+    if (state.source !== previous.source || state.isPlaying !== previous.isPlaying || seekedAway) cancelCountIn();
   });
   useSyncCountInStore.setState({ startedAt, endsAt: startedAt + seconds * 1000, seconds });
   return "counting";

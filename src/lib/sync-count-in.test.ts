@@ -132,6 +132,20 @@ describe("regressions", () => {
     expect(isCountingIn()).toBe(true);
   });
 
+  it("regression: a seek away from the song start cancels the count", () => {
+    requestPlayback();
+    useAudioStore.setState({ currentTime: 12 });
+    expect(isCountingIn()).toBe(false);
+    vi.advanceTimersByTime(5000);
+    expect(isPlaying()).toBe(false);
+  });
+
+  it("keeps counting through a seek that stays inside the start window", () => {
+    requestPlayback();
+    useAudioStore.setState({ currentTime: 0.02 });
+    expect(isCountingIn()).toBe(true);
+  });
+
   it("regression: external play during the count ends it so taps are accepted", () => {
     requestPlayback();
     useAudioStore.getState().setIsPlaying(true);
