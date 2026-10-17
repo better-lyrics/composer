@@ -39,8 +39,9 @@ const GroupsExtras: React.FC = () => (
       <ul className={`${PROSE} list-disc pl-4 space-y-1 mt-2`}>
         <li>
           <strong>Placing an instance</strong>: an instance with no timing yet needs a start. In Sync, one tap on its
-          first word places the whole instance and skips ahead. In the Timeline, right-click one of its lines and pick{" "}
-          <strong>Place at playhead</strong>.
+          first word places the whole instance and skips ahead, starting playback a little before the next line (set in{" "}
+          <SettingLink setting="redoPreroll" />
+          ). In the Timeline, right-click one of its lines and pick <strong>Place at playhead</strong>.
         </li>
         <li>
           <strong>One instance differs</strong>: right-click its banner and pick <strong>Use own timing</strong>. Its

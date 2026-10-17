@@ -35,8 +35,8 @@ describe("SETTINGS_CATALOG", () => {
   describe("copy", () => {
     it("describes the re-record pre-roll as the lead-in for every Sync jump", () => {
       const description = settingDescription("redoPreroll", DEFAULTS);
-      expect(description).toContain("re-recording");
-      expect(description).toContain("skipping past");
+      expect(description).toContain("re-record a line or word");
+      expect(description).toContain("skips past a repeat");
     });
 
     it("has unique labels so a link is never ambiguous", () => {
