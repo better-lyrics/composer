@@ -10,9 +10,10 @@ import { useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/modal-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { getEffectiveBinding } from "@/stores/shortcut-bindings";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
-import { findMatchingShortcut } from "@/utils/shortcut-matcher";
+import { findMatchingShortcut, matchesBinding } from "@/utils/shortcut-matcher";
 import {
   type SyncState,
   convertLineToWord,
@@ -28,6 +29,7 @@ import { SyncHeader } from "@/views/sync/sync-header";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
 import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 // -- Components ---------------------------------------------------------------
 
@@ -96,6 +98,7 @@ const SyncPanel: React.FC = () => {
     handleHoldTap,
     handleReset,
     handleStartSync,
+    handleMoveCursor,
     handleJumpToLine,
     handleJumpToWord,
     handleJumpToBgWord,
@@ -277,6 +280,10 @@ const SyncPanel: React.FC = () => {
   const performKeyboardTap = useEffectEvent(performTap);
   const beginKeyboardHold = useEffectEvent(beginHold);
   const endKeyboardHold = useEffectEvent(endHold);
+  const moveKeyboardCursor = useEffectEvent((direction: -1 | 1) => {
+    // Commit navigation now so a following Space or hold cannot record the old cursor.
+    flushSync(() => handleMoveCursor(direction));
+  });
 
   const handleTapPointerDown = useCallback(
     (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -321,7 +328,23 @@ const SyncPanel: React.FC = () => {
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: Effect Events always read current state and must not be dependencies.
   useEffect(() => {
+    // Claim navigation before a focused slider can seek. Consume repeats without moving again.
+    const handleNavigationKeyDown = (e: KeyboardEvent) => {
+      if (activeTab !== "sync" || editMode || isAnyModalOpen()) return;
+      const direction = matchesBinding(e, getEffectiveBinding("sync.nextWord"))
+        ? 1
+        : matchesBinding(e, getEffectiveBinding("sync.previousWord"))
+          ? -1
+          : null;
+      if (direction === null) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+      if (!e.repeat && !isHolding) moveKeyboardCursor(direction);
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
       if (activeTab !== "sync") return;
       if (isAnyModalOpen()) return;
 
@@ -382,10 +405,12 @@ const SyncPanel: React.FC = () => {
       }
     };
 
+    window.addEventListener("keydown", handleNavigationKeyDown, true);
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
     window.addEventListener("blur", handleBlur);
     return () => {
+      window.removeEventListener("keydown", handleNavigationKeyDown, true);
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);

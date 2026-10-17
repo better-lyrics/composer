@@ -119,6 +119,18 @@ const SHORTCUT_DEFINITIONS: ShortcutDefinition[] = [
     defaultBinding: { key: "l" },
   },
   {
+    id: "sync.nextWord",
+    scope: "sync",
+    description: "Move cursor to the next word",
+    defaultBinding: { key: "ArrowUp" },
+  },
+  {
+    id: "sync.previousWord",
+    scope: "sync",
+    description: "Move cursor to the previous word",
+    defaultBinding: { key: "ArrowDown" },
+  },
+  {
     id: "timeline.toggleFollow",
     scope: "timeline",
     description: "Toggle follow",

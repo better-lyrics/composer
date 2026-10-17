@@ -4,14 +4,20 @@ import type { LyricLine } from "@/domain/line/model";
 import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
-import { commitGesture, type SyncGesture } from "@/domain/sync/commit-gesture";
-import { isCursorPastEnd, nextSyncableLineIndex, previousSlot, resolveSyncCursor } from "@/domain/sync/cursor";
+import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
+import {
+  isCursorPastEnd,
+  moveSyncCursor,
+  nextSyncableLineIndex,
+  previousSlot,
+  resolveSyncCursor,
+} from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
-import { formatTimeMs, type SyncState, splitIntoWords } from "@/utils/sync-helpers";
+import { type SyncState, formatTimeMs, splitIntoWords } from "@/utils/sync-helpers";
 import { nudgeBgWordBegin, nudgeBgWordEnd, setBgWordBegin, setBgWordEnd } from "@/utils/timing/bg-word-timing";
 import { nudgeLineBegin, setLineBegin } from "@/utils/timing/line-timing";
 import { nudgeWordBegin, nudgeWordEnd, setWordBegin, setWordEnd } from "@/utils/timing/word-timing";
@@ -79,18 +85,35 @@ function useSyncHandlers({
       const commit = commitGesture(lines, gesture, {
         cursor,
         jumped: !!syncState.jumpedToPosition,
+        preserveFollowingTimings: syncState.preserveFollowingTimings,
         time: readTapTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
       });
       if (!commit) return false;
       updateLinesWithHistory(commit.lineUpdates, { deriveText: false, propagateToSiblings: false });
-      setSyncState((prev) => ({ ...prev, position: commit.nextCursor, jumpedToPosition: commit.nextJumped }));
+      const nextWord =
+        useProjectStore.getState().lines[commit.nextCursor.lineIndex]?.words?.[commit.nextCursor.wordIndex];
+      setSyncState((prev) => ({
+        ...prev,
+        position: commit.nextCursor,
+        jumpedToPosition: commit.nextJumped,
+        preserveFollowingTimings: !!syncState.preserveFollowingTimings && granularity === "word" && !!nextWord,
+      }));
       if (commit.clampedTo !== null) {
         toast(`Early tap snapped to ${formatTimeMs(commit.clampedTo)}`, { id: EARLY_TAP_TOAST_ID });
       }
       return true;
     },
-    [lines, cursor, syncState.jumpedToPosition, readTapTime, updateLinesWithHistory, setSyncState],
+    [
+      lines,
+      cursor,
+      syncState.jumpedToPosition,
+      syncState.preserveFollowingTimings,
+      granularity,
+      readTapTime,
+      updateLinesWithHistory,
+      setSyncState,
+    ],
   );
 
   const handleTap = useCallback(() => {
@@ -147,9 +170,23 @@ function useSyncHandlers({
       position: { lineIndex: startLine, wordIndex: startWord },
       isActive: true,
       jumpedToPosition: startLine === cursorLine ? prev.jumpedToPosition : false,
+      preserveFollowingTimings: startLine === cursorLine ? prev.preserveFollowingTimings : false,
     }));
     setIsPlaying(true);
   }, [lines, cursor, setIsPlaying, setSyncState]);
+
+  const handleMoveCursor = useCallback(
+    (direction: -1 | 1) => {
+      if (editMode) return;
+      setSyncState((prev) => {
+        const current = resolveSyncCursor(lines, prev.position, !!prev.jumpedToPosition, granularity);
+        const position = moveSyncCursor(lines, current, granularity, direction);
+        if (position === current) return prev;
+        return { ...prev, position, jumpedToPosition: true, preserveFollowingTimings: granularity === "word" };
+      });
+    },
+    [lines, granularity, editMode, setSyncState],
+  );
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so
@@ -173,6 +210,7 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: index, wordIndex: 0 },
         jumpedToPosition: true,
+        preserveFollowingTimings: false,
       }));
       const bounds = effectiveBounds(lines[index]);
       if (!bounds) return;
@@ -181,9 +219,7 @@ function useSyncHandlers({
     [lines, seekForRedo, setSyncState],
   );
 
-  // Only a word that already carries timing can be re-recorded: parking the
-  // cursor on an untimed word would make the next tap write it into slot 0 and
-  // silently drop every word before it.
+  // Click-to-redo needs an existing word timing to seek playback to.
   const handleJumpToWord = useCallback(
     (lineIdx: number, wordIdx: number) => {
       const word = lines[lineIdx]?.words?.[wordIdx];
@@ -192,6 +228,7 @@ function useSyncHandlers({
         ...prev,
         position: { lineIndex: lineIdx, wordIndex: wordIdx },
         jumpedToPosition: true,
+        preserveFollowingTimings: false,
       }));
       seekForRedo(word.begin);
     },
@@ -313,6 +350,7 @@ function useSyncHandlers({
     handleHoldTap,
     handleReset,
     handleStartSync,
+    handleMoveCursor,
     handleJumpToLine,
     handleJumpToWord,
     handleJumpToBgWord,

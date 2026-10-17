@@ -1,15 +1,23 @@
-import { describe, expect, it } from "vitest";
-import { reconcileLine, type LyricLine } from "@/domain/line/model";
-import { commitGesture, type GestureCommit, type SyncGesture } from "@/domain/sync/commit-gesture";
+import { type LyricLine, reconcileLine } from "@/domain/line/model";
+import { type GestureCommit, type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const DUR = 0.3;
 
-function run(lines: LyricLine[], gesture: SyncGesture, cursor: [number, number], time: number, jumped = false) {
+function run(
+  lines: LyricLine[],
+  gesture: SyncGesture,
+  cursor: [number, number],
+  time: number,
+  jumped = false,
+  preserveFollowingTimings = false,
+) {
   return commitGesture(lines, gesture, {
     cursor: { lineIndex: cursor[0], wordIndex: cursor[1] },
     jumped,
+    preserveFollowingTimings,
     time,
     defaultWordDuration: DUR,
   });
@@ -501,7 +509,9 @@ describe("hold gestures · regressions", () => {
 
 describe("re-record after a jump · regressions", () => {
   it("regression: moves a late tapped word earlier and trims the word before it", () => {
-    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3), word("c", 3, 3.3)] })];
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 2), word("b ", 2, 3), word("c", 3, 3.3)] }),
+    ];
     const commit = run(lines, "tap-word", [0, 1], 1.6, true);
     expect(commit?.clampedTo).toBeNull();
     expect(apply(lines, commit)[0].words).toEqual([word("a ", 1, 1.6), word("b ", 1.6, 1.6 + DUR), word("c", 3, 3.3)]);
@@ -540,7 +550,9 @@ describe("re-record after a jump · regressions", () => {
   });
 
   it("regression: leaves a zero-length word in the same line alone after a jump", () => {
-    const lines = [createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 1), word("b ", 1, 2), word("c", 2, 3)] })];
+    const lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 1, 1), word("b ", 1, 2), word("c", 2, 3)] }),
+    ];
     const after = apply(lines, run(lines, "tap-word", [0, 1], 1.5, true));
     expect(after[0].words?.[0]).toEqual(word("a ", 1, 1));
   });
@@ -556,5 +568,61 @@ describe("re-record after a jump · regressions", () => {
       createLine({ id: "l1", text: "b", words: [word("b", 3, 4)] }),
     ];
     expect(run(lines, "tap-word", [1, 0], 2.5, true)?.lineUpdates.map((u) => u.id)).toEqual(["l1"]);
+  });
+});
+
+describe("keyboard re-sync pass", () => {
+  it("records a corrected tap past stale successor times without changing their recordings", () => {
+    const lines = [
+      createLine({
+        id: "l0",
+        text: "one two three",
+        words: [
+          word("one ", 0, 1),
+          { ...word("two ", 1, 2), explicit: true, syllableGroupId: "g1" },
+          word("three", 2, 3),
+        ],
+      }),
+    ];
+    const snapshot = structuredClone(lines);
+    const after = apply(lines, run(lines, "tap-word", [0, 1], 5, true, true));
+    expect(after[0].words).toEqual([
+      word("one ", 0, 1),
+      { ...word("two ", 5, 5 + DUR), explicit: true, syllableGroupId: "g1" },
+      word("three", 2, 3),
+    ]);
+    expect(lines).toEqual(snapshot);
+  });
+
+  it("does not shorten a corrected word to zero when the next old recording begins at the tap time", () => {
+    const lines = [createLine({ id: "l0", text: "a b", words: [word("a ", 1, 2), word("b", 2, 3)] })];
+    const after = apply(lines, run(lines, "tap-word", [0, 0], 2, true, true));
+    expect(after[0].words).toEqual([word("a ", 2, 2 + DUR), word("b", 2, 3)]);
+  });
+
+  it("closes the corrected previous word normally as the re-sync pass continues", () => {
+    let lines = [
+      createLine({ id: "l0", text: "a b c", words: [word("a ", 0.5, 0.8), word("b ", 0.8, 1), word("c", 1, 1.3)] }),
+    ];
+    lines = apply(lines, run(lines, "tap-word", [0, 1], 2.606, true, true));
+    lines = apply(lines, run(lines, "tap-word", [0, 2], 3.1, false, true));
+    expect(lines[0].words).toEqual([word("a ", 0.5, 0.8), word("b ", 2.606, 3.1), word("c", 3.1, 3.1 + DUR)]);
+    expectMonotonic(lines);
+  });
+
+  it("preserves untapped words through hold-start, hold-tap, and hold-end", () => {
+    let lines = [
+      createLine({
+        id: "l0",
+        text: "a b c d",
+        words: [word("a ", 0, 1), word("b ", 1, 2), word("c ", 2, 3), word("d", 3, 4)],
+      }),
+    ];
+    lines = apply(lines, run(lines, "hold-start", [0, 1], 5, true, true));
+    expect(lines[0].words?.slice(2)).toEqual([word("c ", 2, 3), word("d", 3, 4)]);
+    lines = apply(lines, run(lines, "hold-tap", [0, 1], 6, true, true));
+    expect(lines[0].words).toEqual([word("a ", 0, 1), word("b ", 5, 6), word("c ", 6, 6), word("d", 3, 4)]);
+    lines = apply(lines, run(lines, "hold-end", [0, 2], 7, false, true));
+    expect(lines[0].words).toEqual([word("a ", 0, 1), word("b ", 5, 6), word("c ", 6, 7), word("d", 3, 4)]);
   });
 });

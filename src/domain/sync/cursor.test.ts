@@ -1,14 +1,15 @@
-import { describe, expect, it } from "vitest";
 import {
   advanceCursor,
   isCursorPastEnd,
+  moveSyncCursor,
   nextSyncableLineIndex,
-  previousSlot,
   prevSyncableLineIndex,
+  previousSlot,
   resolveSyncCursor,
   slotBounds,
 } from "@/domain/sync/cursor";
 import { createLine } from "@/test/factories";
+import { describe, expect, it } from "vitest";
 
 const word = (text: string, begin: number, end: number) => ({ text, begin, end });
 const blank = () => createLine({ text: "" });
@@ -45,7 +46,76 @@ describe("advanceCursor", () => {
   });
 });
 
+describe("moveSyncCursor", () => {
+  const lines = [blank(), createLine({ text: "a b" }), blank(), createLine({ text: "c d e" }), blank()];
+
+  it("moves one word at a time without requiring timing", () => {
+    expect(moveSyncCursor(lines, { lineIndex: 1, wordIndex: 0 }, "word", 1)).toEqual({ lineIndex: 1, wordIndex: 1 });
+    expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 2 }, "word", -1)).toEqual({ lineIndex: 3, wordIndex: 1 });
+  });
+
+  it("crosses blank lines to the first next word or last previous word", () => {
+    expect(moveSyncCursor(lines, { lineIndex: 1, wordIndex: 1 }, "word", 1)).toEqual({ lineIndex: 3, wordIndex: 0 });
+    expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 0 }, "word", -1)).toEqual({ lineIndex: 1, wordIndex: 1 });
+  });
+
+  it("moves one syncable line in line mode", () => {
+    expect(moveSyncCursor(lines, { lineIndex: 1, wordIndex: 0 }, "line", 1)).toEqual({ lineIndex: 3, wordIndex: 0 });
+    expect(moveSyncCursor(lines, { lineIndex: 3, wordIndex: 0 }, "line", -1)).toEqual({ lineIndex: 1, wordIndex: 0 });
+  });
+
+  it("returns the original cursor at the first and last lyric slots", () => {
+    const first = { lineIndex: 1, wordIndex: 0 };
+    const lastWord = { lineIndex: 3, wordIndex: 2 };
+    const lastLine = { lineIndex: 3, wordIndex: 0 };
+    const completed = { lineIndex: lines.length, wordIndex: 0 };
+    expect(moveSyncCursor(lines, first, "word", -1)).toBe(first);
+    expect(moveSyncCursor(lines, first, "line", -1)).toBe(first);
+    expect(moveSyncCursor(lines, lastWord, "word", 1)).toBe(lastWord);
+    expect(moveSyncCursor(lines, lastLine, "line", 1)).toBe(lastLine);
+    expect(moveSyncCursor(lines, completed, "word", 1)).toBe(completed);
+  });
+
+  it("returns to the last lyric slot after sync completion", () => {
+    expect(moveSyncCursor(lines, { lineIndex: lines.length, wordIndex: 0 }, "word", -1)).toEqual({
+      lineIndex: 3,
+      wordIndex: 2,
+    });
+    expect(moveSyncCursor(lines, { lineIndex: lines.length, wordIndex: 0 }, "line", -1)).toEqual({
+      lineIndex: 3,
+      wordIndex: 0,
+    });
+  });
+
+  it("handles empty and entirely blank lyrics", () => {
+    for (const lyrics of [[], [blank()]]) {
+      for (const granularity of ["word", "line"] as const) {
+        for (const direction of [-1, 1] as const) {
+          const cursor = { lineIndex: 0, wordIndex: 0 };
+          expect(moveSyncCursor(lyrics, cursor, granularity, direction)).toBe(cursor);
+        }
+      }
+    }
+  });
+});
+
 describe("resolveSyncCursor", () => {
+  it("keeps manually selected untimed words while normal syncing still recovers the timing gap", () => {
+    const lines = [createLine({ text: "a b c d", words: [word("a ", 1, 2)] })];
+    expect(resolveSyncCursor(lines, { lineIndex: 0, wordIndex: 2 }, true, "word")).toEqual({
+      lineIndex: 0,
+      wordIndex: 2,
+    });
+    expect(resolveSyncCursor(lines, { lineIndex: 0, wordIndex: 9 }, true, "word")).toEqual({
+      lineIndex: 0,
+      wordIndex: 3,
+    });
+    expect(resolveSyncCursor(lines, { lineIndex: 0, wordIndex: 2 }, false, "word")).toEqual({
+      lineIndex: 0,
+      wordIndex: 1,
+    });
+  });
+
   it("regression D2: pulls the cursor back to the word undo removed", () => {
     const lines = [createLine({ text: "I heard the rumors", words: [word("I ", 1, 2), word("heard ", 2, 3)] })];
     expect(resolveSyncCursor(lines, { lineIndex: 0, wordIndex: 3 }, false, "word")).toEqual({
