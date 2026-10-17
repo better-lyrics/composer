@@ -1,6 +1,6 @@
 import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
 import { PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 // -- Types --------------------------------------------------------------------
@@ -39,11 +39,30 @@ function carriesFiles(e: React.DragEvent): boolean {
   return e.dataTransfer.types.includes("Files");
 }
 
+function forgetDetachedNodes(entered: Set<EventTarget>): void {
+  for (const node of entered) if (node instanceof Node && !node.isConnected) entered.delete(node);
+}
+
 // -- Hook ---------------------------------------------------------------------
 
 function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDropOptions): FileDrop {
   const [isDragging, setIsDragging] = useState(false);
-  const dragDepthRef = useRef(0);
+  const enteredNodesRef = useRef(new Set<EventTarget>());
+
+  const endDrag = useCallback(() => {
+    enteredNodesRef.current.clear();
+    setIsDragging(false);
+  }, []);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    window.addEventListener("drop", endDrag);
+    window.addEventListener("dragend", endDrag);
+    return () => {
+      window.removeEventListener("drop", endDrag);
+      window.removeEventListener("dragend", endDrag);
+    };
+  }, [isDragging, endDrag]);
 
   const handleFile = useCallback(
     (file: File) => {
@@ -64,7 +83,9 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
     if (!carriesFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    dragDepthRef.current++;
+    const entered = enteredNodesRef.current;
+    forgetDetachedNodes(entered);
+    entered.add(e.target);
     setIsDragging(true);
   }, []);
 
@@ -72,8 +93,10 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
     if (!carriesFiles(e)) return;
     e.preventDefault();
     e.stopPropagation();
-    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-    if (dragDepthRef.current === 0) setIsDragging(false);
+    const entered = enteredNodesRef.current;
+    entered.delete(e.target);
+    forgetDetachedNodes(entered);
+    if (entered.size === 0) setIsDragging(false);
   }, []);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -87,12 +110,11 @@ function useFileDrop({ onFileDrop, onProjectFileDrop, capture = false }: FileDro
       if (!carriesFiles(e)) return;
       e.preventDefault();
       e.stopPropagation();
-      dragDepthRef.current = 0;
-      setIsDragging(false);
+      endDrag();
       const file = e.dataTransfer.files[0];
       if (file) handleFile(file);
     },
-    [handleFile],
+    [handleFile, endDrag],
   );
 
   const handlers: FileDropHandlers = capture

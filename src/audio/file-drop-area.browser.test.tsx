@@ -56,6 +56,34 @@ describe("FileDropArea", () => {
       await expect.poll(() => overlay(screen.container)).toBeNull();
     });
 
+    it("regression: clears the overlay when an entered child is replaced during the drag", async () => {
+      const { screen, area, inner } = await renderArea();
+      const spinner = document.createElement("span");
+      inner.append(spinner);
+      dragFile(area, "dragenter");
+      dragFile(spinner, "dragenter");
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      spinner.replaceWith(document.createElement("span"));
+      dragFile(area, "dragleave");
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: clears the overlay when the drag ends elsewhere in the window", async () => {
+      const { screen, area } = await renderArea();
+      dragFile(area, "dragenter");
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragFile(window, "dragend");
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+    });
+
+    it("regression: clears the overlay after a drop outside the area", async () => {
+      const { screen, area } = await renderArea();
+      dragFile(area, "dragenter");
+      await expect.poll(() => overlay(screen.container)).not.toBeNull();
+      dragFile(document.body, "drop");
+      await expect.poll(() => overlay(screen.container)).toBeNull();
+    });
+
     it("regression: clears the overlay after a drop on a child", async () => {
       const { screen, area, inner } = await renderArea();
       dragFile(area, "dragenter");
