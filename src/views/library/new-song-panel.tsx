@@ -133,7 +133,7 @@ const NewSongPanel: React.FC<NewSongPanelProps> = ({ className }) => {
           <IconUpload aria-hidden="true" className="size-5" />
         </span>
         <span className="flex flex-col text-left">
-          <strong className="text-sm font-medium">Drop an audio or project file, or choose one</strong>
+          <strong className="text-sm font-medium">Drop an audio or project file</strong>
           <small className="text-xs text-composer-text-muted">{AUDIO_FORMATS_PROSE}</small>
         </span>
       </FileDropZone>
