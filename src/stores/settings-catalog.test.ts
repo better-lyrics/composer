@@ -33,6 +33,12 @@ describe("SETTINGS_CATALOG", () => {
   });
 
   describe("copy", () => {
+    it("describes the re-record pre-roll as the lead-in for every Sync jump", () => {
+      const description = settingDescription("redoPreroll", DEFAULTS);
+      expect(description).toContain("re-recording");
+      expect(description).toContain("skipping past");
+    });
+
     it("has unique labels so a link is never ambiguous", () => {
       const labels = SETTING_IDS.map((id) => settingEntry(id).label);
       expect(new Set(labels).size).toBe(labels.length);

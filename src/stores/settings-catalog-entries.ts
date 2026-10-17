@@ -193,7 +193,8 @@ const SETTINGS_CATALOG = {
   redoPreroll: {
     section: "sync",
     label: "Re-record pre-roll",
-    description: "How far before the selected line or word playback starts when re-recording in Sync.",
+    description:
+      "How far before the target Sync starts playback when it jumps, such as re-recording a line or word, or skipping past a repeat that already shares its timing.",
     settingKey: "redoPreroll",
   },
   syncCountIn: {
