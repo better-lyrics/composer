@@ -177,10 +177,12 @@ describe("useAudioStore - seekTo", () => {
 });
 
 describe("useAudioStore - setPlaybackRate", () => {
-  it("persists the selected playback rate as the default", () => {
+  it("saves the selected playback rate as the last speed, not the default", () => {
+    const defaultRate = useSettingsStore.getState().defaultPlaybackRate;
     useAudioStore.getState().setPlaybackRate(1.5);
     expect(useAudioStore.getState().playbackRate).toBe(1.5);
-    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(1.5);
+    expect(useSettingsStore.getState().lastPlaybackRate).toBe(1.5);
+    expect(useSettingsStore.getState().defaultPlaybackRate).toBe(defaultRate);
   });
 
   it("ignores invalid playback rates", () => {

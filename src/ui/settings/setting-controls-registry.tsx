@@ -52,6 +52,7 @@ const SETTING_CONTROLS: Record<SettingId, SettingControl> = {
   theme: { kind: "custom", Component: ThemeSettings },
   defaultPlaybackRate: { kind: "custom", Component: DefaultPlaybackRateSetting },
   preservePitch: TOGGLE,
+  rememberPlaybackRate: TOGGLE,
   rememberVolume: TOGGLE,
   audioScrubPreview: TOGGLE,
   autoSeparateOnImport: TOGGLE,
