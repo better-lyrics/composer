@@ -3,7 +3,7 @@ import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { createAudioFile, createMp3File } from "@/test/audio-fixtures";
-import { dispatchDrag, dragFile, dragText } from "@/test/file-drag";
+import { DRAGGED_LINK, dispatchDrag, dragFile, dragText } from "@/test/file-drag";
 import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { DEFAULT_BRIDGE_URL } from "@/utils/composer-bridge-api";
@@ -149,6 +149,22 @@ describe("ImportPanel: drop anywhere", () => {
       const field = screen.getByPlaceholder(/YouTube/).element();
       expect(dragText(field, "dragover").defaultPrevented).toBe(false);
       expect(dragText(field, "drop").defaultPrevented).toBe(false);
+    });
+
+    it("regression: a dragged thumbnail link that also carries a file is a link drag", async () => {
+      useAudioStore.setState({ source: null });
+      const screen = await render(withQueryClient(<ImportPanel />));
+      const thumbnailDrag = {
+        files: [new File(["x"], "hqdefault.jpg", { type: "image/jpeg" })],
+        data: { "text/uri-list": DRAGGED_LINK },
+      };
+      dispatchDrag(importArea(screen.container), "dragenter", thumbnailDrag);
+      const field = screen.getByPlaceholder(/YouTube/).element();
+      expect(dispatchDrag(field, "dragover", thumbnailDrag).defaultPrevented).toBe(false);
+      expect(dispatchDrag(field, "drop", thumbnailDrag).defaultPrevented).toBe(false);
+      await stepFrames(2);
+      expect(overlay(screen.container)).toBeNull();
+      expect(useAudioStore.getState().source).toBeNull();
     });
 
     it("regression: a text drag shows no overlay", async () => {

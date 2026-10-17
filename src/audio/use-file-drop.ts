@@ -35,8 +35,10 @@ const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project
 
 // -- Helpers ------------------------------------------------------------------
 
+// Chrome adds Files when a linked image (a YouTube thumbnail) is dragged, so a link wins.
 function carriesFiles(e: React.DragEvent): boolean {
-  return e.dataTransfer.types.includes("Files");
+  const { types } = e.dataTransfer;
+  return types.includes("Files") && !types.includes("text/uri-list");
 }
 
 function forgetDetachedNodes(entered: Set<EventTarget>): void {
