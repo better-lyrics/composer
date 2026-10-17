@@ -1,6 +1,6 @@
 import { askChoiceWithCheckbox } from "@/stores/choice-store";
 import { useSettingsStore } from "@/stores/settings";
-import { MOD_KEY } from "@/utils/platform";
+import { UndoHint } from "@/ui/undo-hint";
 import { pluralWord } from "@/utils/pluralize";
 
 // -- Types --------------------------------------------------------------------
@@ -36,7 +36,7 @@ const DivergenceBody: React.FC<DivergenceOptions> = ({ affectedSiblingCount, gro
       <br />
       Keeps the change on this line only and unlinks it from the group. Other instances stay exactly as they were.
     </div>
-    <div className="text-xs text-composer-text-muted">This can be undone with {MOD_KEY}+Z.</div>
+    <UndoHint />
   </>
 );
 

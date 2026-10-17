@@ -3,7 +3,6 @@ import { HelpTopic } from "@/ui/help-topic";
 import { InlineKeyBadge } from "@/ui/inline-key-badge";
 import { SettingLink } from "@/ui/setting-link";
 import { INLINE_CODE, PROSE } from "@/ui/typography";
-import { MOD_KEY } from "@/utils/platform";
 
 // -- Linked group extras ------------------------------------------------------
 
@@ -109,7 +108,8 @@ const GroupsExtras: React.FC = () => (
         </li>
       </ul>
       <p className={`${PROSE} mt-2`}>
-        Both are undoable: the toast that appears has an Undo button, or press {MOD_KEY} + Z.
+        Both are undoable: the toast that appears has an Undo button, or press{" "}
+        <InlineKeyBadge keys={getEffectiveKeysArray("global.undo")} />.
       </p>
     </HelpTopic>
 

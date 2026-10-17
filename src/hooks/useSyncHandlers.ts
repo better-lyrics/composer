@@ -134,16 +134,7 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [
-      lines,
-      cursor,
-      jumped,
-      skippedInstances,
-      updateLinesWithHistory,
-      setSyncState,
-      seekTo,
-      onPlacementSkip,
-    ],
+    [lines, cursor, jumped, skippedInstances, updateLinesWithHistory, setSyncState, seekTo, onPlacementSkip],
   );
 
   const handleTap = useCallback(() => {

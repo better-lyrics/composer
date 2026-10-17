@@ -12,6 +12,7 @@ import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useImportModal, useImportModalStore, useLastImportResult } from "@/stores/import-modal-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { historyShortcutAction } from "@/utils/history-shortcut";
 import { Button } from "@/ui/button";
 import { Popover } from "@/ui/popover";
 import { Scroll } from "@/ui/scroll";
@@ -473,17 +474,13 @@ const EditPanel: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (activeTab !== "edit") return;
       if (isAnyModalOpen()) return;
-      if (!(e.metaKey || e.ctrlKey)) return;
       const target = e.target as HTMLElement;
       if ((target.tagName === "INPUT" || target.tagName === "TEXTAREA") && target.id !== textareaId) return;
-      const key = e.key.toLowerCase();
-      const isUndo = key === "z" && !e.shiftKey;
-      const isRedo = (key === "z" && e.shiftKey) || key === "y";
-      if (!isUndo && !isRedo) return;
+      const historyAction = historyShortcutAction(e, { redoOnY: true });
+      if (!historyAction) return;
       e.preventDefault();
       finalizeRun();
-      if (isUndo) useProjectStore.getState().undo();
-      else useProjectStore.getState().redo();
+      useProjectStore.getState()[historyAction]();
     };
 
     window.addEventListener("keydown", handleKeyDown);

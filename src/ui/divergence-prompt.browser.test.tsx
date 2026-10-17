@@ -1,5 +1,6 @@
 import { useChoiceStore } from "@/stores/choice-store";
 import { useSettingsStore } from "@/stores/settings";
+import { useShortcutBindingsStore } from "@/stores/shortcut-bindings";
 import { allowConsole } from "@/test/console-guard";
 import { render } from "@/test/render";
 import { ChoiceModalHost } from "@/ui/choice-modal";
@@ -19,6 +20,17 @@ describe("askWordDivergence", () => {
     await expect.element(screen.getByRole("heading", { name: "Word structure changed" })).toBeInTheDocument();
     expect(document.body.textContent).toContain("Chorus");
     expect(document.body.textContent).toContain("3 other instances");
+    useChoiceStore.getState().answer("cancel");
+    await result;
+  });
+
+  it("names the user's undo binding", async () => {
+    useShortcutBindingsStore.setState({ overrides: { "global.undo": { key: "b", mod: true } } });
+    const screen = await render(<ChoiceModalHost />);
+    const result = askWordDivergence({ affectedSiblingCount: 2 });
+
+    await expect.element(screen.getByText(/This can be undone with/)).toBeInTheDocument();
+    expect(document.querySelector("[data-inline-key-badge]")?.textContent).toMatch(/B$/);
     useChoiceStore.getState().answer("cancel");
     await result;
   });

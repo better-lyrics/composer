@@ -1,5 +1,6 @@
 import { getShortcutDescription } from "@/stores/shortcut-bindings";
 import { SHORTCUT_DEFINITIONS, type ShortcutBinding, type ShortcutScope } from "@/stores/shortcut-definitions";
+import { isMac } from "@/utils/platform";
 import { describe, expect, it } from "vitest";
 
 // -- Helpers ------------------------------------------------------------------
@@ -61,6 +62,27 @@ describe("SHORTCUT_DEFINITIONS", () => {
     }
   });
 
+  it("registers undo as Mod+Z and redo as Mod+Shift+Z in the global scope", () => {
+    const undo = SHORTCUT_DEFINITIONS.find((d) => d.id === "global.undo");
+    const redo = SHORTCUT_DEFINITIONS.find((d) => d.id === "global.redo");
+
+    expect(undo?.scope).toBe("global");
+    expect(undo?.defaultBinding).toEqual({ key: "z", mod: true });
+    expect(redo?.scope).toBe("global");
+    expect(redo?.defaultBinding).toEqual({ key: "z", mod: true, shift: true });
+  });
+
+  it("registers the Ctrl+Y alternate redo only outside macOS", () => {
+    const alternate = SHORTCUT_DEFINITIONS.find((d) => d.id === "global.redoAlternate");
+
+    if (isMac) {
+      expect(alternate).toBeUndefined();
+      return;
+    }
+    expect(alternate?.scope).toBe("global");
+    expect(alternate?.defaultBinding).toEqual({ key: "y", mod: true });
+  });
+
   it("registers the project shortcuts with their exact default bindings in the global scope", () => {
     const expectedBindings: Record<string, ShortcutBinding> = {
       "global.openProjectSwitcher": { key: "o", mod: true },
@@ -101,6 +123,17 @@ describe("SHORTCUT_DEFINITIONS", () => {
   });
 
   describe("invariants", () => {
+    it("has no global default binding that shadows a sync or timeline default", () => {
+      const globalSignatures = new Set(
+        SHORTCUT_DEFINITIONS.filter((d) => d.scope === "global").map((d) => bindingSignature(d.defaultBinding)),
+      );
+      const shadowed = SHORTCUT_DEFINITIONS.filter(
+        (d) => d.scope !== "global" && globalSignatures.has(bindingSignature(d.defaultBinding)),
+      ).map(({ id }) => id);
+
+      expect(shadowed).toEqual([]);
+    });
+
     it("has a unique id for every definition", () => {
       const ids = SHORTCUT_DEFINITIONS.map((d) => d.id);
       expect(new Set(ids).size).toBe(ids.length);
