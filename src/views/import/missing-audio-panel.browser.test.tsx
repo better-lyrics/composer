@@ -2,6 +2,7 @@ import { restoreOpenProject } from "@/lib/open-project";
 import { useAudioStore } from "@/stores/audio";
 import { useUIStore } from "@/stores/ui";
 import { createAudioFile, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { dragFile } from "@/test/file-drag";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -97,11 +98,7 @@ describe("MissingAudioPanel · local file", () => {
 });
 
 describe("MissingAudioPanel · drop anywhere", () => {
-  function dragOver(target: Element, type: "dragenter" | "drop"): void {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(createAudioFile("city.wav"));
-    target.dispatchEvent(new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer }));
-  }
+  const dragOver = (target: Element, type: "dragenter" | "drop") => dragFile(target, type, createAudioFile("city.wav"));
 
   function panelArea(container: HTMLElement): Element {
     const area = container.querySelector('[data-tour="import-dropzone"]');
@@ -134,11 +131,7 @@ describe("MissingAudioPanel · drop anywhere", () => {
 
   it("links audio dropped outside the drop box", async () => {
     const screen = await openMissingFile();
-    const area = screen.container.querySelector('[data-tour="import-dropzone"]');
-    if (!area) throw new Error("Panel not rendered");
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(createAudioFile("city.wav"));
-    area.dispatchEvent(new DragEvent("drop", { bubbles: true, cancelable: true, dataTransfer }));
+    dragOver(panelArea(screen.container), "drop");
     await expect.poll(sourceFileName).toBe("city.wav");
   });
 });
