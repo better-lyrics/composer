@@ -2,7 +2,7 @@ import { isSharedLine } from "@/domain/group/shared-timing";
 import { instanceName } from "@/domain/instance/name";
 import { isLinked } from "@/domain/instance/predicates";
 import type { LyricLine } from "@/domain/line/model";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { showGroupActionToast, showPlacementBlockedToast } from "@/utils/group-toast";
@@ -51,7 +51,7 @@ function useLineMenuActions(targets: ContextMenuTargets, clearContextMenu: () =>
   const handlePlaceAtPlayhead = useCallback(() => {
     if (!placeAtPlayheadInfo) return;
     const audio = useAudioStore.getState();
-    const playheadTime = audio.audioElement?.currentTime ?? audio.currentTime;
+    const playheadTime = livePlaybackTime();
     const { groupId, instanceIdx } = placeAtPlayheadInfo;
     if (!useProjectStore.getState().placeInstance(groupId, instanceIdx, playheadTime, audio.duration)) {
       showPlacementBlockedToast();

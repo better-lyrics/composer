@@ -60,6 +60,7 @@ interface SettingsState {
   defaultWordDuration: number;
   minWordDuration: number;
   redoPreroll: number;
+  syncCountIn: number;
   defaultGranularity: GranularityDefault;
 
   autoSaveDelay: number;
@@ -140,6 +141,7 @@ const DEFAULTS: SettingsState = {
   defaultWordDuration: 0.3,
   minWordDuration: DEFAULT_MIN_WORD_DURATION,
   redoPreroll: 1.5,
+  syncCountIn: 3,
   defaultGranularity: "word",
 
   autoSaveDelay: 2000,

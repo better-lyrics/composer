@@ -1,15 +1,21 @@
 import { Toaster } from "sonner";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { effectiveBounds } from "@/domain/line/bounds";
 import type { LyricLine } from "@/domain/line/model";
 import { isLineSynced } from "@/domain/line/predicates";
 import { useAudioStore } from "@/stores/audio";
+import { useSettingsStore } from "@/stores/settings";
 import { useProjectStore } from "@/stores/project";
 import { createAudioFile } from "@/test/audio-fixtures";
 import { createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import { setCurrentTime, setIsPlaying } from "@/test/sync-gesture-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
+
+// These tests cover gestures and holds after playback starts, not the count-in before it.
+beforeEach(() => {
+  useSettingsStore.setState({ syncCountIn: 0 });
+});
 
 function settle(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 30));

@@ -1,4 +1,5 @@
 import { AudioPlayer } from "@/audio/audio-player";
+import { isCountingIn } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -44,6 +45,32 @@ describe("AudioPlayer", () => {
     expect(useAudioStore.getState().isPlaying).toBe(true);
     await screen.getByRole("button", { name: "Pause" }).click();
     expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
+
+  it("counts in before playing in Sync from the song start", async () => {
+    setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    expect(isCountingIn()).toBe(true);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+  });
+
+  it("shows the pause state during the count, and a click cancels it", async () => {
+    setupAudioSource();
+    useAudioStore.setState({ currentTime: 0 });
+    useProjectStore.setState({ activeTab: "sync" });
+    useSettingsStore.setState({ syncCountIn: 3 });
+    const screen = await render(<AudioPlayer />);
+    await screen.getByRole("button", { name: "Play" }).click();
+    await expect.element(screen.getByRole("button", { name: "Pause" }), { timeout: 500 }).toBeInTheDocument();
+    expect(isCountingIn()).toBe(true);
+    await screen.getByRole("button", { name: "Pause" }).click();
+    expect(isCountingIn()).toBe(false);
+    expect(useAudioStore.getState().isPlaying).toBe(false);
+    await expect.element(screen.getByRole("button", { name: "Play" })).toBeInTheDocument();
   });
 
   it("opens the playback rate popover and applies a preset", async () => {

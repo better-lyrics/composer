@@ -9,6 +9,7 @@ import { LyricsCodeEditor } from "@/ui/lyrics-code/lyrics-code-editor";
 import { StatusChip } from "@/ui/status-chip";
 import { EDITOR_PATH, LIBRARY_PATH } from "@/utils/app-routes";
 import { cn } from "@/utils/cn";
+import { isFileDrag } from "@/utils/file-drag";
 import { fileNameWithoutExtension } from "@/utils/file-name";
 import { IMPORT_HASH_PREFIX } from "@/utils/incoming-link";
 import type { LyricsFileType } from "@/utils/lyrics-parsers/detect";
@@ -63,10 +64,8 @@ const ConverterView: React.FC<ConverterViewProps> = ({
     setFilename(`${fileNameWithoutExtension(file.name)}.${outputFormat.extension}`);
   };
 
-  const carriesFile = (event: React.DragEvent) => event.dataTransfer.types.includes("Files");
-
   const handleDragOver = (event: React.DragEvent) => {
-    if (!carriesFile(event)) return;
+    if (!isFileDrag(event.dataTransfer)) return;
     event.preventDefault();
     setIsDragOver(true);
   };

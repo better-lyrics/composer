@@ -166,5 +166,14 @@ const useAudioStore = create<AudioState & AudioActions>((set, get) => ({
   reset: () => set(createInitialState()),
 }));
 
-export { useAudioStore };
+// -- Readers ------------------------------------------------------------------
+
+function livePlaybackTime(): number {
+  const { audioElement, currentTime } = useAudioStore.getState();
+  return audioElement?.currentTime ?? currentTime;
+}
+
+// -- Exports ------------------------------------------------------------------
+
+export { livePlaybackTime, useAudioStore };
 export type { AudioSource };

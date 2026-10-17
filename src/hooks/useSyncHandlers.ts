@@ -6,11 +6,13 @@ import { hasAnyTiming } from "@/domain/line/predicates";
 import { shiftLineTiming } from "@/domain/line/shift";
 import { isSyncableLine } from "@/domain/line/sync-progress";
 import { anchorGesture } from "@/domain/sync/anchor-gesture";
+import { type PlacementSkip, placementSkipTarget } from "@/domain/sync/placement-skip";
 import { type SyncGesture, commitGesture } from "@/domain/sync/commit-gesture";
 import { isCursorPastEnd, nextSyncableLineIndex, previousSlot } from "@/domain/sync/cursor";
 import type { WordTiming } from "@/domain/word/timing";
 import { keptSyncReRecording, syncReRecordingAt, useSyncCursor } from "@/hooks/useSyncCursor";
-import { useAudioStore } from "@/stores/audio";
+import { requestPlayback } from "@/lib/sync-count-in";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
@@ -28,11 +30,11 @@ interface UseSyncHandlersProps {
   lines: LyricLine[];
   syncState: SyncState;
   setSyncState: React.Dispatch<React.SetStateAction<SyncState>>;
-  currentTime: number;
   editMode: boolean;
   granularity: "line" | "word";
   setShowPulse: (show: boolean) => void;
   setIsPlaying: (playing: boolean) => void;
+  onPlacementSkip?: (skip: PlacementSkip, lineIndex: number) => void;
 }
 
 // -- Constants ------------------------------------------------------------------
@@ -56,11 +58,11 @@ function useSyncHandlers({
   lines,
   syncState,
   setSyncState,
-  currentTime,
   editMode,
   granularity,
   setShowPulse,
   setIsPlaying,
+  onPlacementSkip,
 }: UseSyncHandlersProps) {
   const seekTo = useAudioStore((s) => s.seekTo);
   const updateLineWithHistory = useProjectStore((s) => s.updateLineWithHistory);
@@ -73,19 +75,12 @@ function useSyncHandlers({
   const currentLine = lines[lineIndex];
   const isComplete = isCursorPastEnd(lines, cursor);
 
-  // Store `currentTime` only advances on `timeupdate` (~4 Hz); read the element's
-  // live clock so taps under that interval don't collide into zero-length syllables.
-  const readTapTime = useCallback(
-    () => useAudioStore.getState().audioElement?.currentTime ?? currentTime,
-    [currentTime],
-  );
-
   const runGesture = useCallback(
     (gesture: SyncGesture): boolean => {
       const ctx = {
         cursor,
         jumped,
-        time: readTapTime(),
+        time: livePlaybackTime(),
         defaultWordDuration: useSettingsStore.getState().defaultWordDuration,
         groups: useProjectStore.getState().groups,
         skippedInstances,
@@ -102,6 +97,12 @@ function useSyncHandlers({
       }
       if (anchor) {
         const placed = useProjectStore.getState();
+        const { redoPreroll } = useSettingsStore.getState();
+        const skip = placementSkipTarget(placed.lines, anchor.groupId, anchor.instanceIdx, ctx.time, redoPreroll);
+        if (skip) {
+          seekTo(skip.seekTo);
+          onPlacementSkip?.(skip, anchor.resumeCursor.lineIndex);
+        }
         const anchorUndo = {
           resume: anchor.resumeCursor,
           anchor: anchor.anchorCursor,
@@ -133,7 +134,16 @@ function useSyncHandlers({
       toastEarlyTap(commit.clampedTo);
       return true;
     },
-    [lines, cursor, jumped, skippedInstances, readTapTime, updateLinesWithHistory, setSyncState],
+    [
+      lines,
+      cursor,
+      jumped,
+      skippedInstances,
+      updateLinesWithHistory,
+      setSyncState,
+      seekTo,
+      onPlacementSkip,
+    ],
   );
 
   const handleTap = useCallback(() => {
@@ -197,8 +207,8 @@ function useSyncHandlers({
       isActive: true,
       jumpedToPosition: startLine === cursorLine ? jumped : false,
     }));
-    setIsPlaying(true);
-  }, [lines, cursor, jumped, setIsPlaying, setSyncState]);
+    return requestPlayback();
+  }, [lines, cursor, jumped, setSyncState]);
 
   // Re-recording seeks back and waits for the user to start playback. Edit mode
   // is the exception: there a click is a scrub for auditioning timings, so

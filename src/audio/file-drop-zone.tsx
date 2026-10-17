@@ -1,8 +1,7 @@
-import { UNSUPPORTED_AUDIO_FILE_MESSAGE, isSupportedAudioFile } from "@/domain/audio-file/supported-formats";
-import { PROJECT_FILE_ACCEPT, PROJECT_FILE_EXTENSIONS_LABEL, isProjectFileName } from "@/lib/project-file-read";
+import { useFileDrop } from "@/audio/use-file-drop";
+import { PROJECT_FILE_ACCEPT } from "@/lib/project-file-read";
 import { cn } from "@/utils/cn";
-import { useCallback, useId, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useCallback, useId } from "react";
 
 // -- Types --------------------------------------------------------------------
 
@@ -14,69 +13,11 @@ interface FileDropZoneProps {
   className?: string;
 }
 
-// -- Constants ----------------------------------------------------------------
-
-const UNSUPPORTED_FILE_MESSAGE = `${UNSUPPORTED_AUDIO_FILE_MESSAGE} or a project file (${PROJECT_FILE_EXTENSIONS_LABEL})`;
-
 // -- Component ----------------------------------------------------------------
 
 const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProjectFileDrop, children, className }) => {
-  const [isDragging, setIsDragging] = useState(false);
   const inputId = useId();
-  const dragCountRef = useRef(0);
-
-  const handleFile = useCallback(
-    (file: File) => {
-      if (onProjectFileDrop && isProjectFileName(file.name)) {
-        onProjectFileDrop(file);
-        return;
-      }
-      if (isSupportedAudioFile(file)) {
-        onFileDrop(file);
-        return;
-      }
-      toast.error(onProjectFileDrop ? UNSUPPORTED_FILE_MESSAGE : UNSUPPORTED_AUDIO_FILE_MESSAGE);
-    },
-    [onFileDrop, onProjectFileDrop],
-  );
-
-  const handleDragEnter = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCountRef.current++;
-    if (dragCountRef.current === 1) {
-      setIsDragging(true);
-    }
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCountRef.current--;
-    if (dragCountRef.current === 0) {
-      setIsDragging(false);
-    }
-  }, []);
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      dragCountRef.current = 0;
-      setIsDragging(false);
-
-      const file = e.dataTransfer.files[0];
-      if (file) {
-        handleFile(file);
-      }
-    },
-    [handleFile],
-  );
+  const { isDragging, handlers, handleFile } = useFileDrop({ onFileDrop, onProjectFileDrop });
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,10 +33,7 @@ const FileDropZone: React.FC<FileDropZoneProps> = ({ accept, onFileDrop, onProje
   return (
     <label
       htmlFor={inputId}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      {...handlers}
       className={cn(
         "size-full flex cursor-pointer flex-col items-center justify-center p-8 transition-colors",
         "border-composer-border hover:border-composer-border-hover",

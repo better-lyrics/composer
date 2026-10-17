@@ -2,8 +2,9 @@ import { reconcileTransliterationAfterSyllableSplit } from "@/domain/language/re
 import { splitTransliterationAtBoundaries } from "@/domain/language/transliteration-format";
 import { manualBackgroundWordEdit } from "@/domain/line/background";
 import { effectiveTrackWords } from "@/domain/line/effective-words";
+import { trackField } from "@/domain/line/tracks";
 import type { WordTiming } from "@/domain/word/timing";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime } from "@/stores/audio";
 import { useConfirm } from "@/stores/confirm-store";
 import { useProjectStore } from "@/stores/project";
 import { buildApplyToAllConfirmOptions } from "@/utils/apply-to-all-confirm-options";
@@ -12,7 +13,6 @@ import { splitWordIntoSyllables } from "@/utils/single-word-syllable-split";
 import { handleWordChangeWithDivergenceCheck } from "@/utils/word-divergence-flow";
 import { splitWordIntoWords } from "@/utils/word-split";
 import { splitSourceWord } from "@/utils/word-timing";
-import { trackField } from "@/domain/line/tracks";
 import { nanoid } from "nanoid";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -92,8 +92,7 @@ function useTimelineSyllableSplitterState({
     if (mode === "word") {
       newWords = splitWordIntoWords(word, splitPoints);
     } else {
-      const audioEl = useAudioStore.getState().audioElement;
-      const currentTime = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const currentTime = livePlaybackTime();
       const playheadOnWord = currentTime > word.begin && currentTime < word.end;
 
       if (playheadOnWord && splitPoints.length === 1) {

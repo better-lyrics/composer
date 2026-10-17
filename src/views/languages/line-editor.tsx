@@ -44,7 +44,14 @@ const AlignButton: React.FC<{ onClick: () => void; ariaLabel?: string; needsRevi
   ariaLabel,
   needsReview,
 }) => (
-  <Button variant={needsReview ? "primary" : "ghost"} size="sm" hasIcon aria-label={ariaLabel} onClick={onClick}>
+  <Button
+    variant="ghost"
+    size="sm"
+    hasIcon
+    aria-label={ariaLabel}
+    className={cn(needsReview && "text-composer-accent-text hover:text-composer-accent-text")}
+    onClick={onClick}
+  >
     <IconSeparatorVertical className="size-4" />
     Align
   </Button>

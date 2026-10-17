@@ -172,7 +172,13 @@ describe("BraccatoRenderer lyrics updates", () => {
         },
       });
       let rebuildScrolled = false;
-      el.addEventListener("scroll", () => (rebuildScrolled = true), { once: true });
+      el.addEventListener(
+        "scroll",
+        () => {
+          rebuildScrolled = true;
+        },
+        { once: true },
+      );
 
       await screen.rerender(<BraccatoRenderer ttmlString={buildBackgroundVocalTtml()} />);
       expect(el.scrollTop).not.toBe(scrollTopBefore);

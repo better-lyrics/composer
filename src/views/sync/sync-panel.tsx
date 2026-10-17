@@ -6,10 +6,12 @@ import { isSyncComplete, syncProgress } from "@/domain/line/sync-progress";
 import { previousSlot, slotBounds } from "@/domain/sync/cursor";
 import { useFrameLoop } from "@/hooks/use-frame-loop";
 import { useSyncHandlers } from "@/hooks/useSyncHandlers";
-import { useAudioStore } from "@/stores/audio";
+import { cancelCountIn, isCountingIn } from "@/lib/sync-count-in";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { isAnyModalOpen } from "@/stores/escape-layer-stack";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
+import { setSyncEditMode, useSyncEditModeStore } from "@/stores/sync-edit-mode";
 import { EmptyState } from "@/ui/empty-state";
 import { shimmerTransition, shimmerVariants } from "@/utils/animationVariants";
 import { findMatchingShortcut } from "@/utils/shortcut-matcher";
@@ -26,7 +28,9 @@ import { SkippedInstanceBand } from "@/views/sync/skipped-instance-band";
 import { type RippleTarget, SyncCarousel } from "@/views/sync/sync-carousel";
 import { SyncFooter, SyncGestureControls } from "@/views/sync/sync-footer";
 import { SyncHeader } from "@/views/sync/sync-header";
+import { usePlacementPreroll } from "@/views/sync/use-placement-preroll";
 import { useSharedSyncView } from "@/views/sync/use-shared-sync-view";
+import { useSyncCountIn } from "@/views/sync/use-sync-count-in";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 import { m } from "motion/react";
 import { Fragment, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
@@ -46,6 +50,8 @@ const SyncPanel: React.FC = () => {
   const source = useAudioStore((s) => s.source);
   const currentTime = useAudioStore((s) => s.currentTime);
   const isPlaying = useAudioStore((s) => s.isPlaying);
+  const placementPreroll = usePlacementPreroll();
+  const clearPlacementPreroll = placementPreroll.clear;
   const setIsPlaying = useAudioStore((s) => s.setIsPlaying);
   const audioElement = useAudioStore((s) => s.audioElement);
   const seekTo = useAudioStore((s) => s.seekTo);
@@ -65,7 +71,7 @@ const SyncPanel: React.FC = () => {
     isActive: false,
   });
   const [showPulse, setShowPulse] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const editMode = useSyncEditModeStore((s) => s.editMode);
   const [isHolding, setIsHolding] = useState(false);
   const [rippleTarget, setRippleTarget] = useState<RippleTarget | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -102,12 +108,13 @@ const SyncPanel: React.FC = () => {
     lines,
     syncState,
     setSyncState,
-    currentTime,
     editMode,
     granularity,
     setShowPulse,
     setIsPlaying,
+    onPlacementSkip: placementPreroll.show,
   });
+  const countIn = useSyncCountIn();
 
   const { skippedLineIds, skippedByLastLineId, sharedTags, placingName } = useSharedSyncView(
     lines,
@@ -178,14 +185,12 @@ const SyncPanel: React.FC = () => {
     handleHoldEndRaw();
   }, [handleHoldEndRaw, triggerRippleAtCurrentPosition]);
 
-  // Smooth word progress updates (reads audioElement.currentTime directly)
   useFrameLoop(
     () => {
       const container = scrollContainerRef.current;
       if (!container) return;
 
-      const audioEl = useAudioStore.getState().audioElement;
-      const time = audioEl?.currentTime ?? useAudioStore.getState().currentTime;
+      const time = livePlaybackTime();
 
       const wordEls = container.querySelectorAll<HTMLElement>("[data-word-begin]");
       for (const el of wordEls) {
@@ -231,7 +236,8 @@ const SyncPanel: React.FC = () => {
 
   const handleToggleEdit = useCallback(() => {
     const entering = !editMode;
-    setEditMode(entering);
+    if (entering) cancelCountIn();
+    setSyncEditMode(entering);
     if (entering && isPlaying) setIsPlaying(false);
   }, [editMode, isPlaying, setIsPlaying]);
 
@@ -265,7 +271,8 @@ const SyncPanel: React.FC = () => {
   }, [lines, cursor, granularity]);
 
   const performTap = useCallback(() => {
-    if (editMode) return;
+    if (editMode || isCountingIn()) return;
+    clearPlacementPreroll();
     if (isHolding && isPlaying) {
       handleHoldTap();
     } else if (isPlaying) {
@@ -274,19 +281,39 @@ const SyncPanel: React.FC = () => {
     } else if (lines.length > 0) {
       handleStartSync();
     }
-  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleHoldTap, handleTap, handleStartSync]);
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleHoldTap,
+    handleTap,
+    handleStartSync,
+    clearPlacementPreroll,
+  ]);
 
   const beginHold = useCallback(() => {
-    if (editMode || isHolding) return;
+    if (editMode || isHolding || isCountingIn()) return;
+    clearPlacementPreroll();
     if (!syncState.isActive && lines.length > 0) {
-      handleStartSync();
+      if (handleStartSync() === "counting") return;
       handleHoldStart();
       setIsHolding(true);
     } else if (isPlaying) {
       handleHoldStart();
       setIsHolding(true);
     }
-  }, [editMode, isHolding, isPlaying, syncState.isActive, lines.length, handleStartSync, handleHoldStart]);
+  }, [
+    editMode,
+    isHolding,
+    isPlaying,
+    syncState.isActive,
+    lines.length,
+    handleStartSync,
+    handleHoldStart,
+    clearPlacementPreroll,
+  ]);
 
   const endHold = useCallback(() => {
     if (!isHolding) return;
@@ -412,7 +439,7 @@ const SyncPanel: React.FC = () => {
     };
   }, [activeTab, undo, redo, handleNudgeLastSynced, editMode, isHolding, hasTransliteration, toggleTextVariant]);
 
-  const showScrollableView = !isPlaying || editMode;
+  const showScrollableView = (!isPlaying && !countIn.countingIn) || editMode;
 
   if (!source) {
     return (
@@ -549,6 +576,7 @@ const SyncPanel: React.FC = () => {
               isHolding={isHolding}
               rippleTarget={rippleTarget}
               onRippleComplete={clearRippleTarget}
+              aboveCurrent={countIn.dots}
             />
           )}
         </div>
@@ -560,6 +588,10 @@ const SyncPanel: React.FC = () => {
         editMode={editMode}
         isPlaying={isPlaying}
         isActive={syncState.isActive}
+        status={
+          countIn.status ??
+          placementPreroll.statusFor({ isPlaying, isComplete, cursorLineIndex: lineIndex, playbackTime: currentTime })
+        }
         gestureControls={
           showGestureCircles && (
             <SyncGestureControls

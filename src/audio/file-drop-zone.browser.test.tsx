@@ -1,16 +1,11 @@
 import { FileDropZone } from "@/audio/file-drop-zone";
+import { UNSUPPORTED_AUDIO_FILE_MESSAGE } from "@/domain/audio-file/supported-formats";
 import { createAudioFile } from "@/test/audio-fixtures";
+import { dispatchDrag, dragFile } from "@/test/file-drag";
+import { stepFrames } from "@/test/frame-steps";
 import { render } from "@/test/render";
 import { Toaster } from "sonner";
 import { describe, expect, it } from "vitest";
-
-function dispatchDragEvent(target: Element, type: string, files: File[] = []) {
-  const dataTransfer = new DataTransfer();
-  for (const file of files) dataTransfer.items.add(file);
-  const event = new Event(type, { bubbles: true, cancelable: true });
-  Object.defineProperty(event, "dataTransfer", { value: dataTransfer });
-  target.dispatchEvent(event);
-}
 
 describe("FileDropZone", () => {
   it("renders the file input and children", async () => {
@@ -37,7 +32,7 @@ describe("FileDropZone", () => {
     );
     const label = screen.container.querySelector("label") as HTMLLabelElement;
     const file = createAudioFile("song.wav");
-    dispatchDragEvent(label, "drop", [file]);
+    dragFile(label, "drop", file);
     expect(received).not.toBeNull();
     expect((received as unknown as File).name).toBe("song.wav");
   });
@@ -56,7 +51,7 @@ describe("FileDropZone", () => {
     );
     const label = screen.container.querySelector("label") as HTMLLabelElement;
     const txt = new File(["plain text"], "lyrics.txt", { type: "text/plain" });
-    dispatchDragEvent(label, "drop", [txt]);
+    dragFile(label, "drop", txt);
     expect(received).toBeNull();
   });
 
@@ -92,7 +87,7 @@ describe("FileDropZone", () => {
     );
     const label = screen.container.querySelector("label");
     if (!label) throw new Error("drop zone label not rendered");
-    dispatchDragEvent(label, "drop", [new File(["plain text"], "lyrics.txt", { type: "text/plain" })]);
+    dragFile(label, "drop", new File(["plain text"], "lyrics.txt", { type: "text/plain" }));
     await expect.element(screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac")).toBeInTheDocument();
   });
 
@@ -167,6 +162,87 @@ describe("FileDropZone ids", () => {
     expect(label?.classList.contains("p-8")).toBe(false);
   });
 
+  it("highlights while a file is dragged over it and clears on leave", async () => {
+    const screen = await render(
+      <FileDropZone accept="audio/*" onFileDrop={() => {}}>
+        drop
+      </FileDropZone>,
+    );
+    const label = screen.container.querySelector("label");
+    if (!label) throw new Error("Drop zone not rendered");
+    dragFile(label, "dragenter", createAudioFile());
+    await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(true);
+    dragFile(label, "dragleave", createAudioFile());
+    await expect.poll(() => label.classList.contains("border-composer-accent")).toBe(false);
+  });
+
+  describe("several files", () => {
+    async function renderZone(onFileDrop: (file: File) => void) {
+      const screen = await render(
+        <>
+          <FileDropZone accept="audio/*" onFileDrop={onFileDrop}>
+            <span>Drop</span>
+          </FileDropZone>
+          <Toaster />
+        </>,
+      );
+      const label = screen.container.querySelector("label");
+      if (!label) throw new Error("Drop zone not rendered");
+      return { screen, label };
+    }
+
+    it("loads the first supported file and says only one song loads", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      const notes = new File(["x"], "notes.txt", { type: "text/plain" });
+      dispatchDrag(label, "drop", { files: [notes, createAudioFile("first.wav"), createAudioFile("second.wav")] });
+      expect(dropped).toEqual(["first.wav"]);
+      await expect.element(screen.getByText("Only one song loads at a time")).toBeInTheDocument();
+    });
+
+    it("says nothing extra for a single file", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      dragFile(label, "drop", createAudioFile("only.wav"));
+      expect(dropped).toEqual(["only.wav"]);
+      await stepFrames(2);
+      expect(screen.container.ownerDocument.body.textContent).not.toContain("Only one song loads at a time");
+    });
+
+    it("refuses several files when none is supported", async () => {
+      const dropped: string[] = [];
+      const { screen, label } = await renderZone((file) => dropped.push(file.name));
+      const files = [
+        new File(["x"], "a.txt", { type: "text/plain" }),
+        new File(["x"], "b.txt", { type: "text/plain" }),
+      ];
+      dispatchDrag(label, "drop", { files });
+      expect(dropped).toEqual([]);
+      await expect.element(screen.getByText(UNSUPPORTED_AUDIO_FILE_MESSAGE)).toBeInTheDocument();
+      expect(screen.container.ownerDocument.body.textContent).not.toContain("Only one song loads at a time");
+    });
+  });
+
+  describe("links", () => {
+    it("takes a song file dragged with a file link as a file drop", async () => {
+      const dropped: string[] = [];
+      const screen = await render(
+        <FileDropZone accept="audio/*" onFileDrop={(file) => dropped.push(file.name)}>
+          <span>Drop</span>
+        </FileDropZone>,
+      );
+      const label = screen.container.querySelector("label");
+      if (!label) throw new Error("Drop zone not rendered");
+      const fileManagerDrag = {
+        files: [createAudioFile("song.wav")],
+        data: { "text/uri-list": "file:///home/me/song.wav" },
+      };
+      expect(dispatchDrag(label, "dragover", fileManagerDrag).defaultPrevented).toBe(true);
+      expect(dispatchDrag(label, "drop", fileManagerDrag).defaultPrevented).toBe(true);
+      expect(dropped).toEqual(["song.wav"]);
+    });
+  });
+
   describe("project files", () => {
     function projectFile(name = "song.ttml-project.json") {
       return new File(["{}"], name, { type: "application/json" });
@@ -181,7 +257,7 @@ describe("FileDropZone ids", () => {
         </FileDropZone>,
       );
       const label = screen.container.querySelector("label") as HTMLLabelElement;
-      dispatchDragEvent(label, "drop", [projectFile()]);
+      dragFile(label, "drop", projectFile());
       expect(projects.map((f) => f.name)).toEqual(["song.ttml-project.json"]);
       expect(audio).toEqual([]);
     });
@@ -194,7 +270,7 @@ describe("FileDropZone ids", () => {
         </FileDropZone>,
       );
       const label = screen.container.querySelector("label") as HTMLLabelElement;
-      dispatchDragEvent(label, "drop", [createAudioFile("song.wav")]);
+      dragFile(label, "drop", createAudioFile("song.wav"));
       expect(audio.map((f) => f.name)).toEqual(["song.wav"]);
     });
 
@@ -218,7 +294,7 @@ describe("FileDropZone ids", () => {
         </>,
       );
       const label = screen.container.querySelector("label") as HTMLLabelElement;
-      dispatchDragEvent(label, "drop", [new File(["plain text"], "lyrics.txt", { type: "text/plain" })]);
+      dragFile(label, "drop", new File(["plain text"], "lyrics.txt", { type: "text/plain" }));
       await expect
         .element(screen.getByText("Unsupported file type. Use .mp3 .wav .m4a .ogg .flac or a project file (.json)"))
         .toBeInTheDocument();
@@ -232,7 +308,7 @@ describe("FileDropZone ids", () => {
         </FileDropZone>,
       );
       const label = screen.container.querySelector("label") as HTMLLabelElement;
-      dispatchDragEvent(label, "drop", [projectFile()]);
+      dragFile(label, "drop", projectFile());
       expect(audio).toEqual([]);
       expect(screen.getByLabelText("Upload audio file").elements()).toHaveLength(1);
     });

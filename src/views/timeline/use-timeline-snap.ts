@@ -1,5 +1,5 @@
 import { snapPointTimes } from "@/domain/snap-point/model";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useSettingsStore } from "@/stores/settings";
 import { type SnapAnchor, collectSnapAnchors, findSnapShift } from "@/views/timeline/snap";
@@ -72,10 +72,9 @@ function useTimelineSnap(): UseTimelineSnap {
   const beginGesture = useCallback((args: BeginGestureArgs) => {
     const lines = useProjectStore.getState().lines;
     const projectSnapPoints = useProjectStore.getState().customSnapPoints;
-    const audio = useAudioStore.getState();
     const settings = useSettingsStore.getState();
     const timeline = useTimelineStore.getState();
-    const playhead = audio.audioElement?.currentTime ?? audio.currentTime ?? null;
+    const playhead = livePlaybackTime();
     const vocalOnsets = settings.vocalOnsetSnap ? timeline.vocalOnsetSnapPoints : [];
     ctxRef.current.anchors = collectSnapAnchors(
       lines,

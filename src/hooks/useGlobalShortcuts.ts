@@ -1,5 +1,6 @@
 import type { ProjectTab } from "@/domain/project/tab";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { togglePlayback } from "@/lib/sync-count-in";
 import { useAudioStore } from "@/stores/audio";
 
 interface GlobalShortcutActions {
@@ -14,11 +15,6 @@ const SLOW_PLAYBACK_RATE = 0.75;
 function togglePlaybackSpeed(): void {
   const { playbackRate, setPlaybackRate } = useAudioStore.getState();
   setPlaybackRate(playbackRate === 1 ? SLOW_PLAYBACK_RATE : 1);
-}
-
-function togglePlayback(): void {
-  const { isPlaying, setIsPlaying } = useAudioStore.getState();
-  setIsPlaying(!isPlaying);
 }
 
 function useGlobalShortcuts(actions: GlobalShortcutActions): void {

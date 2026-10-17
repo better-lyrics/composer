@@ -3,6 +3,14 @@ import type { SettingEntry } from "@/stores/settings-catalog";
 import { GENERAL_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-general";
 import { STORAGE_CATALOG_ENTRIES } from "@/stores/settings-catalog-entries-storage";
 import { MOD_KEY } from "@/utils/platform";
+import { pluralize } from "@/utils/pluralize";
+
+// -- Helpers ------------------------------------------------------------------
+
+function syncCountInDescription(seconds: number): string {
+  if (seconds === 0) return "Playback starts right away in Sync.";
+  return `Count down for ${pluralize(seconds, "second")} before Sync plays from the start of the song, so you are ready for the first word.`;
+}
 
 // -- Catalog ------------------------------------------------------------------
 
@@ -185,8 +193,16 @@ const SETTINGS_CATALOG = {
   redoPreroll: {
     section: "sync",
     label: "Re-record pre-roll",
-    description: "How far before the selected line or word playback starts when re-recording in Sync.",
+    description:
+      "How far before the target line or word Sync starts playback after a jump, such as when you re-record a line or word, or when Sync skips past a repeat that already shares its timing.",
     settingKey: "redoPreroll",
+  },
+  syncCountIn: {
+    section: "sync",
+    label: "Count-in",
+    descriptionFor: (state) => syncCountInDescription(state.syncCountIn),
+    keywords: ["countdown", "pre-roll", "start delay"],
+    settingKey: "syncCountIn",
   },
   defaultGranularity: {
     section: "sync",

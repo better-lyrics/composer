@@ -2,6 +2,7 @@ import { restoreOpenProject } from "@/lib/open-project";
 import { useAudioStore } from "@/stores/audio";
 import { useUIStore } from "@/stores/ui";
 import { createAudioFile, createUnplayableAudioFile } from "@/test/audio-fixtures";
+import { dragFile } from "@/test/file-drag";
 import { seedStoredProject, songTitled } from "@/test/projects";
 import { render } from "@/test/render";
 import { ConfirmModalHost } from "@/ui/confirm-modal";
@@ -93,6 +94,45 @@ describe("MissingAudioPanel · local file", () => {
       await expect.element(screen.getByText("Couldn't link that file")).toBeInTheDocument();
       expect(sourceFileName()).toBeNull();
     });
+  });
+});
+
+describe("MissingAudioPanel · drop anywhere", () => {
+  const dragOver = (target: Element, type: "dragenter" | "drop") => dragFile(target, type, createAudioFile("city.wav"));
+
+  function panelArea(container: HTMLElement): Element {
+    const area = container.querySelector('[data-tour="import-dropzone"]');
+    if (!area) throw new Error("Panel not rendered");
+    return area;
+  }
+
+  it("asks to link the audio again while a file is over a missing local file", async () => {
+    const screen = await openMissingFile();
+    dragOver(panelArea(screen.container), "dragenter");
+    await expect.element(screen.getByText("Drop to link the audio again", { exact: true })).toBeInTheDocument();
+  });
+
+  it("offers to use the dropped audio instead of a failed YouTube video", async () => {
+    const screen = await openFailedVideo("fetch-failed");
+    dragOver(panelArea(screen.container), "dragenter");
+    await expect.element(screen.getByText("Drop to use this audio instead", { exact: true })).toBeInTheDocument();
+  });
+
+  it("regression: the overlay goes away after a drop on the relink box", async () => {
+    const screen = await openMissingFile();
+    const box = screen.container.querySelector("label");
+    if (!box) throw new Error("Relink box not rendered");
+    dragOver(box, "dragenter");
+    await expect.poll(() => screen.container.querySelector("[data-file-drop-overlay]")).not.toBeNull();
+    dragOver(box, "drop");
+    await expect.poll(() => screen.container.querySelector("[data-file-drop-overlay]")).toBeNull();
+    await expect.poll(sourceFileName).toBe("city.wav");
+  });
+
+  it("links audio dropped outside the drop box", async () => {
+    const screen = await openMissingFile();
+    dragOver(panelArea(screen.container), "drop");
+    await expect.poll(sourceFileName).toBe("city.wav");
   });
 });
 

@@ -29,6 +29,7 @@ function migrateSettings(persistedState: unknown, version: number): unknown {
   if (next.vocalOnsetSnap === undefined) next.vocalOnsetSnap = true;
   if (next.snapPlayheadToPoints === undefined) next.snapPlayheadToPoints = true;
   if (next.redoPreroll === undefined) next.redoPreroll = 1.5;
+  if (next.syncCountIn === undefined) next.syncCountIn = 3;
   // Old blobs carry an explicit false from before the default flipped, so an undefined guard never reaches them.
   if (version < 6) next.preserveBracketsOnExtraction = true;
   const { librarySort, libraryView, launchScreen, keepYouTubeAudio, smartCleanup, storageLimit, ...rest } = next;

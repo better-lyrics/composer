@@ -13,10 +13,7 @@ interface InstanceRef {
 
 // -- Functions ----------------------------------------------------------------
 
-function selectedBannerInstance(
-  lines: readonly ReadableLine[],
-  selectedWords: WordSelection[],
-): InstanceRef | null {
+function selectedBannerInstance(lines: readonly ReadableLine[], selectedWords: WordSelection[]): InstanceRef | null {
   const first = selectedWords[0];
   if (!first) return null;
   const line = lines.find((candidate) => candidate.id === first.lineId);

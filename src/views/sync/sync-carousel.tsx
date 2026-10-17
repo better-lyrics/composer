@@ -53,6 +53,7 @@ interface SyncCarouselProps {
   isHolding?: boolean;
   rippleTarget?: RippleTarget | null;
   onRippleComplete?: () => void;
+  aboveCurrent?: React.ReactNode;
 }
 
 // -- Components ---------------------------------------------------------------
@@ -105,6 +106,7 @@ const WordGranularityLine: React.FC<WordGranularityLineProps> = ({
     return (
       <m.span
         key={`${line.id}-${widx}`}
+        initial={false}
         animate={{ color, scale: isCurrentHeld ? 0.95 : 1 }}
         transition={syncCarouselTransition}
         className="relative inline-flex items-center justify-center origin-center"
@@ -140,6 +142,7 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
   isHolding = false,
   rippleTarget = null,
   onRippleComplete,
+  aboveCurrent,
 }) => {
   const { accentColor, secondaryColor, disabledColor } = useCarouselColors();
 
@@ -171,10 +174,16 @@ const SyncCarousel: React.FC<SyncCarouselProps> = ({
               style={{ height: LINE_HEIGHT }}
               className="flex flex-col items-center justify-center gap-1 w-full shrink-0"
             >
-              <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              <span className="relative flex justify-center">
+                {isCurrent && aboveCurrent && (
+                  <span className="absolute bottom-full flex justify-center pb-2">{aboveCurrent}</span>
+                )}
+                <SharedTagSlot tag={line.sharedTag?.placement === "above" ? line.sharedTag : undefined} />
+              </span>
               <div className="flex flex-wrap items-center justify-center text-4xl font-medium gap-x-4 gap-y-3">
                 {granularity === "line" ? (
                   <m.span
+                    initial={false}
                     animate={{
                       color: idx === lineIndex - 1 ? accentColor : isCurrent ? secondaryColor : disabledColor,
                     }}

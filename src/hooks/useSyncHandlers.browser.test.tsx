@@ -8,8 +8,13 @@ import { createGroup, createLine, createWord } from "@/test/factories";
 import { render } from "@/test/render";
 import type { SyncState } from "@/utils/sync-helpers";
 import { SyncPanel } from "@/views/sync/sync-panel";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { renderHook } from "vitest-browser-react";
+
+// These tests cover gestures and holds after playback starts, not the count-in before it.
+beforeEach(() => {
+  useSettingsStore.setState({ syncCountIn: 0 });
+});
 
 const ORIGINAL_TEXT = "Hello world how are you";
 
@@ -35,6 +40,7 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
   const getSyncState = () => syncState;
   const startTime = opts.initialCurrentTime ?? 0;
   const playingCalls: boolean[] = [];
+  if (opts.initialCurrentTime !== undefined) useAudioStore.setState({ currentTime: opts.initialCurrentTime });
 
   const { result, rerender, act } = await renderHook(
     (props?: HookProps) => {
@@ -44,7 +50,6 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
         lines,
         syncState: state,
         setSyncState,
-        currentTime: props?.currentTime ?? startTime,
         editMode: opts.editMode ?? false,
         granularity: opts.granularity ?? "word",
         setShowPulse: noopBool,
@@ -54,7 +59,12 @@ async function mountSyncHandlers(opts: MountOptions = {}) {
     { initialProps: { syncState, currentTime: startTime } },
   );
 
-  return { result, rerender, act, getSyncState, playingCalls };
+  const rerenderAt = async (props: HookProps) => {
+    useAudioStore.setState({ currentTime: props.currentTime });
+    await rerender(props);
+  };
+
+  return { result, rerender: rerenderAt, act, getSyncState, playingCalls };
 }
 
 describe("useSyncHandlers.handleTap (word granularity)", () => {
@@ -976,7 +986,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 
   it("regression: starts at the navigated line instead of resetting to the top", async () => {
     useProjectStore.getState().setLines(twoSyncedLines());
-    const { result, act, getSyncState, playingCalls } = await mountSyncHandlers({
+    const { result, act, getSyncState } = await mountSyncHandlers({
       initialSyncState: { position: { lineIndex: 1, wordIndex: 0 }, isActive: false },
     });
 
@@ -984,7 +994,7 @@ describe("useSyncHandlers.handleStartSync (start at cursor)", () => {
 
     expect(getSyncState().position.lineIndex).toBe(1);
     expect(getSyncState().isActive).toBe(true);
-    expect(playingCalls).toContain(true);
+    expect(useAudioStore.getState().isPlaying).toBe(true);
   });
 
   it("preserves the navigated word index when starting", async () => {

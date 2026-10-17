@@ -1,5 +1,5 @@
 import { instanceOffset } from "@/domain/group/shared-timing";
-import { useAudioStore } from "@/stores/audio";
+import { livePlaybackTime, useAudioStore } from "@/stores/audio";
 import { useProjectStore } from "@/stores/project";
 import { useTimelineStore } from "@/views/timeline/timeline-store";
 
@@ -10,7 +10,7 @@ function hearInstance(groupId: string, fromInstanceIdx: number, toInstanceIdx: n
   const offset = instanceOffset(useProjectStore.getState().lines, groupId, fromInstanceIdx, toInstanceIdx);
   useTimelineStore.getState().openGroup(groupId, toInstanceIdx);
   const audio = useAudioStore.getState();
-  if (offset !== null) audio.seekTo((audio.audioElement?.currentTime ?? audio.currentTime) + offset);
+  if (offset !== null) audio.seekTo(livePlaybackTime() + offset);
 }
 
 // -- Exports ------------------------------------------------------------------

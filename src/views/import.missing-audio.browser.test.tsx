@@ -22,7 +22,7 @@ describe("ImportPanel · missing audio", () => {
     await seedStoredProject("p", { open: true, project: songTitled("Lyrics only") });
     await restoreOpenProject();
     const screen = await render(<ImportPanel />);
-    await expect.element(screen.getByText("Drop audio file here")).toBeInTheDocument();
+    await expect.element(screen.getByText("Drop an audio or project file here")).toBeInTheDocument();
   });
 
   it("shows the YouTube relink state when the project's video fails to load", async () => {
@@ -43,7 +43,7 @@ describe("ImportPanel · missing audio", () => {
       useAudioStore.getState().setYouTubeSource("dQw4w9WgXcQ");
       useAudioStore.getState().failYouTubeLoad("Nope");
       const screen = await render(<ImportPanel />);
-      await expect.element(screen.getByText("Drop audio file here")).toBeInTheDocument();
+      await expect.element(screen.getByText("Drop an audio or project file here")).toBeInTheDocument();
       expect(screen.getByText("Couldn't load the audio from YouTube.").elements()).toHaveLength(0);
     });
 

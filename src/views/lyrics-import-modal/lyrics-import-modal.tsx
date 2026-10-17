@@ -4,6 +4,7 @@ import { Button } from "@/ui/button";
 import { Modal } from "@/ui/modal";
 import { isAbortError } from "@/utils/abort-error";
 import { cn } from "@/utils/cn";
+import { isFileDrag } from "@/utils/file-drag";
 import {
   LYRICS_IMPORT_FORMATS_COMPACT,
   UNSUPPORTED_LYRICS_IMPORT_MESSAGE,
@@ -107,27 +108,17 @@ const LyricsImportModalShell: React.FC = () => {
   const switchToPaste = useCallback(() => setCurrentSection("paste"), []);
   const switchToUpload = useCallback(() => setCurrentSection("upload"), []);
 
-  const isFileDrag = useCallback((e: React.DragEvent) => {
-    return Array.from(e.dataTransfer.types).includes("Files");
+  const handleModalDragEnter = useCallback((e: React.DragEvent) => {
+    if (!isFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+    dragCountRef.current++;
+    if (dragCountRef.current === 1) setIsModalDragOver(true);
   }, []);
 
-  const handleModalDragEnter = useCallback(
-    (e: React.DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      dragCountRef.current++;
-      if (dragCountRef.current === 1) setIsModalDragOver(true);
-    },
-    [isFileDrag],
-  );
-
-  const handleModalDragOver = useCallback(
-    (e: React.DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-    },
-    [isFileDrag],
-  );
+  const handleModalDragOver = useCallback((e: React.DragEvent) => {
+    if (!isFileDrag(e.dataTransfer)) return;
+    e.preventDefault();
+  }, []);
 
   const handleModalDragLeave = useCallback((e: React.DragEvent) => {
     e.preventDefault();
